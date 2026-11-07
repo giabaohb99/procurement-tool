@@ -152,6 +152,20 @@ def _group_inventory_by_warehouse(db: Session, invs: list) -> list[dict]:
     return sorted(rows, key=lambda r: (-r["value"], r["warehouse_code"]))
 
 
+@router.get("/menu-badges")
+def menu_badges(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Số phiếu đang chờ duyệt cho bóng đỏ trên menu trái (duoc-CR-723).
+
+    Trả `{survey_request, purchase_request, purchase_order, survey}` → số phiếu ở trạng thái
+    Chờ duyệt (`submitted`) trong PHẠM VI dữ liệu của người xem, cùng cách đếm với thẻ thống kê Trang
+    chủ. Khóa nào người xem không có quyền đọc thì vắng mặt. Bốn câu đếm, số truy vấn cố định — giao
+    diện gọi lại mỗi lần chuyển trang nên phải rẻ.
+    """
+    from app.modules.dashboard.menu_badge_service import count_pending_by_menu
+
+    return success(count_pending_by_menu(db, user))
+
+
 @router.get("/overview")
 def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tổng hợp trang chủ — LỌC THEO QUYỀN + PHẠM VI. Khối nào user không có quyền Xem
@@ -221,6 +235,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         items = {it.id: it for it in db.query(POItem).filter(POItem.po_id.in_(po_ids)).all()} if po_ids else {}
         delivs = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty > 0).all() if po_ids else []
         kpi["po_ordered"] = sum(1 for p in pos.values() if p.status in ("approved", "partial", "received"))
+        # duoc-CR-723 (phiếu TK06112601): thẻ "Đơn mua hàng chờ duyệt (POs)" thay thẻ "Đơn hàng hoạt động".
+        # Giữ `po_ordered` vì báo cáo / giao diện v2 còn đọc.
+        kpi["po_pending"] = sum(1 for p in pos.values() if p.status == "submitted")
         late_src = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all() if po_ids else []
         # Hạn giao = NCC cam kết giao (`promised_date`). Cột `PODelivery.expected_date` đã bỏ
         # dùng — không nơi nào ghi, xem migration e2c5a81f7b60.

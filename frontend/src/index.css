@@ -147,6 +147,30 @@ body.col-resizing {
   font-size: 18px;
 }
 
+/* duoc-CR-723 — bóng đỏ đếm phiếu chờ duyệt ở góc trên bên phải biểu tượng menu trái. */
+.nav-icon {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.nav-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e24b4a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+}
+
 .nav-item:hover {
   background: #f4f7fe;
   color: #1b2559;

@@ -46,6 +46,8 @@ const navItemClass = [
   // Bo góc vừa phải (`rounded-lg`), không bo tròn hẳn: viên thuốc tròn trịa nhìn
   // lạc khỏi phần còn lại của giao diện — thẻ, nút, ô nhập đều dùng bo góc nhỏ.
   'h-9 gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-foreground/80',
+  //  `relative`: mốc cho huy hiệu khi menu thu gọn (đè góc biểu tượng) — xem chỗ vẽ `item.badge`.
+  'relative',
   '[&>svg]:size-5 [&>svg]:text-sidebar-foreground/50',
   //  Nền hover pha từ chính MÀU CHỮ của menu, không lấy `--sidebar-accent`.
   //
@@ -390,9 +392,19 @@ function NavMenuItem({
               {item.icon && <item.icon />}
               <span>{item.label}</span>
               {/*  Huy hiệu đứng CUỐI dòng (`ml-auto` do chính nó mang) và tự ẩn
-                   khi không có việc — xem `ModuleNavItem.badge`. Menu thu gọn
-                   thì cả nhãn lẫn huy hiệu cùng bị ẩn bởi biến thể icon. */}
-              {item.badge && <item.badge />}
+                   khi không có việc — xem `ModuleNavItem.badge`.
+
+                   ⚠️ Menu THU GỌN (chỉ còn biểu tượng): nút co về ô 32px và cắt phần
+                   tràn, huy hiệu cuối dòng bị cắt mất — người dùng thu gọn menu là
+                   mất luôn tín hiệu có việc chờ (anh Được báo 06/11/2026, duoc-CR-723).
+                   Khung bọc này kéo nó lên đè góc trên phải biểu tượng, thu nhỏ lại,
+                   giống bóng đỏ trên menu giao diện cũ. Đặt ở khung chung nên MỌI
+                   huy hiệu (Thu mua, Duyệt sửa hồ sơ, Văn bản chờ duyệt) đều theo. */}
+              {item.badge && (
+                <span className="ml-auto flex group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:origin-top-right group-data-[collapsible=icon]:scale-90">
+                  <item.badge />
+                </span>
+              )}
             </span>
           </SidebarMenuButton>
         )}

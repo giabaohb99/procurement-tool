@@ -17,6 +17,12 @@ import {
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
+import {
+  PurchaseOrderPendingNavBadge,
+  PurchaseRequestPendingNavBadge,
+  SurveyPendingNavBadge,
+  SurveyRequestPendingNavBadge,
+} from './components/procurement-pending-nav-badge'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 import {
@@ -72,6 +78,7 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveyRequests,
       icon: ClipboardList,
       entity: 'survey_request',
+      badge: SurveyRequestPendingNavBadge,
       group: 'Mua hàng',
     },
     {
@@ -86,6 +93,7 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseRequests,
       icon: FileText,
       entity: 'purchase_request',
+      badge: PurchaseRequestPendingNavBadge,
       group: 'Mua hàng',
     },
     {
@@ -93,6 +101,7 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseOrders,
       icon: ShoppingCart,
       entity: 'purchase_order',
+      badge: PurchaseOrderPendingNavBadge,
       group: 'Mua hàng',
     },
     {
@@ -181,6 +190,7 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveys,
       icon: ClipboardCheck,
       entity: 'survey',
+      badge: SurveyPendingNavBadge,
       group: 'Khảo sát',
     },
     {
