@@ -1,6 +1,7 @@
 {
   "_huong_dan": "bao-CR-722. Mỗi đợt đẩy prod một mục, MỚI NHẤT ĐỨNG ĐẦU. version dạng SỐ 2.X.Y (đại ca chốt 04/11/2026): 2 = ERP v2 (11/09/2026 backend v2 lên prod = 2.0.0); X tăng 1 mỗi đợt prod có tính năng; Y tăng khi đợt chỉ vá lỗi. Lịch sử đã đánh: 2.1.0 14/09 bảo mật, 2.2.0 24/09, 2.3.0 28/09 trợ lý AI, 2.4.0 01/10 tra cứu thị trường, 2.5.0 02/10, 2.6.0 05/10, 2.7.0 19/10 kho skill + MCP, 2.7.1 22/10 vá sao lưu, 2.8.0 26/10, 2.9.0 30/10, 2.10.0 31/10, 2.11.0 02/11, 2.12.0 04/11 (chỉ ghi mục từ 30/10). Ghi bằng lời người dùng: thay đổi họ nhìn thấy, không ghi refactor / bài kiểm / tài liệu nội bộ. kind: them | sua | bo. module phải nằm trong app/modules/release_info/service.py MODULES. Bài kiểm test_phien_ban_va_ghi_chu_phat_hanh_cr722.py canh khuôn.",
   "releases": [
+    {"version": "2.15.2", "date": "2026-11-07", "title": "Nhân viên tự xem chi tiết các dòng yêu cầu mua hàng của mình", "notes": [{"module": "Thu mua", "kind": "sua", "cr": "bao-CR-739", "text": "Màn Chi tiết YC mua hàng nay mở cho mọi người được xem yêu cầu mua hàng; nhân viên thường thấy các dòng hàng của phiếu mình lập hoặc mình là người yêu cầu."}, {"module": "Thu mua", "kind": "them", "cr": "bao-CR-739", "text": "Ở màn Tiến độ đơn mua hàng, bấm vào mã PYC để mở thẳng phiếu yêu cầu mua hàng."}]},
     {
       "version": "2.15.1",
       "date": "2026-11-06",
