@@ -63,6 +63,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("office", frozenset({"office_read", "draft_vehicle_booking", "draft_seal_request"}),
      r"dat xe|xe di|chuyen xe|tai xe|xe (cong ty|dua don)|duyet dau|dong dau|con dau|ton kho|kho hang|het hang"
      r"|con hang|dien dan|bai viet|bai dang"),
+    #  bao-CR-740: phiếu xuất kho / phiếu giao hàng của NCC → ghi lần nhận vào ĐMH.
+    ("po_receipt", frozenset({"po_open_lines", "draft_po_receipt"}),
+     r"xuat kho|phieu (xuat|giao|nhap)|nhan hang|da nhan|lan giao|giao hang|ghi nhan|nhap lan|hang ve|con thieu"
+     r"|chua nhan|giao du|giao thieu"),
     #  bao-CR-703: sổ việc chạy ngầm — chỉ quản trị dùng được (tool tự gác).
     ("jobs", frozenset({"background_jobs"}),
      r"viec (nen|chay ngam)|chay ngam|tac vu nen|\bcelery\b|\bbeat\b|sao luu|backup|dong bo .{0,20}(loi|chay)"

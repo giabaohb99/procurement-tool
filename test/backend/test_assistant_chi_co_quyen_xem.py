@@ -201,6 +201,9 @@ TOOL_GHI = {
     "propose_approval": ("leave_request", "approve", {"entity": "leave_request", "id": 1, "action": "approve"}),
     #  duoc-CR-715 C — chỉ soạn nháp; tạo thật qua draft_create bằng comp_request_service.create (kiểm lại quyền lập hộ).
     "draft_leave_comp_request": ("leave_comp_request", "create", {"work_date": "2026-10-25", "reason": "Trực kho"}),
+    #  bao-CR-740 — chỉ soạn nháp; ghi thật qua draft_create → update_po (kiểm lại write + phạm vi từng ĐMH).
+    "draft_po_receipt": ("purchase_order", "write", {"supplier": "NCC A", "slip_date": "2026-11-06",
+                                                     "lines": [{"product_code": "SP1", "qty": 1}]}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua

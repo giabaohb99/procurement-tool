@@ -114,6 +114,17 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-740-bot-ghi-lan-nhan-hang | Trợ lý ghi lần nhận hàng vào đơn mua hàng theo phiếu xuất kho của nhà cung cấp
+- status: xong
+- date: 2026-11-07
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+Nhân viên thu mua gửi ảnh phiếu xuất kho của nhà cung cấp cho ứng dụng AI gắn cổng MCP; AI đọc tên NCC, ngày, các dòng mã hàng và số lượng rồi gọi công cụ soạn nháp. Công cụ tự đề xuất chia vào các dòng đơn mua hàng đã duyệt còn thiếu hàng: đơn có cả chai và nắp của phiếu được xét trước, sau đó tới đơn cũ trước; dòng có lần giao đang chờ khớp số thì điền vào lần đó, không thì thêm lần giao mới. Giao dư không bị chặn nhưng được báo rõ dư bao nhiêu ở đơn nào; người dùng muốn chia khác thì AI soạn lại nháp. Người dùng đồng ý thì xác nhận, hệ thống kiểm lại quyền sửa và phạm vi từng đơn rồi ghi đúng như nút Lưu trên màn đơn mua hàng, sinh phiếu nhập kho, tồn kho và công nợ; lần giao cũ giữ nguyên, không xóa lần giao qua AI. Có thêm công cụ chỉ đọc liệt kê các dòng còn thiếu kèm các lần giao. Nhóm công cụ này tắt mặc định ở màn cấu hình cổng MCP.
+
+Kiểm: 11 bài kiểm mới (chia theo bộ, đơn cũ trước, giao dư, bỏ đơn nháp và đơn đã nhận đủ, ngoài phạm vi, ghi giống màn web, sửa lần giao đang chờ, vừa thêm vừa sửa, xác nhận hai lần không ghi đôi) cùng các bài canh cửa công cụ AI đều xanh.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py`, `backend/app/modules/agent_hub/draft_create.py`, `backend/app/modules/agent_hub/mcp.py`.
+
 ## bao-CR-739-chi-tiet-ycmh-cho-nhan-vien | Mở màn Chi tiết YC mua hàng cho nhân viên, mã PYC ở Tiến độ đơn mua hàng bấm được
 - status: xong
 - date: 2026-11-07

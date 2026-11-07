@@ -61,6 +61,8 @@ TOOL_CHUNG_TU = {
     "my_tickets": "ticket",
     #  ai-CR-140: việc Dự án mình PHỤ TRÁCH trong các dự án mình thấy (visible_list_ids).
     "my_work_tasks": "work_task",
+    #  bao-CR-740: dòng ĐMH còn thiếu + lần giao của một NCC — apply_scope(PurchaseOrder, 'purchase_order', read).
+    "po_open_lines": "purchase_order",
 }
 
 #  DANH MỤC / THỐNG KÊ dùng chung toàn công ty: không có cột chủ sở hữu để lọc, phạm vi
@@ -182,7 +184,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  79 = 76 + `list_skills` / `read_skill` / `read_skill_file` (ai-CR-220, K7 — đọc Kho skill thay gói tri thức).
     #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4); 82 = + `plan_context` (kh-AI1-3); 83 = + `office_read` (kh-AI2-3); 85 = + `draft_vehicle_booking` / `draft_seal_request` (kh-AI2-6); 86 = + `propose_approval` (kh-AI2-7); 87 = + `background_jobs` (bao-CR-703).
     #  88 = + `draft_leave_comp_request` (duoc-CR-715 C — soạn nháp phiếu xin nghỉ bù).
-    assert len(thuc_te) == 88, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  90 = + `po_open_lines` / `draft_po_receipt` (bao-CR-740 — ghi lần nhận hàng ĐMH từ phiếu xuất kho NCC).
+    assert len(thuc_te) == 90, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)
@@ -211,6 +214,7 @@ CA_O_TEP_KHAC = {
     "my_approval_tasks": "test_assistant_approval_tool::test_cho_toi_duyet_khong_thay_viec_cua_nguoi_khac",
     "my_requests_status": "test_assistant_approval_tool::test_phieu_cua_toi_khong_lan_phieu_nguoi_khac_va_loc_only_open",
     "my_work_tasks": "test_agent_hub_ban_tin::test_viec_du_an_toi_han_cua_toi",
+    "po_open_lines": "test_assistant_ghi_lan_nhan_hang_cr740::test_thieu_quyen_va_ngoai_pham_vi",
 }
 
 #  Tool đọc chứng từ CHƯA có ca rò rỉ ở BẤT KỲ đâu. Để trống là mục tiêu; còn dòng nào thì

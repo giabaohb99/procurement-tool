@@ -61,6 +61,9 @@ GROUPS: tuple[ToolGroup, ...] = (
     #  là mở quyền tạo phiếu cho mọi khóa được ghi mà quản trị không chủ động bật.
     ToolGroup("office_write", "Lập phiếu đặt xe, duyệt dấu (khóa được ghi, có xác nhận)", False, frozenset({
         "draft_vehicle_booking", "draft_seal_request"})),
+    #  bao-CR-740: ghi lần nhận hàng vào ĐMH theo phiếu xuất kho NCC — đụng kho + công nợ nên tắt mặc định, quản trị bật.
+    ToolGroup("po_receipt", "Ghi nhận hàng vào đơn mua hàng theo phiếu xuất kho NCC (khóa được ghi, có xác nhận)", False,
+              frozenset({"po_open_lines", "draft_po_receipt"})),
     ToolGroup("customs", "Tra cứu thị trường (tờ khai hải quan)", False, frozenset({
         "customs_price_stats", "customs_buy_timing", "customs_market", "customs_legal_check"})),
     ToolGroup("google", "Lịch và Drive Google cá nhân", False, frozenset({

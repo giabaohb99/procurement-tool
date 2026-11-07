@@ -47,6 +47,7 @@ from .report_summary_tool import REPORT_SUMMARY_SPEC
 from .dataset_tool import DATASET_QUERY_SPEC
 from .erp_read_tool import ERP_READ_SPEC, OFFICE_READ_SPEC
 from .office_draft_tool import OFFICE_DRAFT_SPECS
+from .po_receipt_tool import PO_RECEIPT_SPECS
 from .approval_action_tool import PROPOSE_APPROVAL_SPEC
 from .skill_tool import SKILL_SPECS
 from .capability_tool import CAPABILITY_SPECS
@@ -98,6 +99,7 @@ def _active_specs() -> list:
                            *OFFICE_DRAFT_SPECS,   # kh-AI2-6: soạn nháp phiếu đặt xe / duyệt dấu
                            PROPOSE_APPROVAL_SPEC, # kh-AI2-7: đề xuất duyệt / từ chối một phiếu (đặt xe, phòng họp, nghỉ phép)
                            DRAFT_LEAVE_COMP_REQUEST_SPEC,  # duoc-CR-715 C: soạn nháp phiếu xin nghỉ bù
+                           *PO_RECEIPT_SPECS,     # bao-CR-740: dòng ĐMH còn thiếu + soạn nháp ghi lần nhận từ phiếu xuất kho NCC
                            *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
                            *CAPABILITY_SPECS,     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
                            BACKGROUND_JOBS_SPEC]  # bao-CR-703: sổ việc chạy ngầm (chỉ quản trị)
