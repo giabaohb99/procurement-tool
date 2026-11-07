@@ -115,11 +115,13 @@ export const procurementModule: ErpModule = {
     // như menu v1). bao-CR-691 (đại ca chốt 28/10): dời từ đầu menu xuống nhóm
     // Mua hàng, đứng NGAY SAU Tiến độ đơn mua hàng — hai báo cáo theo dõi cùng
     // một chuỗi (dòng YCMH → dòng ĐMH → lần giao) nên đặt cạnh nhau.
+    // bao-CR-739: mở cho người có `report` HOẶC `purchase_request` (đọc) — người chỉ
+    // có Xem YCMH thấy đúng dòng trong phạm vi YCMH của mình (máy chủ lọc).
     {
       label: 'Chi tiết YC mua hàng',
       path: appRoutes.procurement.prLinesReport,
       icon: TextSearch,
-      entity: 'report',
+      entities: ['report', 'purchase_request'],
       group: 'Mua hàng',
     },
     // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`. Bộ lọc dùng chung trên URL nên

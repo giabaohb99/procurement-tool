@@ -78,6 +78,7 @@ const diffCell = (n: number) =>
 type Ctx = {
   companyName: (id: number) => string
   canOpenPO: boolean
+  canOpenPR: boolean
   navigate: (p: string) => void
   page: number
   pageSize: number
@@ -110,7 +111,16 @@ const COLS: Col[] = [
     ),
   },
   { key: 'misa_code', hide: true, label: 'Mã MISA', w: 92, sort: 'misa_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.misa_code },
-  { key: 'pr_code', label: 'Mã PYC', w: 104, sort: 'pr_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.pr_code },
+  {
+    // bao-CR-739: mã PYC bấm sang chi tiết YCMH khi có quyền Xem YCMH và dòng có phiếu thật (pr_id)
+    key: 'pr_code', label: 'Mã PYC', w: 104, sort: 'pr_code', td: { ...NOWRAP, ...MUTED },
+    cell: (r, c) => c.canOpenPR && r.pr_id ? (
+      <a href={`/purchase-requests/${r.pr_id}`}
+        onClick={(e) => { e.preventDefault(); c.navigate(`/purchase-requests/${r.pr_id}`) }}
+        style={{ cursor: 'pointer', color: 'var(--navy)', textDecoration: 'underline' }}
+        title="Mở yêu cầu mua hàng">{r.pr_code}</a>
+    ) : r.pr_code,
+  },
   { key: 'company', label: 'Công ty', w: 180, cell: (r, c) => c.companyName(r.company_id) },
   { key: 'department', label: 'Bộ phận', w: 124, sort: 'department', cell: (r) => r.department },
   { key: 'supplier_code', hide: true, label: 'Mã NCC', w: 130, sort: 'supplier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.supplier_code },
@@ -177,6 +187,7 @@ export default function PurchaseProgress() {
   const navigate = useNavigate()
   const { can } = useAuth()
   const canOpenPO = can('purchase_order', 'read')   // không có quyền xem ĐMH -> KHÔNG cho click (tránh ra trang trắng)
+  const canOpenPR = can('purchase_request', 'read')   // bao-CR-739: cùng luật cho mã PYC
   // Nút Xuất Excel: gate OR y như backend (export trên ĐMH HOẶC trên YCMH)
   const canExport = can('purchase_order', 'export') || can('purchase_request', 'export')
   const [rows, setRows] = useState<any[]>([])
@@ -236,7 +247,7 @@ export default function PurchaseProgress() {
 
   // Chuyển khai báo cột nội bộ sang TableColumn dùng chung (ẩn/hiện cột + kéo giãn + header thống nhất)
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
-    const ctx: Ctx = { companyName, canOpenPO, navigate, page, pageSize }
+    const ctx: Ctx = { companyName, canOpenPO, canOpenPR, navigate, page, pageSize }
     return COLS.filter((c) => !c.sup || showSupplier).map((c) => ({
       key: c.key,
       label: c.label,
@@ -247,7 +258,7 @@ export default function PurchaseProgress() {
       td: c.td,
       cell: (r: any, i: number) => c.cell(r, ctx, i),
     }))
-  }, [showSupplier, companies, canOpenPO, page, pageSize])
+  }, [showSupplier, companies, canOpenPO, canOpenPR, page, pageSize])
 
   const table = useTableColumns('purchase-progress', tableColumns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)

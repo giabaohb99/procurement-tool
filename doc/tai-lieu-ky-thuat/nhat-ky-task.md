@@ -114,6 +114,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-739-chi-tiet-ycmh-cho-nhan-vien | Mở màn Chi tiết YC mua hàng cho nhân viên, mã PYC ở Tiến độ đơn mua hàng bấm được
+- status: xong
+- date: 2026-11-07
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** nhân viên thường (vai trò **Nhân sự**) chỉ có quyền xem và tạo yêu cầu mua hàng của chính mình, không có quyền
+báo cáo, nên không mở được màn **Chi tiết YC mua hàng** để theo dõi dòng hàng mình yêu cầu đã được đặt chưa. Trên màn
+**Tiến độ đơn mua hàng**, mã PYC chỉ là chữ, không đi được sang phiếu gốc. Đã chốt phương án B ngày 07/11.
+
+**Đã làm**
+- Màn **Chi tiết YC mua hàng** (menu và đường API bảng dòng) mở cho người có quyền xem báo cáo HOẶC quyền xem yêu cầu mua
+  hàng; thiếu cả hai vẫn bị chặn. Người có quyền xem báo cáo giữ nguyên phạm vi phòng ban như cũ. Người chỉ có quyền xem
+  yêu cầu mua hàng thấy đúng các dòng trong phạm vi phiếu của mình: nhân viên thường chỉ thấy phiếu mình lập hoặc mình
+  đứng tên người yêu cầu, không thấy phiếu người khác cùng phòng.
+- Xuất Excel vẫn cần quyền xuất báo cáo và bản tổng hợp (biểu đồ) vẫn cần quyền báo cáo như cũ; nút xuất đã ẩn với người
+  thiếu quyền, mã ĐMH trong bảng chỉ bấm được khi có quyền xem đơn mua hàng.
+- Màn **Tiến độ đơn mua hàng** (cả giao diện cũ và ERP v2): mã PYC thành đường bấm sang chi tiết yêu cầu mua hàng khi người
+  xem có quyền xem yêu cầu mua hàng; đường API trả thêm id phiếu, phạm vi dữ liệu của màn không đổi.
+
+Kiểm: bài kiểm backend mới cho bảng dòng (nhân viên thấy đúng phiếu mình, người có quyền báo cáo giữ phạm vi cũ, không quyền
+bị chặn, xuất và tổng hợp vẫn chặn nhân viên) và cho id phiếu ở Tiến độ; bài kiểm cũ của báo cáo dòng YCMH, phạm vi thu mua,
+đồng bộ giao diện v2 vẫn xanh. Giao diện: kiểm kiểu v1 và v2, bài kiểm màn Tiến độ v2 thêm hai ca cho mã PYC.
+Mã nguồn: `backend/app/modules/report/service.py` (`pr_lines_uses_request_scope`, `_pr_lines_base_query`), `report/controller.py`, `purchase_progress/controller.py`, `frontend/src/layouts/AppLayout.tsx`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/routes.tsx`, `pages/purchase-progress-page.tsx`, `test/backend/test_chi_tiet_ycmh_cho_nhan_vien_cr739.py`
+
+---
+
 ## bao-CR-735-chong-treo-prod | Chống treo prod: healthcheck, tự khởi động lại container treo, canh prod từ ngoài
 - status: xong
 - date: 2026-11-05

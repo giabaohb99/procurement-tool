@@ -688,6 +688,13 @@ Tiến độ đơn mua hàng; đổi nhãn *Tiến độ mua hàng* → *Tiến 
 - **Hạn chế đã biết:** ĐMH không ghi dòng YCMH nguồn, nên hai dòng cùng mã hàng trong một phiếu nhận chung tập đơn.
 - Bài HDSD: `backend/scripts/seed_help_chi_tiet_yc_mua_hang.py` (nhóm Nhân viên Mua hàng, sau bài Tiến độ đơn mua hàng).
   Bài kiểm: `test/backend/test_bao_cao_dong_ycmh_cot_moi_cr691.py`, `report-pr-lines-tab.test.tsx`.
+- **bao-CR-739 (07/11/2026) — mở cho người có quyền Xem YCMH.** Menu và đường `/pr-lines` đòi `report.read` HOẶC
+  `purchase_request.read` (thiếu cả hai: 403). Có `report.read` thì phạm vi như cũ (`report_dept_scope`, theo tên
+  phòng); chỉ có `purchase_request.read` thì dòng lọc bằng `apply_scope` trên YCMH — nhân viên phạm vi *own* chỉ thấy
+  phiếu mình lập hoặc mình đứng tên người yêu cầu. Xuất Excel (`report.export`) và bản tổng hợp `/summary*` giữ gác cũ;
+  nút xuất đã ẩn khi thiếu quyền. Màn *Tiến độ đơn mua hàng* trả thêm `pr_id`: mã PYC bấm sang chi tiết YCMH khi người
+  xem có `purchase_request.read` (v1 lẫn v2). Bài kiểm: `test/backend/test_chi_tiet_ycmh_cho_nhan_vien_cr739.py`,
+  `purchase-progress-page.test.tsx`.
 
 ### Tính năng giao diện & mobile
 

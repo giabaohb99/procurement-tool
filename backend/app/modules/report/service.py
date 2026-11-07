@@ -472,10 +472,23 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     return rows
 
 
-def _pr_lines_base_query(db, user, year, company_id):
+def pr_lines_uses_request_scope(db, user) -> bool:
+    """bao-CR-739: người xem bảng Chi tiết YC mua hàng KHÔNG có `report.read` thì dòng lọc theo
+    phạm vi YCMH (`purchase_request.read`: own / dept / dept_proc / assigned ...) thay cho phạm vi
+    phòng ban của báo cáo. Ai có `report.read` giữ nguyên luật cũ (`report_dept_scope`)."""
+    from app.core.auth import user_has_permission
+
+    return not user_has_permission(db, user, "report", "read")
+
+
+def _pr_lines_base_query(db, user, year, company_id, *, request_scope: bool = False):
     """Truy vấn gốc (dòng YCMH × phiếu) của báo cáo Chi tiết YC mua hàng: bỏ phiếu đã xóa,
     lọc năm / công ty và scope phòng ban. Dùng CHUNG cho bảng phân trang và bản tổng hợp —
-    hai đường mà lệch scope là biểu đồ đếm cả dòng bảng không cho xem."""
+    hai đường mà lệch scope là biểu đồ đếm cả dòng bảng không cho xem.
+
+    `request_scope=True` (bao-CR-739, xem `pr_lines_uses_request_scope`): lọc bằng
+    `apply_scope(PurchaseRequest, "purchase_request")` thay cho `report_dept_scope`. Mặc định
+    `False` là luật cũ — người thiếu `report.read` đi nhầm nhánh này nhận tập rỗng, không lộ dòng."""
     from fastapi import HTTPException
 
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
@@ -492,6 +505,11 @@ def _pr_lines_base_query(db, user, year, company_id):
         q = q.filter(PurchaseRequest.company_id == int(cid))
     if year and year != "all":
         q = q.filter(PurchaseRequest.request_date.like(f"{year}%"))
+    if request_scope:
+        from app.core.auth import get_perm_profile
+        from app.core.scoping import apply_scope
+
+        return apply_scope(q, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user), "read")
     allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình
     if allow is not None:
         q = q.filter(PurchaseRequest.department.in_(list(allow)))   # set rỗng -> IN () = không dòng nào
@@ -733,11 +751,11 @@ def _pr_line_rows(db, pairs, *, show_supplier: bool) -> list[dict]:
     return rows
 
 
-def _pr_lines_filtered(db, user, *, year, company_id, status, line_status, assignee, search):
+def _pr_lines_filtered(db, user, *, year, company_id, status, line_status, assignee, search, request_scope=False):
     """Truy vấn gốc + bộ lọc chi tiết, kèm danh sách NSTM của dropdown (tính TRƯỚC các lọc chi tiết)."""
     from app.modules.purchase_request.model import PurchaseRequestItem
 
-    q = _pr_lines_base_query(db, user, year, company_id)
+    q = _pr_lines_base_query(db, user, year, company_id, request_scope=request_scope)
     assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
                         .filter(PurchaseRequestItem.assignee != "").distinct().all()})
     q = _apply_pr_line_filters(q, status=status, line_status=line_status, assignee=assignee, search=search)
@@ -751,7 +769,8 @@ def _pr_lines_ordered(q):
 
 
 def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
-                     assignee=None, search=None, page=1, page_size=50, show_supplier=False) -> dict:
+                     assignee=None, search=None, page=1, page_size=50, show_supplier=False,
+                     request_scope=False) -> dict:
     """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
 
     Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
@@ -762,7 +781,8 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
     from app.modules.employee.model import Employee
 
     q, assignees = _pr_lines_filtered(db, user, year=year, company_id=company_id, status=status,
-                                      line_status=line_status, assignee=assignee, search=search)
+                                      line_status=line_status, assignee=assignee, search=search,
+                                      request_scope=request_scope)
     total = q.count()
     page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))
     pairs = _pr_lines_ordered(q).offset((page - 1) * page_size).limit(page_size).all()
@@ -773,12 +793,13 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
 
 
 def export_pr_lines_rows(db, user, *, year=None, company_id=None, status=None, line_status=None,
-                         assignee=None, search=None, show_supplier=False) -> list[dict]:
+                         assignee=None, search=None, show_supplier=False, request_scope=False) -> list[dict]:
     """bao-CR-691: mọi dòng theo đúng bộ lọc của bảng (không phân trang) cho file Excel — chặn ở trần dòng xuất."""
     from app.core.export_xlsx import check_row_limit
 
     q, _ = _pr_lines_filtered(db, user, year=year, company_id=company_id, status=status,
-                              line_status=line_status, assignee=assignee, search=search)
+                              line_status=line_status, assignee=assignee, search=search,
+                              request_scope=request_scope)
     from app.core.status_codes import PR_LINE_STATUS
     from app.modules.purchase_request.export import STATUS_LABEL
 
