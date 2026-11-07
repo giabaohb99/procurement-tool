@@ -134,7 +134,8 @@ const NAV_GROUPS: NavGroup[] = [
         to: "/pr-lines-report",
         label: "Chi tiết YC mua hàng",
         icon: "ti-list-search",
-        entity: "report",
+        // bao-CR-739: mở cho người có quyền Xem YCMH (dữ liệu lọc theo phạm vi YCMH của họ).
+        anyEntity: ["report", "purchase_request"],
       },
       {
         // bao-CR-470 — giá nhập khẩu thị trường từ tờ khai hải quan (GTT02)

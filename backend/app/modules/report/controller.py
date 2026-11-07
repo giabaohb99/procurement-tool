@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.auth import require, get_perm_profile, user_has_permission
+from app.core.auth import get_current_user, get_perm_profile, require, user_has_permission
 from app.core.base_controller import read_multi_param
 from app.core.export_xlsx import Col, xlsx_response
 from app.core.database import get_db
@@ -201,12 +201,21 @@ def shipping_detail(request: Request, db: Session = Depends(get_db), user=Depend
     return success(report_service.compute_shipping_detail(db, year, company_id, carrier, month, page, page_size))
 
 
+def _require_pr_lines_reader(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """bao-CR-739: bảng Chi tiết YC mua hàng mở cho người có `report.read` HOẶC `purchase_request.read`."""
+    if user_has_permission(db, user, "report", "read") or user_has_permission(db, user, "purchase_request", "read"):
+        return user
+    raise HTTPException(403, "Không có quyền: read report")
+
+
 @router.get("/pr-lines")
-def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(_require_pr_lines_reader)):
     """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295) — phân trang server (50/trang).
 
     Cho NSTM soi mã hàng nào CHƯA được đặt (line_status=chua_dat gộp 2 trạng thái chưa đặt).
-    Scope phòng ban như báo cáo PYC: phòng ban YÊU CẦU chỉ thấy phòng của mình."""
+    Quyền (bao-CR-739): cần `report.read` HOẶC `purchase_request.read`, thiếu cả hai -> 403.
+    Phạm vi: có `report.read` -> phòng ban như báo cáo PYC (phòng ban YÊU CẦU chỉ thấy phòng của
+    mình); chỉ có `purchase_request.read` -> đúng phạm vi YCMH của người xem (own / dept / ...)."""
     qp = request.query_params
     try:
         page = int(qp.get("page") or 1)
@@ -215,7 +224,8 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(requi
         page, page_size = 1, 50
     return success(report_service.compute_pr_lines(
         db, user, **_pr_lines_filters(request), page=page, page_size=page_size,
-        show_supplier=user_has_permission(db, user, "supplier", "read")))
+        show_supplier=user_has_permission(db, user, "supplier", "read"),
+        request_scope=report_service.pr_lines_uses_request_scope(db, user)))
 
 
 def _pr_lines_filters(request: Request) -> dict:
@@ -234,9 +244,10 @@ def pr_lines_export(request: Request, db: Session = Depends(get_db), user=Depend
     """bao-CR-691: xuất Excel bảng Chi tiết YC mua hàng — cùng bộ lọc với `/pr-lines`, không phân trang, trần
     `export_xlsx.MAX_ROWS` dòng. Không gác `require_report`: bảng gốc `/pr-lines` thuộc phân hệ Thu mua (màn
     /procurement/pr-lines-report), chỉ bản tổng hợp `/summary` mới nằm trong danh mục báo cáo (ReportKey.PR_LINES).
-    Cột NCC chỉ có nội dung khi người xuất có `supplier.read`."""
+    Cột NCC chỉ có nội dung khi người xuất có `supplier.read`. Phạm vi dòng cùng luật với `/pr-lines` (bao-CR-739)."""
     rows = report_service.export_pr_lines_rows(
-        db, user, **_pr_lines_filters(request), show_supplier=user_has_permission(db, user, "supplier", "read"))
+        db, user, **_pr_lines_filters(request), show_supplier=user_has_permission(db, user, "supplier", "read"),
+        request_scope=report_service.pr_lines_uses_request_scope(db, user))
     columns = [Col(key, label, kind=kind, width=width) for key, label, kind, width in report_service.PR_LINE_EXPORT_COLUMNS]
     return xlsx_response("chi-tiet-yc-mua-hang-theo-dong", columns, rows, sheet_title="Chi tiet YC mua hang")
 

@@ -11,6 +11,8 @@ export interface PurchaseProgressRow {
   po_code: string
   misa_code: string
   pr_code: string
+  /** Id phiếu YCMH ứng với `pr_code` (bao-CR-739); `null` khi mã không khớp phiếu nào còn sống. */
+  pr_id?: number | null
   company_id: number
   department: string
   supplier_code: string

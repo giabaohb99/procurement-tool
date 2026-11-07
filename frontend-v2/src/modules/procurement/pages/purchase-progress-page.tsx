@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -153,6 +153,9 @@ function PurchaseProgressContent() {
   //  Gác nút Xuất Excel bằng đúng phép OR của backend: quyền `export` trên ĐMH
   //  HOẶC trên YCMH, vì một dòng tiến độ ghép dữ liệu của cả hai chứng từ.
   const canExport = can('purchase_order', 'export') || can('purchase_request', 'export')
+  //  bao-CR-739: mã PYC thành đường bấm sang chi tiết YCMH khi đọc được YCMH và dòng có phiếu thật.
+  //  Phiếu ngoài phạm vi người xem thì màn chi tiết tự báo không có quyền.
+  const canOpenPurchaseRequest = can('purchase_request', 'read')
 
   const { queryParams, queryKey } = useFilterQuery()
   //  Bộ lọc điều kiện: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng
@@ -247,7 +250,23 @@ function PurchaseProgressContent() {
         cell: (row) => <span className="font-medium">{row.po_code}</span>,
       },
       { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, wrap: true, cell: (r) => r.misa_code || '' },
-      { key: 'pr_code', header: 'Mã PYC', width: 130, wrap: true, cell: (r) => r.pr_code || '' },
+      {
+        key: 'pr_code',
+        header: 'Mã PYC',
+        width: 130,
+        wrap: true,
+        cell: (r) =>
+          canOpenPurchaseRequest && r.pr_id ? (
+            <Link
+              to={appRoutes.procurement.purchaseRequestDetail(r.pr_id)}
+              className="text-primary hover:underline"
+            >
+              {r.pr_code}
+            </Link>
+          ) : (
+            r.pr_code || ''
+          ),
+      },
       { key: 'company', header: 'Công ty', width: 190, wrap: true, cell: (r) => companyName(r.company_id) },
       { key: 'department', header: 'Bộ phận', width: 150, wrap: true, cell: (r) => r.department || '' },
       {
@@ -377,7 +396,7 @@ function PurchaseProgressContent() {
     ]
 
     return all.filter((column) => !column.supplierOnly || showSupplier)
-  }, [showSupplier, companyName])
+  }, [showSupplier, companyName, canOpenPurchaseRequest])
 
   //  Cùng một ô chọn dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
   //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
