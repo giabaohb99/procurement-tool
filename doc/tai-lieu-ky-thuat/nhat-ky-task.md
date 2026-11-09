@@ -19442,6 +19442,24 @@ Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; ảnh `p
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-dialog.tsx`, `dossier-quick-edit-dialog.tsx`.
 
+## duoc-CR-723-f | Bóng đếm trên menu Thu mua: đếm phiếu chờ duyệt có mình là Trưởng phòng phê duyệt
+- status: xong
+- date: 2026-11-09
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau lượt e, bóng đếm mọi phiếu chờ duyệt người xem bấm Duyệt được, nên tài khoản có phạm vi duyệt toàn hệ vẫn thấy toàn bộ phiếu chờ duyệt của công ty. Đã chốt ngày 09/11/2026: số trên bóng là số phiếu **Chờ duyệt** mà ô **Trưởng phòng phê duyệt** chính là tài khoản đang đăng nhập.
+
+**Đã làm**
+- Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng: chỉ đếm phiếu Chờ duyệt có ô **Trưởng phòng phê duyệt** là nhân sự của tài khoản đang đăng nhập, vẫn trong phạm vi duyệt của người đó. Phiếu cũ để trống ô này thì không đếm cho ai; tài khoản chưa gắn nhân sự thì ba mục này là 0.
+- Bỏ phần đếm phiếu chờ **Duyệt điều phối** của lượt e: bóng chỉ còn đếm trạng thái Chờ duyệt.
+- Phiếu khảo sát không có ô Trưởng phòng phê duyệt nên giữ cách đếm của lượt e (quyền Duyệt và phạm vi duyệt).
+- Thẻ thống kê Đơn mua hàng chờ duyệt ở Trang chủ giữ cách đếm theo phạm vi xem.
+
+**Kiểm:** viết lại bài kiểm bóng đếm, 8 bài xanh (chỉ đếm phiếu của mình, ô trống không đếm, tài khoản không gắn nhân sự, không quyền duyệt thì không có bóng, ngoài phạm vi duyệt không đếm, không đếm phiếu chờ điều phối, Phiếu khảo sát theo phạm vi duyệt, thẻ Trang chủ theo phạm vi xem); bài canh phạm vi dữ liệu xanh; ruff sạch. Đếm trên dữ liệu dev: ô trống còn 2/10 Yêu cầu báo giá và 1/2 Đơn mua hàng đang chờ duyệt, các phiếu đó không hiện trên bóng của ai.
+
+Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
+Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
+
 ## duoc-CR-723-e | Bóng đếm trên menu Thu mua: chỉ đếm phiếu chờ mình duyệt
 - status: xong
 - date: 2026-11-07
