@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
@@ -88,6 +88,14 @@ interface SurveyRequestLinesTableProps {
    */
   onLineRemoved?: (index: number) => void
   onLineDuplicated?: (index: number) => void
+  /**
+   * duoc-CR-737 — *Xóa đã chọn (n)* đứng ở GÓC PHẢI TIÊU ĐỀ THẺ cạnh *Thêm dòng* như
+   * bản v1, không ở thanh tiêu đề của `LinesTable`. Bảng giữ state tick dòng nên trao
+   * hai mảnh cho trang tự xếp vào khung `Card`: `headerActions` (nút chỉ dựng khi có
+   * dòng đang tick; khổ thẻ không có cột tick nên rỗng) và `body`. Bỏ trống thì hai
+   * mảnh đứng liền nhau.
+   */
+  renderFrame?: (parts: { headerActions: ReactNode; body: ReactNode }) => ReactNode
 }
 
 /**
@@ -111,6 +119,12 @@ export function SurveyRequestLinesTable({
   onAssigneeChange,
   onLineRemoved,
   onLineDuplicated,
+  renderFrame = ({ headerActions, body }) => (
+    <>
+      {headerActions}
+      {body}
+    </>
+  ),
 }: SurveyRequestLinesTableProps) {
   const units = usePurchaseRequestUnits(editing)
   const lineSelection = useLineSelection({
@@ -243,11 +257,15 @@ export function SurveyRequestLinesTable({
     }
     onChange([...lines.slice(0, index + 1), copy, ...lines.slice(index + 1)])
     onLineDuplicated?.(index)
+    //  Dòng chưa lưu khóa theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang dòng khác,
+    //  *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
+    lineSelection.clear()
   }
 
   function remove(index: number) {
     onChange(lines.filter((_, i) => i !== index))
     onLineRemoved?.(index)
+    lineSelection.clear()
   }
 
   function renderCell(key: string, line: SurveyRequestLine, index: number) {
@@ -390,12 +408,16 @@ export function SurveyRequestLinesTable({
         return <SurveyLineStateBadge state={line.progress_state} tone={line.progress_tone} />
 
       case 'action':
+        //  duoc-CR-741: gợi ý đúng chữ bản v1 (Chi tiết / hình ảnh · Nhân đôi · Xóa); tên đọc
+        //  cho trình đọc màn hình kèm số dòng để mỗi nút một tên riêng.
         return (
           <div className="flex items-center justify-center gap-1">
             <Button
+              type="button"
               variant="ghost"
               size="icon-sm"
-              title="Chi tiết dòng"
+              title="Chi tiết / hình ảnh"
+              aria-label={`Chi tiết / hình ảnh dòng ${index + 1}`}
               onClick={() => onOpenDetail(index)}
             >
               <Pencil />
@@ -403,18 +425,22 @@ export function SurveyRequestLinesTable({
             {editing && (
               <>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
-                  title="Nhân bản dòng"
+                  title="Nhân đôi"
+                  aria-label={`Nhân đôi dòng ${index + 1}`}
                   onClick={() => duplicate(index)}
                 >
                   <Copy />
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
                   className="text-destructive hover:text-destructive"
-                  title="Xóa dòng"
+                  title="Xóa"
+                  aria-label={`Xóa dòng ${index + 1}`}
                   onClick={() => remove(index)}
                 >
                   <Trash2 />
@@ -430,67 +456,76 @@ export function SurveyRequestLinesTable({
   }
 
   if (asCards) {
-    return (
-      <div className="space-y-3">
-        {/*  Thanh đầu tự dựng lại chứ không mượn của `LinesTable`: ở chế độ thẻ
-             không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút *Bảng đầy
-             đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một bảng điều khiển
-             không điều khiển thứ gì đang nhìn thấy.
+    return renderFrame({
+      headerActions: null,
+      body: (
+        <div className="space-y-3">
+          {/*  Thanh đầu tự dựng lại chứ không mượn của `LinesTable`: ở chế độ thẻ
+               không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút *Bảng đầy
+               đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một bảng điều khiển
+               không điều khiển thứ gì đang nhìn thấy.
 
-             Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm cần khảo sát": thẻ bọc
-             ngoài đã có đúng tiêu đề đó ngay bên trên, ở khổ hẹp hai dòng chữ
-             giống nhau xếp chồng đọc như bị lặp. */}
-        <span className="block text-sm font-medium">{lines.length} dòng</span>
+               Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm cần khảo sát": thẻ bọc
+               ngoài đã có đúng tiêu đề đó ngay bên trên, ở khổ hẹp hai dòng chữ
+               giống nhau xếp chồng đọc như bị lặp. */}
+          <span className="block text-sm font-medium">{lines.length} dòng</span>
 
-        <div className="overflow-hidden rounded-lg border">
-          {lines.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
-            </p>
-          ) : (
-            <div className="divide-y">
-              {lines.map((line, index) => (
-                <SurveyRequestLineCard
-                  key={line.id || `new-${index}`}
-                  line={line}
-                  index={index}
-                  editing={editing}
-                  showNstmColumns={showNstmColumns}
-                  showStatus={showStatus}
-                  hasInvalid={invalid?.has(`line-${index}-item_group`) ?? false}
-                  onOpenDetail={() => onOpenDetail(index)}
-                  onDuplicate={() => duplicate(index)}
-                  onRemove={() => remove(index)}
-                />
-              ))}
-            </div>
-          )}
+          <div className="overflow-hidden rounded-lg border">
+            {lines.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
+              </p>
+            ) : (
+              <div className="divide-y">
+                {lines.map((line, index) => (
+                  <SurveyRequestLineCard
+                    key={line.id || `new-${index}`}
+                    line={line}
+                    index={index}
+                    editing={editing}
+                    showNstmColumns={showNstmColumns}
+                    showStatus={showStatus}
+                    hasInvalid={invalid?.has(`line-${index}-item_group`) ?? false}
+                    onOpenDetail={() => onOpenDetail(index)}
+                    onDuplicate={() => duplicate(index)}
+                    onRemove={() => remove(index)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    )
+      ),
+    })
   }
 
-  return (
-    <LinesTable
-      columns={columns}
-      rows={lines}
-      storageKey={TABLE_STORAGE_KEY}
-      rowKey={surveyRequestRowKey}
-      renderCell={renderCell}
-      title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
-      emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
-      selection={lineSelection.selection}
-      actions={
-        <BulkDeleteButton
-          size="sm"
-          count={lineSelection.selectedIndexes.length}
-          unitLabel="dòng"
-          description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
-          onConfirm={removeSelectedLines}
-        />
-      }
-    />
-  )
+  return renderFrame({
+    headerActions: (
+      <BulkDeleteButton
+        size="sm"
+        count={lineSelection.selectedIndexes.length}
+        unitLabel="dòng"
+        //  duoc-CR-741: nguyên văn hộp `askConfirm` của v1 — tiêu đề mặc định *Xác nhận*, thân là
+        //  câu hỏi, nút *Đồng ý* / *Hủy*.
+        title="Xác nhận"
+        description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.`}
+        confirmLabel="Đồng ý"
+        onConfirm={removeSelectedLines}
+      />
+    ),
+    body: (
+      <LinesTable
+        columns={columns}
+        rows={lines}
+        storageKey={TABLE_STORAGE_KEY}
+        rowKey={surveyRequestRowKey}
+        renderCell={renderCell}
+        title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
+        emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
+        selection={lineSelection.selection}
+      />
+    ),
+  })
 }
 
 function CatalogSelect({

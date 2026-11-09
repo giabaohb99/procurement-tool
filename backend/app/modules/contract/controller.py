@@ -98,6 +98,7 @@ def _out(c: Contract) -> dict:
 @router.get("")
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("contract", "read"))):
+    """Danh sách hợp đồng trong phạm vi được xem; lọc theo khoảng ngày hết hạn và đã ký hay chưa."""
     q = apply_filters(db.query(Contract), Contract, request, FILTERABLE, operator_filterable=FILTER_OPS)
     q = apply_scope(q, Contract, "contract", user, get_perm_profile(db, user))
     q = apply_range_filters(q, Contract, request, ["end_date"])   # khoảng ngày hết hạn
@@ -133,11 +134,13 @@ def list_contract_types(user=Depends(require("contract", "read"))):
 
 @router.get("/{cid}")
 def get_(cid: int, db: Session = Depends(get_db), user=Depends(require("contract", "read"))):
+    """Chi tiết một hợp đồng."""
     return success(_out(_in_scope(db, cid, user)))
 
 
 @router.post("")
 def create_(data: ContractCreate, db: Session = Depends(get_db), user=Depends(require("contract", "create"))):
+    """Tạo hợp đồng; tự điền thông tin bên ký từ danh mục."""
     c = Contract(**data.model_dump(exclude={"code"}), created_by=user.id, updated_by=user.id)
     if data.code:
         c.code = data.code
@@ -163,6 +166,7 @@ def create_(data: ContractCreate, db: Session = Depends(get_db), user=Depends(re
 
 @router.patch("/{cid}")
 def update_(cid: int, data: ContractUpdate, db: Session = Depends(get_db), user=Depends(require("contract", "write"))):
+    """Sửa hợp đồng; tự điền lại thông tin bên ký từ danh mục."""
     c = _in_scope(db, cid, user, "write")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(c, k, v)
@@ -221,6 +225,7 @@ def delete_(cid: int, db: Session = Depends(get_db), user=Depends(require("contr
 
 @router.delete("")
 def bulk_delete_contracts(ids: str, db: Session = Depends(get_db), user=Depends(require("contract", "delete"))):
+    """Xóa nhiều hợp đồng theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")

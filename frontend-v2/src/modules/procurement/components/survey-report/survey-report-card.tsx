@@ -14,11 +14,13 @@ import {
   Sheet,
   Sparkles,
   Trash2,
+  Undo2,
 } from 'lucide-react'
 import { Fragment, useImperativeHandle, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/format-date'
 import { nameInitials } from '@/shared/utils/name-initials'
@@ -26,6 +28,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { ResponsiveLabel } from '@/shared/ui/detail-page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
@@ -45,7 +48,11 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { useRememberedCollapse } from '../../hooks/use-remembered-collapse'
-import { useSurveyReportActions, useSurveyRequestReport } from '../../hooks/use-survey-request-report'
+import {
+  useRestoreSurveyReport,
+  useSurveyReportActions,
+  useSurveyRequestReport,
+} from '../../hooks/use-survey-request-report'
 import {
   REPORT_DOC_DOING,
   REPORT_DOC_DONE,
@@ -73,6 +80,25 @@ import {
   reportPercent,
   reportPlanLateDays,
 } from '../../utils/survey-report-helpers'
+import { ReportItemProgressCard } from './report-item-progress-card'
+import { ReportToggleAllButton } from './report-toggle-all-button'
+import {
+  REPORT_GROUP_ACTIONS_CLASS,
+  REPORT_GROUP_HEADER_CLASS,
+  REPORT_GROUP_META_CLASS,
+  REPORT_GROUP_META_INDENT_NUMBER_ONLY,
+  REPORT_GROUP_META_INDENT_WITH_TOGGLE,
+  REPORT_GROUP_TITLE_CLASS,
+  REPORT_SEARCH_CLASS,
+  REPORT_SUMMARY_GRID_CLASS,
+  REPORT_SUMMARY_TILE_CLASS,
+  REPORT_SUMMARY_VALUE_CLASS,
+  REPORT_TOOLBAR_BUTTON_MOBILE_CLASS,
+  REPORT_TOOLBAR_CLASS,
+  REPORT_TOOLBAR_ROW_CLASS,
+  REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS,
+  REPORT_VIEW_TOGGLE_CLASS,
+} from './report-mobile-layout-classes'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
 import { SurveyReportDocSelectionBar } from './survey-report-doc-selection-bar'
 import { ReportDocSheetTable } from './survey-report-doc-sheet-table'
@@ -168,6 +194,8 @@ export function SurveyReportCard({
 }: SurveyReportCardProps) {
   const { data: report, isLoading, isError } = useSurveyRequestReport(ownerId, entity)
   const actions = useSurveyReportActions(ownerId, entity)
+  //  duoc-CR-741: nút *Hoàn tác xóa* ở khối rỗng như bản v1 — chạy cho cả YCBG lẫn ĐMH.
+  const restoreReport = useRestoreSurveyReport(ownerId, entity)
   const { user } = useAuth()
   //  Chữ gọi chứng từ chủ trong câu chữ của khối: "cả phiếu" / "cả đơn".
   const ownerLabel = entity === 'purchase_order' ? 'đơn' : 'phiếu'
@@ -177,7 +205,18 @@ export function SurveyReportCard({
 
   /** Cả khối đang sổ ra chưa — mặc định GẤP. */
   const [cardOpen, setCardOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ReportViewMode>(readViewMode)
+  const [storedViewMode, setViewMode] = useState<ReportViewMode>(readViewMode)
+  /**
+   * Khổ điện thoại KHÔNG có dạng "Bảng" — dạng đó là bảng tính 14 cột ~2100px sửa tại
+   * chỗ, ba cột ghim đã ăn 312px thì máy 390px chỉ còn một khe cuộn ngang. Đổi nó thành
+   * thẻ thì mỗi hồ sơ một thẻ xếp theo giai đoạn — đúng bằng dạng "Xem tổng" đã có sẵn
+   * (sửa từng hồ sơ qua hộp ✎, đổi trạng thái, tick xong, xóa, thêm theo giai đoạn).
+   * Nên ở khổ hẹp "Bảng" lùi về "Xem tổng" và nút gạt giấu lựa chọn đó; lựa chọn đã
+   * lưu KHÔNG bị ghi đè, mở lại trên máy tính vẫn là "Bảng".
+   */
+  const isMobile = useIsMobile()
+  const viewMode: ReportViewMode =
+    isMobile && storedViewMode === 'table' ? 'phase' : storedViewMode
   const [statusFilter, setStatusFilter] = useState(REPORT_STATUS_FILTER_ALL)
   const [query, setQuery] = useState('')
   /** Các dòng hàng đang SỔ (hiện hồ sơ con). Nút trên header gạt cả loạt. */
@@ -238,16 +277,18 @@ export function SurveyReportCard({
     actions.setDocStatus.isPending ||
     actions.deleteDoc.isPending ||
     actions.deleteDocs.isPending ||
-    actions.deleteReport.isPending
+    actions.deleteReport.isPending ||
+    restoreReport.isPending
 
   //  Xóa CẢ khối — thao tác nặng nên hỏi xác nhận; hoàn tác được ở Lịch sử.
+  //  duoc-CR-741: tiêu đề / câu / nút theo bản v1 (`SurveyReportCard.tsx` deleteReport);
+  //  "phiếu" của v1 đổi theo chủ khối để trên ĐMH đọc ra "đơn này".
   const handleDeleteReport = async () => {
-    const total = report?.docs.length ?? 0
     if (
       !(await confirm({
-        title: 'Xóa báo cáo thực hiện?',
-        message: `Xóa toàn bộ báo cáo thực hiện${total ? ` (${total} hồ sơ)` : ''}? Bạn có thể hoàn tác ngay sau đó ở khối Lịch sử thao tác.`,
-        confirmLabel: 'Xóa báo cáo',
+        title: 'Xóa báo cáo thực hiện',
+        message: `Xóa toàn bộ giai đoạn, nút dòng hàng và hồ sơ của ${ownerLabel} này? Có thể hoàn tác ở Lịch sử thao tác.`,
+        confirmLabel: 'Xóa',
       }))
     )
       return
@@ -274,9 +315,11 @@ export function SurveyReportCard({
   //  xác nhận vì xóa là mất, và nói rõ hồ sơ khác đang chờ nó sẽ được mở khóa.
   const handleDeleteDoc = async (doc: SurveyReportDoc) => {
     if (
+      //  duoc-CR-741: tiêu đề + nút như v1; câu v1 giữ nguyên, đuôi mở khóa là phần riêng v2.
       !(await confirm({
+        title: 'Xóa hồ sơ',
         message: `Xóa hồ sơ "${doc.title}"? Hồ sơ khác đang chờ nó sẽ được mở khóa.`,
-        confirmLabel: 'Xóa hồ sơ',
+        confirmLabel: 'Xóa',
       }))
     )
       return
@@ -297,7 +340,8 @@ export function SurveyReportCard({
       !(await confirm({
         title: `Xóa ${docs.length} hồ sơ?`,
         message: `Xóa ${docs.length} hồ sơ ${scope}: ${preview}${more}? Hồ sơ khác đang chờ chúng sẽ được mở khóa.`,
-        confirmLabel: `Xóa ${docs.length} hồ sơ`,
+        //  Xóa nhiều là phần riêng v2; nút đồng ý vẫn một chữ "Xóa" như mọi hộp xóa của v1.
+        confirmLabel: 'Xóa',
       }))
     )
       return false
@@ -437,12 +481,16 @@ export function SurveyReportCard({
   return (
     <Card ref={cardRef} className="scroll-mt-4 gap-4 py-4">
       <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+        {/* `basis-auto` (duoc-CR-737): `flex-1` trơn là `flex-basis: 0`, nên hàng không bao giờ
+            thấy cần xuống dòng — thanh công cụ dài ăn hết chỗ, tiêu đề bị ép còn ~11px, gãy 4
+            dòng và đè lên dãy nút ở khổ 1440. Tính theo bề rộng chữ thì thanh công cụ tự
+            xuống hàng hai khi không đủ chỗ, đúng ý `flex-wrap` từ đầu. */}
         <button
           type="button"
           aria-expanded={showBody}
           disabled={isEmpty}
           title={showBody ? 'Thu gọn báo cáo thực hiện' : 'Mở báo cáo thực hiện'}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          className="flex min-w-0 flex-1 basis-auto items-center gap-2 text-left"
           onClick={() => setCardOpen((current) => !current)}
         >
           <ChevronDown
@@ -461,16 +509,19 @@ export function SurveyReportCard({
           )}
         </button>
         {showBody && !isEmpty && (
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          //  duoc-CR-737: điện thoại xếp ba hàng canh trái (công tắc dạng xem · tìm + lọc ·
+          //  cụm nút) thay vì canh phải tự xuống dòng lởm chởm; khổ rộng giữ nguyên.
+          <div className={REPORT_TOOLBAR_CLASS}>
             {/* Nút gạt hai dạng xem. Tự dựng chứ không lấy `Tabs`: đây không phải
                 hai trang nội dung mà là một công tắc trong thanh công cụ, đứng
                 cạnh các nút khác — `shared/ui/` chưa có toggle-group. */}
-            <div className="flex items-center rounded-md border p-0.5">
+            <div className={REPORT_VIEW_TOGGLE_CLASS}>
               <ViewModeButton
                 active={viewMode === 'phase'}
                 label="Xem tổng"
                 title="Xem tổng: hồ sơ xếp theo giai đoạn"
                 icon={<LayoutList className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('phase')}
               />
               <ViewModeButton
@@ -478,79 +529,90 @@ export function SurveyReportCard({
                 label="Theo dòng hàng"
                 title="Xem theo dòng hàng: mỗi dòng hàng một dòng, bấm để sổ hồ sơ"
                 icon={<Rows3 className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('item')}
               />
-              <ViewModeButton
-                active={viewMode === 'table'}
-                label="Bảng"
-                title="Dạng bảng: mỗi hồ sơ một hàng, bấm vào ô để sửa ngay trên hàng"
-                icon={<Sheet className="size-3.5" />}
-                onClick={() => changeViewMode('table')}
-              />
+              {!isMobile && (
+                <ViewModeButton
+                  active={viewMode === 'table'}
+                  label="Bảng"
+                  title="Dạng bảng: mỗi hồ sơ một hàng, bấm vào ô để sửa ngay trên hàng"
+                  icon={<Sheet className="size-3.5" />}
+                  onClick={() => changeViewMode('table')}
+                />
+              )}
             </div>
-            <SearchField
-              value={query}
-              onChange={setQuery}
-              placeholder="Tìm hồ sơ, mô tả, tệp..."
-              placeholderShort="Tìm hồ sơ..."
-              className="h-8 w-48 flex-none"
-              aria-label="Tìm hồ sơ trong báo cáo"
-            />
-            <Select
-              value={String(statusFilter)}
-              onValueChange={(value) => setStatusFilter(Number(value))}
-            >
-              <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
-                {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
-                  <SelectItem key={code} value={code}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* Dạng bảng không gấp / sổ gì — nút này chỉ có nghĩa ở hai dạng kia. */}
-            {viewMode !== 'table' && (
-              <Button variant="outline" size="sm" onClick={toggleAll}>
-                {allOpen ? 'Thu gọn' : 'Mở tất cả'}
-              </Button>
-            )}
-            {canEdit && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => setPhaseDialog({ phase: null })}
-                >
-                  <ListPlus />
-                  Thêm giai đoạn
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={busy || report.phases.length === 0}
-                  title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
-                  onClick={() => setDocDialog({ doc: null, itemId: COMMON_ROW_ID })}
-                >
-                  <Plus />
-                  Thêm hồ sơ
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="px-2 text-destructive hover:text-destructive"
-                  disabled={busy}
-                  aria-label="Xóa báo cáo thực hiện"
-                  title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
-                  onClick={handleDeleteReport}
-                >
-                  <Trash2 />
-                </Button>
-              </>
-            )}
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Tìm hồ sơ, mô tả, tệp..."
+                placeholderShort="Tìm hồ sơ..."
+                className={REPORT_SEARCH_CLASS}
+                aria-label="Tìm hồ sơ trong báo cáo"
+              />
+              <Select
+                value={String(statusFilter)}
+                onValueChange={(value) => setStatusFilter(Number(value))}
+              >
+                <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
+                  {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
+                    <SelectItem key={code} value={code}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              {/* Dạng bảng không gấp / sổ gì — nút này chỉ có nghĩa ở hai dạng kia. */}
+              {viewMode !== 'table' && (
+                <ReportToggleAllButton allOpen={allOpen} onClick={toggleAll} />
+              )}
+              {canEdit && (
+                <>
+                  {/* Điện thoại 358px không đủ chỗ cho bốn nút chữ dài: bỏ chữ "Thêm" (biểu
+                      tượng đã nói), `aria-label` giữ tên đầy đủ cho trình đọc màn hình. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={REPORT_TOOLBAR_BUTTON_MOBILE_CLASS}
+                    disabled={busy}
+                    aria-label="Thêm giai đoạn"
+                    onClick={() => setPhaseDialog({ phase: null })}
+                  >
+                    <ListPlus />
+                    <ResponsiveLabel short="Giai đoạn" long="Thêm giai đoạn" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className={REPORT_TOOLBAR_BUTTON_MOBILE_CLASS}
+                    disabled={busy || report.phases.length === 0}
+                    aria-label="Thêm hồ sơ"
+                    title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
+                    onClick={() => setDocDialog({ doc: null, itemId: COMMON_ROW_ID })}
+                  >
+                    <Plus />
+                    <ResponsiveLabel short="Hồ sơ" long="Thêm hồ sơ" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2 text-destructive hover:text-destructive"
+                    disabled={busy}
+                    aria-label="Xóa báo cáo thực hiện"
+                    title="Xóa toàn bộ báo cáo (hoàn tác được)"
+                    onClick={handleDeleteReport}
+                  >
+                    <Trash2 />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </CardHeader>
@@ -566,7 +628,20 @@ export function SurveyReportCard({
                 sau.
                 {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
               </p>
-              <div className="flex gap-2">
+              {/*  `flex-wrap`: ba nút dài ~560px, khung máy 390px chỉ ~320px; không
+                   xuống dòng thì cụm canh giữa tràn CẢ HAI mép, mất chữ đầu nút đầu. */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {report.restorable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void restoreReport.mutateAsync()}
+                  >
+                    <Undo2 />
+                    Hoàn tác xóa
+                  </Button>
+                )}
                 <Button disabled={busy} onClick={() => setInitOpen(true)}>
                   <Sparkles />
                   Khởi tạo báo cáo mẫu
@@ -776,12 +851,14 @@ function ViewModeButton({
   label,
   title,
   icon,
+  className,
   onClick,
 }: {
   active: boolean
   label: string
   title: string
   icon: React.ReactNode
+  className?: string
   onClick: () => void
 }) {
   return (
@@ -794,6 +871,7 @@ function ViewModeButton({
         active
           ? 'bg-accent text-accent-foreground'
           : 'text-muted-foreground hover:text-foreground',
+        className,
       )}
       onClick={onClick}
     >
@@ -864,7 +942,9 @@ function ReportPhaseList({
         const collapsed = !forceOpen && collapsedPhases.has(phase.id)
         return (
           <div key={phase.id} className="space-y-2">
-            <div className="flex items-center gap-2.5">
+            {/* duoc-CR-737: điện thoại cho tên giai đoạn trọn hàng đầu (cạnh cụm nút),
+                ghi chú + thanh tiến độ xuống hàng hai — trước đó tên bị ép còn ~70px. */}
+            <div className={REPORT_GROUP_HEADER_CLASS}>
               <button
                 type="button"
                 aria-expanded={!collapsed}
@@ -879,20 +959,22 @@ function ReportPhaseList({
               <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
                 {index + 1}
               </span>
-              <span className="text-sm font-semibold">{phase.name}</span>
-              {phase.location && (
-                <span className="text-xs text-muted-foreground">{phase.location}</span>
-              )}
-              <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+              <span className={REPORT_GROUP_TITLE_CLASS}>{phase.name}</span>
+              <div className={cn(REPORT_GROUP_META_CLASS, REPORT_GROUP_META_INDENT_WITH_TOGGLE)}>
+                {phase.location && (
+                  <span className="text-xs text-muted-foreground">{phase.location}</span>
+                )}
+                <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+              </div>
               {canEdit && (
-                <>
+                <div className={REPORT_GROUP_ACTIONS_CLASS}>
                   {/* Đường vào NGẮN NHẤT để khai hồ sơ: bấm ngay tại giai đoạn
                       đang đọc, hộp điền sẵn giai đoạn đó — khỏi phải lên nút
                       chung ở đầu khối rồi tự chọn lại trong ô. */}
                   <button
                     type="button"
                     disabled={busy}
-                    title={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
+                    title="Thêm hồ sơ vào giai đoạn"
                     aria-label={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onAddDoc(phase.id)}
@@ -906,7 +988,7 @@ function ReportPhaseList({
                   <button
                     type="button"
                     disabled={busy}
-                    title={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
+                    title="Tạo mẫu vào giai đoạn này"
                     aria-label={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onApplyTemplate(phase.id)}
@@ -923,14 +1005,14 @@ function ReportPhaseList({
                   />
                   <button
                     type="button"
-                    title={`Sửa giai đoạn "${phase.name}"`}
+                    title="Sửa giai đoạn"
                     aria-label={`Sửa giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onEditPhase(phase)}
                   >
                     <Pencil className="size-3.5" />
                   </button>
-                </>
+                </div>
               )}
             </div>
             {collapsed ? null : phaseDocs.length === 0 ? (
@@ -1047,6 +1129,143 @@ function ReportItemTable({
   onSetDocStatus,
 }: ReportItemTableProps) {
   const doneCount = report.docs.filter(isReportDocDone).length
+  //  Khổ điện thoại: bảng 6 cột thành thẻ dọc (xem `ReportItemProgressCard`).
+  const asCards = useIsMobile()
+
+  //  Cụm nút, dải sổ và khối giai đoạn mồ côi dựng MỘT chỗ cho cả bảng lẫn thẻ — hai bản
+  //  chép là hai đường phải sửa song song mỗi lần luật sửa nút / xóa cụm đổi.
+  const renderRowActions = (row: ReportItemRow, rowDocs: SurveyReportDoc[]) => (
+    <>
+      {row.item && canEdit && !itemsLocked && (
+        <button
+          type="button"
+          title="Đổi tên / xóa nút"
+          aria-label={`Sửa nút "${row.name}"`}
+          className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+          onClick={(event) => {
+            event.stopPropagation()
+            if (row.item) onEditItem(row.item)
+          }}
+        >
+          <Pencil className="size-3.5" />
+        </button>
+      )}
+      {/* duoc-CR-611 — "Xóa cụm": xóa mọi hồ sơ của dòng hàng này (đang lọc thì
+          chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
+          nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
+      {canEdit && (
+        <ClusterDeleteButton
+          label={`"${row.name}"`}
+          count={rowDocs.length}
+          busy={busy}
+          onClick={() =>
+            void onDeleteDocs(
+              rowDocs,
+              rowDocs.length < row.docs.length
+                ? `đang khớp bộ lọc của "${row.name}"`
+                : `của "${row.name}"`,
+            )
+          }
+        />
+      )}
+    </>
+  )
+  const renderRowDetail = (row: ReportItemRow, rowDocs: SurveyReportDoc[]) => (
+    <ReportRowDetail
+      report={report}
+      docs={rowDocs}
+      docsById={docsById}
+      canEdit={canEdit}
+      busy={busy}
+      addLabel={row.item ? `Thêm hồ sơ cho "${row.name}"` : 'Thêm hồ sơ chung'}
+      templateLabel={row.item ? `Tạo mẫu cho "${row.name}"` : 'Tạo mẫu vào hồ sơ chung'}
+      onAddDoc={() => onAddDoc(row.id)}
+      onApplyTemplate={() => onApplyTemplate(row.id)}
+      onEditDoc={onEditDoc}
+      onDeleteDoc={onDeleteDoc}
+      onDeleteSelected={(docs) => onDeleteDocs(docs, `đã chọn của "${row.name}"`)}
+      onDeleteCluster={(docs, scope) => onDeleteDocs(docs, `của "${row.name}" ${scope}`)}
+      onEditPhase={onEditPhase}
+      onToggleDoc={onToggleDoc}
+      onSetDocStatus={onSetDocStatus}
+    />
+  )
+  const orphanBlock = (
+    <>
+      {/* Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
+          bày riêng, không thì nó thành bản ghi mồ côi không đường sửa/xóa. Dạng
+          xem tổng không cần cụm này: ở đó giai đoạn rỗng vẫn đứng đúng chỗ. */}
+      {orphanPhases.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>Giai đoạn chưa có hồ sơ:</span>
+          {orphanPhases.map((phase) => (
+            <span
+              key={phase.id}
+              className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-2 font-medium"
+            >
+              {phase.name}
+              {canEdit && (
+                <button
+                  type="button"
+                  title="Sửa giai đoạn"
+                  aria-label={`Sửa giai đoạn "${phase.name}"`}
+                  className="rounded-md p-0.5 hover:text-foreground"
+                  onClick={() => onEditPhase(phase)}
+                >
+                  <Pencil className="size-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  if (asCards) {
+    return (
+      <>
+        <div className="divide-y overflow-hidden rounded-lg border">
+          {rows.map((row) => {
+            const rowDocs = row.docs.filter(matchesFilter)
+            return (
+              <ReportItemProgressCard
+                key={row.id}
+                name={row.name}
+                docCount={row.docs.length}
+                doneCount={row.docs.filter(isReportDocDone).length}
+                progress={<PhaseProgressBar docs={row.docs} className="w-full" />}
+                expiry={<ExpiryChip expiry={nearestExpiry(row.docs)} />}
+                open={forceOpen || openRows.has(row.id)}
+                onToggle={() => onToggleRow(row.id)}
+                actions={canEdit ? renderRowActions(row, rowDocs) : undefined}
+              >
+                {renderRowDetail(row, rowDocs)}
+              </ReportItemProgressCard>
+            )
+          })}
+          {canEdit && !itemsLocked && (
+            <div className="px-1.5 py-1">
+              <Button variant="ghost" size="sm" disabled={busy} onClick={onAddItem}>
+                <Plus />
+                Thêm nút dòng hàng
+              </Button>
+            </div>
+          )}
+          {/*  Dòng TỔNG của bảng: không gập / sổ, nền đậm hơn để không đọc nhầm là một dòng hàng. */}
+          <ReportItemProgressCard
+            name={`Tổng cả ${ownerLabel}`}
+            docCount={report.docs.length}
+            doneCount={doneCount}
+            progress={<PhaseProgressBar docs={report.docs} className="w-full" />}
+            expiry={<ExpiryChip expiry={nearestExpiry(report.docs)} />}
+          />
+        </div>
+        {orphanBlock}
+      </>
+    )
+  }
+
   return (
     <>
       <div className="overflow-x-auto rounded-lg border">
@@ -1078,38 +1297,7 @@ function ReportItemTable({
                     <TableCell>
                       <span className="flex items-center gap-1.5">
                         <span className="font-medium">{row.name}</span>
-                        {row.item && canEdit && !itemsLocked && (
-                          <button
-                            type="button"
-                            title={`Sửa nút "${row.name}"`}
-                            aria-label={`Sửa nút "${row.name}"`}
-                            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              if (row.item) onEditItem(row.item)
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                        )}
-                        {/* duoc-CR-611 — "Xóa cụm": xóa mọi hồ sơ của dòng hàng này (đang lọc thì
-                            chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
-                            nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
-                        {canEdit && (
-                          <ClusterDeleteButton
-                            label={`"${row.name}"`}
-                            count={rowDocs.length}
-                            busy={busy}
-                            onClick={() =>
-                              void onDeleteDocs(
-                                rowDocs,
-                                rowDocs.length < row.docs.length
-                                  ? `đang khớp bộ lọc của "${row.name}"`
-                                  : `của "${row.name}"`,
-                              )
-                            }
-                          />
-                        )}
+                        {canEdit && renderRowActions(row, rowDocs)}
                       </span>
                     </TableCell>
                     <TableCell className="text-center tabular-nums">{row.docs.length}</TableCell>
@@ -1126,28 +1314,7 @@ function ReportItemTable({
                   {open && (
                     <TableRow className="hover:bg-transparent">
                       <TableCell colSpan={ITEM_TABLE_COLUMNS} className="bg-muted/40 p-3">
-                        <ReportRowDetail
-                          report={report}
-                          docs={rowDocs}
-                          docsById={docsById}
-                          canEdit={canEdit}
-                          busy={busy}
-                          addLabel={
-                            row.item ? `Thêm hồ sơ cho "${row.name}"` : 'Thêm hồ sơ chung'
-                          }
-                          templateLabel={
-                            row.item ? `Tạo mẫu cho "${row.name}"` : 'Tạo mẫu vào hồ sơ chung'
-                          }
-                          onAddDoc={() => onAddDoc(row.id)}
-                          onApplyTemplate={() => onApplyTemplate(row.id)}
-                          onEditDoc={onEditDoc}
-                          onDeleteDoc={onDeleteDoc}
-                          onDeleteSelected={(docs) => onDeleteDocs(docs, `đã chọn của "${row.name}"`)}
-                          onDeleteCluster={(docs, scope) => onDeleteDocs(docs, `của "${row.name}" ${scope}`)}
-                          onEditPhase={onEditPhase}
-                          onToggleDoc={onToggleDoc}
-                          onSetDocStatus={onSetDocStatus}
-                        />
+                        {renderRowDetail(row, rowDocs)}
                       </TableCell>
                     </TableRow>
                   )}
@@ -1187,33 +1354,7 @@ function ReportItemTable({
         </Table>
       </div>
 
-      {/* Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
-          bày riêng, không thì nó thành bản ghi mồ côi không đường sửa/xóa. Dạng
-          xem tổng không cần cụm này: ở đó giai đoạn rỗng vẫn đứng đúng chỗ. */}
-      {orphanPhases.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Giai đoạn chưa có hồ sơ:</span>
-          {orphanPhases.map((phase) => (
-            <span
-              key={phase.id}
-              className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-2 font-medium"
-            >
-              {phase.name}
-              {canEdit && (
-                <button
-                  type="button"
-                  title={`Sửa giai đoạn "${phase.name}"`}
-                  aria-label={`Sửa giai đoạn "${phase.name}"`}
-                  className="rounded-md p-0.5 hover:text-foreground"
-                  onClick={() => onEditPhase(phase)}
-                >
-                  <Pencil className="size-3" />
-                </button>
-              )}
-            </span>
-          ))}
-        </div>
-      )}
+      {orphanBlock}
     </>
   )
 }
@@ -1306,15 +1447,17 @@ function ReportRowDetail({
           if (phaseDocs.length === 0) return null
           return (
             <div key={phase.id} className="space-y-2">
-              <div className="flex items-center gap-2.5">
+              <div className={REPORT_GROUP_HEADER_CLASS}>
                 <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
                   {index + 1}
                 </span>
-                <span className="text-sm font-semibold">{phase.name}</span>
-                {phase.location && (
-                  <span className="text-xs text-muted-foreground">{phase.location}</span>
-                )}
-                <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+                <span className={REPORT_GROUP_TITLE_CLASS}>{phase.name}</span>
+                <div className={cn(REPORT_GROUP_META_CLASS, REPORT_GROUP_META_INDENT_NUMBER_ONLY)}>
+                  {phase.location && (
+                    <span className="text-xs text-muted-foreground">{phase.location}</span>
+                  )}
+                  <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+                </div>
                 {canEdit && (
                   <ClusterDeleteButton
                     label={`giai đoạn "${phase.name}"`}
@@ -1501,12 +1644,13 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
   const planned = latestPlannedDate(docs)
   const plan = planned ? plannedMeta(planned, docs) : null
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+    //  duoc-CR-737: điện thoại lưới 2 x 2 (trước một cột, 4 ô gần trống chiếm nửa màn).
+    <div className={REPORT_SUMMARY_GRID_CLASS}>
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="text-xs text-muted-foreground">Tổng hồ sơ</p>
-        <p className="text-lg font-semibold tabular-nums">{total}</p>
+        <p className={REPORT_SUMMARY_VALUE_CLASS}>{total}</p>
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
         <PhaseProgressBar
           docs={docs}
@@ -1514,14 +1658,16 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
           labelClassName="text-xs text-foreground"
         />
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <CalendarClock className="size-3" />
-          Hết hiệu lực gần nhất
+          {/* Ô điện thoại chỉ ~170px: nhãn dài gãy 2 dòng làm lệch hàng ô. "Hạn gần nhất"
+              là chữ cột đã dùng ở bảng dòng hàng. */}
+          <ResponsiveLabel short="Hạn gần nhất" long="Hết hiệu lực gần nhất" />
         </p>
         <p
           className={cn(
-            'text-lg font-semibold tabular-nums',
+            REPORT_SUMMARY_VALUE_CLASS,
             meta?.tone === 'overdue' && 'text-destructive',
             meta?.tone === 'soon' && 'text-warning',
           )}
@@ -1530,14 +1676,14 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
           {meta && <span className="ml-1.5 text-xs font-medium">· {meta.note}</span>}
         </p>
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <CalendarCheck className="size-3" />
           Dự định hoàn tất
         </p>
         <p
           className={cn(
-            'text-lg font-semibold tabular-nums',
+            REPORT_SUMMARY_VALUE_CLASS,
             plan?.tone === 'overdue' && 'text-destructive',
             plan?.tone === 'soon' && 'text-warning',
           )}
@@ -1686,13 +1832,19 @@ function ReportDocRow({
     <div
       className={cn(
         'grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-2.5 rounded-lg border bg-card px-3 py-2',
+        //  duoc-CR-737: điện thoại bỏ cột phải — trạng thái + sửa + xóa xuống dưới cột giữa,
+        //  để tên hồ sơ có trọn bề ngang thay vì gãy 3 dòng trong ~150px.
+        'max-md:grid-cols-[1.25rem_minmax(0,1fr)]',
         locked && 'opacity-70',
       )}
     >
       <button
         type="button"
         aria-label={done ? 'Mở lại hồ sơ' : 'Đánh dấu hoàn thành'}
-        title={locked ? 'Chờ hồ sơ tiên quyết hoàn thành trước' : ''}
+        //  duoc-CR-741: gợi ý theo bản v1; tên đọc (`aria-label`) giữ như cũ.
+        title={
+          locked ? 'Đang chờ hồ sơ tiên quyết' : done ? 'Đánh dấu Đang làm' : 'Đánh dấu Hoàn thành'
+        }
         disabled={!canEdit || locked || busy}
         className={cn(
           'mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors',
@@ -1785,7 +1937,7 @@ function ReportDocRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1 max-md:col-start-2 max-md:mt-1.5">
         <ReportDocStatusSelect
           doc={doc}
           locked={locked}

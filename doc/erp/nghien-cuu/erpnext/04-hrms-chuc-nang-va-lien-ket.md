@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Mã việc** | duoc-CR-709 |
-| **Ngày viết** | 02/11/2026 · cập nhật 03/11/2026 (trạng thái DEGO ở §6 và Phụ lục A sau duoc-CR-713, duoc-CR-715, duoc-CR-717) |
+| **Ngày viết** | 02/11/2026 · cập nhật 03/11/2026 (trạng thái DEGO ở §6 và Phụ lục A sau duoc-CR-713, duoc-CR-715, duoc-CR-717, duoc-CR-719) |
 | **Mục đích** | Đi sâu từng chức năng nhân sự của nexterp (ERPNext + app `hrms`), đặc biệt là cách các chứng từ con **liên kết** với nhau và với hồ sơ nhân viên, rồi đối chiếu với phân hệ Nhân sự của DEGO để biết nên học gì. |
 | **Nguồn** | App `hrms` nhánh `develop`, commit `ffadbbf` (01/11/2026), clone vào `dego-holding/nexterp/hrms` để đọc mã — khớp với lõi ERPNext `17.0.0-dev` đang có ở `nexterp/erpnext`. Đường dẫn trong tài liệu tính từ `nexterp/hrms/hrms/` (gọi tắt `hrms/`), trừ khi ghi rõ. |
 | **Đọc trước** | `03-chuc-nang-nhan-su-erpnext-va-doi-chieu.md` (phần nhân sự trong LÕI ERPNext: hồ sơ Employee, phòng ban, chức danh, lịch nghỉ). Tài liệu này nói phần app `hrms` cài thêm. |
@@ -176,7 +176,7 @@ cộng / trừ.
 | `Compensatory Leave Request` (nghỉ bù) | Đi làm ngày lễ thì xin cộng ngày nghỉ bù | Chặn nếu ngày đó **không có chấm công đi làm**; gửi xong **cộng vào quỹ loại nghỉ bù** (cộng thêm vào quỹ đang có hoặc tạo mới) | `compensatory_leave_request.py:79`, `:94-127` |
 | `Leave Application` (đơn nghỉ) | Nhân viên xin nghỉ, người duyệt chọn Approved / Rejected | Xem 4.3 | `leave_application.py` |
 | `Leave Block List` | Danh sách ngày cấm nghỉ (theo công ty / phòng) | Lúc lập đơn chỉ **cảnh báo**; **chặn duyệt** đơn rơi vào ngày cấm | `leave_application.py:411-432` |
-| `Leave Encashment` | Quy đổi phép dư ra tiền — **Ngoài phạm vi** (đi vào lương) | Gửi ghi sổ cái | `leave_encashment.py:73-89` |
+| `Leave Encashment` | Quy đổi phép dư ra tiền — **Đã có (duoc-CR-719)**: DEGO không đi vào lương, phiếu chỉ ghi số ngày, duyệt xong trừ quỹ và sinh Yêu cầu thanh toán cho kế toán nhập tiền | Gửi ghi sổ cái | `leave_encashment.py:73-89` |
 | `Holiday List Assignment` | Gán lịch nghỉ lễ cho từng người / nhóm thay vì chỉ theo công ty | Hiện trong tab Kết nối của nhân viên và của lịch nghỉ | `dashboard_overrides.py:17`, `:70`, `:92` |
 
 ### 4.3 Đơn nghỉ — các chốt khi lưu và khi gửi
@@ -373,7 +373,7 @@ Ký hiệu: **[P]** = chứng từ có bước gửi (submit), khi gửi mới t
 | Leave Ledger Entry | Sổ cái quỹ phép (tự sinh) | Một phần (số dư tính động) |
 | Compensatory Leave Request [P] | Xin nghỉ bù khi làm ngày lễ | Đã có (duoc-CR-715) — kiểm theo ngày lễ + lịch làm việc, không dựa chấm công |
 | Leave Block List | Ngày cấm nghỉ | Đã có (duoc-CR-715) |
-| Leave Encashment [P] | Quy đổi phép ra tiền | Ngoài |
+| Leave Encashment [P] | Quy đổi phép ra tiền | **Đã có (duoc-CR-719)** — mục Nghỉ phép ▸ Thanh toán nghỉ phép (phép dư cuối năm / nghỉ việc), số tiền nhập ở YCTT bên Tài chính, không lộ lương |
 | Holiday List *(lõi ERPNext)* · Holiday List Assignment [P] | Lịch nghỉ lễ · Gán lịch theo người | Có (ngày lễ + lịch làm việc 4 cấp) |
 | *Báo cáo:* Employee Leave Balance, Employee Leave Balance Summary, Employees working on a holiday | Số dư phép, tổng hợp, người đi làm ngày lễ | **Đã có cả ba (duoc-CR-717)** — Quỹ phép năm (báo cáo + thẻ **Theo nhân sự**) và báo cáo khóa 30 **Làm việc vào ngày lễ, ngày nghỉ** |
 

@@ -7,7 +7,7 @@ Muốn hiện được thì phải có chỗ để hỏi, và chỗ đó là đ�
 
 **Số còn lại KHÔNG lưu thành cột.** Nó là hiệu:
 
-    còn lại = allocated + seniority + carried + adjusted + comp − used − pending − carried_out
+    còn lại = allocated + seniority + carried + adjusted + comp − used − pending − carried_out − encashed
 
 Lưu thêm một cột `remaining` thì có hai nguồn sự thật, và cái thứ hai sẽ lệch —
 sớm hay muộn. `balance_service.remaining_days()` là nơi duy nhất tính.
@@ -73,6 +73,13 @@ class LeaveBalance(Base, AuditMixin):
     #  sang loại nghỉ khác (quy đổi). Khác `0` cũng chính là dấu "dòng này đã kết
     #  sổ rồi", nên bấm Kết sổ lần hai không nhân đôi số ngày.
     carried_out_days: Mapped[float] = mapped_column(Float, default=0.0)
+    #  ĐÃ THANH TOÁN RA TIỀN (duoc-CR-719): phiếu thanh toán nghỉ phép được duyệt cộng vào đây, hủy phiếu thì trừ lại.
+    #  Là khoản TRỪ vào công thức còn lại — ngày đã đổi ra tiền không nghỉ được nữa.
+    encashed_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    #  Trong `encashed_days`, phần lấy từ ngày MANG SANG (chỉ khi thanh toán lý do Nghỉ việc: mang sang tiêu trước).
+    #  KHÔNG vào công thức còn lại (đã nằm trong `encashed_days`); chỉ để `carryover_service.expire_carried` coi phần
+    #  mang sang đó là đã tiêu, kẻo qua hạn bị thu hồi lần hai và quỹ âm (duoc-CR-719 M1).
+    encashed_carried_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
 
     # --- ghi nhận, KHÔNG vào công thức ------------------------------------
     #  Phần mang sang đã HẾT HẠN (quá `carry_over_expire_month`). Ghi riêng chứ
@@ -97,4 +104,4 @@ class LeaveBalance(Base, AuditMixin):
         và người dùng đọc con số đó thì tưởng hệ thống hỏng.
         """
         return round(self.total_days - self.used_days - self.pending_days
-                     - self.carried_out_days, 2)
+                     - self.carried_out_days - (self.encashed_days or 0.0), 2)

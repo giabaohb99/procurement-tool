@@ -27,6 +27,10 @@ interface BulkDeleteButtonProps {
   pending?: boolean
   size?: 'default' | 'sm'
   className?: string
+  /** Chữ nút đồng ý — mặc định "Xóa n <đơn vị>". Thu mua truyền "Đồng ý" như v1 (duoc-CR-741). */
+  confirmLabel?: string
+  /** Tiêu đề hộp — mặc định "Xóa n <đơn vị> đã chọn?". Thu mua truyền "Xác nhận" như v1. */
+  title?: string
 }
 
 /**
@@ -44,6 +48,8 @@ export function BulkDeleteButton({
   pending,
   size = 'default',
   className,
+  confirmLabel,
+  title,
 }: BulkDeleteButtonProps) {
   const [open, setOpen] = useState(false)
   if (count <= 0) return null
@@ -73,10 +79,8 @@ export function BulkDeleteButton({
       <AlertDialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Xóa {count} {unitLabel} đã chọn?
-            </AlertDialogTitle>
-            <AlertDialogDescription>{description}</AlertDialogDescription>
+            <AlertDialogTitle>{title ?? `Xóa ${count} ${unitLabel} đã chọn?`}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">{description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Hủy</AlertDialogCancel>
@@ -90,7 +94,7 @@ export function BulkDeleteButton({
               }}
             >
               {pending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
-              Xóa {count} {unitLabel}
+              {confirmLabel ?? `Xóa ${count} ${unitLabel}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

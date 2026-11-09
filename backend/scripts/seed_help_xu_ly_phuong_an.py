@@ -22,7 +22,7 @@ chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự t�
 
 Nội dung phải KHỚP với `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md` mục H (H.1 → H.12) và
 mục I, cùng hành vi thật của `purchase-request-process-card.tsx` +
-`purchase-request-choose-card.tsx`. Không nêu mã phiếu mẫu của môi trường thử.
+`purchase-request-choose-card.tsx`. Tên nút theo bản v1 từ duoc-CR-741 (09/11/2026): *Tạo đơn mua hàng*. Không nêu mã phiếu mẫu của môi trường thử.
 """
 import re
 import sys
@@ -81,7 +81,7 @@ STAFF_CONTENT = f"""<h2>I. Luồng phương án là gì</h2>
 <table><thead><tr><th>Vai</th><th>Làm gì</th><th>Ở màn nào</th></tr></thead><tbody>
 <tr><td><strong>Nhân viên thu mua</strong></td><td><strong>Gắn</strong> phương án lên dòng mình được giao, rồi <strong>Chốt hoàn thành xử lý</strong>. Không chọn thay.</td><td><em>Xử lý phương án</em> (màn riêng)</td></tr>
 <tr><td><strong>Người yêu cầu</strong></td><td><strong>Chọn</strong> một phương án cho mỗi dòng — chỉ họ biết mức giá đó còn đáng mua không.</td><td>thẻ <em>Phương án</em> trên màn chi tiết phiếu</td></tr>
-<tr><td><strong>Quản lý / Admin thu mua</strong></td><td>Chọn <strong>thay</strong> người yêu cầu (đường tắt cho hàng gấp) và <strong>Tạo đơn</strong>.</td><td>thẻ <em>Phương án</em> trên màn chi tiết phiếu</td></tr>
+<tr><td><strong>Quản lý / Admin thu mua</strong></td><td>Chọn <strong>thay</strong> người yêu cầu (đường tắt cho hàng gấp) và <strong>Tạo đơn mua hàng</strong>.</td><td>thẻ <em>Phương án</em> trên màn chi tiết phiếu</td></tr>
 </tbody></table>
 <p><strong>Hàng rào dòng.</strong> Nhân viên thu mua chỉ gắn được phương án vào dòng có mình là người phụ trách. Bấm vào dòng của người khác thì máy chủ từ chối. Muốn đổi người phụ trách thì dùng nút <em>Phân bổ</em> như thường lệ.</p>
 <p><strong>Cổng thời điểm.</strong> Gắn / sửa / chọn phương án chỉ làm được khi phiếu đang ở <strong>Đã điều phối · Đang xử lý · Đang mua · Đã mua</strong> — tức sau khi thu mua tiếp nhận phiếu và trước khi phiếu đóng. <strong>Xem</strong> thì lúc nào cũng xem được, kể cả phiếu đã hoàn thành hay đã hủy.</p>
@@ -149,7 +149,7 @@ STAFF_CONTENT = f"""<h2>I. Luồng phương án là gì</h2>
 <p>Chọn nhầm, hoặc cần gắn thêm phương án, thì bấm <strong>Mở lại cho NSTM xử lý</strong> trên dòng đó. Dòng quay về màn <em>Xử lý phương án</em> và biến mất khỏi thẻ chọn cho tới khi chốt lại.</p>
 
 <h2>VIII. Tạo đơn mua hàng</h2>
-<p>Trên màn chi tiết phiếu chỉ có <strong>một nút Tạo đơn</strong>. Hệ thống tự chọn đường, người bấm không phải chọn:</p>
+<p>Trên màn chi tiết phiếu chỉ có <strong>một nút Tạo đơn mua hàng</strong>. Hệ thống tự chọn đường, người bấm không phải chọn:</p>
 <ol>
 <li>Còn dòng gom được theo phương án (đã chốt hoàn thành xử lý, chưa hủy, chưa nằm trên đơn nào, còn một phương án đang chọn) thì chạy <strong>đường gom theo nhà cung cấp</strong>.</li>
 <li>Không có dòng nào như vậy nhưng còn dòng chưa đặt đủ thì chạy <strong>đường lập đơn tay</strong> như trước nay.</li>
@@ -158,7 +158,7 @@ STAFF_CONTENT = f"""<h2>I. Luồng phương án là gì</h2>
 <p>Nút đòi quyền <strong>tạo Đơn mua hàng</strong>, nên người yêu cầu không thấy nút này.</p>
 
 <h3>Đường gom theo nhà cung cấp</h3>
-<p>Một Đơn mua hàng chỉ mang <strong>một</strong> nhà cung cấp, nên <strong>N nhà cung cấp = N đơn</strong>. Bấm <em>Tạo đơn</em> thì hệ thống gom các dòng đã chọn phương án theo nhà cung cấp và sinh N <strong>đơn nháp</strong> một lượt:</p>
+<p>Một Đơn mua hàng chỉ mang <strong>một</strong> nhà cung cấp, nên <strong>N nhà cung cấp = N đơn</strong>. Bấm <em>Tạo đơn mua hàng</em> thì hệ thống gom các dòng đã chọn phương án theo nhà cung cấp và sinh N <strong>đơn nháp</strong> một lượt:</p>
 <ul>
 <li>Đơn giá lấy theo giá của phương án đã chọn; VAT lấy của phương án, trống thì rơi về VAT của dòng.</li>
 <li>ĐVT lấy theo ĐVT báo giá nếu phương án có ghi; cam kết giao và nơi giao chép vào ghi chú dòng.</li>
@@ -171,6 +171,7 @@ STAFF_CONTENT = f"""<h2>I. Luồng phương án là gì</h2>
 
 <h3>Đường lập đơn tay vẫn còn</h3>
 <p>Phiếu chưa ai chốt phương án (phiếu cũ, hoặc đang giữa chừng) vẫn lập đơn tay được từ nút đó. Đường tay nay còn <strong>điền sẵn</strong> giá / VAT / ĐVT / cam kết giao theo phương án đã chọn của từng dòng, và điền sẵn nhà cung cấp lên đầu đơn khi <strong>mọi dòng còn mua đều chọn cùng một nhà cung cấp</strong>.</p>
+<p>Có sản phẩm đã đặt đủ hoặc vượt số yêu cầu (tính cả đơn chưa duyệt) thì hộp <em>Số lượng đã đặt đủ/vượt</em> mở ra trước, liệt kê các sản phẩm đó, với hai nút: <strong>Chỉ SP còn thiếu</strong> (form tạo đơn chỉ mang sản phẩm còn thiếu) và <strong>Vẫn mua thêm</strong> (form điền đủ số yêu cầu, sửa lại số cần mua thêm trước khi tạo). Không muốn tạo đơn thì đóng hộp bằng dấu X.</p>
 
 <h3>Một mẹo nhỏ: mã hàng tự điền</h3>
 <p>Dòng <strong>chưa có mã hàng</strong> mà phương án được chọn có mã VTBB thì lúc chọn, hệ thống <strong>chép mã đó lên dòng</strong>. Nhờ vậy dòng bắt đầu được tính tiến độ đặt hàng / nhận hàng. Bỏ chọn thì <strong>không xóa mã</strong> đã chép — mã đã thành dữ liệu của dòng. Mã trùng với một dòng khác trên cùng phiếu thì không chép.</p>
@@ -198,7 +199,7 @@ STAFF_CONTENT = f"""<h2>I. Luồng phương án là gì</h2>
 <li><strong>Chọn phương án không ghi đè giá của dòng.</strong> Cố ý — để giữ dấu vết giá đề xuất so với giá chốt, và để bỏ chọn không phải khôi phục gì. Bản in có đủ hai cột.</li>
 <li><strong>Danh sách phiếu không cho biết phiếu đang ở chặng nào của phương án.</strong> Trạng thái phiếu vẫn là năm bậc cũ; cả chặng phương án diễn ra bên trong <em>Đã điều phối</em>. Đây là cố ý, không phải thiếu sót — muốn biết thì mở phiếu ra.</li>
 <li><strong>Không có chuông nào cho chặng phương án.</strong> Gắn xong thì tự nhắn cho người yêu cầu, chọn xong thì tự nhắn cho thu mua. Chuông đã viết nhưng đang tắt vì phần lớn người yêu cầu còn dùng giao diện cũ, nơi không có khu phương án.</li>
-<li><strong>Bấm Tạo đơn hai lần không sinh đơn trùng</strong>, nhưng hộp xác nhận sẽ nói rõ phiếu đã có đơn — đọc rồi hãy bấm.</li>
+<li><strong>Bấm Tạo đơn mua hàng hai lần không sinh đơn trùng</strong>, nhưng hộp xác nhận sẽ nói rõ phiếu đã có đơn — đọc rồi hãy bấm.</li>
 </ul>
 
 <h2>XII. Điều hướng</h2>
@@ -259,7 +260,7 @@ REQUESTER_CONTENT = f"""<h2>I. Chuyện gì đang xảy ra</h2>
 </ul>
 
 <h2>VII. Chọn xong rồi thì sao</h2>
-<p>Không có nút "chốt xong" nào phải bấm nữa. Thu mua nhìn thấy lựa chọn của bạn và bấm <strong>Tạo đơn</strong> — hệ thống gom các dòng bạn đã chọn theo từng nhà cung cấp thành các đơn mua hàng nháp.</p>
+<p>Không có nút "chốt xong" nào phải bấm nữa. Thu mua nhìn thấy lựa chọn của bạn và bấm <strong>Tạo đơn mua hàng</strong> — hệ thống gom các dòng bạn đã chọn theo từng nhà cung cấp thành các đơn mua hàng nháp.</p>
 <p>Theo dõi tiếp ở thẻ <strong>Chứng từ liên quan</strong> ngay bên dưới: khu <em>Đơn mua hàng đã lập</em> liệt kê mọi đơn sinh ra từ phiếu này. Chưa có đơn nào thì thẻ nói rõ là chưa có.</p>
 <p><strong>Lưu ý.</strong> Giá bạn ghi ban đầu <strong>không bị ghi đè</strong> khi bạn chọn một phương án khác. Bản in giữ cả hai cột <em>Giá đề xuất</em> và <em>Giá chốt</em> để thấy chênh lệch.</p>
 

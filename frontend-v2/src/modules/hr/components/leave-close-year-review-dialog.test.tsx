@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render as rtlRender, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LeaveCloseYearReview } from '../types/leave'
 import { LeaveCloseYearReviewDialog } from './leave-close-year-review-dialog'
@@ -68,5 +68,22 @@ describe('LeaveCloseYearReviewDialog', () => {
   it('renders nothing while closed', () => {
     render(<LeaveCloseYearReviewDialog year={null} onClose={() => {}} />)
     expect(screen.queryByText(/Đối chiếu kết sổ phép/)).not.toBeInTheDocument()
+  })
+
+  describe('phone width', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('swaps the table for cards but keeps export and the totals line', () => {
+      //  `setup.ts` cố định khổ desktop — ép khổ điện thoại ngay tại đây (duoc-CR-721).
+      vi.stubGlobal('matchMedia', (q: string) => ({
+        matches: true, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      }))
+      render(<LeaveCloseYearReviewDialog year={2026} onClose={() => {}} />)
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+      expect(screen.getByText('An')).toBeInTheDocument()
+      expect(screen.getByText('NV001')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Xuất Excel/ })).toBeEnabled()
+      expect(screen.getByText(/Tổng 1 dòng/)).toBeInTheDocument()
+    })
   })
 })

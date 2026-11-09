@@ -7,6 +7,7 @@ import { DataTable } from '@/shared/data-table'
 import { buildLeavePolicyAssignmentColumns } from '../config/leave-policy-assignment-columns'
 import { useLeavePolicyAssignments } from '../hooks/use-leave-policy'
 import { buildAssignmentListHref } from '../utils/leave-policy-display'
+import { LeavePolicyAssignmentMobileCard } from './leave-policy-assignment-mobile-card'
 
 interface LeavePolicyAssignmentsTabProps {
   policyId: number
@@ -59,6 +60,9 @@ export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTa
         storageKey="hr.leave-policy-assignments-tab"
         onRowClick={canOpenList ? (a) => navigate(buildAssignmentListHref(policyId, a)) : undefined}
         getRowHref={canOpenList ? (a) => buildAssignmentListHref(policyId, a) : undefined}
+        //  Khổ điện thoại: dùng lại thẻ của màn Phân bổ chính sách (duoc-CR-721), KHÔNG truyền nút — tab này
+        //  chỉ đọc, kết thúc / xóa làm ở màn kia; có quyền mở thì cả thẻ là vùng bấm sang đó.
+        mobileCard={(a) => <LeavePolicyAssignmentMobileCard assignment={a} showPolicy={false} />}
         pagination={{
           page,
           pageSize,

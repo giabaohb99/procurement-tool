@@ -48,7 +48,7 @@ Ranh giới đã chốt: **không nối** danh mục VTBB, tồn kho, lịch s�
 | Tệp | Nội dung | Trạng thái |
 |---|---|---|
 | [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) | Danh sách chức năng CN-HQ-NN, tóm tắt và liên kết | Nháp |
-| [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-HQ-01..12 | Nháp |
+| [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-HQ-01..14 | Nháp |
 | [`chuc-nang/10-danh-sach-tinh-nang.md`](chuc-nang/10-danh-sach-tinh-nang.md) | Danh sách tính năng gốc N, T, B, A, P, Y; câu hỏi còn mở; số đo dữ liệu thật | Kế hoạch + tình trạng (bản 1.1, 23/09/2026) |
 | [`chuc-nang/11-giao-dien.md`](chuc-nang/11-giao-dien.md) | Màn hình M1..M4 cho cả v1 và v2, luật hiển thị, bản dựng khác đề xuất | Thiết kế + đã dựng (bản 1.2, 23/09/2026) |
 | [`nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md`](nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) | Đối chiếu yêu cầu FR-PROC-2026-001 của phòng Thu mua với bản chạy dev 28/09/2026; rủi ro R1; việc còn lại | chưa ghi |

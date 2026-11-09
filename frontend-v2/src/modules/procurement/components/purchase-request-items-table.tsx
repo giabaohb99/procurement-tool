@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { History, Pencil, Plus, PlusCircle, Trash2 } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Copy, History, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
@@ -89,6 +89,14 @@ interface ItemsTableProps {
     expectedDate: string,
     originalDate: string,
   ) => void
+  /**
+   * duoc-CR-737 — cụm nút của bảng đứng ở GÓC PHẢI TIÊU ĐỀ THẺ như bản v1, không ở
+   * thanh tiêu đề của `LinesTable`. Bảng giữ state tick dòng nên trao hai mảnh cho
+   * trang tự xếp vào khung `Card`: `headerActions` (*Xóa đã chọn (n)*, chỉ dựng khi có
+   * dòng đang tick) và `body` (bảng + nút *Thêm nhiều dòng* bên dưới). Bỏ trống thì hai
+   * mảnh đứng liền nhau.
+   */
+  renderFrame?: (parts: { headerActions: ReactNode; body: ReactNode }) => ReactNode
 }
 
 /** Dòng trống khi bấm "Thêm dòng". */
@@ -135,6 +143,12 @@ export function PurchaseRequestItemsTable({
   canEditLine,
   onAssigneeChange,
   onExpectedDateCommit,
+  renderFrame = ({ headerActions, body }) => (
+    <>
+      {headerActions}
+      {body}
+    </>
+  ),
 }: ItemsTableProps) {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const lineSelection = useLineSelection({
@@ -145,6 +159,17 @@ export function PurchaseRequestItemsTable({
   const removeSelectedLines = () => {
     const drop = new Set(lineSelection.selectedIndexes)
     onChange(items.filter((_, index) => !drop.has(index)))
+    lineSelection.clear()
+  }
+  //  Nhân đôi / xóa MỘT dòng làm các dòng phía sau trôi chỉ số. Dòng chưa lưu khóa theo chỉ
+  //  số (`new-${index}`), nên dấu tick đang đặt ở dòng 4 sẽ nhảy sang dòng 3 cũ vừa trôi
+  //  xuống, và *Xóa đã chọn* xóa nhầm dòng (rà mã duoc-CR-741). Bỏ hết dấu tick cho chắc.
+  const duplicateLineAt = (index: number) => {
+    onChange(duplicateLine(items, index))
+    lineSelection.clear()
+  }
+  const removeLineAt = (index: number) => {
+    onChange(items.filter((_, i) => i !== index))
     lineSelection.clear()
   }
   const [bulkCount, setBulkCount] = useState(5)
@@ -251,7 +276,8 @@ export function PurchaseRequestItemsTable({
     {
       key: 'action',
       header: 'Thao tác',
-      width: 88,
+      //  Ba nút lúc sửa (Chi tiết · Nhân đôi · Xóa, duoc-CR-741) — 88px cũ chỉ đủ hai.
+      width: 112,
       minWidth: 60,
       hideable: false,
       align: 'center',
@@ -363,9 +389,7 @@ export function PurchaseRequestItemsTable({
                 variant="ghost"
                 size="icon-sm"
                 className="size-7 shrink-0 text-muted-foreground"
-                title={
-                  editing ? 'Xem lịch sử mua hàng gần nhất' : 'Xem lịch sử mua hàng (chỉ xem)'
-                }
+                title={purchaseHistoryTooltip(editing)}
                 aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
                 onClick={() => setHistoryIndex(index)}
               >
@@ -577,21 +601,40 @@ export function PurchaseRequestItemsTable({
       case 'action':
         return (
           <div className="flex items-center justify-center gap-1">
+            {/*  duoc-CR-741: gợi ý đúng chữ v1 (*Chi tiết* · *Nhân đôi* · *Xóa*). Tên đọc
+                 cho trình đọc màn hình kèm số dòng để mỗi nút vẫn tìm được riêng. */}
             <Button
+              type="button"
               variant="ghost"
               size="icon-sm"
-              title="Chi tiết dòng"
+              title="Chi tiết"
+              aria-label={`Chi tiết dòng ${index + 1}`}
               onClick={() => onOpenDetail(index)}
             >
               <Pencil />
             </Button>
             {editing && (
               <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground"
+                title="Nhân đôi"
+                aria-label={`Nhân đôi dòng ${index + 1}`}
+                onClick={() => duplicateLineAt(index)}
+              >
+                <Copy />
+              </Button>
+            )}
+            {editing && (
+              <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 className="text-destructive hover:text-destructive"
-                title="Xóa dòng"
-                onClick={() => onChange(items.filter((_, i) => i !== index))}
+                title="Xóa"
+                aria-label={`Xóa dòng ${index + 1}`}
+                onClick={() => removeLineAt(index)}
               >
                 <Trash2 />
               </Button>
@@ -607,31 +650,33 @@ export function PurchaseRequestItemsTable({
   // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang mở
   // thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
   //
-  // ⚠️ Dựng thành BIẾN chứ không viết hai lần cho hai lối bày: hai bản chép là
-  // hai đường thêm dòng phải sửa song song mỗi lần luật đổi.
-  const addActions = editing && (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => onChange([...items, { ...EMPTY_PURCHASE_REQUEST_ITEM }])}
-      >
-        <Plus /> Thêm dòng
-      </Button>
+  // duoc-CR-737: thanh nút cũ trên tiêu đề `LinesTable` (Thêm dòng · Thêm nhiều ·
+  // Xóa đã chọn) tách về đúng chỗ của v1 — *Xóa đã chọn* lên góc phải tiêu đề thẻ
+  // (cạnh *Thêm SP* của trang), *Thêm nhiều dòng* xuống dưới bảng. *Thêm dòng* bỏ hẳn:
+  // nó làm đúng việc của *Thêm SP* trên tiêu đề thẻ (thêm một dòng trống cuối bảng),
+  // để cả hai là hai nút cùng một lệnh đứng cách nhau một hàng.
+  const bulkDeleteAction = (
+    <BulkDeleteButton
+      size="sm"
+      count={lineSelection.selectedIndexes.length}
+      unitLabel="dòng"
+      //  duoc-CR-741: câu và nút của v1 — *Xóa n dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên
+      //  màn hình, bấm Lưu mới ghi xuống.* · nút *Đồng ý* / *Hủy*.
+      title="Xác nhận"
+      description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.`}
+      confirmLabel="Đồng ý"
+      onConfirm={removeSelectedLines}
+    />
+  )
+  const addManyAction = editing && (
+    <div className="flex">
       <Button type="button" size="sm" variant="outline" onClick={() => setBulkDialogOpen(true)}>
-        <PlusCircle /> Thêm nhiều
+        <PlusCircle /> Thêm nhiều dòng
       </Button>
-      <BulkDeleteButton
-        size="sm"
-        count={lineSelection.selectedIndexes.length}
-        unitLabel="dòng"
-        description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
-        onConfirm={removeSelectedLines}
-      />
-    </>
+    </div>
   )
 
-  return (
+  const body = (
     <>
       {asCards ? (
         <div className="space-y-3">
@@ -642,12 +687,8 @@ export function PurchaseRequestItemsTable({
                cho bảng dòng khảo sát. */}
           {/*  Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm": thẻ bọc ngoài đã
                có tiêu đề *Danh sách Sản phẩm Yêu cầu* ngay bên trên, ở khổ hẹp hai
-               dòng chữ gần giống nhau xếp chồng đọc như bị lặp. Khổ rộng thì tiêu
-               đề của `LinesTable` nằm cùng hàng với cụm nút nên không va nhau. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">{items.length} dòng</span>
-            {addActions}
-          </div>
+               dòng chữ gần giống nhau xếp chồng đọc như bị lặp. */}
+          <span className="block text-sm font-medium">{items.length} dòng</span>
 
           <div className="overflow-hidden rounded-lg border">
             {items.length === 0 ? (
@@ -672,7 +713,8 @@ export function PurchaseRequestItemsTable({
                     }
                     onOpenDetail={() => onOpenDetail(index)}
                     onOpenHistory={() => setHistoryIndex(index)}
-                    onRemove={() => onChange(items.filter((_, i) => i !== index))}
+                    onDuplicate={() => duplicateLineAt(index)}
+                    onRemove={() => removeLineAt(index)}
                   />
                 ))}
               </div>
@@ -692,20 +734,27 @@ export function PurchaseRequestItemsTable({
           rowClassName={(item) =>
             item.line_status === 'cancelled' ? 'opacity-60' : undefined
           }
-          actions={addActions}
         />
       )}
+      {addManyAction}
+    </>
+  )
+
+  return (
+    <>
+      {renderFrame({ headerActions: bulkDeleteAction, body })}
 
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="sm:max-w-sm">
+          {/*  duoc-CR-741: hộp hỏi của v1 (`askPrompt`) — tiêu đề *Nhập thông tin*, câu
+               *Thêm bao nhiêu dòng?*, nút *Xác nhận* / *Hủy*. Trần 50 dòng mỗi lần giữ lại
+               của v2 để gõ nhầm 5000 không đẻ ra cả nghìn dòng trống. */}
           <DialogHeader>
-            <DialogTitle>Thêm nhiều dòng sản phẩm</DialogTitle>
-            <DialogDescription>
-              Nhập số dòng muốn thêm vào cuối bảng, tối đa 50 dòng mỗi lần.
-            </DialogDescription>
+            <DialogTitle>Nhập thông tin</DialogTitle>
+            <DialogDescription>Thêm bao nhiêu dòng?</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <label htmlFor="purchase-request-bulk-count" className="text-sm font-medium">
+            <label htmlFor="purchase-request-bulk-count" className="sr-only">
               Số dòng
             </label>
             <Input
@@ -725,7 +774,7 @@ export function PurchaseRequestItemsTable({
               Hủy
             </Button>
             <Button type="button" onClick={addMultipleRows}>
-              Thêm dòng
+              Xác nhận
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -745,6 +794,37 @@ export function PurchaseRequestItemsTable({
       />
     </>
   )
+}
+
+/**
+ * Gợi ý của nút lịch sử mua hàng — đúng chữ v1 (duoc-CR-741). Phiếu đã khóa vẫn mở được
+ * nhưng chỉ xem, không điền giá vào dòng (bao-CR-320).
+ */
+function purchaseHistoryTooltip(editing: boolean): string {
+  return editing
+    ? 'Lịch sử mua hàng gần nhất của mã hàng này'
+    : 'Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'
+}
+
+/**
+ * Nút *Nhân đôi* của v1 (`copyItem`, duoc-CR-741): chèn bản sao NGAY SAU dòng gốc.
+ *
+ * Bỏ `id` vì bản sao là dòng khác — giữ id thì lúc lưu backend ghi đè dòng gốc. Bỏ luôn
+ * phần phương án (bao-CR-310) vì phương án gắn theo id dòng, chép sang là bản sao trỏ
+ * vào phương án của dòng gốc. Ảnh đối chiếu cũng không đi theo (ảnh gắn theo id dòng).
+ */
+function duplicateLine(items: PurchaseRequestItem[], index: number): PurchaseRequestItem[] {
+  const source = items[index]
+  if (!source) return items
+  const copy: PurchaseRequestItem = {
+    ...source,
+    id: undefined,
+    option_count: undefined,
+    chosen_option: undefined,
+    options_done: undefined,
+    no_option: undefined,
+  }
+  return [...items.slice(0, index + 1), copy, ...items.slice(index + 1)]
 }
 
 function CatalogSelect({

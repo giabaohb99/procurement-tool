@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { BookingStatusBadge } from './status-pill'
+import { VehicleBookingCard } from './vehicle-booking-card'
 import { BOOKING_STATUS_LABELS, type VehicleBooking } from '../types/vehicle-booking'
 
 const ALL = 'all'
@@ -26,6 +27,7 @@ function formatDateTime(value: string): string {
 }
 
 function fieldValue(row: VehicleBooking, key: string): string | number {
+  if (key === 'id') return row.id // cột ID tự thêm của bảng sắp theo khóa chính (duoc-CR-738)
   if (key === 'status') return row.status
   if (key === 'start_time') return row.start_time || ''
   if (key === 'code') return row.code || ''
@@ -129,6 +131,8 @@ export function BookingQueueTable({
       getRowId={(r) => r.id}
       isLoading={isLoading}
       onRowClick={(r) => navigate(appRoutes.vehicleBooking.detail(r.id))}
+      //  Khối hàng chờ gọn: thẻ bỏ dòng người tạo / xe — bảng của khối này cũng không có hai cột đó.
+      mobileCard={(r) => <VehicleBookingCard booking={r} showPeople={false} />}
       emptyMessage={emptyMessage ?? 'Không có phiếu nào.'}
       sortBy={sortBy}
       sortDir={sortDir}

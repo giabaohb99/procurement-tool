@@ -114,4 +114,12 @@ describe('RoomBookingCard', () => {
 
     expect(screen.getByText('Phòng đã có lịch tiếp khách')).toBeInTheDocument()
   })
+
+  it('drops the room line on a single room schedule, where the room is already the page title', () => {
+    //  duoc-CR-721: tab Lịch đặt của chi tiết phòng — lặp tên phòng trên mọi thẻ chỉ ăn mất một dòng.
+    render(<RoomBookingCard booking={booking()} showRoom={false} />)
+    expect(screen.queryByText('Phòng họp 302')).not.toBeInTheDocument()
+    expect(screen.getByText('Họp giao ban')).toBeInTheDocument()
+    expect(screen.getByText(/09:00 – 10:00/)).toBeInTheDocument()
+  })
 })

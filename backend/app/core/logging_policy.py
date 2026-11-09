@@ -262,8 +262,18 @@ _LABOR_CONTRACT_KEYS = frozenset({"base_salary", "insurance_salary", "allowance"
                                   "custom_values"})
 
 
+#  YCTT (duoc-CR-719 M3): số tiền YCTT thanh toán nghỉ phép = lương ngày x số ngày, mà thân request không cho biết
+#  nguồn của phiếu (không tra DB ở tầng này) nên che số tiền ở MỌI đường `/api/payment-requests/{id}...` (sửa, gửi
+#  duyệt, duyệt, chi). Mất dấu số tiền ở nhật ký YÊU CẦU của YCTT khác; dấu vết nghiệp vụ vẫn còn ở nhật ký theo
+#  entity (`audit`) và nhật ký thay đổi theo cột (`change_tracker`, chỉ che riêng nguồn nghỉ phép).
+_PAYMENT_REQUEST_ID_PATH = re.compile(r"^/api/payment-requests/\d+(/.*)?$")
+_PAYMENT_REQUEST_AMOUNT_KEYS = frozenset({"amount", "total", "allocated_amount"})
+
+
 def sensitive_keys_for_path(path: str) -> frozenset:
     """Những khóa phải che THÊM với riêng đường dẫn này (ngoài luật chung)."""
+    if _PAYMENT_REQUEST_ID_PATH.match(path):
+        return _PAYMENT_REQUEST_AMOUNT_KEYS
     if path == _LABOR_CONTRACT_PATH_PREFIX or path.startswith(_LABOR_CONTRACT_PATH_PREFIX + "/"):
         return _LABOR_CONTRACT_KEYS
     #  duoc-CR-652: "Hợp đồng của tôi" chỉ GET, nhưng giữ cùng luật cho chắc.

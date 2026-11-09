@@ -15,6 +15,11 @@ interface RoomBookingCardProps {
   showStatus?: boolean
   /** Hạn xử lý việc duyệt — chỉ tab "Cần tôi duyệt" có. */
   dueAt?: string | null
+  /**
+   * Bày dòng tên phòng không. Tắt ở tab Lịch đặt của CHI TIẾT MỘT PHÒNG (duoc-CR-721): cả danh sách là
+   * của đúng phòng đó, tên đã nằm trên tiêu đề trang — cùng lý do `showEmployee` của `LeaveRequestCard`.
+   */
+  showRoom?: boolean
 }
 
 /**
@@ -38,6 +43,7 @@ export function RoomBookingCard({
   booking,
   showStatus = true,
   dueAt,
+  showRoom = true,
 }: RoomBookingCardProps) {
   return (
     <div className="flex items-start gap-2">
@@ -58,12 +64,14 @@ export function RoomBookingCard({
           )}
         </div>
 
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <DoorClosed className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 truncate">
-            {booking.room_name || booking.room_code || `#${booking.room_id}`}
-          </span>
-        </p>
+        {showRoom && (
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <DoorClosed className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 truncate">
+              {booking.room_name || booking.room_code || `#${booking.room_id}`}
+            </span>
+          </p>
+        )}
 
         {/*  Ngày + khung giờ đứng chung một dòng: hai vế của cùng một câu hỏi
              "họp lúc nào", tách hai dòng thì mắt phải ghép lại. */}

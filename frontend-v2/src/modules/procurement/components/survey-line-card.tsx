@@ -112,7 +112,8 @@ export function SurveyLineCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            title="Bổ sung thông tin theo yêu cầu TP/QL"
+            //  duoc-CR-741: gợi ý đúng chữ v1 như bảng khổ rộng; khổ hẹp giữ nút biểu tượng cho đỡ chật.
+            title="Bổ sung nội dung dòng thiếu thông tin"
             aria-label={`Bổ sung thông tin dòng ${index + 1}`}
             onClick={() => onOpen('fill')}
           >

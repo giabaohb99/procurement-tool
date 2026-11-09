@@ -1,0 +1,19 @@
+# bao-CR-735 — canh prod từ ngoài (chạy trên VPS 2). Cài: xem doc/tai-lieu-ky-thuat/van-hanh/chong-treo-prod.md
+[Unit]
+Description=DEGO canh prod tu ngoai (bao-CR-735)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=dego-prod-watch
+Environment=WATCH_STATE=/var/lib/dego-prod-watch/state.json
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (+ WATCH_URL, FAIL_THRESHOLD, REMIND_MINUTES nếu muốn đổi). chmod 600, chủ root.
+EnvironmentFile=/etc/dego/alert.env
+ExecStart=/usr/bin/python3 /usr/local/lib/dego/prod_watch.py
+TimeoutStartSec=2min
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes

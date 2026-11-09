@@ -8,7 +8,7 @@ bằng tài liệu thật của công ty.
 Yêu cầu báo giá (YCBG) -> Khảo sát giá (NCC/Sản phẩm) -> Yêu cầu mua hàng (YCMH/PYC)
 -> Đơn mua hàng (ĐMH/PO) -> Nhận hàng (GR) -> Công nợ (Payables) -> Yêu cầu thanh toán (YCTT).
 
-- **Yêu cầu mua hàng**: với luồng khảo sát, chính **người tạo YCBG** (bộ phận có nhu cầu) chọn phương án khảo sát đã duyệt trên phiếu YCBG rồi bấm tạo YCMH — không phải Thu mua; với luồng mua trực tiếp (đã biết rõ mặt hàng và giá), người có nhu cầu tạo YCMH thẳng. Trưởng phòng duyệt theo phòng ban.
+- **Yêu cầu mua hàng**: với luồng khảo sát, chính **người tạo YCBG** (bộ phận có nhu cầu) chọn phương án khảo sát đã duyệt trên phiếu YCBG rồi bấm ***Tạo yêu cầu mua*** — không phải Thu mua; với luồng mua trực tiếp (đã biết rõ mặt hàng và giá), người có nhu cầu tạo YCMH thẳng. Trưởng phòng duyệt theo phòng ban.
 - **Yêu cầu báo giá / Khảo sát**: thu mua thu thập báo giá nhiều nhà cung cấp, chọn
   phương án. Khảo sát được duyệt mới dùng để lên đơn.
 
@@ -22,8 +22,8 @@ Luồng đúng khi ai đó cần xin báo giá / cần mua một mặt hàng:
 2. Gửi duyệt; trưởng bộ phận phê duyệt. Phiếu được duyệt mới chuyển sang **bộ phận Thu mua**.
 3. **Bộ phận Thu mua** là bên đi liên hệ nhà cung cấp, xin và so báo giá qua **Phiếu khảo
    sát**; khảo sát được duyệt thì các phương án hiện trên phiếu YCBG.
-4. **Người tạo YCBG** xem các phương án trên phiếu, chọn phương án cho từng dòng rồi bấm tạo
-   **Yêu cầu mua hàng (YCMH)**; YCMH được duyệt xong, **Thu mua** mới tạo **Đơn mua hàng**.
+4. **Người tạo YCBG** xem các phương án trên phiếu, chọn phương án cho từng dòng rồi bấm ***Tạo yêu cầu mua***
+   để sinh **Yêu cầu mua hàng (YCMH)**; YCMH được duyệt xong, **Thu mua** mới tạo **Đơn mua hàng**.
 
 Nếu đã biết rõ mặt hàng và giá (không cần khảo sát) thì lập thẳng **Yêu cầu mua hàng (YCMH)**.
 
@@ -49,6 +49,26 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 - ***Tên trên hóa đơn*** của dòng ĐMH: để **trống** thì hệ **tự điền từ danh mục Sản phẩm** (theo mã hàng) lúc lưu, lúc sao
   chép ĐMH và lúc nhập Excel. Đã gõ tên thì giữ nguyên; sản phẩm chưa khai tên trên hóa đơn thì ô vẫn trống (hệ không đoán từ tên hàng).
 - **Báo cáo mua hàng gom theo phòng hiện hành**: phòng đổi tên thì báo cáo hiện tên mới, không tách thành hai dòng.
+
+## Tên nút trên màn Thu mua (từ 09/11/2026, giao diện mới và cũ ghi giống nhau)
+
+Chỉ đường cho người dùng thì gọi đúng chữ trên nút dưới đây, đừng dùng tên cũ của giao diện mới (*Thêm mới*,
+*Lưu & gửi duyệt*, *Duyệt điều phối*, *Tạo đơn*, *Hủy đơn*, *Xem cả chuỗi chứng từ*).
+- Bốn danh sách YCMH, YCBG, Phiếu khảo sát, ĐMH: ***Thêm*** để lập phiếu; ***Nhân bản*** ở đầu trang bật cột *Thao tác*,
+  bấm ***Nhân bản*** trên dòng rồi đồng ý, xong bấm ***Xong***; tick dòng thì nút thành ***Xuất Excel (n)*** và chỉ xuất
+  phiếu đã tick (YCMH, ĐMH, YCBG).
+- Chi tiết YCMH: ***Lưu*** · ***Gửi duyệt*** (lưu rồi gửi) · ***Duyệt*** (trưởng bộ phận duyệt; thu mua bấm ***Duyệt*** lần
+  hai để điều phối, hộp tên *Duyệt điều phối*) · ***Tạo đơn mua hàng*** · ***Xóa phiếu***. Phiếu *Bị trả lại* / *Đã từ chối*
+  có ***Tạo yêu cầu báo giá*** (mở form YCBG điền sẵn dòng). Dòng hàng có ***Nhân đôi***, dưới bảng ***Thêm nhiều dòng***.
+  Sản phẩm đã đặt đủ thì hộp hỏi ***Chỉ SP còn thiếu*** hay ***Vẫn mua thêm***.
+- Chi tiết YCBG: ***Tạo yêu cầu mua*** · ***Xóa phiếu***; dòng có ***Nhân đôi***, ***Chi tiết / hình ảnh***. Màn
+  *Xử lý khảo sát*: tick nhiều báo giá rồi ***Thêm n dòng đã chọn làm option***; ***Xóa option***; ***Quay lại***; chốt
+  khi còn dòng rỗng bấm ***Chốt (n chốt rỗng)***.
+- Chi tiết Phiếu khảo sát: ***Duyệt*** (hộp hỏi lại, nút ***Duyệt phiếu***) · ***Bổ sung*** · ***Tải file lên*** · ***Xóa phiếu***.
+- Chi tiết ĐMH: đơn mới bấm ***Tạo***; ***Hủy*** (ẩn khi đơn có dòng Hoàn thành) · ***Xóa đơn*** · ***Hoàn thành*** /
+  ***Mở lại*** luôn hỏi lại; ***Thêm nhiều*** ở thẻ dòng hàng. *Hồ sơ chứng từ* chọn ở tiêu đề thẻ chứng từ (bấm ra menu).
+  Thẻ chứng từ có ***Chuỗi chứng từ (PYC/PKS)*** và ***Upload thêm file cho mục này***. Thẻ chi phí thu mua: ***Tạo YCTT***;
+  NCC chưa có khoản nợ hiện *Chưa thành công nợ*. Hộp tạo YCTT có tab ***Chi phí thu mua***.
 
 ## Ranh giới của trợ lý
 

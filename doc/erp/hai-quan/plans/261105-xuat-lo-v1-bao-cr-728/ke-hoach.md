@@ -56,7 +56,9 @@ Dữ liệu: bảng hải quan của máy local (18.243 dòng) nhân thêm hai b
 Kiểm đúng: sau ghi thật, 7 dòng có đúng giá mới, 5 dòng biến mất, dấu kiểm (CRC) của 49.988 dòng còn lại không đổi;
 sau hoàn tác, dấu kiểm cả bảng trùng hệt trước khi nạp (50.000 dòng).
 
-## 5. Điểm nghẽn còn lại (chưa sửa, cần quyết)
+## 5. Điểm nghẽn còn lại
+
+> **Cập nhật 05/11 — cả ba ý dưới đã xử lý ở bao-CR-733** (xem mục 5.1). Giữ nguyên văn để đối chiếu.
 
 - **Bộ nhớ tác vụ nạp ~1 GB cho tệp 50.000 dòng**: nền 250 MB + đọc tệp ~360 MB + `dedupe.load_existing` nạp mọi dòng
   trong khoảng ngày thành đối tượng ORM ~260 MB + so khớp ~110 MB. Worker local trần `mem_limit: 1g` → sát trần, dễ bị
@@ -66,6 +68,26 @@ sau hoàn tác, dấu kiểm cả bảng trùng hệt trước khi nạp (50.000
   trên màn mất ở các dòng đã sửa qua tệp. Nhỏ, chưa sửa.
 - Dữ liệu hoạt chất ĐÃ LƯU được gắn bằng thứ tự ngẫu nhiên cũ: lần nạp lại đầu tiên sau bản này có thể còn báo ghi đè
   ở các dòng tên hàng chứa hai tên thương mại. Bấm *Gắn lại nhãn* (thẻ Cấu hình) một lần sau khi lên môi trường là hết.
+
+### 5.1 Kết quả bao-CR-733 (05/11/2026)
+
+Cùng bảng thử 50.000 dòng, cùng MySQL 8.0 riêng (bộ đệm 256 MB), cùng script [`do-vong-xuat-nap.py`](do-vong-xuat-nap.py);
+số TRƯỚC đo trên mã erp-v2 74401971, số SAU trên mã bao-CR-733. Bộ nhớ là đỉnh của cả tiến trình (nền ~245 MB).
+
+| Ca | Bước | Trước | Sau |
+|---|---|---|---|
+| Nạp lại tệp xuất (sửa 7 dòng, xóa 5, 49.988 không đổi) | Chạy thử | 45,1 giây · 1.014 MB | 33,4 giây · 389 MB |
+| | Ghi thật | 41,1 giây · 1.014 MB | 33,6 giây · 391 MB |
+| Tệp 50.000 dòng mới (không ID; 47.769 thêm, 2.231 trùng trong tệp) | Chạy thử | 37,5 giây · 879 MB | 26,2 giây · 365 MB |
+| | Ghi thật | 55,3 giây · 879 MB | 42,9 giây · 365 MB |
+
+Kết quả từng lô (thêm / trùng / đã có / ghi đè / xóa) trùng khớp trước và sau; ghi đè đúng 7 dòng, xóa đúng 5, hoàn tác
+trả đủ. Bộ nhớ giảm ở năm chỗ: đọc tệp theo luồng không dựng cả lưới ô (~190 MB), dùng chung số và chữ lặp lại khi đọc
+(~100 MB), chỉ mục dòng sẵn có đọc theo khúc 2.000 dòng bằng câu Core và chỉ giữ mã có trong tệp (~260 MB), dòng có ID
+không đổi không còn bị giữ đối tượng ORM tới cuối lô và không bị thêm khóa (~150 MB), ô chuẩn để so xung đột chỉ tính khi
+cần. Ghi đè qua tệp giữ dấu đã vá ngày khi ngày không đổi. Dữ liệu hoạt chất cũ: script một lần
+`backend/scripts/gan_lai_hoat_chat_cr733.py` (chạy thử / `--apply`), thay cho bấm *Gắn lại nhãn*. Thiết kế:
+[`02-thiet-ke-ky-thuat.md`](../../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §4.5.
 
 ## 6. Chênh tính năng v2 / v1 còn lại (ngoài lô xuất) — chờ người chủ chọn
 

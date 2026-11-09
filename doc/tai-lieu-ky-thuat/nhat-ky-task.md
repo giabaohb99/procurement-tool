@@ -114,6 +114,181 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-741 | Giao diện mới Thu mua: đổi tên nút và hộp xác nhận cho khớp từng chữ giao diện cũ, bù các nút còn thiếu
+- status: xong
+- date: 2026-11-09
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đợt duoc-CR-737 đã xếp nút Thu mua đúng vị trí giao diện cũ nhưng giữ nhãn của giao diện mới, nên người dùng vẫn gặp tên nút lạ (**Thêm mới**, **Tạo đơn**, **Duyệt điều phối**, **Hủy đơn**, **Xóa**) và hộp xác nhận ghi chung **Xác nhận** / **Đóng**. Đã chốt ngày 09/11/2026 lấy giao diện cũ làm chuẩn từng chữ, kể cả các nhãn mới từng được chốt trước đó, và làm luôn các hộp hỏi lại cùng các nút giao diện cũ có mà giao diện mới thiếu. Các phân hệ khác giữ nguyên chữ hiện tại.
+
+**Đã làm**
+- Đổi tên nút ở bốn màn danh sách và chi tiết Yêu cầu mua hàng, Yêu cầu báo giá, Phiếu khảo sát, Đơn mua hàng: **Thêm**, **Gửi duyệt**, **Duyệt**, **Tạo đơn mua hàng**, **Tạo yêu cầu mua**, **Xóa phiếu**, **Xóa đơn**, **Hủy**, **Tạo**, **Vẫn mua thêm**, **Thêm nhiều dòng**, **Nhân đôi**, **Xóa option**, **Chuỗi chứng từ (PYC/PKS)**; tab **Chi phí thu mua** trong hộp tạo yêu cầu thanh toán.
+- Hộp lý do ghi đúng tên thao tác (**Trả về**, **Từ chối**, **Hủy duyệt**, **Hủy đơn**, **Tạm ngưng**) kèm nút **Hủy**; hộp xóa dùng tiêu đề và câu của giao diện cũ; gợi ý của nút biểu tượng chép đúng giao diện cũ.
+- Bù hành vi giao diện cũ có: hỏi lại trước khi duyệt Phiếu khảo sát, xóa dòng, hoàn thành và mở lại Đơn mua hàng, xóa option, chốt khảo sát, tải tệp; nút **Tạo yêu cầu báo giá** trên Yêu cầu mua hàng bị trả lại hoặc bị từ chối (điền sẵn phiếu báo giá, giữ đúng phòng ban); **Nhân đôi** dòng; **So sánh** ảnh; hộp nhập lý do khi đổi ngày dự kiến thay cho hộp của trình duyệt; **Thêm nhiều** dòng Đơn mua hàng; hỏi **Vẫn lưu** / **Quay lại sửa** khi ngày dự kiến lệch Yêu cầu mua hàng; ẩn **Hủy** khi đơn đã có dòng hoàn thành; nút **Tạm ngưng** / **Tiếp tục** / **Hủy** trong cửa sổ chi tiết dòng; chọn **Hồ sơ chứng từ** ở tiêu đề thẻ chứng từ; tick nhiều kết quả để **Thêm n dòng đã chọn làm option**; nút **Nhân bản** / **Xong** bật cột nhân bản ở danh sách; tick dòng để **Xuất Excel (n)**, Yêu cầu mua hàng và Yêu cầu báo giá nay xuất theo bộ lọc.
+- Khung nút xóa dùng chung có thêm tùy chọn nhãn, mặc định giữ nguyên; thẻ chứng từ chỉ đổi chữ ở màn Thu mua nên Đề nghị thanh toán, Duyệt dấu, Nhà cung cấp, Hải quan không đổi.
+- Rà mã phát hiện và đã sửa: nhân đôi hoặc xóa một dòng làm dấu tick trôi sang dòng khác nên **Xóa đã chọn** có thể xóa nhầm (nay bỏ hết tick); gắn nhiều option một lượt hiện nhiều thông báo và nạp lại dữ liệu nhiều lần (nay một thông báo tổng).
+- Đổi tên thư mục kế hoạch của duoc-CR-737 và duoc-CR-741 sang chữ thường cho đúng luật đặt tên tài liệu.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest phân hệ Thu mua, Tài chính, Duyệt dấu và khu giao diện dùng chung xanh; soát khổ 390 đầu trang Yêu cầu báo giá.
+
+**Không làm:** nút **Nhân bản** cả phiếu ở đầu trang chi tiết (đã bỏ ở duoc-CR-737) và nút **ĐMH liên quan** (đã dời vào thẻ Chứng từ liên quan ở bao-CR-422).
+
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/*`, `frontend-v2/src/modules/procurement/components/*`, `hooks/use-survey-request-process.ts`, `types/purchase-order-detail.ts`, `frontend-v2/src/shared/ui/delete-confirm-button.tsx`, `bulk-delete-button.tsx`.
+Kế hoạch: `doc/erp/thu-mua/plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md`.
+
+## duoc-CR-741-tai-lieu-hdsd | Đổi tên nút Thu mua trong bài hướng dẫn, cẩm nang trợ lý và tài liệu chức năng cho khớp giao diện cũ
+- status: xong
+- date: 2026-11-09
+- list: Sản xuất - Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đợt duoc-CR-741 đổi nhãn nút và hộp xác nhận của giao diện mới Thu mua về đúng chữ giao diện cũ (ví dụ
+*Thêm mới* thành *Thêm*, *Tạo đơn* thành *Tạo đơn mua hàng*, *Duyệt điều phối* thành *Duyệt*, *Hủy đơn* của đơn mua hàng
+thành *Hủy*). Mọi chỗ chỉ đường cho người dùng còn ghi tên cũ phải đổi theo, nếu không người dùng tìm không ra nút.
+
+**Đã làm**
+- Viết một script mới vá chữ trong các bài hướng dẫn Thu mua được dựng tay trên Trung tâm trợ giúp: script tìm bài theo
+  tiêu đề và thẻ cha, chỉ thay đúng các cụm chữ cũ đã khai, có chế độ chạy thử in ra bài nào đổi gì, chạy lại không đổi
+  thêm, rồi nạp lại kho tìm kiếm của Trợ lý AI cho đúng các bài vừa đổi.
+- Script đó đổi 14 bài ở máy local: nút **Xóa phiếu** của YCMH (yêu cầu mua hàng), YCBG (yêu cầu báo giá) và các bài bản
+  dành cho trưởng bộ phận; nút **Duyệt** khi thu mua điều phối; nút **Thêm** trên danh sách Phiếu khảo sát và Đơn mua hàng;
+  nút **Nhân bản** cả phiếu nay chỉ có ở màn danh sách (bỏ khỏi trang chi tiết từ duoc-CR-737) nên các câu chỉ đường
+  đều ghi rõ bấm ở màn danh sách; xuất Excel theo các phiếu đã tick; ô **Hồ sơ chứng từ** nay chọn ở tiêu đề thẻ chứng từ.
+  Script thêm đoạn ngắn cho các tính năng mới: **Tạo yêu cầu báo giá** từ YCMH bị trả lại hoặc bị từ chối, **Nhân đôi** dòng,
+  **So sánh** ảnh, **Thêm n dòng đã chọn làm option** ở màn Xử lý khảo sát và các nút trên đơn mua hàng.
+- Sửa ba bài hướng dẫn do script sở hữu (xử lý phương án, chi phí thu mua, báo cáo thực hiện) cho đúng tên nút mới rồi
+  dựng lại ở local hai lần.
+- Thêm mục tên nút Thu mua vào cẩm nang của Trợ lý AI và xuất bản phiên bản 3 của skill quy trình thu mua ở local.
+- Thêm mục **Tên nút theo bản v1** vào tài liệu chức năng Phiếu khảo sát, YCBG, YCMH, Đơn mua hàng; sửa tên nút cũ ở
+  mục lục chức năng, tài liệu báo cáo thực hiện, hai kịch bản kiểm thử tay và nhãn **Chi phí thu mua** ở tài liệu công nợ,
+  yêu cầu thanh toán.
+- Rà phần Trợ lý AI và cổng MCP: không có mô tả công cụ hay câu trả lời mẫu nào nhắc tên nút cũ của Thu mua nên không
+  phải sửa mã.
+
+**Kết quả:** ở máy local 14 bài dựng tay đã đổi, chạy lại script báo không còn gì để đổi; 12 bài kiểm đọc kho skill xanh;
+cổng kiểm tài liệu không có lỗi mới.
+
+**Còn lại:** sau khi deploy dev, chạy script vá chữ (chạy thử trước), ba script bài hướng dẫn đã sửa, xuất bản lại cẩm nang
+và nạp lại kho tìm kiếm trên dev; chưa commit.
+
+Mã nguồn: `backend/scripts/seed_help_thu_mua_doi_ten_nut_cr741.py`, `backend/scripts/seed_help_xu_ly_phuong_an.py`,
+`backend/scripts/seed_help_chi_phi_thu_mua.py`, `backend/scripts/seed_help_bao_cao_thuc_hien.py`,
+`backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`, `doc/erp/thu-mua/chuc-nang/`, `doc/erp/thu-mua/kiem-thu/`.
+
+## bao-CR-740-bot-ghi-lan-nhan-hang | Trợ lý ghi lần nhận hàng vào đơn mua hàng theo phiếu xuất kho của nhà cung cấp
+- status: xong
+- date: 2026-11-07
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+Nhân viên thu mua gửi ảnh phiếu xuất kho của nhà cung cấp cho ứng dụng AI gắn cổng MCP; AI đọc tên NCC, ngày, các dòng mã hàng và số lượng rồi gọi công cụ soạn nháp. Công cụ tự đề xuất chia vào các dòng đơn mua hàng đã duyệt còn thiếu hàng: đơn có cả chai và nắp của phiếu được xét trước, sau đó tới đơn cũ trước; dòng có lần giao đang chờ khớp số thì điền vào lần đó, không thì thêm lần giao mới. Giao dư không bị chặn nhưng được báo rõ dư bao nhiêu ở đơn nào; người dùng muốn chia khác thì AI soạn lại nháp. Người dùng đồng ý thì xác nhận, hệ thống kiểm lại quyền sửa và phạm vi từng đơn rồi ghi đúng như nút Lưu trên màn đơn mua hàng, sinh phiếu nhập kho, tồn kho và công nợ; lần giao cũ giữ nguyên, không xóa lần giao qua AI. Có thêm công cụ chỉ đọc liệt kê các dòng còn thiếu kèm các lần giao. Nhóm công cụ này tắt mặc định ở màn cấu hình cổng MCP.
+
+Kiểm: 11 bài kiểm mới (chia theo bộ, đơn cũ trước, giao dư, bỏ đơn nháp và đơn đã nhận đủ, ngoài phạm vi, ghi giống màn web, sửa lần giao đang chờ, vừa thêm vừa sửa, xác nhận hai lần không ghi đôi) cùng các bài canh cửa công cụ AI đều xanh.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py`, `backend/app/modules/agent_hub/draft_create.py`, `backend/app/modules/agent_hub/mcp.py`.
+
+## bao-CR-739-chi-tiet-ycmh-cho-nhan-vien | Mở màn Chi tiết YC mua hàng cho nhân viên, mã PYC ở Tiến độ đơn mua hàng bấm được
+- status: xong
+- date: 2026-11-07
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** nhân viên thường (vai trò **Nhân sự**) chỉ có quyền xem và tạo yêu cầu mua hàng của chính mình, không có quyền
+báo cáo, nên không mở được màn **Chi tiết YC mua hàng** để theo dõi dòng hàng mình yêu cầu đã được đặt chưa. Trên màn
+**Tiến độ đơn mua hàng**, mã PYC chỉ là chữ, không đi được sang phiếu gốc. Đã chốt phương án B ngày 07/11.
+
+**Đã làm**
+- Màn **Chi tiết YC mua hàng** (menu và đường API bảng dòng) mở cho người có quyền xem báo cáo HOẶC quyền xem yêu cầu mua
+  hàng; thiếu cả hai vẫn bị chặn. Người có quyền xem báo cáo giữ nguyên phạm vi phòng ban như cũ. Người chỉ có quyền xem
+  yêu cầu mua hàng thấy đúng các dòng trong phạm vi phiếu của mình: nhân viên thường chỉ thấy phiếu mình lập hoặc mình
+  đứng tên người yêu cầu, không thấy phiếu người khác cùng phòng.
+- Xuất Excel vẫn cần quyền xuất báo cáo và bản tổng hợp (biểu đồ) vẫn cần quyền báo cáo như cũ; nút xuất đã ẩn với người
+  thiếu quyền, mã ĐMH trong bảng chỉ bấm được khi có quyền xem đơn mua hàng.
+- Màn **Tiến độ đơn mua hàng** (cả giao diện cũ và ERP v2): mã PYC thành đường bấm sang chi tiết yêu cầu mua hàng khi người
+  xem có quyền xem yêu cầu mua hàng; đường API trả thêm id phiếu, phạm vi dữ liệu của màn không đổi.
+
+Kiểm: bài kiểm backend mới cho bảng dòng (nhân viên thấy đúng phiếu mình, người có quyền báo cáo giữ phạm vi cũ, không quyền
+bị chặn, xuất và tổng hợp vẫn chặn nhân viên) và cho id phiếu ở Tiến độ; bài kiểm cũ của báo cáo dòng YCMH, phạm vi thu mua,
+đồng bộ giao diện v2 vẫn xanh. Giao diện: kiểm kiểu v1 và v2, bài kiểm màn Tiến độ v2 thêm hai ca cho mã PYC.
+Mã nguồn: `backend/app/modules/report/service.py` (`pr_lines_uses_request_scope`, `_pr_lines_base_query`), `report/controller.py`, `purchase_progress/controller.py`, `frontend/src/layouts/AppLayout.tsx`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/routes.tsx`, `pages/purchase-progress-page.tsx`, `test/backend/test_chi_tiet_ycmh_cho_nhan_vien_cr739.py`
+
+---
+
+## bao-CR-735-chong-treo-prod | Chống treo prod: healthcheck, tự khởi động lại container treo, canh prod từ ngoài
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** mọi container prod tự lên lại khi **chết** (20 đến 30 giây), nhưng khi **treo** mà còn sống thì đứng mãi: chỉ
+CSDL có healthcheck, Docker không tự khởi động lại container hỏng healthcheck, và chưa có gì canh prod từ ngoài. Đã chốt
+ngày 05/11 cho prod tự khởi động lại khi treo và tự báo khi prod đứng.
+
+**Đã làm**
+- Healthcheck cho api, celery-worker, web, erp, help (bộ prod và bộ dev) và agent-api, agent-worker (cụm Agent Hub). api
+  gọi `/api/health`, lúc đang chạy migration và seed thì coi là khỏe để một migration dài không bị giết giữa chừng; celery
+  ping đúng worker của container qua Redis, worker bận việc dài vẫn trả lời; nginx kiểm trang tĩnh, không qua `/api`. Phải
+  hỏng 3 lượt liền mới tính là hỏng, để lúc sao lưu hay nạp lô lớn không bị giết oan.
+- Bộ tự chữa chạy trên máy chủ mỗi 30 giây: khởi động lại container hỏng có nhãn riêng, tối đa 3 lần mỗi giờ cho mỗi
+  container rồi thôi và báo **cần người xem**, báo Telegram mỗi lần tự chữa nếu máy có tệp khóa báo. Chọn script trong repo
+  thay vì image autoheal bên ngoài để không thêm image lạ cầm quyền điều khiển Docker (tương đương quyền root máy chủ).
+- Bộ canh prod chạy trên VPS 2 mỗi phút, gọi đúng tên miền người dùng gọi: hỏng 2 lượt liền thì báo một tin, còn hỏng thì
+  nhắc mỗi 60 phút, trả lời lại thì báo kèm số phút đứng; gửi tin hỏng thì lượt sau gửi lại.
+- Tài liệu vận hành mới kèm các bước cài tay trên prod và VPS 2.
+
+**Kết quả (đo trên dev):** treo cả container nginx thì sau 1 phút 31 giây bị đánh dấu hỏng, tự khởi động lại và phục vụ lại
+sau 2 phút 19 giây. Bộ canh gửi tin cảnh báo khoảng 2 phút sau khi dev đứng, không gửi lặp, gửi tin đã hồi ngay lượt kiểm
+đầu tiên sau khi hồi. Phát hiện uvicorn 0.30 đã tự thay worker api bị treo sau vài giây. Ước tính api treo cả container trên
+prod lên lại sau 2,5 đến 3 phút.
+
+**Còn lại:** cài lên prod theo tài liệu (dựng image mới trước, bật bộ tự chữa sau) và cài bộ canh trên VPS 2; lệnh cài
+systemd và tệp khóa báo chưa làm vì cần quyền cài dịch vụ trên máy chủ. celery-beat, agent-poller chưa có healthcheck.
+Chưa giả treo celery-worker dev. VPS 2 đứng thì không ai canh prod.
+
+Mã nguồn: `backend/healthcheck.py`, `backend/scripts/ops/autoheal.sh`, `backend/scripts/ops/prod_watch.py`,
+`backend/scripts/ops/systemd/`, `docker-compose.production.yml`, `docker-compose.dev.yml`, `docker-compose.agent-hub.yml`.
+Kiểm: `test/backend/test_chong_treo_cr735.py` (18 bài).
+Tài liệu: `doc/tai-lieu-ky-thuat/van-hanh/chong-treo-prod.md`.
+
+## bao-CR-733-bo-nho-nap-tra-cuu-thi-truong | Tra cứu thị trường: giảm bộ nhớ khi nạp tệp lớn, giữ dấu vá ngày khi ghi đè
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Hải quan
+**Bối cảnh:** lượt thử của bao-CR-728 cho thấy nạp lại tệp xuất 50.000 dòng đẩy tác vụ nền lên khoảng 1 GB bộ nhớ, trong
+khi prod chạy hai tác vụ nền cùng lúc trên máy chỉ còn khoảng 3,3 GB trống. Điều phối giao việc giảm bộ nhớ mà giữ nguyên
+kết quả chống trùng, kèm hai việc nhỏ: ghi đè qua tệp làm mất dấu lịch cam (ngày đã vá), và xét có cần gắn lại nhãn hoạt
+chất sau bao-CR-728 không.
+
+**Đã làm**
+- Viết bài kiểm **chụp kết quả** trên mã cũ trước khi sửa: một kịch bản đủ các ca (trùng hẳn, trùng trong tệp, nghi sửa
+  giá, cùng tờ khai giá lượng có và không xung đột, ghi đè theo ID, ID không có, xóa đúng và xóa hỏng, hỏng ngày, dải nhiều
+  ngày, nhãn hoạt chất), so từng con số của lô, từng dòng nhật ký và mọi cột của mọi dòng sau chạy thử và ghi thật. Bài này
+  đạt trên mã cũ và vẫn đạt sau khi sửa.
+- Bước chống trùng đọc dòng sẵn có **theo khúc 2.000 dòng**, chỉ các cột cần, và chỉ giữ mã có trong tệp; ô chuẩn để so
+  xung đột chỉ đọc lại khi thật cần. Dòng có ô ID được tra theo cụm 1.000 và chỉ giữ dòng sắp ghi đè hoặc xóa để chụp.
+- Bộ đọc tệp đọc **từng dòng** thay vì dựng cả lưới ô, số và chữ lặp lại dùng chung một bản; nhật ký từng dòng và gói chèn
+  dòng mới dựng theo khúc.
+- Ghi đè theo ID mà ngày không đổi thì **giữ dấu đã vá ngày** của dòng cũ.
+- Tìm ra vì sao lô sửa 7 dòng mà báo ghi đè 11 dòng: hoạt chất đã lưu của dòng có tên hàng chứa hai tên thương mại được
+  gắn theo thứ tự ngẫu nhiên cũ, nạp lại thì bộ gắn mới (ổn định) ra giá trị khác nên dòng không sửa cũng thành **Ghi
+  đè**. Viết script chạy một lần để gắn lại, có chế độ chạy thử đếm số dòng sẽ đổi, chỉ ghi dòng khác, chạy lại ra 0.
+
+**Kết quả:** đo ở máy local trên bảng 50.000 dòng, MySQL riêng: nạp lại tệp xuất từ 45 giây và 1.014 MB xuống 33 giây và
+389 MB (chạy thử), ghi thật từ 41 giây và 1.014 MB xuống 34 giây và 391 MB; tệp 50.000 dòng mới từ 879 MB xuống 365 MB,
+nhanh hơn 11 đến 12 giây. Số dòng thêm, trùng, đã có, ghi đè, xóa trùng khớp trước và sau; hoàn tác trả đủ. 369 bài kiểm
+hải quan đạt, ruff sạch. Đã đẩy lên erp-v2, chưa lên dev và prod.
+
+**Còn lại:** sau khi bản này lên prod, chạy script gắn lại hoạt chất một lần (chạy thử trước, xem số dòng rồi mới ghi
+thật). Nút **Gắn lại nhãn** trên màn vẫn đọc cả bảng một lần trong tiến trình API, chưa đổi.
+
+**Bài kiểm đỏ ngoài phạm vi (kiểm ngày 05/11):** một lần lỡ chạy cả bộ bài kiểm backend ra 8 bài đỏ, đều ngoài phần hải
+quan. Chạy riêng trên mã prod và trên erp-v2 cho thấy không bài nào do việc này gây ra. Năm bài phân vùng nhật ký đỏ sẵn
+từ bao-CR-732 (gọi hàm dump đã đổi tên) và đã được sửa riêng. Bài hồ sơ trường riêng chỉ đỏ vì lần chạy đó thiếu thư mục
+giao diện. Bài **tệp quá 20 MB không trích** xanh khi chạy riêng, nghi chập chờn do thiếu bộ nhớ khi chạy cả bộ ba luồng
+trong 2 GB, chưa sửa. Bài thứ tám không còn ghi được tên vì nhật ký bị cắt.
+
+Mã nguồn: `backend/app/modules/customs/dedupe.py`, `importer.py`, `reader.py`, `row_log.py`, `ingredient.py`
+(`retag_changed`), `backend/scripts/gan_lai_hoat_chat_cr733.py`.
+Kiểm: `test/backend/test_chup_ket_qua_chong_trung_cr733.py`, `test/backend/du_lieu_chup_chong_trung_cr733.py`.
+
 ## bao-CR-734 | Đồng bộ màn Tra cứu thị trường giao diện cũ với giao diện mới
 - status: xong
 - date: 2026-11-05
@@ -18634,6 +18809,7 @@ Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLE
 - Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 **Rà 05/11/2026 (còn tồn):** bắt đầu 05/11 theo từng phân hệ (Thu mua, Nhân sự / Nghỉ phép, Tra cứu thị trường, Quản trị trước); nhận thêm bài hướng dẫn cho các màn của kh-AI1-1-hdsd và mục X bài lập bộ tài khoản của kh-tai-lieu-agc.
 **Bước 0 (05/11/2026):** thêm script `backend/scripts/dung_bang_api.py` dựng lại bảng mục 1 của mọi api.md từ mã, chạy lại nhiều lần không đổi gì, giữ cột Phạm vi / Ai gọi ghi tay, tự dò cột Ai gọi từ frontend-v2 và cổng MCP; ghi lệnh chạy vào luật tài liệu. Bộ dựng CRUD chung có câu mô tả tiếng Việt cho bảy đường (148 đường sinh ra). Kết quả: 1.002 dòng ở 12 api.md, cột Ai gọi có chữ ở 816 dòng (trước gần như trống), ô Mục đích còn tên hàm tiếng Anh giảm còn 477. Chín ô Mục đích ghi tay chi tiết chuyển xuống mục 2 của api.md Tra cứu thị trường và Nền tảng. Vá kèm bài đếm db.get đỏ sẵn sau bao-CR-727.
+**Cụm Thu mua (05/11/2026):** thêm câu mô tả tiếng Việt cho 105 đường API Thu mua còn thiếu (YCBG, YCMH, phiếu khảo sát, ĐMH, YCTT, công nợ, NCC, hợp đồng, phân công, tiến độ, lịch sử mua, Báo cáo thực hiện); api.md Thu mua dựng lại, hết ô Mục đích mang tên hàm. Tài liệu chức năng Thu mua: cột Trạng thái ghi có trên prod 05/11 theo main trùng erp-v2, mã vai trò lấy từ seed (người yêu cầu employee, trưởng bộ phận dept_head, kế toán không có vai trò chuẩn). Bài HDSD mới Báo cáo thực hiện trên YCBG và Đơn mua hàng; bài Lập bộ tài khoản phòng tự mua hàng thêm mục X Bộ tài khoản cho một công ty con; cả hai đã nạp dev và nạp lại chỉ mục (156 bài). Tài liệu 19 ghi phần giao diện đổi sau bản 1.0. Chưa soát màn ERP bằng trình duyệt vì phiên đăng nhập dev đã hết; bài viết theo nhãn trong mã.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong
@@ -18966,3 +19142,320 @@ Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test
 **Còn lại:** dòng nhật ký cũ đã ghi trước khi sửa vẫn nằm dưới tên loại nghỉ (chỉ có ở máy local và dev); ba điểm nhỏ ghi trong báo cáo test chưa sửa.
 
 Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx · crud-detail-page.tsx · types.ts · backend/app/core/crud.py · backend/app/modules/leave/policy_controller.py · catalog_controller.py · backend/app/modules/audit/controller.py
+
+## duoc-CR-719 | Thanh toán nghỉ phép: đổi ngày phép chưa nghỉ ra tiền khi cuối năm hoặc nghỉ việc
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu làm chức năng thanh toán nghỉ phép, ai lập phiếu thì làm y như nexterp. Bốn ý đã chốt: bật theo từng loại nghỉ kèm trần, dùng cho phép dư cuối năm và cho người nghỉ việc (Bộ luật Lao động Điều 113 khoản 3); phiếu chỉ ghi số ngày, số tiền do kế toán nhập sau để không lộ lương; duyệt xong trừ quỹ phép và sinh YCTT (yêu cầu thanh toán) ở phân hệ Tài chính. Chín quyết định của kế hoạch đều theo phương án (a).
+
+**Đã làm**
+- Danh mục *Loại nghỉ* có thêm nhóm ô *Thanh toán nghỉ phép*: công tắc *Cho phép thanh toán nghỉ phép* (chỉ dùng được khi loại nghỉ trừ quỹ), ô *Tối đa mỗi năm (ngày)* và ô *Số ngày phải giữ lại*.
+- Thêm mục menu *Thanh toán nghỉ phép* trong Nghỉ phép với khóa quyền riêng: nhân viên lập phiếu cho chính mình, phòng Nhân sự lập hộ, duyệt và hủy; trưởng bộ phận và trưởng công ty chỉ xem; không ai tự duyệt được phiếu của chính mình. Mỗi người, mỗi loại nghỉ, mỗi năm chỉ có một phiếu còn hiệu lực; năm quỹ là năm nay hoặc năm trước.
+- Form lập phiếu có hộp *Số ngày được thanh toán* tính sẵn từng bước: cuối năm thì lấy số còn lại trừ phần mang sang chưa dùng và số ngày phải giữ lại, không vượt trần năm; nghỉ việc thì trả hết số chưa nghỉ, không trần, nhưng hồ sơ phải có ngày nghỉ việc. Kết quả làm tròn xuống nửa ngày.
+- Gửi duyệt thì giữ chỗ số ngày; duyệt xong số ngày bị trừ khỏi quỹ (cột mới *Đã thanh toán ra tiền* ở Quỹ phép năm và báo cáo) và hệ tạo một YCTT nháp loại *Thanh toán nghỉ phép* cho đúng nhân sự đó, kế toán nhận chuông nhập số tiền.
+- YCTT nghỉ phép có khung riêng bên Tài chính: chỉ nhập một số tiền, không gửi duyệt được khi bằng 0, không xóa, không hoàn tiền, không gắn công nợ. Chỉ người vừa có quyền YCTT vừa xem được phiếu nghỉ phép đó mới thấy loại YCTT này, để giữ kín lương; bản in chỉ in số tài khoản khi người in xem được thông tin nhạy cảm của nhân sự, không thì in chữ **kế toán tự điền**.
+- Hủy phiếu đã duyệt chỉ được khi YCTT còn nháp hoặc đã bị từ chối. Kế toán từ chối chi thì phiếu vẫn ở trạng thái đã duyệt, màn hình hiện băng vàng **Kế toán từ chối chi** để phòng Nhân sự hủy phiếu trả ngày về quỹ; người được thanh toán nhận chuông khi đã chi.
+- Trợ lý AI đọc được số ngày đã thanh toán, các phiếu và luật của từng loại nghỉ, không bao giờ trả số tiền; cẩm nang AI Nghỉ phép thêm mục hướng dẫn trả lời câu hỏi được thanh toán mấy ngày phép, đã xuất bản phiên bản 8 trên máy local.
+- Viết bài hướng dẫn mới *Thanh toán nghỉ phép*, sửa bài số phép còn lại, bài quỹ phép, bài loại nghỉ và bài phân quyền; thêm bài *Yêu cầu thanh toán nghỉ phép: nhập số tiền và chi* cho kế toán. Viết mục 16 của tài liệu chức năng Nghỉ phép, thêm nguồn mới vào tài liệu Yêu cầu thanh toán, đánh dấu chức năng này đã có trong tài liệu nghiên cứu nexterp, thêm luật cho trợ lý lập trình.
+
+**Kết quả:** 88 bài kiểm máy chủ mới của CR này xanh (16 bài nền, 37 bài YCTT nguồn nghỉ phép, 35 bài phiếu thanh toán), cùng các bộ kiểm phạm vi dữ liệu, YCTT và nghỉ phép liên quan; giao diện kiểm tra kiểu và kiểm lỗi cú pháp sạch, bộ kiểm phân hệ Nhân sự và Tài chính xanh. Cả vòng lập, duyệt, nhập tiền, từ chối chi, hủy phiếu đã chạy thử trên trình duyệt ở máy local. Hai script hướng dẫn chạy lại không lỗi (cây Nghỉ phép 15 bài, mọi liên kết chéo trỏ đúng bài). Commit lên erp-v2 ngày 05/11/2026 sau khi anh Được duyệt; khi ghép với nhánh chung, migration lvenc719 thành hai đầu với nhánh gửi lại thư và sao lưu (bao-CR-727, bao-CR-732) nên thêm migration gộp mrg719x732 không đổi bảng nào, và nâng số đếm lượt đọc thẳng của bài kiểm phạm vi từ 99 lên 100.
+
+**Còn lại:** chưa nạp lại kho tìm kiếm trợ giúp vì máy local tắt cờ RAG, sẽ chạy trên dev lúc deploy cùng script xuất bản cẩm nang; trên dev và prod phải tick quyền thanh toán nghỉ phép cho các vai trò, nhất là quyền xem phạm vi công ty cho vai trò Kế toán, không thì bên Tài chính không thấy YCTT nghỉ phép nào.
+
+Mã nguồn: backend/app/modules/leave/encashment_*.py · catalog_model.py · balance_model.py · constants.py · payment_request/hr_payout_guard.py · leave_encashment_payout.py · core/scoping.py · approval/self_approval_policy.py · assistant/tools/leave_encashment_tool.py · migration lvenc719 · frontend-v2/src/modules/hr (leave-encashment-*, leave-type-encashment-fields) · modules/finance (payment-request-leave-encashment-*) · backend/scripts/seed_help_nghi_phep.py · seed_help_yctt_thanh_toan_nghi_phep.py · ai_skill/seed_handbook/40-nghi-phep.md · doc/erp/hrm/02-nghi-phep.md
+
+## duoc-CR-720 | Thu mua trên điện thoại: các bảng còn lại đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu nghiên cứu đổi các bảng của phân hệ Thu mua sang dạng thẻ khi xem trên điện thoại. Mười một màn danh sách và bảng dòng của YCMH, YCBG, Phiếu khảo sát đã có thẻ từ duoc-CR-394; đợt này làm nốt khoảng ba mươi bảng còn cuộn ngang. Màn rộng từ 768px trở lên giữ nguyên bảng.
+
+**Đã làm**
+- Chi tiết ĐMH: dòng hàng thành thẻ có tên hàng, SL nhân giá, thành tiền đủ chữ số, trạng thái tiến độ cùng các nút tạm dừng, tiếp tục, hủy; dòng còn sửa được thì chọn hàng, nhập SL đặt, đơn giá, VAT ngay trên thẻ, các ô khác sửa qua hộp chi tiết dòng; giữ ô tick chọn để xóa nhiều dòng. Các lần giao, chi phí thu mua, chi phí theo dòng hàng, thanh toán theo NCC, YCTT của đơn và hộp Tạo YCTT cũng thành thẻ, giữ dòng tổng cộng.
+- YCMH và YCBG: phương án ở màn xử lý, kết quả khảo sát chọn được, chứng từ liên quan và hộp lịch sử mua hàng thành thẻ; mã phiếu vẫn bấm sang phiếu khác được. Thẻ lịch sử mua hàng in giá số trơn như bảng, không gắn chữ đồng vì giá ĐMH nhập khẩu lưu bằng nguyên tệ.
+- Báo cáo: chi tiết chi phí vận chuyển, chi phí theo ngày, tiến độ theo dòng hàng và bảng hồ sơ cần có của Báo cáo thực hiện thành thẻ. Dạng xem Bảng của Báo cáo thực hiện (bảng tính 14 cột) không làm thẻ: trên điện thoại màn tự lùi về dạng Xem tổng, lựa chọn đã lưu không mất.
+- Tra cứu thị trường: mười chín bảng (dòng tờ khai, thuốc BVTV, phạm vi sử dụng, hóa chất theo văn bản, doanh nghiệp nhập khẩu, so sánh, số liệu dưới biểu đồ, biểu thuế, lịch sử nạp, nhật ký lô, bốn danh mục cấu hình) thành thẻ, nhiều bảng cùng kiểu dùng chung một thẻ.
+- Sửa kèm: hàng ba nút ở trạng thái chưa có Báo cáo thực hiện tràn hai mép trên điện thoại, nay xuống dòng; tiêu đề Chi phí thu mua bị bóp mỗi chữ một dòng; câu nhắc sửa đơn đã duyệt đổi theo khổ màn hình.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 123 tệp 1188 bài xanh. Soát bằng trình duyệt giả lập 390x844 trên ĐMH 348, 358, 37, PO00360, YCMH 86, YCBG 2927, Báo cáo mua hàng và Tra cứu thị trường (mục Pháp lý, Thuốc BVTV, Cấu hình). Các màn chưa có dữ liệu ở máy local (dòng tờ khai, doanh nghiệp, so sánh, biểu thuế, lịch sử nạp) mới có bài kiểm phủ, cần xem lại trên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components (purchase-order-*-card, process-option-card, available-survey-line-card, linked-*-card, purchase-history-card, report-*-card, survey-report/report-item-progress-card, customs/customs-*-card), pages/customs-price-page.tsx, pages/purchase-order-detail-page.tsx
+
+## duoc-CR-720-b | Thu mua trên điện thoại: rà bảng trong màn chi tiết, đổi nốt tab Giá vốn nhập khẩu
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được nhắc các bảng bên trong màn chi tiết của phân hệ Thu mua cũng phải hiện tốt trên điện thoại.
+
+**Đã làm**
+- Mở mười hai màn chi tiết (YCMH, màn xử lý YCMH, YCBG, Phiếu khảo sát, ĐMH, chuỗi chứng từ ĐMH, Phân công ngành hàng, Loại chi phí) ở khổ 390px: không còn bảng hay khung cuộn ngang nào. Soát mã theo từng bảng, kể cả hộp thoại và component dùng chung nhúng vào các màn đó: chỉ còn sót tab Giá vốn nhập khẩu của Báo cáo mua hàng.
+- Tab Giá vốn nhập khẩu: dạng Theo lô hàng thành mỗi lô một thẻ (nhà cung cấp, mã đơn, ngày, tờ khai, tỷ giá, số lượng, khối lượng, tiền hàng, chi phí theo từng loại khác 0, tổng giá vốn, giá vốn theo kg), thẻ TỔNG ở cuối; dạng Chi tiết theo dòng hàng thành mỗi dòng một thẻ, thẻ TỔNG không có giá vốn theo đơn vị tính. Trang in giữ nguyên bảng.
+- Các trang in và bảng tính của Báo cáo thực hiện cố ý giữ bảng: trang in là khổ giấy A4, bảng tính đã tự lùi về dạng Xem tổng trên điện thoại.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 1195 bài xanh.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components (import-landed-cost-cards, import-landed-cost-card-parts, report-import-landed-cost-tab)
+
+## duoc-CR-721 | Nhân sự trên điện thoại: các bảng còn lại đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu làm phân hệ Nhân sự giống Thu mua: các bảng phải hiện tốt trên điện thoại. Danh sách nhân sự, phòng ban, pháp nhân, nghỉ phép, quỹ phép, phòng họp đã có thẻ từ trước; đợt này làm nốt mười bốn bảng còn cuộn ngang. Màn rộng từ 768px trở lên giữ nguyên bảng.
+
+**Đã làm**
+- Hồ sơ và hợp đồng: tab Hợp đồng trong hồ sơ nhân sự (lương chỉ hiện khi có quyền xem hợp đồng, đủ thao tác của nút ba chấm), Quá trình công tác và Quyết định bổ nhiệm dùng chung một thẻ, quyền mặc định của chức vụ, danh mục mẫu hợp đồng, danh sách biến mẫu hợp đồng, danh sách duyệt sửa hồ sơ và khối so sánh hộ gia đình (vẫn xếp Lúc gửi, Hiện tại, Đề nghị; ô trống in gạch ngang).
+- Nghỉ phép và phòng họp: danh sách phiếu nghỉ bù, hộp đối chiếu kết sổ năm (số cũ, số mới, phần chênh, phần chuyển sang năm sau), tab Đang phân bổ của chính sách, bảng xem trước phân bổ hàng loạt (giữ ô chọn và nút chọn tất cả), lịch Sắp tới và Đã qua của chi tiết phòng họp. Thẻ trong trang của chính một phòng hay một chính sách thì không lặp tên phòng, tên chính sách.
+- Cố ý giữ bảng: hai trang in (thông tin nhân sự, phiếu nghỉ) và lưới lịch trực. Danh sách Thanh toán nghỉ phép thuộc duoc-CR-719 chưa commit nên chưa làm.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ nhân sự 1591 bài xanh. Quét hai mươi sáu màn nhân sự trên dev ở khổ 390px trước khi sửa để tìm bảng còn cuộn ngang; chỗ cuộn ngang còn lại chỉ là thanh tab, cố ý vuốt được.
+
+Mã nguồn: frontend-v2/src/modules/hr/components (profile-change-request-card, change-request-family-member-card, labor-contract-card, work-history-card, job-position-role-card, labor-contract-template-card, labor-contract-variable-card, leave-comp-request-card, leave-close-year-review-card, leave-policy-bulk-preview-card), utils/format-close-year-days.ts
+
+## duoc-CR-721-b | Nhân sự trên điện thoại: danh sách Thanh toán nghỉ phép đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** lượt duoc-CR-721 chừa lại danh sách Thanh toán nghỉ phép vì duoc-CR-719 chưa commit. Anh Được duyệt commit duoc-CR-719 và bảo làm nốt; hai trang in và lưới lịch trực giữ bảng như đã chốt.
+
+**Đã làm**
+- Danh sách phiếu thanh toán nghỉ phép ở khổ dưới 768px hiện thành thẻ: người được thanh toán lên đầu, số phiếu và mã nhân sự ở dòng phụ, loại nghỉ, năm quỹ, lý do và số ngày gom một dòng, chữ Cần bạn duyệt khi phiếu đang chờ người xem. Trạng thái chi đọc từ yêu cầu thanh toán đứng dòng riêng; kế toán từ chối chi thì nổi màu vàng như cột của bảng. Thẻ không bao giờ in số tiền.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest các phân hệ Nhân sự, Tài chính, Phê duyệt, Quản trị 2453 bài xanh; bài kiểm của thẻ chặn việc in số tiền.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/leave-encashment-card.tsx, pages/leave-encashment-list-page.tsx
+
+## duoc-CR-722 | Đặt xe trên điện thoại: danh sách phiếu và hàng chờ đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được bảo làm tiếp phân hệ Đặt xe giống Thu mua và Nhân sự: các bảng phải hiện tốt trên điện thoại. Quét mười một màn Đặt xe trên dev ở khổ 390px trước khi sửa: chỉ danh sách phiếu còn bảng cuộn ngang (mười cột, rộng khoảng 1460px), và trang chi tiết phiếu bị kéo rộng 622px.
+
+**Đã làm**
+- Danh sách phiếu đặt xe và khối hàng chờ ở trang Tổng quan dùng chung một thẻ ở khổ dưới 768px: mục đích chuyến lên đầu kèm huy hiệu trạng thái, loại và mã phiếu ở dòng phụ, thời gian, lộ trình gồm cả điểm dừng, người tạo cùng xe và tài xế (tự lái hoặc chưa bố trí xe thì nói thẳng), ghi chú chặng duyệt. Khối hàng chờ bỏ dòng người tạo và xe vì bảng của khối đó cũng không có hai cột này.
+- Nút Nhân bản ở cột Thao tác của danh sách không đặt được trong thẻ (cả thẻ là vùng chạm mở chi tiết), nên thêm nút Nhân bản lên đầu trang chi tiết phiếu, chỉ hiện khi có quyền tạo phiếu.
+- Sửa đầu trang chi tiết phiếu: dòng chặng duyệt nằm trong khối không co được nên kéo cả trang rộng 622px trên máy 390px; nay khối đó xuống dòng ở khổ điện thoại, khổ rộng giữ nguyên.
+- Giữ bảng: hai bảng thống kê theo xe và theo tài xế ở Tổng quan (ba cột, vừa khung), lịch tháng và trang in.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh, có bài kiểm thẻ không chứa nút nào.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components (vehicle-booking-card, booking-queue-table, booking-detail-header), pages (vehicle-booking-list-page, vehicle-booking-detail-page)
+
+## duoc-CR-722-b | Đặt xe trên điện thoại: bố trí lại đầu trang chi tiết phiếu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được báo đầu trang chi tiết phiếu đặt xe vỡ giao diện trên điện thoại sau lượt duoc-CR-722: tiêu đề bị bóp chỉ còn một dấu chấm vì hàng nút (Điều phối, ba chấm, In phiếu, Nhân bản) chiếm hết hàng, và yêu cầu bố trí lại cho hợp.
+
+**Đã làm**
+- Nguyên nhân: tiêu đề khai co giãn với nền rộng bằng 0 nên khi hàng nút đầy, trình duyệt bóp tiêu đề về 0 thay vì đẩy nút xuống dòng; nút Nhân bản thêm ở lượt trước làm lộ lỗi.
+- Khổ dưới 768px nay đọc từ trên xuống: nút quay lại cạnh tiêu đề, rồi loại, mã, trạng thái, chặng duyệt, thời gian, lộ trình, xe; dải nút thao tác xuống cuối, ngăn bằng một đường kẻ, nằm một hàng. Hai nút phụ In phiếu và Nhân bản chỉ còn biểu tượng (vẫn có nhãn cho trình đọc màn hình và khi rê chuột). Đổi bằng CSS nên cụm nút không bị dựng hai lần. Khổ rộng giữ nguyên.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt ở khổ 390px và 1440px với phiếu DX001987.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-722-c | Đặt xe trên điện thoại: làm lại đầu trang chi tiết phiếu kiểu đầu trang ứng dụng
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được xem bản bố trí ở lượt b và chê xấu: dải thông tin thụt lề dưới nút quay lại, nút In phiếu và Nhân bản thành mấy ô vuông nhỏ đứng lẻ, cả khối không có điểm nhấn.
+
+**Đã làm**
+- Khổ dưới 768px dựng theo kiểu đầu trang ứng dụng: thanh trên cùng có nút quay lại bên trái, In phiếu và Nhân bản dạng biểu tượng bên phải cùng cỡ; tiêu đề trải hết bề ngang; loại, mã, trạng thái và chặng duyệt; thời gian, lộ trình, xe gom trong một khung nền trắng; nút quyết định (Điều phối, Duyệt…) giãn hết bề ngang ở cuối, nút ba chấm bên cạnh. Người xem không có nút quyết định nào thì không chừa khe trống.
+- Đầu trang nhận hai nhóm nút riêng (nút quyết định và công cụ phụ) và xếp bằng lưới có đặt tên vùng, mỗi khổ một kiểu, nên nút chỉ dựng một lần. Khổ rộng giữ nguyên như cũ.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt khổ 390px và 1440px với phiếu đã duyệt DX001987 (có nút Điều phối) và phiếu chờ duyệt DX001984 (không có nút quyết định), khung tóm tắt thẳng mép với dải nút, trang không cuộn ngang.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-722-d | Đặt xe trên điện thoại: gom nút thao tác lên thanh trên cùng của trang chi tiết
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được chê nút Điều phối giãn hết bề ngang ở lượt c là xấu. Đưa ba hướng kèm hình minh họa (gom lên thanh trên, thanh nút dính đáy màn, gộp hết vào nút ba chấm), anh chọn gom lên thanh trên.
+
+**Đã làm**
+- Khổ dưới 768px: nút quay lại bên trái, nút quyết định cỡ thường có chữ, nút ba chấm, In phiếu và Nhân bản dạng biểu tượng cùng nằm trên một hàng trên cùng; bên dưới là tiêu đề trải ngang, loại, mã, trạng thái và khung tóm tắt chuyến. Bỏ hàng nút giãn hết bề ngang ở cuối. Người không có nút quyết định thì hàng trên chỉ còn nút quay lại và hai công cụ. Khổ rộng giữ nguyên.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát khổ 390px (DX001987 có nút Điều phối, DX001984 không có nút quyết định) và 1440px, trang không cuộn ngang.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-723 | Giao diện thu mua cũ: bóng đỏ đếm phiếu chờ duyệt trên menu trái và thẻ Đơn mua hàng chờ duyệt
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** phiếu hỗ trợ TK06112601 của anh Đoàn Minh Khôi (Dego Organic), anh Được giao làm thẳng trên giao diện thu mua cũ (thumua). Đây là ngoại lệ mở giao diện cũ đang đóng băng theo yêu cầu trực tiếp của anh Được, cùng tiền lệ bao-CR-734. Phiếu đang giao cho anh Bảo nhưng chưa có mã nào cho nó trên nhánh chung.
+
+**Đã làm**
+- Thêm đường API đếm số phiếu đang chờ duyệt cho menu trái: Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng và Phiếu khảo sát, đếm trong phạm vi dữ liệu của người xem như thẻ thống kê Trang chủ; mục người xem không có quyền đọc thì không trả về. Bốn câu đếm, số truy vấn cố định.
+- Menu trái của giao diện cũ hiện bóng tròn nền đỏ chữ trắng ở góc trên bên phải biểu tượng bốn mục đó khi có phiếu chờ duyệt, quá 99 thì ghi 99+. Số được nạp lại mỗi khi đổi trang và mỗi 60 giây.
+- Trang chủ đổi thẻ Đơn hàng hoạt động (POs) thành Đơn mua hàng chờ duyệt (POs), bấm vào ra danh sách đơn đang chờ duyệt; API Trang chủ trả thêm số đơn chờ duyệt, giữ số cũ vì giao diện mới và báo cáo còn đọc.
+
+**Kiểm:** ba bài kiểm máy chủ mới (chỉ đếm phiếu chờ duyệt, vắng khóa khi thiếu quyền, số menu khớp thẻ Trang chủ) cùng các bài kiểm Trang chủ và các bài canh toàn bộ đường API đều xanh; ruff không lỗi; kiểm tra kiểu giao diện cũ không thêm lỗi mới (bảy lỗi có sẵn đều ở tệp khác).
+
+Mã nguồn: backend/app/modules/dashboard (menu_badge_service.py, controller.py: đường /api/dashboard/menu-badges, kpi po_pending), frontend/src (hooks/useMenuBadges.ts, components/NavIcon.tsx, layouts/AppLayout.tsx, pages/Dashboard.tsx, index.css), test/backend/test_bong_dem_cho_duyet_menu_cr723.py
+
+## duoc-CR-723-b | Bóng đếm chờ duyệt: thêm chỉ mục trạng thái và dừng gọi khi tab ẩn
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được hỏi đếm nhiều có làm chậm không. Đo trên dev: bốn câu đếm mất khoảng 5 mili giây, nhưng phiếu khảo sát không có chỉ mục trên cột trạng thái nên phải quét cả bảng, yêu cầu mua hàng và đơn mua hàng chỉ có chỉ mục ghép không dùng được cho câu đếm này. Anh duyệt làm cứng thêm cho lâu dài.
+
+**Đã làm**
+- Migration thêm chỉ mục cột trạng thái cho phiếu khảo sát, yêu cầu mua hàng và đơn mua hàng, chỉ tạo khi chưa có nên chạy lại được; khai chỉ mục trên model cho khớp. Sau khi thêm, cả bốn câu đếm đều tra thẳng qua chỉ mục, chỉ đọc đúng các dòng chờ duyệt.
+- Giao diện cũ không gọi đếm định kỳ khi tab trình duyệt đang ẩn, quay lại tab thì nạp ngay một lần.
+
+**Kiểm:** migration chạy lên, xuống, lên lại trên máy local; bài kiểm bóng đếm và Trang chủ xanh; kiểm tra kiểu giao diện cũ không thêm lỗi mới.
+
+Mã nguồn: backend/migrations/versions/stix723_chi_muc_trang_thai_dem_cho_duyet.py, model status của survey / purchase_request / purchase_order, frontend/src/hooks/useMenuBadges.ts
+
+## duoc-CR-723-c | Giao diện mới: viên số chờ duyệt trên menu Thu mua và thẻ Đơn mua hàng chờ duyệt
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được bảo giao diện mới cũng làm thông báo giống giao diện cũ ở phân hệ Thu mua, nối tiếp phiếu hỗ trợ TK06112601.
+
+**Đã làm**
+- Bốn mục menu Thu mua (Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng, Phiếu khảo sát) có viên số nền đỏ chữ trắng ở cuối dòng, đếm phiếu đang chờ duyệt, dùng chung đường API đếm của giao diện cũ và đúng khuôn viên số có sẵn của menu (không có việc thì không hiện, quá 99 ghi 99+). Cả bốn viên dùng chung một lượt gọi, nạp lại khi đổi trang và mỗi 60 giây chỉ khi tab đang hiện; khóa bộ nhớ đệm nằm dưới nhánh Thu mua nên duyệt phiếu xong số tự nạp lại theo.
+- Tổng quan Thu mua đổi thẻ Đơn hàng hoạt động thành ĐMH chờ duyệt, câu gợi ý theo vai như thẻ YCMH chờ duyệt.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi; ba bài kiểm mới (mỗi mục đúng số của nó từ một lượt gọi, không hiện khi bằng 0 hoặc thiếu quyền, chặn 99+) cùng bài kiểm router và Tổng quan xanh; xem trên máy local thấy đủ bốn viên số khớp giao diện cũ.
+
+Mã nguồn: frontend-v2/src/modules/procurement (components/procurement-pending-nav-badge.tsx, hooks/use-procurement-menu-badges.ts, routes.tsx, pages/procurement-dashboard-page.tsx, api/procurement-dashboard-api.ts), shared/constants/query-keys.ts
+
+## duoc-CR-723-d | Giao diện mới: viên số vẫn hiện khi thu gọn menu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được báo thu gọn menu thì không thấy số chờ duyệt: khung menu co mỗi mục về ô 32 điểm ảnh và cắt phần tràn, viên số ở cuối dòng bị cắt mất.
+
+**Đã làm**
+- Khi menu thu gọn, viên số được kéo lên đè góc trên bên phải biểu tượng và thu nhỏ còn chín phần mười, giống bóng đỏ trên menu giao diện cũ; menu mở rộng giữ nguyên ở cuối dòng. Sửa ở khung menu chung nên mọi viên số đều theo, kể cả Duyệt sửa hồ sơ và Văn bản chờ duyệt.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, bài kiểm khung menu và viên số xanh; xem trên máy local ở cả hai trạng thái thu gọn và mở rộng.
+
+Mã nguồn: frontend-v2/src/app/layouts/module-sidebar.tsx
+
+## duoc-CR-737 | Giao diện mới Thu mua: xếp nút thao tác đúng vị trí và thứ tự của giao diện cũ
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** người dùng chuyển từ giao diện cũ sang giao diện mới thấy các nút thao tác ở màn Thu mua nằm lộn chỗ, phải dò lại từng nút. Giao diện mới luôn xếp nút nền đặc trước rồi mới đến nút viền, nên **Duyệt** tách khỏi **Trả về** / **Từ chối**, còn **Lưu** của Đơn mua hàng nằm giữa thay vì ở cuối bên phải. Đã chốt chỉ đổi vị trí và thứ tự, giữ kiểu nút và nhãn của giao diện mới; các nút giao diện cũ có mà giao diện mới thiếu để đợt sau.
+
+**Đã làm**
+- Khung đầu trang chi tiết dùng chung có thêm cách xếp theo thứ tự giao diện cũ: nhóm tiện ích bên trái, vạch ngăn, các nút đi theo bước quy trình bên phải. Trên điện thoại vẫn để nút nền đặc ở ngoài và gom nút viền vào nút ba chấm như cũ.
+- Chi tiết Yêu cầu mua hàng: **In phiếu**, **Nhân bản**, **Xóa** đứng đầu bên trái và hiện cả lúc đang sửa phiếu đã lưu (trước đây phiếu nháp không thấy ba nút này); các nút quy trình xếp Sửa, Gửi duyệt, Duyệt, Trả về, Từ chối, Duyệt điều phối, Chuyển phòng xử lý, Xử lý phương án, Tạo đơn, Hoàn thành.
+- Chi tiết Yêu cầu báo giá, Phiếu khảo sát, Đơn mua hàng xếp lại đúng thứ tự giao diện cũ; Đơn mua hàng có nhóm tiện ích Tạo yêu cầu thanh toán, In, Nhân bản, Hủy đơn, Xóa và nút **Lưu** luôn ở cuối bên phải. Đầu trang Phiếu khảo sát bỏ nút **Lưu duyệt dòng**, nút này vẫn có trong cửa sổ chi tiết dòng như giao diện cũ.
+- Cụm nút của bảng dòng (Xóa đã chọn, Thêm dòng, Thêm nhiều) lên góc phải tiêu đề thẻ ở cả bốn phiếu; Yêu cầu mua hàng để **Thêm nhiều** dưới bảng như giao diện cũ và bỏ nút **Thêm dòng** trùng việc với **Thêm SP**.
+- Thẻ chi phí thu mua của Đơn mua hàng xếp lại thứ tự nút, nút **Mở lại dòng** ra thẳng giữa **Chi tiết** và **Xóa**.
+- Xử lý khảo sát: **Lấy từ khảo sát** lên góc phải đầu trang, **Chốt hoàn thành khảo sát** canh phải ở chân và chừa đáy để bong bóng Trợ lý không che; bộ lọc và bảng kết quả đứng trước bảng phương án đã gắn, cột thêm phương án là cột cuối.
+- Rà mã phát hiện: tick dòng rồi rời chế độ sửa thì nút **Xóa đã chọn** vẫn đếm dòng ở chế độ chỉ xem. Đã sửa ở bộ chọn dòng dùng chung: tắt chọn là bỏ hết dấu tick.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Thu mua và khu giao diện dùng chung 1505 bài xanh, thêm bài cho khung đầu trang và bộ chọn dòng; soát trên trình duyệt khổ 1440 và 390.
+
+**Còn lại:** các nút giao diện cũ có mà giao diện mới thiếu (Tạo yêu cầu báo giá từ phiếu mua bị từ chối, Nhân đôi dòng, Thêm nhiều dòng Đơn mua hàng, Tạm ngưng / Hủy / Tiếp tục trong cửa sổ dòng, tick nhiều kết quả để gắn phương án, tick dòng để xuất Excel) ghi trong kế hoạch, làm đợt sau.
+
+Mã nguồn: `frontend-v2/src/shared/ui/detail-page-header.tsx`, `frontend-v2/src/shared/hooks/use-line-selection.ts`, `frontend-v2/src/modules/procurement/pages/*-detail-page.tsx`, `survey-request-process-page.tsx`, các bảng dòng trong `frontend-v2/src/modules/procurement/components/`, `hooks/use-purchase-order-line-selection.ts`.
+Kế hoạch: `doc/erp/thu-mua/plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-cr-737/plan.md`.
+
+### duoc-CR-737-b | Ẩn nút Nhân bản ở đầu trang chi tiết và tô màu nút theo giao diện cũ
+- status: xong
+Đầu trang chi tiết Yêu cầu mua hàng, Yêu cầu báo giá, Đơn mua hàng bỏ nút **Nhân bản** cả phiếu; nhân bản vẫn làm được từ biểu tượng ở từng dòng màn danh sách, nút nhân bản dòng trong bảng giữ nguyên. Các nút viền ở bốn màn chi tiết và thẻ chi phí nhập khẩu mang màu theo nghĩa như giao diện cũ: chữ xanh cho bước quy trình phụ (Gửi duyệt, Hoàn thành, Tạo yêu cầu thanh toán, Tạo phiếu khảo sát), cam cho Trả về / Hủy duyệt / Mở lại chặng, đỏ cho Từ chối / Hủy đơn / Xóa, xanh lá cho Đã tạo phiếu YCMH / Quyết toán tất cả; nút nền đặc giữ nguyên. Bảng tông màu đặt một chỗ dùng chung.
+
+Kiểm: typecheck 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest 623 bài xanh; ảnh chụp bốn màn ở khổ 1440 và Đơn mua hàng ở khổ 390. Thẻ chi phí nhập khẩu chưa xem được trên trình duyệt vì máy local không có đơn nhập khẩu.
+
+Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts`, `frontend-v2/src/shared/ui/delete-confirm-button.tsx`, bốn trang chi tiết Thu mua, `purchase-order-import-costs-card.tsx`, `purchase-order-import-cost-supplier-payment-cards.tsx`.
+
+### duoc-CR-737-c | Chỉnh màu nút đầu trang cho khớp ảnh giao diện cũ
+- status: xong
+Đối chiếu ảnh giao diện cũ của phiếu PYC07082603: nút tiện ích (In phiếu, Sửa, Hủy sửa, Chuyển phòng xử lý, Xử lý phương án, In, Mở lại) chữ xám và không nền như giao diện cũ; nút Trả về, Từ chối, Hủy đơn, Xóa cũng bỏ nền trắng; viền Từ chối / Xóa đỏ đậm, viền Trả về vàng nhạt. Nút chữ xanh (Hoàn thành, Gửi duyệt…) giữ nền trắng như giao diện cũ.
+
+Kiểm: typecheck 0 lỗi, lint 0 lỗi, vitest trang Thu mua và giao diện dùng chung xanh; ảnh trước và sau ở `plans/reports/screenshots-cr737/`.
+
+Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts` (thêm tông `neutral`), ba trang chi tiết YCMH, YCBG, ĐMH.
+
+## duoc-CR-738 | Bảng danh sách giao diện mới: bấm tiêu đề để sắp xếp ở mọi cột dữ liệu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** nhiều cột ở bảng danh sách giao diện mới không bấm tiêu đề để sắp xếp được, kể cả cột ID tự thêm ở mọi bảng.
+
+**Đã làm**
+- Cột ID tự thêm ở mọi bảng danh sách bấm được để sắp xếp. Đã rà mọi màn có sắp xếp: màn Loại việc (phân hệ Dự án) chưa nhận sắp theo ID ở server, màn hàng chờ Đặt xe sắp ở trình duyệt chưa biết cột ID; cả hai đã bổ sung.
+- Bốn màn danh sách Thu mua sắp được mọi cột dữ liệu. Yêu cầu mua hàng thêm Người yêu cầu, Bộ phận, Tổng tiền. Yêu cầu báo giá thêm Mục đích, Người yêu cầu, Bộ phận. Phiếu khảo sát thêm Mã YCBG, Nội dung chính, Mã hàng, Nhóm hàng, NSPT. Đơn mua hàng thêm Nhà cung cấp, Mã PYC, Phòng xử lý, Trưởng phòng phê duyệt, Ghi chú, NSPT, Tiền hàng, Loại đơn, Hồ sơ cùng tám cột phụ đang ẩn.
+- Cột tính ra (Tổng tiền, Tiền hàng gồm thuế và tỷ giá, Phòng xử lý, Trưởng phòng phê duyệt, Công ty, Người tạo) sắp ngay ở server, nên thứ tự đúng trên toàn danh sách chứ không chỉ trong trang đang xem, và khớp đúng con số hiện trên màn. Xuất Excel đi cùng câu truy vấn nên cũng theo thứ tự đã chọn.
+
+**Kiểm:** bài kiểm server 7 bài mới xanh cùng các bài danh sách liên quan, ruff sạch, typecheck 0 lỗi, lint 0 lỗi, vitest bảng dùng chung, trang Thu mua và Đặt xe 484 bài xanh. Bấm thử trên trình duyệt màn Đơn mua hàng: Tiền hàng giảm dần, Nhà cung cấp A đến Z, ID tăng dần đều đúng.
+
+Mã nguồn: `frontend-v2/src/shared/data-table/` (thêm `sortKey`, cột ID sắp được), bốn trang danh sách Thu mua, `backend/app/modules/purchase_request/sort_expressions.py`, `backend/app/modules/purchase_order/sort_expressions.py`, `backend/app/modules/work/task_type_service.py`, `frontend-v2/src/modules/vehicle-booking/components/booking-queue-table.tsx`.
+Kiểm: `test/backend/test_sap_xep_cot_danh_sach_thu_mua_cr738.py`.
+
+### duoc-CR-738-b | Màn Xử lý khảo sát và Xử lý phương án: bảng chọn kết quả khảo sát sắp xếp được như giao diện cũ
+- status: xong
+Rà các bảng trong trang chi tiết Thu mua: bảng dòng của bốn phiếu giao diện cũ cũng không sắp xếp (thứ tự dòng là thứ tự nhập, sửa và xóa dòng dựa theo vị trí) nên giữ nguyên; riêng bảng chọn kết quả khảo sát đã duyệt ở màn Xử lý khảo sát giao diện cũ bấm tiêu đề sắp được mà giao diện mới thiếu. Đã bổ sung cho cả màn Xử lý khảo sát (YCBG) và Xử lý phương án (YCMH): sắp theo NCC, Tên SP, Đơn giá, MOQ, ĐVT, Ngày khảo sát và cột ID, sắp ở server, đổi cách sắp thì về trang 1 và giữ bộ lọc, mỗi dòng sản phẩm sắp riêng. Server thêm sắp theo ID cho bảng này.
+
+Kiểm: bài kiểm server 30 bài xanh (thêm bài sắp theo ID và đơn giá), vitest hai thẻ xử lý thêm 7 bài; thử trên trình duyệt màn Xử lý khảo sát: bấm Đơn giá tăng rồi giảm đúng, về trang 1.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/available-survey-line-sort.ts`, `survey-request-process-card.tsx`, `purchase-request-process-card.tsx`, `backend/app/modules/survey_request/line_service.py`.
+
+### duoc-CR-737-d | Thẻ phương án trải hết bề ngang trên màn hẹp
+- status: xong
+- date: 2026-11-07
+Ở khổ điện thoại lớn và máy tính bảng dọc (khoảng 400 đến 768px), thẻ phương án trong khu **Kết quả khảo sát** của Yêu cầu báo giá và khu **Chọn phương án** của Yêu cầu mua hàng dừng ở 352px, chừa một mảng trống bên phải. Nguyên nhân là lưới ghim mỗi thẻ tối đa 22rem nên khi chỉ xếp được một cột thì thẻ không giãn ra. Dưới khổ 768px nay xếp một cột trải hết bề ngang; từ 768px trở lên giữ lưới nhiều thẻ mỗi hàng như cũ.
+
+Kiểm: khổ 480 thẻ rộng 414/414px, không tràn ngang; khổ 1440 vẫn hai cột 352px; typecheck, eslint sạch, vitest 17 bài xanh.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-request-result-card.tsx`, `purchase-request-choose-card.tsx`.
+
+### duoc-CR-737-e | Khối Báo cáo thực hiện và Hồ sơ cần hoàn thành gọn trên điện thoại
+- status: xong
+- date: 2026-11-07
+Ở khổ điện thoại, khối **Báo cáo thực hiện** (Yêu cầu báo giá) rối: thanh công cụ dồn lề phải rớt ba hàng lởm chởm, bốn ô tổng mỗi ô một hàng chiếm nửa màn, tên giai đoạn bị bóp gãy ba dòng. Dưới 768px nay: thanh công cụ ba hàng canh trái (công tắc dạng xem chia đôi bề ngang; ô tìm cạnh ô lọc trạng thái; hàng nút Thu gọn chỉ biểu tượng, Giai đoạn, Hồ sơ, Xóa), bốn ô tổng lưới hai cột, tên giai đoạn một hàng riêng với nút gọn bên phải, ghi chú giai đoạn và thanh tiến độ xuống hàng hai, dòng hồ sơ để tên đủ một hàng và đưa trạng thái cùng nút sửa, xóa xuống dưới. Khối **Hồ sơ cần hoàn thành** dùng cùng khuôn nên sửa theo. Khổ máy tính giữ nguyên, riêng tiêu đề khối không còn bị ép gãy bốn dòng khi mở thanh menu trái (lỗi có sẵn).
+
+Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; đo vị trí phần tử ở khổ 1440 và 800 trùng bản cũ; ảnh trước, sau ở `plans/reports/screenshots-cr737/bao-cao-thuc-hien-*.png`.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/` (`survey-report-card.tsx`, `dossier-checklist-card.tsx`, `dossier-checklist-groups.tsx`, mới `report-mobile-layout-classes.ts`, `report-toggle-all-button.tsx`).
+
+### duoc-CR-737-f | Hộp Chỉnh sửa hồ sơ gọn trên điện thoại
+- status: xong
+- date: 2026-11-07
+Hộp **Chỉnh sửa hồ sơ** của khối Báo cáo thực hiện trên điện thoại: hộp chỉ rộng 326 trên 390px vì khung chung vừa đệm lớp ngoài vừa trừ thêm bề rộng, nút Hủy, Lưu nhỏ lệch trái còn Xóa rớt xuống một hàng riêng, tiêu đề canh giữa trên cột nhãn canh trái. Nay dưới khổ 640px hộp rộng 358px với đệm trong 16px, tiêu đề canh trái, chân hộp một hàng (Xóa bên trái, Hủy và Lưu bên phải), hai mốc Ngày bắt đầu và Dự định hoàn tất chung một hàng còn Ngày hết hiệu lực một hàng riêng, chữ gợi ý ô ngày rút thành "Chọn ngày" cho khỏi bị cắt. Hộp sửa hồ sơ của khối Hồ sơ cần hoàn thành sửa theo cùng khuôn. Khổ máy tính giữ nguyên.
+
+Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; ảnh `plans/reports/screenshots-cr737/hop-sua-ho-so-390-sau.png`.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-dialog.tsx`, `dossier-quick-edit-dialog.tsx`.
+
+## duoc-CR-723-e | Bóng đếm trên menu Thu mua: chỉ đếm phiếu chờ mình duyệt
+- status: xong
+- date: 2026-11-07
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** bóng đỏ trên menu Thu mua (phiếu hỗ trợ TK06112601) đếm mọi phiếu chờ duyệt trong phạm vi XEM, nên tài khoản xem toàn hệ thấy toàn bộ phiếu chờ duyệt của công ty, người chỉ có quyền xem cũng có bóng cho phiếu mình không duyệt được. Đã chốt bóng chỉ đếm phiếu chờ chính người đó duyệt.
+
+**Đã làm**
+- Bóng chỉ hiện khi người xem có quyền **Duyệt** trên loại phiếu đó, và chỉ đếm phiếu chờ duyệt nằm trong phạm vi DUYỆT của người đó, đúng cổng của nút Duyệt ở cả bốn loại phiếu (Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng, Phiếu khảo sát).
+- Yêu cầu mua hàng cộng thêm phiếu chờ **Duyệt điều phối** cho người điều phối được (quản lý thu mua) khi bước điều phối đang bật; trưởng phòng chỉ duyệt bước 1 nên không đếm phiếu này.
+- Áp cho cả giao diện cũ lẫn giao diện mới vì cùng một đường API. Thẻ thống kê Đơn mua hàng chờ duyệt ở Trang chủ giữ cách đếm theo phạm vi xem vì đó là số liệu, không phải việc cần làm.
+
+**Kiểm:** bài kiểm bóng đếm 10 bài xanh, thêm bốn bài (chỉ có quyền xem thì không có bóng; xem toàn hệ nhưng chỉ duyệt phiếu của mình; người điều phối đếm cả phiếu chờ điều phối và tắt bước điều phối thì thôi; trưởng phòng không đếm phiếu chờ điều phối); ruff sạch. Thử trên dữ liệu local: người yêu cầu và nhân viên không còn bóng, trưởng phòng chỉ thấy phiếu phòng mình, quản trị thấy Yêu cầu mua hàng 2 gồm 1 chờ duyệt và 1 chờ điều phối.
+
+Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
+Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
+

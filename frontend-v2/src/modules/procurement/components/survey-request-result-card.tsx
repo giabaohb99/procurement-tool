@@ -5,6 +5,7 @@ import { downloadFile } from '@/core/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -204,7 +205,10 @@ function ResultLineBlock({
         //  rộng thì xếp nhiều option/hàng, còn dòng chỉ có MỘT phương án cũng
         //  không kéo dài nửa màn (lỗi "to đùng" trên màn ultrawide). Không dùng
         //  1fr để cột lẻ khỏi giãn hết chỗ trống.
-        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(18rem,22rem))]">
+        //  Khổ hẹp (dưới md) MỘT cột trải hết bề ngang: ghim 22rem thì ở màn
+        //  400–600px lưới chỉ xếp được một cột mà thẻ dừng ở 352px, chừa mảng trống
+        //  bên phải (duoc-CR-737, ảnh anh Được 07/11/2026).
+        <div className="grid grid-cols-1 gap-3 md:[grid-template-columns:repeat(auto-fill,minmax(18rem,22rem))]">
           {options.map((option) => (
             <OptionCard
               key={option.id}
@@ -366,9 +370,10 @@ function OptionCard({
               ) : (
                 <Button
                   key={file.file_id}
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => void downloadFile(file.url, file.filename)}
+                  onClick={() => void confirmAndDownload(file)}
                 >
                   <FileDown />
                   {file.filename}
@@ -402,6 +407,20 @@ function OptionField({
       <dd className={cn('inline', strong && 'font-semibold')}>{value || '—'}</dd>
     </div>
   )
+}
+
+/**
+ * Tệp không phải ảnh: hỏi trước rồi mới tải về máy — nguyên văn hộp hỏi `openAtt` của bản v1
+ * (duoc-CR-741). Ảnh thì vẫn mở xem ngay, không hỏi.
+ */
+async function confirmAndDownload(file: SurveyOptionAttachment) {
+  const ok = await confirm({
+    title: 'Tải tài liệu',
+    message: `Tải file "${file.filename}" về máy?`,
+    confirmLabel: 'Tải về',
+    tone: 'default',
+  })
+  if (ok) await downloadFile(file.url, file.filename)
 }
 
 function isImageAttachment(file: SurveyOptionAttachment) {

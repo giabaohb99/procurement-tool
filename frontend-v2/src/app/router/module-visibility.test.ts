@@ -487,6 +487,18 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(canAccessRoute(hr, bulk, makeCan({}))).toBe(false)
     })
 
+    it('/hr/leave-encashments (duoc-CR-719): list, new and detail are fenced by leave_encashment.read only', () => {
+      //  Gác điều hướng mặc định MỞ: route thiếu mục menu có `entity` là ai đăng nhập cũng vào — mục "Thanh toán
+      //  nghỉ phép" là hàng rào của cả `/new` và `/:id`.
+      for (const path of ['/hr/leave-encashments', '/hr/leave-encashments/new', '/hr/leave-encashments/12']) {
+        expect(canAccessRoute(hr, path, makeCan({ leave_encashment: ['read'] }))).toBe(true)
+        expect(canAccessRoute(hr, path, makeCan({ leave_request: ['read', 'create'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ leave_comp_request: ['read'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ payment_request: ['read', 'write'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+      }
+    })
+
     it('/hr/leave-blocks (duoc-CR-715): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
       for (const path of ['/hr/leave-blocks', '/hr/leave-blocks/new', '/hr/leave-blocks/7']) {
         expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
@@ -516,6 +528,31 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read', 'write'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Phân bổ chính sách'])
+    })
+
+    it('chỉ có leave_encashment.read (duoc-CR-719): thấy đúng mục Thanh toán nghỉ phép', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_encashment: ['read'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Thanh toán nghỉ phép'])
+    })
+
+    it('nhân viên có cả đơn nghỉ, nghỉ bù và thanh toán: mục mới đứng ngay sau Nghỉ bù (duoc-CR-719)', () => {
+      const items = visibleNavItems(
+        hr,
+        makeCan({
+          leave_request: ['read'],
+          leave_comp_request: ['read'],
+          leave_encashment: ['read'],
+          employee: ['read'],
+        }),
+      )
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual([
+        'Đơn nghỉ phép',
+        'Nghỉ bù',
+        'Thanh toán nghỉ phép',
+        'Lịch nghỉ',
+      ])
     })
 
     it('người quản lý danh mục (leave_type:write): chỉ thấy Thiết lập', () => {

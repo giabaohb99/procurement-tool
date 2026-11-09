@@ -1,7 +1,6 @@
-import { Copy, Download, Plus } from 'lucide-react'
-import { useCallback, useMemo, useState, useRef } from 'react'
+import { Plus } from 'lucide-react'
+import { useMemo, useState, useRef } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -9,7 +8,6 @@ import { useAuthStore } from '@/core/auth/auth-store'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
-import { httpClient } from '@/core/api/http-client'
 import { downloadFile } from '@/core/api/download-file'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -21,7 +19,14 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
+import {
+  DataTable,
+  RowLink,
+  createSelectionColumn,
+  type DataTableColumn,
+} from '@/shared/data-table'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
@@ -52,6 +57,9 @@ import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney, formatUnitPrice } from '@/shared/utils/format-money'
 import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
+import { createCloneColumn } from '../components/procurement-list-clone-column'
+import { ProcurementListCloneModeButton } from '../components/procurement-list-clone-controls'
+import { ProcurementListExportButton } from '../components/procurement-list-export-button'
 import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
@@ -116,20 +124,21 @@ function textCell(value: string | number | null | undefined) {
  * chúng ẩn, khỏi vỡ bảng đang quen (docs/ui/table.md §4).
  */
 const HIDDEN_EXTRA_COLUMN_LIST: DataTableColumn<PurchaseOrder>[] = [
-  { key: 'department', header: 'Phòng lập', width: 170, cell: (po) => textCell(po.department) },
-  { key: 'company_name', header: 'Công ty nhận hóa đơn', width: 230, cell: (po) => textCell(po.company_name) },
-  { key: 'created_by_name', header: 'Người tạo', width: 170, cell: (po) => textCell(po.created_by_name) },
-  { key: 'payment_terms', header: 'Hình thức thanh toán', width: 190, cell: (po) => textCell(po.payment_terms) },
-  { key: 'currency', header: 'Tiền tệ', width: 90, cell: (po) => textCell(po.currency) },
+  { key: 'department', sortable: true, header: 'Phòng lập', width: 170, cell: (po) => textCell(po.department) },
+  { key: 'company_name', sortable: true, header: 'Công ty nhận hóa đơn', width: 230, cell: (po) => textCell(po.company_name) },
+  { key: 'created_by_name', sortable: true, header: 'Người tạo', width: 170, cell: (po) => textCell(po.created_by_name) },
+  { key: 'payment_terms', sortable: true, header: 'Hình thức thanh toán', width: 190, cell: (po) => textCell(po.payment_terms) },
+  { key: 'currency', sortable: true, header: 'Tiền tệ', width: 90, cell: (po) => textCell(po.currency) },
   {
     key: 'exchange_rate',
+    sortable: true,
     header: 'Tỷ giá',
     width: 110,
     align: 'right',
     cell: (po) => textCell(po.exchange_rate ? formatUnitPrice(po.exchange_rate) : ''),
   },
-  { key: 'etd_date', header: 'Ngày ETD', width: 120, cell: (po) => textCell(po.etd_date) },
-  { key: 'customs_decl_no', header: 'Số tờ khai HQ', width: 150, cell: (po) => textCell(po.customs_decl_no) },
+  { key: 'etd_date', sortable: true, header: 'Ngày ETD', width: 120, cell: (po) => textCell(po.etd_date) },
+  { key: 'customs_decl_no', sortable: true, header: 'Số tờ khai HQ', width: 150, cell: (po) => textCell(po.customs_decl_no) },
 ]
 const HIDDEN_EXTRA_COLUMNS: DataTableColumn<PurchaseOrder>[] = HIDDEN_EXTRA_COLUMN_LIST.map(
   (column) => ({ ...column, defaultHidden: true, hiddenForOlderLayouts: true }),
@@ -299,33 +308,31 @@ function PurchaseOrderListContent() {
   const { data, isLoading, isError, isFetching } = usePurchaseOrders(params)
   useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
+  //  duoc-CR-741 — tick chọn đơn để *Xuất Excel (n)* như bản v1. Đổi trang / bộ lọc /
+  //  sắp xếp là bỏ hết tick (v1 dọn tick mỗi lần nạp lại bảng): tick ẩn ở trang khác
+  //  mà vẫn bị xuất thì file ra khác thứ người dùng đang nhìn.
+  const { selectedIds, toggleRow, toggleAllOnPage, clear: clearSelection } = useRowSelection()
+  const selectionScopeChanged = useHasChanged(JSON.stringify(params))
+  if (selectionScopeChanged && selectedIds.size > 0) clearSelection()
+  const selectedCount = selectedIds.size
+
+  //  Chế độ nhân bản: cột *Thao tác* chỉ hiện khi bật nút *Nhân bản* (bản v1).
+  const [cloneMode, setCloneMode] = useState(false)
+
   const handleExportExcel = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const cols = visibleColumnKeys
       .map((key) => EXPORT_COLUMN_KEYS[key])
       .filter(Boolean)
       .join(',')
+    const ids = [...selectedIds]
+    //  Có tick thì backend chỉ xuất đúng các đơn đó (`ids`), không tick thì theo bộ lọc.
     await downloadFile('/api/purchase-orders/export/xlsx', 'don-mua-hang.xlsx', {
       ...filterParams,
       ...(cols ? { cols } : {}),
+      ...(ids.length ? { ids: ids.join(',') } : {}),
     })
   }
-
-  const handleClone = useCallback(
-    async (po: PurchaseOrder, e: React.MouseEvent) => {
-      e.stopPropagation()
-      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
-      try {
-        const res = await httpClient.post<{ data: { id: number } }>(`/api/purchase-orders/${po.id}/clone`)
-        toast.success('Đã nhân bản đơn mua hàng')
-        const newId = res.data?.data?.id
-        if (newId) navigate(appRoutes.procurement.purchaseOrderDetail(newId))
-      } catch {
-        toast.error('Nhân bản đơn mua hàng thất bại')
-      }
-    },
-    [navigate],
-  )
 
   const activeCount = [
     companyId !== ALL,
@@ -394,8 +401,26 @@ function PurchaseOrderListContent() {
     setSearchParams(next)
   }
 
+  const pageIds = useMemo(() => (data?.items ?? []).map((po) => po.id), [data])
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const someOnPageSelected = pageIds.some((id) => selectedIds.has(id))
+
   const columns = useMemo<DataTableColumn<PurchaseOrder>[]>(
     () => [
+      //  Cột tick chỉ có ý nghĩa với người được xuất Excel (v1 bật nó cùng nút Xuất Excel).
+      ...(canExport
+        ? [
+            createSelectionColumn<PurchaseOrder>({
+              getRowId: (po) => po.id,
+              selectedIds,
+              onToggleRow: toggleRow,
+              onToggleAllOnPage: () => toggleAllOnPage(pageIds),
+              allOnPageSelected,
+              someOnPageSelected,
+              getRowLabel: (po) => po.code,
+            }),
+          ]
+        : []),
       {
         key: 'code',
         header: 'Mã ĐMH',
@@ -424,6 +449,7 @@ function PurchaseOrderListContent() {
       },
       {
         key: 'supplier',
+        sortable: true,
         header: 'Nhà cung cấp',
         width: 240,
         cell: (po) => (
@@ -432,17 +458,19 @@ function PurchaseOrderListContent() {
           </span>
         ),
       },
-      { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
+      { key: 'pr_code', sortable: true, header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
       //  bao-CR-705: hai cột HIỆN sẵn (phòng đang xử lý, người duyệt) + cụm cột phụ ẨN sẵn — người
       //  dùng tick trong menu "Cột" mới hiện. Key trùng tên trường API để tệp Excel xuất đúng cột.
       {
         key: 'handler_dept_name',
+        sortable: true,
         header: 'Phòng xử lý',
         width: 170,
         cell: (po) => textCell(po.handler_dept_name),
       },
       {
         key: 'approver_name',
+        sortable: true,
         header: 'Trưởng phòng phê duyệt',
         width: 190,
         cell: (po) => textCell(po.approver_name),
@@ -452,6 +480,7 @@ function PurchaseOrderListContent() {
         //  Ẩn mặc định vì ghi chú thường dài, nhưng phải CÓ cột thì người dùng
         //  mới bật lên để kéo nó vào file Excel được (bản v1 vẫn có cột này).
         key: 'note',
+        sortable: true,
         header: 'Ghi chú',
         width: 220,
         defaultHidden: true,
@@ -461,9 +490,10 @@ function PurchaseOrderListContent() {
           </span>
         ),
       },
-      { key: 'nspt', header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
+      { key: 'nspt', sortable: true, header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
       {
         key: 'amount',
+        sortable: true,
         header: 'Tiền hàng',
         width: 150,
         align: 'right',
@@ -484,6 +514,7 @@ function PurchaseOrderListContent() {
       {
         // bao-CR-319 — đơn nhập khẩu có nhãn riêng; đơn trong nước để trống cho đỡ rối.
         key: 'order_type',
+        sortable: true,
         header: 'Loại đơn',
         width: 110,
         cell: (po) =>
@@ -495,6 +526,7 @@ function PurchaseOrderListContent() {
       },
       {
         key: 'document_status',
+        sortable: true,
         header: 'Hồ sơ',
         width: 130,
         cell: (po) => <DocumentStatusBadge status={po.document_status} />,
@@ -515,25 +547,30 @@ function PurchaseOrderListContent() {
         sortDescFirst: true,
         cell: (po) => formatDateTime(po.updated_at) || '',
       },
-      {
-        key: 'actions',
-        header: '',
-        width: 60,
-        hideable: false,
-        cell: (po) =>
-          canCreate ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Nhân bản đơn mua hàng"
-              onClick={(e) => handleClone(po, e)}
-            >
-              <Copy className="size-4 text-muted-foreground" />
-            </Button>
-          ) : null,
-      },
+      ...(cloneMode && canCreate
+        ? [
+            createCloneColumn<PurchaseOrder>({
+              apiPath: '/api/purchase-orders',
+              getId: (po) => po.id,
+              getCode: (po) => po.code,
+              toDetail: appRoutes.procurement.purchaseOrderDetail,
+              successMessage: 'Đã nhân bản đơn mua hàng',
+              errorMessage: 'Nhân bản đơn mua hàng thất bại',
+            }),
+          ]
+        : []),
     ],
-    [canCreate, handleClone],
+    [
+      canExport,
+      canCreate,
+      cloneMode,
+      selectedIds,
+      toggleRow,
+      toggleAllOnPage,
+      pageIds,
+      allOnPageSelected,
+      someOnPageSelected,
+    ],
   )
 
   //  Cùng một ô dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
@@ -699,11 +736,21 @@ function PurchaseOrderListContent() {
         actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
+            {/*  duoc-CR-741: thứ tự và chữ đúng bản v1 — Xuất Excel · Nhân bản · Thêm. */}
             {canExport && (
-              <Button variant="outline" className="max-md:flex-1" onClick={handleExportExcel}>
-                <Download className="mr-1.5 size-4" />
-                Xuất Excel
-              </Button>
+              <ProcurementListExportButton
+                className="max-md:flex-1"
+                selectedCount={selectedCount}
+                onExport={() => void handleExportExcel()}
+              />
+            )}
+            {/*  Ẩn ở khổ hẹp: bảng thành THẺ ở đó, không có cột *Thao tác* để bật. */}
+            {canCreate && (
+              <ProcurementListCloneModeButton
+                className="max-md:hidden"
+                active={cloneMode}
+                onToggle={() => setCloneMode((current) => !current)}
+              />
             )}
             <PermissionGate entity="purchase_order" action="create">
               <Button
@@ -711,7 +758,7 @@ function PurchaseOrderListContent() {
                 onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}
               >
                 <Plus className="mr-1.5 size-4" />
-                Thêm mới
+                Thêm
               </Button>
             </PermissionGate>
           </div>

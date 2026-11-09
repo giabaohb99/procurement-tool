@@ -14,6 +14,31 @@
 #
 # Luật nhánh + quy trình deploy đầy đủ: doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md
 
+# bao-CR-735 chống treo: container có `healthcheck` + nhãn `dego.autoheal` thì khi `unhealthy` bộ tự chữa trên máy chủ
+# (backend/scripts/ops/autoheal.sh, systemd timer 30 giây) docker restart nó. Docker KHÔNG tự khởi động lại container
+# unhealthy — `restart: always` chỉ lo container chết. Nới tay (hỏng 3 lượt liền) để lúc dump sao lưu / nạp lô lớn
+# không bị giết oan. Cài + đo: doc/tai-lieu-ky-thuat/van-hanh/chong-treo-prod.md
+x-health-api: &health-api
+  test: ["CMD", "python", "healthcheck.py", "api"]   # chưa exec uvicorn (migration / seed) thì coi là khỏe
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 90s
+x-health-celery: &health-celery
+  test: ["CMD", "python", "healthcheck.py", "celery"]  # ping đúng worker của container qua Redis (~0,5 giây)
+  interval: 60s
+  timeout: 20s
+  retries: 3
+  start_period: 60s
+x-health-nginx: &health-nginx
+  test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]   # trang tĩnh, KHÔNG qua /api (api chết thì đừng giết nginx)
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 10s
+x-autoheal: &autoheal
+  dego.autoheal: "true"
+
 services:
   api:
     build:
@@ -26,6 +51,8 @@ services:
     environment:
       APP_ENV: prod            # bao-CR-722: nhãn môi trường ở /api/system/version
     restart: always
+    healthcheck: *health-api
+    labels: *autoheal
     command: ["sh", "start.prod.sh"]
     networks:
       - dego-db                 # để tới MySQL procurement-mysql:3306
@@ -56,6 +83,8 @@ services:
         VITE_HELP_URL: "https://help.degoholding.vn"          # Trung tâm HDSD là app riêng (subdomain riêng)
     container_name: procurement-web
     restart: always
+    healthcheck: *health-nginx
+    labels: *autoheal
     depends_on:
       - api
     networks:
@@ -83,6 +112,8 @@ services:
         VITE_BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: commit của gói giao diện
     container_name: procurement-erp
     restart: always
+    healthcheck: *health-nginx
+    labels: *autoheal
     depends_on:
       - api
     networks:
@@ -99,6 +130,8 @@ services:
         VITE_API_URL: ""        # rỗng = gọi cùng origin, nginx trong container proxy /api -> api:8000
     container_name: procurement-help
     restart: always
+    healthcheck: *health-nginx
+    labels: *autoheal
     depends_on:
       - api
     networks:
@@ -135,6 +168,8 @@ services:
         BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env
     restart: always
+    healthcheck: *health-celery
+    labels: *autoheal
     command: celery -A app.core.celery_app worker -l info -c 2
     depends_on:
       - redis

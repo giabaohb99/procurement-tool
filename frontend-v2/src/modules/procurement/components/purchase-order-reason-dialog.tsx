@@ -20,6 +20,11 @@ interface PurchaseOrderReasonDialogProps {
   pending?: boolean
   /** Nút xác nhận tô đỏ cho các thao tác khóa đơn / hủy dòng. */
   destructive?: boolean
+  /**
+   * Chữ nút đồng ý — mang tên chính thao tác như bản v1 (*Trả về*, *Từ chối*, *Hủy duyệt*,
+   * *Hủy đơn*, *Tạm ngưng*), duoc-CR-741. Mặc định "Xác nhận" như hộp nhập của v1.
+   */
+  confirmLabel?: string
   onClose: () => void
   onConfirm: (reason: string) => void | Promise<void>
 }
@@ -34,6 +39,7 @@ export function PurchaseOrderReasonDialog({
   description,
   pending,
   destructive,
+  confirmLabel = 'Xác nhận',
   onClose,
   onConfirm,
 }: PurchaseOrderReasonDialogProps) {
@@ -56,16 +62,17 @@ export function PurchaseOrderReasonDialog({
           onChange={(event) => setReason(event.target.value)}
         />
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Đóng
+          <Button type="button" variant="outline" onClick={onClose}>
+            Hủy
           </Button>
           <Button
+            type="button"
             variant={destructive ? 'destructive' : 'default'}
             disabled={!reason.trim() || pending}
             onClick={() => void onConfirm(reason.trim())}
           >
             {pending && <Loader2 className="animate-spin" />}
-            Xác nhận
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

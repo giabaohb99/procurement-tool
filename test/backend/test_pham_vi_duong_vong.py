@@ -370,6 +370,10 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_DA_KIEM, "L55 `_get_or_404` — ngay trên là `get_scoped(..., action)`; chỉ nới cho `read` khi "
                      "`comp_approval_bridge.can_read_request` đúng (có việc duyệt treo) — duoc-CR-715 C"),
     ],
+    "leave/encashment_controller.py": [
+        (OK_DA_KIEM, "L35 `_get_or_404` — ngay trên là `get_scoped(..., action)`; chỉ nới cho `read` khi "
+                     "`encashment_approval_bridge.can_read_request` đúng (có việc duyệt treo) — duoc-CR-719"),
+    ],
     # ── Phòng họp ────────────────────────────────────────────────────────────
     "meeting_room/controller.py": [
         (OK_KHONG_CAN, "L5 — dòng DOCSTRING nhắc tên `db.get()`, không phải lời gọi"),
@@ -523,7 +527,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    `service.company_by_id` (gọi từ `serializer._out_print`); bản in vẫn qua `_in_scope(..., "print")`.
     #  95 → 97 (bao-CR-718, khai muộn ở bao-CR-719): `customs/controller.py` +2 — lô xuất chạy nền: `_own_batch`
     #    (kiểm người tạo / phạm vi ngay sau) và tệp của lô đã qua `_own_batch`.
-    assert sum(that.values()) == 99, f"tổng phải là 99, đang là {sum(that.values())}"
+    #  99 → 100 (duoc-CR-719): `leave/encashment_controller.py` +1 — `_get_or_404` nới cho `read` khi có việc duyệt treo
+    #    (cùng khuôn `comp_request_controller`).
+    assert sum(that.values()) == 100, f"tổng phải là 100, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

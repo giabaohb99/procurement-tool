@@ -1,11 +1,13 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import { Copy, FilePlus2, Pencil, Trash2 } from 'lucide-react'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import { SurveyLineCard } from './survey-line-card'
 import type { SurveyCatalog } from '../helpers/survey-catalog'
@@ -48,8 +50,6 @@ interface SurveyLinesTableProps {
   selected: Set<number>
   /** Được phép mở popup "Bổ sung" cho dòng bị TP/QL báo thiếu thông tin. */
   canFill: boolean
-  /** Nút riêng của trang (Thêm dòng, Thêm nhiều, Xóa dòng đã chọn). */
-  actions?: ReactNode
   onSelectedChange: (next: Set<number>) => void
   onChangeLine: (index: number, changes: Partial<SurveyLine>) => void
   onOpenLine: (index: number, mode: 'edit' | 'fill') => void
@@ -84,7 +84,6 @@ export function SurveyLinesTable({
   catalog,
   selected,
   canFill,
-  actions,
   onSelectedChange,
   onChangeLine,
   onOpenLine,
@@ -136,7 +135,8 @@ export function SurveyLinesTable({
       {
         key: ACTION_KEY,
         header: 'Thao tác',
-        width: 104,
+        //  Đủ chỗ cho nút có chữ *Bổ sung* cạnh nút sửa (duoc-CR-741).
+        width: 120,
         minWidth: 80,
         align: 'center',
         hideable: false,
@@ -181,27 +181,34 @@ export function SurveyLinesTable({
 
       return (
         <div className="flex items-center justify-center gap-0.5">
+          {/*  duoc-CR-741: gợi ý + nút *Bổ sung* (nút CÓ CHỮ, viền cam) đúng chữ bản v1. */}
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
-            title="Mở chi tiết dòng"
+            title="Chỉnh sửa chi tiết"
+            aria-label="Chỉnh sửa chi tiết"
             onClick={() => onOpenLine(index, 'edit')}
           >
             <Pencil />
           </Button>
           {fillable && (
             <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Bổ sung thông tin theo yêu cầu TP/QL"
+              type="button"
+              variant="outline"
+              size="sm"
+              title="Bổ sung nội dung dòng thiếu thông tin"
+              className={cn('h-7 gap-1 px-2 text-xs', ACTION_TONE_CLASS.warning)}
               onClick={() => onOpenLine(index, 'fill')}
             >
-              <FilePlus2 />
+              <FilePlus2 className="size-3.5" />
+              Bổ sung
             </Button>
           )}
           {editable && (
             <>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 title="Nhân bản dòng"
@@ -210,6 +217,7 @@ export function SurveyLinesTable({
                 <Copy />
               </Button>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 title="Xóa dòng"
@@ -266,7 +274,6 @@ export function SurveyLinesTable({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{lines.length} dòng</span>
             {selectAllLabel}
-            {actions}
           </div>
 
           <div className="overflow-hidden rounded-lg border">
@@ -307,12 +314,7 @@ export function SurveyLinesTable({
           renderCell={renderCell}
           defaultCompact
           title={`${lines.length} dòng`}
-          actions={
-            <>
-              {selectAllLabel}
-              {actions}
-            </>
-          }
+          actions={selectAllLabel}
           emptyMessage="Chưa có dòng nào."
           cellClassName={(key) =>
             key === SELECT_KEY || key === NO_KEY ? 'align-top pt-3' : 'align-top'

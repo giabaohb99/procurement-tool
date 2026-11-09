@@ -6,6 +6,7 @@ import { DataTable } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { toDateInputValue } from '@/shared/utils/format-date'
 import {
   buildEmployeeWorkHistoryColumns,
   type EmployeeWorkHistoryRowActions,
@@ -14,6 +15,7 @@ import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { EmployeeWorkHistoryTimeline } from './employee-work-history-timeline'
 import { EmployeeWorkHistoryTimelineToolbar, EmployeeWorkHistoryToolbarTitle } from './employee-work-history-toolbar'
 import type { WorkHistoryViewMode } from './employee-work-history-view-toggle'
+import { WorkHistoryCard } from './work-history-card'
 
 const TITLE = 'Quá trình công tác'
 
@@ -122,6 +124,18 @@ export function EmployeeWorkHistoryMainSection({
           //  và hiện lố nút "Xóa lọc" (bấm vào xóa luôn cả tham số đó). Khu này
           //  không có bộ lọc thật nào, nên khóa cứng về false.
           filtersActive={false}
+          //  Khổ điện thoại (duoc-CR-721): mỗi dòng một thẻ. "Hôm nay" tính trong hàm vẽ thẻ như ô
+          //  Đến ngày của bảng, không tính ở thân component.
+          mobileCard={(row) => (
+            <WorkHistoryCard
+              row={row}
+              variant="history"
+              canOpenFiles={canOpenFiles}
+              onOpenFiles={onOpenFiles}
+              actions={actions}
+              today={toDateInputValue(new Date())}
+            />
+          )}
           toolbar={<EmployeeWorkHistoryToolbarTitle title={TITLE} view={view} onChange={setView} />}
           toolbarEnd={addButton}
         />

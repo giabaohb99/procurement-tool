@@ -193,6 +193,9 @@ SCOPE_FIELDS = {
     #  Phiếu nghỉ bù: cùng khuôn đơn nghỉ — người nghỉ (`employee_id`) và người lập (`created_by`).
     "leave_comp_request": {"company": "company_id", "dept_id": "department_id",
                            "owner": "created_by", "self": "employee_id"},
+    #  Phiếu thanh toán nghỉ phép (duoc-CR-719): cùng khuôn — người nhận tiền (`employee_id`) và người lập (`created_by`).
+    "leave_encashment": {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "employee_id"},
     #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
     #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
     #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".
@@ -848,6 +851,23 @@ def has_global_scope(profile: dict, entity: str, action: str) -> bool:
 
 
 def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
+    """ĐIỀU KIỆN phạm vi (chưa gắn vào query nào) = HỢP các grant có `action` + chốt riêng của từng entity.
+
+    Chốt riêng hiện có một: YCTT thanh toán nghỉ phép (duoc-CR-719, D1a) — số tiền ÷ số ngày = lương ngày nên
+    phiếu đó chỉ thấy khi người xem CÒN có `leave_encashment.read` phủ phiếu nguồn. Gắn ở ĐÂY (một chỗ) vì
+    `apply_scope`, `get_scoped` và danh sách người duyệt đều đi qua hàm này; chốt được AND vào kể cả khi phạm vi
+    YCTT là "thấy tất cả" (`None`).
+    """
+    cond = _grant_scope_condition(model, entity, user, profile, action)
+    if entity == "payment_request":
+        from app.modules.payment_request.hr_payout_guard import payout_visibility_cond  # nhập trong hàm: tránh vòng nhập
+        guard = payout_visibility_cond(model, user, profile)
+        if guard is not None:
+            return guard if cond is None else and_(cond, guard)
+    return cond
+
+
+def _grant_scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
     """ĐIỀU KIỆN phạm vi (chưa gắn vào query nào) = HỢP các grant có `action`.
 
     Ba giá trị trả về, phân biệt rõ:

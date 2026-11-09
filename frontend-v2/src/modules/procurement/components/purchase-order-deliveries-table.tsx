@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -23,6 +24,7 @@ import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { usePurchaseRequestWarehouses } from '../hooks/use-purchase-request-support'
+import { PurchaseOrderDeliveryCard } from './purchase-order-delivery-card'
 import { PurchaseOrderDeliveryFiles } from './purchase-order-delivery-files'
 import type {
   PurchaseOrderDelivery,
@@ -91,6 +93,8 @@ export function PurchaseOrderDeliveriesTable({
 }: PurchaseOrderDeliveriesTableProps) {
   const { data: warehouses } = usePurchaseRequestWarehouses()
   const deliveries = item.deliveries ?? []
+  //  Khổ điện thoại: 27 cột thành thẻ, mỗi ô một hàng có nhãn (`PurchaseOrderDeliveryCard`).
+  const asCards = useIsMobile()
 
   //  Danh mục NCC có sẵn một nhà "NCC tự vận chuyển"; giữ lại thì ô chọn hiện hai
   //  dòng chữ y hệt nhau mà chỉ một dòng lưu đúng ý nghĩa "NCC tự giao".
@@ -578,6 +582,52 @@ export function PurchaseOrderDeliveriesTable({
     }
   }
 
+  const addButton = onAdd && (
+    <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+      <Plus />
+      Thêm lần giao
+    </Button>
+  )
+
+  if (asCards) {
+    //  Ô ở thẻ đi đúng thứ tự cột của bảng; bỏ cột Thao tác (nút xóa đã nằm trên
+    //  đầu thẻ) và Trạng thái giao (huy hiệu đã đứng cạnh "Lần n" ở đầu thẻ).
+    const fields = columns
+      .filter((column) => column.key !== 'action' && column.key !== 'status')
+      .map((column) => ({ key: column.key, label: column.header }))
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">Giao hàng nhiều lần ({deliveries.length} lần)</span>
+          {addButton}
+        </div>
+        <div className="overflow-hidden rounded-lg border">
+          {deliveries.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Chưa có lần giao nào.
+            </p>
+          ) : (
+            <div className="divide-y">
+              {deliveries.map((delivery, index) => (
+                <PurchaseOrderDeliveryCard
+                  key={delivery.id ?? `new-${index}`}
+                  delivery={delivery}
+                  index={index}
+                  fields={fields}
+                  renderField={(key) => renderCell(key, delivery, index)}
+                  receivedAmount={renderCell('received_amount', delivery, index)}
+                  status={renderCell('status', delivery, index)}
+                  onRemove={editable ? () => remove(index) : undefined}
+                  defaultOpen={editable && !delivery.id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <LinesTable
       columns={columns}
@@ -588,14 +638,7 @@ export function PurchaseOrderDeliveriesTable({
       title={`Giao hàng nhiều lần (${deliveries.length} lần)`}
       emptyMessage="Chưa có lần giao nào."
       cellClassName={(key) => (key === 'files' ? 'whitespace-normal' : undefined)}
-      actions={
-        onAdd && (
-          <Button type="button" variant="outline" size="sm" onClick={onAdd}>
-            <Plus />
-            Thêm lần giao
-          </Button>
-        )
-      }
+      actions={addButton}
     />
   )
 }

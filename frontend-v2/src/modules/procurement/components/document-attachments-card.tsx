@@ -1,4 +1,6 @@
 import {
+  Check,
+  ChevronDown,
   Download,
   ExternalLink,
   Eye,
@@ -21,10 +23,19 @@ import { toast } from 'sonner'
 
 import { downloadFile } from '@/core/api'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
 import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import {
@@ -67,12 +78,27 @@ interface DocumentAttachmentsCardProps {
    */
   maxSizeMb?: number
   /**
-   * Tình trạng hồ sơ chứng từ của ĐMH, hiện CHỈ ĐỌC ở đây.
+   * Tình trạng hồ sơ chứng từ, hiện ở tiêu đề thẻ. Rỗng = không hiện.
    *
-   * Ô sửa nằm ở thẻ Thông tin chung; đặt thêm một ô sửa nữa ngay trên đống tệp
-   * thì cùng một trường có hai chỗ bấm, người dùng không biết chỗ nào là thật.
+   * duoc-CR-741: ở màn Thu mua (`v1Wording`) ô sửa dời về ĐÂY như bản v1 (trước nằm ở thẻ
+   * Thông tin chung của ĐMH) và đứng đầu cụm nút bên phải. Màn khác (Đề nghị thanh toán…)
+   * giữ huy hiệu chỉ đọc *Hồ sơ:* cạnh tiêu đề như cũ.
    */
   documentStatus?: string
+  /**
+   * Bấm huy hiệu hồ sơ ra menu chọn tình trạng (cần thêm `onDocumentStatusChange`). Chỉ có
+   * tác dụng khi bật `v1Wording`.
+   */
+  documentStatusEditable?: boolean
+  onDocumentStatusChange?: (value: string) => void
+  /**
+   * duoc-CR-741 — chữ và vị trí của bản v1, CHỈ cho màn Thu mua (YCMH · Phiếu khảo sát ·
+   * ĐMH): *Hồ sơ chứng từ:* ở cụm nút, hộp xóa tệp *Xóa file "x"?* + *Đồng ý*, *Chuỗi chứng
+   * từ (PYC/PKS)*, *Upload thêm file cho mục này*, gợi ý *Bỏ file* / *Xóa dòng* trong hộp tải.
+   * Đại ca chốt 09/11/2026: Thu mua v2 khớp v1 từng chữ, phân hệ khác GIỮ chữ v2 hiện có —
+   * nên mặc định tắt.
+   */
+  v1Wording?: boolean
   /**
    * Mục (thư mục) chọn sẵn khi tải lên — mặc định "Khác". Duyệt dấu truyền
    * `signed_doc` để thư mục mặc định là "Chứng từ đã ký".
@@ -87,6 +113,22 @@ interface DocumentAttachmentsCardProps {
 
 /** Giá trị của chip "Tất cả": xem hết, không lọc theo mục nào. */
 const ALL = '__all__'
+
+/** Hai bộ chữ của thẻ — xem prop `v1Wording`. */
+const CARD_WORDING = {
+  v1: {
+    documentStatusLabel: 'Hồ sơ chứng từ:',
+    chainTitle: 'Xem và tải toàn bộ chứng từ liên kết từ PYC, PKS, YCBG',
+    chainLabel: 'Chuỗi chứng từ (PYC/PKS)',
+    uploadMore: 'Upload thêm file cho mục này',
+  },
+  v2: {
+    documentStatusLabel: 'Hồ sơ:',
+    chainTitle: 'Mở trang xem toàn bộ chứng từ của chuỗi (YCMH, phiếu khảo sát, YCBG)',
+    chainLabel: 'Xem cả chuỗi chứng từ',
+    uploadMore: 'Upload thêm tệp cho mục này',
+  },
+} as const
 
 /**
  * Chứng từ của chứng từ mua hàng — dùng chung cho YCMH và ĐMH.
@@ -104,9 +146,13 @@ export function DocumentAttachmentsCard({
   canManage,
   maxSizeMb = 50,
   documentStatus = '',
+  documentStatusEditable = false,
+  onDocumentStatusChange,
   defaultDocType = OTHER_DOC_TYPE,
   hideUploadButton = false,
+  v1Wording = false,
 }: DocumentAttachmentsCardProps) {
+  const wording = v1Wording ? CARD_WORDING.v1 : CARD_WORDING.v2
   const [openType, setOpenType] = useState(ALL)
   const [uploadType, setUploadType] = useState(defaultDocType)
   const [zipping, setZipping] = useState(false)
@@ -184,9 +230,10 @@ export function DocumentAttachmentsCard({
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {files?.length ?? 0} tệp
           </span>
-          {documentStatus && (
+          {/*  Màn ngoài Thu mua: huy hiệu chỉ đọc cạnh tiêu đề, giữ nguyên như trước duoc-CR-741. */}
+          {!v1Wording && documentStatus && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              Hồ sơ:
+              {wording.documentStatusLabel}
               <DocumentStatusBadge status={documentStatus} />
             </span>
           )}
@@ -196,6 +243,46 @@ export function DocumentAttachmentsCard({
              có tới ba nút ở màn ĐMH, nhét chung hàng với tiêu đề là cả hai bên
              cùng bị bóp. */}
         <div className="flex flex-wrap items-center gap-2 max-md:w-full">
+          {/*  duoc-CR-741: ở Thu mua cụm Hồ sơ chứng từ đứng đầu nhóm nút như bản v1. */}
+          {v1Wording && documentStatus && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              {wording.documentStatusLabel}
+              {documentStatusEditable && onDocumentStatusChange ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-0.5 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      title="Bấm để thay đổi trạng thái hồ sơ chứng từ"
+                    >
+                      <DocumentStatusBadge status={documentStatus} />
+                      <ChevronDown className="size-3.5 opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground uppercase">
+                      Cập nhật hồ sơ chứng từ
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {PO_DOCUMENT_STATUS.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={() => {
+                          //  Chọn lại đúng tình trạng đang có thì thôi, khỏi gọi API thừa.
+                          if (option.value !== documentStatus) onDocumentStatusChange(option.value)
+                        }}
+                      >
+                        <span className="flex-1">{option.label}</span>
+                        {option.value === documentStatus && <Check className="text-primary" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <DocumentStatusBadge status={documentStatus} />
+              )}
+            </span>
+          )}
           {canManage && !isNew && !hideUploadButton && (
             <Button
               type="button"
@@ -217,11 +304,11 @@ export function DocumentAttachmentsCard({
                 variant="outline"
                 size="sm"
                 asChild
-                title="Mở trang xem toàn bộ chứng từ của chuỗi (YCMH, phiếu khảo sát, YCBG)"
+                title={wording.chainTitle}
               >
                 <Link to={appRoutes.procurement.purchaseOrderDocuments(entityId)}>
                   <FolderOpen />
-                  Xem cả chuỗi chứng từ
+                  {wording.chainLabel}
                 </Link>
               </Button>
 
@@ -336,7 +423,7 @@ export function DocumentAttachmentsCard({
                           onClick={() => setUploadDialog({ open: true, docType: group.type })}
                         >
                           <Upload />
-                          Upload thêm tệp cho mục này
+                          {wording.uploadMore}
                         </Button>
                       )}
                     </div>
@@ -347,6 +434,7 @@ export function DocumentAttachmentsCard({
                           file={file}
                           canDelete={canManage}
                           pending={remove.isPending}
+                          v1Wording={v1Wording}
                           onDelete={() => void remove.mutateAsync(file.id)}
                           onView={
                             imageFiles.includes(file)
@@ -379,6 +467,7 @@ export function DocumentAttachmentsCard({
         entityId={entityId}
         maxSizeMb={maxSizeMb}
         initialDocType={uploadDialog.docType}
+        v1Wording={v1Wording}
       />
 
       {imageFiles.length > 0 && (
@@ -442,10 +531,13 @@ function AttachmentRow({
   onDelete,
   onView,
   onPreview,
+  v1Wording,
 }: {
   file: AttachmentFile
   canDelete: boolean
   pending: boolean
+  /** Hộp xóa tệp nói chữ v1 (Thu mua) hay chữ v2 cũ — xem `v1Wording` của thẻ. */
+  v1Wording: boolean
   onDelete: () => void
   /** Có = tệp ảnh: bấm tên mở lightbox tại chỗ thay vì mở tab mới. */
   onView?: () => void
@@ -542,9 +634,9 @@ function AttachmentRow({
         <ConfirmIconButton
           icon={Trash2}
           title="Xóa tệp"
-          confirmTitle={`Xóa "${file.filename}"?`}
+          confirmTitle={v1Wording ? `Xóa file "${file.filename}"?` : `Xóa "${file.filename}"?`}
           confirmDescription="Tệp sẽ bị gỡ khỏi chứng từ này."
-          confirmLabel="Xóa"
+          confirmLabel={v1Wording ? 'Đồng ý' : 'Xóa'}
           destructive
           disabled={pending}
           onConfirm={onDelete}

@@ -176,7 +176,9 @@ describe('SurveyReportCard — delete many / delete a whole cluster (by-line vie
     fireEvent.click(screen.getByRole('button', { name: 'Xóa cả cụm hồ sơ của "Nắp 50 75ml"' }))
     await waitFor(() => expect(confirmMock).toHaveBeenCalled())
     const options = confirmMock.mock.calls[0][0] as { message: string; confirmLabel: string }
-    expect(options.confirmLabel).toBe('Xóa 3 hồ sơ')
+    //  duoc-CR-741: nút đồng ý là một chữ "Xóa" như mọi hộp xóa của v1; số lượng nằm ở tiêu đề.
+    expect(options.confirmLabel).toBe('Xóa')
+    expect((options as { title?: string }).title).toBe('Xóa 3 hồ sơ?')
     expect(options.message).toContain('"Nắp 50 75ml"')
   })
 
@@ -375,5 +377,88 @@ describe('SurveyReportCard — nhớ giai đoạn đã gấp (kh-TM2-1)', () => 
     )
     await openCard()
     expect(screen.queryByRole('button', { name: 'Hiện hồ sơ của giai đoạn' })).toBeNull()
+  })
+})
+
+/**
+ * duoc-CR-741 — chữ hộp xóa của khối theo bản v1 (`frontend/src/components/SurveyReportCard.tsx`)
+ * và nút *Hoàn tác xóa* ở khối rỗng (bản v1 có, v2 trước đây chỉ có trên Lịch sử của YCBG,
+ * còn ĐMH thì không có đường hoàn tác nào).
+ */
+describe('SurveyReportCard — chữ hộp xóa và Hoàn tác xóa theo v1 (duoc-CR-741)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('erp.survey-report.view', 'phase')
+    apiGet.mockReset().mockResolvedValue(REPORT)
+    apiPost.mockReset().mockResolvedValue(REPORT)
+    confirmMock.mockReset().mockResolvedValue(false)
+  })
+
+  it('asks with the v1 title, sentence and a plain Xóa button before deleting the whole report', async () => {
+    renderCard()
+    fireEvent.click(await screen.findByRole('button', { name: /Báo cáo thực hiện/ }))
+    const trash = await screen.findByRole('button', { name: 'Xóa báo cáo thực hiện' })
+    expect(trash).toHaveAttribute('title', 'Xóa toàn bộ báo cáo (hoàn tác được)')
+    fireEvent.click(trash)
+
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1))
+    expect(confirmMock.mock.calls[0][0]).toEqual({
+      title: 'Xóa báo cáo thực hiện',
+      message:
+        'Xóa toàn bộ giai đoạn, nút dòng hàng và hồ sơ của phiếu này? Có thể hoàn tác ở Lịch sử thao tác.',
+      confirmLabel: 'Xóa',
+    })
+  })
+
+  it('names the owner as đơn on a purchase order instead of phiếu', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <SurveyReportCard ownerId={7} canEdit entity="purchase_order" />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: /Báo cáo thực hiện/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa báo cáo thực hiện' }))
+    await waitFor(() => expect(confirmMock).toHaveBeenCalled())
+    expect((confirmMock.mock.calls[0][0] as { message: string }).message).toContain('của đơn này?')
+  })
+
+  it('asks Xóa hồ sơ with a plain Xóa button before deleting one doc, and keeps it when cancelled', async () => {
+    renderCard()
+    fireEvent.click(await screen.findByRole('button', { name: /Báo cáo thực hiện/ }))
+    await screen.findByText('Hợp đồng nắp')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Xóa hồ sơ' })[0])
+
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1))
+    const options = confirmMock.mock.calls[0][0] as { title: string; message: string; confirmLabel: string }
+    expect(options.title).toBe('Xóa hồ sơ')
+    expect(options.confirmLabel).toBe('Xóa')
+    expect(options.message).toMatch(/^Xóa hồ sơ ".+"\?/)
+    expect(apiPost).not.toHaveBeenCalled()
+  })
+
+  it('offers Hoàn tác xóa on an empty report that can be restored, and calls the restore endpoint', async () => {
+    apiGet.mockResolvedValue({ ...EMPTY_REPORT, restorable: true, restorable_audit_id: 91 })
+    apiPost.mockResolvedValue(REPORT)
+    renderCard()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tác xóa' }))
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/execution-report/survey_request/7/restore', {}),
+    )
+  })
+
+  it('shows no Hoàn tác xóa when nothing can be restored, nor to a read-only user', async () => {
+    apiGet.mockResolvedValue(EMPTY_REPORT)
+    const view = renderCard()
+    await screen.findByRole('button', { name: /Khởi tạo báo cáo mẫu/ })
+    expect(screen.queryByRole('button', { name: 'Hoàn tác xóa' })).toBeNull()
+    view.unmount()
+
+    //  Người chỉ xem: khối rỗng ẩn hẳn, nên cũng không có đường hoàn tác.
+    apiGet.mockResolvedValue({ ...EMPTY_REPORT, restorable: true, restorable_audit_id: 91 })
+    renderCard(false)
+    await waitFor(() => expect(apiGet).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: 'Hoàn tác xóa' })).toBeNull()
   })
 })

@@ -366,3 +366,14 @@ describe('groupLeaveBalances — nghỉ bù cộng thêm (duoc-CR-715)', () => {
     expect(group.totals.comp_days).toBe(0.3)
   })
 })
+
+describe('groupLeaveBalances — đã thanh toán ra tiền (duoc-CR-719)', () => {
+  it('sums encashed_days per person and treats a missing field (backend before CR-719) as 0', () => {
+    const [group] = groupLeaveBalances([
+      makeBalance({ encashed_days: 3 }),
+      makeBalance({ encashed_days: 1.5 }),
+      makeBalance({}),
+    ])
+    expect(group.totals.encashed_days).toBe(4.5)
+  })
+})

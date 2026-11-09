@@ -71,7 +71,9 @@ def expire_carried(row: LeaveBalance, leave_type: LeaveType,
     if deadline is None or (today or date.today()) <= deadline:
         return 0.0
 
-    consumed = row.used_days + row.pending_days
+    #  Ngày đã thanh toán ra tiền từ phần mang sang (lý do Nghỉ việc) cũng là đã tiêu — nếu không, qua hạn bị thu hồi
+    #  LẦN HAI và còn lại âm (duoc-CR-719 M1).
+    consumed = row.used_days + row.pending_days + (row.encashed_carried_days or 0.0)
     keep = min(row.carried_days, consumed)
     lost = round(row.carried_days - keep, 2)
     if lost <= 0:

@@ -775,3 +775,18 @@ của LAB (chỉ khi dòng có tick "Mẫu sẵn" — giữ nguyên luật cũ, 
 | Duyệt dòng / Duyệt phiếu / Từ chối / Trả lại | `survey:approve` | Chờ duyệt (duyệt dòng: Nháp/Chờ duyệt/Bị trả lại) |
 | Nhân bản | `survey:create` | mọi trạng thái (theo phạm vi dữ liệu) |
 | Xóa | `survey:delete` | Nháp / Bị trả lại / Đã từ chối |
+
+## Tên nút theo bản v1 (duoc-CR-741, 09/11/2026)
+
+Giao diện mới đổi nhãn nút và hộp xác nhận của Phiếu khảo sát về đúng chữ bản v1; bảng đầy đủ ở
+[kế hoạch CR-741](../plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md).
+
+| Chỗ | Cũ (v2) | Mới (= v1) |
+|---|---|---|
+| Danh sách | *Thêm mới* · biểu tượng nhân bản | ***Thêm*** · ***Nhân bản*** / ***Xong*** bật cột *Thao tác* |
+| Chi tiết | *Xóa* | ***Xóa phiếu*** |
+| Dòng bị báo thiếu thông tin | biểu tượng bổ sung | nút có chữ ***Bổ sung*** |
+| Tệp của dòng | nút tải tệp | ***Tải file lên*** |
+
+Hành vi bù từ v1: ***Duyệt*** hỏi lại trước khi duyệt cả phiếu (nút đồng ý ***Duyệt phiếu***); xóa một dòng hỏi lại;
+đầu trang có huy hiệu mã Yêu cầu báo giá nguồn.

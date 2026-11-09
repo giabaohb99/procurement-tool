@@ -155,6 +155,7 @@ def _list_query(request: Request, db: Session, user):
 @router.get("")
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("survey_request", "read"))):
+    """Danh sách yêu cầu báo giá (YCBG) trong phạm vi được xem, có lọc và phân trang."""
     q = _list_query(request, db, user)
     total = q.count()
     q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc())
@@ -189,6 +190,7 @@ def export_xlsx(request: Request, ids: str = "", cols: str = "",
 
 @router.get("/{sid}")
 def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
+    """Chi tiết một YCBG; trưởng bộ phận được chỉ đích danh cũng xem được."""
     prof = get_perm_profile(db, user)
     cond = _scope_with_named_head(user, prof)
     q = service.query_live_by_id(db, sid)
@@ -202,6 +204,7 @@ def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_r
 def create_(data: SurveyRequestCreate, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "create"))):
     # user/profile: để kéo ảnh từ dòng YCMH nguồn sang (CR-027) đúng phạm vi dữ liệu người dùng thấy
+    """Tạo YCBG mới ở trạng thái Nháp."""
     return success(_out(db, service.create_sr(db, data, user.id, user, get_perm_profile(db, user))), "Đã tạo", 201)
 
 
@@ -210,6 +213,7 @@ def update_(sid: int, data: SurveyRequestUpdate, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "read"))):
     # Phạm vi đi theo `read` (đúng `require` của route): người YÊU CẦU chỉ có read+create+write
     # phạm vi `own`, và chính họ là người sửa phiếu nháp của mình.
+    """Sửa YCBG; chỉ người tạo khi phiếu còn sửa được, hoặc người có quyền sửa."""
     s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
@@ -236,6 +240,7 @@ def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey
 
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "delete"))):
+    """Xóa một YCBG."""
     _in_scope(db, sid, user, "delete")
     service.delete_sr(db, sid, user.id)
     return success(None, "Đã xóa")
@@ -243,6 +248,7 @@ def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("surve
 
 @router.delete("")
 def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=Depends(require("survey_request", "delete"))):
+    """Xóa nhiều YCBG theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -266,6 +272,7 @@ def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=De
 
 @router.post("/{sid}/submit")
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
+    """Gửi duyệt YCBG ở trạng thái Nháp hoặc Bị trả lại."""
     s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
@@ -297,6 +304,7 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 
 @router.post("/{sid}/approve")
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
+    """Duyệt YCBG và ghi người duyệt lên bản in."""
     _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "approved", user.id)
     # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
@@ -486,6 +494,7 @@ def available_survey_lines_(sid: int, line_id: int,
                             search: str = "", page: int = 1, page_size: int = 8,
                             sort_by: str = "", sort_dir: str = "desc",
                             db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Dòng phiếu khảo sát đã duyệt có thể gắn làm phương án cho một dòng YCBG; phải có ít nhất một bộ lọc."""
     _in_scope(db, sid, up[0], "read")
     service.get_line(db, sid, line_id)   # xác thực dòng thuộc phiếu (sai thì 404)
     # Lọc MỞ (chọn NCC thủ công) — KHÔNG giới hạn liên kết YCKS: option có thể đã có khảo sát sẵn.
@@ -504,6 +513,7 @@ def available_survey_lines_(sid: int, line_id: int,
 
 @router.post("/{sid}/lines/{line_id}/options")
 def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Gắn phương án cho một dòng YCBG khi phiếu đang xử lý hoặc đã khảo sát."""
     user, prof = up
     s = _in_scope(db, sid, user, "read")
     if s.status not in ("processing", "survey_done"):
@@ -533,6 +543,7 @@ def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
 
 @router.delete("/{sid}/lines/{line_id}/options/{oid}")
 def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Gỡ một phương án của dòng YCBG chưa tạo YCMH."""
     user, prof = up
     _in_scope(db, sid, user, "read")
     ln = service.get_line(db, sid, line_id)
@@ -546,6 +557,7 @@ def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
 
 @router.patch("/{sid}/lines/{line_id}/options/{oid}")
 def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Sửa một phương án của dòng YCBG; chỉ người phụ trách dòng."""
     user, prof = up
     _in_scope(db, sid, user, "read")
     ln = service.get_line(db, sid, line_id)

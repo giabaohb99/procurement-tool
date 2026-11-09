@@ -15,7 +15,8 @@ export interface LaborContractVariableColumnActions {
   onDelete: (variable: LaborContractVariable) => void
 }
 
-function statusBadge(v: LaborContractVariable) {
+/** Huy hiệu trạng thái của một biến — dùng chung cho cột Trạng thái và thẻ khổ điện thoại (duoc-CR-721). */
+export function renderVariableStatusBadge(v: LaborContractVariable) {
   if (v.source === VARIABLE_SOURCE_SYSTEM) {
     return v.is_hidden ? <Badge variant="outline">Ẩn</Badge> : <Badge variant="secondary">Đang dùng</Badge>
   }
@@ -64,7 +65,7 @@ export function buildLaborContractVariableColumns(
       cell: (v) => (v.source !== VARIABLE_SOURCE_SYSTEM && v.is_required ? <Badge variant="secondary">Bắt buộc</Badge> : '—'),
     },
     { key: 'template_count', header: 'Số mẫu dùng', width: 120, align: 'right', cell: (v) => v.template_count },
-    { key: 'status', header: 'Trạng thái', width: 120, cell: statusBadge },
+    { key: 'status', header: 'Trạng thái', width: 120, cell: renderVariableStatusBadge },
   ]
   if (actions.canManage || actions.canDelete) {
     columns.push({

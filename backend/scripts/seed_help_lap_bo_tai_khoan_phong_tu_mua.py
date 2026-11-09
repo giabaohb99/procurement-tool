@@ -201,7 +201,38 @@ docker compose exec -T api python scripts/backfill_handling_dept.py</pre>
 </ul>
 <p>⚠️ Việc thứ hai là chỗ dễ quên nhất và quên thì <strong>lủng im lặng</strong>: Sản xuất -Thu mua vẫn thấy phiếu phòng mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.</p>
 
-<h2>X. Điều hướng</h2>
+<h2>X. Bộ tài khoản cho một công ty con</h2>
+<p>Khác hai bộ ở trên: người của công ty con chỉ được thấy <strong>dữ liệu của công ty mình</strong> (nhân sự, phiếu, văn bản),
+còn người có quyền xem tổng của tập đoàn vẫn thấy cả công ty con. Làm bằng cấu hình trên hệ chung, không tách hệ. Ca đầu
+tiên là công ty Agricare (AGC), ngày 21/10/2026.</p>
+<p><strong>Bốn việc phải có:</strong></p>
+<ol>
+<li><strong>Một phòng ban riêng</strong> của công ty con, khai trưởng phòng (màn <em>Nhân sự › Phòng ban</em>). Trưởng phòng là người duyệt phiếu của phòng.</li>
+<li><strong>Hồ sơ nhân sự</strong> của người công ty con ghi <em>Pháp nhân</em> = công ty con, <em>Phòng ban</em> = phòng ở việc 1 (Bước 1 của mục IV).</li>
+<li><strong>Vai trò</strong> như thường: <em>Nhân sự</em>, <em>Nhân viên thu mua phòng</em>, <em>Nhân sự — Hồ sơ nhân viên</em>... (Bước 3 của mục IV).</li>
+<li><strong>Thu hẹp MỌI vai trò</strong> của người đó bằng ô <em>Chỉ trong công ty</em> = công ty con (Bước 4 của mục IV), lặp cho <strong>từng</strong> vai trò.</li>
+</ol>
+<p>Phòng ở việc 1 tự thành phòng tự mua ngay khi có người giữ vai trò thu mua trong phòng, nên phải thêm phòng này vào ô
+<em>Loại trừ phòng ban</em> của các tài khoản Sản xuất -Thu mua như mục IX.</p>
+<p>⚠️ <strong>Vì sao phải thu hẹp tất cả vai trò, không riêng một vai trò:</strong> phạm vi của một người là gộp mọi vai trò người đó
+giữ, một vai trò còn để <em>Tất cả</em> là đủ mở cả tập đoàn. Hai bẫy đã gặp khi lập bộ AGC:</p>
+<ul>
+<li>Vai trò <em>Nhân sự</em> (ai cũng có) đọc danh bạ toàn tập đoàn. Chưa thu hẹp thì nhân viên công ty con thấy 268 người; thu hẹp xong chỉ còn người công ty mình.</li>
+<li>Quyền đọc trường nhạy cảm (CCCD, ngân hàng, mã số thuế) đi theo khóa quyền chứ không theo phạm vi. HR công ty con chỉ thu hẹp vai trò <em>Hồ sơ nhân viên</em> mà để vai trò <em>Nhân sự</em> ở <em>Tất cả</em> thì đọc được CCCD của cả tập đoàn.</li>
+</ul>
+<p><strong>HR công ty con không được sửa danh mục dùng chung.</strong> Ngày lễ, Loại nghỉ, Chức vụ, Lịch làm việc là danh mục chung
+của cả tập đoàn, ô <em>Chỉ trong công ty</em> không thu hẹp được. Chép hai vai trò <em>Nhân sự — Hồ sơ nhân viên</em> và
+<em>Nhân sự — Quản lý nghỉ phép</em> thành bản <em>"Nhân sự công ty — ... (không sửa danh mục chung)"</em> chỉ còn quyền xem bốn
+danh mục đó, gán bản chép cho HR công ty con; vai trò gốc giữ cho HR tập đoàn.</p>
+<p><strong>Đăng nhập:</strong> tạo tài khoản không mật khẩu, người đó đăng nhập bằng Google đúng gmail ghi ở hồ sơ. Cần mật khẩu thì quản
+trị tự đặt mật khẩu tạm và báo riêng cho người đó.</p>
+<p><strong>Luồng duyệt riêng:</strong> nghỉ phép và văn bản của công ty con có thể chạy luồng riêng: màn <em>Phê duyệt › Luồng duyệt</em>,
+tạo luồng mới, chọn loại chứng từ, ô <em>Pháp nhân áp dụng</em> = công ty con. Luồng đúng pháp nhân được xét trước luồng dùng chung.</p>
+<p><strong>Kiểm sau khi làm</strong> (cửa sổ ẩn danh, đăng nhập từng người): nhân viên công ty con chỉ thấy danh bạ công ty mình; HR công
+ty con chỉ thấy nhân sự công ty mình, mở hồ sơ người công ty khác bằng đường dẫn ra <em>Không tìm thấy</em>, màn Ngày lễ / Loại
+nghỉ không có nút <em>Thêm mới</em>; người có quyền xem tổng vẫn thấy người công ty con.</p>
+
+<h2>XI. Điều hướng</h2>
 <ul>
 <li><strong>Thuộc thư mục:</strong> Các chức năng khác › {ref(PARENT_TITLE, "Trợ lý AI")}</li>
 <li><strong>Bài liên quan:</strong> {ref(AI_ARTICLE_TITLE, "Lập bộ tài khoản thu mua bằng Trợ lý AI")} · {ref("Vai trò", "Vai trò")} · {ref("Nhân sự", "Nhân sự")} · {ref("Phòng ban", "Phòng ban")}</li>

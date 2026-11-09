@@ -15,6 +15,7 @@ from . import service
 from .model import POItem, PurchaseOrder
 from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn,
                      ItemProgressIn, POCreate, POUpdate, RejectIn)
+from .sort_expressions import list_sort_allow
 from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
@@ -58,12 +59,14 @@ def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = service.build_list_query(db, request)
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
-    return apply_sort_from_request(q, PurchaseOrder, request)
+    # duoc-CR-738: cột tính toán / join (amount, supplier, handler_dept_name, approver_name)
+    return apply_sort_from_request(q, PurchaseOrder, request, allow=list_sort_allow(db))
 
 
 @router.get("")
 def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
             user=Depends(require("purchase_order", "read"))):
+    """Danh sách đơn mua hàng (ĐMH) trong phạm vi được xem, có lọc và phân trang."""
     q = _list_query(request, db, user)
     total, items = service.list_po(db, q, pg)
     return success({"total": total, "items": _out_list(db, items)})
@@ -147,6 +150,7 @@ def list_po_lines(request: Request, pg: dict = Depends(pagination), db: Session 
 
 @router.get("/{pid}")
 def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "read"))):
+    """Chi tiết một ĐMH."""
     scoped = apply_scope(service.query_by_id(db, pid),
                          PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     if not scoped.first():
@@ -156,6 +160,7 @@ def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
 
 @router.get("/{pid}/print")
 def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "print"))):
+    """Dữ liệu in một ĐMH (người ký, công ty, dòng hàng)."""
     po = _in_scope(db, pid, user, "print")
     return success(_out_print(db, po))
 
@@ -194,11 +199,13 @@ def get_po_purchase_request(pid: int, db: Session = Depends(get_db),
 
 @router.post("")
 def create_po(data: POCreate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
+    """Tạo ĐMH mới ở trạng thái Nháp."""
     return success(_out(db, service.create_po(db, data, user.id)), "Đã tạo đơn mua hàng", 201)
 
 
 @router.post("/{pid}/copy")
 def copy_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
+    """Nhân bản một ĐMH thành đơn Nháp mới."""
     _in_scope(db, pid, user, "create")
     return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
 
@@ -212,6 +219,7 @@ def clone_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
 
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
+    """Sửa ĐMH."""
     _in_scope(db, pid, user, "write")
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")
 
@@ -227,6 +235,7 @@ def set_document_status(pid: int, body: DocumentStatusIn, db: Session = Depends(
 
 @router.delete("/{pid}")
 def delete_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "delete"))):
+    """Xóa một ĐMH."""
     _in_scope(db, pid, user, "delete")
     service.delete_po(db, pid, user.id)
     return success(None, "Đã xóa")
@@ -234,6 +243,7 @@ def delete_po(pid: int, db: Session = Depends(get_db), user=Depends(require("pur
 
 @router.delete("")
 def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(require("purchase_order", "delete"))):
+    """Xóa nhiều ĐMH theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -261,6 +271,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     # CR-073: trước đây gọi thẳng set_status nên gửi duyệt được đơn thiếu NCC, thiếu dòng
     # hàng, hoặc đơn đang ở trạng thái bất kỳ. set_status chỉ GÁN trạng thái, không kiểm gì —
     # chốt phải đặt ở đây (đồng bộ cách làm của submit_pr).
+    """Gửi duyệt ĐMH ở trạng thái Nháp hoặc Bị trả lại; báo thiếu nhà cung cấp hay dòng hàng."""
     po = _in_scope(db, pid, user, "write")
     if po.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt được đơn ở trạng thái Nháp hoặc Bị trả lại")
@@ -291,6 +302,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 @router.post("/{pid}/approve")
 def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                user=Depends(require("purchase_order", "approve"))):
+    """Duyệt ĐMH đang chờ duyệt và ghi người duyệt lên bản in."""
     _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "duyệt")
     po = service.set_status(db, pid, "approved", user.id)
@@ -326,6 +338,7 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
 def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Từ chối = KHÓA đơn (Đã từ chối) — không sửa/gửi lại được, phải Nhân bản thành đơn mới.
+    """Từ chối ĐMH đang chờ duyệt (đơn chuyển Đã hủy) kèm lý do, báo người tạo."""
     _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "từ chối")
     po = service.set_status(db, pid, "cancelled", user.id, data.reason)
@@ -339,6 +352,7 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Trả về = Bị trả lại — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCMH).
+    """Trả ĐMH đang chờ duyệt về người tạo để sửa, kèm lý do."""
     _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "trả về")
     po = service.set_status(db, pid, "rejected", user.id, data.reason)
@@ -351,6 +365,7 @@ def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 @router.post("/{pid}/cancel")
 def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "cancel"))):
+    """Hủy ĐMH kèm lý do bắt buộc; đơn đã Hủy hay Hoàn thành thì không hủy lại."""
     _in_scope(db, pid, user, "cancel")
     # Hủy phải có lý do
     if not (data.reason or "").strip():
@@ -370,6 +385,7 @@ def complete_po(pid: int, db: Session = Depends(get_db),
     # Chỉ cho Hoàn thành ĐƠN khi MỌI dòng đã ở điểm cuối (`completed`/`cancelled`) —
     # giữ header nhất quán với tiến độ dòng (tránh đơn đã hoàn thành mà dòng chưa nhập
     # Số HĐ / chưa thanh toán, dẫn tới không tạo được Yêu cầu thanh toán).
+    """Chuyển ĐMH sang Hoàn thành khi mọi dòng đã xong hoặc đã hủy."""
     _in_scope(db, pid, user, "write")
     lines = service.items_unsorted_of(db, pid)
     pending = [it for it in lines
@@ -393,6 +409,7 @@ def complete_po(pid: int, db: Session = Depends(get_db),
 @router.post("/{pid}/reopen")
 def reopen_po(pid: int, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
+    """Mở lại ĐMH đã hoàn thành để xử lý tiếp."""
     _in_scope(db, pid, user, "write")
     po = service.reopen_po(db, pid, user.id)
     return success(_out(db, po), "Đã mở lại đơn để xử lý tiếp")

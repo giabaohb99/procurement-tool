@@ -17,6 +17,7 @@ import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { EmployeeChangeRequestStatusBadge } from '../components/employee-change-request-status-badge'
+import { ProfileChangeRequestCard } from '../components/profile-change-request-card'
 import {
   useChangeRequestPendingCount,
   useChangeRequests,
@@ -126,6 +127,7 @@ export function ProfileChangeRequestListPage() {
           emptyMessage={describeEmpty(debouncedValue, status)}
           storageKey="hr.profile-change-requests"
           onRowClick={(row) => navigate(appRoutes.hr.profileChangeRequestDetail(row.id))}
+          mobileCard={(row) => <ProfileChangeRequestCard request={row} />}
           pagination={{
             page,
             pageSize,

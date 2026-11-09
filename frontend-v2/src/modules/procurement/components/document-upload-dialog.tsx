@@ -48,6 +48,8 @@ interface DocumentUploadDialogProps {
    * thì người dùng bấm từ thư mục Hóa đơn GTGT mà tệp lại rơi vào Khác.
    */
   initialDocType?: string
+  /** duoc-CR-741: gợi ý nút đúng chữ v1 (*Bỏ file* · *Xóa dòng*) — chỉ màn Thu mua bật. */
+  v1Wording?: boolean
 }
 
 /**
@@ -64,6 +66,7 @@ export function DocumentUploadDialog({
   entityId,
   maxSizeMb = 50,
   initialDocType = OTHER_DOC_TYPE,
+  v1Wording = false,
 }: DocumentUploadDialogProps) {
   const [rows, setRows] = useState<UploadRow[]>([{ docType: initialDocType, files: [] }])
   const { data: documentTypes } = useDocumentTypes()
@@ -185,7 +188,7 @@ export function DocumentUploadDialog({
                           variant="ghost"
                           size="icon-xs"
                           className="text-destructive hover:text-destructive"
-                          title="Bỏ tệp này"
+                          title={v1Wording ? 'Bỏ file' : 'Bỏ tệp này'}
                           aria-label={`Bỏ tệp ${file.name}`}
                           disabled={upload.isPending}
                           onClick={() => removeFile(index, fileIndex)}
@@ -203,7 +206,7 @@ export function DocumentUploadDialog({
                 variant="ghost"
                 size="icon-sm"
                 className="text-destructive hover:text-destructive"
-                title="Xóa mục này"
+                title={v1Wording ? 'Xóa dòng' : 'Xóa mục này'}
                 aria-label="Xóa mục chứng từ"
                 disabled={rows.length === 1 || upload.isPending}
                 onClick={() => setRows((current) => current.filter((_, p) => p !== index))}

@@ -59,7 +59,12 @@ export function SurveyReportPhaseDialog({
     if (pending) return
     if (
       isDirty &&
-      !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))
+      !(await confirm({
+        //  duoc-CR-741: nguyên văn hộp hỏi đóng khi còn sửa dở của bản v1 (`SurveyReportModal`).
+        title: 'Đóng hộp thoại',
+        message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?',
+        confirmLabel: 'Đóng',
+      }))
     )
       return
     onOpenChange(false)
@@ -84,7 +89,15 @@ export function SurveyReportPhaseDialog({
         )
         return
       }
-      if (!(await confirm({ message: `Xóa giai đoạn "${phase.name}"?` }))) return
+      //  duoc-CR-741: tiêu đề + nút "Xóa" như bản v1.
+      if (
+        !(await confirm({
+          title: 'Xóa giai đoạn',
+          message: `Xóa giai đoạn "${phase.name}"?`,
+          confirmLabel: 'Xóa',
+        }))
+      )
+        return
       await onDelete(phase.id)
       onOpenChange(false)
     })

@@ -38,6 +38,7 @@ ENTITY_LABELS = {
     "payment_request": "Yêu cầu thanh toán",
     "leave_request": "Đơn nghỉ phép",
     "leave_comp_request": "Phiếu nghỉ bù",
+    "leave_encashment": "Thanh toán nghỉ phép",
     "room_booking": "Phiếu đặt phòng họp",
     #  Đặt xe có ĐỦ hook (`register_hooks` + `register_subject` + `register_reader`
     #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
@@ -64,6 +65,7 @@ ENTITY_LINKS = {
     #  phải vá cho phân hệ Văn thư ngày 20/08/2026, chỉ khác chỗ hỏng.
     "leave_request": "/hr/leave-requests/{id}",
     "leave_comp_request": "/hr/leave-comp-requests/{id}",
+    "leave_encashment": "/hr/leave-encashments/{id}",
     #  Đặt phòng cũng chỉ tồn tại ở app v2 — xem cảnh báo ngay trên.
     "room_booking": "/hr/room-bookings/{id}",
     #  Đặt xe cũng chỉ có ở app v2 (`appRoutes.vehicleBooking.detail`), và

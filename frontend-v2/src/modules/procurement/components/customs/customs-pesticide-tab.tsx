@@ -37,6 +37,7 @@ import {
   resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
 import { emptyPesticideInput } from '../../utils/customs-pesticide-form'
+import { CustomsPesticideCard } from './customs-pesticide-card'
 import { CustomsPesticideExportMenu } from './customs-pesticide-export-menu'
 import { CustomsPesticideFilterControls } from './customs-pesticide-filter-controls'
 import { CustomsPesticideFormDialog } from './customs-pesticide-form-dialog'
@@ -112,6 +113,7 @@ export function CustomsPesticideTab() {
         )}
         storageKey={PESTICIDE_TABLE_STORAGE_KEY}
         onRowClick={(row) => openDetail(row.id)}
+        mobileCard={(row) => <CustomsPesticideCard row={row} />}
         filtersActive={filtersActive}
         onResetFilters={resetFilters}
         //  Một hàng duy nhất: tìm → ba ô chọn → Nạp danh mục …… Xóa lọc · Tải lại · Cột

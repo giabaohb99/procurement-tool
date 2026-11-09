@@ -195,7 +195,7 @@ class PurchaseOrder(Base, AuditMixin, SoftDeleteMixin):
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)
     payment_terms: Mapped[str] = mapped_column(String(255), default="")    # hình thức TT cho NCC (col46)
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
-    status: Mapped[str] = mapped_column(String(30), default="draft")
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft | submitted | approved | partial | received | cancelled
     # Trạng thái hồ sơ chứng từ — người dùng cập nhật TAY (Task 10b).
     # MÃ cố định, xem PO_DOCUMENT_STATUS trong app/core/status_codes.py (B-06): none | partial | full.

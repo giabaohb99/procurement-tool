@@ -105,6 +105,15 @@ class LeaveType(Base, AuditMixin):
     #  Cho ứng phép: còn lại được xuống tới `-N` ngày. `0` = không ứng (QĐ-NP2 cũ).
     max_negative_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
 
+    #  duoc-CR-719 — thanh toán ngày phép chưa nghỉ ra tiền (ERPNext: allow_encashment · encashment_threshold_days ·
+    #  non_encashable_leaves). Chỉ có nghĩa khi `counts_balance` bật (loại không trừ quỹ thì không có số dư).
+    allow_encashment: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    #  Trần số ngày thanh toán MỖI NĂM (cộng dồn mọi phiếu còn hiệu lực của năm). `0` = không trần.
+    #  ⚠️ Khác ERPNext: trần ở đó tính theo từng lần, ở đây theo NĂM nên không lách được bằng cách tách phiếu.
+    max_encashable_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    #  Số ngày phải GIỮ LẠI, không được thanh toán (ERPNext non_encashable_leaves). Chỉ áp cho lý do cuối năm.
+    non_encashable_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     note: Mapped[str] = mapped_column(String(500), default="")

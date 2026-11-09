@@ -685,7 +685,7 @@ export function DataTable<T>({
                   minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
                   draggable={!column.stickyRight}
                   dragging={drag?.fromKey === column.key}
-                  sortDir={sortBy === column.key ? sortDir : null}
+                  sortDir={sortBy === (column.sortKey ?? column.key) ? sortDir : null}
                   onSort={
                     onSortChange
                       ? () => {
@@ -704,8 +704,9 @@ export function DataTable<T>({
                           trackUiAction(UI_ACTION_CODE.SORT_CHANGE) // duoc-CR-654
                           const firstDir = column.sortDescFirst ? 'desc' : 'asc'
                           const secondDir = column.sortDescFirst ? 'asc' : 'desc'
-                          if (sortBy !== column.key) return onSortChange(column.key, firstDir)
-                          if (sortDir === firstDir) return onSortChange(column.key, secondDir)
+                          const sortKey = column.sortKey ?? column.key
+                          if (sortBy !== sortKey) return onSortChange(sortKey, firstDir)
+                          if (sortDir === firstDir) return onSortChange(sortKey, secondDir)
                           onSortChange('', 'asc')
                         }
                       : undefined

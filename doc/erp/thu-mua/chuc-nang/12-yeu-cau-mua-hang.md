@@ -939,7 +939,7 @@ thứ tư — không có chuông nào cho hai lần đổi tay — đã đóng n
   `backend/scripts/seed_help_xu_ly_phuong_an.py`, mỗi bài vào một nhóm có sẵn:
   - *Xử lý phương án trên yêu cầu mua hàng* (nhóm **Dành cho Nhân viên Mua hàng**) — đủ đường
     đi: gắn hai nguồn · phương án 0 · chốt hoàn thành xử lý và nghĩa của *chốt rỗng* · khe nới
-    H.10.4 · *Áp 1 NCC cho nhiều dòng* · *Mở lại cho NSTM xử lý* · một nút *Tạo đơn* với ba
+    H.10.4 · *Áp 1 NCC cho nhiều dòng* · *Mở lại cho NSTM xử lý* · một nút *Tạo đơn mua hàng* với ba
     nhánh và hai lời hộp xác nhận · hai bản in · thẻ *Chứng từ liên quan*.
   - *Chọn phương án trên yêu cầu mua hàng* (nhóm **Dành cho Người yêu cầu**) — bản ngắn, cố ý
     **không nhắc tên NCC** để khớp H.3.8, và nói rõ *không làm gì = mua theo yêu cầu gốc*,
@@ -1008,7 +1008,7 @@ H.3.9 chép mã hàng lúc chọn. **Đường tạo ĐMH tay giữ nguyên, lu�
 cấp tự điền NCC/giá/mã từ phương án đã chọn của dòng.
 
 **Lối vào: MỘT nút, hệ thống tự chọn đường (bao-CR-420, 17/09/2026).** Màn chi tiết phiếu chỉ
-còn một nút *Tạo đơn*, không sổ xuống. Đường chạy chọn theo thứ tự:
+còn một nút *Tạo đơn mua hàng* (trước duoc-CR-741 ghi *Tạo đơn*), không sổ xuống. Đường chạy chọn theo thứ tự:
 
 1. Còn dòng gom được theo phương án (đã chốt hoàn thành xử lý · chưa hủy · còn `no_po` · còn
    phương án đang chọn) → chạy **đường gom theo NCC**.
@@ -1020,7 +1020,8 @@ việc NSTM vừa làm — thiếu cả NCC lẫn giá đã khảo sát. Ngượ
 chưa ai chốt phương án (phiếu cũ, hoặc đang giữa chừng) sẽ không lập nổi đơn nào từ màn này.
 Cả hai đường đều đòi `purchase_order:create`, nên người yêu cầu không thấy nút.
 
-**Nhãn nút là *Tạo đơn* cho cả hai đường** (đại ca chốt 17/09/2026). Bản đầu ghi *Tạo đơn theo
+**Nhãn nút là MỘT chữ cho cả hai đường** (đại ca chốt 17/09/2026; chữ đổi từ *Tạo đơn* thành *Tạo đơn mua hàng*
+cho khớp bản v1 ở duoc-CR-741, 09/11/2026). Bản đầu ghi *Tạo đơn theo
 phương án* / *Tạo đơn mua hàng* tùy đường — tức là tả cách chạy bên trong, thứ người bấm không
 chọn được và cũng không cần biết, vì đường nào chạy đã do trạng thái phiếu quyết định. Việc sắp
 làm nói ở hộp xác nhận ngay bên dưới, chỗ có đủ chỗ để nói cho tử tế.
@@ -1250,3 +1251,29 @@ thêm chú *và n phiếu nữa* khi phiếu còn nguồn khác.
 Không thêm bảng, không thêm cột, không có migration, không thêm khóa phân quyền. Thay đổi duy
 nhất ở phần trả về là **thêm** một khóa. Giao diện cũ và hai bản in đọc hai khóa vô hướng như
 trước, hành vi y nguyên.
+
+## Tên nút theo bản v1 (duoc-CR-741, 09/11/2026)
+
+Giao diện mới đổi nhãn nút và hộp xác nhận của YCMH về đúng chữ bản v1; bảng đầy đủ ở
+[kế hoạch CR-741](../plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md). Bài HDSD và cẩm nang trợ lý ghi theo tên mới.
+
+| Chỗ | Cũ (v2) | Mới (= v1) |
+|---|---|---|
+| Danh sách | *Thêm mới* · biểu tượng nhân bản trên mọi dòng | ***Thêm*** · nút ***Nhân bản*** / ***Xong*** ở đầu trang bật cột *Thao tác*, bấm ***Nhân bản*** trên dòng thì hỏi lại ở hộp *Nhân bản phiếu* |
+| Danh sách | *Xuất Excel* | tick dòng thì nút thành ***Xuất Excel (n)***, chỉ xuất phiếu đã tick (mục G) |
+| Chi tiết, khi sửa | *Lưu & gửi duyệt* | ***Gửi duyệt*** (vẫn lưu rồi mới gửi) |
+| Chi tiết, phiếu *Đã duyệt* | *Duyệt điều phối* | ***Duyệt*** (hộp vẫn tên *Duyệt điều phối*) |
+| Chi tiết | *Tạo đơn* | ***Tạo đơn mua hàng*** (H.10.6) |
+| Chi tiết | *Xóa* | ***Xóa phiếu***, hộp *Xác nhận xóa* |
+| Hộp sản phẩm đã đặt đủ/vượt | *Mua thêm* | ***Vẫn mua thêm*** (form điền đủ số yêu cầu) · ***Chỉ SP còn thiếu*** (form chỉ mang sản phẩm còn thiếu); thoát bằng dấu X |
+| Bảng dòng | *Thêm nhiều* | ***Thêm nhiều dòng*** dưới bảng |
+
+Hành vi bù từ v1 trong cùng đợt:
+
+- Phiếu *Bị trả lại* / *Đã từ chối*, người có `survey_request:create`: nút ***Tạo yêu cầu báo giá*** (mục C quy tắc 21, CR-026)
+  mở form YCBG mới điền sẵn các dòng của phiếu; phiếu không còn dòng nào thì báo *Phiếu không còn dòng sản phẩm nào để
+  khảo sát*.
+- Dòng hàng lúc sửa có ba biểu tượng *Chi tiết* · ***Nhân đôi*** (chèn bản sao ngay sau dòng gốc) · *Xóa*.
+- Popup chi tiết dòng: nút ***So sánh*** chỉ hiện khi cả khối *Hình ảnh SP (gốc)* lẫn *File đính kèm (đối chiếu)* đều
+  có ảnh; hộp *So sánh* bày hai ảnh cạnh nhau.
+- Đổi ngày dự kiến có hàng của dòng thì hỏi lý do bằng hộp có nút *Lưu* / *Hủy*.

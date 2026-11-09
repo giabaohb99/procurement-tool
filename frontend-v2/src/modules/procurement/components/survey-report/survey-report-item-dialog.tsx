@@ -52,7 +52,12 @@ export function SurveyReportItemDialog({
     if (pending) return
     if (
       isDirty &&
-      !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))
+      !(await confirm({
+        //  duoc-CR-741: nguyên văn hộp hỏi đóng khi còn sửa dở của bản v1 (`SurveyReportModal`).
+        title: 'Đóng hộp thoại',
+        message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?',
+        confirmLabel: 'Đóng',
+      }))
     )
       return
     onOpenChange(false)
@@ -72,8 +77,11 @@ export function SurveyReportItemDialog({
     once(async () => {
       if (!item) return
       if (
+        //  duoc-CR-741: tiêu đề + nút "Xóa" như bản v1.
         !(await confirm({
+          title: 'Xóa nút dòng hàng',
           message: `Xóa nút "${item.name}"? Hồ sơ đang gắn nút này sẽ chuyển về Chung, không bị xóa.`,
+          confirmLabel: 'Xóa',
         }))
       )
         return

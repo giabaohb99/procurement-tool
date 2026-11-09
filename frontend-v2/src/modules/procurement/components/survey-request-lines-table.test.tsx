@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -137,13 +138,152 @@ describe('SurveyRequestLinesTable — khổ điện thoại', () => {
     expect(screen.getByText(/Hạn KQ 18\/03\/2026/)).toBeInTheDocument()
   })
 
-  it('chỉ hiện nút Nhân bản / Xóa khi phiếu còn sửa được', () => {
+  it('chỉ hiện nút Nhân đôi / Xóa khi phiếu còn sửa được', () => {
     const { unmount } = renderTable({ editing: false })
     expect(screen.queryByRole('button', { name: /Xóa dòng/ })).toBeNull()
     unmount()
 
     renderTable({ editing: true })
     expect(screen.getByRole('button', { name: /Xóa dòng 1/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Nhân bản dòng 1/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Nhân đôi dòng 1/ })).toBeInTheDocument()
+  })
+})
+
+/**
+ * duoc-CR-737 — *Xóa đã chọn (n)* đứng ở góc phải tiêu đề THẺ cạnh *Thêm dòng* như bản
+ * v1, không còn ở thanh tiêu đề của `LinesTable`. Trang xếp khung qua `renderFrame`.
+ */
+describe('SurveyRequestLinesTable — Xóa đã chọn ở tiêu đề thẻ (duoc-CR-737)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  const second: SurveyRequestLine = { ...LINES[0], id: 6, requirement_detail: 'Băng keo trong 48mm' }
+
+  it('moves the bulk-delete button into the header slot and still drops ticked lines', async () => {
+    const onChange = vi.fn()
+    const onLineRemoved = vi.fn()
+    renderTable({
+      lines: [LINES[0], second],
+      editing: true,
+      bulkRemovable: true,
+      onChange,
+      onLineRemoved,
+      renderFrame: ({ headerActions, body }) => (
+        <>
+          <div role="toolbar" aria-label="Tiêu đề thẻ">
+            {headerActions}
+          </div>
+          <div role="region" aria-label="Thân thẻ">
+            {body}
+          </div>
+        </>
+      ),
+    })
+
+    const header = screen.getByRole('toolbar', { name: 'Tiêu đề thẻ' })
+    const body = screen.getByRole('region', { name: 'Thân thẻ' })
+    expect(within(header).queryByRole('button')).toBeNull()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 2' }))
+    expect(within(body).queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+    await userEvent.click(within(header).getByRole('button', { name: 'Xóa đã chọn (1)' }))
+    //  duoc-CR-741: hộp hỏi nói đúng câu v1 và nút đồng ý là "Đồng ý" như v1.
+    const dialog = screen.getByRole('alertdialog', { name: 'Xác nhận' })
+    expect(dialog).toHaveTextContent(
+      'Xóa 1 dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.',
+    )
+    expect(within(dialog).getByRole('button', { name: 'Hủy' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Đồng ý' }))
+
+    expect(onChange).toHaveBeenCalledWith([LINES[0]])
+    expect(onLineRemoved).toHaveBeenCalledWith(1)
+  })
+})
+
+/** duoc-CR-741 — gợi ý nút biểu tượng ở khổ rộng lấy nguyên chữ bản v1. */
+describe('SurveyRequestLinesTable — gợi ý nút theo v1 (duoc-CR-741)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  it('labels the row icons Chi tiết / hình ảnh · Nhân đôi · Xóa like v1, and they act on the right row', async () => {
+    const onChange = vi.fn()
+    const onOpenDetail = vi.fn()
+    const second: SurveyRequestLine = { ...LINES[0], id: 6, requirement_detail: 'Băng keo trong 48mm' }
+    renderTable({ lines: [LINES[0], second], editing: true, onChange, onOpenDetail })
+
+    expect(screen.getByRole('button', { name: 'Chi tiết / hình ảnh dòng 2' })).toHaveAttribute(
+      'title',
+      'Chi tiết / hình ảnh',
+    )
+    expect(screen.getByRole('button', { name: 'Nhân đôi dòng 2' })).toHaveAttribute('title', 'Nhân đôi')
+    expect(screen.getByRole('button', { name: 'Xóa dòng 2' })).toHaveAttribute('title', 'Xóa')
+    expect(screen.queryByTitle('Nhân bản dòng')).toBeNull()
+    expect(screen.queryByTitle('Chi tiết dòng')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết / hình ảnh dòng 2' }))
+    expect(onOpenDetail).toHaveBeenCalledWith(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa dòng 2' }))
+    expect(onChange).toHaveBeenLastCalledWith([LINES[0]])
+  })
+
+  it('hides Nhân đôi / Xóa on a read-only sheet but keeps Chi tiết / hình ảnh', () => {
+    renderTable({ editing: false })
+
+    expect(screen.getByRole('button', { name: 'Chi tiết / hình ảnh dòng 1' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Nhân đôi/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Xóa dòng/ })).toBeNull()
+  })
+})
+
+/**
+ * Rà mã duoc-CR-741: dòng chưa lưu khóa tick theo chỉ số (`new-${index}`). Tick dòng 4 rồi
+ * Nhân đôi dòng 1 thì dấu tick trôi sang dòng 3 cũ, *Xóa đã chọn* xóa nhầm. Nay chèn / bỏ một
+ * dòng là bỏ hết dấu tick.
+ */
+describe('SurveyRequestLinesTable — dấu tick không trôi khi chèn / bỏ dòng', () => {
+  beforeEach(() => localStorage.clear())
+
+  const unsaved: SurveyRequestLine[] = ['A', 'B', 'C', 'D'].map((code) => ({
+    ...LINES[0],
+    id: 0,
+    requirement_detail: `Hàng ${code}`,
+  }))
+
+  function StatefulTable() {
+    const [lines, setLines] = useState(unsaved)
+    return (
+      <SurveyRequestLinesTable
+        lines={lines}
+        editing
+        bulkRemovable
+        showNstmColumns={false}
+        showStatus={false}
+        canAssignNstm={false}
+        purchasers={[]}
+        onChange={setLines}
+        onOpenDetail={vi.fn()}
+        onAssigneeChange={vi.fn()}
+      />
+    )
+  }
+
+  it('duplicating line 1 drops the tick on line 4 instead of moving it to another line', async () => {
+    render(<StatefulTable />)
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 4' }))
+    expect(screen.getByRole('button', { name: 'Xóa đã chọn (1)' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nhân đôi dòng 1' }))
+
+    expect(screen.getAllByRole('checkbox', { name: /^Chọn dòng/ })).toHaveLength(5)
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+  })
+
+  it('deleting one line drops the ticks too', async () => {
+    render(<StatefulTable />)
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 4' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa dòng 1' }))
+
+    expect(screen.getAllByRole('checkbox', { name: /^Chọn dòng/ })).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
   })
 })

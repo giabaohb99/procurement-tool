@@ -6,7 +6,10 @@ import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
-import type { PurchaseRequestOption } from '../types/purchase-request-options'
+import type {
+  AvailablePrSurveyLine,
+  PurchaseRequestOption,
+} from '../types/purchase-request-options'
 import { PurchaseRequestProcessCard } from './purchase-request-process-card'
 
 /**
@@ -42,6 +45,8 @@ vi.mock('../hooks/use-purchase-request-support', () => ({
 
 /** Đối số mỗi lần gọi hook tra kho khảo sát — để soi bộ lọc thật sự gửi đi. */
 const mockAvailableCalls: unknown[][] = []
+/** Kết quả kho khảo sát trả về — mặc định rỗng; bài sắp xếp (duoc-CR-738) đặt dòng + tổng. */
+let mockAvailable: { items: AvailablePrSurveyLine[]; total: number } = { items: [], total: 0 }
 const noopMutation = { mutate: vi.fn(), isPending: false }
 const completeMutate = vi.fn()
 
@@ -52,7 +57,7 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
   }),
   usePrAvailableSurveyLines: (...args: unknown[]) => {
     mockAvailableCalls.push(args)
-    return { data: { items: [], total: 0 }, isLoading: false }
+    return { data: mockAvailable, isLoading: false }
   },
   useAttachSurveyOption: () => noopMutation,
   useAddManualOption: () => noopMutation,
@@ -185,6 +190,7 @@ function buildPurchaseRequest(
 
 beforeEach(() => {
   mockAvailableCalls.length = 0
+  mockAvailable = { items: [], total: 0 }
   mockUser = null
   grantedPermissions = []
   mockOptions = [buildOption()]
@@ -462,5 +468,82 @@ describe('PurchaseRequestProcessCard', () => {
       renderCard(buildPurchaseRequest({ items: [buildItem({ options_done: true })] }))
       expect(screen.queryByRole('button', { name: /^Sửa Phương án/ })).toBeNull()
     })
+  })
+})
+
+/**
+ * duoc-CR-738 — bảng kho khảo sát ở màn Xử lý YCMH bấm tiêu đề cột là sắp phía server như bản
+ * v1 (cùng hàm backend với YCBG). Soi bộ tham số ở đầu vào hook: khóa backend, trang về 1,
+ * bộ lọc giữ nguyên; cột backend không sắp được thì bấm không có tác dụng.
+ */
+describe('PurchaseRequestProcessCard — sorting the approved survey picker', () => {
+  function buildAvailable(): AvailablePrSurveyLine {
+    return {
+      id: 900,
+      supplier_code: 'NCC-A',
+      supplier_name: 'CÔNG TY A',
+      internal_code: 'A-01',
+      product_name: 'Thùng carton 5 lớp',
+      spec: '',
+      origin: 'VN',
+      quote_unit: 'Cái',
+      moq: 100,
+      price_by_volume: 12000,
+      volume_range: '',
+      vat: 8,
+      delivery_time: '',
+      delivery_place: '',
+      shipping_cost: '',
+      lab_result: '',
+      result_date: '2026-10-02',
+      survey_code: 'KS-0042',
+      survey_item_code: 'VTBB-1',
+      survey_item_group: 'Bao bì',
+    }
+  }
+
+  const lastFilters = () =>
+    mockAvailableCalls[mockAvailableCalls.length - 1][2] as Record<string, unknown>
+
+  function renderPicker() {
+    mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+    grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+    //  Không phương án nào → bảng phương án không dựng, tiêu đề NCC / Đơn giá chỉ còn ở bảng kho.
+    mockOptions = []
+    mockAvailable = { items: [buildAvailable()], total: 20 }
+    renderCard(buildPurchaseRequest({ items: [buildItem({ option_count: 0 })] }))
+  }
+
+  it('sends no sort params before any header click', () => {
+    renderPicker()
+    expect(lastFilters()).not.toHaveProperty('sort_by')
+  })
+
+  it('sorts by the backend key, resets to page 1 and keeps the line item group filter', () => {
+    renderPicker()
+    fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }))
+    expect(lastFilters()).toMatchObject({ page: 2 })
+
+    fireEvent.click(screen.getByText('Đơn giá'))
+    expect(lastFilters()).toMatchObject({
+      sort_by: 'price_by_volume',
+      sort_dir: 'asc',
+      page: 1,
+      item_group: 'Bao bì',
+    })
+
+    fireEvent.click(screen.getByText('MOQ'))
+    expect(lastFilters()).toMatchObject({ sort_by: 'moq', sort_dir: 'asc' })
+    fireEvent.click(screen.getByText('MOQ'))
+    expect(lastFilters()).toMatchObject({ sort_by: 'moq', sort_dir: 'desc' })
+    fireEvent.click(screen.getByText('MOQ'))
+    expect(lastFilters()).not.toHaveProperty('sort_by')
+  })
+
+  it('ignores clicks on columns the backend cannot order', () => {
+    renderPicker()
+    fireEvent.click(screen.getByText('Phân loại KS'))
+    fireEvent.click(screen.getByText('Phiếu KS'))
+    expect(lastFilters()).not.toHaveProperty('sort_by')
   })
 })

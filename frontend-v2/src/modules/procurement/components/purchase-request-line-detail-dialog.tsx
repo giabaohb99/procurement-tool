@@ -1,5 +1,5 @@
-import { Image, Loader2, Pencil, Save, Trash2, Upload } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { GitCompareArrows, Image, Loader2, Pencil, Save, Trash2, Upload } from 'lucide-react'
+import { useRef, useState, type ReactNode } from 'react'
 
 import { PR_LINE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
@@ -28,7 +28,12 @@ import {
   usePurchaseRequestAttachments,
   useUploadPurchaseRequestAttachments,
 } from '../hooks/use-purchase-request-support'
+import type { AttachmentFile } from '../api/purchase-request-support-api'
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
+import {
+  PurchaseRequestLineImageCompareDialog,
+  type CompareImage,
+} from './purchase-request-line-image-compare-dialog'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 interface PurchaseRequestLineDetailDialogProps {
@@ -46,7 +51,11 @@ interface PurchaseRequestLineDetailDialogProps {
   onStartEditing?: () => void
   onOpenChange: (open: boolean) => void
   onChange: (item: PurchaseRequestItem) => void
-  onSaveOperational: (item: PurchaseRequestItem) => Promise<void>
+  /**
+   * Lưu dòng khi phiếu đã qua bước sửa. Trả `false` = người dùng bỏ ngang (vd đóng hộp hỏi
+   * lý do đổi ngày dự kiến) — popup GIỮ NGUYÊN như v1, không đóng.
+   */
+  onSaveOperational: (item: PurchaseRequestItem) => Promise<boolean | void>
 }
 
 /**
@@ -70,12 +79,23 @@ export function PurchaseRequestLineDetailDialog({
 }: PurchaseRequestLineDetailDialogProps) {
   const [draft, setDraft] = useState<PurchaseRequestItem | null>(item)
   const [saving, setSaving] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
+  //  Hai khối ảnh tự gọi đúng hai truy vấn này; gọi lại ở đây chỉ để biết nút *So sánh* có
+  //  gì để bày — cùng khóa truy vấn nên TanStack Query dùng lại kết quả, không tốn lượt gọi.
+  const productImages = usePurchaseRequestAttachments('product', draft?.product_id ?? 0)
+  const lineImages = usePurchaseRequestAttachments(
+    'purchase_request_line_image',
+    draft?.id ?? 0,
+  )
 
   // Mở dòng khác (hoặc dữ liệu dòng đổi) -> nạp lại bản nháp đang sửa.
   // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
   const itemChanged = useHasChanged(item)
   const openChanged = useHasChanged(open)
-  if ((itemChanged || openChanged) && open) setDraft(item)
+  if ((itemChanged || openChanged) && open) {
+    setDraft(item)
+    setCompareOpen(false)
+  }
 
   if (!draft) return null
 
@@ -92,8 +112,8 @@ export function PurchaseRequestLineDetailDialog({
     }
     setSaving(true)
     try {
-      await onSaveOperational(draft)
-      onOpenChange(false)
+      const result = await onSaveOperational(draft)
+      if (result !== false) onOpenChange(false)
     } finally {
       setSaving(false)
     }
@@ -101,6 +121,15 @@ export function PurchaseRequestLineDetailDialog({
 
   const canSave = editing || canEditProgress || canAssign
   const lineTotal = draft.qty * draft.price * (1 + (draft.vat_pct || 0) / 100)
+  //  Ảnh gốc: ảnh đính kèm của sản phẩm; chưa có thì lấy ảnh đại diện của danh mục — đúng
+  //  thứ khối *Hình ảnh SP (gốc)* đang bày, để hai bên của hộp So sánh khớp với popup.
+  const originalImages: CompareImage[] = pickImages(productImages.data)
+  if (!originalImages.length && draft.product_thumbnail_url) {
+    originalImages.push({ url: draft.product_thumbnail_url })
+  }
+  const compareImages: CompareImage[] = pickImages(lineImages.data)
+  //  v1: nút *So sánh* chỉ hiện khi CẢ HAI bên đều có ảnh.
+  const canCompare = originalImages.length > 0 && compareImages.length > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,9 +180,22 @@ export function PurchaseRequestLineDetailDialog({
                 entity="product"
                 entityId={draft.product_id}
                 fallbackUrl={draft.product_thumbnail_url}
+                headerRight={
+                  canCompare && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCompareOpen(true)}
+                    >
+                      <GitCompareArrows />
+                      So sánh
+                    </Button>
+                  )
+                }
               />
               <LineImageGallery
-                title="Ảnh đối chiếu (thực tế)"
+                title="File đính kèm (đối chiếu)"
                 entity="purchase_request_line_image"
                 entityId={draft.id}
                 canManage={canManageAttachments}
@@ -363,8 +405,10 @@ export function PurchaseRequestLineDetailDialog({
              `pt-4` thì giữ: hết nét kẻ nhưng vẫn cần khoảng thở, kẻo ô cuối cùng
              dính sát nút Đóng. */}
         <DialogFooter className="shrink-0 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Đóng
+          {/*  duoc-CR-741: chữ của v1 — ô còn nhập được thì *Đóng* (những gì đã gõ vẫn nằm
+               trên phiếu), chỉ xem / sửa tiến độ thì *Hủy* (bỏ phần vừa sửa của dòng). */}
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {editing ? 'Đóng' : 'Hủy'}
           </Button>
           {/*
             Phiếu nháp mở hộp thoại ra là chữ chết hết — người dùng đọc thành
@@ -385,8 +429,23 @@ export function PurchaseRequestLineDetailDialog({
           )}
         </DialogFooter>
       </DialogContent>
+      <PurchaseRequestLineImageCompareDialog
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        left={originalImages}
+        right={compareImages}
+      />
     </Dialog>
   )
+}
+
+/** Chỉ giữ tệp ẢNH — khối đối chiếu nhận cả tệp khác, mà hộp So sánh chỉ bày được ảnh. */
+function isImageFile(file: AttachmentFile): boolean {
+  return file.content_type.startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(file.filename)
+}
+
+function pickImages(files: AttachmentFile[] | undefined): CompareImage[] {
+  return (files ?? []).filter(isImageFile).map((file) => ({ url: file.url, filename: file.filename }))
 }
 
 function LineField({
@@ -416,20 +475,21 @@ function LineImageGallery({
   entityId,
   fallbackUrl,
   canManage,
+  headerRight,
 }: {
   title: string
   entity: string
   entityId: number
   fallbackUrl?: string
   canManage?: boolean
+  /** Góc phải tiêu đề khối — nút *So sánh* của v1 đứng ở đây. */
+  headerRight?: ReactNode
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const { data, isLoading } = usePurchaseRequestAttachments(entity, entityId)
   const upload = useUploadPurchaseRequestAttachments(entity, entityId)
   const remove = useDeletePurchaseRequestAttachment(entity, entityId)
-  const images = (data ?? []).filter(
-    (file) => file.content_type.startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(file.filename),
-  )
+  const images = (data ?? []).filter(isImageFile)
 
   return (
     <section className="rounded-lg border p-3">
@@ -438,6 +498,7 @@ function LineImageGallery({
           <Image className="size-4 text-primary" />
           {title}
         </h4>
+        {headerRight}
         {canManage && entityId > 0 && (
           <>
             <input
@@ -486,12 +547,14 @@ function LineImageGallery({
               </a>
               {canManage && (
                 <div className="absolute right-1 top-1 rounded-md bg-background/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                  {/*  duoc-CR-741: hộp hỏi của v1 (`askConfirm`) — *Xác nhận* / *Xóa ảnh "tên"?* /
+                       nút *Đồng ý* · *Hủy*. */}
                   <ConfirmIconButton
                     icon={Trash2}
                     title="Xóa ảnh"
-                    confirmTitle={`Xóa ảnh ${file.filename}?`}
-                    confirmDescription="Ảnh đối chiếu sẽ bị gỡ khỏi dòng sản phẩm."
-                    confirmLabel="Xóa"
+                    confirmTitle="Xác nhận"
+                    confirmDescription={`Xóa ảnh "${file.filename}"?`}
+                    confirmLabel="Đồng ý"
                     destructive
                     disabled={remove.isPending}
                     onConfirm={() => void remove.mutateAsync(file.id)}

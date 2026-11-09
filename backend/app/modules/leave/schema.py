@@ -50,6 +50,10 @@ class LeaveTypeBase(BaseModel):
     accrual_mode: int = Field(int(LeaveAccrualMode.FULL_YEAR), ge=1, le=3)
     applicable_after_days: int = Field(0, ge=0, le=3650)
     max_negative_days: float = Field(0.0, ge=0, le=30)
+    #  duoc-CR-719 — thanh toán ngày phép chưa nghỉ ra tiền (trần theo NĂM, 0 = không trần).
+    allow_encashment: bool = False
+    max_encashable_days: float = Field(0.0, ge=0, le=366)
+    non_encashable_days: float = Field(0.0, ge=0, le=366)
     sort_order: int = 0
     is_active: bool = True
     note: str = Field("", max_length=500)
@@ -86,6 +90,9 @@ class LeaveTypeUpdate(BaseModel):
     accrual_mode: int | None = Field(None, ge=1, le=3)
     applicable_after_days: int | None = Field(None, ge=0, le=3650)
     max_negative_days: float | None = Field(None, ge=0, le=30)
+    allow_encashment: bool | None = None
+    max_encashable_days: float | None = Field(None, ge=0, le=366)
+    non_encashable_days: float | None = Field(None, ge=0, le=366)
     sort_order: int | None = None
     is_active: bool | None = None
     note: Str500 | None = None
@@ -263,6 +270,8 @@ class LeaveBalanceResponse(BaseModel):
     #  Đã mang khỏi dòng này lúc kết sổ; `carried_expired_days` là phần mang
     #  sang đã hết hạn. Cái đầu vào công thức còn lại, cái sau chỉ để giải thích.
     carried_out_days: float = 0.0
+    #  Đã thanh toán ra tiền (duoc-CR-719) — đã trừ trong remaining_days.
+    encashed_days: float = 0.0
     carried_expired_days: float = 0.0
     note: str
     #  Hai số DẪN XUẤT, tính ở model. Trả kèm để màn hình không phải cộng trừ lại

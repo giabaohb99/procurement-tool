@@ -46,6 +46,7 @@ from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 
 from .base import ToolContext, ToolSpec, denied
 from .leave_comp_tool import my_comp_requests
+from .leave_encashment_tool import my_encashments
 
 MAX_ROWS = 30
 
@@ -105,7 +106,11 @@ def _type_names(db) -> dict[int, dict]:
                    "accrual_mode": int(r.accrual_mode or 1),
                    "max_negative_days": float(r.max_negative_days or 0.0),
                    "applicable_after_days": int(r.applicable_after_days or 0),
-                   "is_compensatory": bool(r.is_compensatory)} for r in rows}
+                   "is_compensatory": bool(r.is_compensatory),
+                   #  duoc-CR-719: luật thanh toán ngày phép chưa nghỉ ra tiền (chỉ ngày, không tiền).
+                   "allow_encashment": bool(r.allow_encashment),
+                   "max_encashable_days": float(r.max_encashable_days or 0.0),
+                   "non_encashable_days": float(r.non_encashable_days or 0.0)} for r in rows}
 
 
 def _rules(info: dict) -> dict:
@@ -114,7 +119,10 @@ def _rules(info: dict) -> dict:
     return {"accrual_mode": mode, "accrual_mode_label": label(LEAVE_ACCRUAL_MODE_LABELS, mode),
             "max_negative_days": info.get("max_negative_days", 0.0),
             "applicable_after_days": info.get("applicable_after_days", 0),
-            "is_compensatory": info.get("is_compensatory", False)}
+            "is_compensatory": info.get("is_compensatory", False),
+            "allow_encashment": info.get("allow_encashment", False),
+            "max_encashable_days": info.get("max_encashable_days", 0.0),
+            "non_encashable_days": info.get("non_encashable_days", 0.0)}
 
 
 def _active_policy(db, employee_id: int, year: int) -> dict | None:
@@ -171,6 +179,8 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: d
             "allocated_days": r.allocated_days,
             #  duoc-CR-715 C: ngày nghỉ bù đã duyệt cộng vào loại này (đã nằm trong `total_days`).
             "comp_days": float(r.comp_days or 0.0),
+            #  duoc-CR-719: ngày đã thanh toán ra tiền (đã TRỪ khỏi `remaining_days`).
+            "encashed_days": float(r.encashed_days or 0.0),
             #  Phần hạn mức CHƯA TỚI THÁNG của loại cộng dần — có trong `total_days` nhưng chưa nghỉ được.
             "not_yet_accrued_days": round(r.remaining_days - available[r.id], 2),
             **_rules(info),
@@ -194,6 +204,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: d
             "carried_days": 0.0,
             "allocated_days": 0.0,
             "comp_days": 0.0,
+            "encashed_days": 0.0,
             "not_yet_accrued_days": 0.0,
             **_rules(info),
             **_policy_fields(policy, tid),
@@ -283,6 +294,9 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     #  Phiếu xin nghỉ bù của CHÍNH người hỏi (khóa riêng `leave_comp_request`; thiếu khóa thì bỏ qua, không chặn cả tool).
     comp = my_comp_requests(ctx.db, emp_id, limit) if ctx.can("leave_comp_request") else None
 
+    #  Phiếu thanh toán nghỉ phép của chính người hỏi, năm đang xem (khóa riêng; thiếu khóa thì bỏ qua). Chỉ ngày + trạng thái.
+    encashments = my_encashments(ctx.db, emp_id, year, limit) if ctx.can("leave_encashment") else None
+
     policy = _active_policy(ctx.db, emp_id, year)
     return {
         "year": year,
@@ -290,6 +304,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
         "policy": None if policy is None else {k: v for k, v in policy.items() if k != "lines"},
         "requests": requests,
         "comp_requests": comp if comp is not None else [],
+        "encashments": encashments if encashments is not None else [],
         "total": len(requests),
         "glossary": {
             "total_days": "Tổng quỹ được hưởng trong năm (đã gồm thâm niên và ngày chuyển "
@@ -309,6 +324,14 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             "applicable_after_days": "Lớn hơn 0 = loại này chỉ dùng được sau chừng đó ngày kể từ ngày vào làm.",
             "accrual_mode_label": "Cách cấp quỹ: đủ hạn mức đầu năm / theo tỷ lệ tháng làm việc (người vào làm trong "
                                   "năm) / cộng dần theo tháng.",
+            "encashed_days": "Ngày phép ĐÃ thanh toán ra tiền (phiếu thanh toán nghỉ phép đã duyệt) — đã trừ khỏi "
+                             "remaining_days, không nghỉ được nữa. Chỉ có số ngày; trợ lý KHÔNG biết và KHÔNG nói số tiền.",
+            "allow_encashment": "true = loại nghỉ này cho đổi ngày phép chưa nghỉ ra tiền (cuối năm hoặc khi nghỉ việc). "
+                                "max_encashable_days > 0 là trần ngày thanh toán mỗi năm; non_encashable_days là số ngày "
+                                "phải giữ lại (chỉ áp cho cuối năm). Muốn thanh toán thì mở Nghỉ phép ▸ Thanh toán nghỉ phép; "
+                                "trợ lý không soạn phiếu này.",
+            "encashments": "Phiếu thanh toán nghỉ phép của người hỏi trong năm đang xem: số ngày, trạng thái duyệt và "
+                           "payment_status_label (trạng thái chi của kế toán). Không có số tiền.",
             "comp_requests": "Phiếu xin nghỉ bù của người hỏi; Đã duyệt = số ngày đã cộng vào comp_days.",
             "policy": "Chính sách nghỉ phép Nhân sự đang phân bổ cho người hỏi (null = không có, hạn mức theo luật "
                       "của loại nghỉ). policy_annual_days của từng loại = số ngày/năm gói khai; null = gói không khai "

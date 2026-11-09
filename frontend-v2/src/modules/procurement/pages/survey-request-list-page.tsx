@@ -1,7 +1,6 @@
-import { Copy, Download, Plus } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -10,12 +9,18 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import { downloadFile } from '@/core/api/download-file'
-import { httpClient } from '@/core/api/http-client'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
+import {
+  DataTable,
+  RowLink,
+  createSelectionColumn,
+  type DataTableColumn,
+} from '@/shared/data-table'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -49,6 +54,9 @@ import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
 import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
+import { createCloneColumn } from '../components/procurement-list-clone-column'
+import { ProcurementListCloneModeButton } from '../components/procurement-list-clone-controls'
+import { ProcurementListExportButton } from '../components/procurement-list-export-button'
 import { SurveyRequestCard } from '../components/survey-request-card'
 import { SURVEY_REQUEST_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { useSurveyRequests } from '../hooks/use-purchase-documents'
@@ -206,26 +214,30 @@ function SurveyRequestListContent() {
   const { data, isLoading, isError, isFetching } = useSurveyRequests(params)
   useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
+  //  duoc-CR-741 — tick chọn phiếu để *Xuất Excel (n)* như bản v1. Đổi trang / bộ lọc /
+  //  sắp xếp là bỏ hết tick (v1 dọn tick mỗi lần nạp lại bảng): tick ẩn ở trang khác
+  //  mà vẫn bị xuất thì file ra khác thứ người dùng đang nhìn.
+  const { selectedIds, toggleRow, toggleAllOnPage, clear: clearSelection } = useRowSelection()
+  const selectionScopeChanged = useHasChanged(JSON.stringify(params))
+  if (selectionScopeChanged && selectedIds.size > 0) clearSelection()
+  const selectedCount = selectedIds.size
+
+  //  Chế độ nhân bản: cột *Thao tác* chỉ hiện khi bật nút *Nhân bản* (bản v1).
+  const [cloneMode, setCloneMode] = useState(false)
+
+  /**
+   * Xuất đúng bộ lọc + sắp xếp đang đặt (như v1); có tick thì gửi `ids` và backend chỉ
+   * xuất đúng các phiếu đó. Bỏ phân trang — file là cả tập kết quả, không phải một trang.
+   */
   const handleExportExcel = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
-    await downloadFile('/api/survey-requests/export/xlsx', 'yeu-cau-bao-gia.xlsx')
+    const { page: _page, page_size: _pageSize, ...filterParams } = params
+    const ids = [...selectedIds]
+    await downloadFile('/api/survey-requests/export/xlsx', 'yeu-cau-bao-gia.xlsx', {
+      ...filterParams,
+      ...(ids.length ? { ids: ids.join(',') } : {}),
+    })
   }
-
-  const handleClone = useCallback(
-    async (sr: SurveyRequest, e: React.MouseEvent) => {
-      e.stopPropagation()
-      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
-      try {
-        const res = await httpClient.post<{ data: { id: number } }>(`/api/survey-requests/${sr.id}/clone`)
-        toast.success('Đã nhân bản phiếu yêu cầu báo giá')
-        const newId = res.data?.data?.id
-        if (newId) navigate(appRoutes.procurement.surveyRequestDetail(newId))
-      } catch {
-        toast.error('Nhân bản phiếu thất bại')
-      }
-    },
-    [navigate],
-  )
 
   //  Huy hiệu trên nút "Bộ lọc" của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
@@ -294,8 +306,26 @@ function SurveyRequestListContent() {
     setSearchParams(next)
   }
 
+  const pageIds = useMemo(() => (data?.items ?? []).map((sr) => sr.id), [data])
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const someOnPageSelected = pageIds.some((id) => selectedIds.has(id))
+
   const columns = useMemo<DataTableColumn<SurveyRequest>[]>(
     () => [
+      //  Cột tick chỉ có ý nghĩa với người được xuất Excel (v1 bật nó cùng nút Xuất Excel).
+      ...(canExport
+        ? [
+            createSelectionColumn<SurveyRequest>({
+              getRowId: (sr) => sr.id,
+              selectedIds,
+              onToggleRow: toggleRow,
+              onToggleAllOnPage: () => toggleAllOnPage(pageIds),
+              allOnPageSelected,
+              someOnPageSelected,
+              getRowLabel: (sr) => sr.code,
+            }),
+          ]
+        : []),
       {
         key: 'code',
         header: 'Mã phiếu',
@@ -305,9 +335,9 @@ function SurveyRequestListContent() {
         //  bao-CR-693: link thật — chuột phải / Ctrl + bấm mở phiếu ở tab mới.
         cell: (sr) => <RowLink to={appRoutes.procurement.surveyRequestDetail(sr.id)}>{sr.code}</RowLink>,
       },
-      { key: 'purpose', header: 'Mục đích', width: 280, cell: (sr) => sr.purpose || '' },
-      { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
-      { key: 'department', header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '' },
+      { key: 'purpose', sortable: true, header: 'Mục đích', width: 280, cell: (sr) => sr.purpose || '' },
+      { key: 'requester', sortable: true, header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
+      { key: 'department', sortable: true, header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '' },
       {
         key: 'request_date',
         header: 'Ngày tạo',
@@ -331,25 +361,30 @@ function SurveyRequestListContent() {
         sortDescFirst: true,
         cell: (sr) => formatDateTime(sr.updated_at) || '',
       },
-      {
-        key: 'actions',
-        header: '',
-        width: 60,
-        hideable: false,
-        cell: (sr) =>
-          canCreate ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Nhân bản phiếu yêu cầu báo giá"
-              onClick={(e) => handleClone(sr, e)}
-            >
-              <Copy className="size-4 text-muted-foreground" />
-            </Button>
-          ) : null,
-      },
+      ...(cloneMode && canCreate
+        ? [
+            createCloneColumn<SurveyRequest>({
+              apiPath: '/api/survey-requests',
+              getId: (sr) => sr.id,
+              getCode: (sr) => sr.code,
+              toDetail: appRoutes.procurement.surveyRequestDetail,
+              successMessage: 'Đã nhân bản phiếu yêu cầu báo giá',
+              errorMessage: 'Nhân bản phiếu thất bại',
+            }),
+          ]
+        : []),
     ],
-    [canCreate, handleClone],
+    [
+      canExport,
+      canCreate,
+      cloneMode,
+      selectedIds,
+      toggleRow,
+      toggleAllOnPage,
+      pageIds,
+      allOnPageSelected,
+      someOnPageSelected,
+    ],
   )
 
   //  Cùng một ô chọn dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
@@ -472,11 +507,21 @@ function SurveyRequestListContent() {
         actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
+            {/*  duoc-CR-741: thứ tự và chữ đúng bản v1 — Xuất Excel · Nhân bản · Thêm. */}
             {canExport && (
-              <Button variant="outline" className="max-md:flex-1" onClick={handleExportExcel}>
-                <Download className="mr-1.5 size-4" />
-                Xuất Excel
-              </Button>
+              <ProcurementListExportButton
+                className="max-md:flex-1"
+                selectedCount={selectedCount}
+                onExport={() => void handleExportExcel()}
+              />
+            )}
+            {/*  Ẩn ở khổ hẹp: bảng thành THẺ ở đó, không có cột *Thao tác* để bật. */}
+            {canCreate && (
+              <ProcurementListCloneModeButton
+                className="max-md:hidden"
+                active={cloneMode}
+                onToggle={() => setCloneMode((current) => !current)}
+              />
             )}
             <PermissionGate entity="survey_request" action="create">
               <Button
@@ -484,7 +529,7 @@ function SurveyRequestListContent() {
                 onClick={() => navigate(appRoutes.procurement.surveyRequestNew)}
               >
                 <Plus className="mr-1.5 size-4" />
-                Thêm mới
+                Thêm
               </Button>
             </PermissionGate>
           </div>
@@ -517,7 +562,7 @@ function SurveyRequestListContent() {
           }
           //  Khổ hẹp: THẺ thay bảng — xem `SurveyRequestCard`.
           //
-          //  ⚠️ Nút *Nhân bản* của cột thao tác KHÔNG theo sang thẻ: bảng khai
+          //  ⚠️ Nút *Nhân bản* của cột *Thao tác* KHÔNG theo sang thẻ: bảng khai
           //  `onRowClick` nên thẻ bị bọc trong một `<button>`, lồng nút vào là
           //  HTML sai. Nhân bản là việc hiếm và vẫn làm được ở khổ rộng.
           mobileCard={(sr) => <SurveyRequestCard row={sr} />}

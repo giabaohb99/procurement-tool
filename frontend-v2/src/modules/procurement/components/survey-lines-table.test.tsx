@@ -109,6 +109,42 @@ describe('SurveyLinesTable', () => {
     expect(screen.getByLabelText('Chọn dòng 1')).toBeInTheDocument()
   })
 
+  //  duoc-CR-741: chữ của cột Thao tác lấy đúng bản v1 (`SurveyDetail.tsx`).
+  it('labels the row edit button with the v1 tooltip', () => {
+    renderTable()
+
+    expect(screen.getAllByRole('button', { name: 'Chỉnh sửa chi tiết' })).toHaveLength(2)
+    expect(screen.queryByTitle('Mở chi tiết dòng')).toBeNull()
+  })
+
+  it('shows a TEXT button Bổ sung only on the line marked Thiếu thông tin, and opens it in fill mode', async () => {
+    const user = userEvent.setup()
+    const onOpenLine = vi.fn()
+    renderTable({
+      canFill: true,
+      onOpenLine,
+      lines: [{ ...LINES[0], line_approve: 'Thiếu thông tin' }, LINES[1]],
+    })
+
+    const fill = screen.getByRole('button', { name: 'Bổ sung' })
+    expect(fill).toHaveAttribute('title', 'Bổ sung nội dung dòng thiếu thông tin')
+    expect(screen.getAllByRole('button', { name: 'Bổ sung' })).toHaveLength(1)
+
+    await user.click(fill)
+    expect(onOpenLine).toHaveBeenCalledWith(0, 'fill')
+  })
+
+  it('hides Bổ sung without write permission and while the survey is still editable', () => {
+    const lines = [{ ...LINES[0], line_approve: 'Thiếu thông tin' }]
+    const { unmount } = renderTable({ canFill: false, lines })
+    expect(screen.queryByRole('button', { name: 'Bổ sung' })).toBeNull()
+    unmount()
+
+    //  Phiếu còn sửa được thì sửa thẳng trên bảng — không có đường bổ sung riêng.
+    renderTable({ canFill: true, editable: true, lines })
+    expect(screen.queryByRole('button', { name: 'Bổ sung' })).toBeNull()
+  })
+
   it('bảng sản phẩm cộng tổng thành tiền, bảng NCC thì không', () => {
     const { unmount } = renderTable()
     expect(screen.queryByText('Tổng thành tiền')).toBeNull()

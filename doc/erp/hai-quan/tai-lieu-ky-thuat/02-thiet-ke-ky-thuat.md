@@ -309,6 +309,17 @@ GTT02 cắt một lần kết xuất thành từng khối hai tháng. **Một l�
 - **Dòng cũ chưa có mã** (nạp trước CR) tự được tính khi lần nạp sau chạm khoảng ngày của nó; tính một lần cho cả bảng + dọn dòng thừa bằng `python -m scripts.customs_row_hash --backfill --dedupe [--apply]`. Đo trên bản sao prod: 576 nhóm / 806 dòng thừa — khớp số đếm theo 32 cột trước đó.
 - **Tốc độ:** đọc mã của 9 tháng dữ liệu (~18.000 dòng) mất ~1,7 giây trên máy dev — không chậm hơn bước xóa theo khoảng ngày cũ.
 - **Sau khi dọn sạch** có thể nâng chỉ mục thành UNIQUE `(row_hash, reg_date)` (bảng chia phân vùng theo năm của `reg_date` nên khóa duy nhất phải chứa cột đó).
+- **Bộ nhớ (bao-CR-733, 05/11/2026).** `load_existing` đọc dòng sẵn có trong dải ngày THEO KHÚC 2.000 dòng (khóa trang
+  `(reg_date, id)` theo chỉ mục `ix_customs_line_date`, câu Core chỉ các cột cần, không dựng đối tượng ORM) và chỉ giữ
+  mã có trong tệp (`stamp_file_rows` trả ba mã của từng dòng). Dòng đầu tiên mang một mã vẫn thắng như cũ: ba mã đều
+  gói `reg_date` nên các dòng cùng mã cùng ngày, đi theo `id` tăng dần. Ô chuẩn để so xung đột (bao-CR-699) chỉ đọc lại
+  theo id cho dòng tệp chưa trùng mã băm. Dòng có ô ID tra theo cụm 1000, chỉ giữ dòng sẽ ghi đè / xóa để chụp; nhãn gắn
+  trên bản sao nên dòng không đổi không bị thêm khóa. Bộ đọc tệp đi luồng từng dòng (`reader.iter_cells`), số và chữ lặp
+  lại dùng chung một đối tượng. Đo tệp 50.000 dòng: worker 1.014 MB → 389 MB, chạy thử 45 → 33 giây (bảng đủ ở
+  [kế hoạch bao-CR-728 §5.1](../plans/261105-xuat-lo-v1-bao-cr-728/ke-hoach.md)). Bài kiểm chụp kết quả trên mã cũ:
+  `test_chup_ket_qua_chong_trung_cr733.py`.
+- **Ghi đè giữ dấu vá ngày (bao-CR-733).** Tệp xuất ghi ngày đã vá nên nạp lại không còn gì để vá; ghi đè theo ID mà ngày
+  không đổi thì giữ `date_fixed` của dòng cũ, ngày đổi thì lấy dấu của lần đọc này.
 
 ---
 

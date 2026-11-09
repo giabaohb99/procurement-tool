@@ -95,6 +95,7 @@ from app.modules.leave import catalog_model as _leave_catalog  # noqa: F401
 from app.modules.leave import balance_model as _leave_balance  # noqa: F401
 from app.modules.leave import request_model as _leave_request  # noqa: F401
 from app.modules.leave import comp_request_model as _leave_comp_request  # noqa: F401
+from app.modules.leave import encashment_model as _leave_encashment  # noqa: F401
 from app.modules.leave import policy_model as _leave_policy  # noqa: F401
 from app.modules.meeting_room import model as _meeting_room  # noqa: F401
 # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/, CP1)

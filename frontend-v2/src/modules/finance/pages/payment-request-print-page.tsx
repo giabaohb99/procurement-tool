@@ -10,6 +10,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { numberToVietnameseWords } from '@/shared/utils/number-to-vietnamese-words'
 import { usePaymentRequestPrintData } from '../hooks/use-payment-requests'
+import { isLeaveEncashmentPayout, type PaymentRequestPrint } from '../types/payment-request'
 import { cn } from '@/shared/utils/cn'
 
 const DOTS = '............................'
@@ -17,6 +18,22 @@ const DOTS = '............................'
 /** Có dữ liệu thì hiện, không thì để dòng chấm cho điền tay. */
 function dot(value: string): string {
   return value ? value : DOTS
+}
+
+const BANK_HIDDEN_TEXT = 'kế toán tự điền'
+
+/** Người nhận của YCTT nghỉ phép: "Tên (mã)" từ khối `payee`, lùi về `supplier_name` (backend đã ghép sẵn). */
+function payeeLabel(req: PaymentRequestPrint): string {
+  const payee = req.payee
+  if (payee?.full_name) return payee.code ? `${payee.full_name} (${payee.code})` : payee.full_name
+  return req.supplier_name
+}
+
+/** Câu nội dung tự động của YCTT nghỉ phép; phiếu nguồn mất thì lùi về ghi chú backend đã dựng. */
+function payoutContent(req: PaymentRequestPrint): string {
+  const source = req.leave_encashment
+  if (!source) return req.note || 'Thanh toán tiền nghỉ phép'
+  return `Thanh toán tiền nghỉ phép năm ${source.balance_year} — ${String(source.days).replace('.', ',')} ngày`
 }
 
 /** `yyyy-mm-dd` -> "Ngày dd tháng mm năm yyyy". */
@@ -127,12 +144,19 @@ export function PaymentRequestPrintPage() {
   }
 
   const company = req.company ?? {}
-  const supplier = req.supplier_name || req.supplier_code
+  //  duoc-CR-719: YCTT thanh toán nghỉ phép — người nhận là NHÂN SỰ, không phải NCC.
+  const isPayout = isLeaveEncashmentPayout(req)
+  const supplier = isPayout ? payeeLabel(req) : req.supplier_name || req.supplier_code
   const period = (req.period || '').split('-').reverse().join('/') // YYYY-MM -> MM/YYYY
   // CR-146 main (ticket #12): phiếu đánh dấu THANH TOÁN TRƯỚC thì đổi câu nội dung
-  const content = req.prepay
-    ? `Thanh toán trước cho nhà cung cấp ${supplier}${period ? ` ${period}` : ''}`
-    : `Thanh toán công nợ ${supplier}${period ? ` ${period}` : ''}`
+  const content = isPayout
+    ? payoutContent(req)
+    : req.prepay
+      ? `Thanh toán trước cho nhà cung cấp ${supplier}${period ? ` ${period}` : ''}`
+      : `Thanh toán công nợ ${supplier}${period ? ` ${period}` : ''}`
+  //  D2a: chuyển khoản mà người in không được xem STK của nhân sự → nói rõ "kế toán tự điền", không để chấm trơn
+  //  (chấm trơn đọc ra là "nhân sự chưa khai số tài khoản").
+  const bankText = (value: string) => (req.bank_hidden ? BANK_HIDDEN_TEXT : dot(value))
   // CR-149 (ticket #14): người dùng sửa được 3 câu — khóa nào rỗng thì in câu tự động.
   const printTexts = req.print_texts ?? {}
   const contentText = printTexts.content || content
@@ -225,7 +249,7 @@ export function PaymentRequestPrintPage() {
         <div style={sectionHead}>NỘI DUNG THANH TOÁN</div>
         <div style={{ lineHeight: 1.55, marginBottom: 4 }}>
           <div style={lbl}>
-            <b>Đối tượng:</b> {supplier}
+            <b>{isPayout ? 'Người nhận:' : 'Đối tượng:'}</b> {supplier}
           </div>
           <div style={lbl}>
             <b>Mã khoản mục CP:</b> {DOTS}
@@ -399,13 +423,13 @@ export function PaymentRequestPrintPage() {
           <div style={{ width: '52%' }}>
             <div style={{ ...lbl, fontWeight: 700 }}>Thông tin chuyển khoản:</div>
             <div style={lbl}>
-              <b>Tên TK thụ hưởng:</b> {isCash ? DOTS : supplier}
+              <b>Tên TK thụ hưởng:</b> {isCash ? DOTS : isPayout ? (req.payee?.full_name || supplier) : supplier}
             </div>
             <div style={lbl}>
-              <b>Số TK thụ hưởng:</b> {isCash ? DOTS : dot(req.bank_account)}
+              <b>Số TK thụ hưởng:</b> {isCash ? DOTS : bankText(req.bank_account)}
             </div>
             <div style={lbl}>
-              <b>Ngân hàng:</b> {isCash ? DOTS : dot(req.bank_name)}
+              <b>Ngân hàng:</b> {isCash ? DOTS : bankText(req.bank_name)}
             </div>
             <div style={lbl}>
               <b>Nội dung chuyển khoản:</b> {isCash ? DOTS : transferText}

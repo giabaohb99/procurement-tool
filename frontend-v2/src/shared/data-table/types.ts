@@ -62,6 +62,12 @@ export interface DataTableColumn<T> {
   /** `true` = cột có thể sắp xếp. */
   sortable?: boolean
   /**
+   * Khóa gửi cho `onSortChange` (thành `sort_by`) và so với `sortBy` hiện tại để tô mũi tên.
+   * Bỏ trống = dùng `key`. Dùng khi khóa cột (id nhớ bố cục) khác tên trường backend sắp xếp
+   * (vd cột ID tự thêm có key `__row_id` nhưng sắp theo `id`) — duoc-CR-738.
+   */
+  sortKey?: string
+  /**
    * Bấm lần đầu sắp GIẢM dần thay vì tăng (chu kỳ thành giảm → tăng → thôi).
    * Dành cho cột thời gian (*Ngày cập nhật*, *Ngày tạo*): người dùng bấm vào đó
    * là muốn xem BẢN GHI MỚI NHẤT trước — bắt họ bấm hai lần là ngược tay

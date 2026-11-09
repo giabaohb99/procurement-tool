@@ -1,9 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { PurchaseOrderItem } from '../types/purchase-order-detail'
+import { PRODUCT_LOCK_HINT, type PurchaseOrderItem } from '../types/purchase-order-detail'
 import type { LineReportProgress } from '../utils/survey-report-helpers'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
+import { ConfirmDialogHost } from '@/shared/ui/confirm-dialog'
+
+import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
 import { PurchaseOrderItemsTable } from './purchase-order-items-table'
 
 // Bảng này nói về CÁCH HIỆN dòng hàng, không nói về mạng — cắt lượt gọi danh mục.
@@ -55,13 +59,38 @@ const ITEMS = [item({ id: 501 }), item({ id: 502, product_code: 'DK', product_na
 
 function renderTable(props: Partial<Parameters<typeof PurchaseOrderItemsTable>[0]> = {}) {
   return render(
-    <PurchaseOrderItemsTable
-      items={ITEMS}
-      editable={false}
-      progressEditable={false}
-      onChange={vi.fn()}
-      {...props}
-    />,
+    <>
+      <PurchaseOrderItemsTable
+        items={ITEMS}
+        editable={false}
+        progressEditable={false}
+        onChange={vi.fn()}
+        {...props}
+      />
+      {/*  Hộp hỏi lại khi xóa một dòng (duoc-CR-741) là hộp toàn cục — phải có chỗ hiện. */}
+      <ConfirmDialogHost />
+    </>,
+  )
+}
+
+/** Trang giữ trạng thái tick (duoc-CR-737) — dựng lại đúng cách nối hook với bảng. */
+function SelectableTable({ items }: { items: PurchaseOrderItem[] }) {
+  const lineSelection = usePurchaseOrderLineSelection(items, true)
+  return (
+    <>
+      <PurchaseOrderItemsTable
+        items={items}
+        editable
+        progressEditable={false}
+        onChange={vi.fn()}
+        selection={lineSelection.selection}
+      />
+      <BulkDeleteButton
+        count={lineSelection.selectedIndexes.length}
+        unitLabel="dòng"
+        onConfirm={vi.fn()}
+      />
+    </>
   )
 }
 
@@ -98,5 +127,169 @@ describe('PurchaseOrderItemsTable — cột Hồ sơ (báo cáo thực hiện th
     ])
     renderTable({ lineReport })
     expect(screen.queryByRole('button', { name: /Hồ sơ dòng 1/ })).toBeNull()
+  })
+})
+
+/**
+ * duoc-CR-720 — khổ điện thoại đổi bảng sang THẺ. `setup.ts` cố định `matchMedia`
+ * ở khổ desktop cho cả bộ test, nên khổ hẹp phải nói rõ ngay tại đây.
+ */
+describe('PurchaseOrderItemsTable — khổ điện thoại', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  it('swaps the grid for one card per line and keeps the line count', () => {
+    const { container } = renderTable()
+    expect(container.querySelector('table')).toBeNull()
+    expect(screen.getByText('2 dòng')).toBeInTheDocument()
+    expect(screen.getByText('Abamectin 3.6EC')).toBeInTheDocument()
+    expect(screen.getByText('Dầu khoáng')).toBeInTheDocument()
+  })
+
+  it('opens the line detail dialog by index when a card is tapped', async () => {
+    const onOpenDetail = vi.fn()
+    renderTable({ onOpenDetail })
+    await userEvent.click(screen.getByRole('button', { name: /Chi tiết dòng 2/ }))
+    expect(onOpenDetail).toHaveBeenCalledWith(1)
+  })
+
+  it('duplicates and removes lines from the card exactly like the table does', async () => {
+    const onChange = vi.fn()
+    const onLineRemoved = vi.fn()
+    const onLineDuplicated = vi.fn()
+    renderTable({ editable: true, onChange, onLineRemoved, onLineDuplicated })
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Nhân bản dòng' })[0])
+    const duplicated = onChange.mock.calls[0][0] as PurchaseOrderItem[]
+    expect(duplicated).toHaveLength(3)
+    // Bản sao là dòng MỚI: không mang id, không mang các lần giao của dòng gốc.
+    expect(duplicated[1].id).toBeUndefined()
+    expect(duplicated[1].deliveries).toEqual([])
+    expect(onLineDuplicated).toHaveBeenCalledWith(0)
+
+    //  duoc-CR-741: xóa MỘT dòng cũng hỏi lại như bản v1 — Hủy thì dòng còn nguyên.
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xóa dòng' })[1])
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Xóa dòng này?')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onLineRemoved).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xóa dòng' })[1])
+    await userEvent.click(await screen.findByRole('button', { name: 'Đồng ý' }))
+    expect(onChange.mock.calls[1][0]).toHaveLength(1)
+    expect(onLineRemoved).toHaveBeenCalledWith(1)
+  })
+
+  /**
+   * Lỗi chặn rà ra ở duoc-CR-720: hộp Chi tiết dòng KHÔNG có mã hàng / SL đặt / đơn
+   * giá / VAT (bảng chỉ sửa chúng tại ô), nên thẻ thiếu các ô đó thì dòng mới thêm
+   * trên điện thoại kẹt ở "(chưa chọn hàng)" — không chọn được hàng, không nhập giá.
+   */
+  it('lets a new line pick a product and type qty, price and VAT right on the card', async () => {
+    const onChange = vi.fn()
+    renderTable({
+      editable: true,
+      onChange,
+      items: [item({ id: undefined, product_code: '', product_name: '', qty_order: 0, price: 0 })],
+    })
+
+    expect(within(screen.getByRole('group', { name: 'Mã hàng' })).getByRole('button')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'VAT%' })).toBeInTheDocument()
+
+    await userEvent.type(within(screen.getByRole('group', { name: 'SL đặt' })).getByRole('textbox'), '5')
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ qty_order: 5 })])
+
+    await userEvent.type(within(screen.getByRole('group', { name: 'Đơn giá' })).getByRole('textbox'), '7')
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ price: 7 })])
+  })
+
+  it('locks the product on a received line like the table, but keeps qty and price editable', () => {
+    renderTable({ editable: true, items: [item({ qty_received: 3 })] })
+
+    const code = screen.getByRole('group', { name: 'Mã hàng' })
+    // Đã nhận hàng: kho đã ghi theo mã cũ, ô mã hàng thành chữ chỉ đọc.
+    expect(within(code).getByText('ABA36')).toHaveAttribute('title', PRODUCT_LOCK_HINT)
+    expect(within(screen.getByRole('group', { name: 'SL đặt' })).getByRole('textbox')).toBeInTheDocument()
+  })
+
+  it('shows no inline editor on a read-only order or a completed line', () => {
+    const { unmount } = renderTable({ editable: false })
+    expect(screen.queryByRole('group', { name: 'SL đặt' })).toBeNull()
+    unmount()
+
+    renderTable({ editable: true, items: [item({ progress_status: 'completed' })] })
+    expect(screen.queryByRole('group', { name: 'SL đặt' })).toBeNull()
+  })
+
+  it('drops the VAT field on import orders, as the table drops the column', () => {
+    renderTable({
+      editable: true,
+      order: { order_type: 2, currency: 'USD', exchange_rate: 25_000 },
+    })
+    expect(screen.getAllByRole('group', { name: 'Đơn giá' }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('group', { name: 'VAT%' })).toBeNull()
+  })
+
+  it('keeps bulk delete reachable: select-all ticks every unlocked line', async () => {
+    //  duoc-CR-737: trạng thái chọn nằm ở TRANG (nút Xóa đã chọn đứng ở tiêu đề thẻ),
+    //  nên bài kiểm dựng lại đúng cách trang nối hook với bảng.
+    render(
+      <SelectableTable
+        items={[ITEMS[0], item({ id: 502, product_name: 'Dầu khoáng', progress_status: 'completed' })]}
+      />,
+    )
+
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 2' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 1' })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Xóa đã chọn (1)' })).toBeInTheDocument()
+  })
+})
+
+/** duoc-CR-741 — gợi ý của nút biểu tượng theo đúng chữ bản v1. */
+describe('PurchaseOrderItemsTable — gợi ý nút theo bản v1', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  it('says the purchase history is read-only when the line cannot be edited', () => {
+    renderTable({ editable: false })
+    expect(
+      screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)').length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('drops the read-only hint on an editable line, but keeps it on a received one', () => {
+    renderTable({ editable: true, items: [item({ id: 501 }), item({ id: 502, qty_received: 2 })] })
+    expect(screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này')).toHaveLength(1)
+    expect(
+      screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'),
+    ).toHaveLength(1)
+  })
+
+  it('counts deliveries on the detail button, zero included', () => {
+    renderTable({
+      onOpenDetail: vi.fn(),
+      items: [
+        item({ id: 501 }),
+        item({
+          id: 502,
+          deliveries: [{ delivery_no: 1 }, { delivery_no: 2 }] as PurchaseOrderItem['deliveries'],
+        }),
+      ],
+    })
+    expect(screen.getByTitle('Chi tiết & giao hàng (0 lần)')).toBeInTheDocument()
+    expect(screen.getByTitle('Chi tiết & giao hàng (2 lần)')).toBeInTheDocument()
   })
 })

@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  ListPlus,
   Loader2,
   Lock,
   Plus,
@@ -11,22 +12,16 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { createSelectionColumn } from '@/shared/data-table/selection-column'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { MultiPicker } from '@/shared/ui/multi-picker'
 import { formatDate } from '@/shared/utils/format-date'
@@ -35,6 +30,7 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import {
   useAddProcessOption,
+  useAddProcessOptions,
   useAvailableSurveyLines,
   useCompleteProcess,
   useRemoveProcessOption,
@@ -47,13 +43,22 @@ import {
   hasAvailableLinesCriteria,
   isLineGroupOnly,
 } from '../utils/survey-process-filter'
+import {
+  NO_AVAILABLE_SURVEY_LINE_SORT,
+  toAvailableSurveyLineSortParams,
+  withAvailableSurveyLineSort,
+  type AvailableSurveyLineSort,
+} from '../utils/available-survey-line-sort'
 import type {
   AvailableSurveyLine,
   SurveyProcessLine,
   SurveyProcessOption,
 } from '../types/survey-request-process'
 import { isSurveyRequestProcessable } from '../types/survey-request-process'
+import { AvailableSurveyLineCard } from './available-survey-line-card'
+import { ProcessOptionCard } from './process-option-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
+import { SurveyRequestProcessEmptyLinesDialog } from './survey-request-process-empty-lines-dialog'
 
 /** Trùng AVAIL_PAGE_SIZE của bản v1 — 8 dòng khảo sát mỗi trang. */
 const AVAILABLE_PAGE_SIZE = 8
@@ -82,7 +87,6 @@ export function SurveyRequestProcessCard({
     surveyRequestId,
     isSurveyRequestProcessable(status),
   )
-  const syncMutation = useSyncProcessOptions(surveyRequestId)
   const completeMutation = useCompleteProcess(surveyRequestId)
 
   const [emptyDialogOpen, setEmptyDialogOpen] = useState(false)
@@ -108,7 +112,8 @@ export function SurveyRequestProcessCard({
   }
   if (!process) return null
 
-  const canFinish = myLines.length > 0 && !myLines.every((line) => line.is_completed)
+  const allMineCompleted = myLines.length > 0 && myLines.every((line) => line.is_completed)
+  const canFinish = myLines.length > 0 && !allMineCompleted
 
   const startComplete = () => {
     //  bao-CR-565 (02/10/2026): bỏ chốt chặn "mọi phương án phải có Mã SP hệ thống" — đại ca chốt
@@ -118,7 +123,15 @@ export function SurveyRequestProcessCard({
       (line) => !line.is_completed && (line.options ?? []).length === 0,
     )
     if (emptyLines.length === 0) {
-      completeMutation.mutate([])
+      //  duoc-CR-741: không còn dòng rỗng thì hỏi lại trước khi chốt, nguyên văn bản v1.
+      void confirm({
+        title: 'Chốt hoàn thành',
+        message: 'Chốt hoàn thành khảo sát?',
+        confirmLabel: 'Chốt hoàn thành',
+        tone: 'default',
+      }).then((ok) => {
+        if (ok) completeMutation.mutate([])
+      })
       return
     }
     setCheckedEmptyLineIds([])
@@ -154,93 +167,43 @@ export function SurveyRequestProcessCard({
           />
         ))}
 
-        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-          {status === 'processing' && myLines.length > 0 && (
-            <Button
-              variant="outline"
-              disabled={syncMutation.isPending}
-              title="Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCBG này"
-              onClick={() => syncMutation.mutate()}
-            >
-              {syncMutation.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              Lấy từ khảo sát
-            </Button>
-          )}
-          {canFinish && (
-            <Button disabled={completeMutation.isPending} onClick={startComplete}>
-              {completeMutation.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <CheckCircle2 />
-              )}
-              Chốt hoàn thành khảo sát
-            </Button>
-          )}
-          {myLines.length > 0 && myLines.every((line) => line.is_completed) && (
-            <p className="flex items-center gap-2 text-sm text-success">
-              <CheckCircle2 className="size-4" />
-              Bạn đã chốt xong phần khảo sát của mình.
-            </p>
-          )}
-        </div>
+        {/*  duoc-CR-737: chân khu canh PHẢI như bản v1. *Lấy từ khảo sát* đã lên góc phải
+             đầu trang (`SurveyRequestSyncOptionsButton`). */}
+        {(canFinish || allMineCompleted) && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
+            {canFinish && (
+              <Button disabled={completeMutation.isPending} onClick={startComplete}>
+                {completeMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CheckCircle2 />
+                )}
+                Chốt hoàn thành khảo sát
+              </Button>
+            )}
+            {allMineCompleted && (
+              <p className="flex items-center gap-2 text-sm text-success">
+                <CheckCircle2 className="size-4" />
+                Bạn đã chốt xong phần khảo sát của mình.
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
 
-      <Dialog open={emptyDialogOpen} onOpenChange={setEmptyDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Dòng chưa có phương án</DialogTitle>
-            <DialogDescription>
-              Các sản phẩm sau chưa gắn phương án nào. Đánh dấu <b>chốt rỗng</b> (không có NCC
-              phù hợp) cho từng dòng để chốt hoàn thành, hoặc đóng lại và gắn thêm phương án.
-            </DialogDescription>
-          </DialogHeader>
-
-          <ul className="space-y-2">
-            {emptyLines.map((line) => (
-              <li key={line.id} className="flex items-start gap-3 rounded-lg border px-3 py-2">
-                <Checkbox
-                  id={`empty-line-${line.id}`}
-                  checked={checkedEmptyLineIds.includes(line.id)}
-                  onCheckedChange={(checked) =>
-                    setCheckedEmptyLineIds((prev) =>
-                      checked === true
-                        ? [...prev, line.id]
-                        : prev.filter((id) => id !== line.id),
-                    )
-                  }
-                />
-                <label htmlFor={`empty-line-${line.id}`} className="text-sm">
-                  <span className="font-medium">
-                    {line.requirement_detail || line.item_group || '—'}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    Phân loại: {line.item_group || '—'} · SL:{' '}
-                    {formatQuantity(line.request_qty) || '—'} {line.uom}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmptyDialogOpen(false)}>
-              Đóng
-            </Button>
-            <Button
-              disabled={
-                checkedEmptyLineIds.length !== emptyLines.length || completeMutation.isPending
-              }
-              onClick={() => {
-                completeMutation.mutate(checkedEmptyLineIds, {
-                  onSuccess: () => setEmptyDialogOpen(false),
-                })
-              }}
-            >
-              Chốt hoàn thành
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SurveyRequestProcessEmptyLinesDialog
+        open={emptyDialogOpen}
+        onOpenChange={setEmptyDialogOpen}
+        emptyLines={emptyLines}
+        checkedLineIds={checkedEmptyLineIds}
+        onCheckedLineIdsChange={setCheckedEmptyLineIds}
+        pending={completeMutation.isPending}
+        onConfirm={() =>
+          completeMutation.mutate(checkedEmptyLineIds, {
+            onSuccess: () => setEmptyDialogOpen(false),
+          })
+        }
+      />
     </Card>
   )
 }
@@ -291,6 +254,10 @@ function ProcessLineSection({
         )}
       </div>
 
+      {/*  duoc-CR-737: thứ tự bản v1 — bộ lọc + bảng kết quả khảo sát TRƯỚC, bảng
+           phương án đã gắn SAU. */}
+      {editable && <AvailableLinesPicker surveyRequestId={surveyRequestId} line={line} />}
+
       {options.length > 0 ? (
         <OptionsTable surveyRequestId={surveyRequestId} line={line} editable={editable} />
       ) : (
@@ -298,8 +265,6 @@ function ProcessLineSection({
           Chưa có phương án nào cho sản phẩm này.
         </p>
       )}
-
-      {editable && <AvailableLinesPicker surveyRequestId={surveyRequestId} line={line} />}
     </section>
   )
 }
@@ -315,6 +280,73 @@ function OptionsTable({
 }) {
   const removeMutation = useRemoveProcessOption(surveyRequestId)
   const updateMutation = useUpdateProcessOption(surveyRequestId)
+
+  //  Ô mã SP / ghi chú / nút xóa dựng MỘT chỗ cho cả bảng lẫn thẻ (khổ điện thoại) — hai
+  //  bản chép là hai đường phải sửa song song mỗi lần luật sửa phương án đổi.
+  const renderSystemCode = useCallback(
+    (option: SurveyProcessOption) =>
+      editable ? (
+        <PurchaseRequestProductPicker
+          code={option.system_product_code}
+          name=""
+          onPick={(product) =>
+            updateMutation.mutate({
+              lineId: line.id,
+              optionId: option.id,
+              payload: { system_product_code: product?.code ?? '' },
+            })
+          }
+        />
+      ) : (
+        option.system_product_code || '—'
+      ),
+    [editable, line.id, updateMutation],
+  )
+
+  const renderNote = useCallback(
+    (option: SurveyProcessOption) =>
+      editable ? (
+        <OptionNoteCell
+          option={option}
+          onSave={(note) =>
+            updateMutation.mutate({
+              lineId: line.id,
+              optionId: option.id,
+              payload: { nstm_note: note },
+            })
+          }
+        />
+      ) : (
+        option.nstm_note || '—'
+      ),
+    [editable, line.id, updateMutation],
+  )
+
+  const renderRemove = useCallback(
+    (option: SurveyProcessOption) => (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="text-destructive hover:text-destructive"
+        //  duoc-CR-741: gợi ý + hộp hỏi lại theo bản v1 ("Xóa option" · "Xóa phương án này?").
+        title={
+          option.is_chosen
+            ? 'Xóa option (người YC đang chọn option này — xóa sẽ bỏ lựa chọn của họ)'
+            : 'Xóa option'
+        }
+        aria-label="Xóa option"
+        onClick={() =>
+          void confirm({ message: 'Xóa phương án này?' }).then((ok) => {
+            if (ok) removeMutation.mutate({ lineId: line.id, optionId: option.id })
+          })
+        }
+      >
+        <Trash2 />
+      </Button>
+    ),
+    [line.id, removeMutation],
+  )
 
   // Dùng DataTable để có kéo giãn + kéo đổi vị trí cột như màn danh sách.
   // Mọi cột khai `hideable: false` là CỐ Ý: bảng con nằm trong thẻ, mỗi dòng
@@ -396,43 +428,14 @@ function OptionsTable({
         header: 'Mã SP hệ thống',
         width: 220,
         hideable: false,
-        cell: (option) =>
-          editable ? (
-            <PurchaseRequestProductPicker
-              code={option.system_product_code}
-              name=""
-              onPick={(product) =>
-                updateMutation.mutate({
-                  lineId: line.id,
-                  optionId: option.id,
-                  payload: { system_product_code: product?.code ?? '' },
-                })
-              }
-            />
-          ) : (
-            option.system_product_code || '—'
-          ),
+        cell: renderSystemCode,
       },
       {
         key: 'note',
         header: 'Ghi chú NSTM',
         width: 190,
         hideable: false,
-        cell: (option) =>
-          editable ? (
-            <OptionNoteCell
-              option={option}
-              onSave={(note) =>
-                updateMutation.mutate({
-                  lineId: line.id,
-                  optionId: option.id,
-                  payload: { nstm_note: note },
-                })
-              }
-            />
-          ) : (
-            option.nstm_note || '—'
-          ),
+        cell: renderNote,
       },
       {
         key: 'status',
@@ -455,25 +458,11 @@ function OptionsTable({
         header: '',
         width: 56,
         hideable: false,
-        cell: (option) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            title={
-              option.is_chosen
-                ? 'Phương án đang được người YC chọn — xóa sẽ bỏ lựa chọn của họ'
-                : 'Xóa phương án'
-            }
-            onClick={() => removeMutation.mutate({ lineId: line.id, optionId: option.id })}
-          >
-            <Trash2 />
-          </Button>
-        ),
+        cell: renderRemove,
       })
     }
     return base
-  }, [editable, line.id, removeMutation, updateMutation])
+  }, [editable, renderSystemCode, renderNote, renderRemove])
 
   return (
     <DataTable
@@ -482,6 +471,23 @@ function OptionsTable({
       getRowId={(option) => option.id}
       storageKey="procurement.survey-process.options"
       emptyMessage="Chưa có phương án nào cho sản phẩm này."
+      //  Khổ điện thoại: bảng 10 cột ~1400px thành thẻ dọc. Không khai `onRowClick` nên
+      //  thẻ là `div`, ô chọn mã SP, ô ghi chú và nút xóa nằm trong được.
+      mobileCard={(option) => (
+        <ProcessOptionCard
+          option={option}
+          labelPrefix="Option"
+          fields={[
+            ...(editable || option.system_product_code
+              ? [{ label: 'Mã SP hệ thống', content: renderSystemCode(option) }]
+              : []),
+            ...(editable || option.nstm_note
+              ? [{ label: 'Ghi chú NSTM', content: renderNote(option) }]
+              : []),
+          ]}
+          actions={editable ? renderRemove(option) : undefined}
+        />
+      )}
     />
   )
 }
@@ -526,7 +532,18 @@ function AvailableLinesPicker({
   const [itemGroups, setItemGroups] = useState<string[]>(() => defaultItemGroups(line.item_group))
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  //  duoc-CR-738: sắp xếp RIÊNG từng dòng sản phẩm (mỗi dòng một bộ chọn), như bản v1.
+  const [sort, setSort] = useState<AvailableSurveyLineSort>(NO_AVAILABLE_SURVEY_LINE_SORT)
   const debouncedSearch = useDebouncedValue(search, 300)
+  //  duoc-CR-741: tick nhiều kết quả rồi *Thêm n dòng đã chọn làm option* như bản v1. Đổi
+  //  trang / bộ lọc / sắp xếp là bỏ hết lựa chọn (v1 cũng xóa khi nạp lại bảng).
+  const { selectedIds, toggleRow, toggleAllOnPage, clear: clearSelection } = useRowSelection()
+  const goToPage = (next: number) => {
+    setPage(next)
+    clearSelection()
+  }
+  const bulkAddingRef = useRef(false)
+  const [bulkAdding, setBulkAdding] = useState(false)
 
   const suppliersQuery = useSuppliers(
     { page_size: 1000, supplier_type: 'goods', is_active: true },
@@ -534,6 +551,12 @@ function AvailableLinesPicker({
   )
   const itemGroupsQuery = usePurchaseRequestItemGroups()
   const addMutation = useAddProcessOption(surveyRequestId)
+  const addManyMutation = useAddProcessOptions(surveyRequestId)
+  //  Đổi sắp xếp: về trang 1 (thứ tự mới, trang cũ không còn nghĩa), giữ nguyên bộ lọc.
+  const changeSort = (sortBy: string, sortDir: 'asc' | 'desc') => {
+    setSort({ sortBy, sortDir })
+    goToPage(1)
+  }
 
   const hasCriteria = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search: debouncedSearch })
   // Nút "Bỏ lọc" nhìn theo ô đang gõ, không đợi debounce — bấm là sạch ngay.
@@ -542,7 +565,7 @@ function AvailableLinesPicker({
     setSupplierCodes([])
     setItemGroups([])
     setSearch('')
-    setPage(1)
+    goToPage(1)
   }
   const availableQuery = useAvailableSurveyLines(
     surveyRequestId,
@@ -553,6 +576,7 @@ function AvailableLinesPicker({
       search: debouncedSearch.trim(),
       page,
       page_size: AVAILABLE_PAGE_SIZE,
+      ...toAvailableSurveyLineSortParams(sort),
     },
     hasCriteria,
   )
@@ -563,32 +587,52 @@ function AvailableLinesPicker({
     () => new Set((line.options ?? []).map((option) => option.product_survey_line_id)),
     [line.options],
   )
-  const rows = (availableQuery.data?.items ?? []).filter((row) => !attachedIds.has(row.id))
+  const availableItems = availableQuery.data?.items
+  const rows = useMemo(
+    () => (availableItems ?? []).filter((row) => !attachedIds.has(row.id)),
+    [availableItems, attachedIds],
+  )
   const total = availableQuery.data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / AVAILABLE_PAGE_SIZE))
+  //  Chỉ đếm dòng ĐANG HIỆN: dòng vừa gắn xong rời bảng thì cũng rời khỏi số trên nút.
+  const selectedRows = rows.filter((row) => selectedIds.has(row.id))
+  const allOnPageSelected = rows.length > 0 && selectedRows.length === rows.length
+  const someOnPageSelected = selectedRows.length > 0 && !allOnPageSelected
+
+  async function addSelectedRows() {
+    //  Ref chặn bấm đúp ngay trong tick — `disabled` theo state chỉ đúng ở lượt render sau.
+    if (bulkAddingRef.current || selectedRows.length === 0) return
+    bulkAddingRef.current = true
+    setBulkAdding(true)
+    try {
+      //  Gắn LẦN LƯỢT như v1, một dòng lỗi thì đi tiếp; làm mới + toast MỘT lần ở cuối
+      //  (`useAddProcessOptions`).
+      await addManyMutation.mutateAsync({
+        lineId: line.id,
+        productSurveyLineIds: selectedRows.map((row) => row.id),
+      })
+    } catch {
+      // vòng gắn tự nuốt lỗi từng dòng — tới đây chỉ là lỗi bất ngờ, httpClient đã báo
+    } finally {
+      bulkAddingRef.current = false
+      setBulkAdding(false)
+      clearSelection()
+    }
+  }
 
   // Toàn bộ cột `hideable: false` để DataTable giấu thanh công cụ (lý do xem
   // OptionsTable); phân trang giữ footer thủ công bên dưới vì cỡ trang cố định.
   const columns = useMemo<DataTableColumn<AvailableSurveyLine>[]>(
-    () => [
-      {
-        key: 'add',
-        header: '',
-        width: 48,
-        hideable: false,
-        cell: (row) => (
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7"
-            title="Gắn làm phương án"
-            disabled={addMutation.isPending}
-            onClick={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
-          >
-            <Plus />
-          </Button>
-        ),
-      },
+    () => withAvailableSurveyLineSort<AvailableSurveyLine>([
+      createSelectionColumn<AvailableSurveyLine>({
+        getRowId: (row) => row.id,
+        selectedIds,
+        onToggleRow: toggleRow,
+        onToggleAllOnPage: () => toggleAllOnPage(rows.map((row) => row.id)),
+        allOnPageSelected,
+        someOnPageSelected,
+        getRowLabel: (row) => row.product_name || row.supplier_name || `kết quả ${row.id}`,
+      }),
       {
         key: 'supplier',
         header: 'NCC',
@@ -677,8 +721,37 @@ function AvailableLinesPicker({
         hideable: false,
         cell: (row) => row.survey_code || '—',
       },
+      //  duoc-CR-737: cột (+) gắn phương án là cột CUỐI như bản v1.
+      {
+        key: 'add',
+        header: '',
+        width: 48,
+        hideable: false,
+        cell: (row) => (
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            title="Gắn làm phương án"
+            disabled={addMutation.isPending}
+            onClick={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
+          >
+            <Plus />
+          </Button>
+        ),
+      },
+    ]),
+    [
+      addMutation,
+      line.id,
+      line.item_group,
+      rows,
+      selectedIds,
+      toggleRow,
+      toggleAllOnPage,
+      allOnPageSelected,
+      someOnPageSelected,
     ],
-    [addMutation, line.id, line.item_group],
   )
 
   return (
@@ -690,13 +763,33 @@ function AvailableLinesPicker({
       <div className="flex flex-wrap items-center gap-2">
         {/* Danh mục NCC / phân loại dài hàng chục-hàng trăm dòng — Select thường cuộn tay
             không nổi (khách báo 29/08). bao-CR-487: chọn được NHIỀU, gõ tìm được (MultiPicker
-            như CR-423). MultiPicker tự chiếm trọn thẻ bọc nên bề rộng đặt ở div ngoài. */}
+            như CR-423). MultiPicker tự chiếm trọn thẻ bọc nên bề rộng đặt ở div ngoài.
+            duoc-CR-737: thứ tự bản v1 — Phân loại · NCC · ô tìm · Về phân loại dòng · Bỏ lọc. */}
+        <div className="w-56" aria-label="Lọc theo phân loại">
+          <MultiPicker
+            value={itemGroups}
+            onChange={(ids) => {
+              setItemGroups(ids)
+              goToPage(1)
+            }}
+            options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
+              id: group.name,
+              label: group.name,
+            }))}
+            placeholder="Tất cả phân loại"
+            searchPlaceholder="Tìm phân loại…"
+            emptyMessage="Không tìm thấy phân loại nào."
+            summaryInTrigger
+            clearInTrigger
+          />
+        </div>
+
         <div className="w-64" aria-label="Lọc theo nhà cung cấp">
           <MultiPicker
             value={supplierCodes}
             onChange={(ids) => {
               setSupplierCodes(ids)
-              setPage(1)
+              goToPage(1)
             }}
             options={(suppliersQuery.data?.items ?? []).map((supplier) => ({
               id: supplier.code,
@@ -711,24 +804,15 @@ function AvailableLinesPicker({
           />
         </div>
 
-        <div className="w-56" aria-label="Lọc theo phân loại">
-          <MultiPicker
-            value={itemGroups}
-            onChange={(ids) => {
-              setItemGroups(ids)
-              setPage(1)
-            }}
-            options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
-              id: group.name,
-              label: group.name,
-            }))}
-            placeholder="Tất cả phân loại"
-            searchPlaceholder="Tìm phân loại…"
-            emptyMessage="Không tìm thấy phân loại nào."
-            summaryInTrigger
-            clearInTrigger
-          />
-        </div>
+        <Input
+          className="w-64"
+          value={search}
+          placeholder="Tìm theo tên SP / mã / NCC..."
+          onChange={(event) => {
+            setSearch(event.target.value)
+            goToPage(1)
+          }}
+        />
 
         {!!line.item_group && !isLineGroupOnly(itemGroups, line.item_group) && (
           <Button
@@ -737,22 +821,12 @@ function AvailableLinesPicker({
             size="sm"
             onClick={() => {
               setItemGroups(defaultItemGroups(line.item_group))
-              setPage(1)
+              goToPage(1)
             }}
           >
             Về phân loại dòng
           </Button>
         )}
-
-        <Input
-          className="w-64"
-          value={search}
-          placeholder="Tìm theo tên SP / mã / NCC..."
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setPage(1)
-          }}
-        />
 
         {filterActive && (
           <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
@@ -781,7 +855,31 @@ function AvailableLinesPicker({
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="procurement.survey-process.available"
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={changeSort}
+          mobileCard={(row) => (
+            <AvailableSurveyLineCard
+              row={row}
+              lineItemGroup={line.item_group || ''}
+              documentLabel="YCBG"
+              attaching={addMutation.isPending}
+              onAttach={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
+            />
+          )}
         />
+      )}
+
+      {hasCriteria && rows.length > 0 && selectedRows.length > 0 && (
+        <Button
+          type="button"
+          size="sm"
+          disabled={bulkAdding}
+          onClick={() => void addSelectedRows()}
+        >
+          {bulkAdding ? <Loader2 className="animate-spin" /> : <ListPlus />}
+          Thêm {selectedRows.length} dòng đã chọn làm option
+        </Button>
       )}
 
       {hasCriteria && total > AVAILABLE_PAGE_SIZE && (
@@ -793,8 +891,9 @@ function AvailableLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang trước"
             disabled={page <= 1}
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            onClick={() => goToPage(Math.max(1, page - 1))}
           >
             <ChevronLeft />
           </Button>
@@ -802,13 +901,45 @@ function AvailableLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang sau"
             disabled={page >= totalPages}
-            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            onClick={() => goToPage(Math.min(totalPages, page + 1))}
           >
             <ChevronRight />
           </Button>
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Nút *Lấy từ khảo sát* — duoc-CR-737 dời lên góc phải ĐẦU TRANG Xử lý khảo sát như bản
+ * v1 (trước nằm ở chân thẻ). Điều kiện giữ nguyên: phiếu Đang xử lý và người xem có dòng
+ * mình phụ trách. Đọc cùng khóa truy vấn với `SurveyRequestProcessCard` nên không gọi
+ * thêm API; backend trả lỗi (không phải NSTM) thì nút ẩn theo thẻ.
+ */
+export function SurveyRequestSyncOptionsButton({
+  surveyRequestId,
+  status,
+}: SurveyRequestProcessCardProps) {
+  const processQuery = useSurveyRequestProcess(
+    surveyRequestId,
+    isSurveyRequestProcessable(status),
+  )
+  const syncMutation = useSyncProcessOptions(surveyRequestId)
+  const hasMyLines = (processQuery.data?.lines ?? []).some((line) => line.can_process)
+
+  if (status !== 'processing' || !hasMyLines) return null
+  return (
+    <Button
+      variant="outline"
+      disabled={syncMutation.isPending}
+      title="Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCBG này"
+      onClick={() => syncMutation.mutate()}
+    >
+      {syncMutation.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+      Lấy từ khảo sát
+    </Button>
   )
 }

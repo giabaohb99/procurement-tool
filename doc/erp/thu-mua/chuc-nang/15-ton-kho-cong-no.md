@@ -334,7 +334,7 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 - Kiểu nhập: Bộ lọc — Chọn từ danh sách
 - Mặc định: Tất cả
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: `goods` (Hàng hóa) / `shipping` (Vận chuyển) / `import_cost` (Chi phí nhập khẩu — bao-CR-319 P5). Nhãn dùng chung ở `frontend/src/utils/payable.ts`
+- Nguồn dữ liệu / liên kết: `goods` (Hàng hóa) / `shipping` (Vận chuyển) / `import_cost` (Chi phí thu mua — bao-CR-319 P5, đổi nhãn ở bao-CR-453). Nhãn dùng chung ở `frontend/src/utils/payable.ts`
 - Người sửa: Người dùng
 
 ### 6. Trạng thái (`status`)
@@ -419,7 +419,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
 - Bắt buộc: —
-- Nguồn dữ liệu / liên kết: `goods` hiển thị "Hàng hóa"; `shipping` hiển thị "Vận chuyển"; `import_cost` hiển thị "Chi phí nhập khẩu" (bao-CR-319 P5)
+- Nguồn dữ liệu / liên kết: `goods` hiển thị "Hàng hóa"; `shipping` hiển thị "Vận chuyển"; `import_cost` hiển thị "Chi phí thu mua" (bao-CR-319 P5, đổi nhãn ở bao-CR-453)
 - Người sửa: Hệ thống
 
 ### 5. Công ty (`company_id`)

@@ -106,6 +106,8 @@ export const ENTITIES = [
   'holiday',
   //  Phiếu xin nghỉ bù (duoc-CR-715 phase C) — khóa riêng, backend `leave_comp_request`.
   'leave_comp_request',
+  //  Phiếu thanh toán nghỉ phép (duoc-CR-719) — khóa riêng, backend `leave_encashment`.
+  'leave_encashment',
   //  Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán 4 cấp; mọi vai trò `read`, sửa: hr_leave/hr_profile.
   'work_schedule',
   //  Hợp đồng lao động (có lương) + mẫu hợp đồng theo pháp nhân (05/10/2026) — chỉ hr_profile + admin.

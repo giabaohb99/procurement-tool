@@ -62,6 +62,7 @@ def product_purchase_history(
     # nhưng NCC là thông tin riêng của khối thu mua -> ai không có `supplier.read` thì
     # không được thấy. Chặn ở BACKEND chứ không chỉ ẩn cột: ẩn ở giao diện thì gọi thẳng
     # API vẫn đọc được nguyên tên NCC.
+    """Lịch sử mua của một mặt hàng; tìm theo NCC chỉ khi được xem NCC."""
     show_supplier = user_has_permission(db, user, "supplier", "read")
     total, items = service.list_history(db, pg, product_code=code, search=search,
                                         search_by_supplier=show_supplier)
@@ -76,5 +77,6 @@ def supplier_purchase_history(
     db: Session = Depends(get_db),
     user=Depends(require("supplier", "read")),
 ):
+    """Lịch sử mua từ một nhà cung cấp."""
     total, items = service.list_history(db, pg, supplier_code=code, search=search)
     return success(_payload(db, total, items))

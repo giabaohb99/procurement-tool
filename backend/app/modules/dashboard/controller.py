@@ -154,12 +154,12 @@ def _group_inventory_by_warehouse(db: Session, invs: list) -> list[dict]:
 
 @router.get("/menu-badges")
 def menu_badges(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Số phiếu đang chờ duyệt cho bóng đỏ trên menu trái (duoc-CR-723).
+    """Số phiếu chờ NGƯỜI XEM duyệt, cho bóng đỏ trên menu trái (duoc-CR-723).
 
-    Trả `{survey_request, purchase_request, purchase_order, survey}` → số phiếu ở trạng thái
-    Chờ duyệt (`submitted`) trong PHẠM VI dữ liệu của người xem, cùng cách đếm với thẻ thống kê Trang
-    chủ. Khóa nào người xem không có quyền đọc thì vắng mặt. Bốn câu đếm, số truy vấn cố định — giao
-    diện gọi lại mỗi lần chuyển trang nên phải rẻ.
+    Trả `{survey_request, purchase_request, purchase_order, survey}` → số phiếu Chờ duyệt (`submitted`)
+    nằm trong phạm vi DUYỆT của người xem; YCMH cộng thêm phiếu chờ duyệt điều phối nếu người xem điều
+    phối được (lượt e, 07/11/2026). Khóa nào người xem không có quyền `approve` thì vắng mặt. Bốn câu
+    đếm, số truy vấn cố định — giao diện gọi lại mỗi lần chuyển trang nên phải rẻ.
     """
     from app.modules.dashboard.menu_badge_service import count_pending_by_menu
 

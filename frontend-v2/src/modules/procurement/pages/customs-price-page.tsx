@@ -53,6 +53,7 @@ import { CustomsConfigTab } from '../components/customs/customs-config-tab'
 import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
 import { CustomsImportersTab } from '../components/customs/customs-importers-tab'
+import { CustomsLineCard } from '../components/customs/customs-line-card'
 import { CustomsPesticideTab } from '../components/customs/customs-pesticide-tab'
 import { CustomsRegulationTab } from '../components/customs/customs-regulation-tab'
 import { CustomsTariffTab } from '../components/customs/customs-tariff-tab'
@@ -626,6 +627,8 @@ export function CustomsPricePage() {
             emptyMessage={resolveLinesEmptyMessage(coverage.data?.total, canImport)}
             storageKey={STORAGE_KEY}
             onRowClick={(line) => setDetailId(line.id)}
+            //  Khổ điện thoại: bảng 37 cột đổi thành thẻ dọc; đủ trường vẫn ở hộp chi tiết.
+            mobileCard={(line) => <CustomsLineCard row={line} />}
             //  Bộ lọc đứng NGOÀI bảng (dùng chung cho mọi mục) và đã có nút "Xóa lọc"
             //  riêng ở thanh lọc — tắt nút của bảng cho khỏi hai nút làm cùng một việc.
             filtersActive={false}

@@ -20,6 +20,7 @@ import { CUSTOMS_PESTICIDE_COLUMNS } from '../../config/customs-pesticide-column
 import { useCustomsPesticides } from '../../hooks/use-customs-pesticides'
 import type { CustomsRegulationHit } from '../../types/customs'
 import { formatBannedLabel } from '../../utils/customs'
+import { CustomsPesticideCard } from './customs-pesticide-card'
 
 const DEFAULT_PAGE_SIZE = 50
 const SHOWN_COLUMNS = new Set(['trade_name', 'active_ingredient', 'registrant', 'registration_no', 'status'])
@@ -73,6 +74,8 @@ export function CustomsBannedPesticideDialog({ regulation, onClose }: CustomsBan
             onRowClick={(row) =>
               navigate(appRoutes.procurement.customsPesticideDetail(row.id), { state: fromHere(location) })
             }
+            //  Cùng thẻ với danh sách Thuốc BVTV — bảng ở đây chỉ là năm cột con của bảng đó.
+            mobileCard={(row) => <CustomsPesticideCard row={row} />}
             pagination={{
               page,
               pageSize,

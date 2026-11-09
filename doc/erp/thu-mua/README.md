@@ -40,7 +40,7 @@ lấy từ [bảng fit-gap 30/10/2026](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-e
 | Gọi API nào | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) · các nhóm `purchase_request`, `survey_request`, `survey`, `purchase_order`, `payable`, `payment_request`, `supplier`, `contract`… trên `/docs` |
 | Thiết kế, bảng dữ liệu, bẫy | [tai-lieu-ky-thuat/](tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) và mô tả từng trường trong `chuc-nang/10..20` |
 | So sánh, khảo sát, câu hỏi chờ chốt | [nghien-cuu/11 Độ phủ so với ERPNext](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md), [nghien-cuu/09 Nghiệp vụ mua hàng](nghien-cuu/09-nghiep-vu-mua-hang.md) |
-| Kế hoạch đang làm / đã xong | Chưa có thư mục `plans/` riêng; kế hoạch chung ở [doc/plans/01 Luồng chuẩn mua hàng, kho, sản xuất](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
+| Kế hoạch đang làm / đã xong | [plans/261106 Đồng bộ vị trí nút v1 → v2 (duoc-CR-737)](plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-cr-737/plan.md) · [plans/261109 Đồng bộ tên nút và hộp xác nhận v1 → v2 (duoc-CR-741)](plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md) · kế hoạch chung ở [doc/plans/01 Luồng chuẩn mua hàng, kho, sản xuất](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
 | Kịch bản kiểm thử tay | [kiem-thu/00-muc-luc.md](kiem-thu/00-muc-luc.md) |
 | Hướng dẫn người dùng | Trung tâm trợ giúp, nhóm *Dành cho Nhân viên Mua hàng*: `backend/scripts/seed_help_xu_ly_phuong_an.py`, `seed_help_chi_tiet_yc_mua_hang.py`, `seed_help_chi_phi_thu_mua.py`, `seed_help_thu_mua_cap_nhat.py`, `seed_help_lap_bo_tai_khoan_phong_tu_mua.py` |
 

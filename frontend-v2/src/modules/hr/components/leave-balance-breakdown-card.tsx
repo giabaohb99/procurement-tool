@@ -74,6 +74,10 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
             {balance.carried_out_days > 0 && (
               <Stat label="Đã chuyển sang năm sau" value={balance.carried_out_days} />
             )}
+            {/*  duoc-CR-719: chỉ mọc khi có — phần lớn quỹ không bao giờ đổi phép ra tiền. */}
+            {(balance.encashed_days ?? 0) !== 0 && (
+              <Stat label="Đã thanh toán ra tiền" value={balance.encashed_days ?? 0} />
+            )}
             {/*  ⚠️ KHÔNG `text-primary`: primary là navy — đúng màu nút hành
                  động chính — nên con số đọc ra như một cái link bấm được.
 

@@ -1,4 +1,5 @@
 import {
+  Banknote,
   BriefcaseBusiness,
   Building,
   Building2,
@@ -151,7 +152,14 @@ export const hrModule: ErpModule = {
       label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
       icon: CalendarOff,
-      entities: ['leave_request', 'leave_comp_request', 'leave_balance', 'leave_type', 'holiday'],
+      entities: [
+        'leave_request',
+        'leave_comp_request',
+        'leave_encashment',
+        'leave_balance',
+        'leave_type',
+        'holiday',
+      ],
       //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
       //  cùng, không tiêu đề, và vốn chỉ dành cho "Tổng quan". Hai mục nghỉ phép
       //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
@@ -159,6 +167,7 @@ export const hrModule: ErpModule = {
       group: 'Danh mục',
       matchPaths: [
         appRoutes.hr.leaveCompRequests,
+        appRoutes.hr.leaveEncashments,
         appRoutes.hr.leaveCalendar,
         appRoutes.hr.leaveBalances,
         appRoutes.hr.leaveTypes,
@@ -181,6 +190,14 @@ export const hrModule: ErpModule = {
           path: appRoutes.hr.leaveCompRequests,
           icon: CalendarPlus,
           entity: 'leave_comp_request',
+        },
+        {
+          //  duoc-CR-719. ⚠️ `entity` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) — gác luôn `/new`
+          //  và `/:id` vì cả hai nằm dưới đường dẫn danh sách.
+          label: 'Thanh toán nghỉ phép',
+          path: appRoutes.hr.leaveEncashments,
+          icon: Banknote,
+          entity: 'leave_encashment',
         },
         {
           label: 'Lịch nghỉ',
@@ -419,6 +436,24 @@ export const hrModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/leave-comp-request-detail-page'))
           .LeaveCompRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveEncashments,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-encashment-list-page')).LeaveEncashmentListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveEncashmentNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-encashment-detail-page')).LeaveEncashmentDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveEncashmentDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-encashment-detail-page')).LeaveEncashmentDetailPage,
       }),
     },
     {

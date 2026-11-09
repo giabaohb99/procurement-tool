@@ -221,6 +221,7 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "customs_pesticide",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday", "leave_comp_request",
+                 "leave_encashment",   # duoc-CR-719: duyệt = trừ quỹ + sinh YCTT, Quản lý thu mua không tự có
                  #  Lịch làm việc: sửa lịch đổi cách tính ngày phép cả công ty —
                  #  Quản lý thu mua không tự có (chỉ `read` đại trà + hr_leave/hr_profile sửa).
                  "work_schedule",
@@ -639,6 +640,9 @@ for _role_info in STD_ROLES.values():
         "leave_request", (["read", "create", "write", "delete"], "own"))
     _role_info["perms"].setdefault(
         "leave_comp_request", (["read", "create", "write", "delete"], "own"))
+    #  duoc-CR-719 (D3a): ai cũng lập được phiếu thanh toán phép CỦA MÌNH; duyệt chỉ `hr_leave`.
+    _role_info["perms"].setdefault(
+        "leave_encashment", (["read", "create", "write", "delete"], "own"))
     _role_info["perms"].setdefault("leave_balance", (["read"], "own"))
     #  Đọc danh mục loại nghỉ + lịch lễ: cần để form dựng được ô chọn và tính
     #  được số ngày. Chỉ `read` — sửa luật là việc của vai trò `hr_leave` dưới.
@@ -689,6 +693,7 @@ STD_ROLES["dept_head"]["perms"]["leave_request"] = (
     ["read", "create", "write", "delete", "approve", "export"], "dept")
 STD_ROLES["dept_head"]["perms"]["leave_comp_request"] = (
     ["read", "create", "write", "delete", "approve", "export"], "dept")
+STD_ROLES["dept_head"]["perms"]["leave_encashment"] = (["read", "export"], "dept")
 STD_ROLES["dept_head"]["perms"]["leave_balance"] = (["read"], "dept")
 STD_ROLES["dept_head"]["perms"]["room_booking"] = (
     ["read", "create", "write", "delete", "approve", "cancel"], "dept")
@@ -696,6 +701,7 @@ STD_ROLES["company_head"]["perms"]["leave_request"] = (
     ["read", "approve", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_comp_request"] = (
     ["read", "approve", "export"], "company")
+STD_ROLES["company_head"]["perms"]["leave_encashment"] = (["read", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_balance"] = (["read"], "company")
 STD_ROLES["company_head"]["perms"]["room_booking"] = (
     ["read", "create", "write", "approve", "cancel"], "company")
@@ -709,6 +715,7 @@ STD_ROLES["company_head"]["perms"]["room_booking"] = (
 STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perms": {
     "leave_request": (["read", "create", "write", "delete", "export"], "all"),
     "leave_comp_request": (["read", "create", "write", "delete", "export"], "all"),
+    "leave_encashment": (["read", "create", "write", "delete", "approve", "cancel", "export"], "all"),
     "leave_balance": (["read", "create", "write", "delete", "export"], "all"),
     "leave_type": (["read", "create", "write", "delete"], "all"),
     "holiday": (["read", "create", "write", "delete"], "all"),

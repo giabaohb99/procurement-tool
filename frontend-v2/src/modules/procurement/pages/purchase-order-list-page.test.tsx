@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -36,6 +37,12 @@ vi.mock('@/modules/production/hooks/use-suppliers', () => ({
   useSuppliers: () => ({ data: { total: 0, items: [] } }),
 }))
 
+//  Nút Xuất Excel: bắt bộ tham số gửi đi thay vì tải tệp thật.
+const downloadFile = vi.fn()
+vi.mock('@/core/api/download-file', () => ({
+  downloadFile: (...args: unknown[]) => downloadFile(...args),
+}))
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: () => true, canAccess: () => true }),
 }))
@@ -61,6 +68,7 @@ function lastCall() {
 beforeEach(() => {
   listCalls.length = 0
   listItems.length = 0
+  downloadFile.mockReset().mockResolvedValue(undefined)
   localStorage.clear()
   sessionStorage.clear()
   useAuthStore.setState({ user: null })
@@ -264,5 +272,62 @@ describe('PurchaseOrderListPage — cột Phòng xử lý (bao-CR-705)', () => {
     listItems.push(row(3, undefined))
     build()
     expect(screen.queryByText('undefined')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * duoc-CR-741 — nút đầu trang và chế độ nhân bản theo đúng `CrudList.tsx` bản v1.
+ */
+describe('PurchaseOrderListPage — nút đầu trang theo bản v1', () => {
+  beforeEach(() => {
+    for (const id of [1, 2]) {
+      listItems.push({
+        id, code: `PO0${id}`, misa_code: '', pr_code: '', survey_code: '', company_id: 1,
+        supplier_code: 'NCC', supplier_name: 'Nhà cung cấp', department: 'Dego Organic', nspt: '',
+        order_date: '2026-10-31', is_urgent: false, order_type: 1, status: 'approved',
+        document_status: '', note: '', created_at: '2026-10-31T08:00:00', amount: 0,
+      })
+    }
+  })
+
+  it('names the create button Thêm, not Thêm mới', () => {
+    build()
+
+    expect(screen.getByRole('button', { name: 'Thêm' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thêm mới' })).toBeNull()
+  })
+
+  it('reveals a Nhân bản text button per row only after switching clone mode on', async () => {
+    const user = userEvent.setup()
+    build()
+
+    expect(within(screen.getByRole('table')).queryByRole('button', { name: /Nhân bản/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Nhân bản' }))
+    expect(within(screen.getByRole('table')).getAllByRole('button', { name: /^Nhân bản / })).toHaveLength(2)
+  })
+
+  it('Xuất Excel (n) keeps the filters and visible columns and adds the ticked ids', async () => {
+    const user = userEvent.setup()
+    build('/procurement/purchase-orders?status=approved')
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn PO01' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn PO02' }))
+    await user.click(screen.getByRole('button', { name: 'Xuất Excel (2)' }))
+
+    const params = downloadFile.mock.calls[0][2] as Record<string, unknown>
+    expect(params).toMatchObject({ status: 'approved' })
+    expect(String(params.ids).split(',').sort()).toEqual(['1', '2'])
+    expect(params).not.toHaveProperty('page')
+  })
+
+  it('the header tick selects the whole page and a second click clears it', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn cả trang' }))
+    expect(screen.getByRole('button', { name: 'Xuất Excel (2)' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Bỏ chọn cả trang' }))
+    expect(screen.getByRole('button', { name: 'Xuất Excel' })).toBeInTheDocument()
   })
 })

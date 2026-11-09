@@ -17,9 +17,13 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { laborContractTemplateApi } from '../api/labor-contract-template-api'
+import { LaborContractTemplateCard } from './labor-contract-template-card'
 import { LaborContractTemplateEditDialog } from './labor-contract-template-edit-dialog'
 import { LaborContractTemplateUploadDialog } from './labor-contract-template-upload-dialog'
-import { buildLaborContractTemplateColumns } from '../config/labor-contract-template-columns'
+import {
+  buildLaborContractTemplateColumns,
+  type LaborContractTemplateColumnActions,
+} from '../config/labor-contract-template-columns'
 import { useCompanies } from '../hooks/use-companies'
 import {
   useDeleteLaborContractTemplate,
@@ -67,31 +71,32 @@ export function LaborContractTemplateCatalog() {
   const update = useUpdateLaborContractTemplate()
   const remove = useDeleteLaborContractTemplate()
 
-  const columns = useMemo(
-    () =>
-      buildLaborContractTemplateColumns({
-        canWrite,
-        canDelete,
-        onDownload: (t) =>
-          void laborContractTemplateApi.download(t).catch((e: unknown) => toast.error(extractErrorMessage(e))),
-        onEditContent: (t) => navigate(appRoutes.hr.laborContractTemplateEditor(t.id)),
-        onEditInfo: setEditing,
-        onReplaceFile: setReplacing,
-        onToggleActive: (t) => update.mutate({ id: t.id, payload: { is_active: !t.is_active } }),
-        onDelete: async (t) => {
-          const ok = await confirm({
-            title: 'Xóa mẫu hợp đồng',
-            message: `Xóa mẫu "${t.name}"? Hợp đồng đã sinh từ mẫu này vẫn giữ nguyên. Mẫu đã có hợp đồng tham chiếu sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
-            confirmLabel: 'Xóa',
-          })
-          //  Lỗi 409 (đang có HĐ dùng) đã được http-client toast đúng câu của backend.
-          if (ok) remove.mutate(t.id)
-        },
-      }),
+  //  Bộ hàm thao tác dùng CHUNG cho cột Thao tác của bảng và nút "⋯" của thẻ khổ điện thoại (duoc-CR-721).
+  const actions = useMemo<LaborContractTemplateColumnActions>(
+    () => ({
+      canWrite,
+      canDelete,
+      onDownload: (t) =>
+        void laborContractTemplateApi.download(t).catch((e: unknown) => toast.error(extractErrorMessage(e))),
+      onEditContent: (t) => navigate(appRoutes.hr.laborContractTemplateEditor(t.id)),
+      onEditInfo: setEditing,
+      onReplaceFile: setReplacing,
+      onToggleActive: (t) => update.mutate({ id: t.id, payload: { is_active: !t.is_active } }),
+      onDelete: async (t) => {
+        const ok = await confirm({
+          title: 'Xóa mẫu hợp đồng',
+          message: `Xóa mẫu "${t.name}"? Hợp đồng đã sinh từ mẫu này vẫn giữ nguyên. Mẫu đã có hợp đồng tham chiếu sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
+          confirmLabel: 'Xóa',
+        })
+        //  Lỗi 409 (đang có HĐ dùng) đã được http-client toast đúng câu của backend.
+        if (ok) remove.mutate(t.id)
+      },
+    }),
     // `mutate` ổn định; không đưa cả object mutation vào deps kẻo bảng dựng lại mỗi lượt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [canWrite, canDelete],
   )
+  const columns = useMemo(() => buildLaborContractTemplateColumns(actions), [actions])
 
   if (!canRead) {
     return <p className="text-sm text-muted-foreground">Bạn không có quyền xem màn này.</p>
@@ -116,6 +121,7 @@ export function LaborContractTemplateCatalog() {
               : 'Chưa có mẫu hợp đồng nào. Bấm "Tải lên mẫu" ở góc trên để thêm.'
           }
           storageKey="hr.labor-contract-templates"
+          mobileCard={(t) => <LaborContractTemplateCard template={t} actions={actions} />}
           pagination={{
             page,
             pageSize,

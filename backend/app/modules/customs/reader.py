@@ -107,19 +107,31 @@ def load_cells(raw: bytes, filename: str = "", max_rows: int | None = None) -> l
     """Tệp → lưới `Cell`. Hai định dạng đi chung một đầu ra để luật đọc chỉ viết một lần.
 
     `max_rows` (bao-CR-728): chỉ đọc chừng ấy dòng đầu — áp cho .xlsx (đọc từng dòng được); dạng khác vẫn đọc trọn."""
-    if raw[:4] == _OLE2_MAGIC:
-        return _cells_from_xls(raw)
     if raw[:2] == _ZIP_MAGIC:
-        return _cells_from_xlsx(raw, max_rows)
+        return list(_iter_xlsx(raw, max_rows))
+    return list(iter_cells(raw, filename))
+
+
+def iter_cells(raw: bytes, filename: str = ""):
+    """bao-CR-733 — như `load_cells` nhưng trả TỪNG DÒNG: .xlsx đọc luồng, không dựng cả lưới ô (tệp 50.000 dòng là
+    ~2,4 triệu ô, ~190 MB). Ba dạng còn lại (.xls, HTML, XML giả .xls) là tệp nguồn nhỏ, vẫn đọc trọn rồi trả dần."""
+    if raw[:2] == _ZIP_MAGIC:
+        yield from _iter_xlsx(raw)
+        return
+    if raw[:4] == _OLE2_MAGIC:
+        yield from _cells_from_xls(raw)
+        return
     #  bao-CR-662: hệ thống hải quan có lúc kết xuất tệp HTML hoặc XML (SpreadsheetML) nhưng đặt
     #  đuôi .xls — Excel mở được, còn chữ ký đầu tệp thì không phải Excel. Nhận cả hai dạng đó;
     #  mọi ô đọc thành TEXT, vì luật từng ô đã biết đọc ngày và số từ chữ.
     head = raw.lstrip(b"\xef\xbb\xbf \t\r\n")[:512].lower()
     if head.startswith(b"<"):
         if b"urn:schemas-microsoft-com:office:spreadsheet" in head or b"<workbook" in head:
-            return _cells_from_spreadsheetml(raw)
+            yield from _cells_from_spreadsheetml(raw)
+            return
         if b"<html" in head or b"<table" in head or b"<!doctype" in head:
-            return _cells_from_html(raw)
+            yield from _cells_from_html(raw)
+            return
     raise CustomsFileError(
         f"Tệp \"{filename}\" không phải Excel (.xls hoặc .xlsx). Mở bằng Excel rồi lưu lại dạng .xlsx và nạp lại.")
 
@@ -246,31 +258,36 @@ def cells_from_xlrd_sheet(sheet, datemode: int) -> list[list[Cell]]:
     return grid
 
 
-def _cells_from_xlsx(raw: bytes, max_rows: int | None = None) -> list[list[Cell]]:
+def _iter_xlsx(raw: bytes, max_rows: int | None = None):
+    """.xlsx → từng dòng `Cell` (openpyxl chế độ chỉ đọc, đọc luồng). bao-CR-733: trả dần thay vì dựng cả lưới."""
     import openpyxl
     try:
         wb = openpyxl.load_workbook(io.BytesIO(raw), data_only=True, read_only=True)
     except Exception as e:  # noqa: BLE001
         raise CustomsFileError(f"Không đọc được tệp .xlsx: {e}") from e
-    grid = []
-    for values in wb.worksheets[0].iter_rows(max_row=max_rows, values_only=True):
-        row = []
-        for v in values:
-            if isinstance(v, datetime):
-                row.append(Cell(DATE, v.date()))
-            elif isinstance(v, date):
-                row.append(Cell(DATE, v))
-            elif isinstance(v, bool) or v is None:
-                row.append(Cell(EMPTY))
-            elif isinstance(v, (int, float)):
-                row.append(Cell(NUMBER, v))
-            elif str(v).strip():
-                row.append(Cell(TEXT, str(v)))
-            else:
-                row.append(Cell(EMPTY))
-        grid.append(row)
-    wb.close()
-    return grid
+    #  bao-CR-733: cùng một chữ lặp ở hàng nghìn ô (mã chi cục, tiền tệ, tên doanh nghiệp…) mà mỗi ô đọc ra một chuỗi
+    #  riêng — gom về MỘT đối tượng chuỗi cho mỗi giá trị (chuỗi bất biến nên dùng chung an toàn).
+    texts: dict[str, str] = {}
+    try:
+        for values in wb.worksheets[0].iter_rows(max_row=max_rows, values_only=True):
+            row = []
+            for v in values:
+                if isinstance(v, datetime):
+                    row.append(Cell(DATE, v.date()))
+                elif isinstance(v, date):
+                    row.append(Cell(DATE, v))
+                elif isinstance(v, bool) or v is None:
+                    row.append(Cell(EMPTY))
+                elif isinstance(v, (int, float)):
+                    row.append(Cell(NUMBER, v))
+                elif str(v).strip():
+                    text = str(v)
+                    row.append(Cell(TEXT, texts.setdefault(text, text)))
+                else:
+                    row.append(Cell(EMPTY))
+            yield row
+    finally:
+        wb.close()
 
 
 # ── Tiêu đề ─────────────────────────────────────────────────────────────────
@@ -375,15 +392,24 @@ def _read_code(cell: Cell, width: int = 0) -> str:
     return ""
 
 
-def _read_decimal(cell: Cell) -> Decimal | None:
+def _read_decimal(cell: Cell, cache: dict[str, Decimal] | None = None) -> Decimal | None:
+    """`cache` (bao-CR-733): chuỗi số → MỘT đối tượng `Decimal` dùng chung (bất biến nên chia sẻ an toàn). Tệp 50.000
+    dòng có ~750 nghìn ô số mà chỉ ~22 nghìn giá trị khác nhau — mỗi `Decimal` ~104 byte, dùng chung bớt ~80 MB."""
     if cell.kind == NUMBER:
-        return Decimal(repr(float(cell.value)))
-    if cell.kind == TEXT:
-        try:
-            return Decimal(str(cell.value).strip().replace(",", ""))
-        except InvalidOperation:
-            raise ValueError(f"không phải số: \"{cell.value}\"") from None
-    return None
+        text = repr(float(cell.value))
+    elif cell.kind == TEXT:
+        text = str(cell.value).strip().replace(",", "")
+    else:
+        return None
+    if cache is not None and text in cache:
+        return cache[text]
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        raise ValueError(f"không phải số: \"{cell.value}\"") from None
+    if cache is not None:
+        cache[text] = value
+    return value
 
 
 def _read_text(cell: Cell) -> str:
@@ -441,81 +467,76 @@ def read_row_action(cell: Cell) -> tuple[bool, str]:
 
 
 # ── Đọc cả tệp ──────────────────────────────────────────────────────────────
+_EMPTY_CELL = Cell(EMPTY)
+
+
 def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseResult:
+    """Đọc trọn tệp thành dòng hàng đã chuẩn hóa + nhật ký đọc.
+
+    bao-CR-733: đọc LUỒNG từng dòng (`iter_cells`), không dựng cả lưới ô. Việc vá ngày cần soi cột Ngày đăng ký của
+    CẢ TỆP trước (`_detect_date_swap`), nên lượt đầu đọc mọi ô khác của từng dòng và giữ ô ngày lại; xong tệp mới
+    quyết định vá rồi chốt từng dòng theo đúng thứ tự cũ. Kết quả (dòng, nhật ký và thứ tự nhật ký, lỗi từ chối cả lô)
+    y như đọc trọn lưới: dòng hỏng Ngày đăng ký vẫn chỉ có câu lỗi ngày, lỗi của dòng đó (mã phương tiện lạ…) không
+    được tính; dòng ngày đúng mà có lỗi thì lỗi đầu tiên theo thứ tự dòng vẫn từ chối cả lô."""
     from app.modules.import_tool.model import LogLevel
 
-    grid = load_cells(raw, filename)
-    if not grid:
+    grid = iter_cells(raw, filename)
+    header = next(grid, None)
+    if header is None:
         raise CustomsFileError(f"Tệp \"{filename}\" rỗng.")
-    col = map_header(grid[0])
-    body = [r for r in grid[1:] if any(c.kind != EMPTY for c in r)]
-    width = max((len(r) for r in body), default=0)
-    body = [r + [Cell(EMPTY)] * (width - len(r)) for r in body]
-
-    res = ParseResult(date_swap=_detect_date_swap([r[col["reg_date"]] for r in body]),
-                      optional_columns=optional_columns_of(col), control_columns=control_columns_of(col))
+    col = map_header(header)
+    res = ParseResult(optional_columns=optional_columns_of(col), control_columns=control_columns_of(col))
     labels = dict(COLUMNS) | OPTIONAL_LABELS
-    for offset, cells in enumerate(body):
-        row_no = offset + 2                      # dòng thật trong tệp (dòng 1 là tiêu đề)
+    decimals: dict[str, Decimal] = {}
+    names: dict[str, str] = {}             # tên gốc → tên đã sửa hoa thường (lặp ở hàng nghìn dòng)
+    #  Mỗi dòng có dữ liệu: (số dòng, ô Ngày đăng ký, nhật ký trước ngày, dòng xóa | None, dòng dữ liệu | None,
+    #  nhật ký đọc dữ liệu, lỗi đọc dữ liệu | None).
+    pending: list[tuple] = []
+    row_no = 1
+    for cells in grid:
+        if not any(c.kind != EMPTY for c in cells):
+            continue
+        row_no += 1                              # dòng thật trong tệp (dòng 1 là tiêu đề), không đếm dòng trống
         #  Cột tùy chọn mà tệp không có thì trả ô TRỐNG — mọi luật phía dưới chạy y như cũ.
-        get = lambda key, cells=cells: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
+        get = lambda key, cells=cells: (cells[col[key]] if key in col and col[key] < len(cells)  # noqa: E731
+                                        else _EMPTY_CELL)
         #  bao-CR-608: hai cột điều khiển. Dòng "xóa" chỉ cần ô ID — tách ra TRƯỚC luật đọc dữ
         #  liệu, kẻo bị bỏ vì thiếu Ngày đăng ký.
+        early: list[tuple[int, int, str]] = []
         ref_id, warn = read_ref_id(get(REF_ID_KEY))
         if warn:
-            res.logs.append((row_no, LogLevel.WARNING, warn))
+            early.append((row_no, LogLevel.WARNING, warn))
         is_delete, warn = read_row_action(get(ACTION_KEY))
         if warn:
-            res.logs.append((row_no, LogLevel.WARNING, warn))
+            early.append((row_no, LogLevel.WARNING, warn))
         if is_delete:
-            res.deletes.append({"source_row": row_no, "ref_id": ref_id,
-                                "product_name": _read_text(get("product_name"))[:255]})
+            pending.append((row_no, get("reg_date"), early, {"source_row": row_no, "ref_id": ref_id,
+                                                             "product_name": _read_text(get("product_name"))[:255]},
+                            None, [], None))
             continue
-        reg_date, fixed = _read_date(get("reg_date"), res.date_swap)
+        logs: list[tuple[int, int, str]] = []
+        try:
+            out = _read_data_row(get, col, row_no, ref_id, labels, logs, decimals, names, LogLevel.WARNING)
+            error = None
+        except Exception as e:  # noqa: BLE001 — giữ lại, chỉ ném nếu ngày của dòng đọc được (như đọc trọn lưới)
+            out, error = None, e
+        pending.append((row_no, get("reg_date"), early, None, out, logs, error))
+
+    res.date_swap = _detect_date_swap([p[1] for p in pending])
+    for row_no, reg_cell, early, delete, out, logs, error in pending:
+        res.logs.extend(early)
+        if delete is not None:
+            res.deletes.append(delete)
+            continue
+        reg_date, fixed = _read_date(reg_cell, res.date_swap)
         if reg_date is None:
             res.skipped += 1
             res.logs.append((row_no, LogLevel.ERROR, "Không đọc được Ngày đăng ký — bỏ dòng"))
             continue
-        out = {"source_row": row_no, "date_fixed": 1 if fixed else 0, "reg_date": reg_date,
-               "contract_date": _read_date(get("contract_date"), False)[0],   # ⚠️ KHÔNG vá
-               "importer_tax_code": _read_code(get("importer_tax_code"), 10),
-               "hs_code": _read_code(get("hs_code"), 8),
-               "transport_mode": _read_transport(get("transport_mode"))}
-        line_no = get("line_no")
-        out["line_no"] = int(float(line_no.value)) if line_no.kind == NUMBER else int(_read_text(line_no) or 0)
-        for key in ("office_code", "importer_name", "partner_name", "product_name", "currency",
-                    "unit_code", "origin_country", "contract_no", "incoterm", "import_country"):
-            out[key] = _read_text(get(key))
-        out["importer_name"] = clean_party_name(out["importer_name"])
-        out["partner_name"] = clean_party_name(out["partner_name"])
-        #  bao-CR-603: bốn cột tùy chọn — chỉ đọc khi tệp có; ô trống ra "" / None để bộ ghi
-        #  suy ra hoặc tính như cũ. Hàm lượng viết hoa cho khớp ô lọc (giá trị suy ra cũng in hoa).
-        for key, _ in OPTIONAL_COLUMNS:
-            if key not in col:
-                continue
-            if key in OPTIONAL_DECIMAL_KEYS:
-                try:
-                    out[key] = _read_decimal(get(key))
-                except ValueError as e:
-                    out[key] = None
-                    res.logs.append((row_no, LogLevel.WARNING, f"Cột \"{labels[key]}\" {e} — để trống, sẽ tính như cũ"))
-            else:
-                out[key] = _read_text(get(key))
-                if key == "formulation":
-                    out[key] = out[key].upper()
-        for key in DECIMAL_KEYS:
-            try:
-                out[key] = _read_decimal(get(key))
-            except ValueError as e:
-                out[key] = None
-                res.logs.append((row_no, LogLevel.WARNING, f"Cột \"{labels[key]}\" {e} — để trống"))
-        for key, limit in TEXT_LIMITS.items():
-            if key in out and len(out[key]) > limit:
-                res.logs.append((row_no, LogLevel.WARNING,
-                                 f"Cột \"{labels[key]}\" dài hơn {limit} ký tự — đã cắt"))
-                out[key] = out[key][:limit]
-        if ref_id is not None:
-            out[REF_ID_KEY] = ref_id          # bao-CR-608 — KHÔNG phải cột của bảng, bộ ghi bóc ra
+        if error is not None:
+            raise error
+        out["date_fixed"], out["reg_date"] = (1 if fixed else 0), reg_date
+        res.logs.extend(logs)
         res.rows.append(out)
 
     today = today or date.today()
@@ -524,3 +545,52 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
                          "Có Ngày đăng ký nằm trong TƯƠNG LAI — kiểm tra lại tệp: có thể nguồn đã "
                          "đổi cách xuất ngày và luật vá ngày không còn đúng"))
     return res
+
+
+def _read_data_row(get, col: dict[str, int], row_no: int, ref_id: int | None, labels: dict[str, str],
+                   logs: list, decimals: dict[str, Decimal], names: dict[str, str], warning: int) -> dict:
+    """Một dòng dữ liệu → dict (trừ Ngày đăng ký: `parse` điền sau khi biết có vá ngày không). Thứ tự đọc giữ như cũ
+    để lỗi từ chối cả lô (mã phương tiện lạ…) và câu cảnh báo ra đúng như trước."""
+    out = {"source_row": row_no, "date_fixed": 0, "reg_date": None,
+           "contract_date": _read_date(get("contract_date"), False)[0],   # ⚠️ KHÔNG vá
+           "importer_tax_code": _read_code(get("importer_tax_code"), 10),
+           "hs_code": _read_code(get("hs_code"), 8),
+           "transport_mode": _read_transport(get("transport_mode"))}
+    line_no = get("line_no")
+    out["line_no"] = int(float(line_no.value)) if line_no.kind == NUMBER else int(_read_text(line_no) or 0)
+    for key in ("office_code", "importer_name", "partner_name", "product_name", "currency",
+                "unit_code", "origin_country", "contract_no", "incoterm", "import_country"):
+        out[key] = _read_text(get(key))
+    for key in ("importer_name", "partner_name"):
+        raw_name = out[key]
+        if raw_name not in names:
+            names[raw_name] = clean_party_name(raw_name)
+        out[key] = names[raw_name]
+    #  bao-CR-603: bốn cột tùy chọn — chỉ đọc khi tệp có; ô trống ra "" / None để bộ ghi
+    #  suy ra hoặc tính như cũ. Hàm lượng viết hoa cho khớp ô lọc (giá trị suy ra cũng in hoa).
+    for key, _ in OPTIONAL_COLUMNS:
+        if key not in col:
+            continue
+        if key in OPTIONAL_DECIMAL_KEYS:
+            try:
+                out[key] = _read_decimal(get(key), decimals)
+            except ValueError as e:
+                out[key] = None
+                logs.append((row_no, warning, f"Cột \"{labels[key]}\" {e} — để trống, sẽ tính như cũ"))
+        else:
+            out[key] = _read_text(get(key))
+            if key == "formulation":
+                out[key] = out[key].upper()
+    for key in DECIMAL_KEYS:
+        try:
+            out[key] = _read_decimal(get(key), decimals)
+        except ValueError as e:
+            out[key] = None
+            logs.append((row_no, warning, f"Cột \"{labels[key]}\" {e} — để trống"))
+    for key, limit in TEXT_LIMITS.items():
+        if key in out and len(out[key]) > limit:
+            logs.append((row_no, warning, f"Cột \"{labels[key]}\" dài hơn {limit} ký tự — đã cắt"))
+            out[key] = out[key][:limit]
+    if ref_id is not None:
+        out[REF_ID_KEY] = ref_id          # bao-CR-608 — KHÔNG phải cột của bảng, bộ ghi bóc ra
+    return out

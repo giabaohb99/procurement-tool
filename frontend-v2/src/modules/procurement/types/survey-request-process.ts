@@ -114,6 +114,9 @@ export interface AvailableSurveyLinesParams {
   /** Trang 1-based (khớp backend). */
   page: number
   page_size: number
+  /** duoc-CR-738: khóa cột sắp xếp (whitelist `sort_cols` ở backend); bỏ trống = mới nhất trước. */
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
 }
 
 /** Trạng thái phiếu cho phép gắn/xóa phương án (backend chặn ngoài hai mốc này). */

@@ -105,7 +105,7 @@ export function ReportDocSheetAddRow({
         <Input
           value={title}
           maxLength={255}
-          placeholder="Tên hồ sơ mới, Enter để thêm…"
+          placeholder="Thêm hồ sơ — gõ tên rồi Enter"
           aria-label="Tên hồ sơ mới"
           className="h-7 text-xs"
           onChange={(event) => setTitle(event.target.value)}

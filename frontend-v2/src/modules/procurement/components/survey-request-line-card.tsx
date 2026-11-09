@@ -146,8 +146,9 @@ export function SurveyRequestLineCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            title="Nhân bản dòng"
-            aria-label={`Nhân bản dòng ${index + 1}`}
+            //  duoc-CR-741: gợi ý đúng chữ bản v1.
+            title="Nhân đôi"
+            aria-label={`Nhân đôi dòng ${index + 1}`}
             onClick={onDuplicate}
           >
             <Copy />
@@ -155,7 +156,7 @@ export function SurveyRequestLineCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            title="Xóa dòng"
+            title="Xóa"
             aria-label={`Xóa dòng ${index + 1}`}
             className="text-destructive hover:text-destructive"
             onClick={onRemove}
