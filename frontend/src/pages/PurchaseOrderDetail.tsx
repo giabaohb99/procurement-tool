@@ -1299,7 +1299,8 @@ export default function PurchaseOrderDetail() {
               {/* bao-CR-490: ai THỰC bấm Duyệt đơn — hệ thống ghi lúc duyệt, chỉ xem. */}
               {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
                   đè người THỰC duyệt và khóa. */}
-              <div className="form-row"><label>Trưởng phòng phê duyệt</label>
+              {/* bao-CR-742 (người chủ chốt 09/11, mở ngoại lệ frontend/): ô bắt buộc khi gửi duyệt. */}
+              <div className="form-row"><label>Trưởng phòng phê duyệt {headerEditable && <span className="req">*</span>}</label>
                 {headerEditable && approverCands.length > 0 ? (
                   <SearchSelect value={po.approver_employee_id ? String(po.approver_employee_id) : ''}
                     options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
