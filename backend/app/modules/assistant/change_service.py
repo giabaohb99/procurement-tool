@@ -51,6 +51,7 @@ ENTITY_LABELS = {
     "account_setup": "Bộ tài khoản",
     "ai_skill": "Skill AI",
     "ai_skill_access": "Quyền đọc skill AI",
+    "purchase_order": "Đơn mua hàng (ĐMH)",   # bao-CR-740: ghi lần nhận hàng — chỉ ghi sổ, không hoàn tác tự động
 }
 #  bao-CR-634: thay đổi Kho skill AI do AI riêng ghi qua MCP — kiểm / làm ngược nằm ở chính phân hệ đó
 #  (`ai_skill/mcp_admin.undo_check` + `undo_apply`), phiếu ở đây không có model chung để đi đường `_load_doc`.
@@ -228,6 +229,8 @@ def url_of(entity: str, entity_id: int) -> str:
             return f"/ai-skill/skills/{entity_id}"
         if entity == "ai_skill_access":
             return f"/ai-skill/sets/{entity_id}?tab=access"
+        if entity == "purchase_order":
+            return f"/procurement/purchase-orders/{entity_id}"
         if entity in DOC_ENTITIES or entity == "work_task":
             from .tools.update_tool import _url_of
             return _url_of(entity, entity_id)

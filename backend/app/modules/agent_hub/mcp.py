@@ -55,6 +55,7 @@ READ_TOOLS = frozenset({
     "plan_context", "task_type_stats", "team_capacity",   # kh-AI1-2/3
     "office_read",   # kh-AI2-3: chỉ đọc; quyền gác trong tool (khóa báo cáo 16 / trưởng phòng)
     "background_jobs",   # bao-CR-703: sổ việc chạy ngầm, gác setting.read trong tool
+    "po_open_lines",   # bao-CR-740: dòng ĐMH còn thiếu + lần giao của một NCC (purchase_order.read + supplier.read)
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
@@ -86,7 +87,9 @@ CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
                     "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ, vehicle_booking = phiếu đặt xe, seal_request = phiếu duyệt "
-                    "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù; skill / skill_publish / skill_access / key_issue / "
+                    "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù, po_receipt = ghi lần nhận hàng vào ĐMH theo phiếu "
+                    "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); skill / "
+                    "skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
                     "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về; approval = "
                     "duyệt / từ chối MỘT phiếu, `draft` là `proposal` của propose_approval). "
@@ -95,7 +98,7 @@ CONFIRM_DRAFT_DEF = {
                     "vehicle_booking/leave_comp)."),
     "inputSchema": {"type": "object", "properties": {
         "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
-                                            "leave_comp", "update", "delete", "approval",
+                                            "leave_comp", "po_receipt", "update", "delete", "approval",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -274,7 +277,7 @@ def _offset(args: dict) -> int:
 
 #  kind của confirm_draft → tool soạn nháp của nó; nhóm G7 chứa tool đó đang tắt thì không cho tạo qua cổng.
 _GROUP_GATED_KINDS = {"vehicle_booking": "draft_vehicle_booking", "seal_request": "draft_seal_request",
-                      "leave_comp": "draft_leave_comp_request"}
+                      "leave_comp": "draft_leave_comp_request", "po_receipt": "draft_po_receipt"}
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -305,6 +308,13 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
             erp.submit_draft(db, user, kind, oid)
     except draft_create.DraftError as e:
         return {"error": str(e)}
+    if kind == "po_receipt":
+        #  bao-CR-740: một nháp ghi được nhiều ĐMH — đọc lại từng đơn (đặt / đã nhận / dư) cho người dùng.
+        po_ids = list(dict.fromkeys(int(r.get("po_id") or 0) for r in draft.get("rows") or [] if isinstance(r, dict)))
+        return {"ok": True, "code": code, "id": oid, "submitted": False,
+                "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
+                "links": [draft_create.DETAIL_PATHS[kind].format(id=pid) for pid in po_ids],
+                "note": "Đã ghi lần nhận hàng. Báo người dùng từng ĐMH đã ghi và phần dư (nếu có)."}
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
             "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}

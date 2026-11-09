@@ -34,6 +34,7 @@ KIND_BY_TOOL = {
     "draft_vehicle_booking": "vehicle_booking",   # kh-AI2-6
     "draft_seal_request": "seal_request",         # kh-AI2-6
     "draft_leave_comp_request": "leave_comp",     # duoc-CR-715 C: phiếu xin nghỉ bù
+    "draft_po_receipt": "po_receipt",             # bao-CR-740: lần nhận hàng ĐMH từ phiếu xuất kho NCC
 }
 LABELS = {
     "leave": "đơn nghỉ phép",
@@ -46,6 +47,7 @@ LABELS = {
     "vehicle_booking": "phiếu đặt xe",
     "seal_request": "phiếu duyệt dấu",
     "leave_comp": "phiếu xin nghỉ bù",
+    "po_receipt": "lần nhận hàng vào đơn mua hàng",
 }
 #  Khóa QUYỀN để tạo từng loại (kế hoạch = quyền tạo việc Dự án).
 PERM_ENTITIES = {"work_plan": "work_task"}
@@ -62,6 +64,7 @@ ENTITIES = {
     "vehicle_booking": "vehicle_booking",
     "seal_request": "seal_request",
     "leave_comp": "leave_comp_request",
+    "po_receipt": "purchase_order",   # bao-CR-740: quyền write + sổ thay đổi tự ghi ở po_receipt_tool
 }
 DETAIL_PATHS = {
     "leave": "/hr/leave-requests/{id}",
@@ -73,6 +76,7 @@ DETAIL_PATHS = {
     "vehicle_booking": "/vehicle-booking/{id}",
     "seal_request": "/approval-seal/{id}",
     "leave_comp": "/hr/leave-comp-requests/{id}",
+    "po_receipt": "/procurement/purchase-orders/{id}",
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -171,6 +175,10 @@ def summarize(kind: str, draft: dict) -> list[str]:
         if int(draft.get("employee_id") or 0):
             out.insert(0, f"Người đi làm: {draft.get('employee_name') or '#' + str(draft.get('employee_id'))} (lập hộ)")
         return out
+    if kind == "po_receipt":
+        from app.modules.assistant.tools import po_receipt_tool
+
+        return po_receipt_tool.summary_lines(draft)
     if kind == "seal_request":
         return [f"Mục đích: {draft.get('purpose', '')}", f"Chứng từ: {draft.get('title') or '(chưa ghi)'}",
                 f"Số bản: {draft.get('copies', 1)}", f"Công ty: {', '.join(draft.get('company_names') or []) or '(trống)'}",
@@ -281,6 +289,12 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
 
     if kind not in DETAIL_PATHS:
         raise DraftError(f"Loại {LABELS.get(kind, kind)} không tạo được từ chat.")
+    if kind == "po_receipt":
+        #  bao-CR-740: không TẠO phiếu mà SỬA ĐMH (thêm / điền lần giao) — tự kiểm quyền write + phạm vi từng đơn, tự ghi
+        #  nhật ký thao tác + sổ thay đổi; trả (các mã ĐMH đã ghi, id đơn đầu).
+        from app.modules.assistant.tools import po_receipt_tool
+
+        return po_receipt_tool.confirm_receipt(db, user, draft, source=source)
     _check_permission(db, user, kind)
     if kind == "work_plan":
         _hold_plan_for_review(db, user, draft)          # kh-AI1-3: công tắc duyệt bật → dừng ở đây, chưa tạo việc
@@ -594,6 +608,10 @@ def _vn_num(value: float) -> str:
 
 def created_details(db: Session, kind: str, oid: int) -> list[str]:
     """Các dòng thông tin của phiếu vừa tạo / vừa gửi duyệt, đọc từ DB (trạng thái thật sau gửi duyệt)."""
+    if kind == "po_receipt":
+        from app.modules.assistant.tools import po_receipt_tool
+
+        return po_receipt_tool.created_details(db, oid)
     if kind == "work_plan":
         from app.modules.work import plan_service
 
