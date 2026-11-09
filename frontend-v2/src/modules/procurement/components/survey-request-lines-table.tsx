@@ -257,11 +257,15 @@ export function SurveyRequestLinesTable({
     }
     onChange([...lines.slice(0, index + 1), copy, ...lines.slice(index + 1)])
     onLineDuplicated?.(index)
+    //  Dòng chưa lưu khóa theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang dòng khác,
+    //  *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
+    lineSelection.clear()
   }
 
   function remove(index: number) {
     onChange(lines.filter((_, i) => i !== index))
     onLineRemoved?.(index)
+    lineSelection.clear()
   }
 
   function renderCell(key: string, line: SurveyRequestLine, index: number) {
@@ -404,12 +408,16 @@ export function SurveyRequestLinesTable({
         return <SurveyLineStateBadge state={line.progress_state} tone={line.progress_tone} />
 
       case 'action':
+        //  duoc-CR-741: gợi ý đúng chữ bản v1 (Chi tiết / hình ảnh · Nhân đôi · Xóa); tên đọc
+        //  cho trình đọc màn hình kèm số dòng để mỗi nút một tên riêng.
         return (
           <div className="flex items-center justify-center gap-1">
             <Button
+              type="button"
               variant="ghost"
               size="icon-sm"
-              title="Chi tiết dòng"
+              title="Chi tiết / hình ảnh"
+              aria-label={`Chi tiết / hình ảnh dòng ${index + 1}`}
               onClick={() => onOpenDetail(index)}
             >
               <Pencil />
@@ -417,18 +425,22 @@ export function SurveyRequestLinesTable({
             {editing && (
               <>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
-                  title="Nhân bản dòng"
+                  title="Nhân đôi"
+                  aria-label={`Nhân đôi dòng ${index + 1}`}
                   onClick={() => duplicate(index)}
                 >
                   <Copy />
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
                   className="text-destructive hover:text-destructive"
-                  title="Xóa dòng"
+                  title="Xóa"
+                  aria-label={`Xóa dòng ${index + 1}`}
                   onClick={() => remove(index)}
                 >
                   <Trash2 />
@@ -493,7 +505,11 @@ export function SurveyRequestLinesTable({
         size="sm"
         count={lineSelection.selectedIndexes.length}
         unitLabel="dòng"
-        description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
+        //  duoc-CR-741: nguyên văn hộp `askConfirm` của v1 — tiêu đề mặc định *Xác nhận*, thân là
+        //  câu hỏi, nút *Đồng ý* / *Hủy*.
+        title="Xác nhận"
+        description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.`}
+        confirmLabel="Đồng ý"
         onConfirm={removeSelectedLines}
       />
     ),

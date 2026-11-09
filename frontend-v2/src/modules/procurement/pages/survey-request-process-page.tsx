@@ -38,9 +38,20 @@ export function SurveyRequestProcessPage() {
         title="Không có quyền xử lý khảo sát"
         description="Màn này dành cho nhân sự thu mua được gán quyền xử lý Yêu cầu báo giá."
       >
-        <Button variant="outline" onClick={() => navigate(appRoutes.procurement.surveyRequests)}>
+        {/*  duoc-CR-741: như bản v1 — *Quay lại* về đúng phiếu YCBG đang mở, không ra danh sách. */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            navigate(
+              surveyRequestId
+                ? appRoutes.procurement.surveyRequestDetail(surveyRequestId)
+                : appRoutes.procurement.surveyRequests,
+            )
+          }
+        >
           <ArrowLeft />
-          Về danh sách
+          Quay lại
         </Button>
       </ErrorState>
     )

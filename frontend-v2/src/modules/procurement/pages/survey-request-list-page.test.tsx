@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -59,6 +60,12 @@ vi.mock('@/modules/hr/hooks/use-departments', () => ({
   useDepartments: () => ({ data: { items: [] } }),
 }))
 
+//  Nút Xuất Excel: bắt bộ tham số gửi đi thay vì tải tệp thật.
+const downloadFile = vi.fn()
+vi.mock('@/core/api/download-file', () => ({
+  downloadFile: (...args: unknown[]) => downloadFile(...args),
+}))
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: () => true, canAccess: () => true }),
 }))
@@ -83,6 +90,7 @@ function lastCall() {
 
 beforeEach(() => {
   listCalls.length = 0
+  downloadFile.mockReset().mockResolvedValue(undefined)
   localStorage.clear()
   sessionStorage.clear()
   useAuthStore.setState({ user: null })
@@ -245,5 +253,47 @@ describe('SurveyRequestListPage — nút Xóa lọc', () => {
     expect(call.assignee).toBeUndefined()
     expect(call.status__in).toBeUndefined()
     expect(call.code__contains).toBeUndefined()
+  })
+})
+
+/**
+ * duoc-CR-741 — nút đầu trang và chế độ nhân bản theo đúng `CrudList.tsx` bản v1.
+ */
+describe('SurveyRequestListPage — nút đầu trang theo bản v1', () => {
+  it('names the create button Thêm, not Thêm mới', () => {
+    build()
+
+    expect(screen.getByRole('button', { name: 'Thêm' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thêm mới' })).toBeNull()
+  })
+
+  it('shows no always-on clone icon — the Thao tác column appears only in clone mode', async () => {
+    const user = userEvent.setup()
+    build()
+
+    const table = screen.getByRole('table')
+    expect(within(table).queryByRole('button', { name: /Nhân bản/ })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Nhân bản' }))
+    expect(within(screen.getByRole('table')).getByRole('button', { name: /^Nhân bản / })).toHaveAttribute(
+      'title',
+      'Nhân bản thành phiếu nháp mới',
+    )
+    expect(screen.getByRole('button', { name: 'Xong' })).toBeInTheDocument()
+  })
+
+  it('exports the current filters without ticks, and only the ticked ids with them', async () => {
+    const user = userEvent.setup()
+    build('/procurement/survey-requests?status=survey_done')
+
+    await user.click(screen.getByRole('button', { name: 'Xuất Excel' }))
+    expect(downloadFile.mock.calls[0][0]).toBe('/api/survey-requests/export/xlsx')
+    expect(downloadFile.mock.calls[0][2]).toMatchObject({ status: 'survey_done' })
+    expect(downloadFile.mock.calls[0][2]).not.toHaveProperty('ids')
+    expect(downloadFile.mock.calls[0][2]).not.toHaveProperty('page')
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn YCBGDEMO01' }))
+    await user.click(screen.getByRole('button', { name: 'Xuất Excel (1)' }))
+    expect(downloadFile.mock.calls[1][2]).toMatchObject({ ids: '1', status: 'survey_done' })
   })
 })

@@ -150,7 +150,12 @@ export function SurveyReportDocDialog({
     if (pending) return
     if (
       isDirty &&
-      !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))
+      !(await confirm({
+        //  duoc-CR-741: nguyên văn hộp hỏi đóng khi còn sửa dở của bản v1 (`SurveyReportModal`).
+        title: 'Đóng hộp thoại',
+        message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?',
+        confirmLabel: 'Đóng',
+      }))
     )
       return
     onOpenChange(false)
@@ -180,8 +185,11 @@ export function SurveyReportDocDialog({
     once(async () => {
       if (!doc) return
       if (
+        //  duoc-CR-741: tiêu đề + nút "Xóa" như bản v1; đuôi mở khóa là phần riêng v2.
         !(await confirm({
+          title: 'Xóa hồ sơ',
           message: `Xóa hồ sơ "${doc.title}"? Hồ sơ khác đang chờ nó sẽ được mở khóa.`,
+          confirmLabel: 'Xóa',
         }))
       )
         return
@@ -214,7 +222,7 @@ export function SurveyReportDocDialog({
         {/*  Tiêu đề canh trái ở MỌI khổ: khung chung canh giữa ở khổ hẹp, đứng trên
              một cột nhãn canh trái thì trông lệch. */}
         <DialogHeader className="text-left">
-          <DialogTitle>{doc ? 'Chỉnh sửa hồ sơ' : 'Thêm hồ sơ mới'}</DialogTitle>
+          <DialogTitle>{doc ? 'Sửa hồ sơ' : 'Thêm hồ sơ'}</DialogTitle>
         </DialogHeader>
 
         <div className="max-h-[65dvh] space-y-4 overflow-y-auto pr-1">

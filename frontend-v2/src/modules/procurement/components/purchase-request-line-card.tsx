@@ -1,4 +1,4 @@
-import { History, Trash2 } from 'lucide-react'
+import { Copy, History, Trash2 } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -24,6 +24,8 @@ interface PurchaseRequestLineCardProps {
   assigneeName: string
   onOpenDetail: () => void
   onOpenHistory: () => void
+  /** Nút *Nhân đôi* của v1 (duoc-CR-741) — chỉ hiện lúc đang sửa. */
+  onDuplicate: () => void
   onRemove: () => void
 }
 
@@ -58,6 +60,7 @@ export function PurchaseRequestLineCard({
   assigneeName,
   onOpenDetail,
   onOpenHistory,
+  onDuplicate,
   onRemove,
 }: PurchaseRequestLineCardProps) {
   //  Cùng luật với `rowClassName` của bảng: dòng đã hủy mờ đi chứ không biến
@@ -160,10 +163,15 @@ export function PurchaseRequestLineCard({
         {/*  bao-CR-320: phiếu đã khóa vẫn xem được lịch sử (chỉ xem, không điền giá). */}
         {!!item.product_code && (
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground"
-            title={editing ? 'Xem lịch sử mua hàng gần nhất' : 'Xem lịch sử mua hàng (chỉ xem)'}
+            title={
+              editing
+                ? 'Lịch sử mua hàng gần nhất của mã hàng này'
+                : 'Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'
+            }
             aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
             onClick={onOpenHistory}
           >
@@ -172,9 +180,23 @@ export function PurchaseRequestLineCard({
         )}
         {editing && (
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
-            title="Xóa dòng"
+            title="Nhân đôi"
+            aria-label={`Nhân đôi dòng ${index + 1}`}
+            className="text-muted-foreground"
+            onClick={onDuplicate}
+          >
+            <Copy />
+          </Button>
+        )}
+        {editing && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            title="Xóa"
             aria-label={`Xóa dòng ${index + 1}`}
             className="text-destructive hover:text-destructive"
             onClick={onRemove}

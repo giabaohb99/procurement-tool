@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PRODUCT_LOCK_HINT, type PurchaseOrderItem } from '../types/purchase-order-detail'
 import type { LineReportProgress } from '../utils/survey-report-helpers'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
+import { ConfirmDialogHost } from '@/shared/ui/confirm-dialog'
 
 import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
 import { PurchaseOrderItemsTable } from './purchase-order-items-table'
@@ -58,13 +59,17 @@ const ITEMS = [item({ id: 501 }), item({ id: 502, product_code: 'DK', product_na
 
 function renderTable(props: Partial<Parameters<typeof PurchaseOrderItemsTable>[0]> = {}) {
   return render(
-    <PurchaseOrderItemsTable
-      items={ITEMS}
-      editable={false}
-      progressEditable={false}
-      onChange={vi.fn()}
-      {...props}
-    />,
+    <>
+      <PurchaseOrderItemsTable
+        items={ITEMS}
+        editable={false}
+        progressEditable={false}
+        onChange={vi.fn()}
+        {...props}
+      />
+      {/*  Hộp hỏi lại khi xóa một dòng (duoc-CR-741) là hộp toàn cục — phải có chỗ hiện. */}
+      <ConfirmDialogHost />
+    </>,
   )
 }
 
@@ -173,7 +178,16 @@ describe('PurchaseOrderItemsTable — khổ điện thoại', () => {
     expect(duplicated[1].deliveries).toEqual([])
     expect(onLineDuplicated).toHaveBeenCalledWith(0)
 
+    //  duoc-CR-741: xóa MỘT dòng cũng hỏi lại như bản v1 — Hủy thì dòng còn nguyên.
     await userEvent.click(screen.getAllByRole('button', { name: 'Xóa dòng' })[1])
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Xóa dòng này?')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onLineRemoved).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xóa dòng' })[1])
+    await userEvent.click(await screen.findByRole('button', { name: 'Đồng ý' }))
     expect(onChange.mock.calls[1][0]).toHaveLength(1)
     expect(onLineRemoved).toHaveBeenCalledWith(1)
   })
@@ -241,5 +255,41 @@ describe('PurchaseOrderItemsTable — khổ điện thoại', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
     expect(screen.getByRole('checkbox', { name: 'Chọn dòng 1' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Xóa đã chọn (1)' })).toBeInTheDocument()
+  })
+})
+
+/** duoc-CR-741 — gợi ý của nút biểu tượng theo đúng chữ bản v1. */
+describe('PurchaseOrderItemsTable — gợi ý nút theo bản v1', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  it('says the purchase history is read-only when the line cannot be edited', () => {
+    renderTable({ editable: false })
+    expect(
+      screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)').length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('drops the read-only hint on an editable line, but keeps it on a received one', () => {
+    renderTable({ editable: true, items: [item({ id: 501 }), item({ id: 502, qty_received: 2 })] })
+    expect(screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này')).toHaveLength(1)
+    expect(
+      screen.getAllByTitle('Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'),
+    ).toHaveLength(1)
+  })
+
+  it('counts deliveries on the detail button, zero included', () => {
+    renderTable({
+      onOpenDetail: vi.fn(),
+      items: [
+        item({ id: 501 }),
+        item({
+          id: 502,
+          deliveries: [{ delivery_no: 1 }, { delivery_no: 2 }] as PurchaseOrderItem['deliveries'],
+        }),
+      ],
+    })
+    expect(screen.getByTitle('Chi tiết & giao hàng (0 lần)')).toBeInTheDocument()
+    expect(screen.getByTitle('Chi tiết & giao hàng (2 lần)')).toBeInTheDocument()
   })
 })

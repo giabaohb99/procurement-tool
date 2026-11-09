@@ -14,6 +14,7 @@ import {
   Sheet,
   Sparkles,
   Trash2,
+  Undo2,
 } from 'lucide-react'
 import { Fragment, useImperativeHandle, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -47,7 +48,11 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { useRememberedCollapse } from '../../hooks/use-remembered-collapse'
-import { useSurveyReportActions, useSurveyRequestReport } from '../../hooks/use-survey-request-report'
+import {
+  useRestoreSurveyReport,
+  useSurveyReportActions,
+  useSurveyRequestReport,
+} from '../../hooks/use-survey-request-report'
 import {
   REPORT_DOC_DOING,
   REPORT_DOC_DONE,
@@ -189,6 +194,8 @@ export function SurveyReportCard({
 }: SurveyReportCardProps) {
   const { data: report, isLoading, isError } = useSurveyRequestReport(ownerId, entity)
   const actions = useSurveyReportActions(ownerId, entity)
+  //  duoc-CR-741: nút *Hoàn tác xóa* ở khối rỗng như bản v1 — chạy cho cả YCBG lẫn ĐMH.
+  const restoreReport = useRestoreSurveyReport(ownerId, entity)
   const { user } = useAuth()
   //  Chữ gọi chứng từ chủ trong câu chữ của khối: "cả phiếu" / "cả đơn".
   const ownerLabel = entity === 'purchase_order' ? 'đơn' : 'phiếu'
@@ -270,16 +277,18 @@ export function SurveyReportCard({
     actions.setDocStatus.isPending ||
     actions.deleteDoc.isPending ||
     actions.deleteDocs.isPending ||
-    actions.deleteReport.isPending
+    actions.deleteReport.isPending ||
+    restoreReport.isPending
 
   //  Xóa CẢ khối — thao tác nặng nên hỏi xác nhận; hoàn tác được ở Lịch sử.
+  //  duoc-CR-741: tiêu đề / câu / nút theo bản v1 (`SurveyReportCard.tsx` deleteReport);
+  //  "phiếu" của v1 đổi theo chủ khối để trên ĐMH đọc ra "đơn này".
   const handleDeleteReport = async () => {
-    const total = report?.docs.length ?? 0
     if (
       !(await confirm({
-        title: 'Xóa báo cáo thực hiện?',
-        message: `Xóa toàn bộ báo cáo thực hiện${total ? ` (${total} hồ sơ)` : ''}? Bạn có thể hoàn tác ngay sau đó ở khối Lịch sử thao tác.`,
-        confirmLabel: 'Xóa báo cáo',
+        title: 'Xóa báo cáo thực hiện',
+        message: `Xóa toàn bộ giai đoạn, nút dòng hàng và hồ sơ của ${ownerLabel} này? Có thể hoàn tác ở Lịch sử thao tác.`,
+        confirmLabel: 'Xóa',
       }))
     )
       return
@@ -306,9 +315,11 @@ export function SurveyReportCard({
   //  xác nhận vì xóa là mất, và nói rõ hồ sơ khác đang chờ nó sẽ được mở khóa.
   const handleDeleteDoc = async (doc: SurveyReportDoc) => {
     if (
+      //  duoc-CR-741: tiêu đề + nút như v1; câu v1 giữ nguyên, đuôi mở khóa là phần riêng v2.
       !(await confirm({
+        title: 'Xóa hồ sơ',
         message: `Xóa hồ sơ "${doc.title}"? Hồ sơ khác đang chờ nó sẽ được mở khóa.`,
-        confirmLabel: 'Xóa hồ sơ',
+        confirmLabel: 'Xóa',
       }))
     )
       return
@@ -329,7 +340,8 @@ export function SurveyReportCard({
       !(await confirm({
         title: `Xóa ${docs.length} hồ sơ?`,
         message: `Xóa ${docs.length} hồ sơ ${scope}: ${preview}${more}? Hồ sơ khác đang chờ chúng sẽ được mở khóa.`,
-        confirmLabel: `Xóa ${docs.length} hồ sơ`,
+        //  Xóa nhiều là phần riêng v2; nút đồng ý vẫn một chữ "Xóa" như mọi hộp xóa của v1.
+        confirmLabel: 'Xóa',
       }))
     )
       return false
@@ -593,7 +605,7 @@ export function SurveyReportCard({
                     className="px-2 text-destructive hover:text-destructive"
                     disabled={busy}
                     aria-label="Xóa báo cáo thực hiện"
-                    title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
+                    title="Xóa toàn bộ báo cáo (hoàn tác được)"
                     onClick={handleDeleteReport}
                   >
                     <Trash2 />
@@ -619,6 +631,17 @@ export function SurveyReportCard({
               {/*  `flex-wrap`: ba nút dài ~560px, khung máy 390px chỉ ~320px; không
                    xuống dòng thì cụm canh giữa tràn CẢ HAI mép, mất chữ đầu nút đầu. */}
               <div className="flex flex-wrap justify-center gap-2">
+                {report.restorable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void restoreReport.mutateAsync()}
+                  >
+                    <Undo2 />
+                    Hoàn tác xóa
+                  </Button>
+                )}
                 <Button disabled={busy} onClick={() => setInitOpen(true)}>
                   <Sparkles />
                   Khởi tạo báo cáo mẫu
@@ -951,7 +974,7 @@ function ReportPhaseList({
                   <button
                     type="button"
                     disabled={busy}
-                    title={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
+                    title="Thêm hồ sơ vào giai đoạn"
                     aria-label={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onAddDoc(phase.id)}
@@ -965,7 +988,7 @@ function ReportPhaseList({
                   <button
                     type="button"
                     disabled={busy}
-                    title={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
+                    title="Tạo mẫu vào giai đoạn này"
                     aria-label={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onApplyTemplate(phase.id)}
@@ -982,7 +1005,7 @@ function ReportPhaseList({
                   />
                   <button
                     type="button"
-                    title={`Sửa giai đoạn "${phase.name}"`}
+                    title="Sửa giai đoạn"
                     aria-label={`Sửa giai đoạn "${phase.name}"`}
                     className="rounded-md p-1 text-muted-foreground hover:text-foreground"
                     onClick={() => onEditPhase(phase)}
@@ -1116,7 +1139,7 @@ function ReportItemTable({
       {row.item && canEdit && !itemsLocked && (
         <button
           type="button"
-          title={`Sửa nút "${row.name}"`}
+          title="Đổi tên / xóa nút"
           aria-label={`Sửa nút "${row.name}"`}
           className="rounded-md p-1 text-muted-foreground hover:text-foreground"
           onClick={(event) => {
@@ -1184,7 +1207,7 @@ function ReportItemTable({
               {canEdit && (
                 <button
                   type="button"
-                  title={`Sửa giai đoạn "${phase.name}"`}
+                  title="Sửa giai đoạn"
                   aria-label={`Sửa giai đoạn "${phase.name}"`}
                   className="rounded-md p-0.5 hover:text-foreground"
                   onClick={() => onEditPhase(phase)}
@@ -1818,7 +1841,10 @@ function ReportDocRow({
       <button
         type="button"
         aria-label={done ? 'Mở lại hồ sơ' : 'Đánh dấu hoàn thành'}
-        title={locked ? 'Chờ hồ sơ tiên quyết hoàn thành trước' : ''}
+        //  duoc-CR-741: gợi ý theo bản v1; tên đọc (`aria-label`) giữ như cũ.
+        title={
+          locked ? 'Đang chờ hồ sơ tiên quyết' : done ? 'Đánh dấu Đang làm' : 'Đánh dấu Hoàn thành'
+        }
         disabled={!canEdit || locked || busy}
         className={cn(
           'mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors',

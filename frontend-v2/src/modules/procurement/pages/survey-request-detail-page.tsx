@@ -34,11 +34,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
-import {
-  DetailPageHeader,
-  ResponsiveLabel,
-  type HeaderActionList,
-} from '@/shared/ui/detail-page-header'
+import { DetailPageHeader, type HeaderActionList } from '@/shared/ui/detail-page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +46,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -72,6 +69,12 @@ import { StatusBadge } from '../components/document-status-badge'
 import { DocumentComments } from '../components/document-comments'
 import { DossierChecklistCard } from '../components/survey-report/dossier-checklist-card'
 import { SurveyReportCard } from '../components/survey-report/survey-report-card'
+import {
+  applySurveyRequestFromPurchaseRequest,
+  keepsSourceDepartment,
+  parseSurveyRequestFromPurchaseRequest,
+  type SurveyRequestFromPurchaseRequestState,
+} from '../components/survey-request-from-purchase-request'
 import { SurveyRequestInfoCard } from '../components/survey-request-info-card'
 import { SurveyRequestLineDialog } from '../components/survey-request-line-dialog'
 import {
@@ -130,26 +133,38 @@ const CREATE_PR_STATUSES = ['processing', 'survey_done', 'pr_created', 'done']
 type ReasonAction = 'reject' | 'cancel'
 type ConfirmAction = 'createPrs' | 'finalize'
 
-const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string }> = {
+interface ActionDialogText {
+  title: string
+  description: string
+  /** Chữ nút đồng ý — đúng chữ bản v1 (duoc-CR-741), nút còn lại luôn là "Hủy". */
+  confirmLabel: string
+}
+
+//  duoc-CR-741: tiêu đề, câu hỏi và nút lấy NGUYÊN VĂN `askPrompt` / `askConfirm` của bản v1
+//  (`frontend/src/pages/SurveyRequestDetail.tsx`), kể cả chữ "đơn" ở hộp Từ chối.
+const REASON_ACTIONS: Record<ReasonAction, ActionDialogText> = {
   reject: {
-    title: 'Trả về cho người yêu cầu',
-    description: 'Phiếu chuyển sang Bị trả lại để người yêu cầu sửa rồi gửi duyệt lại.',
+    title: 'Trả về',
+    description: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):',
+    confirmLabel: 'Trả về',
   },
   cancel: {
-    title: 'Từ chối phiếu',
-    description: 'Phiếu bị khóa hẳn, không sửa lại được — muốn làm tiếp phải lập phiếu mới.',
+    title: 'Từ chối đơn',
+    description: 'Lý do từ chối (khóa đơn, không thể sửa lại):',
+    confirmLabel: 'Từ chối',
   },
 }
 
-const CONFIRM_ACTIONS: Record<ConfirmAction, { title: string; description: string }> = {
+const CONFIRM_ACTIONS: Record<ConfirmAction, ActionDialogText> = {
   createPrs: {
-    title: 'Tạo Yêu cầu mua hàng?',
-    description:
-      'Sinh YCMH từ các phương án đã chọn, gom theo nhà cung cấp. Dòng chưa chọn phương án sẽ bỏ qua.',
+    title: 'Tạo Yêu cầu mua hàng',
+    description: 'Tạo YCMH từ các phương án đã chọn? (dòng chưa chọn sẽ bỏ qua)',
+    confirmLabel: 'Tạo YCMH',
   },
   finalize: {
-    title: 'Chuyển phiếu sang Hoàn thành?',
-    description: 'Sau khi hoàn thành, phiếu không chỉnh sửa được nữa.',
+    title: 'Hoàn thành phiếu',
+    description: 'Chuyển phiếu sang Hoàn thành? Sau đó không chỉnh sửa được nữa.',
+    confirmLabel: 'Hoàn thành',
   },
 }
 
@@ -182,6 +197,11 @@ export function SurveyRequestDetailPage() {
   const assistantDraft = isNew
     ? parseAssistantDraft((location.state as { assistantDraft?: unknown } | null)?.assistantDraft)
     : null
+  //  duoc-CR-741 (CR-026 của v1): mở từ nút *Tạo yêu cầu báo giá* trên YCMH bị trả lại / từ
+  //  chối — gói `fromPr` đủ hơn bản nháp Trợ lý nên được ưu tiên; chưa có bản ghi nào trong DB.
+  const fromPr = isNew
+    ? parseSurveyRequestFromPurchaseRequest((location.state as { fromPr?: unknown } | null)?.fromPr)
+    : null
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
@@ -212,7 +232,7 @@ export function SurveyRequestDetailPage() {
   const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
 
   const [draft, setDraft] = useState<SurveyRequestDetail | null>(() =>
-    isNew ? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft) : null,
+    isNew ? buildNewSurveyRequest(user, fromPr, assistantDraft) : null,
   )
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
@@ -255,7 +275,7 @@ export function SurveyRequestDetailPage() {
   ) {
     setDraft(
       isNew
-        ? (current) => current ?? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft)
+        ? (current) => current ?? buildNewSurveyRequest(user, fromPr, assistantDraft)
         : (serverData ?? null),
     )
   }
@@ -268,7 +288,9 @@ export function SurveyRequestDetailPage() {
   //  `false`, thành ra nhịp bù không bao giờ chạy và phiếu lại neo phòng bằng
   //  TÊN, đúng thứ CR-086 sinh ra để tránh (bao-CR-492). Điều kiện
   //  `!draft.department_id` tự tắt sau lần bù đầu nên không cần mốc so sánh.
-  if (isNew && draft?.requester_id && !draft.department_id) {
+  //  Phiếu điền sẵn từ YCMH có tên phòng thì KHÔNG bù: phòng phải là phòng của YCMH như v1, không
+  //  phải phòng hiện tại trong hồ sơ người yêu cầu (rà mã duoc-CR-741).
+  if (isNew && draft?.requester_id && !draft.department_id && !keepsSourceDepartment(fromPr)) {
     const me = (employeesData?.items ?? []).find((employee) => employee.id === draft.requester_id)
     if (me?.department_id) {
       const departmentId = me.department_id
@@ -541,7 +563,7 @@ export function SurveyRequestDetailPage() {
    * Cụm nút đầu trang, xếp ĐÚNG THỨ TỰ BẢN V1 (duoc-CR-737) và đứng thành MỘT
    * dãy — v1 không có vạch ngăn tiện ích / quy trình ở màn này: Lưu · Gửi duyệt ·
    * Duyệt · Từ chối · Xử lý khảo sát · Chuyển phòng xử lý · Trả về · Tạo phiếu
-   * khảo sát · Tạo YCMH · Chuyển Hoàn thành · Đã tạo N phiếu YCMH · Xóa. Nút Nhân
+   * khảo sát · Tạo yêu cầu mua · Chuyển Hoàn thành · Đã tạo N phiếu YCMH · Xóa phiếu. Nút Nhân
    * bản cả phiếu đã bỏ khỏi đầu trang (duoc-CR-737) — chép phiếu dùng biểu tượng
    * chép ở từng dòng của màn danh sách.
    *
@@ -710,10 +732,8 @@ export function SurveyRequestDetailPage() {
             onClick={() => setConfirmAction('createPrs')}
           >
             <FilePlus />
-            {/*  Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng 158px, đúng phần đẩy cụm nút
-                 rớt xuống hàng riêng trên máy 390px. "YCMH" là từ viết tắt người
-                 dùng đang dùng hằng ngày, không phải chữ nghĩ ra cho vừa chỗ. */}
-            <ResponsiveLabel short="Tạo YCMH" long="Tạo yêu cầu mua" />
+            {/*  duoc-CR-741: một chữ ở mọi khổ như bản v1 — bỏ nhãn ngắn "Tạo YCMH". */}
+            Tạo yêu cầu mua
           </Button>
         ),
       },
@@ -756,11 +776,16 @@ export function SurveyRequestDetailPage() {
         key: 'delete',
         node: (
           <PermissionGate entity="survey_request" action="delete">
+            {/*  duoc-CR-741: nguyên văn hộp `askConfirm` của v1 — *Xác nhận* · *Xóa phiếu này?* ·
+                 nút *Đồng ý* / *Hủy*. */}
             <DeleteConfirmButton
               recordName={data.code || `#${data.id}`}
+              label="Xóa phiếu"
+              title="Xác nhận"
+              description="Xóa phiếu này?"
+              confirmLabel="Đồng ý"
               pending={deleteSurveyRequest.isPending}
               className={ACTION_TONE_CLASS.danger}
-              warning="Phiếu và các dòng cần khảo sát kèm theo sẽ bị xóa."
               onConfirm={async () => {
                 await deleteSurveyRequest.mutateAsync(data.id)
                 navigate(appRoutes.procurement.surveyRequests)
@@ -774,10 +799,28 @@ export function SurveyRequestDetailPage() {
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
       <DetailPageHeader
-        backTo={appRoutes.procurement.surveyRequests}
-        backLabel="Về danh sách yêu cầu báo giá"
+        //  CR-027 của v1: mở từ YCMH thì quay lại ĐÚNG phiếu nguồn, không văng ra danh sách.
+        backTo={
+          fromPr?.pr_id
+            ? appRoutes.procurement.purchaseRequestDetail(fromPr.pr_id)
+            : appRoutes.procurement.surveyRequests
+        }
+        backLabel={fromPr?.pr_id ? `Quay lại YCMH ${fromPr.pr_code}` : 'Về danh sách yêu cầu báo giá'}
         title={isNew ? 'Tạo Yêu cầu báo giá mới' : data.code || 'Phiếu nháp'}
-        badges={!isNew && <StatusBadge status={status} labels={SR_STATUS_LABELS} />}
+        badges={
+          isNew ? (
+            fromPr && (
+              <Badge
+                variant="secondary"
+                title={`Điền sẵn từ YCMH ${fromPr.pr_code} — chưa lưu`}
+              >
+                Từ {fromPr.pr_code}
+              </Badge>
+            )
+          ) : (
+            <StatusBadge status={status} labels={SR_STATUS_LABELS} />
+          )
+        }
         actions={headerActions}
       />
 
@@ -917,7 +960,7 @@ export function SurveyRequestDetailPage() {
                     onClick={() => void restoreReport.mutateAsync()}
                   >
                     <Undo2 className="size-3.5" />
-                    Hoàn tác
+                    Hoàn tác xóa
                   </Button>
                 ) : null
               }
@@ -968,7 +1011,7 @@ export function SurveyRequestDetailPage() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setReasonFor(null)}>
-              Đóng
+              Hủy
             </Button>
             <Button
               variant={reasonFor === 'cancel' ? 'destructive' : 'default'}
@@ -981,7 +1024,7 @@ export function SurveyRequestDetailPage() {
               }}
             >
               {runAction.isPending && <Loader2 className="animate-spin" />}
-              Xác nhận
+              {reasonFor ? REASON_ACTIONS[reasonFor].confirmLabel : ''}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1001,7 +1044,7 @@ export function SurveyRequestDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Đóng</AlertDialogCancel>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmAction === 'createPrs') void createPurchaseRequests.mutateAsync()
@@ -1012,7 +1055,7 @@ export function SurveyRequestDetailPage() {
                 setConfirmAction(null)
               }}
             >
-              Đồng ý
+              {confirmAction ? CONFIRM_ACTIONS[confirmAction].confirmLabel : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1051,12 +1094,12 @@ export function SurveyRequestDetailPage() {
               {resultLines
                 .find((line) => line.id === resurveyLineId)
                 ?.options?.some((option) => option.is_chosen)
-                ? 'Dòng này đang chọn 1 phương án. Đánh dấu "Cần khảo sát lại" sẽ BỎ CHỌN phương án đó và chờ NSTM khảo sát lại.'
+                ? 'Dòng này đang chọn 1 phương án. Đánh dấu "Cần khảo sát lại" sẽ BỎ CHỌN phương án đó và chờ NSTM khảo sát lại. Tiếp tục?'
                 : 'Đánh dấu dòng này "Cần khảo sát lại"? NSTM sẽ khảo sát lại phương án cho sản phẩm này.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Đóng</AlertDialogCancel>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (resurveyLineId !== null) {
@@ -1101,6 +1144,18 @@ export function SurveyRequestDetailPage() {
       </Dialog>
     </PageContainer>
   )
+}
+
+/** Phiếu mới: gói YCMH nguồn thắng bản nháp Trợ lý; không có cả hai thì là phiếu rỗng. */
+function buildNewSurveyRequest(
+  user: AuthUser | null | undefined,
+  fromPr: SurveyRequestFromPurchaseRequestState | null,
+  assistantDraft: AssistantDraft | null,
+): SurveyRequestDetail {
+  const base = createEmptySurveyRequest(user)
+  return fromPr
+    ? applySurveyRequestFromPurchaseRequest(base, fromPr)
+    : applyAssistantDraft(base, assistantDraft)
 }
 
 /** Trả về chuỗi lỗi đầu tiên gặp phải, rỗng nghĩa là hợp lệ. */

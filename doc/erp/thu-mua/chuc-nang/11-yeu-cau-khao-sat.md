@@ -760,3 +760,27 @@ trong DB (sort trên trang đang xem thì làm ở trình duyệt).
 |---|---|
 | `survey_request.read` | Vào được màn hay không, và **phạm vi dữ liệu** (qua `apply_scope`). NSTM chỉ thấy dòng mình phụ trách — điều kiện dòng dịch nguyên từ `_see_all_lines` / `can_process_line` sang SQL |
 | `supplier.read` | Cụm cột NCC (Mã/Tên NCC · Mã SP theo NCC · Ghi chú NSTM · Mã dòng nội bộ) hiện hay **bị gỡ khỏi dữ liệu** — gỡ ở API chứ không chỉ ẩn cột, để màn tiến độ không thành đường rò danh tính nhà cung cấp |
+
+## Tên nút theo bản v1 (duoc-CR-741, 09/11/2026)
+
+Giao diện mới đổi nhãn nút và hộp xác nhận của YCBG và màn *Xử lý khảo sát* về đúng chữ bản v1; bảng đầy đủ ở
+[kế hoạch CR-741](../plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md).
+
+| Chỗ | Cũ (v2) | Mới (= v1) |
+|---|---|---|
+| Danh sách | *Thêm mới* · biểu tượng nhân bản | ***Thêm*** · ***Nhân bản*** / ***Xong*** bật cột *Thao tác*; tick dòng thì ***Xuất Excel (n)*** |
+| Chi tiết YCBG | *Tạo YCMH* (khổ hẹp) | ***Tạo yêu cầu mua*** ở mọi khổ; nút trong hộp là ***Tạo YCMH*** |
+| Chi tiết YCBG | *Xóa* | ***Xóa phiếu*** (hộp *Xác nhận* · *Xóa phiếu này?*) |
+| Dòng YCBG | *Nhân bản dòng* · *Chi tiết dòng* | ***Nhân đôi*** · ***Chi tiết / hình ảnh*** |
+| Khối Báo cáo thực hiện | *Hoàn tác* | ***Hoàn tác xóa***, có thêm ở khối rỗng ([19](19-bao-cao-thuc-hien-ycbg.md)) |
+| Xử lý khảo sát | *Xóa phương án* | ***Xóa option***, có hỏi lại (*Xóa phương án này?*) |
+| Xử lý khảo sát | *Về danh sách* | ***Quay lại*** — về đúng phiếu YCBG đang mở |
+
+Hành vi bù từ v1 ở màn *Xử lý khảo sát*:
+
+- Kho báo giá đã duyệt cho tick nhiều dòng; tick xong bấm ***Thêm n dòng đã chọn làm option*** để gắn cả nhóm. Đổi
+  trang, bộ lọc hay sắp xếp thì bỏ hết tick.
+- ***Chốt hoàn thành khảo sát*** hỏi lại (*Chốt hoàn thành khảo sát?*). Còn dòng chưa có option thì hộp *Chốt rỗng sản
+  phẩm chưa có phương án* mở ra, nút ***Chốt (n chốt rỗng)***.
+- Chi tiết YCBG mở từ nút ***Tạo yêu cầu báo giá*** của YCMH bị trả lại / từ chối thì form điền sẵn dòng của YCMH đó
+  ([12](12-yeu-cau-mua-hang.md), mục *Tên nút theo bản v1*).

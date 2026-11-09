@@ -18,7 +18,8 @@ Idempotent: đã có bài cùng tiêu đề dưới đúng nhóm thì xóa bài 
 chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự tạo bài gốc.
 
 Nội dung phải KHỚP với `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K (K.0 → K.7) và
-`08-he-thong-bao-cao.md` tab Giá vốn nhập khẩu. Không nêu mã phiếu mẫu của môi trường thử.
+`17-he-thong-bao-cao.md` tab Giá vốn nhập khẩu. Không nêu mã phiếu mẫu của môi trường thử.
+Tên nút theo bản v1 từ duoc-CR-741 (09/11/2026): nút *Tạo YCTT* ở đầu bảng, chữ *Chưa thành công nợ*, nút *Hủy* của đơn.
 """
 import re
 import sys
@@ -106,11 +107,11 @@ CONTENT = f"""<h2>I. Chi phí thu mua là gì</h2>
 
 <h2>V. Công nợ và thanh toán</h2>
 <p>Mỗi dòng chi phí đã quyết toán thành <strong>một khoản công nợ</strong> loại <strong>Chi phí thu mua</strong> ở màn {ref(PAYABLE_ARTICLE_TITLE, "Công nợ")}, khi đủ bốn điều kiện: đơn đã duyệt; dòng ở giai đoạn Quyết toán; dòng có nhà cung cấp và số tiền lớn hơn 0; loại chi phí có bật <em>Sinh công nợ</em>. Sửa số Quyết toán, nhà cung cấp hay hóa đơn của dòng thì khoản nợ cập nhật theo; hạ số xuống dưới số đã chi thì hệ thống từ chối.</p>
-<p>Dòng <strong>đã có tiền chi thì không xóa được</strong>. Hủy đơn thì gỡ các khoản chưa chi, giữ khoản đã chi.</p>
+<p>Dòng <strong>đã có tiền chi thì không xóa được</strong>. Bấm <strong>Hủy</strong> đơn mua hàng thì gỡ các khoản chưa chi, giữ khoản đã chi.</p>
 <p>Tạo Yêu cầu thanh toán cho chi phí có ba đường, đều đưa về màn lập phiếu và hệ thống tự tách mỗi nhà cung cấp một phiếu:</p>
 <ul>
-<li>Khối <strong>Thanh toán chi phí theo nhà cung cấp</strong> dưới bảng: mỗi nhà cung cấp một dòng Phải trả, Đã chi, Còn lại và nút <em>Tạo YCTT</em>. Đây là đường chính.</li>
-<li>Tick các dòng trên bảng chi phí rồi bấm <em>Tạo YCTT (n dòng đã tick)</em>.</li>
+<li>Khối <strong>Thanh toán chi phí theo nhà cung cấp</strong> dưới bảng: mỗi nhà cung cấp một dòng Phải trả, Đã chi, Còn lại và nút <em>Tạo YCTT</em>. Đây là đường chính. Nhà cung cấp còn phải chi mà chưa có khoản nợ nào (dòng chưa chọn nhà cung cấp, chưa Lưu, hoặc số tiền 0) thì chỗ nút hiện chữ <em>Chưa thành công nợ</em>; trả hết rồi thì hiện <em>Đã chi đủ</em>.</li>
+<li>Tick các dòng trên bảng chi phí rồi bấm nút <em>Tạo YCTT</em> ở đầu bảng. Chưa tick dòng nào thì nút chỉ ghi <em>Tạo YCTT</em> và chưa bấm được; tick rồi nút ghi thêm số dòng, ví dụ <em>Tạo YCTT (2 dòng đã tick)</em>.</li>
 <li>Popup <em>Tạo yêu cầu thanh toán</em> của đơn, tab <em>Chi phí thu mua</em>.</li>
 </ul>
 <p>Hai cột <strong>Đã chi</strong> / <strong>Còn lại</strong> trên bảng đọc từ khoản nợ; dòng chưa thành nợ hiện dấu gạch.</p>

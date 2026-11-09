@@ -4,6 +4,7 @@ import {
   Ban,
   Check,
   CheckCheck,
+  ClipboardList,
   CornerUpLeft,
   ListChecks,
   Loader2,
@@ -63,6 +64,7 @@ import {
 } from '@/shared/ui/dialog'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
+import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
@@ -79,6 +81,7 @@ import { PurchaseRequestChooseCard } from '../components/purchase-request-choose
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { PurchaseRequestLinkedDocumentsCard } from '../components/purchase-request-linked-documents-card'
+import { buildSurveyRequestPrefill } from '../components/purchase-request-survey-request-prefill'
 import { ReturnChoiceDialog } from '../components/return-choice-dialog'
 import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
@@ -129,25 +132,34 @@ import { trackUiAction } from '@/core/telemetry/track-ui-action'
 type ReasonAction = Extract<PurchaseRequestAction, 'return' | 'cancel'>
 type ConfirmAction = Extract<PurchaseRequestAction, 'dispatch' | 'complete'>
 
+//  duoc-CR-741: tiêu đề + câu hỏi chép đúng chữ bản v1 (`PurchaseRequestDetail.tsx`).
 const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string }> = {
   return: {
-    title: 'Trả phiếu về cho người yêu cầu',
-    description: 'Phiếu chuyển sang Bị trả lại để người yêu cầu sửa và gửi duyệt lại.',
+    title: 'Trả về',
+    description: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):',
   },
   cancel: {
     title: 'Từ chối phiếu',
-    description: 'Phiếu sẽ bị khóa và không thể sửa lại.',
+    description: 'Lý do từ chối (khóa phiếu, không sửa lại được):',
   },
 }
+/** v1: nút *Từ chối* ở chặng muộn (đã duyệt trở đi, quyền quản lý) hỏi câu ngắn hơn. */
+const LATE_REJECT_DESCRIPTION = 'Lý do từ chối (khóa phiếu):'
 
-const CONFIRM_ACTIONS: Record<ConfirmAction, { title: string; description: string }> = {
+const CONFIRM_ACTIONS: Record<
+  ConfirmAction,
+  { title: string; description: string; confirmLabel: string }
+> = {
   dispatch: {
-    title: 'Duyệt điều phối phiếu?',
-    description: 'Hệ thống sẽ tự động phân bổ nhân sự thu mua phụ trách theo phân loại hàng.',
+    title: 'Duyệt điều phối',
+    description:
+      'Duyệt và điều phối phiếu này? Hệ thống sẽ tự động phân bổ nhân sự thu mua phụ trách theo phân loại hàng, sau đó mới tạo được đơn mua hàng.',
+    confirmLabel: 'Duyệt',
   },
   complete: {
-    title: 'Hoàn thành phiếu?',
-    description: 'Phiếu được đóng sau khi mọi dòng hàng đã Hoàn thành hoặc Hủy đơn.',
+    title: 'Hoàn thành',
+    description: 'Đánh dấu phiếu HOÀN THÀNH?',
+    confirmLabel: 'Đồng ý',
   },
 }
 
@@ -244,8 +256,20 @@ export function PurchaseRequestDetailPage() {
   )
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
+  /** Hộp từ chối mở từ nút *Từ chối* chặng muộn — v1 hỏi câu ngắn hơn ở đó. */
+  const [lateReject, setLateReject] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [lineIndex, setLineIndex] = useState<number | null>(null)
+  /**
+   * duoc-CR-741 — hộp hỏi lý do đổi ngày dự kiến có hàng (thay `window.prompt`, chữ + nút
+   * *Lưu* / *Hủy* như `askPrompt` của v1). Lời hứa (`Promise`) giữ ở ref để nhánh gọi chờ
+   * được câu trả lời rồi mới ghi; `null` = người dùng bỏ ngang.
+   */
+  const [expectedDatePrompt, setExpectedDatePrompt] = useState<{
+    title: string
+    description: string
+  } | null>(null)
+  const expectedDateResolveRef = useRef<((reason: string | null) => void) | null>(null)
   /** Cảnh báo trước khi tạo ĐMH: có dòng đã đặt đủ/vượt so với số yêu cầu. */
   const [orderedWarning, setOrderedWarning] = useState<{
     message: string
@@ -637,33 +661,66 @@ export function PurchaseRequestDetailPage() {
    * Ghi "TG dự kiến có hàng" khi rời ô. ĐỔI giá trị ĐÃ CÓ thì bắt buộc nêu lý
    * do (backend ghi vào nhật ký) — hủy nhập lý do sẽ trả ô về giá trị cũ.
    */
-  function handleExpectedDateCommit(
+  /** Mở hộp hỏi lý do đổi ngày dự kiến; trả lý do đã gõ, hoặc `null` khi bỏ ngang. */
+  function askExpectedDateReason(
+    title: string,
+    originalDate: string,
+    nextDate: string,
+  ): Promise<string | null> {
+    //  Hộp cũ chưa trả lời (khó xảy ra — hộp chặn cả trang) thì coi như bỏ ngang.
+    expectedDateResolveRef.current?.(null)
+    return new Promise((resolve) => {
+      expectedDateResolveRef.current = resolve
+      setExpectedDatePrompt({
+        title,
+        description: `Đổi từ ${formatDate(originalDate)} sang ${
+          formatDate(nextDate) || '(để trống)'
+        } — nhập lý do (bắt buộc):`,
+      })
+    })
+  }
+
+  function settleExpectedDateReason(reason: string | null) {
+    const resolve = expectedDateResolveRef.current
+    expectedDateResolveRef.current = null
+    setExpectedDatePrompt(null)
+    resolve?.(reason)
+  }
+
+  async function handleExpectedDateCommit(
     item: PurchaseRequestItem,
     expectedDate: string,
     originalDate: string,
   ) {
     if (editing || !item.id || expectedDate === originalDate) return
 
+    //  Cập nhật theo hàm: lúc hộp hỏi lý do đóng thì `loadedDraft` của lượt vẽ này đã cũ.
     const revert = () =>
-      patch({
-        items: loadedDraft.items.map((line) =>
-          line.id === item.id ? { ...line, expected_date: originalDate } : line,
-        ),
-      })
+      setDraft((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((line) =>
+                line.id === item.id ? { ...line, expected_date: originalDate } : line,
+              ),
+            }
+          : current,
+      )
 
     let reason = ''
     if (originalDate) {
-      const answer = window.prompt(
-        `Đổi thời gian dự kiến có hàng từ ${formatDate(originalDate)} sang ${
-          formatDate(expectedDate) || '(để trống)'
-        } — nhập lý do:`,
+      //  v1 (`commitExpectedDate`): đổi trên bảng hỏi *Đổi ngày dự kiến có hàng*; bỏ ngang
+      //  thì ô về lại ngày cũ.
+      const answer = await askExpectedDateReason(
+        'Đổi ngày dự kiến có hàng',
+        originalDate,
+        expectedDate,
       )
-      reason = answer?.trim() ?? ''
-      if (!reason) {
-        toast.error('Cần nhập lý do thay đổi thời gian dự kiến')
+      if (answer === null) {
         revert()
         return
       }
+      reason = answer
     }
 
     void updateItemStatus.mutateAsync({
@@ -676,16 +733,20 @@ export function PurchaseRequestDetailPage() {
     })
   }
 
-  async function handleOperationalLineSave(item: PurchaseRequestItem) {
-    if (!item.id) return
+  /** Trả `false` khi người dùng bỏ ngang hộp lý do — popup dòng giữ nguyên như v1. */
+  async function handleOperationalLineSave(item: PurchaseRequestItem): Promise<boolean> {
+    if (!item.id) return false
     const original = loadedData.items.find((line) => line.id === item.id)
     let expectedDateReason = ''
     if (original?.expected_date && original.expected_date !== item.expected_date) {
-      expectedDateReason = window.prompt('Nhập lý do thay đổi thời gian dự kiến có hàng:')?.trim() ?? ''
-      if (!expectedDateReason) {
-        toast.error('Cần nhập lý do thay đổi thời gian dự kiến')
-        return
-      }
+      //  v1 (`savePopupLine`): popup dòng hỏi *Đổi thời gian dự kiến có hàng*.
+      const answer = await askExpectedDateReason(
+        'Đổi thời gian dự kiến có hàng',
+        original.expected_date,
+        item.expected_date,
+      )
+      if (answer === null) return false
+      expectedDateReason = answer
     }
     if (canEditSelectedLine) {
       await updateItemStatus.mutateAsync({
@@ -702,9 +763,24 @@ export function PurchaseRequestDetailPage() {
     if (canAssign) {
       await assignPurchaser.mutateAsync({ id: item.id, assignee: item.assignee })
     }
+    return true
   }
 
-  /** Nút quy trình khi đang sửa: Lưu · Lưu & gửi duyệt · Hủy sửa (thứ tự v1). */
+  /**
+   * CR-026 (dời từ v1 ở duoc-CR-741) — YCMH bị trả lại / đã từ chối thì chuyển sang tạo Yêu cầu
+   * báo giá điền sẵn từ phiếu này. Chỉ điều hướng kèm dữ liệu, KHÔNG tạo bản ghi nào cho tới
+   * khi người dùng bấm Lưu bên màn YCBG.
+   */
+  function handleCreateSurveyRequest() {
+    const prefill = buildSurveyRequestPrefill(loadedDraft)
+    if (!prefill.fromPr.lines.length) {
+      toast.error('Phiếu không còn dòng sản phẩm nào để khảo sát')
+      return
+    }
+    navigate(appRoutes.procurement.surveyRequestNew, { state: prefill })
+  }
+
+  /** Nút quy trình khi đang sửa: Lưu · Gửi duyệt · Hủy sửa (thứ tự + chữ v1, duoc-CR-741). */
   function editingWorkflowActions(): HeaderActionList {
     return [
       {
@@ -734,7 +810,8 @@ export function PurchaseRequestDetailPage() {
             disabled={savePurchaseRequest.isPending}
           >
             <Send />
-            Lưu &amp; gửi duyệt
+            {/*  duoc-CR-741: chữ v1 là *Gửi duyệt* — nút vẫn LƯU rồi mới gửi như v1 `save(true)`. */}
+            Gửi duyệt
           </Button>
         ),
       },
@@ -762,8 +839,8 @@ export function PurchaseRequestDetailPage() {
 
   /**
    * Nút quy trình khi đang xem, thứ tự v1: Sửa · Gửi duyệt · Duyệt · Trả về ·
-   * Từ chối · Duyệt điều phối · Chuyển phòng xử lý · Xử lý phương án · Tạo đơn ·
-   * Hoàn thành · Từ chối (chặng muộn, quyền quản lý).
+   * Từ chối · Duyệt (điều phối) · Chuyển phòng xử lý · Xử lý phương án · Tạo đơn mua
+   * hàng · Hoàn thành · Từ chối (chặng muộn, quyền quản lý).
    */
   function viewingWorkflowActions(): HeaderActionList {
     return [
@@ -825,7 +902,10 @@ export function PurchaseRequestDetailPage() {
             <Button
               variant="outline"
               className={ACTION_TONE_CLASS.danger}
-              onClick={() => void handleAction('cancel')}
+              onClick={() => {
+                setLateReject(false)
+                void handleAction('cancel')
+              }}
             >
               <Ban />
               Từ chối
@@ -837,9 +917,11 @@ export function PurchaseRequestDetailPage() {
           key: 'dispatch',
           primary: true,
           node: (
+            //  duoc-CR-741: chữ v1 là *Duyệt* (bước duyệt lần 2 của thu mua); hộp xác nhận mới
+            //  gọi tên *Duyệt điều phối* như v1.
             <Button onClick={() => setConfirmAction('dispatch')} disabled={runAction.isPending}>
               <Check />
-              Duyệt điều phối
+              Duyệt
             </Button>
           ),
         },
@@ -886,13 +968,11 @@ export function PurchaseRequestDetailPage() {
       // một menu, nên lần nào cũng mất hai chạm cho việc làm hằng ngày.
       // Đường nào chạy là do trạng thái phiếu + quyền của người bấm quyết
       // định, xem `orderMode` — không hỏi lại người dùng nữa.
-      // Nhãn là "Tạo đơn" ở MỌI khổ màn hình (đại ca chốt 17/09/2026): bản dài
-      // cũ ("Tạo đơn theo phương án" / "Tạo đơn mua hàng") tả cách chạy bên
-      // trong, thứ người bấm không chọn được và cũng không cần biết — đường nào
-      // chạy đã do trạng thái phiếu quyết định rồi. Hai nhánh dùng CHUNG một
-      // chữ nên nút không đổi tên theo vai trò người đăng nhập, và chữ ngắn thì
-      // khỏi cần đổi nhãn theo bề ngang nữa. Việc sắp làm nói ở hộp xác nhận
-      // (bao-CR-421), chỗ có đủ chỗ để nói cho tử tế.
+      // Nhãn: bao-CR-420 (17/09/2026) từng chốt chữ ngắn "Tạo đơn" ở mọi khổ màn
+      // hình. duoc-CR-741 (anh Được chốt 09/11/2026) TRẢ VỀ đúng chữ bản v1 là
+      // "Tạo đơn mua hàng" cho người dời từ v1 sang nhận ra nút. Hai nhánh vẫn
+      // dùng CHUNG một chữ nên nút không đổi tên theo vai trò người đăng nhập;
+      // việc sắp làm nói ở hộp xác nhận (bao-CR-421).
       orderMode === 'options' && {
         key: 'create-order',
         primary: true,
@@ -902,7 +982,7 @@ export function PurchaseRequestDetailPage() {
             onClick={() => void handleGenerateOrders()}
           >
             {generateOrders.isPending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
-            Tạo đơn
+            Tạo đơn mua hàng
           </Button>
         ),
       },
@@ -912,7 +992,7 @@ export function PurchaseRequestDetailPage() {
         node: (
           <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
             <ShoppingCart />
-            Tạo đơn
+            Tạo đơn mua hàng
           </Button>
         ),
       },
@@ -948,7 +1028,10 @@ export function PurchaseRequestDetailPage() {
             <Button
               variant="outline"
               className={ACTION_TONE_CLASS.danger}
-              onClick={() => void handleAction('cancel')}
+              onClick={() => {
+                setLateReject(true)
+                void handleAction('cancel')
+              }}
             >
               <Ban />
               Từ chối
@@ -963,13 +1046,12 @@ export function PurchaseRequestDetailPage() {
    * v1 sang tìm nút ở chỗ cũ. Nhóm tiện ích (In phiếu · Xóa) · vạch ngăn · nút
    * theo bước quy trình — nút đặc và nút viền xen nhau theo bước.
    *
-   * Nút viền mang MÀU của nút cùng tên ở v1 (`ACTION_TONE_CLASS`): Lưu & gửi duyệt,
+   * Nút viền mang MÀU của nút cùng tên ở v1 (`ACTION_TONE_CLASS`): Gửi duyệt (lúc sửa),
    * Hoàn thành chữ xanh; Trả về hổ phách; Từ chối, Xóa đỏ; In phiếu, Sửa, Chuyển
    * phòng xử lý, Xử lý phương án để trơn (v1 là `btn ghost`).
    *
    * `primary` đánh dấu nút nền đặc: việc người mở trang đang định làm (*Lưu* khi
-   * đang sửa, *Gửi duyệt* / *Duyệt* / *Duyệt điều phối* / *Tạo đơn* theo từng
-   * chặng). Khổ hẹp nút đặc ở ngoài, nút viền vào `⋯` — giấu nút đặc sau `⋯` là
+   * đang sửa, *Gửi duyệt* / *Duyệt* / *Tạo đơn mua hàng* theo từng chặng). Khổ hẹp nút đặc ở ngoài, nút viền vào `⋯` — giấu nút đặc sau `⋯` là
    * bắt thêm một chạm cho thao tác thường xuyên nhất.
    *
    * ⚠️ Dựng thành MỘT mảng chứ không viết hai lần: mỗi nút kéo theo state hoặc
@@ -999,17 +1081,44 @@ export function PurchaseRequestDetailPage() {
         </Button>
       ),
     },
+    // CR-026 (dời từ v1 ở duoc-CR-741): phiếu bị trả lại / đã từ chối chuyển hướng đi khảo
+    // sát lại, khỏi gõ lại từ đầu. Đứng trước *Xóa phiếu* như v1. Màu theo v1 (CR-027): phiếu
+    // ĐÃ TỪ CHỐI bị khóa, không còn nút quy trình nào nên đây là việc cần làm tiếp — nút đặc;
+    // phiếu BỊ TRẢ LẠI vẫn sửa & gửi duyệt lại được nên nút viền, tránh hai nút chính đá nhau.
+    !isNew &&
+      ['rejected', 'cancelled'].includes(data.status) &&
+      can('survey_request', 'create') && {
+        key: 'create-survey-request',
+        group: 'utility',
+        primary: data.status === 'cancelled',
+        node: (
+          <Button
+            type="button"
+            variant={data.status === 'cancelled' ? 'default' : 'outline'}
+            className={data.status === 'cancelled' ? undefined : ACTION_TONE_CLASS.accent}
+            onClick={handleCreateSurveyRequest}
+          >
+            <ClipboardList />
+            Tạo yêu cầu báo giá
+          </Button>
+        ),
+      },
     !isNew &&
       ['draft', 'rejected', 'cancelled'].includes(data.status) && {
         key: 'delete',
         group: 'utility',
         node: (
           <PermissionGate entity="purchase_request" action="delete">
+            {/*  duoc-CR-741: chữ v1 — nút *Xóa phiếu*, hộp *Xác nhận xóa* với câu hỏi của
+                 v1, nút *Xóa* / *Hủy*. */}
             <DeleteConfirmButton
               recordName={data.code || `#${data.id}`}
               pending={deletePurchaseRequest.isPending}
               className={ACTION_TONE_CLASS.danger}
-              warning="Phiếu và các dòng hàng kèm theo sẽ bị xóa."
+              label="Xóa phiếu"
+              title="Xác nhận xóa"
+              confirmLabel="Xóa"
+              description="Bạn có chắc chắn muốn xóa phiếu mua hàng này không?"
               onConfirm={async () => {
                 await deletePurchaseRequest.mutateAsync(data.id)
                 navigate(appRoutes.procurement.purchaseRequests)
@@ -1042,10 +1151,11 @@ export function PurchaseRequestDetailPage() {
 
       {data.status === 'approved' && data.dispatch_enabled !== false && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          <b>Trưởng bộ phận đã duyệt, phiếu còn chờ thu mua duyệt điều phối.</b>{' '}
+          {/*  duoc-CR-741: câu của v1 — nút nay tên *Duyệt* nên câu cũng gọi đúng tên đó. */}
+          <b>Trưởng bộ phận đã duyệt — còn chờ thu mua duyệt lần 2 (điều phối).</b>{' '}
           {data.can_dispatch
-            ? 'Bấm Duyệt điều phối để hệ thống phân bổ nhân sự thu mua phụ trách.'
-            : 'Quản lý hoặc Admin thu mua cần duyệt lần hai trước khi tạo đơn mua hàng.'}
+            ? 'Bấm Duyệt để hệ thống tự phân bổ nhân sự thu mua phụ trách; trước đó phiếu chưa tạo được đơn mua hàng.'
+            : 'Admin / Quản lý thu mua duyệt lần nữa thì hệ thống mới phân bổ nhân sự phụ trách và mở khóa tạo đơn mua hàng.'}
         </div>
       )}
 
@@ -1077,7 +1187,9 @@ export function PurchaseRequestDetailPage() {
             canAssign={canAssign}
             canEditLine={canEditLine}
             onAssigneeChange={handleAssigneeChange}
-            onExpectedDateCommit={handleExpectedDateCommit}
+            onExpectedDateCommit={(item, expectedDate, originalDate) =>
+              void handleExpectedDateCommit(item, expectedDate, originalDate)
+            }
             // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm SP.
             // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
             renderFrame={({ headerActions, body }) => (
@@ -1137,6 +1249,7 @@ export function PurchaseRequestDetailPage() {
             entity="purchase_request"
             entityId={purchaseRequestId}
             canManage={canManageAttachments}
+            v1Wording
           />
 
           {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
@@ -1187,7 +1300,11 @@ export function PurchaseRequestDetailPage() {
           <DialogHeader>
             <DialogTitle>{reasonFor ? REASON_ACTIONS[reasonFor].title : ''}</DialogTitle>
             <DialogDescription>
-              {reasonFor ? REASON_ACTIONS[reasonFor].description : ''}
+              {reasonFor === 'cancel' && lateReject
+                ? LATE_REJECT_DESCRIPTION
+                : reasonFor
+                  ? REASON_ACTIONS[reasonFor].description
+                  : ''}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1220,25 +1337,42 @@ export function PurchaseRequestDetailPage() {
         open={orderedWarning !== null}
         onOpenChange={(open) => !open && setOrderedWarning(null)}
       >
+        {/*  duoc-CR-741: hộp của v1 — CHỈ hai nút (*Vẫn mua thêm* · *Chỉ SP còn thiếu*), cả
+             hai đều điều hướng. Thoát không làm gì thì như v1 `onClose`: dấu X, hoặc phím Esc.
+             Dấu X đứng ĐẦU trong cây để Radix đặt con trỏ vào nó lúc mở — nhấn Enter nhầm
+             không đẩy người dùng sang màn tạo đơn. */}
         <AlertDialogContent>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="absolute right-3 top-3 text-muted-foreground"
+            title="Đóng"
+            aria-label="Đóng"
+            onClick={() => setOrderedWarning(null)}
+          >
+            <X />
+          </Button>
           <AlertDialogHeader>
-            <AlertDialogTitle>Có sản phẩm đã đặt đủ hoặc vượt số yêu cầu</AlertDialogTitle>
+            <AlertDialogTitle className="pr-8">Số lượng đã đặt đủ/vượt</AlertDialogTitle>
             <AlertDialogDescription className="whitespace-pre-line">
-              {`Tính cả đơn chưa duyệt:\n${orderedWarning?.message ?? ''}\n\n`}
-              Chọn "Chỉ SP còn thiếu" để bỏ qua các dòng này, hoặc "Mua thêm" nếu vẫn muốn đặt
-              tiếp — form tạo đơn sẽ điền đủ số yêu cầu, sửa lại số cần mua thêm trước khi tạo.
+              {`Các sản phẩm sau đã đặt đủ hoặc vượt số lượng yêu cầu (tính cả đơn chưa duyệt):\n${
+                orderedWarning?.message ?? ''
+              }\n\n`}
+              Bấm "Vẫn mua thêm" thì form tạo đơn điền đủ số yêu cầu — sửa lại số cần mua thêm
+              trước khi tạo. Bạn vẫn muốn tạo đơn mua hàng?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Đóng</AlertDialogCancel>
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 const picked = orderedWarning
                 setOrderedWarning(null)
                 if (!picked) return
                 if (!picked.remaining.length) {
-                  toast.info('Không còn sản phẩm nào cần đặt thêm')
+                  toast.info('Không còn sản phẩm cần đặt')
                   return
                 }
                 goToNewPurchaseOrder(picked.remaining)
@@ -1253,7 +1387,7 @@ export function PurchaseRequestDetailPage() {
                 if (picked) goToNewPurchaseOrder(picked.all)
               }}
             >
-              Mua thêm
+              Vẫn mua thêm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1277,11 +1411,22 @@ export function PurchaseRequestDetailPage() {
                 setConfirmAction(null)
               }}
             >
-              Đồng ý
+              {confirmAction ? CONFIRM_ACTIONS[confirmAction].confirmLabel : 'Đồng ý'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ReasonConfirmDialog
+        open={expectedDatePrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) settleExpectedDateReason(null)
+        }}
+        title={expectedDatePrompt?.title ?? ''}
+        description={expectedDatePrompt?.description}
+        confirmText="Lưu"
+        onConfirm={(value) => settleExpectedDateReason(value)}
+      />
 
       <ReturnChoiceDialog
         open={returnChoiceOpen}

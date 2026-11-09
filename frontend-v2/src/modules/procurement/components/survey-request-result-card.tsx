@@ -5,6 +5,7 @@ import { downloadFile } from '@/core/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -369,9 +370,10 @@ function OptionCard({
               ) : (
                 <Button
                   key={file.file_id}
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => void downloadFile(file.url, file.filename)}
+                  onClick={() => void confirmAndDownload(file)}
                 >
                   <FileDown />
                   {file.filename}
@@ -405,6 +407,20 @@ function OptionField({
       <dd className={cn('inline', strong && 'font-semibold')}>{value || '—'}</dd>
     </div>
   )
+}
+
+/**
+ * Tệp không phải ảnh: hỏi trước rồi mới tải về máy — nguyên văn hộp hỏi `openAtt` của bản v1
+ * (duoc-CR-741). Ảnh thì vẫn mở xem ngay, không hỏi.
+ */
+async function confirmAndDownload(file: SurveyOptionAttachment) {
+  const ok = await confirm({
+    title: 'Tải tài liệu',
+    message: `Tải file "${file.filename}" về máy?`,
+    confirmLabel: 'Tải về',
+    tone: 'default',
+  })
+  if (ok) await downloadFile(file.url, file.filename)
 }
 
 function isImageAttachment(file: SurveyOptionAttachment) {

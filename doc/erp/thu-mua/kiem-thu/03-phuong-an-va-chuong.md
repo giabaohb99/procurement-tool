@@ -39,7 +39,7 @@ làm ghi vào đúng chỗ đó.
 **TC-419-02 — Sinh đơn không bị mốc chặn**
 1. Vẫn phiếu trên, người yêu cầu chọn xong phương án nhưng **không bấm xác nhận gì thêm**
    (vì không còn nút nào để bấm).
-2. Đổi sang tài khoản thu mua, bấm **Tạo đơn**.
+2. Đổi sang tài khoản thu mua, bấm **Tạo đơn mua hàng**.
 - Mong đợi: gom đơn chạy bình thường.
 - Lý do: sinh đơn chỉ đọc cờ đã chọn của **từng dòng**; mốc chốt xong lựa chọn chưa
   bao giờ là điều kiện chặn. Ca này canh cho lời hứa "không phiếu nào kẹt vì việc bỏ nút".

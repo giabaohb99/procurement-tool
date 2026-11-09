@@ -1,22 +1,32 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/core/auth/auth-store'
 import type { ListParams } from '@/shared/types/api'
+import type { PurchaseRequest } from '../types/purchase-document'
 import { PurchaseRequestListPage } from './purchase-request-list-page'
 
 //  Chặn ở tầng HOOK dữ liệu chứ không ở `@/core/api`: màn này phải bắt được BỘ
 //  THAM SỐ nó gửi đi, mà hai ô lọc của bao-CR-443 (`item_group`, `assignee`)
 //  chạy trên bảng DÒNG nên chỉ nhìn thấy ở đây.
 const listCalls: ListParams[] = []
+//  Trang dữ liệu trả về — MỘT tham chiếu cố định mỗi bài, bài nào cần dòng thì tự gán.
+let listData: { total: number; items: Partial<PurchaseRequest>[] } = { total: 0, items: [] }
 
 vi.mock('../hooks/use-purchase-documents', () => ({
   usePurchaseRequests: (params: ListParams) => {
     listCalls.push(params)
-    return { data: { total: 0, items: [] }, isLoading: false, isError: false }
+    return { data: listData, isLoading: false, isError: false }
   },
+}))
+
+//  Nút Xuất Excel: bắt bộ tham số gửi đi thay vì tải tệp thật.
+const downloadFile = vi.fn()
+vi.mock('@/core/api/download-file', () => ({
+  downloadFile: (...args: unknown[]) => downloadFile(...args),
 }))
 
 //  Bốn danh mục mượn của phân hệ khác: không chặn thì mỗi lần dựng màn là một
@@ -60,6 +70,8 @@ function lastCall() {
 
 beforeEach(() => {
   listCalls.length = 0
+  listData = { total: 0, items: [] }
+  downloadFile.mockReset().mockResolvedValue(undefined)
   localStorage.clear()
   sessionStorage.clear()
   useAuthStore.setState({ user: null })
@@ -226,5 +238,81 @@ describe('PurchaseRequestListPage — câu bảng rỗng', () => {
     build()
 
     expect(screen.queryByText(/khớp bộ lọc đang chọn/)).toBeNull()
+  })
+})
+
+/**
+ * duoc-CR-741 — nút đầu trang và chế độ nhân bản theo đúng `CrudList.tsx` bản v1:
+ * *Xuất Excel (n)* xuất đúng phiếu đã tick, *Nhân bản* / *Xong* bật cột *Thao tác*, *Thêm*.
+ */
+describe('PurchaseRequestListPage — nút đầu trang theo bản v1', () => {
+  beforeEach(() => {
+    listData = {
+      total: 2,
+      items: [
+        { id: 1, code: 'PYC-0001', status: 'draft', total: 0 },
+        { id: 2, code: 'PYC-0002', status: 'draft', total: 0 },
+      ],
+    }
+  })
+
+  it('names the create button Thêm, not Thêm mới', () => {
+    build()
+
+    expect(screen.getByRole('button', { name: 'Thêm' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thêm mới' })).toBeNull()
+  })
+
+  it('hides the clone column until Nhân bản is switched on, and Xong hides it again', async () => {
+    const user = userEvent.setup()
+    build()
+
+    expect(screen.queryByRole('columnheader', { name: /Thao tác/ })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Nhân bản' }))
+    expect(screen.getByRole('columnheader', { name: /Thao tác/ })).toBeInTheDocument()
+    const table = screen.getByRole('table')
+    expect(within(table).getAllByRole('button', { name: /^Nhân bản / })).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Xong' }))
+    expect(screen.queryByRole('columnheader', { name: /Thao tác/ })).toBeNull()
+  })
+
+  it('Xuất Excel without ticks exports the current filters, never the page number', async () => {
+    const user = userEvent.setup()
+    build('/procurement/purchase-requests?status=draft')
+
+    await user.click(screen.getByRole('button', { name: 'Xuất Excel' }))
+
+    const [url, , params] = downloadFile.mock.calls[0]
+    expect(url).toBe('/api/purchase-requests/export/xlsx')
+    expect(params).toMatchObject({ status: 'draft' })
+    expect(params).not.toHaveProperty('page')
+    expect(params).not.toHaveProperty('page_size')
+    expect(params).not.toHaveProperty('ids')
+  })
+
+  it('ticking rows turns the button into Xuất Excel (n) and sends exactly those ids', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn PYC-0002' }))
+    const exportButton = screen.getByRole('button', { name: 'Xuất Excel (1)' })
+    expect(exportButton).toHaveAttribute('title', 'Xuất 1 phiếu đã chọn ra Excel')
+
+    await user.click(exportButton)
+    expect(downloadFile.mock.calls[0][2]).toMatchObject({ ids: '2' })
+  })
+
+  it('changing a filter drops the ticks, so hidden rows are never exported', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn PYC-0001' }))
+    expect(screen.getByRole('button', { name: 'Xuất Excel (1)' })).toBeInTheDocument()
+
+    //  Chip *Gấp* đổi bộ lọc — v1 dọn tick mỗi lần nạp lại bảng.
+    await user.click(screen.getAllByRole('button', { name: 'Gấp' })[0])
+    expect(screen.getByRole('button', { name: 'Xuất Excel' })).toBeInTheDocument()
   })
 })

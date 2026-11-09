@@ -24,6 +24,14 @@ interface DeleteConfirmButtonProps {
   warning?: string
   /** Ghép cuối vào nút mở hộp (vd tông `ACTION_TONE_CLASS.danger` cho viền đỏ như v1). */
   className?: string
+  /** Chữ trên nút mở hộp — mặc định "Xóa". Thu mua truyền "Xóa phiếu" / "Xóa đơn" như v1 (duoc-CR-741). */
+  label?: string
+  /** Câu hỏi trong hộp — mặc định `Xóa "<tên bản ghi>"?`. */
+  title?: string
+  /** Chữ nút đồng ý — mặc định "Xóa". */
+  confirmLabel?: string
+  /** Thay CẢ đoạn giải thích (bỏ câu "không hoàn tác được" + `warning`) — để chép đúng câu của v1. */
+  description?: string
 }
 
 /**
@@ -36,6 +44,10 @@ export function DeleteConfirmButton({
   pending,
   warning,
   className,
+  label = 'Xóa',
+  title,
+  confirmLabel = 'Xóa',
+  description,
 }: DeleteConfirmButtonProps) {
   const [open, setOpen] = useState(false)
   //  Tên bản ghi có thể rất dài (vd mục đích phiếu là cả đoạn văn) → cắt gọn + "…" để
@@ -63,16 +75,15 @@ export function DeleteConfirmButton({
         disabled={pending}
       >
         {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-        Xóa
+        {label}
       </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="break-words">Xóa "{shortName}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Thao tác này không hoàn tác được.
-              {warning ? ` ${warning}` : ''}
+            <AlertDialogTitle className="break-words">{title ?? `Xóa "${shortName}"?`}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">
+              {description ?? `Thao tác này không hoàn tác được.${warning ? ` ${warning}` : ''}`}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -82,7 +93,7 @@ export function DeleteConfirmButton({
               className={cn(buttonVariants({ variant: 'destructive' }))}
               onClick={() => void onConfirm()}
             >
-              Xóa
+              {confirmLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

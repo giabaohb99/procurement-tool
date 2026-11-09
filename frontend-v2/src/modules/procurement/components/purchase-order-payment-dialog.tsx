@@ -42,7 +42,7 @@ import {
 const SOURCE_TABS = [
   { value: 'goods', label: 'NCC sản xuất (hàng)' },
   { value: 'shipping', label: 'NCC vận chuyển' },
-  { value: 'import_cost', label: 'Chi phí nhập khẩu' },
+  { value: 'import_cost', label: 'Chi phí thu mua' },
 ] as const
 
 type SourceTab = (typeof SOURCE_TABS)[number]['value']

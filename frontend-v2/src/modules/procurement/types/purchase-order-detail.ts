@@ -66,6 +66,11 @@ export interface PurchaseOrderItem {
    * cổng CR-095 chặn gửi duyệt — nên màn phải có ô để sửa tay.
    */
   expected_date: string
+  /**
+   * Ngày dự kiến có hàng ở dòng YCMH nguồn (serializer ĐMH ghép theo `product_code`, rỗng khi
+   * không có YCMH). Dùng để hỏi "Vẫn lưu / Quay lại sửa" khi lệch ngày như v1 (duoc-CR-741).
+   */
+  pr_expected_date?: string
   unit: string
   qty_request: number
   qty_order: number

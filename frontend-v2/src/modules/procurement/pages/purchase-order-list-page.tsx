@@ -1,7 +1,6 @@
-import { Copy, Download, Plus } from 'lucide-react'
-import { useCallback, useMemo, useState, useRef } from 'react'
+import { Plus } from 'lucide-react'
+import { useMemo, useState, useRef } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -9,7 +8,6 @@ import { useAuthStore } from '@/core/auth/auth-store'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
-import { httpClient } from '@/core/api/http-client'
 import { downloadFile } from '@/core/api/download-file'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -21,7 +19,14 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
+import {
+  DataTable,
+  RowLink,
+  createSelectionColumn,
+  type DataTableColumn,
+} from '@/shared/data-table'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
@@ -52,6 +57,9 @@ import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney, formatUnitPrice } from '@/shared/utils/format-money'
 import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
+import { createCloneColumn } from '../components/procurement-list-clone-column'
+import { ProcurementListCloneModeButton } from '../components/procurement-list-clone-controls'
+import { ProcurementListExportButton } from '../components/procurement-list-export-button'
 import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
@@ -300,33 +308,31 @@ function PurchaseOrderListContent() {
   const { data, isLoading, isError, isFetching } = usePurchaseOrders(params)
   useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
+  //  duoc-CR-741 — tick chọn đơn để *Xuất Excel (n)* như bản v1. Đổi trang / bộ lọc /
+  //  sắp xếp là bỏ hết tick (v1 dọn tick mỗi lần nạp lại bảng): tick ẩn ở trang khác
+  //  mà vẫn bị xuất thì file ra khác thứ người dùng đang nhìn.
+  const { selectedIds, toggleRow, toggleAllOnPage, clear: clearSelection } = useRowSelection()
+  const selectionScopeChanged = useHasChanged(JSON.stringify(params))
+  if (selectionScopeChanged && selectedIds.size > 0) clearSelection()
+  const selectedCount = selectedIds.size
+
+  //  Chế độ nhân bản: cột *Thao tác* chỉ hiện khi bật nút *Nhân bản* (bản v1).
+  const [cloneMode, setCloneMode] = useState(false)
+
   const handleExportExcel = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const cols = visibleColumnKeys
       .map((key) => EXPORT_COLUMN_KEYS[key])
       .filter(Boolean)
       .join(',')
+    const ids = [...selectedIds]
+    //  Có tick thì backend chỉ xuất đúng các đơn đó (`ids`), không tick thì theo bộ lọc.
     await downloadFile('/api/purchase-orders/export/xlsx', 'don-mua-hang.xlsx', {
       ...filterParams,
       ...(cols ? { cols } : {}),
+      ...(ids.length ? { ids: ids.join(',') } : {}),
     })
   }
-
-  const handleClone = useCallback(
-    async (po: PurchaseOrder, e: React.MouseEvent) => {
-      e.stopPropagation()
-      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
-      try {
-        const res = await httpClient.post<{ data: { id: number } }>(`/api/purchase-orders/${po.id}/clone`)
-        toast.success('Đã nhân bản đơn mua hàng')
-        const newId = res.data?.data?.id
-        if (newId) navigate(appRoutes.procurement.purchaseOrderDetail(newId))
-      } catch {
-        toast.error('Nhân bản đơn mua hàng thất bại')
-      }
-    },
-    [navigate],
-  )
 
   const activeCount = [
     companyId !== ALL,
@@ -395,8 +401,26 @@ function PurchaseOrderListContent() {
     setSearchParams(next)
   }
 
+  const pageIds = useMemo(() => (data?.items ?? []).map((po) => po.id), [data])
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const someOnPageSelected = pageIds.some((id) => selectedIds.has(id))
+
   const columns = useMemo<DataTableColumn<PurchaseOrder>[]>(
     () => [
+      //  Cột tick chỉ có ý nghĩa với người được xuất Excel (v1 bật nó cùng nút Xuất Excel).
+      ...(canExport
+        ? [
+            createSelectionColumn<PurchaseOrder>({
+              getRowId: (po) => po.id,
+              selectedIds,
+              onToggleRow: toggleRow,
+              onToggleAllOnPage: () => toggleAllOnPage(pageIds),
+              allOnPageSelected,
+              someOnPageSelected,
+              getRowLabel: (po) => po.code,
+            }),
+          ]
+        : []),
       {
         key: 'code',
         header: 'Mã ĐMH',
@@ -523,25 +547,30 @@ function PurchaseOrderListContent() {
         sortDescFirst: true,
         cell: (po) => formatDateTime(po.updated_at) || '',
       },
-      {
-        key: 'actions',
-        header: '',
-        width: 60,
-        hideable: false,
-        cell: (po) =>
-          canCreate ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Nhân bản đơn mua hàng"
-              onClick={(e) => handleClone(po, e)}
-            >
-              <Copy className="size-4 text-muted-foreground" />
-            </Button>
-          ) : null,
-      },
+      ...(cloneMode && canCreate
+        ? [
+            createCloneColumn<PurchaseOrder>({
+              apiPath: '/api/purchase-orders',
+              getId: (po) => po.id,
+              getCode: (po) => po.code,
+              toDetail: appRoutes.procurement.purchaseOrderDetail,
+              successMessage: 'Đã nhân bản đơn mua hàng',
+              errorMessage: 'Nhân bản đơn mua hàng thất bại',
+            }),
+          ]
+        : []),
     ],
-    [canCreate, handleClone],
+    [
+      canExport,
+      canCreate,
+      cloneMode,
+      selectedIds,
+      toggleRow,
+      toggleAllOnPage,
+      pageIds,
+      allOnPageSelected,
+      someOnPageSelected,
+    ],
   )
 
   //  Cùng một ô dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
@@ -707,11 +736,21 @@ function PurchaseOrderListContent() {
         actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
+            {/*  duoc-CR-741: thứ tự và chữ đúng bản v1 — Xuất Excel · Nhân bản · Thêm. */}
             {canExport && (
-              <Button variant="outline" className="max-md:flex-1" onClick={handleExportExcel}>
-                <Download className="mr-1.5 size-4" />
-                Xuất Excel
-              </Button>
+              <ProcurementListExportButton
+                className="max-md:flex-1"
+                selectedCount={selectedCount}
+                onExport={() => void handleExportExcel()}
+              />
+            )}
+            {/*  Ẩn ở khổ hẹp: bảng thành THẺ ở đó, không có cột *Thao tác* để bật. */}
+            {canCreate && (
+              <ProcurementListCloneModeButton
+                className="max-md:hidden"
+                active={cloneMode}
+                onToggle={() => setCloneMode((current) => !current)}
+              />
             )}
             <PermissionGate entity="purchase_order" action="create">
               <Button
@@ -719,7 +758,7 @@ function PurchaseOrderListContent() {
                 onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}
               >
                 <Plus className="mr-1.5 size-4" />
-                Thêm mới
+                Thêm
               </Button>
             </PermissionGate>
           </div>

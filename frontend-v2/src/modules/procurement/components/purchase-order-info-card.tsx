@@ -5,7 +5,6 @@ import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { PO_DOCUMENT_STATUS, labelOf } from '@/shared/constants/statuses'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -65,9 +64,6 @@ interface PurchaseOrderInfoCardProps {
   /** Id YCMH nguồn (dò theo `pr_code`) để mở nhanh phiếu gốc. */
   purchaseRequestId?: number
   onChange: (changes: Partial<PurchaseOrderDetail>) => void
-  /** Hồ sơ chứng từ đổi qua endpoint riêng, sửa được cả khi đơn đã hoàn thành. */
-  onDocumentStatusChange?: (value: string) => void
-  documentStatusEditable?: boolean
 }
 
 /**
@@ -88,8 +84,6 @@ export function PurchaseOrderInfoCard({
   canPickNspt,
   purchaseRequestId,
   onChange,
-  onDocumentStatusChange,
-  documentStatusEditable,
 }: PurchaseOrderInfoCardProps) {
   function pickSupplier(code: string) {
     const supplier = suppliers.find((option) => option.code === code)
@@ -468,29 +462,8 @@ export function PurchaseOrderInfoCard({
           </>
         )}
 
-        <div className="space-y-1.5">
-          <Label>Hồ sơ chứng từ</Label>
-          {documentStatusEditable && onDocumentStatusChange ? (
-            <Select
-              value={data.document_status || undefined}
-              onValueChange={onDocumentStatusChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn tình trạng hồ sơ" />
-              </SelectTrigger>
-              <SelectContent>
-                {PO_DOCUMENT_STATUS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <ReadOnlyValue>{labelOf(PO_DOCUMENT_STATUS, data.document_status) || '—'}</ReadOnlyValue>
-          )}
-        </div>
-
+        {/*  duoc-CR-741: ô Hồ sơ chứng từ dời xuống tiêu đề thẻ Chứng từ (menu bấm đổi) đúng chỗ
+             bản v1 — để ở đây nữa là một trường có hai chỗ sửa. */}
         <div className="space-y-1.5">
           <Label>Tùy chọn đơn</Label>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-destructive">

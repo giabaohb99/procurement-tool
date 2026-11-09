@@ -114,6 +114,67 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-741 | Giao diện mới Thu mua: đổi tên nút và hộp xác nhận cho khớp từng chữ giao diện cũ, bù các nút còn thiếu
+- status: xong
+- date: 2026-11-09
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đợt duoc-CR-737 đã xếp nút Thu mua đúng vị trí giao diện cũ nhưng giữ nhãn của giao diện mới, nên người dùng vẫn gặp tên nút lạ (**Thêm mới**, **Tạo đơn**, **Duyệt điều phối**, **Hủy đơn**, **Xóa**) và hộp xác nhận ghi chung **Xác nhận** / **Đóng**. Đã chốt ngày 09/11/2026 lấy giao diện cũ làm chuẩn từng chữ, kể cả các nhãn mới từng được chốt trước đó, và làm luôn các hộp hỏi lại cùng các nút giao diện cũ có mà giao diện mới thiếu. Các phân hệ khác giữ nguyên chữ hiện tại.
+
+**Đã làm**
+- Đổi tên nút ở bốn màn danh sách và chi tiết Yêu cầu mua hàng, Yêu cầu báo giá, Phiếu khảo sát, Đơn mua hàng: **Thêm**, **Gửi duyệt**, **Duyệt**, **Tạo đơn mua hàng**, **Tạo yêu cầu mua**, **Xóa phiếu**, **Xóa đơn**, **Hủy**, **Tạo**, **Vẫn mua thêm**, **Thêm nhiều dòng**, **Nhân đôi**, **Xóa option**, **Chuỗi chứng từ (PYC/PKS)**; tab **Chi phí thu mua** trong hộp tạo yêu cầu thanh toán.
+- Hộp lý do ghi đúng tên thao tác (**Trả về**, **Từ chối**, **Hủy duyệt**, **Hủy đơn**, **Tạm ngưng**) kèm nút **Hủy**; hộp xóa dùng tiêu đề và câu của giao diện cũ; gợi ý của nút biểu tượng chép đúng giao diện cũ.
+- Bù hành vi giao diện cũ có: hỏi lại trước khi duyệt Phiếu khảo sát, xóa dòng, hoàn thành và mở lại Đơn mua hàng, xóa option, chốt khảo sát, tải tệp; nút **Tạo yêu cầu báo giá** trên Yêu cầu mua hàng bị trả lại hoặc bị từ chối (điền sẵn phiếu báo giá, giữ đúng phòng ban); **Nhân đôi** dòng; **So sánh** ảnh; hộp nhập lý do khi đổi ngày dự kiến thay cho hộp của trình duyệt; **Thêm nhiều** dòng Đơn mua hàng; hỏi **Vẫn lưu** / **Quay lại sửa** khi ngày dự kiến lệch Yêu cầu mua hàng; ẩn **Hủy** khi đơn đã có dòng hoàn thành; nút **Tạm ngưng** / **Tiếp tục** / **Hủy** trong cửa sổ chi tiết dòng; chọn **Hồ sơ chứng từ** ở tiêu đề thẻ chứng từ; tick nhiều kết quả để **Thêm n dòng đã chọn làm option**; nút **Nhân bản** / **Xong** bật cột nhân bản ở danh sách; tick dòng để **Xuất Excel (n)**, Yêu cầu mua hàng và Yêu cầu báo giá nay xuất theo bộ lọc.
+- Khung nút xóa dùng chung có thêm tùy chọn nhãn, mặc định giữ nguyên; thẻ chứng từ chỉ đổi chữ ở màn Thu mua nên Đề nghị thanh toán, Duyệt dấu, Nhà cung cấp, Hải quan không đổi.
+- Rà mã phát hiện và đã sửa: nhân đôi hoặc xóa một dòng làm dấu tick trôi sang dòng khác nên **Xóa đã chọn** có thể xóa nhầm (nay bỏ hết tick); gắn nhiều option một lượt hiện nhiều thông báo và nạp lại dữ liệu nhiều lần (nay một thông báo tổng).
+- Đổi tên thư mục kế hoạch của duoc-CR-737 và duoc-CR-741 sang chữ thường cho đúng luật đặt tên tài liệu.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest phân hệ Thu mua, Tài chính, Duyệt dấu và khu giao diện dùng chung xanh; soát khổ 390 đầu trang Yêu cầu báo giá.
+
+**Không làm:** nút **Nhân bản** cả phiếu ở đầu trang chi tiết (đã bỏ ở duoc-CR-737) và nút **ĐMH liên quan** (đã dời vào thẻ Chứng từ liên quan ở bao-CR-422).
+
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/*`, `frontend-v2/src/modules/procurement/components/*`, `hooks/use-survey-request-process.ts`, `types/purchase-order-detail.ts`, `frontend-v2/src/shared/ui/delete-confirm-button.tsx`, `bulk-delete-button.tsx`.
+Kế hoạch: `doc/erp/thu-mua/plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md`.
+
+## duoc-CR-741-tai-lieu-hdsd | Đổi tên nút Thu mua trong bài hướng dẫn, cẩm nang trợ lý và tài liệu chức năng cho khớp giao diện cũ
+- status: xong
+- date: 2026-11-09
+- list: Sản xuất - Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đợt duoc-CR-741 đổi nhãn nút và hộp xác nhận của giao diện mới Thu mua về đúng chữ giao diện cũ (ví dụ
+*Thêm mới* thành *Thêm*, *Tạo đơn* thành *Tạo đơn mua hàng*, *Duyệt điều phối* thành *Duyệt*, *Hủy đơn* của đơn mua hàng
+thành *Hủy*). Mọi chỗ chỉ đường cho người dùng còn ghi tên cũ phải đổi theo, nếu không người dùng tìm không ra nút.
+
+**Đã làm**
+- Viết một script mới vá chữ trong các bài hướng dẫn Thu mua được dựng tay trên Trung tâm trợ giúp: script tìm bài theo
+  tiêu đề và thẻ cha, chỉ thay đúng các cụm chữ cũ đã khai, có chế độ chạy thử in ra bài nào đổi gì, chạy lại không đổi
+  thêm, rồi nạp lại kho tìm kiếm của Trợ lý AI cho đúng các bài vừa đổi.
+- Script đó đổi 14 bài ở máy local: nút **Xóa phiếu** của YCMH (yêu cầu mua hàng), YCBG (yêu cầu báo giá) và các bài bản
+  dành cho trưởng bộ phận; nút **Duyệt** khi thu mua điều phối; nút **Thêm** trên danh sách Phiếu khảo sát và Đơn mua hàng;
+  nút **Nhân bản** cả phiếu nay chỉ có ở màn danh sách (bỏ khỏi trang chi tiết từ duoc-CR-737) nên các câu chỉ đường
+  đều ghi rõ bấm ở màn danh sách; xuất Excel theo các phiếu đã tick; ô **Hồ sơ chứng từ** nay chọn ở tiêu đề thẻ chứng từ.
+  Script thêm đoạn ngắn cho các tính năng mới: **Tạo yêu cầu báo giá** từ YCMH bị trả lại hoặc bị từ chối, **Nhân đôi** dòng,
+  **So sánh** ảnh, **Thêm n dòng đã chọn làm option** ở màn Xử lý khảo sát và các nút trên đơn mua hàng.
+- Sửa ba bài hướng dẫn do script sở hữu (xử lý phương án, chi phí thu mua, báo cáo thực hiện) cho đúng tên nút mới rồi
+  dựng lại ở local hai lần.
+- Thêm mục tên nút Thu mua vào cẩm nang của Trợ lý AI và xuất bản phiên bản 3 của skill quy trình thu mua ở local.
+- Thêm mục **Tên nút theo bản v1** vào tài liệu chức năng Phiếu khảo sát, YCBG, YCMH, Đơn mua hàng; sửa tên nút cũ ở
+  mục lục chức năng, tài liệu báo cáo thực hiện, hai kịch bản kiểm thử tay và nhãn **Chi phí thu mua** ở tài liệu công nợ,
+  yêu cầu thanh toán.
+- Rà phần Trợ lý AI và cổng MCP: không có mô tả công cụ hay câu trả lời mẫu nào nhắc tên nút cũ của Thu mua nên không
+  phải sửa mã.
+
+**Kết quả:** ở máy local 14 bài dựng tay đã đổi, chạy lại script báo không còn gì để đổi; 12 bài kiểm đọc kho skill xanh;
+cổng kiểm tài liệu không có lỗi mới.
+
+**Còn lại:** sau khi deploy dev, chạy script vá chữ (chạy thử trước), ba script bài hướng dẫn đã sửa, xuất bản lại cẩm nang
+và nạp lại kho tìm kiếm trên dev; chưa commit.
+
+Mã nguồn: `backend/scripts/seed_help_thu_mua_doi_ten_nut_cr741.py`, `backend/scripts/seed_help_xu_ly_phuong_an.py`,
+`backend/scripts/seed_help_chi_phi_thu_mua.py`, `backend/scripts/seed_help_bao_cao_thuc_hien.py`,
+`backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`, `doc/erp/thu-mua/chuc-nang/`, `doc/erp/thu-mua/kiem-thu/`.
+
 ## bao-CR-740-bot-ghi-lan-nhan-hang | Trợ lý ghi lần nhận hàng vào đơn mua hàng theo phiếu xuất kho của nhà cung cấp
 - status: xong
 - date: 2026-11-07
@@ -19311,7 +19372,7 @@ Mã nguồn: frontend-v2/src/app/layouts/module-sidebar.tsx
 **Còn lại:** các nút giao diện cũ có mà giao diện mới thiếu (Tạo yêu cầu báo giá từ phiếu mua bị từ chối, Nhân đôi dòng, Thêm nhiều dòng Đơn mua hàng, Tạm ngưng / Hủy / Tiếp tục trong cửa sổ dòng, tick nhiều kết quả để gắn phương án, tick dòng để xuất Excel) ghi trong kế hoạch, làm đợt sau.
 
 Mã nguồn: `frontend-v2/src/shared/ui/detail-page-header.tsx`, `frontend-v2/src/shared/hooks/use-line-selection.ts`, `frontend-v2/src/modules/procurement/pages/*-detail-page.tsx`, `survey-request-process-page.tsx`, các bảng dòng trong `frontend-v2/src/modules/procurement/components/`, `hooks/use-purchase-order-line-selection.ts`.
-Kế hoạch: `doc/erp/thu-mua/plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-CR-737/plan.md`.
+Kế hoạch: `doc/erp/thu-mua/plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-cr-737/plan.md`.
 
 ### duoc-CR-737-b | Ẩn nút Nhân bản ở đầu trang chi tiết và tô màu nút theo giao diện cũ
 - status: xong

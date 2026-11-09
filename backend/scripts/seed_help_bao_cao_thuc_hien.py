@@ -75,8 +75,8 @@ Thanh tóm tắt cho biết tổng hồ sơ, số đã hoàn thành, hạn hết
 <h3>6. Xóa</h3>
 <ul>
 <li><strong>Một hồ sơ</strong>: biểu tượng thùng rác trên dòng, hỏi xác nhận một lần. Hồ sơ khác đang chờ nó sẽ được mở khóa.</li>
-<li><strong>Nhiều hồ sơ</strong>: đánh dấu các hồ sơ cần xóa rồi bấm <strong>Xóa đã chọn</strong> trên thanh chọn (hộp xác nhận ghi <em>Xóa n hồ sơ</em>); hoặc xóa cả cụm hồ sơ của một dòng hàng.</li>
-<li><strong>Cả báo cáo</strong>: nút thùng rác trên đầu khối (cạnh <strong>Thêm hồ sơ</strong>). Hoàn tác được ngay sau đó ở khối <strong>Lịch sử thao tác</strong> của phiếu.</li>
+<li><strong>Nhiều hồ sơ</strong>: đánh dấu các hồ sơ cần xóa rồi bấm <strong>Xóa đã chọn</strong> trên thanh chọn (hộp xác nhận hỏi <em>Xóa n hồ sơ?</em>, bấm <strong>Xóa</strong>); hoặc xóa cả cụm hồ sơ của một dòng hàng.</li>
+<li><strong>Cả báo cáo</strong>: nút thùng rác trên đầu khối (cạnh <strong>Thêm hồ sơ</strong>), hộp <em>Xóa báo cáo thực hiện</em> hỏi lại, bấm <strong>Xóa</strong>. Lấy lại được ngay: khối trống sau khi xóa có nút <strong>Hoàn tác xóa</strong>, hoặc hoàn tác ở khối <strong>Lịch sử thao tác</strong> của phiếu.</li>
 <li>Giai đoạn còn hồ sơ thì không xóa được; chuyển hồ sơ sang giai đoạn khác trước. Xóa một dòng hàng trên YCBG thì hồ sơ của nó chuyển về <strong>Chung</strong>, không mất.</li>
 </ul>
 

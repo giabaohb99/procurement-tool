@@ -35,7 +35,6 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -117,6 +116,7 @@ import {
   PurchaseOrderImportCostLineCard,
   type ImportCostStageFigure,
 } from './purchase-order-import-cost-line-card'
+import { PurchaseOrderImportCostSupplierPayAction } from './purchase-order-import-cost-supplier-pay-action'
 import { PurchaseOrderImportCostSupplierPaymentCards } from './purchase-order-import-cost-supplier-payment-cards'
 
 /**
@@ -560,11 +560,8 @@ export function PurchaseOrderImportCostsCard({
   }
 
   async function removeCost(index: number) {
-    const ok = await confirmDialog({
-      title: 'Xóa dòng chi phí',
-      message: 'Xóa dòng chi phí này?',
-      confirmLabel: 'Xóa',
-    })
+    //  duoc-CR-741: đúng câu của bản v1 — tiêu đề mặc định Xác nhận, nút Đồng ý / Hủy.
+    const ok = await confirmDialog({ message: 'Xóa dòng chi phí này?' })
     if (!ok) return
     onChange(costs.filter((_, i) => i !== index))
     if (detailIndex === index) setDetailIndex(null)
@@ -1183,7 +1180,9 @@ export function PurchaseOrderImportCostsCard({
                   disabled={effectiveSelected.length === 0}
                   onClick={() => goCreatePaymentRequest(effectiveSelected)}
                 >
-                  Tạo YCTT ({effectiveSelected.length} dòng đã tick)
+                  {/*  duoc-CR-741: chưa tick dòng nào thì chỉ ghi Tạo YCTT như bản v1. */}
+                  Tạo YCTT
+                  {effectiveSelected.length > 0 && ` (${effectiveSelected.length} dòng đã tick)`}
                 </Button>
               </>
             )}
@@ -1385,20 +1384,10 @@ export function PurchaseOrderImportCostsCard({
                               {formatMoney(group.remaining)} đ
                             </TableCell>
                             <TableCell className="text-right">
-                              {settled ? (
-                                <Badge variant="outline">Đã chi đủ</Badge>
-                              ) : (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className={ACTION_TONE_CLASS.accent}
-                                  disabled={group.unpaid_payable_ids.length === 0}
-                                  onClick={() => goCreatePaymentRequest(group.unpaid_payable_ids)}
-                                >
-                                  Tạo YCTT
-                                </Button>
-                              )}
+                              <PurchaseOrderImportCostSupplierPayAction
+                                group={group}
+                                onCreatePaymentRequest={goCreatePaymentRequest}
+                              />
                             </TableCell>
                           </TableRow>
                         )
@@ -1693,7 +1682,7 @@ export function PurchaseOrderImportCostsCard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
               disabled={advanceStageMutation.isPending}
               onClick={() => {
@@ -1731,7 +1720,7 @@ export function PurchaseOrderImportCostsCard({
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Huỷ</Button>
+              <Button type="button" variant="outline">Hủy</Button>
             </DialogClose>
             <Button
               type="button"
@@ -1745,7 +1734,7 @@ export function PurchaseOrderImportCostsCard({
                 })
               }}
             >
-              Mở lại
+              Xác nhận mở lại
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1774,7 +1763,7 @@ export function PurchaseOrderImportCostsCard({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setPendingFinalize(null)}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setPendingFinalize(null)}>Hủy</AlertDialogCancel>
               <AlertDialogAction
                 disabled={finalizeLinesMutation.isPending}
                 onClick={() => {
@@ -1783,7 +1772,7 @@ export function PurchaseOrderImportCostsCard({
                   })
                 }}
               >
-                Xác nhận
+                Quyết toán {pendingFinalize.count} dòng
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1796,7 +1785,7 @@ export function PurchaseOrderImportCostsCard({
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Mở lại dòng chi phí đã quyết toán</DialogTitle>
+              <DialogTitle>Mở lại dòng chi phí</DialogTitle>
               <DialogDescription>Cho biết lý do mở lại.</DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -1810,7 +1799,7 @@ export function PurchaseOrderImportCostsCard({
             </div>
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline">Huỷ</Button>
+                <Button type="button" variant="outline">Hủy</Button>
               </DialogClose>
               <Button
                 type="button"
@@ -1828,7 +1817,7 @@ export function PurchaseOrderImportCostsCard({
                   )
                 }}
               >
-                Mở lại
+                Xác nhận mở lại
               </Button>
             </DialogFooter>
           </DialogContent>

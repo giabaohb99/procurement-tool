@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import { FileDropzone } from '@/shared/ui/file-dropzone'
 import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
@@ -12,6 +13,43 @@ import {
 } from '../hooks/use-purchase-request-support'
 
 const IMAGE_PATTERN = /\.(jpe?g|png|webp|gif)$/i
+
+/**
+ * Chữ trên khung đính kèm — duoc-CR-741: mỗi màn dùng ĐÚNG chữ của bản v1, mà hai
+ * màn v1 nói khác nhau (Phiếu khảo sát có nút *Tải file lên*, YCBG có vùng *Kéo thả
+ * hoặc bấm chọn file*). Màn gọi truyền bộ chữ của mình; bỏ trống thì giữ chữ cũ của v2.
+ */
+export interface LineAttachmentsLabels {
+  /** `button` = nút ở góc tiêu đề; `dropzone` = vùng kéo thả dưới danh sách tệp. */
+  uploadMode: 'button' | 'dropzone'
+  /** Chữ nút tải lên, hoặc dòng chính giữa vùng kéo thả. */
+  uploadLabel: string
+  /** Chữ nút trong lúc đang tải (chỉ kiểu `button`). */
+  uploadingLabel: string
+  /** Dòng nhỏ dưới vùng kéo thả khi dòng ĐÃ lưu (định dạng nhận). */
+  uploadHint?: string
+  /** Dòng nhỏ dưới vùng kéo thả khi dòng CHƯA lưu. */
+  pendingUploadHint?: string
+  /** Gợi ý nút xóa tệp đã tải. */
+  deleteTooltip: string
+  /** Câu hỏi khi xóa tệp — bỏ trống thì hỏi kèm tên tệp. */
+  deleteConfirmTitle?: string
+  /** Câu giải thích dưới câu hỏi — `''` = không có. */
+  deleteConfirmDescription: string
+  deleteConfirmLabel: string
+  /** Gợi ý nút bỏ một tệp đang chờ lưu. */
+  removePendingTooltip: string
+}
+
+const DEFAULT_LABELS: LineAttachmentsLabels = {
+  uploadMode: 'button',
+  uploadLabel: 'Thêm tệp',
+  uploadingLabel: 'Thêm tệp',
+  deleteTooltip: 'Xóa tệp',
+  deleteConfirmDescription: 'Tệp sẽ bị gỡ khỏi dòng này.',
+  deleteConfirmLabel: 'Xóa',
+  removePendingTooltip: 'Bỏ tệp này',
+}
 
 interface LineAttachmentsProps {
   /** Entity của tệp: `survey_request_line`, `survey_line`… — mỗi loại dòng một kho riêng. */
@@ -23,6 +61,8 @@ interface LineAttachmentsProps {
   pendingFiles: File[]
   onPendingFilesChange: (files: File[]) => void
   title?: string
+  /** Bộ chữ riêng của màn gọi (duoc-CR-741) — xem `LineAttachmentsLabels`. */
+  labels?: Partial<LineAttachmentsLabels>
 }
 
 /**
@@ -42,7 +82,9 @@ export function LineAttachments({
   pendingFiles,
   onPendingFilesChange,
   title = 'Hình ảnh / tài liệu đính kèm',
+  labels,
 }: LineAttachmentsProps) {
+  const text = { ...DEFAULT_LABELS, ...labels }
   const inputRef = useRef<HTMLInputElement>(null)
   const { data, isLoading } = usePurchaseRequestAttachments(entity, lineId)
   const upload = useUploadPurchaseRequestAttachments(entity, lineId)
@@ -65,6 +107,26 @@ export function LineAttachments({
   const imageFiles = files.filter(isImageFile)
   const lightbox = useImageLightbox()
 
+  /** Dòng đã lưu thì tải lên ngay; dòng chưa lưu thì trang giữ hộ tới lúc bấm Lưu. */
+  function addFiles(picked: File[]) {
+    if (!picked.length) return
+    if (lineId > 0) void upload.mutateAsync({ files: picked })
+    else onPendingFilesChange([...pendingFiles, ...picked])
+  }
+
+  const deleteButton = (file: { id: number; filename: string }) => (
+    <ConfirmIconButton
+      icon={Trash2}
+      title={text.deleteTooltip}
+      confirmTitle={text.deleteConfirmTitle ?? `Xóa tệp ${file.filename}?`}
+      confirmDescription={text.deleteConfirmDescription || undefined}
+      confirmLabel={text.deleteConfirmLabel}
+      destructive
+      disabled={remove.isPending}
+      onConfirm={() => void remove.mutateAsync(file.id)}
+    />
+  )
+
   return (
     <section className="rounded-lg border p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -72,7 +134,7 @@ export function LineAttachments({
           <Paperclip className="size-4 text-primary" />
           {title}
         </h4>
-        {canManage && (
+        {canManage && text.uploadMode === 'button' && (
           <>
             <input
               ref={inputRef}
@@ -80,22 +142,20 @@ export function LineAttachments({
               type="file"
               multiple
               onChange={(event) => {
-                const picked = Array.from(event.target.files ?? [])
-                if (picked.length) {
-                  if (lineId > 0) void upload.mutateAsync({ files: picked })
-                  else onPendingFilesChange([...pendingFiles, ...picked])
-                }
+                addFiles(Array.from(event.target.files ?? []))
                 event.target.value = ''
               }}
             />
+            {/*  `type="button"`: popup dòng có thể nằm trong `<form>` của trang. */}
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               disabled={upload.isPending}
               onClick={() => inputRef.current?.click()}
             >
               <Upload />
-              Thêm tệp
+              {upload.isPending ? text.uploadingLabel : text.uploadLabel}
             </Button>
           </>
         )}
@@ -131,16 +191,7 @@ export function LineAttachments({
               </button>
               {canManage && (
                 <div className="absolute right-1 top-1 rounded-md bg-background/90 opacity-0 shadow-sm transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                  <ConfirmIconButton
-                    icon={Trash2}
-                    title="Xóa tệp"
-                    confirmTitle={`Xóa tệp ${file.filename}?`}
-                    confirmDescription="Tệp sẽ bị gỡ khỏi dòng này."
-                    confirmLabel="Xóa"
-                    destructive
-                    disabled={remove.isPending}
-                    onConfirm={() => void remove.mutateAsync(file.id)}
-                  />
+                  {deleteButton(file)}
                 </div>
               )}
             </div>
@@ -155,18 +206,7 @@ export function LineAttachments({
                 <FileText className="size-4 text-muted-foreground" />
                 {file.filename}
               </a>
-              {canManage && (
-                <ConfirmIconButton
-                  icon={Trash2}
-                  title="Xóa tệp"
-                  confirmTitle={`Xóa tệp ${file.filename}?`}
-                  confirmDescription="Tệp sẽ bị gỡ khỏi dòng này."
-                  confirmLabel="Xóa"
-                  destructive
-                  disabled={remove.isPending}
-                  onConfirm={() => void remove.mutateAsync(file.id)}
-                />
-              )}
+              {canManage && deleteButton(file)}
             </div>
           ),
         )}
@@ -189,10 +229,12 @@ export function LineAttachments({
             )}
             {canManage && (
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 className="absolute right-0.5 top-0.5 bg-background/90 text-destructive hover:text-destructive"
-                title="Bỏ tệp này"
+                title={text.removePendingTooltip}
+                aria-label={text.removePendingTooltip}
                 onClick={() => onPendingFilesChange(pendingFiles.filter((_, i) => i !== index))}
               >
                 <X />
@@ -201,6 +243,17 @@ export function LineAttachments({
           </div>
         ))}
       </div>
+
+      {/*  Kiểu YCBG v1: vùng kéo thả nằm DƯỚI danh sách tệp. */}
+      {canManage && text.uploadMode === 'dropzone' && (
+        <FileDropzone
+          className="mt-3"
+          hint={text.uploadLabel}
+          description={lineId > 0 ? text.uploadHint : text.pendingUploadHint}
+          busy={upload.isPending}
+          onFiles={addFiles}
+        />
+      )}
 
       {imageFiles.length > 0 && (
         <ImageLightbox

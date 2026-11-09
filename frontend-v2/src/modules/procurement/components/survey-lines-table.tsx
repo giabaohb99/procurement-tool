@@ -4,8 +4,10 @@ import { Copy, FilePlus2, Pencil, Trash2 } from 'lucide-react'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import { SurveyLineCard } from './survey-line-card'
 import type { SurveyCatalog } from '../helpers/survey-catalog'
@@ -133,7 +135,8 @@ export function SurveyLinesTable({
       {
         key: ACTION_KEY,
         header: 'Thao tác',
-        width: 104,
+        //  Đủ chỗ cho nút có chữ *Bổ sung* cạnh nút sửa (duoc-CR-741).
+        width: 120,
         minWidth: 80,
         align: 'center',
         hideable: false,
@@ -178,27 +181,34 @@ export function SurveyLinesTable({
 
       return (
         <div className="flex items-center justify-center gap-0.5">
+          {/*  duoc-CR-741: gợi ý + nút *Bổ sung* (nút CÓ CHỮ, viền cam) đúng chữ bản v1. */}
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
-            title="Mở chi tiết dòng"
+            title="Chỉnh sửa chi tiết"
+            aria-label="Chỉnh sửa chi tiết"
             onClick={() => onOpenLine(index, 'edit')}
           >
             <Pencil />
           </Button>
           {fillable && (
             <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Bổ sung thông tin theo yêu cầu TP/QL"
+              type="button"
+              variant="outline"
+              size="sm"
+              title="Bổ sung nội dung dòng thiếu thông tin"
+              className={cn('h-7 gap-1 px-2 text-xs', ACTION_TONE_CLASS.warning)}
               onClick={() => onOpenLine(index, 'fill')}
             >
-              <FilePlus2 />
+              <FilePlus2 className="size-3.5" />
+              Bổ sung
             </Button>
           )}
           {editable && (
             <>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 title="Nhân bản dòng"
@@ -207,6 +217,7 @@ export function SurveyLinesTable({
                 <Copy />
               </Button>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
                 title="Xóa dòng"

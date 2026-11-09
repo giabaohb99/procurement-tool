@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -74,7 +75,7 @@ describe('PurchaseRequestItemsTable', () => {
     unmount()
 
     renderTable({ editing: true })
-    expect(screen.getByRole('button', { name: /Thêm nhiều/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Thêm nhiều dòng' })).toBeInTheDocument()
   })
 
   /**
@@ -144,6 +145,21 @@ describe('PurchaseRequestItemsTable — khổ điện thoại', () => {
     expect(screen.queryByRole('button', { name: /Bảng rút gọn|Bảng đầy đủ/ })).toBeNull()
   })
 
+  it('the phone card also offers "Nhân đôi" while editing (duoc-CR-741)', async () => {
+    const onChange = vi.fn()
+    renderTable({ editing: true, onChange })
+
+    const duplicate = screen.getByRole('button', { name: 'Nhân đôi dòng 1' })
+    expect(duplicate).toHaveAttribute('title', 'Nhân đôi')
+    expect(screen.getByRole('button', { name: 'Xóa dòng 1' })).toHaveAttribute('title', 'Xóa')
+    await userEvent.click(duplicate)
+
+    expect((onChange.mock.calls[0][0] as PurchaseRequestItem[]).map((line) => line.id)).toEqual([
+      7,
+      undefined,
+    ])
+  })
+
   it('cả thẻ là một nút mở hộp chi tiết — mọi ô vẫn sửa được ở đó', async () => {
     const onOpenDetail = vi.fn()
     renderTable({ onOpenDetail })
@@ -170,7 +186,12 @@ describe('PurchaseRequestItemsTable — xóa nhiều dòng (bao-CR-547)', () => 
     expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 1' }))
     await userEvent.click(screen.getByRole('button', { name: 'Xóa đã chọn (1)' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Xóa 1 dòng' }))
+    //  duoc-CR-741: hộp hỏi của v1 — câu *Xóa 1 dòng đã chọn?*, nút *Đồng ý* / *Hủy*.
+    const dialog = screen.getByRole('alertdialog')
+    expect(within(dialog).getByText('Xác nhận')).toBeInTheDocument()
+    expect(within(dialog).getByText(/^Xóa 1 dòng đã chọn\? Dòng bỏ khỏi phiếu/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Hủy' })).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Đồng ý' }))
 
     expect(onChange).toHaveBeenCalledWith([second])
   })
@@ -181,7 +202,7 @@ describe('PurchaseRequestItemsTable — xóa nhiều dòng (bao-CR-547)', () => 
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả dòng' }))
     await userEvent.click(screen.getByRole('button', { name: 'Xóa đã chọn (2)' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Xóa 2 dòng' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Đồng ý' }))
 
     expect(onChange).toHaveBeenCalledWith([])
   })
@@ -230,23 +251,180 @@ describe('PurchaseRequestItemsTable — vị trí nút theo v1 (duoc-CR-737)', (
     expect(within(body).queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
 
     await userEvent.click(within(header).getByRole('button', { name: 'Xóa đã chọn (1)' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Xóa 1 dòng' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Đồng ý' }))
     expect(onChange).toHaveBeenCalledWith([second])
   })
 
-  it('puts "Thêm nhiều" below the table, after the last row', () => {
+  it('puts "Thêm nhiều dòng" below the table, after the last row', () => {
     renderFramed()
 
     const body = screen.getByRole('region', { name: 'Thân thẻ' })
-    const addMany = within(body).getByRole('button', { name: /Thêm nhiều/ })
+    const addMany = within(body).getByRole('button', { name: 'Thêm nhiều dòng' })
     const table = within(body).getByRole('table')
     // DOCUMENT_POSITION_FOLLOWING: nút đứng SAU bảng trong thứ tự tài liệu.
     expect(table.compareDocumentPosition(addMany) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(within(screen.getByRole('toolbar', { name: 'Tiêu đề thẻ' })).queryByRole('button')).toBeNull()
   })
 
-  it('hides "Thêm nhiều" while only viewing the ticket', () => {
+  it('hides "Thêm nhiều dòng" while only viewing the ticket', () => {
     renderFramed({ editing: false })
     expect(screen.queryByRole('button', { name: /Thêm nhiều/ })).toBeNull()
+  })
+})
+
+/**
+ * duoc-CR-741 — chữ + hành vi theo bản v1: gợi ý nút biểu tượng (*Chi tiết* · *Nhân đôi* ·
+ * *Xóa*, lịch sử mua hàng), hộp *Thêm nhiều dòng* hỏi như `askPrompt`, nút *Nhân đôi* dòng.
+ */
+describe('PurchaseRequestItemsTable — chữ và hành vi v1 (duoc-CR-741)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  const second: PurchaseRequestItem = { ...ITEMS[0], id: 8, product_code: 'NAP0030', product_name: 'Nắp nhựa phi 30' }
+
+  it('row icon tooltips use the v1 words', () => {
+    renderTable({ editing: true })
+
+    expect(screen.getByRole('button', { name: 'Chi tiết dòng 1' })).toHaveAttribute('title', 'Chi tiết')
+    expect(screen.getByRole('button', { name: 'Nhân đôi dòng 1' })).toHaveAttribute('title', 'Nhân đôi')
+    expect(screen.getByRole('button', { name: 'Xóa dòng 1' })).toHaveAttribute('title', 'Xóa')
+    expect(screen.getByRole('button', { name: /Xem lịch sử mua hàng của NAP0029/ })).toHaveAttribute(
+      'title',
+      'Lịch sử mua hàng gần nhất của mã hàng này',
+    )
+  })
+
+  it('a locked ticket says the history is read-only and offers no duplicate / delete', () => {
+    renderTable({ editing: false })
+
+    expect(screen.getByRole('button', { name: /Xem lịch sử mua hàng của NAP0029/ })).toHaveAttribute(
+      'title',
+      'Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)',
+    )
+    expect(screen.queryByRole('button', { name: /Nhân đôi/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Xóa dòng/ })).toBeNull()
+  })
+
+  it('"Nhân đôi" inserts a copy right after the source line, without its id', async () => {
+    const onChange = vi.fn()
+    renderTable({
+      items: [{ ...ITEMS[0], option_count: 2, options_done: true }, second],
+      editing: true,
+      onChange,
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nhân đôi dòng 1' }))
+
+    const next = onChange.mock.calls[0][0] as PurchaseRequestItem[]
+    expect(next.map((line) => line.product_code)).toEqual(['NAP0029', 'NAP0029', 'NAP0030'])
+    expect(next[0].id).toBe(7)
+    //  Giữ id thì lúc lưu backend ghi đè dòng gốc; giữ phương án thì bản sao trỏ vào phương
+    //  án của dòng gốc.
+    expect(next[1].id).toBeUndefined()
+    expect(next[1].option_count).toBeUndefined()
+    expect(next[1].options_done).toBeUndefined()
+    expect(next[1].qty).toBe(1000)
+    expect(next[2].id).toBe(8)
+  })
+
+  it('"Nhân đôi" on the last line appends the copy at the end', async () => {
+    const onChange = vi.fn()
+    renderTable({ items: [ITEMS[0], second], editing: true, onChange })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nhân đôi dòng 2' }))
+
+    const next = onChange.mock.calls[0][0] as PurchaseRequestItem[]
+    expect(next.map((line) => line.product_code)).toEqual(['NAP0029', 'NAP0030', 'NAP0030'])
+  })
+
+  it('"Thêm nhiều dòng" asks like v1 and adds the typed number of empty lines', async () => {
+    const onChange = vi.fn()
+    renderTable({ editing: true, onChange })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm nhiều dòng' }))
+    const dialog = screen.getByRole('dialog', { name: 'Nhập thông tin' })
+    expect(within(dialog).getByText('Thêm bao nhiêu dòng?')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Hủy' })).toBeInTheDocument()
+
+    const input = within(dialog).getByRole('spinbutton', { name: 'Số dòng' })
+    await userEvent.clear(input)
+    await userEvent.type(input, '3')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
+
+    const next = onChange.mock.calls[0][0] as PurchaseRequestItem[]
+    expect(next).toHaveLength(4)
+    expect(next.slice(1).every((line) => line.product_name === '' && line.id === undefined)).toBe(true)
+  })
+
+  it('a typo like 5000 is capped at 50 lines, so it cannot flood the ticket', async () => {
+    const onChange = vi.fn()
+    renderTable({ editing: true, onChange })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm nhiều dòng' }))
+    const input = screen.getByRole('spinbutton', { name: 'Số dòng' })
+    await userEvent.clear(input)
+    await userEvent.type(input, '5000')
+    await userEvent.click(screen.getByRole('button', { name: 'Xác nhận' }))
+
+    expect((onChange.mock.calls[0][0] as PurchaseRequestItem[]).length).toBe(1 + 50)
+  })
+})
+
+/**
+ * Lỗi rà mã duoc-CR-741: dòng chưa lưu khóa tick theo chỉ số (`new-${index}`). Tick dòng 4
+ * rồi Nhân đôi dòng 1 thì dòng 3 cũ trôi xuống vị trí 4 và "nhận" dấu tick, nên *Xóa đã
+ * chọn (1)* xóa nhầm nó thay vì dòng 4. Nay nhân đôi / xóa một dòng là bỏ hết dấu tick.
+ */
+describe('PurchaseRequestItemsTable — dấu tick không trôi khi chèn / bỏ dòng', () => {
+  const unsaved: PurchaseRequestItem[] = ['A', 'B', 'C', 'D'].map((code) => ({
+    ...ITEMS[0],
+    id: undefined,
+    product_code: code,
+    product_name: `Hàng ${code}`,
+  }))
+
+  function StatefulTable({ onItems }: { onItems: (items: PurchaseRequestItem[]) => void }) {
+    const [items, setItems] = useState(unsaved)
+    return (
+      <PurchaseRequestItemsTable
+        items={items}
+        editing
+        bulkRemovable
+        onChange={(next) => {
+          setItems(next)
+          onItems(next)
+        }}
+        onOpenDetail={vi.fn()}
+      />
+    )
+  }
+
+  it('duplicating line 1 clears the tick on line 4, so bulk delete cannot hit the wrong line', async () => {
+    const onItems = vi.fn()
+    render(<StatefulTable onItems={onItems} />)
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 4' }))
+    expect(screen.getByRole('button', { name: 'Xóa đã chọn (1)' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nhân đôi dòng 1' }))
+
+    expect(onItems).toHaveBeenLastCalledWith(
+      expect.arrayContaining([expect.objectContaining({ product_code: 'C' })]),
+    )
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 5' })).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 4' })).not.toBeChecked()
+  })
+
+  it('deleting one line clears the ticks too — the lines after it shift up', async () => {
+    const onItems = vi.fn()
+    render(<StatefulTable onItems={onItems} />)
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 4' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa dòng 1' }))
+
+    const after = onItems.mock.lastCall?.[0] as PurchaseRequestItem[]
+    expect(after.map((line) => line.product_code)).toEqual(['B', 'C', 'D'])
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
   })
 })

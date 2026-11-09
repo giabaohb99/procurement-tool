@@ -70,14 +70,18 @@ export function PurchaseOrderDeliveryFiles({
               event.target.value = ''
             }}
           />
+          {/*  duoc-CR-741: chữ theo bản v1 — lần giao đã lưu thì Tải (lên ngay), chưa lưu thì
+               Chọn tệp (giữ tạm, Lưu đơn mới tải). `type="button"`: hộp chi tiết dòng có thể
+               nằm trong form, nút trơn sẽ thành submit. */}
           <Button
+            type="button"
             variant="outline"
             size="sm"
             disabled={upload.isPending}
             onClick={() => inputRef.current?.click()}
           >
             <Upload />
-            {upload.isPending ? 'Đang tải' : 'Tải tệp'}
+            {upload.isPending ? 'Đang tải' : deliveryId ? 'Tải' : 'Chọn tệp'}
           </Button>
         </>
       )}

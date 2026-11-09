@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 0.2 |
-| Ngày | 05/11/2026 |
+| Bản | 0.3 |
+| Ngày | 09/11/2026 |
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Nháp |
-| CR liên quan | bao-CR-712, td-0311 · CR chính trong tài liệu cũ: CR-034, CR-068, CR-108, CR-268, bao-CR-310, bao-CR-388, bao-CR-414, bao-CR-422 |
+| CR liên quan | bao-CR-712, td-0311, duoc-CR-741 · CR chính trong tài liệu cũ: CR-034, CR-068, CR-108, CR-268, bao-CR-310, bao-CR-388, bao-CR-414, bao-CR-422 |
 
 Tệp này là **mục lục chức năng**: mỗi chức năng một dòng tóm tắt và liên kết tới tài liệu chi tiết đã có ở
 `chuc-nang/10..20`. Chi tiết từng trường, từng nút vẫn nằm ở tài liệu gốc (luật *một sự thật một chỗ*); sửa nghiệp vụ thì
@@ -17,6 +17,8 @@ sửa tài liệu gốc trước, rồi chỉnh dòng tóm tắt ở đây nếu
 `erp-v2` ngày 30/10/2026) xác nhận đã có mã; nó không nói đã lên prod hay chưa.
 
 **Rà 05/11/2026 (td-0311):** từ đợt phát hành 2.14.0 ngày 05/11/2026 nhánh `main` (prod) trùng `erp-v2` (`dae5957b`), và mọi màn, đường API trong bảng mục 2 đều có trong mã (`frontend-v2/src/shared/constants/app-routes.ts`, bảng [api.md](../tai-lieu-ky-thuat/api.md)). Vì vậy cột Trạng thái ghi *có trên prod 05/11*; phần *có mã (doc 11 …)* giữ lại để tra bảng fit-gap.
+
+**Tên nút (duoc-CR-741, 09/11/2026):** giao diện mới đổi nhãn nút và hộp xác nhận của Thu mua về đúng chữ bản cũ (*Thêm*, *Gửi duyệt*, *Duyệt*, *Tạo đơn mua hàng*, *Xóa phiếu*, *Hủy*, *Xóa đơn*, *Chuỗi chứng từ (PYC/PKS)*…). Bảng đối chiếu cũ → mới ở [kế hoạch CR-741](../plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md); tài liệu gốc `10`..`13` ghi tên mới ở mục *Tên nút theo bản v1* của từng tệp.
 
 ## 1. Người dùng và vai trò
 
@@ -55,7 +57,7 @@ sửa tài liệu gốc trước, rồi chỉnh dòng tóm tắt ở đây nếu
 | CN-TM-19 | Lịch sử mua hàng theo mã hàng và NCC, popup lấy giá khi lập đơn, che NCC với người không có quyền — [18](18-lich-su-mua-hang.md) | NSTM, người lập phiếu | Tab trên chi tiết SP, NCC; ô Mã hàng | có trên prod 05/11 · có mã (doc 11 H3) | CR-060 |
 | CN-TM-20 | Báo cáo mua hàng (nhiều tab) và màn Chi tiết YC mua hàng — [17 mục Báo cáo mua hàng](17-he-thong-bao-cao.md) | Quản lý | `/procurement/purchase-report`, `/procurement/pr-lines-report` | có trên prod 05/11 · có mã (doc 11 H1) | bao-CR-347, bao-CR-691 |
 | CN-TM-21 | Báo cáo khảo sát — [17 mục Báo cáo khảo sát](17-he-thong-bao-cao.md) | Quản lý | `/procurement/survey-report` | có trên prod 05/11 | không tìm thấy mã CR (có từ bản dựng đầu) |
-| CN-TM-22 | Xuất Excel danh sách YCBG, YCMH, ĐMH, Tiến độ — [11 mục G](11-yeu-cau-khao-sat.md), [12 mục G](12-yeu-cau-mua-hang.md), [13 mục J](13-don-mua-hang.md) | Mọi người có quyền `export` | Nút Xuất trên danh sách | có trên prod 05/11 | CR-068 |
+| CN-TM-22 | Xuất Excel danh sách YCBG, YCMH, ĐMH, Tiến độ — [11 mục G](11-yeu-cau-khao-sat.md), [12 mục G](12-yeu-cau-mua-hang.md), [13 mục J](13-don-mua-hang.md) | Mọi người có quyền `export` | Nút *Xuất Excel* trên danh sách; tick dòng thì thành *Xuất Excel (n)*, chỉ xuất phiếu đã tick | có trên prod 05/11; xuất theo dòng tick: dev | CR-068, duoc-CR-741 |
 | CN-TM-23 | Phòng tự mua hàng: bậc phạm vi `dept_proc`, bộ tài khoản riêng, công ty con thu hẹp — [20](20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) | Admin | Phân quyền tài khoản | có trên prod 05/11 | bao-CR-414, bao-CR-480 |
 | CN-TM-24 | Danh mục và quản trị dùng chung đang được mô tả trong tài liệu thu mua: phòng ban, công ty ([16](16-danh-muc.md)); nhân sự, tài khoản, vai trò, cấu hình hệ thống ([17](17-he-thong-bao-cao.md)) | Admin | Nhiều màn | có trên prod 05/11 | CR-022, CR-023, CR-037 |
 
@@ -69,7 +71,7 @@ mua thuộc phân hệ [Nhập khẩu](../../nhap-khau/chuc-nang/01-yeu-cau-chuc
 ### CN-TM-01 — Yêu cầu báo giá (YCBG)
 
 - **Mục đích:** ghi nhu cầu hỏi giá của bộ phận nghiệp vụ, chuyển NSTM khảo sát, để người yêu cầu chọn phương án mà không thấy tên NCC.
-- **Luồng chính:** lập phiếu nhiều dòng → gửi duyệt → TBP duyệt (tự sang *Đang xử lý*, gán NSTM theo phân loại) → NSTM gắn phương án ở màn Xử lý → chốt *Đã khảo sát* → người yêu cầu chọn phương án, bấm tạo YCMH (gom theo NCC) → Hoàn thành.
+- **Luồng chính:** lập phiếu nhiều dòng → gửi duyệt → TBP duyệt (tự sang *Đang xử lý*, gán NSTM theo phân loại) → NSTM gắn phương án ở màn Xử lý → chốt *Đã khảo sát* → người yêu cầu chọn phương án, bấm *Tạo yêu cầu mua* (gom theo NCC) → Hoàn thành.
 - **Luật nghiệp vụ:** phiếu chỉ sang *Đã khảo sát* khi mọi dòng của mọi NSTM đã có phương án hoặc được chốt rỗng; YCBG tự sang *Hoàn thành* khi mọi YCMH sinh ra đã hoàn thành. Chi tiết ở [11 mục Vòng đời, mục E](11-yeu-cau-khao-sat.md).
 - **Dữ liệu:** đầu phiếu (công ty nhận hóa đơn, người yêu cầu, bộ phận, TBP, mục đích); dòng (phân loại, thông số, số lượng, ĐVT, giá đề xuất, ảnh); phương án là bản chụp từ phiếu khảo sát. Danh sách trường ở [11 mục A, B, C](11-yeu-cau-khao-sat.md).
 - **Quyền:** entity `survey_request` (`create`, `write`, `approve`, `process`, `export`, `delete`); phạm vi theo `SCOPE_FIELDS` (công ty, phòng, phòng xử lý, người tạo). Bảng quyền ở [11 mục F](11-yeu-cau-khao-sat.md).
@@ -89,7 +91,7 @@ mua thuộc phân hệ [Nhập khẩu](../../nhap-khau/chuc-nang/01-yeu-cau-chuc
 ### CN-TM-09 — Đơn mua hàng (ĐMH)
 
 - **Mục đích:** ghi quyết định mua chính thức với một NCC: dòng hàng, số lượng, đơn giá, lịch giao nhiều lần.
-- **Luồng chính:** lập (từ phương án đã chọn hoặc tay) → gửi duyệt → duyệt → giao nhận nhiều lần (*Đã nhận một phần*, *Đã nhận đủ*) → *Hoàn thành*; có Hủy duyệt về Nháp, Hủy đơn, Nhân bản, Mở lại.
+- **Luồng chính:** lập (từ phương án đã chọn hoặc tay) → gửi duyệt → duyệt → giao nhận nhiều lần (*Đã nhận một phần*, *Đã nhận đủ*) → *Hoàn thành*; có Hủy duyệt về Nháp, Hủy cả đơn (nút *Hủy*), Nhân bản, Mở lại.
 - **Luật nghiệp vụ:** từ *Đã duyệt* nội dung khóa, chỉ còn năm ô phát sinh sau duyệt và khối giao hàng (CR-108); Hủy duyệt bị chặn khi đã nhận hàng, có dòng *Hoàn thành* hoặc có YCTT chưa hủy; chặn ở `block_edit_approved_order()`. Chi tiết ở [13 mục Vòng đời, mục F](13-don-mua-hang.md).
 - **Dữ liệu:** đầu đơn (NCC, công ty, ngày đặt, VAT, hình thức thanh toán, loại đơn, tiền tệ, tỷ giá); dòng (mã hàng, số lượng đặt, đơn giá, VAT, kho nhận). Danh sách ở [13 mục A, B](13-don-mua-hang.md).
 - **Quyền:** entity `purchase_order` (`create`, `write`, `approve`, `cancel`, `print`, `export`, `delete`); phạm vi theo `SCOPE_FIELDS`. Bảng ở [13 mục G](13-don-mua-hang.md).

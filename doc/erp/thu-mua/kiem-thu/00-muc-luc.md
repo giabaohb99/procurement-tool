@@ -12,7 +12,7 @@ Kịch bản kiểm thử **thủ công** cho phần việc thuộc dải CR `ba
 | Tệp | Phạm vi | CR |
 |---|---|---|
 | [01-chung-tu-lien-quan-ycmh.md](01-chung-tu-lien-quan-ycmh.md) | Thẻ *Chứng từ liên quan* trên phiếu yêu cầu mua hàng | bao-CR-422 |
-| [02-nut-tao-don-va-in-phieu.md](02-nut-tao-don-va-in-phieu.md) | Một nút *Tạo đơn*, một nút *In phiếu*, hộp hỏi trước khi gom thêm | bao-CR-420 · bao-CR-421 |
+| [02-nut-tao-don-va-in-phieu.md](02-nut-tao-don-va-in-phieu.md) | Một nút *Tạo đơn mua hàng*, một nút *In phiếu*, hộp hỏi trước khi gom thêm | bao-CR-420 · bao-CR-421 · duoc-CR-741 |
 | [03-phuong-an-va-chuong.md](03-phuong-an-va-chuong.md) | Chuông luồng phương án, mốc chốt xong lựa chọn | bao-CR-419 |
 | [04-pham-vi-va-bang-rong.md](04-pham-vi-va-bang-rong.md) | Phạm vi dữ liệu và câu chữ khi bảng rỗng | bao-CR-414 · liên đới 422 |
 | [05-vai-tro-va-pham-vi.md](05-vai-tro-va-pham-vi.md) | Màn Vai trò & quyền, hộp thoại Phạm vi dữ liệu, cảnh báo tự loại trừ phòng mình | bao-CR-427 · bao-CR-428 · bao-CR-430 |

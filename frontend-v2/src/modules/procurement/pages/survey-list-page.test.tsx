@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -211,5 +212,32 @@ describe('SurveyListPage — chip loại khảo sát và nút Xóa lọc', () =>
     expect(call.nspt).toBeUndefined()
     expect(call.status__in).toBeUndefined()
     expect(call.sr_code__contains).toBeUndefined()
+  })
+})
+
+/**
+ * duoc-CR-741 — nút đầu trang theo `CrudList.tsx` bản v1: *Thêm*, và chế độ nhân bản
+ * (*Nhân bản* / *Xong*) thay cho biểu tượng nhân bản nằm sẵn trên mọi dòng.
+ */
+describe('SurveyListPage — nút đầu trang theo bản v1', () => {
+  it('names the create button Thêm and offers no Excel export (v1 has none here)', () => {
+    build()
+
+    expect(screen.getByRole('button', { name: 'Thêm' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thêm mới' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).toBeNull()
+  })
+
+  it('shows the Thao tác column with Nhân bản only while clone mode is on', async () => {
+    const user = userEvent.setup()
+    build()
+
+    expect(within(screen.getByRole('table')).queryByRole('button', { name: /Nhân bản/ })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Nhân bản' }))
+    expect(within(screen.getByRole('table')).getByRole('button', { name: /^Nhân bản / })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Xong' }))
+    expect(within(screen.getByRole('table')).queryByRole('button', { name: /Nhân bản/ })).toBeNull()
   })
 })

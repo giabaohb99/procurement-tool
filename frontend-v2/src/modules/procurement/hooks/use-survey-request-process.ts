@@ -61,6 +61,55 @@ export function useAddProcessOption(id: number) {
   })
 }
 
+/**
+ * Gắn NHIỀU dòng khảo sát đã duyệt làm phương án cho một dòng YCBG (nút *Thêm n dòng đã
+ * chọn làm option*, duoc-CR-741).
+ *
+ * Gọi thẳng API LẦN LƯỢT (backend không có đường gắn hàng loạt), một dòng lỗi thì đi tiếp
+ * dòng sau — lỗi từng dòng `httpClient` đã toast. Xong vòng mới làm mới dữ liệu MỘT lần và
+ * báo MỘT câu tổng: đi qua `useAddProcessOption` thì gắn 8 dòng là 8 toast chồng nhau và 8
+ * lượt nạp lại mọi truy vấn Thu mua đang mở (rà mã duoc-CR-741).
+ */
+export function useAddProcessOptions(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      lineId,
+      productSurveyLineIds,
+    }: {
+      lineId: number
+      productSurveyLineIds: number[]
+    }) => {
+      let added = 0
+      let failed = 0
+      for (const productSurveyLineId of productSurveyLineIds) {
+        try {
+          await surveyRequestApi.addProcessOption(id, lineId, productSurveyLineId)
+          added += 1
+        } catch {
+          failed += 1
+        }
+      }
+      return { added, failed }
+    },
+    onSuccess: ({ added, failed }) => {
+      if (added > 0) {
+        toast.success(
+          failed > 0
+            ? `Đã thêm ${added} phương án, ${failed} dòng không thêm được`
+            : `Đã thêm ${added} phương án`,
+        )
+      } else if (failed > 0) {
+        toast.error(`Không thêm được ${failed} dòng nào`)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
 export function useRemoveProcessOption(id: number) {
   const queryClient = useQueryClient()
 

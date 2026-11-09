@@ -35,8 +35,8 @@ import {
   usePurchaseRequestWarehouses,
 } from '../hooks/use-purchase-request-support'
 import { buildStdDaysMap, calcRegulatedDate, findStdDays } from '../utils/lead-time'
-import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseOrderDeliveriesTable } from './purchase-order-deliveries-table'
+import { PurchaseOrderLineProgressCell } from './purchase-order-line-progress-cell'
 import {
   CURRENCY_OPTIONS,
   isImportOrder,
@@ -71,6 +71,13 @@ interface PurchaseOrderLineDialogProps {
   afterApproveEditable: boolean
   /** Nhập được tiến độ giao (đơn đã duyệt trở đi). */
   deliveryEditable: boolean
+  /**
+   * duoc-CR-741 — bày nút Tạm ngưng / Tiếp tục / Hủy ở ô *Trạng thái tiến độ* như popup bản v1.
+   * Cùng điều kiện với cột Trạng thái của bảng (đơn đã duyệt trở đi + quyền ghi); dòng chưa lưu
+   * hoặc đã khóa thì tự ẩn. Trang hỏi lý do rồi gọi API — chung một luồng với nút trên bảng.
+   */
+  progressEditable?: boolean
+  onProgressChange?: (item: PurchaseOrderItem, status: string) => void
   /** Gắn tệp cho lần giao — mở cả khi đơn đã hoàn thành. */
   attachEditable: boolean
   purchaseOrderId: number
@@ -102,6 +109,8 @@ export function PurchaseOrderLineDialog({
   editable,
   afterApproveEditable,
   deliveryEditable,
+  progressEditable = false,
+  onProgressChange,
   attachEditable,
   purchaseOrderId,
   carriers,
@@ -412,11 +421,13 @@ export function PurchaseOrderLineDialog({
 
           <div className="space-y-1.5">
             <Label>Trạng thái tiến độ</Label>
-            <div className="flex min-h-9 items-center gap-2">
-              <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
-              {item.pause_reason && (
-                <span className="text-xs text-muted-foreground">Lý do: {item.pause_reason}</span>
-              )}
+            <div className="flex min-h-9 items-center">
+              <PurchaseOrderLineProgressCell
+                align="start"
+                item={item}
+                controllable={progressEditable && !!item.id && !locked}
+                onProgressChange={onProgressChange}
+              />
             </div>
           </div>
 

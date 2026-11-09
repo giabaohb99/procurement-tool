@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ClipboardList, Copy, History, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
+import { ClipboardList, Copy, History, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
@@ -11,6 +11,7 @@ import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Input } from '@/shared/ui/input'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
@@ -32,9 +33,9 @@ import {
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
 } from '../hooks/use-purchase-request-support'
-import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseOrderItemCard, type PurchaseOrderItemEditField } from './purchase-order-item-card'
+import { PurchaseOrderLineProgressCell } from './purchase-order-line-progress-cell'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 import { purchaseOrderRowKey } from '../hooks/use-purchase-order-line-selection'
 import {
@@ -329,9 +330,25 @@ export function PurchaseOrderItemsTable({
     onLineDuplicated?.(index)
   }
 
-  function removeLine(index: number) {
+  /** duoc-CR-741: bản v1 hỏi lại trước khi xóa MỘT dòng — tiêu đề Xác nhận, nút Đồng ý / Hủy. */
+  async function removeLine(index: number) {
+    if (!(await confirmDialog({ message: 'Xóa dòng này?' }))) return
     onChange(items.filter((_, current) => current !== index))
     onLineRemoved?.(index)
+  }
+
+  /**
+   * Hộp lịch sử mua hàng mở ở chế độ chỉ xem khi dòng không sửa được — gợi ý của nút nói luôn
+   * điều đó, chữ đúng bản v1 (duoc-CR-741). Cùng điều kiện `readOnly` truyền cho hộp bên dưới.
+   */
+  function isHistoryReadOnly(item: PurchaseOrderItem) {
+    return !editable || isLineLocked(item) || isLineReceived(item)
+  }
+
+  function historyTitle(item: PurchaseOrderItem) {
+    return isHistoryReadOnly(item)
+      ? 'Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'
+      : 'Lịch sử mua hàng gần nhất của mã hàng này'
   }
 
   function renderCell(key: string, item: PurchaseOrderItem, index: number) {
@@ -374,7 +391,7 @@ export function PurchaseOrderItemsTable({
                 variant="ghost"
                 size="icon-sm"
                 className="size-7 shrink-0 text-muted-foreground"
-                title="Xem lịch sử mua hàng gần nhất"
+                title={historyTitle(item)}
                 aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
                 onClick={() => setHistoryIndex(index)}
               >
@@ -569,7 +586,7 @@ export function PurchaseOrderItemsTable({
 
       case 'status':
         return (
-          <LineProgressCell
+          <PurchaseOrderLineProgressCell
             item={item}
             controllable={progressEditable && !!item.id && !locked}
             onProgressChange={onProgressChange}
@@ -581,9 +598,10 @@ export function PurchaseOrderItemsTable({
           <LineActions
             editable={editable}
             locked={locked}
+            deliveryCount={item.deliveries?.length ?? 0}
             onOpenDetail={onOpenDetail ? () => onOpenDetail(index) : undefined}
             onDuplicate={() => duplicateLine(index)}
-            onRemove={() => removeLine(index)}
+            onRemove={() => void removeLine(index)}
           />
         )
 
@@ -653,7 +671,7 @@ export function PurchaseOrderItemsTable({
                       amount={renderCell('amount', item, index)}
                       baseAmount={importMode ? renderCell('base_amount', item, index) : undefined}
                       progress={
-                        <LineProgressCell
+                        <PurchaseOrderLineProgressCell
                           align="start"
                           item={item}
                           controllable={progressEditable && !!item.id && !locked}
@@ -685,7 +703,7 @@ export function PurchaseOrderItemsTable({
                               variant="ghost"
                               size="icon-sm"
                               className="text-muted-foreground"
-                              title="Xem lịch sử mua hàng gần nhất"
+                              title={historyTitle(item)}
                               aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
                               onClick={() => setHistoryIndex(index)}
                             >
@@ -696,7 +714,7 @@ export function PurchaseOrderItemsTable({
                             editable={editable}
                             locked={locked}
                             onDuplicate={() => duplicateLine(index)}
-                            onRemove={() => removeLine(index)}
+                            onRemove={() => void removeLine(index)}
                           />
                         </>
                       }
@@ -729,12 +747,7 @@ export function PurchaseOrderItemsTable({
         productName={historyItem?.product_name ?? ''}
         // Dòng đã nhận hàng cũng chỉ xem: kho đã ghi theo mã cũ nên backend chặn
         // đổi nhận diện sản phẩm, điền vào chỉ tổ lưu lên rồi báo lỗi.
-        readOnly={
-          !historyItem ||
-          !editable ||
-          isLineLocked(historyItem) ||
-          isLineReceived(historyItem)
-        }
+        readOnly={!historyItem || isHistoryReadOnly(historyItem)}
         onOpenChange={(open) => {
           if (!open) setHistoryIndex(null)
         }}
@@ -776,85 +789,19 @@ function NumberCell({
   )
 }
 
-/**
- * Huy hiệu tiến độ dòng + nút Tạm ngưng / Tiếp tục / Hủy + lý do. Dùng chung cho
- * cột Trạng thái (canh giữa) và thẻ khổ điện thoại (canh trái).
- */
-function LineProgressCell({
-  item,
-  controllable,
-  onProgressChange,
-  align = 'center',
-}: {
-  item: PurchaseOrderItem
-  /** Đơn đã duyệt trở đi, dòng đã lưu và chưa khóa. */
-  controllable: boolean
-  onProgressChange?: (item: PurchaseOrderItem, status: string) => void
-  align?: 'center' | 'start'
-}) {
-  return (
-    <div className={cn(align === 'center' ? 'text-center' : 'text-left')}>
-      <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
-      {controllable && (
-        <div
-          className={cn(
-            'mt-1 flex flex-wrap items-center gap-1',
-            align === 'center' ? 'justify-center' : 'justify-start',
-          )}
-        >
-          {item.progress_status === 'paused' ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => onProgressChange?.(item, '__resume__')}
-            >
-              <PlayCircle />
-              Tiếp tục
-            </Button>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => onProgressChange?.(item, 'paused')}
-              >
-                <PauseCircle />
-                Tạm ngưng
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                onClick={() => onProgressChange?.(item, 'cancelled')}
-              >
-                Hủy
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-      {item.pause_reason && ['paused', 'cancelled'].includes(item.progress_status ?? '') && (
-        <p className="mt-1 text-xs text-muted-foreground">Lý do: {item.pause_reason}</p>
-      )}
-    </div>
-  )
-}
-
 /** Mở chi tiết, nhân bản và xóa dòng. Tiến độ dòng nằm ở cột Trạng thái. */
 function LineActions({
   editable,
   locked,
+  deliveryCount = 0,
   onOpenDetail,
   onDuplicate,
   onRemove,
 }: {
   editable: boolean
   locked: boolean
+  /** Số lần giao của dòng — gợi ý nút bút chì ghi kèm như bản v1. */
+  deliveryCount?: number
   onOpenDetail?: () => void
   onDuplicate: () => void
   onRemove: () => void
@@ -866,7 +813,7 @@ function LineActions({
           type="button"
           variant="ghost"
           size="icon-sm"
-          title="Chi tiết dòng & các lần giao hàng"
+          title={`Chi tiết & giao hàng (${deliveryCount} lần)`}
           onClick={onOpenDetail}
         >
           <Pencil />

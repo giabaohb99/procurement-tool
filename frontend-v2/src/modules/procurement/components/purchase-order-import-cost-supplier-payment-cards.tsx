@@ -1,9 +1,7 @@
-import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import type { ImportCostSummaryBySupplier } from '../types/purchase-order-detail'
+import { PurchaseOrderImportCostSupplierPayAction } from './purchase-order-import-cost-supplier-pay-action'
 
 interface PurchaseOrderImportCostSupplierPaymentCardsProps {
   groups: ImportCostSummaryBySupplier[]
@@ -56,7 +54,6 @@ export function PurchaseOrderImportCostSupplierPaymentCards({
   return (
     <div className="divide-y">
       {groups.map((group) => {
-        const settled = group.remaining <= 0.01
         return (
           <div key={group.supplier_code || '__empty__'} className="space-y-2 px-3 py-2.5">
             <div className="flex items-start gap-2">
@@ -79,22 +76,11 @@ export function PurchaseOrderImportCostSupplierPaymentCards({
                   </p>
                 )}
               </div>
-              {settled ? (
-                <Badge variant="outline" className="shrink-0">
-                  Đã chi đủ
-                </Badge>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={cn('shrink-0', ACTION_TONE_CLASS.accent)}
-                  disabled={group.unpaid_payable_ids.length === 0}
-                  onClick={() => onCreatePaymentRequest(group.unpaid_payable_ids)}
-                >
-                  Tạo YCTT
-                </Button>
-              )}
+              <PurchaseOrderImportCostSupplierPayAction
+                group={group}
+                className="shrink-0"
+                onCreatePaymentRequest={onCreatePaymentRequest}
+              />
             </div>
             <MoneyTriplet base={group.base_amount} paid={group.paid_amount} remaining={group.remaining} />
           </div>

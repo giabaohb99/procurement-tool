@@ -1,15 +1,11 @@
-import { Copy, Plus } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 
-import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
-import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useAuthStore } from '@/core/auth/auth-store'
 import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
-import { httpClient } from '@/core/api/http-client'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -44,6 +40,8 @@ import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
 import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
+import { createCloneColumn } from '../components/procurement-list-clone-column'
+import { ProcurementListCloneModeButton } from '../components/procurement-list-clone-controls'
 import { SurveyCard } from '../components/survey-card'
 import { SURVEY_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
@@ -159,21 +157,9 @@ function SurveyListContent() {
   // KHÔNG có nút Xuất Excel ở màn này: backend chưa có route `/api/surveys/export/xlsx`
   // (bấm là 404), và bản v1 cũng không xuất được danh sách phiếu khảo sát.
 
-  const handleClone = useCallback(
-    async (survey: Survey, e: React.MouseEvent) => {
-      e.stopPropagation()
-      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
-      try {
-        const res = await httpClient.post<{ data: { id: number } }>(`/api/surveys/${survey.id}/clone`)
-        toast.success('Đã nhân bản phiếu khảo sát')
-        const newId = res.data?.data?.id
-        if (newId) navigate(appRoutes.procurement.surveyDetail(newId))
-      } catch {
-        toast.error('Nhân bản phiếu khảo sát thất bại')
-      }
-    },
-    [navigate],
-  )
+  //  duoc-CR-741 — chế độ nhân bản như bản v1: cột *Thao tác* chỉ hiện khi bật nút
+  //  *Nhân bản* ở đầu trang, và mỗi lần nhân bản đều hỏi lại.
+  const [cloneMode, setCloneMode] = useState(false)
 
   //  Huy hiệu trên nút "Bộ lọc" của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
@@ -308,25 +294,20 @@ function SurveyListContent() {
         sortDescFirst: true,
         cell: (survey) => formatDateTime(survey.updated_at) || '',
       },
-      {
-        key: 'actions',
-        header: '',
-        width: 60,
-        hideable: false,
-        cell: (survey) =>
-          canCreate ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Nhân bản phiếu khảo sát"
-              onClick={(e) => handleClone(survey, e)}
-            >
-              <Copy className="size-4 text-muted-foreground" />
-            </Button>
-          ) : null,
-      },
+      ...(cloneMode && canCreate
+        ? [
+            createCloneColumn<Survey>({
+              apiPath: '/api/surveys',
+              getId: (survey) => survey.id,
+              getCode: (survey) => survey.code,
+              toDetail: appRoutes.procurement.surveyDetail,
+              successMessage: 'Đã nhân bản phiếu khảo sát',
+              errorMessage: 'Nhân bản phiếu khảo sát thất bại',
+            }),
+          ]
+        : []),
     ],
-    [canCreate, handleClone],
+    [canCreate, cloneMode],
   )
 
   //  Cùng một ô chọn dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
@@ -409,13 +390,22 @@ function SurveyListContent() {
         actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
+            {/*  duoc-CR-741: chữ và thứ tự đúng bản v1 — Nhân bản · Thêm. Nút Nhân bản ẩn ở
+                 khổ hẹp: bảng thành THẺ ở đó, không có cột *Thao tác* để bật. */}
+            {canCreate && (
+              <ProcurementListCloneModeButton
+                className="max-md:hidden"
+                active={cloneMode}
+                onToggle={() => setCloneMode((current) => !current)}
+              />
+            )}
             <PermissionGate entity="survey" action="create">
               <Button
                 className="max-md:flex-1"
                 onClick={() => navigate(appRoutes.procurement.surveyNew)}
               >
                 <Plus className="mr-1.5 size-4" />
-                Thêm mới
+                Thêm
               </Button>
             </PermissionGate>
           </div>

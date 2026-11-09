@@ -25,10 +25,24 @@ import {
 } from '../hooks/use-purchase-request-support'
 import type { SurveyRequestLine } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
-import { LineAttachments } from './line-attachments'
+import { LineAttachments, type LineAttachmentsLabels } from './line-attachments'
 
 /** Đính kèm của dòng khảo sát nằm dưới entity riêng, không chung với đầu phiếu. */
 const LINE_ATTACHMENT_ENTITY = 'survey_request_line'
+
+/** Chữ của khung đính kèm theo đúng popup dòng YCBG bản v1 (duoc-CR-741): vùng kéo thả, nút Xóa / Bỏ. */
+const SURVEY_REQUEST_LINE_ATTACHMENT_LABELS: Partial<LineAttachmentsLabels> = {
+  uploadMode: 'dropzone',
+  uploadLabel: 'Kéo thả hoặc bấm chọn file',
+  uploadHint: 'jpg / png / webp / pdf — có thể nhiều hình',
+  pendingUploadHint: 'jpg / png / webp / pdf',
+  deleteTooltip: 'Xóa',
+  //  Hộp `askConfirm` của v1: tiêu đề mặc định *Xác nhận*, thân chỉ là câu hỏi.
+  deleteConfirmTitle: 'Xác nhận',
+  deleteConfirmDescription: 'Xóa hình/tài liệu này?',
+  deleteConfirmLabel: 'Đồng ý',
+  removePendingTooltip: 'Bỏ',
+}
 
 
 interface SurveyRequestLineDialogProps {
@@ -238,6 +252,7 @@ export function SurveyRequestLineDialog({
               canManage={editing}
               pendingFiles={pendingFiles}
               onPendingFilesChange={onPendingFilesChange}
+              labels={SURVEY_REQUEST_LINE_ATTACHMENT_LABELS}
             />
           </div>
 

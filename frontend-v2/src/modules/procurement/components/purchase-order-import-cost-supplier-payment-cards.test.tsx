@@ -49,7 +49,9 @@ describe('PurchaseOrderImportCostSupplierPaymentCards', () => {
     expect(onCreatePaymentRequest).toHaveBeenCalledWith([31, 32])
   })
 
-  it('shows "paid in full" instead of a button once nothing is left, and disables an empty id list', () => {
+  it('shows "paid in full" once nothing is left, and "not yet a payable" text instead of a dead button', () => {
+    //  duoc-CR-741: bản v1 ghi chữ Chưa thành công nợ khi còn phải chi mà chưa có khoản nợ
+    //  nào; v2 từng vẽ nút Tạo YCTT bị khóa ở đó — người dùng bấm hoài không hiểu vì sao.
     render(
       <PurchaseOrderImportCostSupplierPaymentCards
         groups={[
@@ -61,7 +63,19 @@ describe('PurchaseOrderImportCostSupplierPaymentCards', () => {
       />,
     )
     expect(screen.getByText('Đã chi đủ')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Tạo YCTT' })).toBeDisabled()
+    expect(screen.getByText('Chưa thành công nợ')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Tạo YCTT' })).not.toBeInTheDocument()
+  })
+
+  it('still offers the button when a payable id exists even if the remaining rounds to zero', () => {
+    render(
+      <PurchaseOrderImportCostSupplierPaymentCards
+        groups={[group({ remaining: 0, unpaid_payable_ids: [7] })]}
+        totals={TOTALS}
+        onCreatePaymentRequest={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Tạo YCTT' })).toBeEnabled()
   })
 
   it('labels costs without a supplier instead of printing an empty name', () => {

@@ -81,7 +81,12 @@ export function SurveyReportFirstDocDialog({
     if (pending) return
     if (
       isDirty &&
-      !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))
+      !(await confirm({
+        //  duoc-CR-741: nguyên văn hộp hỏi đóng khi còn sửa dở của bản v1 (`SurveyReportModal`).
+        title: 'Đóng hộp thoại',
+        message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?',
+        confirmLabel: 'Đóng',
+      }))
     )
       return
     onOpenChange(false)

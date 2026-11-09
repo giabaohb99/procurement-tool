@@ -19,11 +19,23 @@ import {
   type SurveyLine,
   type SurveyTable,
 } from '../types/survey-detail'
-import { LineAttachments } from './line-attachments'
+import { LineAttachments, type LineAttachmentsLabels } from './line-attachments'
 import { SurveyLineField } from './survey-line-field'
 
 /** Đính kèm của dòng khảo sát có entity riêng, không chung với đầu phiếu. */
 const LINE_ATTACHMENT_ENTITY = 'survey_line'
+
+/** Chữ của khung đính kèm theo đúng popup dòng Phiếu khảo sát bản v1 (duoc-CR-741). */
+const SURVEY_LINE_ATTACHMENT_LABELS: Partial<LineAttachmentsLabels> = {
+  uploadMode: 'button',
+  uploadLabel: 'Tải file lên',
+  //  v1 ghi kèm phần trăm (*Đang tải n%…*); đường tải của v2 chưa báo tiến độ nên chỉ ghi chữ.
+  uploadingLabel: 'Đang tải…',
+  //  Hộp `askConfirm` của v1: tiêu đề mặc định *Xác nhận*, thân chỉ là câu hỏi.
+  deleteConfirmTitle: 'Xác nhận',
+  deleteConfirmDescription: 'Xóa file?',
+  deleteConfirmLabel: 'Đồng ý',
+}
 
 interface SurveyLineDialogProps {
   open: boolean
@@ -187,6 +199,7 @@ export function SurveyLineDialog({
             canManage={fieldsEditable}
             pendingFiles={pendingFiles}
             onPendingFilesChange={onPendingFilesChange}
+            labels={SURVEY_LINE_ATTACHMENT_LABELS}
           />
         </div>
 

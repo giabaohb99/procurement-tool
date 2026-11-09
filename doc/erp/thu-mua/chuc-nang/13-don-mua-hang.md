@@ -1392,3 +1392,32 @@ migration) · `test_po_tien_te_cr319.py` (P1) · `test_po_chi_phi_nhap_khau_cr31
 `test_po_phan_bo_chi_phi_cr319.py` (P4) · `test_po_cong_no_chi_phi_cr319.py` (P5) ·
 `test_gia_von_nhap_khau_cr347.py`. Dữ liệu thử local: `backend/scripts/seed_demo_import_po.py`. Migration
 lịch sử: `ed610675320b` (NSNN) · `b7e2c4d9a1f3` (nhập tay) · `a1c6f80b2d47` (`cost_status` + `etd_date`).
+
+## Tên nút theo bản v1 (duoc-CR-741, 09/11/2026)
+
+Giao diện mới đổi nhãn nút và hộp xác nhận của ĐMH, thẻ chứng từ và thẻ chi phí thu mua về đúng chữ bản v1; bảng đầy
+đủ ở [kế hoạch CR-741](../plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md). Thẻ chứng từ là khung dùng chung: chữ mới chỉ áp ở Thu mua, phân hệ khác (YCTT tài
+chính, duyệt dấu…) giữ chữ cũ.
+
+| Chỗ | Cũ (v2) | Mới (= v1) |
+|---|---|---|
+| Danh sách | *Thêm mới* · biểu tượng nhân bản | ***Thêm*** · ***Nhân bản*** / ***Xong*** bật cột *Thao tác*; tick dòng thì ***Xuất Excel (n)*** (mục J.1) |
+| Chi tiết | *Hủy đơn* | ***Hủy*** — ẩn khi đơn có dòng *Hoàn thành*; hộp lý do có nút ***Hủy đơn*** / ***Hủy*** |
+| Chi tiết | *Xóa* | ***Xóa đơn*** (đơn *Nháp* / *Bị trả lại*) |
+| Chi tiết, đơn mới | *Tạo đơn* | ***Tạo*** |
+| Thẻ chứng từ | *Xem cả chuỗi chứng từ* | ***Chuỗi chứng từ (PYC/PKS)*** |
+| Thẻ chứng từ | *Upload thêm tệp cho mục này* | ***Upload thêm file cho mục này*** |
+| Hồ sơ chứng từ | ô ở thẻ *Thông tin chung* | chọn ở tiêu đề thẻ chứng từ: chữ *Hồ sơ chứng từ:* + huy hiệu, bấm ra menu, chọn là ghi ngay; thẻ *Thông tin chung* không còn ô này |
+| Thẻ chi phí thu mua | *Tạo YCTT (0 dòng đã tick)* | ***Tạo YCTT*** khi chưa tick (nút mờ); bảng theo NCC: còn phải chi mà chưa có khoản nợ thì hiện *Chưa thành công nợ*, hết nợ hiện *Đã chi đủ* |
+| Hộp tạo YCTT từ đơn | tab *Chi phí nhập khẩu* | tab ***Chi phí thu mua*** |
+| Mọi hộp lý do | *Xác nhận* / *Đóng* | đúng tên thao tác (***Trả về***, ***Từ chối***, ***Hủy duyệt***, ***Hủy đơn***, ***Tạm ngưng***) / ***Hủy*** |
+| Hộp xóa của ĐMH (Xóa đơn, dòng hàng, dòng chi phí) | *Xóa* / *Xóa n dòng* | ***Đồng ý*** / ***Hủy***, tiêu đề *Xác nhận* |
+
+Hành vi bù từ v1:
+
+- ***Hoàn thành*** và ***Mở lại*** luôn hỏi lại; lời nhắc chi phí thu mua còn nợ hoặc chưa quyết toán nối vào cùng hộp
+  *Hoàn thành*, vẫn không chặn.
+- Lưu đơn mà ngày dự kiến có hàng của dòng lệch với YCMH nguồn thì hộp *Lệch ngày dự kiến có hàng* hỏi ***Vẫn lưu*** /
+  ***Quay lại sửa***; YCMH không tự đổi theo.
+- Thẻ dòng hàng có ***Thêm nhiều*** (hộp *Nhập thông tin*, mặc định 3 dòng). Popup chi tiết dòng có ***Tạm ngưng*** /
+  ***Tiếp tục*** / ***Hủy*** ở ô *Trạng thái tiến độ*, như nút trên bảng.

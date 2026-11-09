@@ -69,6 +69,13 @@ import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialo
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
+import { PurchaseOrderAddManyLinesButton } from '../components/purchase-order-add-many-lines-button'
+import {
+  buildCompleteConfirmMessage,
+  buildExpectedDateDiffMessage,
+  findExpectedDateDiffs,
+  PO_REOPEN_CONFIRM_MESSAGE,
+} from '../components/purchase-order-detail-confirm-messages'
 import {
   SurveyReportCard,
   type SurveyReportCardHandle,
@@ -112,8 +119,6 @@ import {
 } from '../utils/purchase-order-import-cost'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
-  COST_STAGE_ESTIMATE,
-  COST_STAGE_FINAL,
   isDeliveryStage,
   isImportOrder,
   isPurchaseOrderApproved,
@@ -130,24 +135,41 @@ const NO_ITEMS: PurchaseOrderItem[] = []
 /** Thao tác cần lý do — mở hộp nhập trước khi gọi API. */
 type ReasonAction = Extract<PurchaseOrderAction, 'return' | 'reject' | 'unapprove' | 'cancel'>
 
-const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string }> = {
+/**
+ * Tiêu đề + nút đồng ý theo đúng bản v1 (duoc-CR-741): hộp mang tên thao tác, nút đồng ý cũng
+ * mang tên thao tác, nút còn lại là Hủy. Câu giải thích giữ bản v2 — nói rõ hậu quả hơn.
+ */
+const REASON_ACTIONS: Record<
+  ReasonAction,
+  { title: string; description: string; confirmLabel: string }
+> = {
   return: {
-    title: 'Trả đơn về cho người tạo',
+    title: 'Trả về',
+    confirmLabel: 'Trả về',
     description: 'Đơn chuyển sang Bị trả lại để người tạo sửa và gửi duyệt lại.',
   },
   unapprove: {
-    title: 'Hủy duyệt đơn',
+    title: 'Hủy duyệt',
+    confirmLabel: 'Hủy duyệt',
     description:
       'Đơn về Nháp để sửa lại nội dung, sửa xong phải Gửi duyệt và Duyệt lại. Đơn đã nhận hàng hoặc đã có yêu cầu thanh toán thì không hủy duyệt được.',
   },
   reject: {
     title: 'Từ chối đơn',
+    confirmLabel: 'Từ chối',
     description: 'Đơn bị khóa, không sửa hay gửi lại được — phải nhân bản thành đơn mới.',
   },
   cancel: {
     title: 'Hủy đơn',
-    description: 'Đơn bị khóa. Đơn có dòng đã Hoàn thành thì hệ thống không cho hủy.',
+    confirmLabel: 'Hủy đơn',
+    description: 'Lý do hủy đơn là bắt buộc. Đơn bị khóa, không sửa lại được.',
   },
+}
+
+/** Nhãn của hai tiến độ dòng cần lý do — bản v1 lấy nhãn tiến độ làm tiêu đề lẫn chữ nút. */
+const LINE_PROGRESS_REASON_LABELS: Record<string, string> = {
+  paused: 'Tạm ngưng',
+  cancelled: 'Hủy đơn',
 }
 
 /**
@@ -387,6 +409,19 @@ export function PurchaseOrderDetailPage() {
       })
       if (!ok) return false
     }
+    //  duoc-CR-741 (bản v1): Ngày dự kiến có hàng lệch với YCMH nguồn thì nhắc — YCMH KHÔNG tự
+    //  đổi theo, người lập đối chiếu rồi tự quyết. Chỉ nhắc, không chặn.
+    const dateDiffs = findExpectedDateDiffs(data.items)
+    if (dateDiffs.length) {
+      const ok = await confirmDialog({
+        title: 'Lệch ngày dự kiến có hàng',
+        tone: 'default',
+        confirmLabel: 'Vẫn lưu',
+        cancelLabel: 'Quay lại sửa',
+        message: buildExpectedDateDiffMessage(data.pr_code, dateDiffs),
+      })
+      if (!ok) return false
+    }
     const saved = await savePurchaseOrder.mutateAsync({
       id: isNew ? undefined : purchaseOrderId,
       payload: toPurchaseOrderPayload(data),
@@ -455,28 +490,23 @@ export function PurchaseOrderDetailPage() {
         return
       }
     }
-    // bao-CR-319: chi phí thu mua còn nợ thì nhắc trước — Hoàn thành không chặn,
-    // nhưng người dùng hay tưởng "xong đơn" là "xong tiền".
-    if (action === 'complete' && (data.import_cost_summary?.remaining_total ?? 0) > 0.01) {
+    // duoc-CR-741: Hoàn thành LUÔN hỏi lại như bản v1 (chốt xong là khóa đơn). Hai lời nhắc
+    // cũ của v2 — chi phí thu mua còn nợ (bao-CR-319), dòng chi phí chưa quyết toán
+    // (bao-CR-453) — nối vào cùng hộp thay vì bật hai hộp liền nhau; vẫn không chặn.
+    if (action === 'complete') {
       const proceed = await confirmDialog({
-        title: 'Chi phí thu mua còn nợ',
-        message: `Đơn còn ${(data.import_cost_summary?.remaining_total ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ chi phí thu mua chưa thanh toán. Vẫn đánh dấu Hoàn thành? Công nợ đó vẫn theo dõi được ở phân hệ Tài chính.`,
-        confirmLabel: 'Vẫn hoàn thành',
-        cancelLabel: 'Để sau',
+        message: buildCompleteConfirmMessage(data),
+        confirmLabel: 'Hoàn thành',
+        tone: 'default',
       })
       if (!proceed) return
     }
-    // bao-CR-453: còn dòng chi phí chưa quyết toán thì nhắc — vẫn không chặn.
-    if (
-      action === 'complete' &&
-      (data.cost_stage ?? COST_STAGE_ESTIMATE) < COST_STAGE_FINAL &&
-      (data.import_cost_summary?.lines_not_final ?? 0) > 0
-    ) {
+    // duoc-CR-741: Mở lại đơn đã Hoàn thành cũng hỏi lại như bản v1. Tông đỏ là CỐ Ý: v1 gọi
+    // `askConfirm` không truyền `danger`, mà mặc định của v1 là `danger: true` (nút đỏ).
+    if (action === 'reopen') {
       const proceed = await confirmDialog({
-        title: 'Chi phí chưa quyết toán',
-        message: `Còn ${data.import_cost_summary?.lines_not_final ?? 0} dòng chi phí chưa quyết toán. Nên chốt Quyết toán trước khi Hoàn thành. Vẫn tiếp tục?`,
-        confirmLabel: 'Vẫn hoàn thành',
-        cancelLabel: 'Để sau',
+        message: PO_REOPEN_CONFIRM_MESSAGE,
+        confirmLabel: 'Mở lại',
       })
       if (!proceed) return
     }
@@ -591,9 +621,12 @@ export function PurchaseOrderDetailPage() {
           </DropdownMenu>
         ),
       },
+    /* duoc-CR-741: như bản v1, đơn đã có dòng Hoàn thành thì không hiện nút Hủy (backend
+       cũng chặn) — để nút ở đó chỉ mời người dùng gõ lý do rồi ăn lỗi. */
     !isNew &&
       isDeliveryStage(data.status) &&
-      can('purchase_order', 'cancel') && {
+      can('purchase_order', 'cancel') &&
+      !data.items.some((item) => item.progress_status === 'completed') && {
         key: 'cancel',
         group: 'utility',
         node: (
@@ -603,7 +636,7 @@ export function PurchaseOrderDetailPage() {
             onClick={() => void handleAction('cancel')}
           >
             <Ban />
-            Hủy đơn
+            Hủy
           </Button>
         ),
       },
@@ -616,7 +649,10 @@ export function PurchaseOrderDetailPage() {
             recordName={data.code || `#${data.id}`}
             pending={deletePurchaseOrder.isPending}
             className={ACTION_TONE_CLASS.danger}
-            warning="Đơn và các dòng hàng kèm theo sẽ bị xóa."
+            label="Xóa đơn"
+            title="Xác nhận"
+            description="Xóa đơn mua hàng này?"
+            confirmLabel="Đồng ý"
             onConfirm={async () => {
               await deletePurchaseOrder.mutateAsync(data.id)
               navigate(appRoutes.procurement.purchaseOrders)
@@ -729,11 +765,23 @@ export function PurchaseOrderDetailPage() {
       node: (
         <Button onClick={() => void handleSave()} disabled={savePurchaseOrder.isPending}>
           {savePurchaseOrder.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          {isNew ? 'Tạo đơn' : 'Lưu'}
+          {isNew ? 'Tạo' : 'Lưu'}
         </Button>
       ),
     },
   ]
+
+  /**
+   * Đổi tiến độ một dòng — chung cho nút trên bảng lẫn trong hộp chi tiết dòng (duoc-CR-741).
+   * Tạm ngưng / Hủy đơn bắt buộc nêu lý do; tiếp tục thì gọi thẳng.
+   */
+  function handleProgressChange(item: PurchaseOrderItem, status: string) {
+    if (status === '__resume__') {
+      void setItemProgress.mutateAsync({ itemId: item.id ?? 0, status })
+      return
+    }
+    setProgressFor({ item, status })
+  }
 
   /** Bỏ các dòng đang tick khỏi đơn (chỉ trên màn hình — bấm Lưu mới ghi xuống). */
   function removeSelectedLines() {
@@ -781,8 +829,6 @@ export function PurchaseOrderDetailPage() {
           canPickNspt={can('purchase_order', 'approve')}
           purchaseRequestId={purchaseRequestId}
           onChange={patch}
-          documentStatusEditable={!isNew && can('purchase_order', 'write')}
-          onDocumentStatusChange={(value) => void setDocumentStatus.mutateAsync(value)}
         />
 
         <Card className="gap-4 py-4">
@@ -798,12 +844,15 @@ export function PurchaseOrderDetailPage() {
                   size="sm"
                   count={lineSelection.selectedIndexes.length}
                   unitLabel="dòng"
-                  description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
+                  title="Xác nhận"
+                  description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi đơn ngay trên màn hình, bấm Lưu mới ghi xuống.`}
+                  confirmLabel="Đồng ý"
                   onConfirm={removeSelectedLines}
                 />
               )}
               {headerEditable && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() =>
@@ -813,6 +862,20 @@ export function PurchaseOrderDetailPage() {
                   <Plus />
                   Thêm dòng
                 </Button>
+              )}
+              {headerEditable && (
+                <PurchaseOrderAddManyLinesButton
+                  onAdd={(count) =>
+                    patch({
+                      items: [
+                        ...data.items,
+                        ...Array.from({ length: count }, () =>
+                          createEmptyPurchaseOrderItem(data.vat_rate),
+                        ),
+                      ],
+                    })
+                  }
+                />
               )}
             </div>
           </CardHeader>
@@ -852,22 +915,19 @@ export function PurchaseOrderDetailPage() {
               progressEditable={progressEditable}
               onChange={(items) => patch({ items })}
               onOpenDetail={setLineIndex}
-              onLineRemoved={(index) =>
+              //  Dòng chưa lưu khóa tick theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang
+              //  dòng khác, *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
+              onLineRemoved={(index) => {
                 setPendingFiles((current) => shiftPendingAfterLineRemove(current, index))
-              }
-              onLineDuplicated={(index) =>
+                lineSelection.clear()
+              }}
+              onLineDuplicated={(index) => {
                 setPendingFiles((current) => shiftPendingAfterLineInsert(current, index))
-              }
+                lineSelection.clear()
+              }}
               lineReport={isNew ? undefined : lineReport}
               onOpenLineReport={(progress) => reportCardRef.current?.focusItem(progress.itemId)}
-              onProgressChange={(item, status) => {
-                // Tạm ngưng / Hủy đơn bắt buộc nêu lý do; tiếp tục thì gọi thẳng.
-                if (status === '__resume__') {
-                  void setItemProgress.mutateAsync({ itemId: item.id ?? 0, status })
-                  return
-                }
-                setProgressFor({ item, status })
-              }}
+              onProgressChange={handleProgressChange}
             />
             <DocumentMoneyTotals
               subtotal={orderTotals.subtotal}
@@ -984,7 +1044,12 @@ export function PurchaseOrderDetailPage() {
           entity="purchase_order"
           entityId={purchaseOrderId}
           canManage={!locked && can('purchase_order', 'write')}
-          documentStatus={data.document_status}
+          documentStatus={isNew ? '' : data.document_status || 'none'}
+          //  duoc-CR-741: đổi tình trạng hồ sơ bằng menu ở tiêu đề thẻ này như bản v1. Sửa được
+          //  cả khi đơn đã Hoàn thành (chứng từ thường về sau) — endpoint riêng, không qua Lưu.
+          documentStatusEditable={!isNew && can('purchase_order', 'write')}
+          onDocumentStatusChange={(value) => setDocumentStatus.mutate(value)}
+          v1Wording
         />
 
         {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
@@ -1020,6 +1085,8 @@ export function PurchaseOrderDetailPage() {
         editable={headerEditable}
         afterApproveEditable={afterApproveEditable}
         deliveryEditable={progressEditable}
+        progressEditable={progressEditable}
+        onProgressChange={handleProgressChange}
         // Đính kèm phiếu giao mở cả khi đơn đã hoàn thành (chỉ chặn khi hủy):
         // chứng từ thường về sau ngày chốt đơn.
         attachEditable={
@@ -1063,6 +1130,7 @@ export function PurchaseOrderDetailPage() {
         open={reasonFor !== null}
         title={reasonFor ? REASON_ACTIONS[reasonFor].title : ''}
         description={reasonFor ? REASON_ACTIONS[reasonFor].description : ''}
+        confirmLabel={reasonFor ? REASON_ACTIONS[reasonFor].confirmLabel : undefined}
         pending={runAction.isPending}
         destructive={reasonFor === 'reject' || reasonFor === 'cancel'}
         onClose={() => setReasonFor(null)}
@@ -1075,8 +1143,9 @@ export function PurchaseOrderDetailPage() {
 
       <PurchaseOrderReasonDialog
         open={progressFor !== null}
-        title={progressFor?.status === 'cancelled' ? 'Hủy dòng hàng' : 'Tạm ngưng dòng hàng'}
-        description={`Sản phẩm: ${progressFor?.item.product_name || progressFor?.item.product_code || ''}`}
+        title={LINE_PROGRESS_REASON_LABELS[progressFor?.status ?? ''] ?? ''}
+        confirmLabel={LINE_PROGRESS_REASON_LABELS[progressFor?.status ?? '']}
+        description={`Lý do ${(LINE_PROGRESS_REASON_LABELS[progressFor?.status ?? ''] ?? '').toLowerCase()} — sản phẩm: ${progressFor?.item.product_name || progressFor?.item.product_code || ''}`}
         pending={setItemProgress.isPending}
         destructive={progressFor?.status === 'cancelled'}
         onClose={() => setProgressFor(null)}
