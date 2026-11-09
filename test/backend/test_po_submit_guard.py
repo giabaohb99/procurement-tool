@@ -15,6 +15,8 @@ from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_order.schema import RejectIn
 
 USER = SimpleNamespace(id=1)
+#  bao-CR-742: nhân sự không gắn tài khoản — đủ để qua chốt "Trưởng phòng phê duyệt".
+APPROVER = 999901
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +41,8 @@ def _user_co_quyen_that(cap_quyen):
 def _po(db, status="draft", supplier_code="NX", co_dong_hang=True, progress="Chưa đặt hàng"):
     code = "PO%d" % (db.query(PurchaseOrder).count() + 1)   # tab_purchase_order.code là UNIQUE
     po = PurchaseOrder(code=code, status=status, supplier_code=supplier_code,
-                       supplier_name="NCC Nam Xuân" if supplier_code else "")
+                       supplier_name="NCC Nam Xuân" if supplier_code else "",
+                       approver_employee_id=APPROVER)   # bao-CR-742: gửi duyệt buộc có người duyệt
     db.add(po)
     db.commit()
     db.refresh(po)
@@ -250,3 +253,27 @@ def test_huy_don_dang_chay_van_huy_duoc(db):
     controller.cancel_po(po.id, RejectIn(reason="NCC báo hết hàng"), db=db, user=USER)
     db.refresh(po)
     assert po.status == "cancelled"
+
+
+# --- bao-CR-742: Trưởng phòng phê duyệt bắt buộc --------------------------------
+
+def test_gui_duyet_khi_chua_chon_truong_phong_phe_duyet_bi_chan(db):
+    """Ca prod 09/11: PO00979 của nhà máy gửi duyệt được khi ô Trưởng phòng phê duyệt còn trống."""
+    po = _po(db)
+    po.approver_employee_id = 0
+    db.commit()
+    with pytest.raises(HTTPException) as e:
+        _submit(db, po)
+    assert e.value.status_code == 400
+    assert "Trưởng phòng phê duyệt" in e.value.detail
+    db.refresh(po)
+    assert po.status == "draft"
+
+
+def test_thieu_ca_ncc_lan_truong_phong_thi_bao_ca_hai(db):
+    po = _po(db, supplier_code="")
+    po.approver_employee_id = 0
+    db.commit()
+    with pytest.raises(HTTPException) as e:
+        _submit(db, po)
+    assert "nhà cung cấp" in e.value.detail and "Trưởng phòng phê duyệt" in e.value.detail
