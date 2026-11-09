@@ -173,7 +173,8 @@ def create_order(db, *, code, company_id, created_by=0, status="draft", pr_code=
 
     row = PurchaseOrder(code=code, company_id=company_id, status=status, pr_code=pr_code,
                         survey_code=survey_code, nspt_id=nspt_id, supplier_code="NX",
-                        supplier_name="Nhà Xuất NX", created_by=created_by)
+                        supplier_name="Nhà Xuất NX", created_by=created_by,
+                        approver_employee_id=999901)   # bao-CR-742
     db.add(row)
     db.flush()
     return row

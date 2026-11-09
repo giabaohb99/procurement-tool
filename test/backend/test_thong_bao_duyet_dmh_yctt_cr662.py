@@ -67,7 +67,8 @@ def _user(db, seed, code, dept_id=None):
 def _po(db, seed, submitter, dept_id=None):
     po = PurchaseOrder(code="PO662%d" % (db.query(PurchaseOrder).count() + 1), status="draft",
                        supplier_code="NX", supplier_name="NCC", company_id=seed.company_id,
-                       department_id=dept_id or seed.dept_id, created_by=submitter.id)
+                       department_id=dept_id or seed.dept_id, created_by=submitter.id,
+                       approver_employee_id=999901)   # bao-CR-742: không thêm người nhận chuông
     db.add(po)
     db.commit()
     db.add(POItem(po_id=po.id, progress_status="Chưa đặt hàng", product_code="SP1", product_name="Hàng",
