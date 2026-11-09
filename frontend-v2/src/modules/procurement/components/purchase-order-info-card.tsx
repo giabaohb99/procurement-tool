@@ -278,6 +278,7 @@ export function PurchaseOrderInfoCard({
           candidates={approverCandidates}
           editable={editable}
           onChange={onChange}
+          required
         />
 
         {/*
