@@ -114,6 +114,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-742-dmh-buoc-truong-phong-phe-duyet | Đơn mua hàng: chưa chọn Trưởng phòng phê duyệt thì không gửi duyệt được
+- status: xong
+- date: 2026-11-09
+- list: Sản xuất - Thu mua
+- tag: Thu mua
+**Bối cảnh:** trên prod, đơn PO00979 của nhà máy (người lập NSU012) gửi duyệt được khi ô **Trưởng phòng phê duyệt** còn trống, nên không ai được chọn để báo duyệt. Yêu cầu mua hàng đã bắt buộc ô này từ bao-CR-590 nhưng Đơn mua hàng thì chưa. Đây không phải lỗi giao diện: màn hiện tên theo người lưu trên đơn, và bấm Duyệt xong hệ thống ghi người thực duyệt vào ô nên sau khi duyệt mới thấy có tên.
+
+**Đã làm**
+- Gửi duyệt Đơn mua hàng bị chặn khi chưa chọn Trưởng phòng phê duyệt; câu báo gộp cùng chỗ thiếu nhà cung cấp, thiếu dòng hàng.
+- Bài kiểm mới cho hai ca; các bài kiểm cũ có gửi duyệt đơn được thêm người duyệt vào đơn mẫu.
+
+Mã nguồn: `backend/app/modules/purchase_order/controller.py` (`submit_po`), `test/backend/test_po_submit_guard.py`
+
 ## duoc-CR-741 | Giao diện mới Thu mua: đổi tên nút và hộp xác nhận cho khớp từng chữ giao diện cũ, bù các nút còn thiếu
 - status: xong
 - date: 2026-11-09

@@ -80,7 +80,8 @@ def _po(db, code, submitter_id, dept_id, company_id=1, invoice_name="HĐ"):
     """Tạo ĐMH."""
     po = PurchaseOrder(
         code=code, status="draft", supplier_code="NX", supplier_name="NCC",
-        company_id=company_id, department_id=dept_id, created_by=submitter_id
+        company_id=company_id, department_id=dept_id, created_by=submitter_id,
+        approver_employee_id=999901,   # bao-CR-742: nhân sự không tài khoản, không thêm người nhận chuông
     )
     db.add(po)
     db.flush()

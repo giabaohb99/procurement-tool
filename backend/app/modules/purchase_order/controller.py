@@ -281,8 +281,12 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     items = service.items_of(db, pid)
     if not items:
         missing.append("ít nhất một dòng hàng")
+    #  bao-CR-742 (người chủ báo 09/11, PO00979 của nhà máy): gửi duyệt BUỘC có Trưởng phòng phê duyệt,
+    #  cùng luật YCMH (bao-CR-590). Thiếu thì đơn vào Chờ duyệt mà không ai được chọn để báo.
+    if not int(po.approver_employee_id or 0):
+        missing.append("Trưởng phòng phê duyệt")
     if missing:
-        raise HTTPException(400, f"Chưa gửi duyệt được — đơn còn thiếu {' và '.join(missing)}.")
+        raise HTTPException(400, f"Chưa gửi duyệt được — đơn còn thiếu {', '.join(missing)}.")
     # CR-095: từng dòng hàng phải điền đủ bộ trường bắt buộc. Nêu ĐÍCH DANH dòng nào
     # thiếu ô nào — báo chung chung thì người lập phải mở lần lượt từng dòng để dò.
     line_errors = [f"dòng {i} ({it.product_code or 'chưa có mã hàng'}): {', '.join(t)}"
