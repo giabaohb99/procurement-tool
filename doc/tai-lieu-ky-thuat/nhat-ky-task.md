@@ -19470,6 +19470,8 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/surve
 
 **Kiểm:** viết lại bài kiểm bóng đếm, 8 bài xanh (chỉ đếm phiếu của mình, ô trống không đếm, tài khoản không gắn nhân sự, không quyền duyệt thì không có bóng, ngoài phạm vi duyệt không đếm, không đếm phiếu chờ điều phối, Phiếu khảo sát theo phạm vi duyệt, thẻ Trang chủ theo phạm vi xem); bài canh phạm vi dữ liệu xanh; ruff sạch. Đếm trên dữ liệu dev: ô trống còn 2/10 Yêu cầu báo giá và 1/2 Đơn mua hàng đang chờ duyệt, các phiếu đó không hiện trên bóng của ai.
 
+**Lên prod:** người dùng prod báo bóng Yêu cầu mua hàng ghi 3 mà lọc Chờ duyệt không có phiếu nào; nguyên nhân là bản 2.17.0 (lượt e) còn cộng phiếu chờ duyệt điều phối. Đã đưa riêng lượt này lên prod ngày 09/11/2026 thành bản 2.17.1 (chọn riêng commit sang `main`, chỉ build lại api và celery, không có migration); kiểm sau deploy: container khỏe, các trang trả 200, mã trong image khớp commit.
+
 Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
 Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 
