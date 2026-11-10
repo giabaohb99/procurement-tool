@@ -30,7 +30,13 @@ vi.mock('@/shared/ui/confirm-dialog', () => ({ confirm: vi.fn(() => Promise.reso
 
 const META: KeyAdminMeta = {
   days: [7, 30, 90], batch_max: 50, max_keys: 5,
-  states: [{ value: 1, label: 'Chờ nhận' }, { value: 2, label: 'Đang dùng' }, { value: 3, label: 'Hết hạn' }, { value: 4, label: 'Đã thu hồi' }, { value: 5, label: 'Đang tắt' }],
+  states: [{ value: 1, label: 'Chờ nhận' }, { value: 2, label: 'Còn hiệu lực' }, { value: 3, label: 'Hết hạn' }, { value: 4, label: 'Đã thu hồi' }, { value: 5, label: 'Đang tắt' }],
+  usages: [
+    { value: 'recent', label: 'Đang dùng' },
+    { value: 'idle', label: 'Ít dùng' },
+    { value: 'stale', label: 'Lâu không dùng' },
+    { value: 'never', label: 'Chưa dùng' },
+  ],
   can_read: true, can_create: true, can_delete: true,
 }
 
@@ -176,8 +182,44 @@ describe('KeyAdminPage as the Connections screen (bao-CR-696)', () => {
     expect(cellOf('Bình', 'Cách nối')).toHaveTextContent('Khóa riêng')
     expect(cellOf('Bình', 'Ứng dụng')).toHaveTextContent(/^—$/)
     expect(cellOf('Bình', 'Dùng lần cuối')).toHaveTextContent('Chưa dùng')
-    expect(cellOf('Bình', 'Trạng thái')).toHaveTextContent('Đang dùng')
+    expect(cellOf('Bình', 'Trạng thái')).toHaveTextContent('Còn hiệu lực')
     expect(document.body.textContent).not.toMatch(/undefined|NaN/)
+  })
+
+  //  bao-CR-743: admin cần biết khóa nào ĐANG DÙNG THẬT, không chỉ còn hiệu lực.
+  it('shows the scope column by default', async () => {
+    mockServer(META, [key(1, 2, 'An')])
+    renderPage()
+    await screen.findByText('An')
+    expect(cellOf('An', 'Mức')).toHaveTextContent('Chỉ đọc')
+  })
+
+  it('shows the usage level next to the last-used date for live keys only', async () => {
+    mockServer(META, [
+      { ...key(1, 2, 'An'), last_used_at: '2026-09-01T08:00:00', usage: 'stale', usage_label: 'Lâu không dùng' },
+      { ...key(2, 2, 'Bình'), usage: 'never', usage_label: 'Chưa dùng' },
+      { ...key(3, 4, 'Chi'), usage: null, usage_label: '' },
+    ])
+    renderPage()
+    await screen.findByText('An')
+    expect(cellOf('An', 'Dùng lần cuối')).toHaveTextContent('Lâu không dùng')
+    //  Khóa chưa dùng: không in hai lần chữ "Chưa dùng" (ngày trống + huy hiệu).
+    expect(within(cellOf('Bình', 'Dùng lần cuối')).getAllByText('Chưa dùng')).toHaveLength(1)
+    expect(cellOf('Chi', 'Dùng lần cuối')).not.toHaveTextContent(/Đang dùng|Ít dùng|Lâu không dùng/)
+  })
+
+  it('filters by usage level through the server', async () => {
+    const user = userEvent.setup()
+    mockServer(META, [key(1, 2, 'An')])
+    renderPage()
+    await screen.findByText('An')
+    await user.click(screen.getByRole('combobox', { name: 'Lọc mức dùng' }))
+    await user.click(await screen.findByRole('option', { name: 'Chưa dùng' }))
+    await waitFor(() =>
+      expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/keys', {
+        params: expect.objectContaining({ usage: 'never', page: 1 }),
+      }),
+    )
   })
 
   it('searches by name, email or employee code through the server, not before the user stops typing', async () => {

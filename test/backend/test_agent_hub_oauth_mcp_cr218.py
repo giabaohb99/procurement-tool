@@ -134,7 +134,7 @@ def test_tron_luong_dang_ky_cho_phep_token_goi_mcp(db, owner, client):
     row = db.get(AgentMcpKey, log.key_id)
     assert (row.kind, row.scope, row.name) == (mcp_keys.KIND_OAUTH, mcp_keys.SCOPE_READ, "Qua ChatGPT")
     listed = client.get("/api/agent-hub/mcp-keys").json()["data"]["items"]
-    assert [(k["kind_label"], k["state_label"]) for k in listed] == [("Kết nối OAuth", "Đang dùng")]
+    assert [(k["kind_label"], k["state_label"]) for k in listed] == [("Kết nối OAuth", "Còn hiệu lực")]
     #  Kết nối OAuth không ăn vào trần 5 khóa dán tay.
     for i in range(mcp_keys.MAX_KEYS):
         mcp_keys.create(db, owner.id, name=f"tay {i}")

@@ -217,8 +217,9 @@ Luật đọc (doc 21 §4.2): bộ đọc được **và** skill không bị thu
 *Đang dùng* của bộ *Đang dùng* lộ ra MCP; một hàm `ai_skill.access_service.visible_skills(db, user)` dùng chung MCP /
 bot / Trợ lý web / màn AI của tôi.
 
-**Khóa nhân sự** (`ai_mcp_key_admin`, phạm vi theo hồ sơ **chủ khóa**): bảng khóa (Chờ nhận / Đang dùng / Hết hạn / Đã thu
-hồi), lọc phòng + trạng thái; **Phát khóa** cho người (theo danh sách nhân sự) hoặc cả phòng, ≤ 50 / lượt, hạn 7 / 30 / 90 /
+**Khóa nhân sự** (`ai_mcp_key_admin`, phạm vi theo hồ sơ **chủ khóa**): bảng khóa (Chờ nhận / Còn hiệu lực / Hết hạn / Đã thu
+hồi / Đang tắt) kèm mức dùng của khóa còn hiệu lực (Đang dùng ≤ 7 ngày / Ít dùng / Lâu không dùng > 30 ngày / Chưa
+dùng — bao-CR-743), lọc phòng + trạng thái + mức dùng; **Phát khóa** cho người (theo danh sách nhân sự) hoặc cả phòng, ≤ 50 / lượt, hạn 7 / 30 / 90 /
 180 / 365, luôn Chỉ đọc; có người ngoài phạm vi → từ chối cả lượt; đủ 5 khóa / chưa có tài khoản / tài khoản khóa → bỏ qua
 kèm lý do; người nhận có **chuông** (không email, không Telegram). **Thu hồi**: tick → hộp chỉ đếm khóa còn hiệu lực; thu hồi
 theo khóa / người / lượt; dòng thu hồi giữ lại.

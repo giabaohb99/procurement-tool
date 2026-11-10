@@ -1,6 +1,7 @@
 import { Badge } from '@/shared/ui/badge'
 import { TONE_CLASS, type StatusTone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
+import type { KeyUsage } from '../types/ai-skill'
 import { CALL_STATUS, KEY_STATE, SECURITY_LEVEL, SKILL_SET_STATUS } from './ai-skill-constants'
 
 /** Huy hiệu trạng thái của Kho skill — màu theo bảng tông dùng chung (`status-tone.ts`), nhãn lấy từ backend. */
@@ -43,6 +44,18 @@ const KEY_STATE_TONE: Record<number, StatusTone> = {
 
 export function KeyStateBadge({ state, label }: { state: number; label: string }) {
   return <ToneBadge tone={KEY_STATE_TONE[state] ?? 'neutral'} label={label} />
+}
+
+/** bao-CR-743: xanh = đang dùng thật; vàng / cam = nguội dần; xám = cấp rồi mà chưa ai dùng (ứng viên thu hồi). */
+const KEY_USAGE_TONE: Record<KeyUsage, StatusTone> = {
+  recent: 'done',
+  idle: 'pending',
+  stale: 'returned',
+  never: 'neutral',
+}
+
+export function KeyUsageBadge({ usage, label }: { usage: KeyUsage; label: string }) {
+  return <ToneBadge tone={KEY_USAGE_TONE[usage]} label={label} />
 }
 
 const CALL_STATUS_TONE: Record<number, StatusTone> = {

@@ -39,7 +39,7 @@ const PLACEHOLDER = '<KHÓA_CỦA_BẠN>'
 function keyRow(over: Record<string, unknown> = {}) {
   return {
     id: 7, name: 'Cursor', hint: '…9999', scope: 0, scope_label: 'chỉ đọc', expires_at: null, last_used_at: null,
-    created_at: null, state: 2, state_label: 'Đang dùng', issued_by: 0, claimed_at: null, batch_id: '', user_id: 3,
+    created_at: null, state: 2, state_label: 'Còn hiệu lực', issued_by: 0, claimed_at: null, batch_id: '', user_id: 3,
     kind: 1, kind_label: '', enabled: true, disabled_at: null, revealable: true, ...over,
   }
 }
