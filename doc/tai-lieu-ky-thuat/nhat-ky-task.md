@@ -114,6 +114,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-744-phieu-cua-toi-dat-phong | Đặt phòng họp: ô Phạm vi "Phiếu của tôi" lọc đúng phiếu của mình
+- status: xong
+- date: 2026-11-10
+- list: Hành chính
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** trong đợt rà sắp xếp cột phát hiện ô Phạm vi **Phiếu của tôi** ở màn Đặt phòng họp không có tác dụng: giao diện gửi yêu cầu lọc phiếu của mình nhưng máy chủ chưa bao giờ đọc yêu cầu đó, nên chọn xong vẫn ra phiếu của mọi người trong phạm vi được xem.
+
+**Đã làm**
+- Máy chủ nay lọc **Phiếu của tôi** đúng nghĩa: phiếu mình là người đặt, hoặc phiếu mình tạo hộ người khác (thư ký đặt phòng cho sếp vẫn thấy phiếu mình đã đặt).
+- Bộ lọc này vẫn nằm trong quyền xem nên không bao giờ hiện thêm phiếu ngoài phạm vi được phép.
+- Hai bài kiểm mới cho hai ca trên và cho tài khoản không gắn nhân sự.
+
+Mã nguồn: `backend/app/modules/meeting_room/controller.py` (`list_bookings`), `frontend-v2/src/modules/hr/components/unified-room-booking-table.tsx`, `test/backend/test_sap_xep_man_hinh_ngoai_thu_mua_cr744.py`
+
 ## duoc-CR-744 | Rà và sửa sắp xếp cột trên toàn giao diện mới: bấm tiêu đề cột nào cũng xếp đúng
 - status: xong
 - date: 2026-11-10
@@ -132,7 +147,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 **Kiểm:** bài kiểm máy chủ mới cho từng màn và cho luật chung, bài kiểm giao diện cho từng màn và bảng dòng; ruff, kiểm kiểu và lint không lỗi; thử thật trên cơ sở dữ liệu MySQL ở máy local cả hai chiều xếp của từng cột, đi hết các trang để đếm dòng lặp.
 
-**Còn lại:** chưa đo tốc độ xếp trên bảng giá hải quan cỡ dữ liệu thật (khoảng 328 nghìn dòng); cột Gram ở Chi tiết YC mua hàng xếp theo chữ nên "80gsm" đứng sau "300gsm"; bộ lọc **Phiếu của tôi** ở Đặt phòng họp không có tác dụng (lỗi có từ trước, chờ quyết làm riêng).
+**Còn lại:** chưa đo tốc độ xếp trên bảng giá hải quan cỡ dữ liệu thật (khoảng 328 nghìn dòng); cột Gram ở Chi tiết YC mua hàng xếp theo chữ nên "80gsm" đứng sau "300gsm".
 
 Mã nguồn: `backend/app/core/sort_order.py`, `backend/app/core/code_rank_sql.py`, `backend/app/core/base_controller.py`, các tệp `sort_expressions.py` / `*_sort.py` mới trong từng phân hệ, `frontend-v2/src/shared/data-table/use-lines-table-sort.ts`, `lines-table.tsx`, `frontend-v2/src/shared/utils/status-rank.ts`, các trang danh sách và bảng dòng; bài kiểm `test/backend/test_*_cr744.py`.
 

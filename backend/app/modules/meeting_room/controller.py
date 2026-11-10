@@ -9,7 +9,7 @@ Danh mục phòng dựng bằng `make_crud_router` (khóa `meeting_room`): nó l
 mục thuần, không có chốt chặn nào ngoài "không xóa phòng đang có phiếu".
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import case
+from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
@@ -81,10 +81,17 @@ def list_bookings(
     to_time: LocalDateTime | None = Query(None, description="Lọc theo khoảng: họp ĐẾN lúc"),
     mine_first: bool = Query(
         False, description="Đưa phiếu ĐANG chờ chính người gọi duyệt lên đầu (chỉ khi không chọn cột sắp xếp)"),
+    scope: str | None = Query(
+        None, description="`mine` = chỉ phiếu tôi là người đặt HOẶC tôi tạo hộ (ô Phạm vi: Phiếu của tôi)"),
     db: Session = Depends(get_db),
     user=Depends(require(ENTITY, "read")),
 ):
-    """Danh sách phiếu trong phạm vi người xem ("Phiếu của tôi" khi phạm vi = own).
+    """Danh sách phiếu trong phạm vi người xem; `scope=mine` thu về phiếu của chính người gọi.
+
+    "Phiếu của tôi" = tôi là NGƯỜI ĐẶT (`requester_employee_id`) HOẶC tôi là người TẠO hộ
+    (`created_by` — thư ký đặt hộ sếp), cùng nghĩa với phạm vi `own` ở `SCOPE_FIELDS`. Trước
+    duoc-CR-744 tham số này bị bỏ qua: chọn "Phiếu của tôi" vẫn ra mọi phiếu trong phạm vi xem.
+    Vẫn đi qua `apply_scope` nên không bao giờ rộng hơn quyền xem.
 
     Sắp xếp: `sort_by`/`sort_dir` (Số phiếu, Trạng thái, Nội dung, Phòng, Ngày họp, Người đặt).
     Không chọn cột thì mặc định cuộc họp mới nhất trước; thêm `mine_first=true` thì phiếu đang
@@ -98,6 +105,12 @@ def list_bookings(
     query = db.query(RoomBooking).filter(RoomBooking.is_deleted.is_(False))
     query = apply_filters(query, RoomBooking, request, service.FILTERABLE)
     query = service.apply_keyword_search(query, search)
+    if (scope or "").strip().lower() == "mine":
+        mine = [RoomBooking.created_by == user.id]
+        employee_id = getattr(user, "employee_id", 0) or 0
+        if employee_id:
+            mine.append(RoomBooking.requester_employee_id == employee_id)
+        query = query.filter(or_(*mine))
     if from_time:
         query = query.filter(RoomBooking.end_at >= from_time)
     if to_time:

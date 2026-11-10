@@ -297,7 +297,10 @@ def _call_room_list(db, user, monkeypatch, mine_ids, **query):
                         lambda _db, _emp, _entity="": [{"entity_id": i} for i in mine_ids])
     pg = {"page": 1, "page_size": 50, "offset": 0, "limit": 50}
     mine_first = query.pop("mine_first", False)
-    out = room_controller.list_bookings(_Req(**query), pg, None, None, None, mine_first, db, user)
+    scope = query.pop("scope", None)
+    #  Gọi bằng TÊN tham số: gọi thẳng hàm thì giá trị mặc định là đối tượng `Query`, không phải None.
+    out = room_controller.list_bookings(_Req(**query), pg, search=None, from_time=None, to_time=None,
+                                        mine_first=mine_first, scope=scope, db=db, user=user)
     return [i["code"] for i in json.loads(out.body)["data"]["items"]]
 
 
@@ -316,6 +319,30 @@ def test_dat_phong_mine_first_va_bo_qua_khi_da_chon_cot(db, seed, cap_quyen, mon
     got = _call_room_list(db, user, monkeypatch, [oldest.id], mine_first=True,
                           sort_by="start_at", sort_dir="desc")
     assert got == [r.code for r in reversed(rows)]
+
+
+def test_dat_phong_phieu_cua_toi_chi_ra_phieu_toi_dat_hoac_tao_ho(db, seed, cap_quyen, monkeypatch):
+    """duoc-CR-744: ô Phạm vi **Phiếu của tôi** gửi `scope=mine` mà máy chủ bỏ qua — chọn xong vẫn
+    ra phiếu của mọi người. Nay chỉ còn phiếu tôi là người đặt HOẶC tôi tạo hộ (thư ký đặt cho sếp)."""
+    cap_quyen(seed.u_nstm_id, "room_booking", scope="all", read=True)
+    user = SimpleNamespace(id=seed.u_nstm_id, employee_id=seed.emp_nstm_id)
+    _booking(db, "MY-REQ", 0, seed.emp_nstm_id, 8)                   # tôi là người đặt
+    on_behalf = _booking(db, "MY-CREATED", 0, seed.emp_tp_id, 9)     # tôi đặt hộ người khác
+    on_behalf.created_by = seed.u_nstm_id
+    _booking(db, "OTHER", 0, seed.emp_req_id, 10)                    # của người khác
+    db.flush()
+
+    assert sorted(_call_room_list(db, user, monkeypatch, [])) == ["MY-CREATED", "MY-REQ", "OTHER"]
+    assert sorted(_call_room_list(db, user, monkeypatch, [], scope="mine")) == ["MY-CREATED", "MY-REQ"]
+
+
+def test_dat_phong_phieu_cua_toi_khong_rong_hon_quyen_xem(db, seed, cap_quyen, monkeypatch):
+    """Tài khoản không gắn nhân sự chỉ còn vế "tôi tạo"; `scope=mine` không bao giờ mở rộng phạm vi."""
+    cap_quyen(seed.u_nstm_id, "room_booking", scope="all", read=True)
+    user = SimpleNamespace(id=seed.u_nstm_id, employee_id=0)
+    _booking(db, "BY-EMP-0", 0, 0, 8)                                # requester 0 nhưng không do tôi tạo
+    db.flush()
+    assert _call_room_list(db, user, monkeypatch, [], scope="mine") == []
 
 
 # ── Bảng "Kết quả khảo sát đã duyệt": khóa phụ id ────────────────────────────────────────

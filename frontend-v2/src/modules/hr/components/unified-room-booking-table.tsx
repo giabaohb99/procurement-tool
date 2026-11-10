@@ -105,9 +105,8 @@ export function UnifiedRoomBookingTable() {
     if (debouncedValue) p.search = debouncedValue
     if (status !== ALL) p.status = status
     if (roomId !== ALL) p.room_id = roomId
-    //  Phạm vi MINE: backend trả phiếu của chính người đang đăng nhập khi
-    //  `scope=mine` — giả định backend hỗ trợ; nếu chưa thì lọc phía client
-    //  bằng employee_id giống UnifiedLeaveRequestTable.
+    //  Phạm vi MINE: `scope=mine` — máy chủ trả phiếu tôi là người đặt HOẶC tôi tạo hộ
+    //  (`meeting_room/controller.list_bookings`, có từ duoc-CR-744; trước đó tham số bị bỏ qua).
     if (currentScope === ROOM_SCOPE.MINE) p.scope = 'mine'
     //  duoc-CR-744: cột người dùng bấm xếp ở MÁY CHỦ, trên cả tập (xếp lại một trang ở trình duyệt
     //  thì phiếu ở trang 2 không bao giờ nổi lên). Chưa chọn cột thì xin `mine_first`: máy chủ tự
