@@ -34,7 +34,7 @@ function overview(over: Partial<AiOverview> = {}): AiOverview {
     top_tools: [{ key: 'purchase_report', calls: 20 }],
     top_users: [{ key: 5, calls: 30, label: 'Nguyễn An' }],
     top_skills: [{ skill_id: 1, calls: 10 }, { skill_id: 99, calls: 2 }],
-    keys_by_state: [{ state: 2, label: 'Đang dùng', count: 6 }],
+    keys_by_state: [{ state: 2, label: 'Còn hiệu lực', count: 6 }],
     expiring_keys: [], expiring_days: 7, ...over,
   }
 }

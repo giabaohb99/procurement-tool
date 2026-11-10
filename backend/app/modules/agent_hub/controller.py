@@ -557,6 +557,7 @@ def key_admin_meta(user=Depends(get_current_user), db: Session = Depends(get_db)
     return success({
         "days": list(mcp_keys.ISSUE_DAYS), "batch_max": mcp_keys.BATCH_MAX, "max_keys": mcp_keys.MAX_KEYS,
         "states": [{"value": int(k), "label": v} for k, v in mcp_keys.STATE_LABELS.items()],
+        "usages": [{"value": k, "label": v} for k, v in mcp_keys.USAGE_LABELS.items()],     # bao-CR-743
         "can_read": user_has_permission(db, user, KEY_ADMIN_ENTITY, "read"),
         "can_create": user_has_permission(db, user, KEY_ADMIN_ENTITY, "create"),
         "can_delete": user_has_permission(db, user, KEY_ADMIN_ENTITY, "delete"),
@@ -567,7 +568,7 @@ def key_admin_meta(user=Depends(get_current_user), db: Session = Depends(get_db)
 def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Query(None, ge=1, le=5),
                    user_id: int | None = Query(None, ge=1), batch_id: str = Query("", max_length=32),
                    page: int = Query(1, ge=1, le=10_000), size: int = Query(50, ge=1, le=200),
-                   q: str = "", user=Depends(get_current_user), db: Session = Depends(get_db)):
+                   q: str = "", usage: str = "", user=Depends(get_current_user), db: Session = Depends(get_db)):
     from app.core.text_fold import fold
 
     from . import oauth
@@ -588,6 +589,12 @@ def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Quer
         rows = [r for r in rows if r.batch_id == batch_id]
     if state is not None:
         rows = [r for r in rows if int(mcp_keys.state_of(r)) == state]
+    #  bao-CR-743: lọc mức dùng (recent / idle / stale / never) — chỉ khóa còn hiệu lực mới có mức dùng. Tham số trơn như
+    #  `q` để bài kiểm gọi thẳng hàm khỏi truyền; giá trị lạ → 422 như Query sai.
+    if usage:
+        if usage not in mcp_keys.USAGE_LABELS:
+            raise HTTPException(422, f"Mức dùng chỉ nhận: {', '.join(mcp_keys.USAGE_LABELS)}.")
+        rows = [r for r in rows if mcp_keys.usage_of(r) == usage]
     total = len(rows)
     page_rows = rows[(page - 1) * size: page * size]
     issuers = _user_labels(db, [r.issued_by for r in page_rows if r.issued_by])

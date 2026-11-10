@@ -304,6 +304,13 @@ def test_key_revoke_needs_confirm_and_cannot_touch_outsider(keys):
     assert "đã bị thu hồi" in again["error"]
 
 
+def test_key_revoke_preview_shows_usage_bao_cr743(keys):
+    db = keys.db
+    row, _raw = mcp_keys.create(db, keys.mate.id, name="Claude máy nhà")
+    out, _ = _call(db, keys.boss, "draft_key_revoke", {"key_ids": [row.id]})
+    assert "(Còn hiệu lực · Chưa dùng, hạn " in out["preview"]["khóa"][0]
+
+
 def test_key_tools_refused_for_read_only_key_even_in_confirm(keys):
     db = keys.db
     out, _ = _call(db, keys.boss, "draft_key_issue", {"employees": ["BANK9"]})

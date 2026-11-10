@@ -114,6 +114,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-743-ket-noi-ai-muc-dung-khoa | Màn AI Kết nối: nhãn Còn hiệu lực, mức dùng theo lần dùng cuối và lọc khóa chưa dùng
+- status: xong
+- date: 2026-11-10
+- tag: AI
+**Bối cảnh:** cột Trạng thái của màn **AI › Kết nối** ghi *Đang dùng* cho mọi khóa còn hạn, nên quản trị tưởng khóa nào cũng đang chạy; thực tế có người giữ 2–3 khóa, có khóa chưa gọi lần nào.
+
+**Đã làm**
+- Trạng thái khóa còn hạn đổi tên thành **Còn hiệu lực** (cả Trang cá nhân và Tổng quan AI dùng chung nhãn này).
+- Khóa còn hiệu lực có thêm mức dùng tính từ lần dùng cuối: **Đang dùng** (trong 7 ngày), **Ít dùng** (7–30 ngày), **Lâu không dùng** (quá 30 ngày), **Chưa dùng**; hiện thành huy hiệu dưới ngày dùng lần cuối.
+- Thêm ô lọc **Mức dùng** (lọc ở máy chủ) để lọc khóa chưa dùng / lâu không dùng rồi tick thu hồi cả loạt bằng nút Thu hồi sẵn có.
+- Cột **Mức** (chỉ đọc / được ghi) hiện mặc định.
+- Bản xem trước thu hồi khóa qua cổng MCP ghi kèm mức dùng.
+- Sửa bài hướng dẫn Kết nối AI riêng và tài liệu cổng MCP theo nhãn mới.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_keys.py`, `controller.py` (`key_admin_list`, `key_admin_meta`), `mcp_admin.py`, `frontend-v2/src/modules/ai-skill/pages/key-admin-page.tsx`, `test/backend/test_agent_hub_muc_dung_khoa_cr743.py`
+
 ## bao-CR-742-dmh-buoc-truong-phong-phe-duyet | Đơn mua hàng: chưa chọn Trưởng phòng phê duyệt thì không gửi duyệt được
 - status: xong
 - date: 2026-11-09
@@ -291,6 +307,18 @@ hải quan đạt, ruff sạch. Đã đẩy lên erp-v2, chưa lên dev và prod
 
 **Còn lại:** sau khi bản này lên prod, chạy script gắn lại hoạt chất một lần (chạy thử trước, xem số dòng rồi mới ghi
 thật). Nút **Gắn lại nhãn** trên màn vẫn đọc cả bảng một lần trong tiến trình API, chưa đổi.
+
+**Sửa bộ dò trước khi ghi thật (10/11):** chạy thử script trên prod ngày 09/11 ra 381 dòng đổi, mẫu là hàng hương liệu
+đang mang hoạt chất thuốc BVTV và sau khi chạy vẫn mang một hoạt chất BVTV khác. Nguyên nhân là danh mục có thuốc tên
+đúng bằng từ thường (POWER, ELIXIR, JASMINE, ABSOLUTE, GAULOIS): tên hàng chứa hai từ như vậy thì bản cũ chọn ngẫu nhiên,
+bản sửa ở bao-CR-728 chọn từ đứng trước, cả hai đều sai vì hàng không phải thuốc. Bộ gắn nay chỉ dò tên thương mại cho
+dòng mã HS nhóm 3808 hoặc chưa có mã HS; bước dò theo tên hoạt chất giữ nguyên; sửa mã HS trên màn thì suy lại hoạt
+chất. Script gắn lại vì thế đưa về rỗng hoạt chất suy ra sai của hàng ngoài nhóm 3808 (giá trị người nhập giữ nguyên),
+in thêm số dòng đưa về rỗng và chia theo mã HS bốn số. Dữ liệu local 18.243 dòng và dev 17.175 dòng đều thuộc 3808 nên
+chạy thử ra 0 dòng đổi; số của prod phải chạy thử lại sau khi bản này lên. 411 bài kiểm hải quan đạt, ruff sạch, không
+migration.
+Mã nguồn: `customs/ingredient.py` (`allows_trade_names`, `retag_changed`), `customs/importer.py`,
+`customs/line_edit_service.py`. Kiểm: `test/backend/test_ten_thuong_mai_chi_hang_bvtv_cr733.py`.
 
 **Bài kiểm đỏ ngoài phạm vi (kiểm ngày 05/11):** một lần lỡ chạy cả bộ bài kiểm backend ra 8 bài đỏ, đều ngoài phần hải
 quan. Chạy riêng trên mã prod và trên erp-v2 cho thấy không bài nào do việc này gây ra. Năm bài phân vùng nhật ký đỏ sẵn
@@ -19469,6 +19497,8 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/surve
 - Thẻ thống kê Đơn mua hàng chờ duyệt ở Trang chủ giữ cách đếm theo phạm vi xem.
 
 **Kiểm:** viết lại bài kiểm bóng đếm, 8 bài xanh (chỉ đếm phiếu của mình, ô trống không đếm, tài khoản không gắn nhân sự, không quyền duyệt thì không có bóng, ngoài phạm vi duyệt không đếm, không đếm phiếu chờ điều phối, Phiếu khảo sát theo phạm vi duyệt, thẻ Trang chủ theo phạm vi xem); bài canh phạm vi dữ liệu xanh; ruff sạch. Đếm trên dữ liệu dev: ô trống còn 2/10 Yêu cầu báo giá và 1/2 Đơn mua hàng đang chờ duyệt, các phiếu đó không hiện trên bóng của ai.
+
+**Lên prod:** người dùng prod báo bóng Yêu cầu mua hàng ghi 3 mà lọc Chờ duyệt không có phiếu nào; nguyên nhân là bản 2.17.0 (lượt e) còn cộng phiếu chờ duyệt điều phối. Đã đưa riêng lượt này lên prod ngày 09/11/2026 thành bản 2.17.1 (chọn riêng commit sang `main`, chỉ build lại api và celery, không có migration); kiểm sau deploy: container khỏe, các trang trả 200, mã trong image khớp commit.
 
 Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
 Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.

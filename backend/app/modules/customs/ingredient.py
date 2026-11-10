@@ -12,7 +12,10 @@ theo nghĩa của thu mua — hoạt chất — phải SUY RA từ chữ. Ba ngu
    bù cho bộ từ khóa tay chỉ có 99 hoạt chất — thiếu nó thì chính ATRAZINE, mặt hàng
    mẫu của tính năng, chỉ nhận ra 65/92 dòng.
 3. **Tên thương mại** (cùng danh mục): tên hàng chứa `BIPYRHONE` thì hoạt chất là hoạt
-   chất đăng ký của thuốc đó. Chỉ dùng khi hai bước trên không ra gì.
+   chất đăng ký của thuốc đó. Chỉ dùng khi hai bước trên không ra gì, và CHỈ cho dòng mã HS
+   nhóm 3808 (thuốc BVTV) hoặc chưa có mã HS — bao-CR-733: danh mục có thuốc tên đúng bằng
+   từ thường (`POWER`, `ELIXIR`, `JASMINE`, `ABSOLUTE`, `GAULOIS`), dò trên hương liệu / tinh
+   dầu (3301 / 3302) là gắn nhầm hoạt chất BVTV cho hàng không phải thuốc.
 
 Đo trên 18.243 dòng thật (trước khi có bước 2): bước 1 ra 31%, bước 3 ra 24%, gộp 41%. Phần còn lại phần lớn
 là hóa chất khử trùng / tẩy rửa — không có hoạt chất BVTV để nối, không phải bộ gắn
@@ -59,6 +62,17 @@ _GENERIC_HEADS = frozenset({
 #  Cột hoạt chất của danh mục nguồn đôi chỗ chép nhầm TÊN CÔNG TY (`SHANDONG JOPHNE
 #  BIOTECHNOLOGY CO LTD`) — tên nào mang dấu hiệu doanh nghiệp thì bỏ.
 _COMPANY_MARK = re.compile(r"\b(?:CO|LTD|LIMITED|COMPANY|CORP|CORPORATION|INC|GROUP|BIOTECH\w*|INDUSTR\w*)\b")
+
+
+#  bao-CR-733: nhóm HS của thuốc BVTV (trừ sâu, trừ nấm, trừ cỏ, trừ chuột, điều hòa sinh trưởng…).
+PESTICIDE_HS_PREFIX = "3808"
+
+
+def allows_trade_names(hs_code: str | None) -> bool:
+    """Dòng có được dò theo TÊN THƯƠNG MẠI thuốc BVTV không: mã HS nhóm 3808, hoặc chưa có mã HS (không đủ căn cứ để
+    chặn). Bước theo tên hoạt chất không qua cổng này — thuốc kỹ thuật hay khai ở chương 29."""
+    code = (hs_code or "").strip().lstrip("'")
+    return not code or code.startswith(PESTICIDE_HS_PREFIX)
 
 
 def normalize_for_match(text: str) -> str:
@@ -117,7 +131,8 @@ class IngredientTagger:
             if key:
                 self.trades[key.split()[0]].append((key, active))
 
-    def tag(self, product_name: str) -> tuple[str, str]:
+    def tag(self, product_name: str, hs_code: str | None = "") -> tuple[str, str]:
+        """→ (hoạt chất, hàm lượng). `hs_code` rỗng = không biết mã HS (dò đủ ba bước như cũ)."""
         up = (product_name or "").upper()
         found: list[str] = []
         for keyword, canonical in self.aliases:
@@ -133,7 +148,7 @@ class IngredientTagger:
                     if len(found) == _MAX_ACTIVES:
                         break
         active = " + ".join(found)
-        if not active:
+        if not active and allows_trade_names(hs_code):
             #  bao-CR-728: duyệt từ theo THỨ TỰ trong tên hàng (bỏ trùng), không theo `set` — thứ tự của `set` chữ
             #  đổi theo từng tiến trình (băm ngẫu nhiên), nên tên chứa hai tên thương mại ra hoạt chất khác nhau giữa
             #  hai lần chạy: xuất rồi nạp lại tệp không sửa gì vẫn báo "Ghi đè" và đổi hoạt chất của dòng.
@@ -197,19 +212,20 @@ def retag_all(db: Session) -> dict:
     """
     tagger = load_tagger(db)
     kinds = load_kind_tagger(db)
-    cache: dict[str, tuple[str, str]] = {}
+    cache: dict[tuple[str, bool], tuple[str, str]] = {}
     tagged = total = technical = 0
     batch: list[dict] = []
     #  Đọc hết trước rồi mới ghi: đọc kiểu luồng (`yield_per`) giữ con trỏ mở trên cùng
     #  kết nối, MySQL không cho chạy câu UPDATE xen giữa.
     #  bao-CR-603: dòng có hoạt chất / hàm lượng LẤY TỪ TỆP (cờ `_from_file`) thì giữ nguyên giá
     #  trị đó — gắn lại chỉ đụng phần suy ra.
-    for line_id, name, stored_active, stored_form, active_from_file, form_from_file in db.query(
-            CustomsLine.id, CustomsLine.product_name, CustomsLine.active_ingredient, CustomsLine.formulation,
-            CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file).all():
-        if name not in cache:
-            cache[name] = tagger.tag(name)
-        active, form = cache[name]
+    for line_id, name, hs_code, stored_active, stored_form, active_from_file, form_from_file in db.query(
+            CustomsLine.id, CustomsLine.product_name, CustomsLine.hs_code, CustomsLine.active_ingredient,
+            CustomsLine.formulation, CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file).all():
+        key = (name, allows_trade_names(hs_code))
+        if key not in cache:
+            cache[key] = tagger.tag(name, hs_code)
+        active, form = cache[key]
         if active_from_file:
             active = stored_active
         if form_from_file:
@@ -247,24 +263,31 @@ def retag_changed(db: Session, apply: bool = False, chunk: int = 5000, examples:
     (tên đứng trước trong tên hàng thắng), nhưng dữ liệu cũ vẫn lệch: xuất rồi nạp lại tệp không sửa gì vẫn báo
     "Ghi đè" ở các dòng đó và đổi hoạt chất của chúng. Giá trị lấy từ tệp / sửa tay (cờ `_from_file`) giữ nguyên.
 
-    Mỗi khúc commit riêng (gián đoạn giữa chừng thì chạy lại là tiếp phần còn lại). → số đếm + vài dòng mẫu."""
+    Mỗi khúc commit riêng (gián đoạn giữa chừng thì chạy lại là tiếp phần còn lại). → số đếm + vài dòng mẫu.
+
+    Sửa bộ dò (bao-CR-733): tên thương mại chỉ dò cho dòng mã HS 3808 (`allows_trade_names`), nên hàng ngoài nhóm đó đang
+    mang hoạt chất suy ra từ tên thương mại (hương liệu GAULOIS ELIXIR → Brodifacoum) được ĐƯA VỀ RỖNG — đếm riêng ở
+    `cleared`, theo mã HS 4 số ở `cleared_by_hs`. Không xóa thì nạp lại tệp xuất vẫn báo "Ghi đè" ở các dòng đó."""
     tagger = load_tagger(db)
     kinds = load_kind_tagger(db)
-    cache: dict[str, tuple[str, str, int]] = {}
-    out = {"total": 0, "changed": 0, "active": 0, "formulation": 0, "kind": 0, "examples": [], "applied": apply}
+    cache: dict[tuple[str, bool], tuple[str, str, int]] = {}
+    out = {"total": 0, "changed": 0, "active": 0, "formulation": 0, "kind": 0, "cleared": 0, "cleared_by_hs": {},
+           "examples": [], "applied": apply}
     last_id = 0
     while True:
         rows = db.execute(
-            select(CustomsLine.id, CustomsLine.product_name, CustomsLine.active_ingredient, CustomsLine.formulation,
-                   CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file, CustomsLine.product_kind)
+            select(CustomsLine.id, CustomsLine.product_name, CustomsLine.hs_code, CustomsLine.active_ingredient,
+                   CustomsLine.formulation, CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file,
+                   CustomsLine.product_kind)
             .where(CustomsLine.id > last_id).order_by(CustomsLine.id).limit(chunk)).all()
         if not rows:
             return out
         batch: list[dict] = []
-        for line_id, name, active_now, form_now, active_from_file, form_from_file, kind_now in rows:
-            if name not in cache:
-                cache[name] = (*tagger.tag(name), kinds.tag(name))
-            active, form, kind = cache[name]
+        for line_id, name, hs_code, active_now, form_now, active_from_file, form_from_file, kind_now in rows:
+            key = (name, allows_trade_names(hs_code))
+            if key not in cache:
+                cache[key] = (*tagger.tag(name, hs_code), kinds.tag(name))
+            active, form, kind = cache[key]
             active = active_now if active_from_file else active
             form = form_now if form_from_file else form
             diff = [active != (active_now or ""), form != (form_now or ""), kind != (kind_now or 0)]
@@ -275,8 +298,13 @@ def retag_changed(db: Session, apply: bool = False, chunk: int = 5000, examples:
             out["active"] += diff[0]
             out["formulation"] += diff[1]
             out["kind"] += diff[2]
+            if active_now and not active:
+                out["cleared"] += 1
+                hs4 = (hs_code or "")[:4] or "?"
+                out["cleared_by_hs"][hs4] = out["cleared_by_hs"].get(hs4, 0) + 1
             if len(out["examples"]) < examples:
-                out["examples"].append({"id": line_id, "product_name": name, "active_before": active_now,
+                out["examples"].append({"id": line_id, "hs_code": hs_code, "product_name": name,
+                                        "active_before": active_now,
                                         "active_after": active, "formulation_before": form_now,
                                         "formulation_after": form, "kind_before": kind_now, "kind_after": kind})
             batch.append({"line_id": line_id, "active_ingredient": active, "formulation": form,

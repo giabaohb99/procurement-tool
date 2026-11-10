@@ -150,11 +150,16 @@ export interface PagedItems<T> {
   items: T[]
 }
 
+/** bao-CR-743: dùng trong 7 ngày · 7–30 ngày · quá 30 ngày · chưa dùng lần nào. */
+export type KeyUsage = 'recent' | 'idle' | 'stale' | 'never'
+
 export interface KeyAdminMeta {
   days: number[]
   batch_max: number
   max_keys: number
   states: { value: number; label: string }[]
+  /** bao-CR-743: lựa chọn ô lọc Mức dùng. Máy chủ cũ chưa có thì không bày ô lọc. */
+  usages?: { value: KeyUsage; label: string }[]
   can_read: boolean
   can_create: boolean
   can_delete: boolean
@@ -202,6 +207,12 @@ export interface AdminMcpKey {
   app_name?: string | null
   /** Nơi quay về ĐẦU TIÊN của ứng dụng OAuth; `null` với khóa tay hoặc khi ứng dụng đã bị xóa. */
   app_redirect_uri?: string | null
+  /**
+   * bao-CR-743: mức dùng thật — chỉ có khi `state === 2` (còn hiệu lực), các trạng thái khác `null`; `usage_label`
+   * rỗng khi `usage` null. Máy chủ cũ chưa có thì coi như không biết. Màn Kết nối chỉ đọc qua `toConnectionRow`.
+   */
+  usage?: KeyUsage | null
+  usage_label?: string
 }
 
 /** Tham số bảng màn Kết nối. `q` (bao-CR-696): họ tên / mã NV / email, không dấu, không phân biệt hoa thường. */
@@ -211,6 +222,8 @@ export type KeyAdminKeysParams = {
   state?: number
   user_id?: number
   q?: string
+  /** bao-CR-743: lọc ở máy chủ, ngầm chỉ còn khóa state 2. */
+  usage?: KeyUsage
   page: number
   size: number
 }
@@ -316,6 +329,12 @@ export interface MyMcpKey {
   disabled_at?: string | null
   /** Xem lại được khóa đầy đủ không (false: khóa trước 221, OAuth, chờ nhận, hết hạn, thu hồi). */
   revealable?: boolean
+  /**
+   * bao-CR-743: mức dùng thật — chỉ có khi `state === 2` (còn hiệu lực), các trạng thái khác `null`; `usage_label`
+   * rỗng khi `usage` null. Máy chủ cũ chưa có thì coi như không biết. Màn Kết nối chỉ đọc qua `toConnectionRow`.
+   */
+  usage?: KeyUsage | null
+  usage_label?: string
   key?: string
 }
 
