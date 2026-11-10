@@ -1,6 +1,6 @@
 import { matchesVietnamese } from '@/shared/utils/vn-text'
-import { KEY_KIND } from '../config/ai-skill-constants'
-import type { AdminMcpKey, McpCall, OAuthClient } from '../types/ai-skill'
+import { KEY_KIND, KEY_STATE } from '../config/ai-skill-constants'
+import type { AdminMcpKey, KeyUsage, McpCall, OAuthClient } from '../types/ai-skill'
 
 /**
  * bao-CR-696 — MỘT chỗ duy nhất đọc các trường mới của màn Kết nối và cột Chứng từ ở Nhật ký sử dụng.
@@ -34,6 +34,10 @@ export interface ConnectionRow {
   lastUsedAt: string | null
   state: number
   stateLabel: string
+  /** bao-CR-743: mức dùng thật; `null` khi khóa không còn hiệu lực hoặc máy chủ chưa trả. */
+  usage: KeyUsage | null
+  /** Nhãn máy chủ cho `usage`; rỗng đúng khi `usage` null. */
+  usageLabel: string
   source: AdminMcpKey
 }
 
@@ -65,6 +69,20 @@ function stripEmployeeCode(label: string, code: string): string {
   return rest === '' || rest.endsWith(' ') ? rest.trim() : label
 }
 
+const KEY_USAGES: readonly KeyUsage[] = ['recent', 'idle', 'stale', 'never']
+
+/**
+ * Mức dùng chỉ có nghĩa với khóa còn hiệu lực. Máy chủ lỡ trả cho khóa khác, giá trị lạ hay nhãn trống thì coi như
+ * không có — thà không hiện còn hơn hiện một huy hiệu sai / trống.
+ */
+function readUsage(k: AdminMcpKey): { usage: KeyUsage | null; usageLabel: string } {
+  const label = text(k.usage_label)
+  if (k.state !== KEY_STATE.active || !k.usage || !KEY_USAGES.includes(k.usage) || !label) {
+    return { usage: null, usageLabel: '' }
+  }
+  return { usage: k.usage, usageLabel: label }
+}
+
 export function toConnectionRow(k: AdminMcpKey): ConnectionRow {
   const connectionType = readConnectionType(k)
   const employeeCode = text(k.employee_code)
@@ -87,6 +105,7 @@ export function toConnectionRow(k: AdminMcpKey): ConnectionRow {
     lastUsedAt: k.last_used_at || null,
     state: k.state,
     stateLabel: text(k.state_label),
+    ...readUsage(k),
     source: k,
   }
 }

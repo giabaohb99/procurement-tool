@@ -11,7 +11,7 @@ import { filterOAuthClients, readCallDocument, redirectHost, toConnectionRow } f
 function oldServerKey(over: Partial<AdminMcpKey> = {}): AdminMcpKey {
   return {
     id: 1, name: 'Claude máy nhà', hint: '…ab12', scope: 0, scope_label: 'chỉ đọc', expires_at: null,
-    last_used_at: '2026-10-29T08:00:00', created_at: null, state: 2, state_label: 'Đang dùng', issued_by: 0,
+    last_used_at: '2026-10-29T08:00:00', created_at: null, state: 2, state_label: 'Còn hiệu lực', issued_by: 0,
     claimed_at: null, batch_id: '', user_id: 42, owner_label: 'Nguyễn Văn An', department_id: 3, department: 'Thu mua',
     issued_by_label: '', ...over,
   }
@@ -93,6 +93,23 @@ describe('toConnectionRow', () => {
   it('shows the user id when the server has no name at all, and nothing for user 0 (broken key)', () => {
     expect(toConnectionRow(oldServerKey({ owner_label: '' })).person).toBe('#42')
     expect(toConnectionRow(oldServerKey({ owner_label: '', user_id: 0 })).person).toBe('')
+  })
+
+  //  bao-CR-743: mức dùng thật chỉ có nghĩa với khóa còn hiệu lực (state 2).
+  it('reads the usage level of a live key and its server label', () => {
+    const row = toConnectionRow(oldServerKey({ usage: 'stale', usage_label: 'Lâu không dùng' }))
+    expect(row).toMatchObject({ usage: 'stale', usageLabel: 'Lâu không dùng' })
+  })
+
+  it('has no usage for an older server, a non-live key, or an unknown value', () => {
+    expect(toConnectionRow(oldServerKey())).toMatchObject({ usage: null, usageLabel: '' })
+    //  Máy chủ lỡ trả mức dùng cho khóa đã thu hồi — vẫn không hiện.
+    expect(toConnectionRow(oldServerKey({ state: 4, usage: 'never', usage_label: 'Chưa dùng' }))).toMatchObject({
+      usage: null,
+      usageLabel: '',
+    })
+    expect(toConnectionRow(oldServerKey({ usage: 'weird' as never, usage_label: 'X' }))).toMatchObject({ usage: null, usageLabel: '' })
+    expect(toConnectionRow(oldServerKey({ usage: 'recent', usage_label: '  ' }))).toMatchObject({ usage: null, usageLabel: '' })
   })
 })
 

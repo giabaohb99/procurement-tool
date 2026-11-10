@@ -114,6 +114,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-743-ket-noi-ai-muc-dung-khoa | Màn AI Kết nối: nhãn Còn hiệu lực, mức dùng theo lần dùng cuối và lọc khóa chưa dùng
+- status: xong
+- date: 2026-11-10
+- tag: AI
+**Bối cảnh:** cột Trạng thái của màn **AI › Kết nối** ghi *Đang dùng* cho mọi khóa còn hạn, nên quản trị tưởng khóa nào cũng đang chạy; thực tế có người giữ 2–3 khóa, có khóa chưa gọi lần nào.
+
+**Đã làm**
+- Trạng thái khóa còn hạn đổi tên thành **Còn hiệu lực** (cả Trang cá nhân và Tổng quan AI dùng chung nhãn này).
+- Khóa còn hiệu lực có thêm mức dùng tính từ lần dùng cuối: **Đang dùng** (trong 7 ngày), **Ít dùng** (7–30 ngày), **Lâu không dùng** (quá 30 ngày), **Chưa dùng**; hiện thành huy hiệu dưới ngày dùng lần cuối.
+- Thêm ô lọc **Mức dùng** (lọc ở máy chủ) để lọc khóa chưa dùng / lâu không dùng rồi tick thu hồi cả loạt bằng nút Thu hồi sẵn có.
+- Cột **Mức** (chỉ đọc / được ghi) hiện mặc định.
+- Bản xem trước thu hồi khóa qua cổng MCP ghi kèm mức dùng.
+- Sửa bài hướng dẫn Kết nối AI riêng và tài liệu cổng MCP theo nhãn mới.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_keys.py`, `controller.py` (`key_admin_list`, `key_admin_meta`), `mcp_admin.py`, `frontend-v2/src/modules/ai-skill/pages/key-admin-page.tsx`, `test/backend/test_agent_hub_muc_dung_khoa_cr743.py`
+
 ## bao-CR-742-dmh-buoc-truong-phong-phe-duyet | Đơn mua hàng: chưa chọn Trưởng phòng phê duyệt thì không gửi duyệt được
 - status: xong
 - date: 2026-11-09

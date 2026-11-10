@@ -23,10 +23,11 @@ import { SectionHeading } from '@/shared/ui/section-heading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { LIVE_KEY_STATES, upperFirst } from '../config/ai-skill-constants'
-import { KeyStateBadge } from '../config/ai-skill-meta'
+import { KeyStateBadge, KeyUsageBadge } from '../config/ai-skill-meta'
 import { ConnectGuide } from '../components/connect-guide'
 import { KeyIssueDialog } from '../components/key-issue-dialog'
 import { useKeyAdminKeys, useKeyAdminMeta, useRevokeKeys } from '../hooks/use-ai-usage'
+import type { KeyUsage } from '../types/ai-skill'
 import {
   CONNECTION_TYPE_LABEL,
   redirectHost,
@@ -49,10 +50,12 @@ export function KeyAdminPage() {
   const { data: departments } = useDepartments({ page_size: 500 })
   const [departmentId, setDepartmentId] = useUrlParamState('department', ALL)
   const [state, setState] = useUrlParamState('state', ALL)
+  //  bao-CR-743: mức dùng thật (đang dùng / ít / lâu không / chưa dùng) — máy chủ lọc, ngầm chỉ còn khóa còn hiệu lực.
+  const [usage, setUsage] = useUrlParamState('usage', ALL)
   //  Tìm theo tên / email / mã NV — máy chủ lọc (`q`). Đặt lại trang theo giá trị ĐÃ HOÃN, không theo từng ký tự gõ.
   const { value: keyword, setValue: setKeyword, debouncedValue: q } = useUrlSearchParam('q')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([departmentId, state, q])
+  const [page, setPage] = usePageResetOnFilterChange([departmentId, state, usage, q])
   const [issueOpen, setIssueOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const selection = useRowSelection()
@@ -65,6 +68,7 @@ export function KeyAdminPage() {
   const params = {
     department_id: departmentId === ALL ? undefined : Number(departmentId),
     state: state === ALL ? undefined : Number(state),
+    usage: usage === ALL ? undefined : (usage as KeyUsage),
     q: q.trim() || undefined,
     page,
     size: pageSize,
@@ -149,7 +153,7 @@ export function KeyAdminPage() {
           </span>
         ),
       },
-      { key: 'scope', header: 'Mức', width: 100, defaultHidden: true, cell: (k) => upperFirst(k.source.scope_label) },
+      { key: 'scope', header: 'Mức', width: 100, cell: (k) => upperFirst(k.source.scope_label) },
       {
         key: 'expires_at',
         header: 'Hết hạn',
@@ -161,8 +165,18 @@ export function KeyAdminPage() {
         key: 'last_used_at',
         header: 'Dùng lần cuối',
         width: 150,
+        wrap: true,
+        //  bao-CR-743: huy hiệu mức dùng dưới ngày — khóa còn hiệu lực mới có. Đã có huy hiệu Chưa dùng thì bỏ dòng chữ
+        //  trùng nghĩa ở trên.
         cell: (k) => (
-          <span className="whitespace-nowrap text-muted-foreground">{k.lastUsedAt ? formatDateTime(k.lastUsedAt) : 'Chưa dùng'}</span>
+          <div className="flex flex-col items-start gap-1">
+            {(k.lastUsedAt || k.usage !== 'never') && (
+              <span className="whitespace-nowrap text-muted-foreground">
+                {k.lastUsedAt ? formatDateTime(k.lastUsedAt) : 'Chưa dùng'}
+              </span>
+            )}
+            {k.usage && <KeyUsageBadge usage={k.usage} label={k.usageLabel} />}
+          </div>
         ),
       },
       { key: 'state', header: 'Trạng thái', width: 120, cell: (k) => <KeyStateBadge state={k.state} label={k.stateLabel} /> },
@@ -207,7 +221,7 @@ export function KeyAdminPage() {
     )
   }
 
-  const filtering = departmentId !== ALL || state !== ALL || q.trim() !== ''
+  const filtering = departmentId !== ALL || state !== ALL || usage !== ALL || q.trim() !== ''
 
   return (
     <PageContainer fill>
@@ -297,6 +311,21 @@ export function KeyAdminPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {(meta.data?.usages?.length ?? 0) > 0 && (
+                  <Select value={usage} onValueChange={setUsage}>
+                    <SelectTrigger className="w-44" aria-label="Lọc mức dùng">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>Mọi mức dùng</SelectItem>
+                      {(meta.data?.usages ?? []).map((u) => (
+                        <SelectItem key={u.value} value={u.value}>
+                          {u.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </>
             }
           />
