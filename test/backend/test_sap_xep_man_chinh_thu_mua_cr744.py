@@ -99,6 +99,17 @@ def test_dmh_nha_cung_cap_xep_theo_chu_dang_hien_va_o_trong_cuoi(db, seed, cap_q
     assert _codes(desc) == ["PO-MAI", "PO-MA", "PO-AN", "PO-TRONG"]
 
 
+def test_dmh_loai_don_xep_theo_nhan_dang_hien(db, seed, cap_quyen):
+    #  Mã 1 = Trong nước, 2 = Nhập khẩu: xếp theo mã thì Trong nước lên trước — ngược chữ đang hiện.
+    user = _user(seed, cap_quyen, "purchase_order")
+    _po(db, seed, "PO-NK", order_type=2)
+    _po(db, seed, "PO-TN", order_type=1)
+    asc = po_controller._list_query(_Req(sort_by="order_type", sort_dir="asc"), db, user)
+    assert _codes(asc) == ["PO-NK", "PO-TN"]
+    desc = po_controller._list_query(_Req(sort_by="order_type", sort_dir="desc"), db, user)
+    assert _codes(desc) == ["PO-TN", "PO-NK"]
+
+
 def test_dmh_ngay_dat_xep_theo_ngay_tao_dung_nhu_o_dang_hien(db, seed, cap_quyen):
     """Ô "Ngày đặt" in `created_at`; giao diện gửi `sort_by=created_at` (không phải `order_date`)."""
     user = _user(seed, cap_quyen, "purchase_order")

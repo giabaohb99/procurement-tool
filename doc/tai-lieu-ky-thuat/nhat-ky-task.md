@@ -114,6 +114,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-744-luot-c | Sắp xếp cột: SL nhận ở Tiến độ mua hàng và Loại đơn ở ĐMH xếp đúng chữ đang hiện
+- status: xong
+- date: 2026-11-10
+- list: Thu mua
+- pic: A1
+- tag: Được
+**Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy hai cột xếp lệch với số / chữ đang hiện trên màn.
+
+**Đã làm**
+- Tiến độ mua hàng, cột **SL nhận**: dòng chưa có lần giao hiện 0 nhưng bị coi là ô trống nên xếp tăng nằm cuối. Nay xếp như số 0, đứng đầu khi xếp tăng.
+- Danh sách ĐMH, cột **Loại đơn**: trước xếp theo mã số nên *Trong nước* ra trước *Nhập khẩu*. Nay xếp theo nhãn đang hiện.
+- Hai bài kiểm mới, chạy đỏ khi bỏ bản sửa.
+
+Mã nguồn: `backend/app/modules/purchase_progress/sort_expressions.py`, `backend/app/modules/purchase_order/sort_expressions.py`, `test/backend/test_tien_do_mua_hang_sap_xep_cot_cr744.py`, `test/backend/test_sap_xep_man_chinh_thu_mua_cr744.py`
+
 ## duoc-CR-744-phieu-cua-toi-dat-phong | Đặt phòng họp: ô Phạm vi "Phiếu của tôi" lọc đúng phiếu của mình
 - status: xong
 - date: 2026-11-10

@@ -15,7 +15,7 @@ from app.modules.employee.model import Employee
 
 from app.modules.user.model import User
 
-from .model import POItem, PurchaseOrder
+from .model import OrderType, POItem, PurchaseOrder
 
 #  Dòng đời của đơn (cột `status`): nhãn đang hiện là tiếng Việt nên xếp theo THỨ TỰ TIẾN TRÌNH,
 #  không theo chữ cái của mã tiếng Anh (duoc-CR-744). Nhánh rẽ (bị trả lại, từ chối) đứng sau
@@ -34,6 +34,7 @@ def list_sort_allow(db: Session) -> dict:
     - `handler_dept_name`: tên phòng xử lý; `handler_dept_id = 0` (đơn cũ) = phòng thu mua mặc định
       (bao-CR-524), giống `list_display_names`.
     - `approver_name`: tên trưởng phòng phê duyệt được chọn (`approver_employee_id`).
+    - `order_type`: xếp theo NHÃN đang hiện (Nhập khẩu < Trong nước), không theo mã số 1 / 2.
     - `company_name`, `created_by_name`: hai cột phụ ẩn sẵn (bao-CR-705).
     """
     rate = case((func.coalesce(POItem.exchange_rate, 0) == 0, 1), else_=POItem.exchange_rate)
@@ -68,6 +69,8 @@ def list_sort_allow(db: Session) -> dict:
     )
     return {
         "amount": amount,
+        "order_type": case((PurchaseOrder.order_type == int(OrderType.IMPORT), 1),
+                           (PurchaseOrder.order_type == int(OrderType.DOMESTIC), 2), else_=3),
         "company_name": company_name,
         "created_by_name": created_by_name,
         "supplier": func.coalesce(func.nullif(PurchaseOrder.supplier_name, ""),

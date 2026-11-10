@@ -33,6 +33,10 @@ def get_computed_sort_expression(key: str):
                 .limit(1).scalar_subquery())
     if key == "order_amount":
         return func.coalesce(POItem.qty_order, 0) * _amount_factor()
+    if key == "received_qty":
+        #  Hàng chưa có lần giao: bảng hiện 0 (`row_values`) nên xếp như số 0, không xuống
+        #  cuối như ô trống (A3 soát dev 10/11/2026).
+        return func.coalesce(PODelivery.received_qty, 0)
     if key == "amount":
         #  Hàng chưa có lần giao: SL nhận NULL -> 0, khớp ô 0 trên bảng.
         return func.coalesce(PODelivery.received_qty, 0) * _amount_factor()

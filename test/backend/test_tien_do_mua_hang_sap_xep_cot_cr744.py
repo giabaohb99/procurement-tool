@@ -97,6 +97,16 @@ def test_thanh_tien_nhan_hang_chua_giao_tinh_la_0(db, viewer):
     assert [r["po_code"] for r in rows] == ["A-NONE", "B-SOME", "C-ALL"]
 
 
+def test_sl_nhan_chua_giao_xep_nhu_so_0_khong_xuong_cuoi(db, viewer):
+    #  Bảng hiện 0 cho dòng chưa có lần giao — xếp tăng phải đứng ĐẦU, không bị coi là ô trống.
+    _add(db, "A-NONE")
+    _add(db, "B-TWO", received=2)
+    _add(db, "C-ONE", received=1)
+    db.commit()
+    assert _codes(db, viewer, "sort_by=received_qty&sort_dir=asc") == ["A-NONE", "C-ONE", "B-TWO"]
+    assert _codes(db, viewer, "sort_by=received_qty&sort_dir=desc") == ["B-TWO", "C-ONE", "A-NONE"]
+
+
 def test_tien_do_xep_theo_dong_doi_khong_theo_chu_cai_cua_ma(db, viewer):
     #  Theo chữ cái của MÃ: completed < doc_pending < doc_sent < not_ordered < ordered < received.
     for code, progress in (("A", "completed"), ("B", "doc_sent"), ("C", "received"),
