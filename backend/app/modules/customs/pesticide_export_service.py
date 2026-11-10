@@ -109,10 +109,11 @@ def _iter_all(db: Session):
 
 
 def _iter_page(db: Session, q: str, status: int | None, pest_group: str, sector: str,
-              banned_only: bool, banned_regulation_id: int | None, offset: int, limit: int):
+              banned_only: bool, banned_regulation_id: int | None, offset: int, limit: int,
+              sort_by: str = "", sort_dir: str = "asc"):
     """ĐÚNG các dòng MỘT TRANG — cùng bộ lọc + sắp xếp với `pesticide_service.list_pesticides`."""
-    rows = export_query(db, q, status, pest_group, sector, banned_only,
-                        banned_regulation_id).offset(offset).limit(limit).all()
+    rows = export_query(db, q, status, pest_group, sector, banned_only, banned_regulation_id,
+                        sort_by, sort_dir).offset(offset).limit(limit).all()
     uses = _uses_by_pesticide(db, [p.id for p in rows])
     for p in rows:
         yield p, uses.get(p.id, [])
@@ -193,7 +194,8 @@ def _check_output_size(file_size: int) -> None:
 
 def export_to_tempfile(db: Session, user, scope: str, q: str, status: int | None, pest_group: str,
                        sector: str, banned_only: bool, banned_regulation_id: int | None,
-                       page: int, offset: int, limit: int) -> tuple[str, str]:
+                       page: int, offset: int, limit: int, sort_by: str = "",
+                       sort_dir: str = "asc") -> tuple[str, str]:
     """→ (đường dẫn tệp tạm, tên tệp để tải). Tệp tạm do NGƯỜI GỌI xóa (route gắn `BackgroundTask`
     sau khi đã trả response — xóa trước là hỏng lượt tải)."""
     dup_source_ids = _duplicate_source_ids(db)
@@ -207,7 +209,7 @@ def export_to_tempfile(db: Session, user, scope: str, q: str, status: int | None
         filters = ""
     else:
         rows = list(_iter_page(db, q, status, pest_group, sector, banned_only,
-                               banned_regulation_id, offset, limit))
+                               banned_regulation_id, offset, limit, sort_by, sort_dir))
         _check_caps(len(rows), sum(len(u) for _, u in rows))
         path, n_pesticides, n_uses = _write_file(iter(rows), dup_source_ids, scope, page)
         filename = f"thuoc-bvtv-trang-{page}-{_stamp()}.xlsx"

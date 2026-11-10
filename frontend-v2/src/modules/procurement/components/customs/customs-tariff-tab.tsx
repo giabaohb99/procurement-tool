@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 
+import { useClientTableSort } from '../../hooks/use-client-table-sort'
 import { useCustomsTariff } from '../../hooks/use-customs'
 import type { CustomsFilters, CustomsTariffRow } from '../../types/customs'
 import { isValidHsLookup } from '../../utils/customs'
@@ -87,6 +88,29 @@ function formatRate(value: string | number | null | undefined): string {
   return value === null || value === undefined || value === '' ? '—' : String(value)
 }
 
+/** Giá trị ô đang hiển thị của biểu thuế; ô "—" (rỗng) là ô trống. Thuế suất là chuỗi số nên so theo số. */
+function tariffSortValue(columnKey: string, row: CustomsTariffRow) {
+  if (columnKey.startsWith('fta-')) return row.fta?.[columnKey.slice(4)] ?? null
+  switch (columnKey) {
+    case 'hs_code':
+      return row.hs_code
+    case 'name_vn':
+      return row.name_vn
+    case 'unit':
+      return row.unit
+    case 'rate_normal':
+      return row.rate_normal
+    case 'rate_mfn':
+      return row.rate_mfn
+    case 'rate_vat':
+      return row.rate_vat
+    case 'policy':
+      return row.policy
+    default:
+      return null
+  }
+}
+
 function TariffTables({
   rows,
   isLoading,
@@ -95,6 +119,9 @@ function TariffTables({
   isLoading: boolean
 }) {
   const leaves = useMemo(() => (rows ?? []).filter((row) => row.hs_code.length >= 8), [rows])
+  //  duoc-CR-744 — hai bảng biểu thuế đã tải đủ: xếp ngay trên trình duyệt, mỗi bảng một thứ tự riêng.
+  const sortedRows = useClientTableSort(rows, tariffSortValue)
+  const sortedLeaves = useClientTableSort(leaves, tariffSortValue)
   const ftaKeys = useMemo(
     () => [...new Set(leaves.flatMap((row) => Object.keys(row.fta ?? {})))].sort(),
     [leaves],
@@ -106,6 +133,7 @@ function TariffTables({
         key: 'hs_code',
         header: 'Mã HS',
         width: 110,
+        sortable: true,
         hideable: false,
         //  Mã cha (4 · 6 số) chỉ để đọc mô tả nhóm — chữ mờ; dòng lá (8 số) đậm.
         cell: (r) => (
@@ -114,13 +142,15 @@ function TariffTables({
           </span>
         ),
       },
-      { key: 'name_vn', header: 'Mô tả', width: 360, hideable: false, wrap: true, cell: (r) => r.name_vn },
-      { key: 'unit', header: 'ĐVT', width: 80, hideable: false, cell: (r) => r.unit },
+      { key: 'name_vn', header: 'Mô tả', width: 360, sortable: true, hideable: false, wrap: true, cell: (r) => r.name_vn },
+      { key: 'unit', header: 'ĐVT', width: 80, sortable: true, hideable: false, cell: (r) => r.unit },
       {
         key: 'rate_normal',
         header: 'Thông thường',
         width: 110,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => formatRate(r.rate_normal),
       },
@@ -129,6 +159,8 @@ function TariffTables({
         header: 'Ưu đãi (MFN)',
         width: 110,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => formatRate(r.rate_mfn),
       },
@@ -137,22 +169,26 @@ function TariffTables({
         header: 'VAT',
         width: 80,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => formatRate(r.rate_vat),
       },
-      { key: 'policy', header: 'Chính sách', width: 240, hideable: false, wrap: true, cell: (r) => r.policy },
+      { key: 'policy', header: 'Chính sách', width: 240, sortable: true, hideable: false, wrap: true, cell: (r) => r.policy },
     ],
     [],
   )
 
   const ftaColumns = useMemo<DataTableColumn<CustomsTariffRow>[]>(
     () => [
-      { key: 'hs_code', header: 'Mã HS', width: 110, hideable: false, cell: (r) => r.hs_code },
+      { key: 'hs_code', header: 'Mã HS', width: 110, sortable: true, hideable: false, cell: (r) => r.hs_code },
       ...ftaKeys.map<DataTableColumn<CustomsTariffRow>>((key) => ({
         key: `fta-${key}`,
         header: key,
         width: 90,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => formatRate(r.fta?.[key]),
       })),
@@ -164,7 +200,10 @@ function TariffTables({
     <div className="flex flex-col gap-3">
       <DataTable
         columns={columns}
-        rows={rows}
+        rows={sortedRows.rows}
+        sortBy={sortedRows.sortBy}
+        sortDir={sortedRows.sortDir}
+        onSortChange={sortedRows.onSortChange}
         getRowId={(r) => r.hs_code}
         isLoading={isLoading}
         emptyMessage="Không có mã này trong biểu thuế đã nạp."
@@ -175,7 +214,10 @@ function TariffTables({
           <p className="text-sm font-semibold">Thuế suất theo hiệp định thương mại tự do (%)</p>
           <DataTable
             columns={ftaColumns}
-            rows={leaves}
+            rows={sortedLeaves.rows}
+            sortBy={sortedLeaves.sortBy}
+            sortDir={sortedLeaves.sortDir}
+            onSortChange={sortedLeaves.onSortChange}
             getRowId={(r) => r.hs_code}
             mobileCard={(r) => <CustomsTariffCard row={r} ftaKeys={ftaKeys} />}
           />

@@ -3,6 +3,9 @@ import { Copy, History, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
+import { PR_LINE_STATUS } from '@/shared/constants/statuses'
+import { getStatusRank } from '@/shared/utils/status-rank'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -354,6 +357,51 @@ export function PurchaseRequestItemsTable({
 
   const lineTotal = (item: PurchaseRequestItem) =>
     editing ? item.qty * item.price * (1 + (item.vat_pct || 0) / 100) : item.amount
+
+  /**
+   * Giá trị để XẾP từng cột khi bấm tiêu đề (duoc-CR-744) — đúng thứ ô đang hiện: khóa
+   * cột ở đây không trùng tên trường của dòng (`code` -> `product_code`), cột Thành
+   * tiền là số TÍNH, cột Trạng thái xếp theo dòng đời chứ không theo chữ cái của mã.
+   * Cột "No." và "Thao tác" trả `undefined` nên tiêu đề của chúng không bấm được.
+   */
+  function getSortValue(key: string, item: PurchaseRequestItem): SortValue {
+    switch (key) {
+      case 'code':
+        return item.product_code
+      case 'name':
+        return item.product_name
+      case 'warehouse':
+        return item.warehouse
+      case 'group':
+        return item.item_group
+      case 'unit':
+        return item.unit
+      case 'qty':
+        return item.qty
+      case 'price':
+        return item.price
+      case 'vat':
+        return item.vat_pct ?? 0
+      case 'amount':
+        return lineTotal(item)
+      case 'status':
+        return getStatusRank(PR_LINE_STATUS, item.line_status)
+      case 'progress':
+        return item.qty_received
+      case 'required':
+        return item.required_date
+      case 'expected':
+        return item.expected_date
+      case 'assignee':
+        return (
+          item.assignee_name ||
+          purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
+          item.assignee
+        )
+      default:
+        return undefined
+    }
+  }
 
   function renderCell(key: string, item: PurchaseRequestItem, index: number) {
     switch (key) {
@@ -728,6 +776,7 @@ export function PurchaseRequestItemsTable({
           storageKey={TABLE_STORAGE_KEY}
           rowKey={purchaseRequestRowKey}
           renderCell={renderCell}
+          getSortValue={getSortValue}
           title={`Danh sách sản phẩm (${items.length} dòng)`}
           selection={lineSelection.selection}
           emptyMessage="Chưa có sản phẩm nào."

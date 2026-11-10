@@ -17,6 +17,7 @@ from . import service
 from .model import LS_RESURVEY, SurveyRequest
 from .schema import (LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate,
                      TransferDeptIn)
+from .sort_expressions import list_sort_allow
 from .serializer import _dict, _out, _out_available_lines, _out_process, _out_result
 from .service import notify as _notify, users_of_codes as _users_of_codes
 
@@ -158,7 +159,9 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     """Danh sách yêu cầu báo giá (YCBG) trong phạm vi được xem, có lọc và phân trang."""
     q = _list_query(request, db, user)
     total = q.count()
-    q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc())
+    #  duoc-CR-744: Trạng thái xếp theo dòng đời, không theo chữ cái của mã.
+    q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc(),
+                                allow=list_sort_allow())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_dict(x) for x in items]})
 

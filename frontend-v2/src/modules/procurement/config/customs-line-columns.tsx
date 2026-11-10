@@ -27,6 +27,8 @@ function money(key: keyof CustomsLine, header: string): DataTableColumn<CustomsL
     //  bao-CR-493: bề rộng đủ cho tiêu đề (tiêu đề bảng luôn cắt "…", không xuống dòng) — đại ca 25/09.
     width: 175,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{formatUsd(row[key] as number | null)}</span>,
   }
 }
@@ -43,6 +45,8 @@ function vnd(key: 'price_vnd_flat' | 'price_vnd_line_tax', header: string): Data
     header,
     width: 175,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => {
       const fromFile = key === 'price_vnd_flat' ? row.price_vnd_flat_from_file : row.price_vnd_line_tax_from_file
       return (
@@ -61,6 +65,7 @@ function tagged(key: 'active_ingredient' | 'formulation', header: string, width:
     header,
     width,
     wrap,
+    sortable: true,
     cell: (row) => {
       const fromFile = key === 'active_ingredient' ? row.active_ingredient_from_file : row.formulation_from_file
       return (
@@ -76,12 +81,14 @@ function rate(key: keyof CustomsLine, header: string): DataTableColumn<CustomsLi
     header,
     width: 130,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{formatRate(row[key] as number | null)}</span>,
   }
 }
 
 function plain(key: keyof CustomsLine, header: string, width: number, wrap = false): DataTableColumn<CustomsLine> {
-  return { key, header, width, wrap, cell: (row) => String(row[key] ?? '') }
+  return { key, header, width, wrap, sortable: true, cell: (row) => String(row[key] ?? '') }
 }
 
 export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
@@ -92,6 +99,8 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     header: 'ID',
     width: 80,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{row.id}</span>,
   },
   {
@@ -99,6 +108,8 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     header: 'Ngày đăng ký',
     width: 120,
     hideable: false,
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => (
       <span className="inline-flex items-center gap-1">
         {formatDate(row.reg_date)}
@@ -121,6 +132,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     header: 'Số thứ tự hàng',
     width: 100,
     align: 'right',
+    sortable: true,
     cell: (row) => (row.line_no === null ? '' : row.line_no),
   },
   {
@@ -129,6 +141,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     width: 360,
     wrap: true,
     hideable: false,
+    sortable: true,
     cell: (row) => row.product_name,
   },
   money('price_usd', 'Đơn giá khai báo(USD)'),
@@ -143,6 +156,8 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     header: 'Lượng',
     width: 120,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{formatQuantity(row.quantity)}</span>,
   },
   plain('unit_code', 'Đơn vị tính', 90),
@@ -152,6 +167,8 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     key: 'contract_date',
     header: 'Ngày hợp đồng',
     width: 120,
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => formatDate(row.contract_date),
   },
   plain('incoterm', 'Điều kiện giao hàng', 155),
@@ -159,6 +176,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     key: 'transport_mode',
     header: 'Phương tiện vận chuyển',
     width: 190,
+    sortable: true,
     cell: (row) => row.transport_label || String(row.transport_mode ?? ''),
   },
   rate('rate_import', 'Thuế suất XNK'),
@@ -183,6 +201,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     key: 'product_kind',
     header: 'Phân loại',
     width: 120,
+    sortable: true,
     cell: (row) => row.product_kind_label || '—',
   },
 ]

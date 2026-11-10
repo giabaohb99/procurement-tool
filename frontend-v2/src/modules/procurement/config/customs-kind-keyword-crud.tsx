@@ -68,7 +68,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
         </Badge>
       ),
     },
-    { key: 'note', header: 'Ghi chú', width: 320, wrap: true, cell: (row) => row.note },
+    { key: 'note', header: 'Ghi chú', width: 320, wrap: true, sortable: true, cell: (row) => row.note },
     {
       key: 'is_active',
       header: 'Trạng thái',

@@ -153,7 +153,7 @@ def test_progress_state_hoan_thanh_thang_da_tao_ycmh(db):
     """CR-077: Hoàn thành là ĐIỂM CUỐI. Một dòng tạo được YCMH nhiều lần (mua lại) nên `pr_code`
     không khép dòng lại; chỉ khi người YC chốt hoàn thành thì dòng mới thật sự xong.
     Trước CR-077 nhãn này thua "Đã tạo YCMH" nên lệch với màn chi tiết Yêu cầu báo giá."""
-    from app.modules.survey_progress.controller import _state_cond
+    from app.modules.survey_progress.line_state_sql import state_condition
     ln = _line(pr_code="PYC001", line_status="completed")
     assert ex.progress_state(ln, True, 2) == ex.STATE_DONE
 
@@ -162,8 +162,8 @@ def test_progress_state_hoan_thanh_thang_da_tao_ycmh(db):
     db.add(s); db.flush()
     row = _line(survey_request_id=s.id, pr_code="PYC001", line_status="completed")
     db.add(row); db.commit()
-    ids_done = {r.id for r in db.query(SurveyRequestLine).filter(_state_cond(ex.STATE_DONE)).all()}
-    ids_pr = {r.id for r in db.query(SurveyRequestLine).filter(_state_cond(ex.STATE_PR_CREATED)).all()}
+    ids_done = {r.id for r in db.query(SurveyRequestLine).filter(state_condition(ex.STATE_DONE)).all()}
+    ids_pr = {r.id for r in db.query(SurveyRequestLine).filter(state_condition(ex.STATE_PR_CREATED)).all()}
     assert row.id in ids_done and row.id not in ids_pr
 
 
@@ -214,7 +214,7 @@ def test_loc_theo_tien_do_dong_chia_dung_het_khong_trung(db):
     """Bộ lọc SQL phải CHIA ĐÔI KHỚP với cột tính: mỗi dòng rơi vào đúng một nhãn, tổng các
     nhãn = tổng số dòng. Đây là chỗ dễ vỡ nhất — quên vế "và không khớp mốc xa hơn" là nhãn
     "Đang khảo sát" kéo về cả những dòng đã chốt xong từ lâu."""
-    from app.modules.survey_progress.controller import _state_cond
+    from app.modules.survey_progress.line_state_sql import state_condition
 
     s = SurveyRequest(code="YCBG7", status="processing")
     db.add(s); db.flush()
@@ -247,7 +247,7 @@ def test_loc_theo_tien_do_dong_chia_dung_het_khong_trung(db):
 
     total = 0
     for state in ex.STATES:
-        ids = {r.id for r in db.query(SurveyRequestLine).filter(_state_cond(state)).all()}
+        ids = {r.id for r in db.query(SurveyRequestLine).filter(state_condition(state)).all()}
         assert ids == mong_doi.get(state, set()), f"lệch ở nhãn {state}"
         total += len(ids)
     assert total == len(mau)
@@ -255,5 +255,5 @@ def test_loc_theo_tien_do_dong_chia_dung_het_khong_trung(db):
 
 def test_loc_nhan_la_thi_khong_loc_gi(db):
     """Người dùng sửa URL thành nhãn không có thật -> coi như không lọc, hơn là bảng rỗng khó hiểu."""
-    from app.modules.survey_progress.controller import _state_cond
-    assert _state_cond("Nhan-khong-co-that") is None
+    from app.modules.survey_progress.line_state_sql import state_condition
+    assert state_condition("Nhan-khong-co-that") is None

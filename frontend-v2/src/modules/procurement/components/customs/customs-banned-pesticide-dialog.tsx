@@ -2,7 +2,7 @@
 // thuốc trong danh mục BVTV đang chứa hoạt chất đó (29/09/2026). Mọi tình trạng — kể cả hết hiệu
 // lực — vì số ở cột đếm đủ mọi tình trạng; lọc "Còn hiệu lực" ở đây là số với danh sách lệch nhau.
 // Bấm một thuốc mở TRANG chi tiết thuốc (duoc-CR-492), nút lùi của trang đưa về lại mục Pháp lý.
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -18,6 +18,7 @@ import {
 
 import { CUSTOMS_PESTICIDE_COLUMNS } from '../../config/customs-pesticide-columns'
 import { useCustomsPesticides } from '../../hooks/use-customs-pesticides'
+import { useLocalServerSort } from '../../hooks/use-local-server-sort'
 import type { CustomsRegulationHit } from '../../types/customs'
 import { formatBannedLabel } from '../../utils/customs'
 import { CustomsPesticideCard } from './customs-pesticide-card'
@@ -40,8 +41,12 @@ export function CustomsBannedPesticideDialog({ regulation, onClose }: CustomsBan
   //  (cha đặt `regulation = null` ngay khi bấm đóng). Mẫu "state theo prop", không dùng ref.
   const [shown, setShown] = useState(regulation)
   if (regulation && regulation !== shown) setShown(regulation)
+  //  duoc-CR-744 — danh sách phân trang phía server: bấm tiêu đề cột xếp trên cả danh sách thuốc của hoạt chất.
+  //  Đổi hoạt chất thì thứ tự cũ vẫn giữ (cùng bộ cột), chỉ kéo về trang 1.
+  const resetPage = useCallback(() => setPage(1), [])
+  const sort = useLocalServerSort(resetPage)
   const list = useCustomsPesticides(
-    { banned_regulation_id: regulation?.id ?? 0, page, page_size: pageSize },
+    { banned_regulation_id: regulation?.id ?? 0, page, page_size: pageSize, ...sort.params },
     regulation !== null,
   )
 
@@ -71,6 +76,9 @@ export function CustomsBannedPesticideDialog({ regulation, onClose }: CustomsBan
             isLoading={list.isLoading || list.isPlaceholderData}
             isError={list.isError}
             emptyMessage="Không còn thuốc nào trong danh mục chứa hoạt chất này."
+            sortBy={sort.sortBy}
+            sortDir={sort.sortDir}
+            onSortChange={sort.onSortChange}
             onRowClick={(row) =>
               navigate(appRoutes.procurement.customsPesticideDetail(row.id), { state: fromHere(location) })
             }

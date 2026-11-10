@@ -14,6 +14,7 @@
 5. [Cột trạng thái](#5-cột-trạng-thái)
 6. [Commit và đẩy mã](#6-commit-và-đẩy-mã)
 7. [Bài kiểm](#7-bài-kiểm)
+8. [Sắp xếp cột của bảng](#8-sắp-xếp-cột-của-bảng)
 
 ---
 
@@ -98,3 +99,19 @@ mã chuỗi tiếng Anh, QĐ-9) xem `CLAUDE.md` — không chép ngoại lệ v�
   src/modules/<phân hệ>` (luật đủ ở `frontend-v2/.claude/rules/testing.md`).
 - Bài kiểm canh (phạm vi dữ liệu, sổ công cụ AI, bộ mã…) đỏ thì **sửa bảng khai kèm lý do thật**, không nới luật.
 - Sửa chuỗi người dùng thấy thì sửa luôn bài kiểm so chuỗi trong cùng commit.
+
+## 8. Sắp xếp cột của bảng
+
+Chốt ở duoc-CR-744 (10/11/2026) sau đợt rà toàn hệ. Bảng mới hay cột mới phải theo đủ bốn luật:
+
+- **Xếp theo đúng giá trị ĐANG HIỆN**: ô bày tên thì xếp theo tên (không theo id / mã), ô bày nhãn trạng thái thì
+  xếp theo DÒNG ĐỜI (`core/code_rank_sql.py`; giao diện `shared/utils/status-rank.ts`), ô bày số tính thì xếp theo
+  đúng công thức đó. Cột bật `sortable` mà máy chủ không nhận khóa là lỗi "bấm không ăn" — bảng danh sách có bài canh
+  "mọi khóa cột đều xếp được" thì khai thêm khóa vào đó.
+- **Ô trống luôn xuống CUỐI cả hai chiều** và **luôn có khóa phụ `id`** — dùng `core/sort_order.py`
+  (`build_blank_last_order`, `with_stable_tiebreak`); `apply_sort` đã áp sẵn. Thiếu khóa phụ là dòng lặp / mất giữa
+  các trang.
+- Bảng phân trang tại máy chủ thì **xếp tại máy chủ** (gửi `sort_by` / `sort_dir`, gắn vào bộ tham số LỌC để Xuất
+  Excel cùng thứ tự); cấm xếp lại một trang ở trình duyệt. Bảng nạp đủ mọi dòng (bảng dòng chứng từ `LinesTable`,
+  hộp việc) mới xếp ở trình duyệt.
+- **Cột bị che theo quyền không cho xếp** với người thiếu quyền (thứ tự dòng đủ để dò ra giá trị bị che).

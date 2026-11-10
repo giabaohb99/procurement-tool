@@ -64,7 +64,7 @@ export function useCustomsBatchRowSummary(batchId: number | null) {
 /** bao-CR-496 — danh sách từng dòng của một lô, lọc theo kết cục, phân trang. */
 export function useCustomsBatchRows(
   batchId: number | null,
-  params: { page: number; page_size: number; row_status?: number },
+  params: { page: number; page_size: number; row_status?: number; sort_by?: string; sort_dir?: string },
 ) {
   return useQuery({
     queryKey: queryKeys.procurement.customsBatchRows(batchId ?? 0, params),

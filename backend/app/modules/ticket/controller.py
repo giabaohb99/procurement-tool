@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
 
-from . import service
+from . import service, sort_expressions
 from .model import Ticket
 from .schema import (AssignIn, MessageCreate, StatusIn, TicketCreate,
                      TicketUpdate)
@@ -162,7 +162,11 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     elif asg.isdigit():
         q = q.filter(Ticket.assignee_id == int(asg))
     total = q.count()
-    q = apply_sort_from_request(q, Ticket, request, default=Ticket.id.desc())
+    #  duoc-CR-744: cột đang hiện xếp qua `sort_expressions` (tên người, hạng ưu tiên / trạng thái, ô trống xuống
+    #  cuối, khóa phụ `id`); khóa khác về đường cũ.
+    order = sort_expressions.build_order_by(request.query_params.get("sort_by") or "",
+                                            request.query_params.get("sort_dir") or "asc")
+    q = q.order_by(*order) if order else apply_sort_from_request(q, Ticket, request, default=Ticket.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(db, x) for x in items]})
 

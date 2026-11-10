@@ -81,6 +81,7 @@ export function useOutgoingDocumentColumns({
         key: 'display_code',
         header: 'Số hiệu',
         width: 210,
+        sortable: true,
         hideable: false,
         defaultPinned: true,
         cell: (row) => {
@@ -144,19 +145,22 @@ export function useOutgoingDocumentColumns({
         key: 'book_number_display',
         header: 'Số vào sổ',
         width: 130,
+        sortable: true,
         cell: (row) => <span className="tabular-nums">{row.book_number_display}</span>,
       },
-      { key: 'title', header: 'Tên văn bản', width: 340, cell: (row) => row.title },
+      { key: 'title', header: 'Tên văn bản', width: 340, sortable: true, cell: (row) => row.title },
       {
         key: 'doc_type_name',
         header: 'Loại',
         width: 160,
+        sortable: true,
         cell: (row) => row.doc_type_name,
       },
       {
         key: 'company_name',
         header: 'Pháp nhân ban hành',
         width: 220,
+        sortable: true,
         cell: (row) => (
           //  Với BẢN RIÊNG đang bung, pháp nhân là thứ duy nhất phân biệt nó
           //  với bản gốc (tiêu đề chép nguyên) — tô đậm để mắt bám vào cột đó.
@@ -169,6 +173,7 @@ export function useOutgoingDocumentColumns({
         key: 'department_name',
         header: 'Phòng chủ trì',
         width: 170,
+        sortable: true,
         cell: (row) => row.department_name,
       },
       {
@@ -176,6 +181,7 @@ export function useOutgoingDocumentColumns({
         header: 'Sổ',
         width: 170,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.book_name,
       },
       {
@@ -215,6 +221,8 @@ export function useOutgoingDocumentColumns({
         header: 'Bản',
         width: 90,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => (
           <span className="tabular-nums">
             {row.version_no}
@@ -228,6 +236,7 @@ export function useOutgoingDocumentColumns({
         key: 'status',
         header: 'Trạng thái',
         width: 190,
+        sortable: true,
         // Nhãn TÍNH RA lúc hiển thị (hết hạn theo ngày), không phải trạng thái thô.
         //  "Chờ bạn duyệt" đứng CẠNH trạng thái chứ không thay thế nó: văn bản
         //  vẫn đang ở "Đang duyệt", thứ thêm vào là *lượt của ai*. Đây là dấu
@@ -249,12 +258,16 @@ export function useOutgoingDocumentColumns({
         key: 'effective_date',
         header: 'Ngày hiệu lực',
         width: 140,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => formatDate(row.effective_date ?? ''),
       },
       {
         key: 'secrecy_level',
         header: 'Mức mật',
         width: 120,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => (
           <Badge variant="outline" className="font-normal">
             {securityLevelLabel(SECURITY_LEVEL_KIND_CONFIDENTIAL, row.secrecy_level)}
@@ -266,6 +279,8 @@ export function useOutgoingDocumentColumns({
         header: 'Độ khẩn',
         width: 110,
         defaultHidden: true,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => securityLevelLabel(SECURITY_LEVEL_KIND_URGENCY, row.urgency),
       },
       {
@@ -273,6 +288,7 @@ export function useOutgoingDocumentColumns({
         header: 'Người chịu trách nhiệm',
         width: 180,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.owner_name,
       },
       {
@@ -280,12 +296,14 @@ export function useOutgoingDocumentColumns({
         header: 'Số hiệu cũ',
         width: 150,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.legacy_code,
       },
       {
         key: 'storage_location',
         header: 'Nơi lưu trữ cứng',
         width: 200,
+        sortable: true,
         //  Ẩn mặc định: chỉ cần tới lúc đi lấy hồ sơ giấy hoặc kiểm kê kho,
         //  không phải thứ đọc hằng ngày.
         defaultHidden: true,
@@ -296,6 +314,8 @@ export function useOutgoingDocumentColumns({
         header: 'Tệp',
         width: 80,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => (row.attachment_count ? String(row.attachment_count) : ''),
       },
       {

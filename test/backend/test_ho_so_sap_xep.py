@@ -55,16 +55,14 @@ def test_vo_thoi_han_xuong_CUOI_chu_khong_len_dau(db, bon_ho_so):
     assert _codes(db, nulls_last=("expiry_date",)) == ["HS-QUA", "HS-GAN", "HS-XA", "HS-VO"]
 
 
-def test_khong_khai_nulls_last_thi_SAI_dung_kieu_da_gap(db, bon_ho_so):
-    """Chốt chính cái bẫy, để người sau thấy hậu quả của việc gỡ `sort_nulls_last`.
+def test_khong_khai_nulls_last_van_xuong_cuoi_nho_luat_chung(db, bon_ho_so):
+    """duoc-CR-744: ô trống xuống cuối là LUẬT CHUNG của `apply_sort`, không cần khai từng cột.
 
-    Không khai thì dòng vô thời hạn nhảy lên ĐẦU — trang đầu đầy thứ không cần
-    nhìn, và tờ giấy phép quá hạn nằm dưới nó.
+    Trước đó bài này khẳng định ngược lại (không khai thì dòng vô thời hạn nhảy lên ĐẦU) để canh cái
+    bẫy `NULL` của MySQL. Nay bẫy đó được vá ở gốc cho MỌI cột nên `nulls_last` chỉ còn là tham số
+    giữ lại cho nơi gọi cũ không vỡ.
     """
-    assert _codes(db)[0] == "HS-VO", (
-        "nếu bài này đỏ nghĩa là hành vi mặc định của DB đã đổi — đọc lại "
-        "`apply_sort` trước khi sửa, có thể `sort_nulls_last` đã thành thừa"
-    )
+    assert _codes(db) == ["HS-QUA", "HS-GAN", "HS-XA", "HS-VO"]
 
 
 def test_nulls_last_ap_cho_CA_HAI_chieu_sap(db, bon_ho_so):
@@ -78,14 +76,9 @@ def test_nulls_last_ap_cho_CA_HAI_chieu_sap(db, bon_ho_so):
     assert [r.code for r in q.all()] == ["HS-XA", "HS-GAN", "HS-QUA", "HS-VO"]
 
 
-def test_cot_khong_khai_thi_khong_doi_hanh_vi(db, bon_ho_so):
-    """`sort_nulls_last` là DANH SÁCH TRẮNG — cột ngoài danh sách giữ nguyên như cũ.
-
-    Hơn hai chục danh mục khác đang gọi chung bộ sinh CRUD này; đổi hành vi mặc
-    định của tất cả để tiện cho một màn là cách nhanh nhất làm lệch thứ tự ở
-    những chỗ không ai xem lại.
-    """
-    assert _codes(db, nulls_last=("issued_date",))[0] == "HS-VO"
+def test_tham_so_nulls_last_khong_con_tac_dung_rieng(db, bon_ho_so):
+    """Khai hay không khai cột nào trong `nulls_last` thì kết quả cũng như nhau (luật chung đã gánh)."""
+    assert _codes(db, nulls_last=("issued_date",)) == _codes(db, nulls_last=("expiry_date",))
 
 
 def test_controller_ho_so_co_khai_nulls_last():

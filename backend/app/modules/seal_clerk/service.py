@@ -149,11 +149,17 @@ def list_grouped(db: Session, search: str = "", offset: int = 0, limit: int = 50
                  or kw in (it["employee_code"] or "").lower()
                  or any(kw in (c["name"] or "").lower() for c in it["companies"])]
 
+    #  duoc-CR-744: ô trống (văn thư chưa có tên) luôn xuống CUỐI cả hai chiều; trùng giá trị thì
+    #  dòng phân công mới hơn (anchor_id lớn) đứng trước, để thứ tự không đổi giữa các lần tải.
     reverse = sort_dir == "desc"
+    items.sort(key=lambda it: it["anchor_id"], reverse=True)
     if sort_by == "company_count":
         items.sort(key=lambda it: it["company_count"], reverse=reverse)
     else:
-        items.sort(key=lambda it: (it["employee_name"] or "").lower(), reverse=reverse)
+        named = [it for it in items if (it["employee_name"] or "").strip()]
+        blank = [it for it in items if not (it["employee_name"] or "").strip()]
+        named.sort(key=lambda it: it["employee_name"].strip().lower(), reverse=reverse)
+        items = named + blank
 
     return len(items), items[offset:offset + limit]
 

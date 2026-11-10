@@ -9,6 +9,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -38,7 +39,7 @@ const FILTER_CONFIG = {
   allowConjunctionToggle: true,
   // Bốn ô chọn trên thanh công cụ. Thiếu tên nào ở đây là bấm "Áp dụng" bộ lọc
   // nâng cao xong mất luôn ô đó.
-  preserveParams: ['company_id', 'warehouse_code', 'item_group', 'qty_status'],
+  preserveParams: ['company_id', 'warehouse_code', 'item_group', 'qty_status', 'sort_by', 'sort_dir'],
 }
 
 export function InventoryListPage() {
@@ -57,11 +58,11 @@ export function InventoryListPage() {
  * ghi lại `qty` / `avg_cost` / `value`. Vì vậy màn này chỉ đọc, đường sửa duy
  * nhất là hộp thoại Điều chỉnh — và mỗi lần chỉnh đều để lại một dòng trong sổ.
  *
- * Khác bản v1 hai chỗ, đều có chủ ý:
- *  - v1 tải 500 dòng rồi tự cắt trang ở trình duyệt; ở đây server phân trang.
- *  - MẤT SẮP XẾP THEO CỘT: `DataTable` chưa hỗ trợ, mà `/api/inventory` cũng
- *    không nhận tham số sort — v1 sắp được chỉ vì đã ôm cả 500 dòng về máy.
- *    Thứ tự server trả (`product_code` tăng dần) đúng bằng mặc định của v1.
+ * Khác bản v1 một chỗ có chủ ý: v1 tải 500 dòng rồi tự cắt trang ở trình duyệt;
+ * ở đây server phân trang, nên sắp xếp theo cột cũng chạy ở server
+ * (`sort_by`/`sort_dir` → `inventory/sort_expressions.py`, duoc-CR-744) để xếp
+ * trên CẢ TẬP chứ không riêng trang đang xem. Chưa bấm cột nào thì thứ tự mặc
+ * định (`product_code` tăng dần) đúng bằng v1.
  */
 function InventoryListContent() {
   const { can } = usePermission()
@@ -71,6 +72,7 @@ function InventoryListContent() {
   const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
   const [qtyStatus, setQtyStatus] = useUrlParamState('qty_status', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const [detailItem, setDetailItem] = useState<InventoryItem | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
@@ -88,6 +90,8 @@ function InventoryListContent() {
     warehouseCode,
     itemGroup,
     qtyStatus,
+    sortBy,
+    sortDir,
   ])
 
   const params: ListParams = { ...queryParams, page, page_size: pageSize }
@@ -98,6 +102,10 @@ function InventoryListContent() {
   if (warehouseCode !== ALL) params.warehouse_code__eq = warehouseCode
   if (itemGroup !== ALL) params.item_group = itemGroup
   if (qtyStatus !== ALL) params.qty_status = qtyStatus
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useInventoryItems(params)
 
@@ -109,18 +117,20 @@ function InventoryListContent() {
 
   const columns = useMemo<DataTableColumn<InventoryItem>[]>(
     () => [
-      { key: 'company', header: 'Công ty', width: 200, cell: (r) => companyName(r.company_id) },
-      { key: 'warehouse_code', header: 'Kho', width: 110, cell: (r) => r.warehouse_code || '—' },
+      { key: 'company', header: 'Công ty', width: 200, sortable: true, cell: (r) => companyName(r.company_id) },
+      { key: 'warehouse_code', header: 'Kho', width: 110, sortable: true, cell: (r) => r.warehouse_code || '—' },
       {
         key: 'product_code',
         header: 'Mã SP',
         width: 150,
+        sortable: true,
         cell: (r) => <span className="font-medium">{r.product_code}</span>,
       },
       {
         key: 'product_name',
         header: 'Tên sản phẩm',
         width: 280,
+        sortable: true,
         hideable: false,
         cell: (r) => (
           <span className="truncate" title={r.product_name}>
@@ -128,12 +138,14 @@ function InventoryListContent() {
           </span>
         ),
       },
-      { key: 'unit', header: 'ĐVT', width: 90, cell: (r) => r.unit || '—' },
+      { key: 'unit', header: 'ĐVT', width: 90, sortable: true, cell: (r) => r.unit || '—' },
       {
         key: 'qty',
         header: 'Tồn hiện tại',
         width: 130,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         // Tồn âm = xuất nhiều hơn nhập, gần như luôn là sai sót chứng từ chứ
         // không phải tình trạng kho thật -> tô đỏ để không trôi qua mắt.
         cell: (r) => (
@@ -147,6 +159,8 @@ function InventoryListContent() {
         header: 'Đơn giá BQ',
         width: 140,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         cell: (r) => <span className="tabular-nums">{formatUnitPrice(r.avg_cost)}</span>,
       },
       {
@@ -154,6 +168,8 @@ function InventoryListContent() {
         header: 'Giá trị tồn',
         width: 150,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         cell: (r) => <span className="font-semibold tabular-nums">{formatMoney(r.value)}</span>,
       },
     ],
@@ -193,6 +209,9 @@ function InventoryListContent() {
           isError={isError}
           emptyMessage="Không có dòng tồn nào khớp bộ lọc."
           storageKey="inventory.stock"
+          sortBy={sortBy || undefined}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

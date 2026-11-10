@@ -13,14 +13,18 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       key: 'code',
       header: 'Số phiếu',
       width: 110,
+      sortable: true,
       hideable: false,
       defaultPinned: true,
       cell: (r) => <span className="font-medium tabular-nums">{r.code}</span>,
     },
     {
       key: 'employee',
+      //  Cột hiện tên kèm mã nhưng xếp theo họ tên — khóa gửi lên là `employee_name`.
+      sortKey: 'employee_name',
       header: 'Người được thanh toán',
       width: 220,
+      sortable: true,
       cell: (r) => (
         <span className="truncate">
           {r.employee_name || `#${r.employee_id}`}
@@ -32,6 +36,7 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       key: 'leave_type_name',
       header: 'Loại nghỉ',
       width: 140,
+      sortable: true,
       cell: (r) => <span className="truncate">{r.leave_type_name || '—'}</span>,
     },
     {
@@ -39,12 +44,15 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       header: 'Năm quỹ',
       width: 90,
       align: 'right',
+      sortable: true,
+      sortDescFirst: true,
       cell: (r) => <span className="tabular-nums">{r.balance_year}</span>,
     },
     {
       key: 'reason_kind',
       header: 'Lý do',
       width: 150,
+      sortable: true,
       cell: (r) => <span className="truncate">{r.reason_kind_label}</span>,
     },
     {
@@ -52,12 +60,15 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       header: 'Số ngày',
       width: 90,
       align: 'right',
+      sortable: true,
+      sortDescFirst: true,
       cell: (r) => <span className="tabular-nums">{formatEncashDays(r.days)}</span>,
     },
     {
       key: 'status',
       header: 'Trạng thái',
       width: 190,
+      sortable: true,
       cell: (r) => (
         <div className="flex min-w-0 items-center gap-1.5">
           <LeaveStatusBadge status={r.status} label={r.status_label} />
@@ -71,6 +82,7 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       key: 'payment_status',
       header: 'Trạng thái chi',
       width: 170,
+      sortable: true,
       //  Đọc từ YCTT sinh ra khi duyệt — không lưu hai nơi. D7a: YCTT bị từ chối thì nói thẳng, không để chữ
       //  "Đã từ chối" trôi lẫn với trạng thái của chính phiếu.
       cell: (r) =>
@@ -87,12 +99,15 @@ export function buildLeaveEncashmentColumns(waitingIds: Set<number>): DataTableC
       header: 'Ghi chú',
       width: 260,
       defaultHidden: true,
+      sortable: true,
       cell: (r) => <span className="truncate">{r.note}</span>,
     },
     {
       key: 'created_at',
       header: 'Ngày tạo',
       width: 120,
+      sortable: true,
+      sortDescFirst: true,
       cell: (r) => <span className="tabular-nums">{formatDate(r.created_at)}</span>,
     },
   ]

@@ -10,6 +10,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -20,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { buildLeaveEncashmentColumns } from '../components/leave-encashment-columns'
 import { LeaveEncashmentCard } from '../components/leave-encashment-card'
 import { useLeaveEncashments, useLeaveEncashmentToApprove } from '../hooks/use-leave-encashment'
+import { sortRowsByCell } from '@/shared/utils/sort-rows-by-cell'
+import { ENCASHMENT_SORT_GETTERS } from '../utils/leave-encashment-sort-getters'
 import {
   LEAVE_ENCASHMENT_REASON_LABELS,
   LEAVE_ENCASHMENT_STATUS,
@@ -54,7 +57,9 @@ export function LeaveEncashmentListPage() {
   const [reason, setReason] = useUrlParamState('reason_kind', ALL)
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([scope, status, reason, debouncedValue])
+  //  Sắp xếp: server cho hai phạm vi có phân trang, tại chỗ cho hàng đợi *Cần tôi duyệt* (duoc-CR-744).
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+  const [page, setPage] = usePageResetOnFilterChange([scope, status, reason, debouncedValue, sortBy, sortDir])
 
   const employeeId = user?.employee_id
   const listParams = useMemo<ListParams>(() => {
@@ -63,8 +68,12 @@ export function LeaveEncashmentListPage() {
     if (status !== ALL) p.status = status
     if (reason !== ALL) p.reason_kind = reason
     if (scope === SCOPE.MINE && employeeId) p.employee_id = String(employeeId)
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    }
     return p
-  }, [page, pageSize, debouncedValue, status, reason, scope, employeeId])
+  }, [page, pageSize, debouncedValue, status, reason, scope, employeeId, sortBy, sortDir])
 
   //  "Của tôi" mà tài khoản chưa gắn hồ sơ nhân sự thì không có gì để lọc — khỏi gọi (gọi không lọc là trả cả
   //  phạm vi, đánh lừa người xem).
@@ -77,12 +86,17 @@ export function LeaveEncashmentListPage() {
   const needle = debouncedValue.trim().toLowerCase()
   const approveRows = useMemo(
     () =>
-      waiting.filter(
-        (r) =>
-          !needle ||
-          [r.code, r.employee_name, r.note].some((v) => v?.toLowerCase().includes(needle)),
+      sortRowsByCell(
+        waiting.filter(
+          (r) =>
+            !needle ||
+            [r.code, r.employee_name, r.note].some((v) => v?.toLowerCase().includes(needle)),
+        ),
+        sortBy,
+        sortDir,
+        ENCASHMENT_SORT_GETTERS,
       ),
-    [waiting, needle],
+    [waiting, needle, sortBy, sortDir],
   )
 
   const isApproveScope = scope === SCOPE.TO_APPROVE
@@ -137,6 +151,9 @@ export function LeaveEncashmentListPage() {
           isError={isError}
           emptyMessage={emptyMessage}
           storageKey="hr.leave-encashments"
+          sortBy={sortBy || undefined}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           onRowClick={(r) => navigate(appRoutes.hr.leaveEncashmentDetail(r.id))}
           getRowHref={(r) => appRoutes.hr.leaveEncashmentDetail(r.id)}
           mobileCard={(r) => (

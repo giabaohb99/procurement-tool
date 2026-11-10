@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import (IMPORT_ROW_STATUS_LABELS, ImportBatch, ImportLog,
                                            ImportRowStatus, LogLevel)
 
+from .batch_sort import row_log_order
 from .constants import COLUMNS, INSERT_CHUNK, REF_ID_KEY
 from .dedupe import ExistingIndex, canon_values, conflict_fields
 from .reader import ParseResult
@@ -227,13 +228,16 @@ def count_rows(db: Session, batch_id: int, batch: ImportBatch | None = None) -> 
     return {"total": sum(out[k] for k in _COUNT_KEY.values()), **out}
 
 
-def list_rows(db: Session, batch_id: int, row_status: int | None, pg: dict):
-    """Danh sách từng dòng của lô, lọc theo kết cục, xếp theo số dòng trong tệp."""
+def list_rows(db: Session, batch_id: int, row_status: int | None, pg: dict, sort_by: str = "",
+              sort_dir: str = "asc"):
+    """Danh sách từng dòng của lô, lọc theo kết cục, xếp theo số dòng trong tệp (duoc-CR-744: hoặc theo cột
+    đang bấm, `batch_sort.ROW_SORT_KEYS`)."""
     q = _row_query(db, batch_id)
     if row_status:
         q = q.filter(ImportLog.row_status == int(row_status))
     total = q.count()
-    items = q.order_by(ImportLog.row_no.asc(), ImportLog.id.asc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    order = row_log_order(sort_by, sort_dir) or [ImportLog.row_no.asc(), ImportLog.id.asc()]
+    items = q.order_by(*order).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, [serialize_row(x) for x in items]
 
 

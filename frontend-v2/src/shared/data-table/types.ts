@@ -137,6 +137,14 @@ export interface LinesTableColumn {
   /** `true` = cho phép chữ dài tự xuống dòng thay vì cắt bằng dấu ba chấm "…". */
   wrap?: boolean
   /**
+   * Sắp xếp khi bấm tiêu đề (duoc-CR-744). Bỏ trống = tự bật khi cột có giá trị để
+   * xếp (`getSortValue` của bảng, mặc định đọc trường trùng tên khóa cột); `false`
+   * = tắt hẳn, dùng cho cột thao tác / cột chỉ có nút.
+   */
+  sortable?: boolean
+  /** Nhịp bấm đầu tiên xếp GIẢM — cột ngày, cột tiền. */
+  sortDescFirst?: boolean
+  /**
    * Màu tô SẴN cho cột (mã trong `COLUMN_COLORS` hoặc hex), dùng khi màu của cột
    * mang NGHĨA chứ không chỉ để dò — vd ba cột tiền Dự toán / Tạm tính / Quyết toán.
    * Màu người dùng tự chọn trong menu "Cột" vẫn THẮNG; bỏ màu tự chọn thì cột quay

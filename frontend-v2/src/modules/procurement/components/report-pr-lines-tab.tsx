@@ -1,5 +1,5 @@
 import { FileSpreadsheet } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -130,6 +130,7 @@ export const PR_LINES_TOOLBAR_STICKY_UNDER_CONTROLS = `${STICKY_TOOLBAR_BASE} ma
 const supplierColumns: DataTableColumn<PrLineRow>[] = [
   {
     key: 'suggested_supplier',
+    sortable: true,
     header: 'NCC đề xuất',
     width: 180,
     defaultHidden: true,
@@ -137,6 +138,7 @@ const supplierColumns: DataTableColumn<PrLineRow>[] = [
   },
   {
     key: 'latest_po_supplier',
+    sortable: true,
     header: 'NCC đơn gần nhất',
     width: 180,
     defaultHidden: true,
@@ -188,6 +190,11 @@ export function ReportPrLinesTab({
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  //  Sắp xếp tại SERVER (duoc-CR-744): mọi cột có `sortable` đều gửi `sort_by`/`sort_dir`, máy chủ xếp trên
+  //  CẢ TẬP rồi mới phân trang — xếp riêng trang đang xem là sai khi báo cáo có vài nghìn dòng. Ở state cục bộ
+  //  như các bộ lọc khác của bảng này (component còn nhúng làm tab, không có URL riêng).
+  const [sortBy, setSortBy] = useState('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = usePageResetOnFilterChange([
     status,
     lineStatuses,
@@ -195,7 +202,15 @@ export function ReportPrLinesTab({
     search,
     year,
     companyId,
+    sortBy,
+    sortDir,
   ])
+
+  /** Nhịp thứ ba của tiêu đề cột (tăng, giảm, THÔI SẮP XẾP) trả khóa RỖNG: về thứ tự mặc định của máy chủ. */
+  const handleSortChange = useCallback((nextSortBy: string, nextSortDir: 'asc' | 'desc') => {
+    setSortBy(nextSortBy)
+    setSortDir(nextSortBy ? nextSortDir : 'asc')
+  }, [])
 
   /**
    * Bộ lọc đang đặt, KHÔNG kèm phân trang — dùng chung cho bảng và nút Xuất
@@ -209,6 +224,9 @@ export function ReportPrLinesTab({
     line_status: lineStatuses.length ? lineStatuses.join(',') : undefined,
     assignee: assignee === ALL ? undefined : assignee,
     search: search || undefined,
+    //  Nằm ở phần LỌC (không phải phần phân trang) để nút Xuất Excel cũng đi theo: tệp ra cùng thứ tự với bảng.
+    sort_by: sortBy || undefined,
+    sort_dir: sortBy ? sortDir : undefined,
   }
 
   const { data, isLoading, isError } = usePrLines(
@@ -300,9 +318,10 @@ export function ReportPrLinesTab({
 
   const columns = useMemo<DataTableColumn<PrLineRow>[]>(
     () => [
-      { key: 'id', header: 'ID', width: 70, cell: (row) => row.id },
+      { key: 'id', sortable: true, header: 'ID', width: 70, cell: (row) => row.id },
       {
         key: 'pr_code',
+        sortable: true,
         header: 'Mã PYC',
         width: 130,
         hideable: false,
@@ -319,17 +338,20 @@ export function ReportPrLinesTab({
       },
       {
         key: 'created_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày tạo',
         width: 110,
         cell: (row) => (
           <span className="whitespace-nowrap">{formatDate(row.created_date) || '—'}</span>
         ),
       },
-      { key: 'requester', header: 'Người yêu cầu', width: 150, cell: (row) => row.requester || '—' },
-      { key: 'department', header: 'Bộ phận', width: 140, cell: (row) => row.department || '—' },
-      { key: 'product_code', header: 'Mã hàng', width: 120, cell: (row) => row.product_code || '—' },
+      { key: 'requester', sortable: true, header: 'Người yêu cầu', width: 150, cell: (row) => row.requester || '—' },
+      { key: 'department', sortable: true, header: 'Bộ phận', width: 140, cell: (row) => row.department || '—' },
+      { key: 'product_code', sortable: true, header: 'Mã hàng', width: 120, cell: (row) => row.product_code || '—' },
       {
         key: 'product_name',
+        sortable: true,
         header: 'Tên sản phẩm',
         width: 220,
         cell: (row) => (
@@ -338,11 +360,13 @@ export function ReportPrLinesTab({
           </span>
         ),
       },
-      { key: 'warehouse', header: 'Kho nhận', width: 130, cell: (row) => row.warehouse || '—' },
-      { key: 'item_group', header: 'Phân loại', width: 140, cell: (row) => row.item_group || '—' },
-      { key: 'gram', header: 'Gram', width: 100, cell: (row) => row.gram || '—' },
+      { key: 'warehouse', sortable: true, header: 'Kho nhận', width: 130, cell: (row) => row.warehouse || '—' },
+      { key: 'item_group', sortable: true, header: 'Phân loại', width: 140, cell: (row) => row.item_group || '—' },
+      { key: 'gram', sortable: true, header: 'Gram', width: 100, cell: (row) => row.gram || '—' },
       {
         key: 'qty',
+        sortable: true,
+        sortDescFirst: true,
         header: 'SL',
         width: 90,
         align: 'right',
@@ -350,6 +374,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'price',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Đơn giá',
         width: 120,
         align: 'right',
@@ -357,6 +383,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'vat_pct',
+        sortable: true,
+        sortDescFirst: true,
         header: 'VAT',
         width: 80,
         align: 'right',
@@ -365,6 +393,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'amount',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Thành tiền',
         width: 140,
         align: 'right',
@@ -375,18 +405,22 @@ export function ReportPrLinesTab({
       //  "Tiến độ" / "Trạng thái" làm người đọc lẫn hai thứ với nhau.
       {
         key: 'line_status',
+        sortable: true,
         header: 'Tiến độ dòng',
         width: 160,
         cell: (row) => <ProgressStatusBadge status={row.line_status} />,
       },
       {
         key: 'status',
+        sortable: true,
         header: 'Trạng thái phiếu',
         width: 140,
         cell: (row) => <StatusBadge status={row.status} labels={PR_STATUS_LABELS} />,
       },
       {
         key: 'expected_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày dự kiến có hàng',
         width: 160,
         cell: (row) => (
@@ -395,6 +429,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'assignee',
+        sortable: true,
         header: 'NSTM phụ trách',
         width: 160,
         cell: (row) => row.assignee_name || row.assignee || '—',
@@ -403,6 +438,8 @@ export function ReportPrLinesTab({
       //  của báo cáo ("đã đặt đủ chưa, về tới đâu rồi").
       {
         key: 'qty_ordered',
+        sortable: true,
+        sortDescFirst: true,
         header: 'SL đã đặt',
         width: 100,
         align: 'right',
@@ -410,6 +447,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'qty_received',
+        sortable: true,
+        sortDescFirst: true,
         header: 'SL đã nhận',
         width: 100,
         align: 'right',
@@ -417,6 +456,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'po_codes',
+        sortable: true,
         header: 'Mã ĐMH',
         width: 170,
         cell: (row) => <PoCodeLinks raw={row.po_codes} linkable={canReadPurchaseOrder} />,
@@ -425,6 +465,8 @@ export function ReportPrLinesTab({
       //  chỉ áp cho người chưa từng đụng menu Cột (bảng nhớ bố cục).
       {
         key: 'po_count',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Số đơn',
         width: 80,
         align: 'right',
@@ -433,6 +475,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'company_name',
+        sortable: true,
         header: 'Pháp nhân',
         width: 180,
         defaultHidden: true,
@@ -440,6 +483,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'purpose',
+        sortable: true,
         header: 'Mục đích',
         width: 200,
         defaultHidden: true,
@@ -447,6 +491,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'is_urgent',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Gấp',
         width: 70,
         defaultHidden: true,
@@ -458,6 +504,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'need_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày cần (phiếu)',
         width: 130,
         defaultHidden: true,
@@ -465,6 +513,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'required_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày cần (dòng)',
         width: 130,
         defaultHidden: true,
@@ -472,6 +522,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'unit',
+        sortable: true,
         header: 'ĐVT',
         width: 80,
         defaultHidden: true,
@@ -479,6 +530,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'head_of_dept_name',
+        sortable: true,
         header: 'Trưởng bộ phận',
         width: 160,
         defaultHidden: true,
@@ -486,6 +538,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'approver_name',
+        sortable: true,
         header: 'Người duyệt',
         width: 160,
         defaultHidden: true,
@@ -493,6 +546,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'handler_dept_name',
+        sortable: true,
         header: 'Phòng xử lý',
         width: 160,
         defaultHidden: true,
@@ -501,6 +555,8 @@ export function ReportPrLinesTab({
       ...(showSupplier ? supplierColumns : []),
       {
         key: 'latest_delivery_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Hẹn giao gần nhất',
         width: 150,
         defaultHidden: true,
@@ -510,6 +566,8 @@ export function ReportPrLinesTab({
       },
       {
         key: 'delivery_count',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Số lần nhận hàng',
         width: 130,
         align: 'right',
@@ -518,6 +576,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'progress_note',
+        sortable: true,
         header: 'Chi tiết tiến độ',
         width: 200,
         defaultHidden: true,
@@ -525,6 +584,7 @@ export function ReportPrLinesTab({
       },
       {
         key: 'line_note',
+        sortable: true,
         header: 'Ghi chú dòng',
         width: 200,
         defaultHidden: true,
@@ -546,6 +606,9 @@ export function ReportPrLinesTab({
         columns={columns}
         rows={data?.items ?? []}
         getRowId={(row) => String(row.id)}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         isLoading={isLoading}
         isError={isError}
         emptyMessage={filtersActive ? 'Không có dòng khớp bộ lọc.' : 'Chưa có dữ liệu.'}

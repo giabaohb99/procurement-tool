@@ -2,6 +2,7 @@ from fastapi import Query, Request
 
 from app.core.filter_operators import apply_operator_filters
 from app.core.ref_filter import owns as _ref_owns
+from app.core.sort_order import build_blank_last_order, with_stable_tiebreak
 import contextlib
 
 
@@ -101,28 +102,28 @@ def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default
     - sort_by: tên cột (khớp cột model). Không hợp lệ -> bỏ qua, dùng `default`.
     - sort_dir: 'asc' / 'desc' (mặc định asc).
     - default: mệnh đề order_by mặc định (vd Model.id.desc()); None -> id desc.
-    - nulls_last: tên các cột mà dòng `NULL` phải xuống CUỐI, bất kể chiều sắp.
+    - nulls_last: GIỮ LẠI để nơi gọi cũ không vỡ, KHÔNG còn tác dụng — duoc-CR-744 đã bật luật
+      "ô trống xuống cuối" cho MỌI cột (xem dưới), nên không cần khai riêng từng cột nữa.
 
-    ⚠️ **`nulls_last` không phải chuyện thẩm mỹ.** MySQL xếp `NULL` LÊN ĐẦU khi
-    sắp tăng dần, và với cột mà `NULL` mang nghĩa *"không có hạn / không áp
-    dụng"* thì đó đúng là nhóm KHÔNG cần ai để mắt tới — đẩy chúng lên đầu là
-    dìm mất đúng những dòng mà cả cái sắp xếp sinh ra để lôi lên (phân hệ Hồ sơ,
-    17/09/2026: `expiry_date` rỗng = vô thời hạn, mà phần lớn hồ sơ là vậy).
+    Hai luật chung của duoc-CR-744 (chi tiết ở `core/sort_order.py`):
+    1. Ô trống (NULL; cột chữ thì cả chuỗi rỗng / chỉ khoảng trắng) luôn xuống CUỐI ở cả hai chiều.
+       Cột số chỉ coi NULL là trống để số 0 không bị đẩy xuống nhầm. Dùng `CASE`, KHÔNG dùng
+       `nullslast()` vì cú pháp `NULLS LAST` MySQL 8 không hiểu (chạy trên SQLite của bộ test rồi
+       nổ trên chạy thật).
+    2. Luôn gắn khóa phụ `id` giảm dần, để các dòng trùng giá trị không đổi chỗ giữa các trang.
+       Mô hình không có cột `id` thì bỏ khóa phụ.
 
-    ⚠️ Dùng mẹo `col IS NULL` chứ KHÔNG dùng `sqlalchemy.nullslast()`: hàm đó
-    phát ra cú pháp `NULLS LAST` mà **MySQL 8 không hiểu**, nên nó chạy trên
-    SQLite của bộ test rồi nổ trên chạy thật — đúng kiểu lỗi chỉ lộ ra ở prod.
-    `IS NULL` cho `0`/`1`, sắp tăng dần là dòng có giá trị lên trước.
+    Thứ tự `default` do nơi gọi tự quyết (mỗi màn có thứ tự mặc định riêng), hàm không can thiệp.
     """
     col = getattr(model, sort_by, None) if sort_by else None
     # chỉ cho phép cột vật lý trong bảng, tránh sort theo relationship/hybrid/method
     valid = col is not None and sort_by in model.__table__.columns
     if valid:
-        is_desc = str(sort_dir).lower() == "desc"
-        order = col.desc() if is_desc else col.asc()
-        if sort_by in nulls_last:
-            return query.order_by(col.is_(None).asc(), order)
-        return query.order_by(order)
+        order = build_blank_last_order(col, str(sort_dir).lower())
+        id_column = getattr(model, "id", None) if sort_by != "id" else None
+        if id_column is not None:
+            order = with_stable_tiebreak(order, id_column)
+        return query.order_by(*order)
     if default is not None:
         if isinstance(default, (list, tuple)):
             return query.order_by(*default)
@@ -136,13 +137,16 @@ def apply_sort_from_request(query, model, request: Request, default=None, allow:
     - allow: map tùy chọn {key_FE: cột SQLAlchemy} cho cột KHÔNG trùng tên DB (vd cột join/computed).
       Nếu key nằm trong allow -> dùng cột đó; ngược lại thử cột thật của model.
     Tiện để gắn vào các controller tự viết mà không phải đổi chữ ký hàm.
+    Nhánh `allow` cũng theo hai luật chung (ô trống cuối + khóa phụ `id` giảm dần) như `apply_sort`.
     """
     sort_by = (request.query_params.get("sort_by") or "").strip()
     sort_dir = (request.query_params.get("sort_dir") or "asc").strip()
     if sort_by and allow and sort_by in allow:
-        col = allow[sort_by]
-        is_desc = str(sort_dir).lower() == "desc"
-        return query.order_by(col.desc() if is_desc else col.asc())
+        order = build_blank_last_order(allow[sort_by], sort_dir.lower())
+        id_column = getattr(model, "id", None)
+        if id_column is not None:
+            order = with_stable_tiebreak(order, id_column)
+        return query.order_by(*order)
     return apply_sort(query, model, sort_by, sort_dir, default=default)
 
 

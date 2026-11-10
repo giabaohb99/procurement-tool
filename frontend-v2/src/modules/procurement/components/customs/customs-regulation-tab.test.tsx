@@ -2,6 +2,7 @@
 // tra. Chặn ở tầng `@/core/api` (luật testing.md).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -86,6 +87,41 @@ beforeEach(() => {
 })
 
 describe('CustomsRegulationTab', () => {
+  //  duoc-CR-744 — bảng này phân trang phía server mà tiêu đề cột không bấm được. Nay mọi cột (kể cả cột GHÉP
+  //  "Ngưỡng / Mức cấm" và cột tính "Thuốc BVTV chứa") gửi `sort_by`/`sort_dir` để backend xếp trên cả danh mục.
+  it('sorts every column on the server and returns to page 1 when the order changes', async () => {
+    build()
+    const lastList = () => calls.filter((call) => call.url.endsWith('/regulations')).at(-1)?.params ?? {}
+    const header = (text: string) => screen.findByText(text, { selector: 'thead span' })
+    const cases: [string, string][] = [
+      ['STT', 'seq_no'],
+      ['Phụ lục / Văn bản', 'list_label'],
+      ['Tên khoa học', 'name'],
+      ['Tên chất', 'name_vi'],
+      ['Mã số CAS', 'cas_no'],
+      ['Công thức hóa học', 'formula'],
+      ['Ngưỡng / Mức cấm', 'limit'],
+      ['Lưu ý', 'obligation'],
+      ['Thuốc BVTV chứa', 'pesticide_count'],
+    ]
+    for (const [text, key] of cases) {
+      await userEvent.click(await header(text))
+      await waitFor(() => expect(lastList()).toMatchObject({ sort_by: key, page: 1 }))
+    }
+  })
+
+  it('cycles a text column asc → desc → off and drops both sort params', async () => {
+    build()
+    const lastList = () => calls.filter((call) => call.url.endsWith('/regulations')).at(-1)?.params ?? {}
+    const click = async () => userEvent.click(await screen.findByText('Mã số CAS', { selector: 'thead span' }))
+    await click()
+    await waitFor(() => expect(lastList()).toMatchObject({ sort_by: 'cas_no', sort_dir: 'asc' }))
+    await click()
+    await waitFor(() => expect(lastList()).toMatchObject({ sort_by: 'cas_no', sort_dir: 'desc' }))
+    await click()
+    await waitFor(() => expect(lastList()).toEqual({ page: 1, page_size: 50 }))
+  })
+
   it('loads every document on page 1 without a list filter by default', async () => {
     build()
     await waitFor(() => expect(calls.some((call) => call.url.endsWith('/regulations'))).toBe(true))

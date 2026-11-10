@@ -134,10 +134,38 @@ describe('BookDocumentsTab', () => {
       expect.objectContaining({
         book_id: 9,
         book_year: 2026,
-        sort: '-book_seq_no',
+        sort_by: 'book_seq_no',
+        sort_dir: 'desc',
         page: 1,
       }),
     )
+  })
+
+  /**
+   * duoc-CR-744 — bấm tiêu đề cột đổi `sort_by`/`sort_dir`; nhịp thứ ba của tiêu đề (thôi sắp xếp) quay về
+   * mặc định "số vào sổ giảm dần" chứ không về "không xếp" — quyển sổ luôn phải đọc được theo số.
+   */
+  it('bấm tiêu đề cột gửi sort_by lên server, về trang 1, nhịp thứ ba quay lại mặc định số vào sổ giảm dần', async () => {
+    const user = userEvent.setup()
+    renderTab({ bookId: 9, year: 2026, onYearChange: vi.fn() })
+    const lastParams = () => vi.mocked(useDocuments).mock.calls.at(-1)?.[0]
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+
+    await user.click(header('Trích yếu'))
+    expect(lastParams()).toMatchObject({ sort_by: 'title', sort_dir: 'asc', page: 1 })
+    await user.click(header('Trích yếu'))
+    expect(lastParams()).toMatchObject({ sort_by: 'title', sort_dir: 'desc' })
+    await user.click(header('Trích yếu'))
+    expect(lastParams()).toMatchObject({ sort_by: 'book_seq_no', sort_dir: 'desc' })
+
+    //  Cột "Số trong sổ" mở đầu bằng GIẢM dần (số mới nhất lên đầu) — trùng mặc định, nên bấm một lần là sang tăng dần.
+    await user.click(header('Số trong sổ'))
+    expect(lastParams()).toMatchObject({ sort_by: 'book_seq_no', sort_dir: 'asc' })
+
+    await user.click(header('Người soạn'))
+    expect(lastParams()).toMatchObject({ sort_by: 'drafter_name' })
+    await user.click(header('Trạng thái'))
+    expect(lastParams()).toMatchObject({ sort_by: 'status' })
   })
 
   it('vẽ đủ Số trong sổ · Loại · Người soạn · badge Trạng thái của mỗi dòng', () => {

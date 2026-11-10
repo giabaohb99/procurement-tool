@@ -22,6 +22,7 @@ import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import {
@@ -662,6 +663,65 @@ export function PurchaseOrderImportCostsCard({
 
   const allLinesOpen = allocationLines.length > 0 && openLineIds.size >= allocationLines.length
 
+  /**
+   * Giá trị để XẾP từng cột của bảng khoản chi phí khi bấm tiêu đề (duoc-CR-744) — đúng thứ
+   * ô đang hiện: loại chi phí / cách phân bổ xếp theo NHÃN, NCC theo chuỗi "mã - tên" như ô
+   * chỉ xem, ba cột giai đoạn theo số QUY ĐỔI VNĐ (dòng chưa nhập -> trống, xuống cuối).
+   * Khi dòng đang sửa, ô giai đoạn hiện số NGUYÊN TỆ trước thuế nhưng cột vẫn xếp theo VNĐ
+   * để các khoản khác tiền tệ so được với nhau. "#", "Chọn" và "Hành động" trả `undefined`.
+   */
+  function getSortValue(key: string, cost: PurchaseOrderImportCost): SortValue {
+    switch (key) {
+      case 'cost_type':
+        return cost.cost_type_label || importCostTypeLabel(cost.cost_type)
+      case 'description':
+        return cost.description
+      case 'supplier':
+        if (!cost.supplier_code) return null
+        return cost.supplier_name
+          ? `${cost.supplier_code} — ${cost.supplier_name}`
+          : cost.supplier_code
+      case 'currency':
+        return (cost.currency || DEFAULT_CURRENCY).toUpperCase()
+      case 'vat':
+        return cost.vat
+      case 'estimate_base':
+        return hasStageValue(cost, COST_STAGE_ESTIMATE) ? stageBaseOf(cost, COST_STAGE_ESTIMATE) : null
+      case 'provisional_base':
+        return hasStageValue(cost, COST_STAGE_PROVISIONAL)
+          ? stageBaseOf(cost, COST_STAGE_PROVISIONAL)
+          : null
+      case 'final_base':
+        return hasStageValue(cost, COST_STAGE_FINAL) ? stageBaseOf(cost, COST_STAGE_FINAL) : null
+      case 'variance_base':
+        return cost.variance_base ?? null
+      case 'base_amount':
+        return displayCostBaseAmount(cost)
+      case 'paid_amount':
+        return cost.payable_id ? (cost.paid_amount ?? 0) : null
+      case 'remaining':
+        return cost.payable_id ? (cost.remaining ?? 0) : displayCostBaseAmount(cost)
+      case 'allocation_method':
+        return cost.allocation_method_label || allocationMethodLabel(cost.allocation_method)
+      case 'allocation_target':
+        //  Khớp ô: nhập tay hiện câu trạng thái, chỉ định một mã hàng hiện mã, còn lại để trống.
+        if (isManualAllocation(cost)) return manualStatusText(cost, isNew || !cost.id)
+        return Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT
+          ? cost.allocation_target
+          : null
+      case 'invoice_no':
+        return cost.invoice_no
+      case 'invoice_date':
+        return cost.invoice_date
+      case 'payment_due_date':
+        return cost.payment_due_date
+      case 'note':
+        return cost.note
+      default:
+        return undefined
+    }
+  }
+
   function renderCell(key: string, cost: PurchaseOrderImportCost, index: number) {
     const currency = (cost.currency || DEFAULT_CURRENCY).toUpperCase()
     const hasPayable = Boolean(cost.payable_id)
@@ -1249,6 +1309,7 @@ export function PurchaseOrderImportCostsCard({
               storageKey={TABLE_STORAGE_KEY}
               rowKey={(cost, index) => cost.id ?? `new-${index}`}
               renderCell={renderCell}
+              getSortValue={getSortValue}
               title={<span className="text-sm font-medium">Khoản chi phí</span>}
               emptyMessage="Chưa khai chi phí nào cho lô hàng này"
               defaultCompact

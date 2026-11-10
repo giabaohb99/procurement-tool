@@ -36,32 +36,37 @@ export const COMPANY_COLUMNS: DataTableColumn<Company>[] = [
     key: 'level',
     header: 'Cấp',
     width: 180,
+    sortable: true,
     cell: (c) => COMPANY_LEVEL_LABELS[c.level] ?? '—',
   },
   {
     key: 'issue_code',
     header: 'Mã số hiệu',
     width: 140,
+    sortable: true,
     cell: (c) => c.issue_code || '—',
   },
   {
     key: 'short_name',
     header: 'Tên viết tắt',
     width: 180,
+    sortable: true,
     defaultHidden: true,
     cell: (c) => c.short_name || '—',
   },
-  { key: 'tax_code', header: 'Mã số thuế', width: 170, cell: (c) => c.tax_code || '—' },
+  { key: 'tax_code', header: 'Mã số thuế', width: 170, sortable: true, cell: (c) => c.tax_code || '—' },
   {
     key: 'legal_rep_name',
     header: 'Người đại diện',
     width: 220,
+    sortable: true,
     cell: (c) => c.legal_rep_name || '—',
   },
   {
     key: 'invoice_email',
     header: 'Email hóa đơn',
     width: 220,
+    sortable: true,
     // Ít khi cần liếc trong danh sách — mặc định ẩn, ai cần thì bật ở menu Cột.
     defaultHidden: true,
     cell: (c) => c.invoice_email || '—',
@@ -70,6 +75,7 @@ export const COMPANY_COLUMNS: DataTableColumn<Company>[] = [
     key: 'is_active',
     header: 'Trạng thái',
     width: 140,
+    sortable: true,
     cell: (c) => (
       <Badge variant={c.is_active ? 'default' : 'secondary'}>
         {c.is_active ? 'Đang dùng' : 'Ngừng'}

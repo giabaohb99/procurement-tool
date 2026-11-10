@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -86,6 +86,14 @@ function build(url = '/procurement/survey-requests') {
 
 function lastCall() {
   return listCalls[listCalls.length - 1]
+}
+
+/** Bấm tiêu đề cột theo NHÃN chữ khớp trọn vẹn (không dò theo tên trợ năng của cả ô). */
+async function clickHeader(name: string) {
+  const headers = await screen.findAllByRole('columnheader')
+  const [target] = headers.flatMap((header) => within(header).queryAllByText(name))
+  if (!target) throw new Error(`Không thấy tiêu đề cột "${name}"`)
+  await userEvent.click(target)
 }
 
 beforeEach(() => {
@@ -295,5 +303,24 @@ describe('SurveyRequestListPage — nút đầu trang theo bản v1', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Chọn YCBGDEMO01' }))
     await user.click(screen.getByRole('button', { name: 'Xuất Excel (1)' }))
     expect(downloadFile.mock.calls[1][2]).toMatchObject({ ids: '1', status: 'survey_done' })
+  })
+})
+
+/** duoc-CR-744 — ô "Ngày tạo" in `created_at` nên bấm tiêu đề phải sắp theo `created_at` (như YCMH, bao-CR-316). */
+describe('SurveyRequestListPage — sắp xếp cột Ngày tạo (duoc-CR-744)', () => {
+  it('sorts by created_at, not request_date', async () => {
+    build()
+    await clickHeader('Ngày tạo')
+
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'created_at', sort_dir: 'asc' }))
+    expect(lastCall().sort_by).not.toBe('request_date')
+  })
+
+  it('flips to descending on the second click', async () => {
+    build()
+    await clickHeader('Ngày tạo')
+    await clickHeader('Ngày tạo')
+
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'created_at', sort_dir: 'desc' }))
   })
 })

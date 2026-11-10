@@ -37,6 +37,11 @@ import {
 interface CustomsLineExportMenuProps {
   /** Bộ lọc ĐÃ ÁP dựng bằng `buildCustomsParams` — KHÔNG kèm `page`/`page_size`. */
   filterParams: Record<string, string>
+  /**
+   * Thứ tự đang xem (`sort_by`/`sort_dir`, duoc-CR-744) — CHỈ "Xuất ngay" mang theo để tệp ra đúng thứ tự bảng.
+   * "Xuất toàn bộ" chạy nền theo ID tăng dần (đọc khối keyset), không nhận thứ tự.
+   */
+  sortParams?: Record<string, string>
   /** Câu mô tả bộ lọc cho hộp xác nhận (`describeCustomsFilters`). */
   filterSummary: string
   /** Tổng dòng khớp bộ lọc (`lines.data.total`); chưa về thì `undefined`. */
@@ -47,7 +52,12 @@ function isConflict(error: unknown): boolean {
   return (error as { response?: { status?: number } } | null)?.response?.status === 409
 }
 
-export function CustomsLineExportMenu({ filterParams, filterSummary, totalRows }: CustomsLineExportMenuProps) {
+export function CustomsLineExportMenu({
+  filterParams,
+  sortParams,
+  filterSummary,
+  totalRows,
+}: CustomsLineExportMenuProps) {
   const navigate = useNavigate()
   const location = useLocation()
   //  Nút lùi của màn lô quay về ĐÚNG chỗ đang đứng (bộ lọc trên URL), không về Tra cứu trống trơn.
@@ -64,7 +74,7 @@ export function CustomsLineExportMenu({ filterParams, filterSummary, totalRows }
     void singleFlight(async () => {
       setExporting(true)
       try {
-        await exportCustomsLines(filterParams)
+        await exportCustomsLines({ ...filterParams, ...sortParams })
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Không xuất được tệp Excel')
       } finally {

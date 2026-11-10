@@ -25,6 +25,7 @@ from . import read_cache, reader
 from .constants import (ACTION_KEY, COLUMNS, CONTROL_LABELS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
                         OPTIONAL_COLUMNS, OPTIONAL_LABELS, PRODUCT_KIND_LABELS, REF_ID_KEY, REGULATION_LIST_LABELS,
                         TRANSPORT_LABELS, RegulationList)
+from .line_sort import apply_line_sort
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
 from .search_service import build_keyword_condition, ci_like
 
@@ -195,7 +196,10 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
     return out
 
 
-def list_lines(db: Session, f: dict, offset: int, limit: int) -> tuple[int, list[dict]]:
+def list_lines(db: Session, f: dict, offset: int, limit: int, sort_by: str = "",
+               sort_dir: str = "asc") -> tuple[int, list[dict]]:
+    """Trang dòng hàng. `sort_by`/`sort_dir` (duoc-CR-744) xếp theo cột trên CẢ tập đã lọc — khóa lạ hay
+    rỗng thì giữ thứ tự mặc định (ngày đăng ký giảm dần)."""
     q = apply_line_filters(db.query(CustomsLine), f)
     #  Đếm thẳng COUNT(id) — `Query.count()` bọc cả câu SELECT mọi cột thành bảng con.
     #  bao-CR-718: qua đệm theo bộ lọc — lật trang không đếm lại (đếm có từ khóa ~0,5 giây trên 328 nghìn dòng).
@@ -205,7 +209,7 @@ def list_lines(db: Session, f: dict, offset: int, limit: int) -> tuple[int, list
     #  (hay trang nằm quá tổng) thì đừng dò: đi ngược chỉ mục mà không gặp dòng khớp là đọc hết bảng (~0,8 giây).
     if total <= offset:
         return total, []
-    rows = q.order_by(CustomsLine.reg_date.desc(), CustomsLine.id.desc()).offset(offset).limit(limit).all()
+    rows = apply_line_sort(q, sort_by, sort_dir).offset(offset).limit(limit).all()
     return total, serialize_lines(db, rows)
 
 
@@ -590,12 +594,13 @@ def search_parties(db: Session, party_type: int, term: str, limit: int = 20) -> 
 
 
 # ── Xuất Excel (T-06) ───────────────────────────────────────────────────────
-def export_lines_xlsx(db: Session, f: dict) -> bytes:
+def export_lines_xlsx(db: Session, f: dict, sort_by: str = "", sort_dir: str = "asc") -> bytes:
+    """Xuất ngay (≤ 50.000 dòng): cùng thứ tự với bảng đang xem (duoc-CR-744)."""
     import openpyxl
     q = apply_line_filters(db.query(CustomsLine), f)
     if q.count() > MAX_EXPORT_ROWS:
         raise HTTPException(400, f"Kết quả quá {MAX_EXPORT_ROWS:,} dòng — thu hẹp bộ lọc rồi xuất lại.".replace(",", "."))
-    lines = serialize_lines(db, q.order_by(CustomsLine.reg_date.desc(), CustomsLine.id.desc()).all())
+    lines = serialize_lines(db, apply_line_sort(q, sort_by, sort_dir).all())
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tra cuu gia hai quan"

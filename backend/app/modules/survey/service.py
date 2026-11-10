@@ -524,28 +524,56 @@ def report_rows_in_range(db: Session, base_survey_query, d_from: str, d_to: str)
             + [_product_line_row(surveys[x.survey_id], x) for x in prod_lines if x.survey_id in surveys])
 
 
+#  Cột bày NHÃN mà dòng báo cáo lưu MÃ hoặc chữ rời: xếp theo thứ tự nhãn / dòng đời như người
+#  dùng đọc, không theo chữ cái của mã tiếng Anh (duoc-CR-744). Mã lạ đứng sau cùng.
+REPORT_RANKED_FIELDS = {
+    #  "NCC" trước "SP" (đúng thứ tự chữ cái của nhãn đang hiện).
+    "kind": ("supplier", "product"),
+    #  Nhãn: "Khảo sát NCC" < "Khảo sát NCC & SP" < "Khảo sát SP".
+    "survey_type": ("supplier", "combined", "product"),
+    #  Dòng đời của phiếu khảo sát.
+    "survey_status": ("draft", "submitted", "approved", "rejected", "cancelled"),
+    #  Chuỗi duyệt của dòng khảo sát (cột lưu thẳng chữ tiếng Việt, ngoại lệ cũ).
+    "line_approve": ("Chờ duyệt", "Đã duyệt", "Không duyệt", "Thiếu thông tin"),
+}
+
+
+def _is_blank_report_value(value) -> bool:
+    """Ô trống = None hoặc chuỗi rỗng / toàn khoảng trắng. Số 0 KHÔNG phải ô trống (cột tiền / số
+    lượng đã đổi 0 thành None từ `to_report_number`, nên 0 còn lại là giá trị thật)."""
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
 def sort_report_rows(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict]:
     """Sắp xếp dòng báo cáo theo cột người dùng chọn. Cột ngoài danh sách -> giữ nguyên.
 
-    `sorted` ỔN ĐỊNH nên thứ tự mặc định (phiếu mới trước) vẫn làm tiêu chí phụ.
+    - Ô trống luôn xuống CUỐI, cả hai chiều (duoc-CR-744). Bản trước đảo cả rổ khi xếp giảm
+      dần nên ô trống của dòng NCC (cột tiền / số lượng chỉ có ở dòng SP) lên đầu: bấm giảm dần
+      "Thành tiền" ra 100/100 dòng đầu trống, nhìn như bấm không ăn.
+    - `sorted` ỔN ĐỊNH, kể cả khi `reverse=True`, nên thứ tự mặc định (phiếu mới trước) vẫn là
+      tiêu chí phụ ở cả hai chiều.
     """
     if sort_by not in REPORT_SORTABLE_FIELDS:
         return rows
+    ranked = REPORT_RANKED_FIELDS.get(sort_by)
+    rank_of = {value: i for i, value in enumerate(ranked)} if ranked else None
 
     def key_of(row: dict):
-        """Khóa sắp xếp chịu được cột LẪN chữ với số.
+        """Khóa sắp xếp chịu được cột LẪN chữ với số (ném TypeError là cả trang báo cáo chết 500).
 
-        Cột tiền/số lượng chỉ có giá trị ở dòng SP, dòng NCC để None; đem `float`
-        so với `""` là Python ném TypeError — cả trang báo cáo chết 500 chỉ vì
-        bấm một tiêu đề cột. Tách hai rổ: số xếp trước, chữ xếp sau, ô trống của
-        cột số coi như 0.
+        Cột có thứ tự nhãn -> hạng; số -> giá trị số; còn lại -> chữ thường.
         """
         value = row.get(sort_by)
+        if rank_of is not None:
+            return (0, float(rank_of.get(value, len(rank_of))), "")
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             return (0, float(value), "")
         return (1, 0.0, str(value or "").lower())
 
-    return sorted(rows, key=key_of, reverse=str(sort_dir).lower() == "desc")
+    filled = [r for r in rows if not _is_blank_report_value(r.get(sort_by))]
+    blank = [r for r in rows if _is_blank_report_value(r.get(sort_by))]
+    filled.sort(key=key_of, reverse=str(sort_dir).lower() == "desc")
+    return filled + blank
 
 
 def lines_by_supplier(db: Session, tax_code: str, supplier_code: str, base_survey_query):

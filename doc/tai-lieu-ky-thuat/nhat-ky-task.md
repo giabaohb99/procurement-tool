@@ -114,6 +114,28 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-744 | Rà và sửa sắp xếp cột trên toàn giao diện mới: bấm tiêu đề cột nào cũng xếp đúng
+- status: xong
+- date: 2026-11-10
+- list: Sản xuất - Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** người dùng báo màn **Tiến độ báo giá** bấm tiêu đề cột không sắp xếp được, rồi lần lượt báo thêm Tiến độ mua hàng, Chi tiết YC mua hàng, Tra cứu thị trường, Công nợ, Phân công phụ trách phân loại và bảng dòng trong chi tiết phiếu; sau đó yêu cầu rà hết toàn hệ để không bỏ sót. Một lượt quét mọi màn danh sách tìm ra thêm một lỗi nặng hơn: khi xếp theo cột có nhiều dòng trùng giá trị, các trang trả thứ tự tùy hứng nên có dòng lặp lại ở trang sau và có dòng không bao giờ hiện ra.
+
+**Đã làm**
+- Đặt một luật chung cho mọi bảng: ô trống luôn xuống cuối ở cả hai chiều, luôn có khóa phụ để thứ tự ổn định qua các trang, cột xếp theo đúng giá trị đang hiện (tên chứ không phải mã số, cột trạng thái theo dòng đời chứ không theo chữ cái của mã tiếng Anh, cột tiền tính đủ tỷ giá và thuế như ô hiển thị).
+- Sửa lớp sắp xếp dùng chung của máy chủ: Đặt xe, Hợp đồng, Nhà cung cấp, Duyệt dấu, Yêu cầu thanh toán, Nghỉ phép, Sản phẩm, Quy định hải quan trước đây lặp dòng giữa các trang, nay không còn dòng nào lặp.
+- Bật và sửa sắp xếp ở các màn Thu mua (Tiến độ báo giá, Tiến độ mua hàng, Chi tiết YC mua hàng, danh sách YCMH, YCBG, Phiếu khảo sát, Đơn mua hàng, Báo cáo khảo sát, hai màn xử lý khảo sát, Phân công phụ trách phân loại), Tra cứu thị trường (năm màn), Tài chính (Công nợ, Yêu cầu thanh toán), Duyệt dấu, Nhân sự (Nhân sự, Pháp nhân, Phòng ban, Nghỉ phép, Nghỉ bù, Quy đổi phép, Đặt phòng họp), Văn bản, Tồn kho và Phiếu hỗ trợ; file Excel xuất ra cùng thứ tự với bảng.
+- Bảng dòng trong chi tiết phiếu (YCMH, YCBG, Đơn mua hàng, giao hàng nhiều lần, Phiếu khảo sát, chi phí nhập khẩu, Yêu cầu thanh toán) nay sắp xếp được ngay trên trình duyệt; thứ tự được chốt lúc bấm nên đang sửa một ô thì dòng không nhảy chỗ.
+- Nghỉ phép và Đặt phòng họp thôi xếp lại từng trang ở trình duyệt; đơn đang chờ chính mình duyệt được máy chủ đưa lên đầu trên cả danh sách.
+- Đóng hai chỗ lộ dữ liệu qua thứ tự dòng: người không có quyền xem nhà cung cấp không xếp được theo các cột nhà cung cấp đang bị che, người không có quyền xem hồ sơ nhạy cảm không xếp được danh sách nhân sự theo ngày sinh, mã số thuế, số giấy tờ hay số tài khoản.
+
+**Kiểm:** bài kiểm máy chủ mới cho từng màn và cho luật chung, bài kiểm giao diện cho từng màn và bảng dòng; ruff, kiểm kiểu và lint không lỗi; thử thật trên cơ sở dữ liệu MySQL ở máy local cả hai chiều xếp của từng cột, đi hết các trang để đếm dòng lặp.
+
+**Còn lại:** chưa đo tốc độ xếp trên bảng giá hải quan cỡ dữ liệu thật (khoảng 328 nghìn dòng); cột Gram ở Chi tiết YC mua hàng xếp theo chữ nên "80gsm" đứng sau "300gsm"; bộ lọc **Phiếu của tôi** ở Đặt phòng họp không có tác dụng (lỗi có từ trước, chờ quyết làm riêng).
+
+Mã nguồn: `backend/app/core/sort_order.py`, `backend/app/core/code_rank_sql.py`, `backend/app/core/base_controller.py`, các tệp `sort_expressions.py` / `*_sort.py` mới trong từng phân hệ, `frontend-v2/src/shared/data-table/use-lines-table-sort.ts`, `lines-table.tsx`, `frontend-v2/src/shared/utils/status-rank.ts`, các trang danh sách và bảng dòng; bài kiểm `test/backend/test_*_cr744.py`.
+
 ## bao-CR-742-dmh-buoc-truong-phong-phe-duyet | Đơn mua hàng: chưa chọn Trưởng phòng phê duyệt thì không gửi duyệt được
 - status: xong
 - date: 2026-11-09

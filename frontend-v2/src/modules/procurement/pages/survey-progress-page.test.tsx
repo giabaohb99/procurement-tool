@@ -270,6 +270,70 @@ describe('SurveyProgressPage — Xuất Excel bám bộ lọc điều kiện', (
   })
 })
 
+/**
+ * duoc-CR-744 — mọi cột đều sắp xếp được tại server. Trước đây các cột TÍNH
+ * (Trễ, Số ngày xử lý, Tiến độ dòng, Số PA) và cụm phương án chốt không bật
+ * `sortable`: bấm tiêu đề không có gì xảy ra, người dùng báo "không sort được".
+ */
+describe('SurveyProgressPage — sắp xếp cột', () => {
+  function header(text: string) {
+    return screen.getByText(text, { selector: 'thead span' })
+  }
+
+  it('sorts Trễ newest-problem-first — the first click asks for the most days late', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Trễ (ngày)'))
+    expect(lastCall()).toMatchObject({ sort_by: 'days_late', sort_dir: 'desc' })
+  })
+
+  it('sorts the computed columns and the chosen-option columns on the server', async () => {
+    const user = userEvent.setup()
+    build()
+
+    const cases: [string, string][] = [
+      ['Tiến độ dòng', 'progress_state'],
+      ['Thông số kỹ thuật', 'requirement_detail'],
+      ['Nhà cung cấp', 'opt_supplier_name'],
+      ['Tên SP báo giá', 'opt_product_name'],
+    ]
+    for (const [text, key] of cases) {
+      await user.click(header(text))
+      expect(lastCall()).toMatchObject({ sort_by: key, sort_dir: 'asc' })
+    }
+  })
+
+  it('cycles Đơn giá báo desc → asc → off, and clears sort_dir from the request', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Đơn giá báo'))
+    expect(lastCall()).toMatchObject({ sort_by: 'opt_price', sort_dir: 'desc' })
+    await user.click(header('Đơn giá báo'))
+    expect(lastCall()).toMatchObject({ sort_by: 'opt_price', sort_dir: 'asc' })
+    await user.click(header('Đơn giá báo'))
+    expect(lastCall().sort_by).toBeUndefined()
+    expect(lastCall().sort_dir).toBeUndefined()
+  })
+
+  it('sorts Công ty by the name key, not by company_id', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Công ty'))
+    expect(lastCall()).toMatchObject({ sort_by: 'company', sort_dir: 'asc' })
+  })
+
+  it('exports in the SAME order the table is showing', async () => {
+    const user = userEvent.setup()
+    build('/procurement/survey-progress?sort_by=handling_days&sort_dir=desc')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+    expect(downloads[0].params).toMatchObject({ sort_by: 'handling_days', sort_dir: 'desc' })
+  })
+})
+
 describe('SurveyProgressPage — cột chữ đọc đủ', () => {
   //  Khách nêu 31/08/2026: "cho show full ra chứ đừng có …". Xuống dòng là hiệu
   //  ứng CSS, jsdom không đo được, nên đành khẳng định theo class — đây là chỗ

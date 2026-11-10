@@ -20,6 +20,7 @@ import {
   CUSTOMS_REGULATION_COLUMNS,
 } from '../../config/customs-regulation-columns'
 import { useCustomsRegulationOptions, useCustomsRegulations } from '../../hooks/use-customs'
+import { useLocalServerSort } from '../../hooks/use-local-server-sort'
 import type { CustomsRegulationHit } from '../../types/customs'
 import { buildRegulationParams, resolveRegulationEmptyMessage } from '../../utils/customs-regulation'
 import { CustomsBannedPesticideDialog } from './customs-banned-pesticide-dialog'
@@ -44,7 +45,10 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
   const debouncedSearch = useDebouncedValue(search, 350)
   const [listCode, setListCode] = useState(ALL)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [page, setPage] = usePageResetOnFilterChange([debouncedSearch, listCode])
+  //  duoc-CR-744 — sắp xếp tại SERVER theo cột (backend `regulation_sort.py`), cả tập đã lọc. State cục bộ
+  //  như bộ lọc của mục này (không lên URL: `sort_by` trên URL là của bảng dòng hàng ở mục Danh sách).
+  const sort = useLocalServerSort()
+  const [page, setPage] = usePageResetOnFilterChange([debouncedSearch, listCode, sort.sortBy, sort.sortDir])
   const [pesticidesOf, setPesticidesOf] = useState<CustomsRegulationHit | null>(null)
   //  Cột "Thuốc BVTV chứa" đứng TRƯỚC "Lưu ý" (cột rộng nhất): đặt cuối thì nó rơi ra ngoài khung
   //  ở màn 1440px, phải cuộn ngang mới thấy — mà nó là thứ mới của bảng này.
@@ -59,6 +63,7 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
   const options = useCustomsRegulationOptions()
   const list = useCustomsRegulations({
     ...buildRegulationParams(debouncedSearch, listCode),
+    ...sort.params,
     page,
     page_size: pageSize,
   })
@@ -92,6 +97,9 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
           storageKey={STORAGE_KEY}
           //  Khổ điện thoại: thẻ dọc; nút "N thuốc" của cột "Thuốc BVTV chứa" đi theo vào thẻ.
           mobileCard={(row) => <CustomsRegulationCard row={row} onOpenPesticides={setPesticidesOf} />}
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           filtersActive={filtersActive}
           onResetFilters={() => {
             setSearch('')

@@ -12,6 +12,7 @@ from app.core.scoping import apply_scope
 
 from . import service
 from .model import Payable
+from .sort_expressions import NEEDS_INVOICE_JOIN, build_order_by
 
 router = APIRouter(prefix="/api/payables", tags=["payable"])
 
@@ -126,14 +127,29 @@ def _filtered(db: Session, request: Request, user, scoped: bool = True):
     return q
 
 
+def _ordered(db: Session, q, request: Request):
+    """Gắn ORDER BY: cột người dùng bấm (`sort_by`/`sort_dir`, duoc-CR-744) rồi mới đến thứ tự
+    mặc định (hạn trả gần nhất, khoản mới trước) làm khóa phụ. Khóa lạ thì chỉ còn thứ tự
+    mặc định. Danh sách VÀ file Xuất Excel đều đi qua đây nên luôn ra cùng thứ tự."""
+    sort_by = (request.query_params.get("sort_by") or "").strip()
+    clauses = build_order_by(db, sort_by, request.query_params.get("sort_dir") or "asc", datetime.now())
+    #  Ngày hóa đơn cần outer-join; bộ lọc khoảng ngày hóa đơn đã join sẵn thì không join lại.
+    if clauses and sort_by in NEEDS_INVOICE_JOIN and not (
+            request.query_params.get("invoice_from") or request.query_params.get("invoice_to")):
+        q = service.join_invoice_date(q)
+    return q.order_by(*clauses, Payable.due_date.asc(), Payable.id.desc())
+
+
 @router.get("")
 def list_payables(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
                   user=Depends(require("payable", "read"))):
-    """Danh sách công nợ phải trả, sắp theo hạn trả gần nhất, kèm mã MISA của đơn."""
+    """Danh sách công nợ phải trả, kèm mã MISA của đơn.
+
+    Mặc định sắp theo hạn trả gần nhất; `sort_by` + `sort_dir` (asc|desc) sắp theo cột bất kỳ
+    đang hiện trên bảng, trên cả tập (không riêng trang đang xem). Khóa lạ bị bỏ qua."""
     q = _filtered(db, request, user)
     total = q.count()
-    rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())
-            .offset(pg["offset"]).limit(pg["limit"]).all())
+    rows = _ordered(db, q, request).offset(pg["offset"]).limit(pg["limit"]).all()
     misa = service.misa_code_by_po(db, rows)
     inv_dates = service.invoice_date_map(db, rows)
     return success({"total": total,
@@ -205,7 +221,7 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
     from . import export as ex
 
     q = _filtered(db, request, user)
-    items = q.order_by(Payable.due_date.asc(), Payable.id.desc()).all()
+    items = _ordered(db, q, request).all()
     check_row_limit(len(items))
     columns = pick_columns(ex.COLS, cols)
     return xlsx_response(ex.FILE_NAME, columns, ex.build_rows(db, items), ex.SHEET_TITLE)

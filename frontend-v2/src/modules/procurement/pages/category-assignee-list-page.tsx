@@ -18,6 +18,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import type { CategoryAssignee } from '../types/category-assignee'
+import { sortCategoryAssignees } from '../utils/category-assignee-sort'
 import { DEFAULT_PURCHASING_LABEL } from '../utils/handling-dept-display'
 
 interface ItemGroupOption {
@@ -87,6 +88,10 @@ export function CategoryAssigneeListPage() {
     { enabled: can('department', 'read') },
   )
   const departments = departmentsData?.items ?? []
+  //  Sắp xếp phía trình duyệt (duoc-CR-744): danh sách đã tải trọn nên xếp tại chỗ, TRƯỚC khi
+  //  cắt trang. URL giữ `sort_by`/`sort_dir` để F5 / gửi link vẫn đúng thứ tự.
+  const sortBy = searchParams.get('sort_by') || ''
+  const sortDir: 'asc' | 'desc' = searchParams.get('sort_dir') === 'desc' ? 'desc' : 'asc'
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const pageSize = Number(searchParams.get('pageSize')) || 20
 
@@ -162,11 +167,16 @@ export function CategoryAssigneeListPage() {
     })
   }, [items, search, catFilter, deptFilter])
 
-  // Phân trang client
+  const sortedItems = useMemo(
+    () => (sortBy ? sortCategoryAssignees(filteredItems, sortBy, sortDir, departmentLabel) : filteredItems),
+    [filteredItems, sortBy, sortDir],
+  )
+
+  // Phân trang client — SAU khi xếp, để trang 1 là đầu của cả tập đã xếp chứ không riêng 20 dòng.
   const paginatedItems = useMemo(() => {
     const start = (page - 1) * pageSize
-    return filteredItems.slice(start, start + pageSize)
-  }, [filteredItems, page, pageSize])
+    return sortedItems.slice(start, start + pageSize)
+  }, [sortedItems, page, pageSize])
 
   const columns: DataTableColumn<CategoryAssignee>[] = useMemo(
     () => [
@@ -276,6 +286,23 @@ export function CategoryAssigneeListPage() {
     setSearchParams(p)
   }
 
+  /**
+   * Nhịp thứ ba của tiêu đề cột (tăng → giảm → THÔI SẮP XẾP) trả khóa cột RỖNG: xóa cả hai
+   * tham số khỏi URL. Đổi thứ tự thì về trang 1 — đang ở trang 3 của thứ tự cũ là vô nghĩa.
+   */
+  const handleSortChange = (nextSortBy: string, nextSortDir: 'asc' | 'desc') => {
+    const p = new URLSearchParams(searchParams)
+    if (nextSortBy) {
+      p.set('sort_by', nextSortBy)
+      p.set('sort_dir', nextSortDir)
+    } else {
+      p.delete('sort_by')
+      p.delete('sort_dir')
+    }
+    p.set('page', '1')
+    setSearchParams(p, { replace: true })
+  }
+
   return (
     //  ⚠️ Dùng `PageContainer` + `PageHeader` như mọi màn khác, bản cũ tự dựng
     //  `div.p-6` + `h1.text-2xl`: đệm lệch 8px và tiêu đề to hơn mọi trang còn
@@ -337,6 +364,9 @@ export function CategoryAssigneeListPage() {
           columns={columns}
           rows={paginatedItems}
           getRowId={(r) => r.id}
+          sortBy={sortBy || undefined}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           isLoading={loading}
           toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.category-assignees"

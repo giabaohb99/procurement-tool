@@ -18,6 +18,7 @@ from . import leave_encashment_payout as payout
 from . import service
 from .model import PaymentRequest
 from .schema import PRequestCreate, PRequestUpdate
+from .sort_expressions import list_sort_allow
 
 router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
@@ -153,7 +154,8 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     """Danh sách yêu cầu thanh toán (YCTT) trong phạm vi được xem, có lọc và phân trang."""
     q = _list_query(db, request, user)
     total = q.count()
-    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
+    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc(),
+                                allow=list_sort_allow())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     # Ticket #26 (bao-CR-302): cột Mã MISA gộp theo phiếu, join một lượt cho cả trang
     misa_by_req = service.misa_codes_by_request(db, [p.id for p in items])
@@ -182,7 +184,8 @@ def export_xlsx(request: Request, db: Session = Depends(get_db),
     ids = parse_ids(request.query_params.get("ids"))
     if ids:
         q = q.filter(PaymentRequest.id.in_(ids))
-    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
+    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc(),
+                                allow=list_sort_allow())
     pairs = ex.load_lines(db, q.all())
     check_row_limit(len(pairs))
     return xlsx_response(ex.FILE_NAME, ex.COLS, ex.build_rows(db, pairs), ex.SHEET_TITLE)

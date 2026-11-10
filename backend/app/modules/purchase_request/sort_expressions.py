@@ -5,7 +5,16 @@ Dùng truy vấn con tương quan (correlated scalar subquery) để chạy đư
 """
 from sqlalchemy import func, select
 
+from app.core.code_rank_sql import build_value_rank_expression
+
 from .model import PurchaseRequest, PurchaseRequestItem
+
+
+#  Dòng đời của phiếu (cột `status`) theo đúng thứ tự `PR_STATUS_LABELS` ở giao diện: nhãn đang hiện
+#  là tiếng Việt nên xếp theo TIẾN TRÌNH, không theo chữ cái của mã tiếng Anh (duoc-CR-744).
+#  Nhánh rẽ (bị trả lại, từ chối) đứng sau chuỗi.
+PR_STATUS_ORDER = ("draft", "submitted", "approved", "dispatched", "processing", "purchasing",
+                   "purchased", "completed", "rejected", "cancelled", "")
 
 
 def list_sort_allow() -> dict:
@@ -13,6 +22,7 @@ def list_sort_allow() -> dict:
 
     `total` = tổng thành tiền (đã gồm VAT) mọi dòng của phiếu — đúng số `service.list_line_summaries`
     trả cho cột *Tổng tiền*; phiếu chưa có dòng nào tính 0 (khớp serializer).
+    `status` xếp theo hạng dòng đời (`PR_STATUS_ORDER`).
     """
     total = (
         select(func.coalesce(func.sum(PurchaseRequestItem.amount), 0))
@@ -20,4 +30,4 @@ def list_sort_allow() -> dict:
         .correlate(PurchaseRequest)
         .scalar_subquery()
     )
-    return {"total": total}
+    return {"total": total, "status": build_value_rank_expression(PurchaseRequest.status, PR_STATUS_ORDER)}

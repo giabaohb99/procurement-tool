@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
+from app.modules.approval import task_service
 from app.modules.approval.self_approval_policy import ensure_not_self_approval
 from app.modules.company.model import Company
 from app.modules.department.model import Department
@@ -29,6 +30,7 @@ from .constants import LR_APPROVED, LR_CANCELLED, LR_PENDING, LR_REJECTED
 from .period_spans import PeriodView
 from .request_model import LeaveRequest
 from .schema import LeaveEstimateIn, LeaveRequestCreate, LeaveRequestUpdate
+from .sort_expressions import list_sort_allow
 
 router = APIRouter(prefix="/api/leave-requests", tags=["leave"])
 
@@ -72,10 +74,17 @@ def list_requests(
     search: str | None = None,
     from_date: str | None = Query(None, description="Lọc theo khoảng: nghỉ TỪ ngày"),
     to_date: str | None = Query(None, description="Lọc theo khoảng: nghỉ ĐẾN ngày"),
+    mine_first: bool = Query(
+        False, description="Đưa đơn ĐANG chờ chính người gọi duyệt lên đầu (chỉ khi không chọn cột sắp xếp)"),
     db: Session = Depends(get_db),
     user=Depends(require(ENTITY, "read")),
 ):
     """Danh sách đơn trong phạm vi người xem ("Đơn của tôi" khi phạm vi = own).
+
+    Sắp xếp: `sort_by`/`sort_dir` (Số đơn, Trạng thái, Người nghỉ, Từ ngày, Đến ngày, Số ngày,
+    Lý do). Không chọn cột thì mặc định Chờ duyệt lên đầu, rồi đơn mới nhất; thêm `mine_first=true`
+    thì đơn đang chờ CHÍNH người gọi duyệt đứng trước hết. Có chọn cột thì `mine_first` bị bỏ qua
+    để cột người dùng bấm quyết định thứ tự trên cả tập, không chỉ trong từng trang.
 
     `from_date`/`to_date` lọc theo GIAO NHAU của khoảng, không phải theo cột
     `from_date` đơn lẻ — màn Lịch nghỉ hỏi "tuần này ai nghỉ", và một đơn nghỉ
@@ -91,11 +100,21 @@ def list_requests(
         query = query.filter(LeaveRequest.from_date <= to_date)
     query = apply_scope(query, LeaveRequest, ENTITY, user, get_perm_profile(db, user))
     is_pending = case((LeaveRequest.status == LR_PENDING, 0), else_=1)
+    default_order = (is_pending.asc(), LeaveRequest.id.desc())
+    sort_chosen = bool((request.query_params.get("sort_by") or "").strip())
+    if mine_first and not sort_chosen:
+        #  Việc ĐANG treo ở chính tôi (kể cả việc được ủy quyền bấm thay) -> lên trước hết, làm ở
+        #  SQL nên đúng trên cả tập chứ không chỉ trong một trang như cách xếp lại ở trình duyệt.
+        mine_ids = {t["entity_id"] for t in
+                    task_service.my_tasks(db, getattr(user, "employee_id", 0) or 0, ENTITY)}
+        if mine_ids:
+            default_order = (case((LeaveRequest.id.in_(mine_ids), 0), else_=1).asc(), *default_order)
     query = apply_sort_from_request(
         query,
         LeaveRequest,
         request,
-        default=(is_pending.asc(), LeaveRequest.id.desc()),
+        default=default_order,
+        allow=list_sort_allow(),
     )
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()

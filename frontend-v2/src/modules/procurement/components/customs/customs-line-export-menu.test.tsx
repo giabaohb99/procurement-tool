@@ -48,7 +48,11 @@ function LocationProbe() {
   return <output aria-label="location">{pathname}</output>
 }
 
-function build(totalRows: number | undefined, filterParams: Record<string, string> = { q: 'abamectin' }) {
+function build(
+  totalRows: number | undefined,
+  filterParams: Record<string, string> = { q: 'abamectin' },
+  sortParams?: Record<string, string>,
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
@@ -59,6 +63,7 @@ function build(totalRows: number | undefined, filterParams: Record<string, strin
             element={
               <CustomsLineExportMenu
                 filterParams={filterParams}
+                sortParams={sortParams}
                 filterSummary="Tên hàng: abamectin"
                 totalRows={totalRows}
               />
@@ -122,6 +127,24 @@ describe('CustomsLineExportMenu', () => {
     expect(url).toBe('/api/customs/lines/export')
     expect(params).toEqual({ q: 'abamectin', hs_code: '3808' })
     expect(posts).toHaveLength(0)
+  })
+
+  //  duoc-CR-744 — "Xuất ngay" ra tệp theo ĐÚNG thứ tự bảng đang xem; "Xuất toàn bộ" chạy nền theo ID tăng dần
+  //  (đọc khối keyset) nên KHÔNG mang thứ tự — gửi sang chỉ làm bộ lọc của lô dính hai khóa lạ.
+  it('exports in the order the table shows, but never sends the order to the background batch', async () => {
+    downloadFile.mockResolvedValue(undefined)
+    build(120, { q: 'abamectin' }, { sort_by: 'price_usd', sort_dir: 'desc' })
+    await openMenu()
+    await userEvent.click(await screen.findByText(/Xuất ngay \(tối đa 50\.000 dòng\)/))
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
+    const [, , params] = downloadFile.mock.calls[0] as [string, string, Record<string, string>]
+    expect(params).toEqual({ q: 'abamectin', sort_by: 'price_usd', sort_dir: 'desc' })
+
+    await openMenu()
+    await userEvent.click(await screen.findByText('Xuất toàn bộ theo bộ lọc (chạy nền)'))
+    await userEvent.click(await screen.findByRole('button', { name: 'Đồng ý' }))
+    await waitFor(() => expect(posts).toHaveLength(1))
+    expect(posts[0].params).toEqual({ q: 'abamectin' })
   })
 
   it('shows rows and the expected file count in the confirm box, and creates nothing on Hủy', async () => {

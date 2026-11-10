@@ -23,10 +23,11 @@ export const NO_AVAILABLE_SURVEY_LINE_SORT: AvailableSurveyLineSort = { sortBy: 
  * `backend/app/modules/survey_request/line_service.py::available_survey_lines`; khóa lạ
  * backend lặng lẽ bỏ qua và xếp theo `id` giảm dần, nên cột không có ở đây (Phân loại KS,
  * Phiếu KS, nút gắn) KHÔNG được bật sắp xếp — bật lên là mũi tên đổi mà thứ tự đứng im.
- * Cột NCC hiện tên nhưng sắp theo MÃ NCC, giống bản v1.
+ * Cột NCC hiện TÊN (thiếu tên thì mã) nên sắp theo đúng chữ đó (`supplier_name`, duoc-CR-744) -
+ * khác bản v1 từng sắp theo mã.
  */
 export const AVAILABLE_SURVEY_LINE_SORT_KEYS: Readonly<Record<string, string>> = {
-  supplier: 'supplier_code',
+  supplier: 'supplier_name',
   product: 'product_name',
   price: 'price_by_volume',
   moq: 'moq',

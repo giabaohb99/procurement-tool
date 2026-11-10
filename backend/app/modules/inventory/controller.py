@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, has_global_scope
 
-from . import service
+from . import service, sort_expressions
 from .model import Inventory, InventoryMove
 from .schema import AdjustIn
 
@@ -46,7 +46,12 @@ def list_inventory(request: Request, pg: dict = Depends(pagination), db: Session
             q = q.filter(Inventory.qty < 0)
 
     total = q.count()
-    items = q.order_by(Inventory.product_code.asc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    #  duoc-CR-744: bấm tiêu đề cột -> `sort_by`/`sort_dir` (xem `sort_expressions`); không bấm thì giữ mặc định cũ
+    #  (mã sản phẩm tăng dần), thêm `id` làm khóa phụ để các kho cùng mã không đổi chỗ giữa các trang.
+    order = sort_expressions.build_order_by(request.query_params.get("sort_by") or "",
+                                            request.query_params.get("sort_dir") or "asc")
+    q = q.order_by(*order) if order else q.order_by(Inventory.product_code.asc(), Inventory.id.desc())
+    items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(i) for i in items]})
 
 

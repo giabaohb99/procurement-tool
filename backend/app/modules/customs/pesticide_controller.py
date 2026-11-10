@@ -33,11 +33,14 @@ router = APIRouter(prefix="/api/customs/pesticides", tags=["customs"])
 def list_pesticides(q: str = "", status: int | None = Query(None, ge=0, le=9),
                     pest_group: str = "", sector: str = "", banned_only: bool = False,
                     banned_regulation_id: int | None = Query(None, ge=1),
+                    sort_by: str = "", sort_dir: str = "asc",
                     pg: dict = Depends(pagination),
                     db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    """Danh sách thuốc BVTV. `sort_by` = khóa cột (`pesticide_sort.PESTICIDE_SORT_KEYS`), `sort_dir` = asc | desc;
+    khóa lạ bị bỏ qua (xếp theo tên thuốc). Xếp trên cả danh mục đã lọc (duoc-CR-744)."""
     total, items = pesticide_service.list_pesticides(db, q, status, pest_group, sector,
                                                      pg["offset"], pg["limit"], banned_only,
-                                                     banned_regulation_id)
+                                                     banned_regulation_id, sort_by, sort_dir)
     return success({"total": total, "items": items})
 
 
@@ -51,6 +54,7 @@ def export_pesticides(scope: str = Query("page", pattern="^(page|all)$"),
                       q: str = "", status: int | None = Query(None, ge=0, le=9),
                       pest_group: str = "", sector: str = "", banned_only: bool = False,
                       banned_regulation_id: int | None = Query(None, ge=1),
+                      sort_by: str = "", sort_dir: str = "asc",
                       pg: dict = Depends(pagination),
                       db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
     """Xuất Excel mục "Thuốc BVTV" — đặt TRƯỚC `/{pesticide_id}` để "export" không bị nuốt làm id.
@@ -60,7 +64,7 @@ def export_pesticides(scope: str = Query("page", pattern="^(page|all)$"),
     """
     path, filename = pesticide_export_service.export_to_tempfile(
         db, user, scope, q, status, pest_group, sector, banned_only, banned_regulation_id,
-        pg["page"], pg["offset"], pg["limit"])
+        pg["page"], pg["offset"], pg["limit"], sort_by, sort_dir)
     return FileResponse(path, filename=filename, media_type=XLSX_MEDIA,
                         background=BackgroundTask(os.remove, path))
 

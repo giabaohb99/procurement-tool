@@ -165,6 +165,39 @@ describe('CustomsPesticideTab', () => {
     expect(list?.params).toMatchObject({ status: '1', page: 1, page_size: 50 })
   })
 
+  //  duoc-CR-744 — trước đây không cột nào bấm được. Thứ tự nằm trên URL bằng param RIÊNG (`psort_*`) để không
+  //  đụng `sort_by` của bảng dòng hàng ở mục Danh sách (menu giữ nguyên query khi đổi mục).
+  it('sorts on the server when a header is clicked and keeps the order on the URL under its own params', async () => {
+    build()
+    const header = (text: string) => screen.findByText(text, { selector: 'thead span' })
+    await userEvent.click(await header('Hết hạn đăng ký'))
+    await waitFor(() => {
+      const list = calls.filter((call) => call.url.endsWith('/pesticides')).at(-1)
+      expect(list?.params).toMatchObject({ status: '1', sort_by: 'expires_on', sort_dir: 'desc' })
+    })
+    expect(screen.getByTestId('where').textContent).toContain('psort_by=expires_on')
+    await userEvent.click(await header('Hết hạn đăng ký'))
+    await userEvent.click(await header('Hết hạn đăng ký'))
+    await waitFor(() => {
+      const list = calls.filter((call) => call.url.endsWith('/pesticides')).at(-1)
+      expect(list?.params?.sort_by).toBeUndefined()
+    })
+    expect(screen.getByTestId('where').textContent).not.toContain('psort')
+  })
+
+  it('makes every pesticide column sortable by a key the backend knows', async () => {
+    const { CUSTOMS_PESTICIDE_COLUMNS } = await import('../../config/customs-pesticide-columns')
+    //  Bản chép tay `pesticide_sort.PESTICIDE_SORT_KEYS` — bài test_sap_xep_tra_cuu_thi_truong_cr744.py canh phía backend.
+    const backendKeys = [
+      'trade_name', 'active_ingredient', 'banned', 'concentration', 'pest_group', 'registrant',
+      'registration_no', 'expires_on', 'status', 'use_count', 'sector',
+    ]
+    expect(CUSTOMS_PESTICIDE_COLUMNS.filter((column) => !column.sortable)).toEqual([])
+    expect(CUSTOMS_PESTICIDE_COLUMNS.map((column) => column.sortKey ?? column.key).sort()).toEqual(
+      [...backendKeys].sort(),
+    )
+  })
+
   it('hides the import and add buttons without the customs_pesticide keys', async () => {
     granted = new Set()
     build()

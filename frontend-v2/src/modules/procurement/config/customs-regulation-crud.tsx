@@ -60,6 +60,8 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
       wrap: true,
       cell: (row) => formatRegulationListLabel(row.list_code),
     },
+    //  STT KHÔNG khai `sortable`: cột chữ trong DB (phụ lục III có dòng con "5.1"), xếp chữ cho "10" đứng trước "2" —
+    //  sai hơn là không xếp. Bảng "Tra cứu hóa chất" xếp STT đúng số (regulation_sort.py).
     { key: 'seq_no', header: 'STT', width: 70, align: 'right', cell: (row) => row.seq_no },
     {
       key: 'name',
@@ -70,15 +72,16 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
       wrap: true,
       cell: (row) => <span className="font-medium">{row.name}</span>,
     },
-    { key: 'name_vi', header: 'Tên chất', width: 240, wrap: true, cell: (row) => row.name_vi },
+    { key: 'name_vi', header: 'Tên chất', width: 240, wrap: true, sortable: true, cell: (row) => row.name_vi },
     { key: 'cas_no', header: 'Số CAS', width: 120, sortable: true, cell: (row) => row.cas_no },
-    { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, cell: (row) => row.formula },
-    { key: 'category', header: 'Phân loại', width: 160, wrap: true, cell: (row) => row.category },
+    { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, sortable: true, cell: (row) => row.formula },
+    { key: 'category', header: 'Phân loại', width: 160, wrap: true, sortable: true, cell: (row) => row.category },
     {
       key: 'threshold_kg',
       header: 'Ngưỡng (kg)',
       width: 120,
       align: 'right',
+      sortable: true,
       cell: (row) => (
         <span className="tabular-nums">
           {row.threshold_kg === null ? '' : formatQuantity(row.threshold_kg)}
@@ -90,6 +93,7 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
       header: 'Ngưỡng hỗn hợp (%)',
       width: 130,
       align: 'right',
+      sortable: true,
       cell: (row) => <span className="tabular-nums">{row.mixture_pct === null ? '' : `> ${row.mixture_pct}%`}</span>,
     },
     {
@@ -97,6 +101,7 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
       header: 'Năm cấm',
       width: 100,
       align: 'right',
+      sortable: true,
       cell: (row) => row.banned_year || '',
     },
     {

@@ -16,7 +16,7 @@
 // thẳng cột với nhau; rê chuột ở biểu đồ nào cũng hiện ô số liệu đầy đủ của kỳ đó ở biểu
 // đồ giá. Cỡ chữ cố định (recharts vẽ theo điểm ảnh thật, không co giãn `viewBox`).
 import { Boxes, ListOrdered, Scale, TrendingDown, TrendingUp } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Area,
   Bar,
@@ -42,6 +42,7 @@ import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 
 import { useCustomsStats } from '../../hooks/use-customs'
+import { useClientTableSort } from '../../hooks/use-client-table-sort'
 import type {
   CustomsFilters,
   CustomsPeriod,
@@ -84,6 +85,34 @@ interface CustomsPriceChartProps {
   filters: CustomsFilters
 }
 
+/**
+ * Giá trị ô đang hiển thị của bảng kỳ (duoc-CR-744) — kỳ xếp theo `period` (YYYY-MM, đúng thứ tự thời gian chứ
+ * không theo nhãn "03/2026"); kỳ không có dòng nào hiện "—" / ô trống nên tính là ô trống.
+ */
+function periodSortValue(columnKey: string, point: ChartPoint, minLines: number) {
+  const empty = point.count === 0
+  switch (columnKey) {
+    case 'label':
+      return point.period
+    case 'count':
+      return point.count
+    case 'qty':
+      return empty ? null : point.qty
+    case 'min':
+      return empty ? null : point.min
+    case 'common_range':
+      return typeof point.p25 === 'number' && typeof point.p75 === 'number' ? point.p25 : null
+    case 'wavg':
+      return empty ? null : point.wavg
+    case 'max':
+      return empty ? null : point.max
+    case 'note':
+      return formatPeriodNote(point, minLines)
+    default:
+      return null
+  }
+}
+
 export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
   const [period, setPeriod] = useState<CustomsPeriod>('month')
   //  bao-CR-493: đại ca chốt bỏ hẳn nút chọn giá — biểu đồ luôn vẽ GIÁ ĐIỀU CHỈNH (giá hải quan
@@ -121,14 +150,22 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
   const unit = formatCustomsUnit(data?.unit)
   const minLines = data?.min_lines_for_best ?? 5
 
+  const getPeriodValue = useCallback(
+    (columnKey: string, point: ChartPoint) => periodSortValue(columnKey, point, minLines),
+    [minLines],
+  )
+  const sortedPoints = useClientTableSort(points, getPeriodValue)
+
   const tableColumns = useMemo<DataTableColumn<ChartPoint>[]>(
     () => [
-      { key: 'label', header: 'Kỳ', width: 110, hideable: false, cell: (p) => p.label },
+      { key: 'label', header: 'Kỳ', width: 110, sortable: true, hideable: false, cell: (p) => p.label },
       {
         key: 'count',
         header: 'Số dòng',
         width: 90,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (p) => <span className="tabular-nums">{p.count}</span>,
       },
@@ -137,6 +174,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         header: `Tổng lượng (${unit})`,
         width: 140,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         dividerAfter: true,
         cell: (p) => <span className="tabular-nums">{p.count ? formatQuantity(p.qty) : '—'}</span>,
@@ -146,6 +185,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         header: 'Thấp nhất',
         width: 110,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         //  bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 — nền cột làm hàng "Giá tốt
         //  nhất" chìm mất. Bốn cột giá gom thành NHÓM bằng hai vạch dọc đậm (sau cột Tổng
@@ -157,6 +198,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         header: 'Khoảng phổ biến (25–75%)',
         width: 180,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (p) => <span className="tabular-nums">{formatCommonRange(p)}</span>,
       },
@@ -165,6 +208,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         header: 'Bình quân gia quyền',
         width: 150,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (p) => <span className="font-semibold tabular-nums">{formatUsd(p.wavg)}</span>,
       },
@@ -174,6 +219,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         dividerAfter: true,
         width: 110,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (p) => <span className="tabular-nums">{formatUsd(p.max)}</span>,
       },
@@ -181,6 +228,7 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         key: 'note',
         header: 'Ghi chú',
         width: 220,
+        sortable: true,
         hideable: false,
         wrap: true,
         cell: (p) => (
@@ -289,7 +337,10 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
       <Card className="p-4">
         <DataTable
           columns={tableColumns}
-          rows={points}
+          rows={sortedPoints.rows}
+          sortBy={sortedPoints.sortBy}
+          sortDir={sortedPoints.sortDir}
+          onSortChange={sortedPoints.onSortChange}
           getRowId={(point) => point.period}
           //  Nền ĐỤC (luật bảng: cấm nền hàng có alpha) — khai lại đúng cặp odd/even để
           //  đè sọc mặc định của `DataTable`.

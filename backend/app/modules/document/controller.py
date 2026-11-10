@@ -34,7 +34,7 @@ from app.core.response import success
 
 from . import labor_contract_archive_access as archive_access
 from . import (access_service, approval_bridge, duplicate_service, import_service, numbering,
-               serializer, service, version_service)
+               serializer, service, sort_expressions, version_service)
 from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
 from .query import (hide_private_copies_with_visible_source, count_private_copies,
@@ -104,6 +104,22 @@ def _sort_from_param(sort: str) -> tuple[str, str]:
     if name not in SORTABLE_COLUMNS:
         return "", "asc"
     return name, ("desc" if is_desc else "asc")
+
+
+def _apply_list_sort(query, request: Request, legacy_sort_by: str, legacy_sort_dir: str):
+    """Xếp danh sách: `sort_by`/`sort_dir` (cột đang hiện, duoc-CR-744) thắng `?sort=` cũ.
+
+    Cột đang hiện xếp qua `sort_expressions` (ô trống xuống cuối, khóa phụ `id`). Khóa lạ hoặc không có gì thì
+    về đường cũ: `?sort=` (4 cột) rồi mặc định `id desc`. Nơi gọi trực tiếp không qua HTTP (bài kiểm phạm vi)
+    có thể truyền `request` không đủ thuộc tính nên đọc phòng thủ.
+    """
+    params = getattr(request, "query_params", None)
+    order = sort_expressions.build_order_by((params.get("sort_by") if params else "") or "",
+                                            (params.get("sort_dir") if params else "") or "asc")
+    if order:
+        return query.order_by(*order)
+    return apply_sort(query, Document, legacy_sort_by, legacy_sort_dir,
+                      default=Document.id.desc(), nulls_last=("book_seq_no",))
 
 
 def doc_reader(user=Depends(get_current_user)):
@@ -240,9 +256,8 @@ def list_documents(
     #  `sort=-book_seq_no` để đọc theo số vào sổ giảm dần (duoc-CR-474). NULL của
     #  `book_seq_no` (văn bản chưa vào sổ) luôn xuống CUỐI bất kể chiều sắp.
     sort_by, sort_dir = _sort_from_param(sort)
-    items = (apply_sort(query, Document, sort_by, sort_dir,
-                        default=Document.id.desc(), nulls_last=("book_seq_no",))
-             .offset(pg["offset"]).limit(pg["limit"]).all())
+    query = _apply_list_sort(query, request, sort_by, sort_dir)
+    items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     rows = serializer.serialize_many(db, items, user=user)
 
     #  Đếm trên một truy vấn CHỈ lọc quyền — không kèm bộ lọc/tìm kiếm của
@@ -364,7 +379,8 @@ def export_xlsx(
     if id_list:
         query = query.filter(Document.id.in_(id_list))
 
-    docs = query.order_by(Document.id.desc()).all()
+    #  duoc-CR-744: tệp Export ra cùng thứ tự với bảng đang xem (nút Export gửi kèm `sort_by`/`sort_dir`).
+    docs = _apply_list_sort(query, request, "", "asc").all()
     check_row_limit(len(docs))
     rows = ex.build_rows(db, serializer.serialize_many(db, docs, user=user))
     return xlsx_response(ex.FILE_NAME, pick_columns(ex.COLUMNS, cols), rows,

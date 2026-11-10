@@ -7,6 +7,8 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.core.central_purchasing import get_central_dept_id
+from app.core.code_rank_sql import build_code_rank_expression, build_value_rank_expression
+from app.core.status_codes import PO_DOCUMENT_STATUS
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
@@ -15,13 +17,20 @@ from app.modules.user.model import User
 
 from .model import POItem, PurchaseOrder
 
+#  Dòng đời của đơn (cột `status`): nhãn đang hiện là tiếng Việt nên xếp theo THỨ TỰ TIẾN TRÌNH,
+#  không theo chữ cái của mã tiếng Anh (duoc-CR-744). Nhánh rẽ (bị trả lại, từ chối) đứng sau
+#  chuỗi; `processing` là mã cũ không còn nhãn, đặt sau "Đã duyệt".
+PO_STATUS_ORDER = ("draft", "submitted", "approved", "processing", "partial", "received",
+                   "completed", "rejected", "cancelled", "")
+
 
 def list_sort_allow(db: Session) -> dict:
     """Map {khóa cột giao diện: biểu thức} cho cột tính toán của danh sách ĐMH.
 
     - `amount`: tiền hàng = SL đặt x đơn giá x (1 + VAT%) x tỷ giá, cộng mọi dòng
       (cùng luật `order_amount_map`; tỷ giá trống hoặc 0 đọc thành 1).
-    - `supplier`: tên NCC lưu trên đơn (`supplier_name`).
+    - `supplier`: ô bày tên NCC, đơn chỉ có mã thì bày mã -> xếp theo đúng chữ đang hiện.
+    - `status` / `document_status`: hạng theo dòng đời / chuỗi chứng từ, không theo chữ cái của mã.
     - `handler_dept_name`: tên phòng xử lý; `handler_dept_id = 0` (đơn cũ) = phòng thu mua mặc định
       (bao-CR-524), giống `list_display_names`.
     - `approver_name`: tên trưởng phòng phê duyệt được chọn (`approver_employee_id`).
@@ -61,7 +70,11 @@ def list_sort_allow(db: Session) -> dict:
         "amount": amount,
         "company_name": company_name,
         "created_by_name": created_by_name,
-        "supplier": PurchaseOrder.supplier_name,
+        "supplier": func.coalesce(func.nullif(PurchaseOrder.supplier_name, ""),
+                                  PurchaseOrder.supplier_code),
+        "status": build_value_rank_expression(PurchaseOrder.status, PO_STATUS_ORDER),
+        "document_status": build_code_rank_expression(PurchaseOrder.document_status,
+                                                      PO_DOCUMENT_STATUS),
         "handler_dept_name": handler_name,
         "approver_name": approver_name,
     }

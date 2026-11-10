@@ -12,6 +12,8 @@ import type { Payable, PayableSummary } from '../types/payable'
 //  BỘ THAM SỐ nó gửi đi (`due_from` / `incur_from` / `year`), mà tham số đó chỉ
 //  hiện nguyên vẹn ở đầu vào của hook.
 const listCalls: ListParams[] = []
+//  Tham số của thẻ tổng hợp — canh việc bấm tiêu đề cột KHÔNG làm thẻ tải lại (duoc-CR-744).
+const summaryCalls: ListParams[] = []
 
 // bao-CR-414 GĐ4: thẻ tổng hợp có hai bộ số (phần của tôi + tổng nợ NCC không gác phạm
 // vi). Mặc định là người phạm vi toàn bộ — backend gửi `partial: false`.
@@ -28,7 +30,10 @@ vi.mock('../hooks/use-payables', () => ({
     listCalls.push(params)
     return { data: { total: rows.length, items: rows }, isLoading: false, isError: false }
   },
-  usePayableSummary: () => ({ data: summaryData, isLoading: false }),
+  usePayableSummary: (params: ListParams) => {
+    summaryCalls.push(params)
+    return { data: summaryData, isLoading: false }
+  },
   // CR-268: dialog cấn trừ tiền trả trước mount sẵn (đóng) trên trang — thiếu
   // export này là cả trang nổ ngay lúc render, 10 test không liên quan đỏ theo.
   useOffsetPrepay: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -136,6 +141,7 @@ async function desktopFilterTrigger() {
 
 beforeEach(() => {
   listCalls.length = 0
+  summaryCalls.length = 0
   canCreatePayment = true
   canExportPayable = true
   downloadFileMock.mockClear()
@@ -521,5 +527,100 @@ describe('PayableListPage — nút Xóa lọc (kh-NT2-2b)', () => {
     expect(call.amount_from).toBeUndefined()
     expect(call.supplier_code).toBeUndefined()
     expect(call.year).toBe(String(new Date().getFullYear()))
+  })
+})
+
+/**
+ * duoc-CR-744 — bấm tiêu đề cột phải sắp xếp tại server. Trước đây backend không đọc
+ * `sort_by` và các cột không bật `sortable`, nên bấm không có gì xảy ra.
+ */
+describe('PayableListPage — sắp xếp cột (duoc-CR-744)', () => {
+  function lastCall() {
+    return listCalls[listCalls.length - 1]
+  }
+  function header(text: string) {
+    return screen.getByText(text, { selector: 'thead span' })
+  }
+
+  it('sends sort_by for EVERY visible data column (key = column key)', async () => {
+    const user = userEvent.setup()
+    build()
+
+    const cases: [string, string][] = [
+      ['Nhà cung cấp', 'supplier_name'],
+      ['Mã NCC', 'supplier_code'],
+      ['Loại nợ', 'source_type'],
+      ['Công ty', 'company'],
+      ['Mã ĐMH', 'po_code'],
+      ['Số hóa đơn', 'invoice_no'],
+      ['Ngày hóa đơn', 'invoice_date'],
+      ['Ngày phát sinh', 'incur_date'],
+      ['Hạn trả', 'due_date'],
+      ['Tuổi nợ', 'aging'],
+      ['Tổng nợ', 'total'],
+      ['Đã trả', 'paid_amount'],
+      ['Còn lại', 'remaining'],
+      ['Trạng thái', 'status'],
+    ]
+    for (const [text, key] of cases) {
+      await user.click(header(text))
+      expect(lastCall().sort_by, text).toBe(key)
+    }
+  })
+
+  it('asks for the biggest / newest first on the first click of money and date columns', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Tổng nợ'))
+    expect(lastCall()).toMatchObject({ sort_by: 'total', sort_dir: 'desc' })
+    await user.click(header('Ngày phát sinh'))
+    expect(lastCall()).toMatchObject({ sort_by: 'incur_date', sort_dir: 'desc' })
+    await user.click(header('Mã ĐMH'))
+    expect(lastCall()).toMatchObject({ sort_by: 'po_code', sort_dir: 'asc' })
+  })
+
+  it('cycles asc -> desc -> off and drops sort_dir from the request', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Hạn trả'))
+    expect(lastCall()).toMatchObject({ sort_by: 'due_date', sort_dir: 'asc' })
+    await user.click(header('Hạn trả'))
+    expect(lastCall()).toMatchObject({ sort_by: 'due_date', sort_dir: 'desc' })
+    await user.click(header('Hạn trả'))
+    expect(lastCall().sort_by).toBeUndefined()
+    expect(lastCall().sort_dir).toBeUndefined()
+  })
+
+  it('keeps the summary cards out of the sort (no refetch per header click)', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Tổng nợ'))
+    expect(summaryCalls.length).toBeGreaterThan(0)
+    for (const call of summaryCalls) {
+      expect(call.sort_by).toBeUndefined()
+      expect(call.sort_dir).toBeUndefined()
+    }
+  })
+
+  it('exports in the SAME order the table is showing', async () => {
+    const user = userEvent.setup()
+    build('/finance/payables?sort_by=remaining&sort_dir=desc')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+    expect(downloadFileMock.mock.calls[0][2]).toMatchObject({
+      sort_by: 'remaining',
+      sort_dir: 'desc',
+    })
+  })
+
+  it('goes back to page 1 when the sort changes', async () => {
+    const user = userEvent.setup()
+    build('/finance/payables?sort_by=total&sort_dir=asc')
+
+    await user.click(header('Hạn trả'))
+    expect(lastCall().page).toBe(1)
   })
 })
