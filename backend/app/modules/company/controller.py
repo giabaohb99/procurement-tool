@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_perm_profile, get_scoped, scope_condition
 
-from . import service
+from . import service, sort_expressions
 from .schema import CompanyCreate, CompanyOut, CompanyUpdate
 
 router = APIRouter(prefix="/api/companies", tags=["company"])
@@ -44,7 +44,10 @@ def list_companies(
     query = apply_filters(db.query(service.Company), service.Company, request, service.FILTERABLE)
     query = query.options(joinedload(service.Company.legal_rep))
     query = apply_scope(query, service.Company, "company", user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, service.Company, request)
+    #  duoc-CR-744: cột đang hiện xếp qua `sort_expressions` (ô trống xuống cuối, khóa phụ `id`); khóa khác về đường cũ.
+    order = sort_expressions.build_order_by(request.query_params.get("sort_by") or "",
+                                            request.query_params.get("sort_dir") or "asc")
+    query = query.order_by(*order) if order else apply_sort_from_request(query, service.Company, request)
     total, items = service.list_companies(db, query, pg)
 
     cids = [c.id for c in items]

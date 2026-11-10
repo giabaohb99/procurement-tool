@@ -31,12 +31,14 @@ from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
+from app.core.sort_order import build_blank_last_order
 from app.core.scoping import apply_scope, exclude_deleted
 from app.modules.report_access.guard import require_report
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
 from . import export as ex
 from . import summary_service as prog_summary
+from .sort_expressions import get_computed_sort_expression
 
 router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
@@ -76,8 +78,9 @@ def build_warehouse_code_col():
 
 
 def _sort_map():
-    """Key cột (FE) -> cột DB thật để sort tại server. Các cột tính toán
-    (STT, thành tiền, tên công ty) không có ở đây -> bỏ qua, dùng thứ tự mặc định."""
+    """Key cột (FE) -> cột DB thật để sort tại server (map này cũng là gốc của `_cond_map`).
+    Hai cột thành tiền, tên công ty và thứ tự dòng đời của Tiến độ / Hồ sơ CT xếp bằng biểu
+    thức riêng ở `sort_expressions.py` (duoc-CR-744)."""
     return {
         # Đơn mua hàng
         "po_code": PurchaseOrder.code, "misa_code": PurchaseOrder.misa_code,
@@ -262,9 +265,17 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     # Cột do người dùng chọn (nếu là cột thật) đứng trước, thứ tự mặc định làm tiebreak
     sort_by = (request.query_params.get("sort_by") or "").strip()
     sort_dir = (request.query_params.get("sort_dir") or "asc").strip().lower()
-    col = _sort_map().get(sort_by)
+    #  duoc-CR-744: biểu thức riêng đi TRƯỚC `_sort_map()` — Tiến độ / Hồ sơ CT có trong map
+    #  nhưng map xếp theo chữ cái của MÃ, còn màn bày nhãn theo dòng đời.
+    col = get_computed_sort_expression(sort_by)
+    if col is None:
+        col = _sort_map().get(sort_by)
+    #  Cột NCC đã che thì cũng không cho xếp: thứ tự dòng theo tên NCC là đủ để mò ra NCC.
+    if not show_supplier and sort_by in _SUPPLIER_HIDDEN:
+        col = None
     if col is not None:
-        q = q.order_by(col.desc() if sort_dir == "desc" else col.asc())
+        #  Ô trống xuống cuối cả hai chiều — luật chung `core/sort_order.py`.
+        q = q.order_by(*build_blank_last_order(col, sort_dir))
     return q.order_by(PurchaseOrder.code, POItem.id, PODelivery.delivery_no)
 
 

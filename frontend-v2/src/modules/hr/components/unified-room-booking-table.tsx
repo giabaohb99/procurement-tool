@@ -6,10 +6,12 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
+import { sortRowsByCell, type CellGetters } from '@/shared/utils/sort-rows-by-cell'
 import {
   Select,
   SelectContent,
@@ -43,6 +45,18 @@ export const ROOM_SCOPE = {
 
 export type RoomScope = (typeof ROOM_SCOPE)[keyof typeof ROOM_SCOPE]
 
+/** Giá trị ô theo khóa cột - dùng khi xếp danh sách hộp việc (đã tải hết) tại trình duyệt. */
+const ROOM_SORT_GETTERS: CellGetters<RoomBooking> = {
+  code: (r) => r.code,
+  status: (r) => r.status,
+  title: (r) => r.title,
+  room_name: (r) => r.room_name,
+  start_at: (r) => r.start_at,
+  requester_name: (r) => r.requester_name,
+  //  Ô hiện "—" khi bằng 0 (chưa khai) nên 0 là ô trống, xuống cuối như ở máy chủ.
+  attendee_count: (r) => r.attendee_count || null,
+}
+
 /**
  * BẢNG PHIẾU ĐẶT PHÒNG DUY NHẤT — gom 3 tab (Cần tôi duyệt · Phiếu của tôi · Tôi đã duyệt)
  * thành 1 bảng với bộ lọc phạm vi, phòng và trạng thái; cùng khuôn với `UnifiedLeaveRequestTable`.
@@ -62,9 +76,10 @@ export function UnifiedRoomBookingTable() {
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   // Đổi phạm vi hay điều kiện lọc → về trang 1
-  const querySignature = `${currentScope}-${status}-${roomId}-${debouncedValue}`
+  const querySignature = `${currentScope}-${status}-${roomId}-${debouncedValue}-${sortBy}-${sortDir}`
   const [lastSignature, setLastSignature] = useState(querySignature)
   if (lastSignature !== querySignature) {
     setLastSignature(querySignature)
@@ -90,12 +105,23 @@ export function UnifiedRoomBookingTable() {
     if (debouncedValue) p.search = debouncedValue
     if (status !== ALL) p.status = status
     if (roomId !== ALL) p.room_id = roomId
-    //  Phạm vi MINE: backend trả phiếu của chính người đang đăng nhập khi
-    //  `scope=mine` — giả định backend hỗ trợ; nếu chưa thì lọc phía client
-    //  bằng employee_id giống UnifiedLeaveRequestTable.
+    //  Phạm vi MINE: `scope=mine` — máy chủ trả phiếu tôi là người đặt HOẶC tôi tạo hộ
+    //  (`meeting_room/controller.list_bookings`, có từ duoc-CR-744; trước đó tham số bị bỏ qua).
     if (currentScope === ROOM_SCOPE.MINE) p.scope = 'mine'
+    //  duoc-CR-744: cột người dùng bấm xếp ở MÁY CHỦ, trên cả tập (xếp lại một trang ở trình duyệt
+    //  thì phiếu ở trang 2 không bao giờ nổi lên). Chưa chọn cột thì xin `mine_first`: máy chủ tự
+    //  đưa phiếu đang chờ chính tôi duyệt lên đầu trên cả tập - việc trước đây trình duyệt làm
+    //  bằng cách xếp lại từng trang, lại còn đè mất thứ tự "cuộc họp mới nhất trước" của máy chủ.
+    //  Đã chọn cột thì BỎ luật "của tôi lên đầu" để thứ tự đúng bằng cột đã bấm; phiếu cần tôi
+    //  duyệt vẫn có huy hiệu riêng và phạm vi "Cần tôi duyệt".
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    } else if (currentScope === ROOM_SCOPE.ALL) {
+      p.mine_first = true
+    }
     return p
-  }, [page, pageSize, debouncedValue, status, roomId, currentScope])
+  }, [page, pageSize, debouncedValue, status, roomId, currentScope, sortBy, sortDir])
 
   const bookingsQuery = useRoomBookings(
     serverParams,
@@ -118,6 +144,7 @@ export function UnifiedRoomBookingTable() {
         )
       }
       if (roomId !== ALL) list = list.filter((r) => String(r.room_id) === roomId)
+      list = sortRowsByCell(list, sortBy, sortDir, ROOM_SORT_GETTERS)
       const total = list.length
       const paged = list.slice((page - 1) * pageSize, page * pageSize)
       return {
@@ -141,6 +168,7 @@ export function UnifiedRoomBookingTable() {
       }
       if (status !== ALL) list = list.filter((r) => String(r.status) === status)
       if (roomId !== ALL) list = list.filter((r) => String(r.room_id) === roomId)
+      list = sortRowsByCell(list, sortBy, sortDir, ROOM_SORT_GETTERS)
       const total = list.length
       const paged = list.slice((page - 1) * pageSize, page * pageSize)
       return {
@@ -151,20 +179,12 @@ export function UnifiedRoomBookingTable() {
       }
     }
 
-    // ALL | MINE — dữ liệu từ server, đẩy Cần tôi duyệt lên đầu khi xem ALL
+    // ALL | MINE: máy chủ đã xếp xong (cột đã chọn, hoặc cuộc họp mới nhất + phiếu của tôi lên đầu) -
+    // KHÔNG xếp lại ở đây, xem chú thích ở `serverParams`.
     const rawItems = bookingsQuery.data?.items ?? []
-    const sorted =
-      currentScope === ROOM_SCOPE.ALL
-        ? [...rawItems].sort((a, b) => {
-            const aMine = toApproveIds.has(a.id) ? 0 : 1
-            const bMine = toApproveIds.has(b.id) ? 0 : 1
-            if (aMine !== bMine) return aMine - bMine
-            return b.id - a.id
-          })
-        : rawItems
 
     return {
-      displayRows: sorted,
+      displayRows: rawItems,
       totalCount: bookingsQuery.data?.total ?? 0,
       isLoading: bookingsQuery.isLoading,
       isError: bookingsQuery.isError,
@@ -185,7 +205,8 @@ export function UnifiedRoomBookingTable() {
     bookingsQuery.data,
     bookingsQuery.isLoading,
     bookingsQuery.isError,
-    toApproveIds,
+    sortBy,
+    sortDir,
   ])
 
   // ── Cột theo phạm vi ───────────────────────────────────────────────────────
@@ -199,6 +220,7 @@ export function UnifiedRoomBookingTable() {
         key: 'status',
         header: 'Trạng thái',
         width: currentScope === ROOM_SCOPE.TO_APPROVE ? 140 : 230,
+        sortable: true,
         cell: (b) => {
           const isMyTask = toApproveIds.has(b.id)
           return (
@@ -225,6 +247,7 @@ export function UnifiedRoomBookingTable() {
         header: 'Số người',
         width: 100,
         align: 'right',
+        sortable: true,
         cell: (b) =>
           b.attendee_count ? (
             <span className="tabular-nums">{b.attendee_count}</span>
@@ -328,6 +351,9 @@ export function UnifiedRoomBookingTable() {
       emptyMessage={emptyMessage}
       toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
       storageKey="hr.unified-room-bookings"
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSortChange={handleSortChange}
       onRowClick={(b) => navigate(appRoutes.hr.roomBookingDetail(b.id))}
       mobileCard={(b) => {
         const dueAt =

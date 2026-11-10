@@ -38,14 +38,20 @@ const MOCK_CLERKS: SealClerkGroup[] = [
   },
 ]
 
+//  duoc-CR-744: ghi lại bộ tham số gửi đi để kiểm cột "Văn thư đóng dấu" có xếp ở máy chủ.
+const clerkListCalls: Array<Record<string, unknown>> = []
+
 vi.mock('../hooks/use-seal-clerks', () => ({
-  useSealClerks: () => ({
-    data: { total: MOCK_CLERKS.length, items: MOCK_CLERKS },
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-    isFetching: false,
-  }),
+  useSealClerks: (params: Record<string, unknown>) => {
+    clerkListCalls.push(params)
+    return {
+      data: { total: MOCK_CLERKS.length, items: MOCK_CLERKS },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+      isFetching: false,
+    }
+  },
   useSyncSealClerks: () => ({
     mutate: vi.fn(),
     isPending: false,
@@ -129,5 +135,30 @@ describe('SealClerkListPage', () => {
     await user.click(screen.getByRole('button', { name: /Nghỉ phép/ }))
 
     expect(screen.getByText('Không có văn thư nào khớp bộ lọc đang chọn.')).toBeInTheDocument()
+  })
+
+  //  duoc-CR-744: cột "Văn thư đóng dấu" khai `sortable` nhưng trang không nối `onSortChange`, nên
+  //  tiêu đề không bấm được. Khóa gửi lên phải là `employee_name` (khóa của backend), không phải
+  //  `employee` (khóa cột ở giao diện).
+  it('sorts by the clerk name on the server and cycles back to the default', async () => {
+    const user = userEvent.setup()
+    clerkListCalls.length = 0
+    renderPage()
+    const header = screen.getByText('Văn thư đóng dấu', { selector: 'thead span' })
+
+    await user.click(header)
+    expect(clerkListCalls[clerkListCalls.length - 1]).toMatchObject({
+      sort_by: 'employee_name',
+      sort_dir: 'asc',
+    })
+    await user.click(header)
+    expect(clerkListCalls[clerkListCalls.length - 1]).toMatchObject({
+      sort_by: 'employee_name',
+      sort_dir: 'desc',
+    })
+    await user.click(header)
+    const last = clerkListCalls[clerkListCalls.length - 1]
+    expect(last.sort_by).toBeUndefined()
+    expect(last.sort_dir).toBeUndefined()
   })
 })

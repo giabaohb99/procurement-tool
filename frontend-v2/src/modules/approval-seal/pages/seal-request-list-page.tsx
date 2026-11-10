@@ -1,6 +1,6 @@
 import { Copy, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -13,6 +13,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -70,7 +71,6 @@ export function SealRequestListPage() {
 
 function SealRequestListContent() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canCreate = can('seal_request', 'create')
   const canReadCompany = can('company', 'read')
@@ -85,8 +85,8 @@ function SealRequestListContent() {
   const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
-  const sortBy = searchParams.get('sort_by') || ''
-  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
+  //  Dùng chung `useUrlSort` (khóa rỗng = nhịp "thôi sắp xếp" thì XÓA tham số) thay vì tự chép bộ xử lý.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true }, { enabled: canReadCompany })
   const { data: departments } = useDepartments({ page_size: 500, is_active: true }, { enabled: canReadDept })
@@ -128,18 +128,6 @@ function SealRequestListContent() {
   const clearAllFilters = () => {
     //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
     clearUrlParams(['company_id', 'department_id', 'status', 'created_at_from', 'created_at_to'])
-  }
-
-  const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
-    const next = new URLSearchParams(searchParams)
-    if (newSortBy) {
-      next.set('sort_by', newSortBy)
-      next.set('sort_dir', newSortDir)
-    } else {
-      next.delete('sort_by')
-      next.delete('sort_dir')
-    }
-    setSearchParams(next)
   }
 
   const columns = useMemo<DataTableColumn<SealRequest>[]>(
@@ -191,12 +179,16 @@ function SealRequestListContent() {
         header: 'Công ty đóng dấu',
         cell: (r) => <CompanyAvatarGroup companies={r.companies} />,
         minWidth: 180,
+        //  Dải ảnh nhiều công ty: xếp theo TÊN công ty đầu tiên (khóa của backend), không theo id công ty.
+        sortable: true,
+        sortKey: 'company_name',
       },
       {
         key: 'copies',
         header: 'Số bản',
         align: 'right',
         width: 90,
+        sortable: true,
         cell: (r) => (
           <span className="font-mono text-xs tabular-nums text-foreground">
             {r.copies ? `${r.copies} bản` : '—'}

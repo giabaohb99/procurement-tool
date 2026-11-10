@@ -339,7 +339,9 @@ function SurveyRequestListContent() {
       { key: 'requester', sortable: true, header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
       { key: 'department', sortable: true, header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '' },
       {
-        key: 'request_date',
+        //  duoc-CR-744: ô in `created_at` nên phải SẮP theo `created_at` (cùng lỗi bao-CR-316 đã vá ở
+        //  YCMH). Khóa cũ `request_date` là ngày lập phiếu người dùng sửa được, lệch ngày tạo thật.
+        key: 'created_at',
         header: 'Ngày tạo',
         width: 150,
         sortable: true,

@@ -69,4 +69,32 @@ describe('CUSTOMS_LINE_COLUMNS', () => {
     expect(keys).not.toContain('effective_price_usd')
     expect(new Set(keys).size).toBe(keys.length)
   })
+
+  //  duoc-CR-744 — trước đây KHÔNG cột nào khai `sortable`: bấm tiêu đề không có gì xảy ra, người dùng báo
+  //  "không sort được". Canh hai chiều: cột nào cũng bấm được, và khóa gửi đi nằm trong danh sách khóa xếp được ở
+  //  backend (`line_sort.LINE_SORT_KEYS`, bản chép tay — đổi một bên thì sửa bên kia, bài
+  //  test_sap_xep_tra_cuu_thi_truong_cr744.py canh phía backend).
+  it('makes every column sortable and every sort key one the backend knows', () => {
+    const backendKeys = new Set([
+      'id',
+      ...EXCEL_COLUMNS.map(([key]) => key),
+      'active_ingredient',
+      'formulation',
+      'price_vnd_flat',
+      'price_vnd_line_tax',
+      'product_kind',
+    ])
+    expect(CUSTOMS_LINE_COLUMNS.filter((column) => !column.sortable).map((column) => column.key)).toEqual([])
+    expect(new Set(CUSTOMS_LINE_COLUMNS.map((column) => column.sortKey ?? column.key))).toEqual(backendKeys)
+  })
+
+  it('starts amount, quantity, rate and date columns from the largest / newest value', () => {
+    const descFirst = (key: string) => CUSTOMS_LINE_COLUMNS.find((column) => column.key === key)?.sortDescFirst
+    for (const key of ['reg_date', 'contract_date', 'price_usd', 'quantity', 'tax_vat', 'rate_import', 'price_vnd_flat']) {
+      expect(descFirst(key), key).toBe(true)
+    }
+    for (const key of ['product_name', 'hs_code', 'currency', 'importer_name']) {
+      expect(descFirst(key), key).toBeFalsy()
+    }
+  })
 })

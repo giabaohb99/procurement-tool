@@ -5,6 +5,9 @@ import { toast } from 'sonner'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
+import { PO_PROGRESS_STATUS } from '@/shared/constants/statuses'
+import { getStatusRank } from '@/shared/utils/status-rank'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableSelection } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -157,6 +160,14 @@ function buildColumns(): LinesTableColumn[] {
       align: 'center',
     },
   ]
+}
+
+/**
+ * Đơn giá sau VAT làm tròn 2 số lẻ (bao-CR-307) — 166.666,67 × 1,08 phải ra 180.000 chứ
+ * không phải 180.000,0036. Ô hiển thị và cột xếp dùng chung để hai nơi không lệch.
+ */
+function priceAfterVat(item: PurchaseOrderItem): number {
+  return Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) / 100
 }
 
 /** Lịch sử có ghi thì lấy, không thì giữ nguyên thứ đang có trên dòng. */
@@ -351,6 +362,51 @@ export function PurchaseOrderItemsTable({
       : 'Lịch sử mua hàng gần nhất của mã hàng này'
   }
 
+  /**
+   * Giá trị để XẾP từng cột khi bấm tiêu đề (duoc-CR-744) — đúng thứ ô đang hiện: khóa
+   * cột không trùng tên trường của dòng (`code` -> `product_code`, `qty` -> `qty_order`),
+   * các cột tiền là số TÍNH bằng đúng công thức của ô, cột Trạng thái xếp theo dòng đời.
+   * Cột "#" và "Hành động" trả `undefined` nên tiêu đề của chúng không bấm được.
+   */
+  function getSortValue(key: string, item: PurchaseOrderItem): SortValue {
+    switch (key) {
+      case 'code':
+        return item.product_code
+      case 'name':
+        return item.product_name
+      case 'item_group':
+        return item.item_group ?? null
+      case 'unit':
+        return item.unit
+      case 'qty':
+        return item.qty_order
+      case 'price':
+        return item.price
+      case 'vat':
+        return item.vat ?? 0
+      case 'price_after_vat':
+        return priceAfterVat(item)
+      case 'amount':
+        return orderLineAmount(item)
+      case 'base_amount':
+        //  Ô hiện "Chưa có tỷ giá" thay vì số -> để trống cho dòng đó xuống cuối.
+        return isMissingExchangeRate(item, orderCurrency)
+          ? null
+          : displayLineBaseAmount(item, orderCurrency)
+      case 'delivered':
+        return item.qty_received ?? 0
+      case 'report': {
+        //  Ô chỉ hiện % khi dòng có hồ sơ; còn lại là gạch ngang (trống).
+        const progress = item.id ? lineReport?.get(item.id) : undefined
+        return progress && progress.total > 0 ? progress.percent : null
+      }
+      case 'status':
+        return getStatusRank(PO_PROGRESS_STATUS, item.progress_status ?? 'not_ordered')
+      default:
+        return undefined
+    }
+  }
+
   function renderCell(key: string, item: PurchaseOrderItem, index: number) {
     const locked = isLineLocked(item)
     const received = isLineReceived(item)
@@ -482,10 +538,7 @@ export function PurchaseOrderItemsTable({
       case 'price_after_vat':
         return (
           <span className="tabular-nums font-semibold">
-            {formatUnitPrice(
-              Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) /
-                100,
-            )}
+            {formatUnitPrice(priceAfterVat(item))}
           </span>
         )
 
@@ -732,6 +785,7 @@ export function PurchaseOrderItemsTable({
           storageKey={TABLE_STORAGE_KEY}
           rowKey={purchaseOrderRowKey}
           renderCell={renderCell}
+          getSortValue={getSortValue}
           title={`Danh sách dòng hàng (${items.length} dòng)`}
           emptyMessage="Chưa có dòng hàng nào."
           selection={selection}

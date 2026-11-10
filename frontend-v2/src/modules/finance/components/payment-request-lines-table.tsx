@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -158,6 +159,40 @@ export function PaymentRequestLinesTable({
     return cols
   }, [showSupplierColumns, showOffsetColumn, editable])
 
+  /**
+   * Giá trị để XẾP từng cột khi bấm tiêu đề (duoc-CR-744) — đúng thứ ô đang hiện: NCC và
+   * Loại nợ xếp theo CHỮ hiển thị (tên NCC, nhãn loại nợ) chứ không theo mã; tiền và ngày
+   * theo giá trị thô. Cột "#" và "Bỏ" trả `undefined` nên tiêu đề của chúng không bấm được.
+   */
+  function getSortValue(key: string, row: EditablePaymentLine): SortValue {
+    switch (key) {
+      case 'supplier':
+        return supplierDisplay(row)
+      case 'source':
+        return sourceDisplay(row)
+      case 'po':
+        return row.po_code
+      case 'misa':
+        return row.misa_code
+      case 'invoice_no':
+        return row.invoice_no
+      case 'invoice_date':
+        return row.invoice_date
+      case 'due_date':
+        return row.due_date
+      case 'payable_total':
+        return row.payable_total
+      case 'payable_paid':
+        return row.payable_paid
+      case 'offset':
+        return row.offset_amount ?? 0
+      case 'amount':
+        return row.amount ?? 0
+      default:
+        return undefined
+    }
+  }
+
   function renderCell(key: string, row: EditablePaymentLine, index: number) {
     const poEditable = editable && (!lockLinkedPo || !row.payable_id)
 
@@ -280,6 +315,7 @@ export function PaymentRequestLinesTable({
       storageKey={storageKey}
       rowKey={paymentLineRowKey}
       renderCell={renderCell}
+      getSortValue={getSortValue}
       title={`Các khoản công nợ thanh toán (${rows.length})`}
       emptyMessage="Chưa có dòng nào."
       selection={lineSelection.selection}

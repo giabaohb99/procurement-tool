@@ -36,6 +36,9 @@ export type PrLinesFilter = ReportScope & {
   line_status?: string
   assignee?: string
   search?: string
+  /** Khóa cột đang xếp (trùng khóa cột của bảng); bỏ trống = thứ tự mặc định (ngày lập mới nhất). */
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
 }
 
 /**

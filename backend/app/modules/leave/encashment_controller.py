@@ -18,6 +18,7 @@ from app.modules.approval.self_approval_policy import ensure_not_self_approval
 from app.modules.employee.model import Employee
 
 from . import encashment_approval_bridge as bridge, encashment_balance, encashment_serializer as view
+from . import comp_encashment_sort_expressions as sort_expr
 from . import encashment_service as service
 from . import encashment_transitions as transitions, request_service
 from .constants import LEAVE_ENCASHMENT_REASON_LABELS, LeaveEncashmentReason, LeaveEncashmentStatus as S, label
@@ -58,7 +59,12 @@ def list_encashments(request: Request, pg: dict = Depends(pagination), q: str | 
                                  LeaveEncashment.employee_id.in_(
                                      db.query(Employee.id).filter(Employee.full_name.like(like)))))
     query = apply_scope(query, LeaveEncashment, ENTITY, user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, LeaveEncashment, request, default=(LeaveEncashment.id.desc(),))
+    #  duoc-CR-744: cột đang hiện xếp qua `comp_encashment_sort_expressions` (tên nhân sự / loại nghỉ, hạng trạng
+    #  thái chi, ô trống xuống cuối, khóa phụ `id`); khóa khác về đường cũ.
+    order = sort_expr.build_encashment_order_by(request.query_params.get("sort_by") or "",
+                                                request.query_params.get("sort_dir") or "asc")
+    query = query.order_by(*order) if order else apply_sort_from_request(
+        query, LeaveEncashment, request, default=(LeaveEncashment.id.desc(),))
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": view.dump_many(db, items)})

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core import reference_guard
 
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
+from . import sort_expressions
 from .model import Department, DepartmentCompany
 from .schema import (DepartmentCompanyInput, DepartmentCreate,
                      DepartmentUpdate)
@@ -99,7 +100,10 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
         query = query.filter(or_(Department.company_id == company_id,
                                  Department.id.in_(present_at)))
     total = query.count()
-    query = apply_sort(query, Department, sort_by, sort_dir, default=Department.id.desc())
+    #  duoc-CR-744: cột đang hiện xếp qua `sort_expressions` (ô trống xuống cuối, khóa phụ `id`); khóa khác về đường cũ.
+    order = sort_expressions.build_order_by(sort_by, sort_dir)
+    query = query.order_by(*order) if order else apply_sort(
+        query, Department, sort_by, sort_dir, default=Department.id.desc())
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 

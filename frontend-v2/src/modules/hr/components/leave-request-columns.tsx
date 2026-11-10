@@ -37,6 +37,7 @@ export function codeColumn<T extends LeaveRequest>(
     width: 110,
     hideable: !pinned,
     defaultPinned: pinned,
+    sortable: true,
   }
 }
 
@@ -104,6 +105,7 @@ export function employeeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
     header: 'Người nghỉ',
     cell: (r) => r.employee_name || `#${r.employee_id}`,
     width: 170,
+    sortable: true,
   }
 }
 
@@ -115,6 +117,9 @@ export function leaveTypeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
     //  không chứa nổi hai tên loại, và liệt kê hết thì cột nào cũng cụt bằng dấu
     //  ba chấm — mất luôn tên loại chính. Bản kê đủ nằm ở `title` và ở màn chi tiết.
     cell: (r) => <span title={leaveLinesText(r) || undefined}>{leaveTypeLabel(r)}</span>,
+    //  Ô hiện "Phép năm +1": xếp theo TÊN loại chính (phần đầu của chữ đang hiện), phần "+N" không
+    //  tham gia - đơn cùng loại chính rồi mới đến khóa phụ id (xem `leave/sort_expressions.py`).
+    sortable: true,
     //  "Nghỉ không lương" là tên dài nhất trong danh mục mặc định — hẹp hơn thì
     //  cột nào cũng kết thúc bằng dấu ba chấm.
     width: 170,
@@ -136,12 +141,14 @@ export function dateColumns<T extends LeaveRequest>(): DataTableColumn<T>[] {
       //  Đơn nhiều khoảng thêm chữ mờ "· 2 khoảng" (duoc-CR-683) — cột này là bao ngoài.
       cell: (r) => <LeaveToDateCell request={r} />,
       width: 150,
+      sortable: true,
     },
     {
       key: 'total_days',
       header: 'Số ngày',
       cell: (r) => <span className="font-medium tabular-nums">{r.total_days}</span>,
       width: 90,
+      sortable: true,
     },
   ]
 }
@@ -174,5 +181,6 @@ export function reasonColumn<T extends LeaveRequest>(): DataTableColumn<T> {
     },
     width: 220,
     minWidth: 160,
+    sortable: true,
   }
 }

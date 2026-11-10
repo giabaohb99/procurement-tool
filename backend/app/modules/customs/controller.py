@@ -37,7 +37,8 @@ from app.modules.import_tool.tasks import run_import
 
 from .tasks import export_batch_part_task
 
-from . import reader, regulation_browse_service
+from . import batch_sort, reader, regulation_browse_service
+from .batch_sort import batch_order
 from .constants import COLUMNS
 
 router = APIRouter(prefix="/api/customs", tags=["customs"])
@@ -124,15 +125,18 @@ def line_filters(q: str = "", ingredient: str = "", hs_code: str = "", formulati
 
 @router.get("/lines")
 def get_lines(f: dict = Depends(line_filters), pg: dict = Depends(pagination),
+              sort_by: str = "", sort_dir: str = "asc",
               db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    total, items = service.list_lines(db, f, pg["offset"], pg["limit"])
+    """Danh sách dòng hàng. `sort_by` = khóa cột (xem `line_sort.LINE_SORT_KEYS`), `sort_dir` = asc | desc;
+    khóa lạ bị bỏ qua, xếp trên cả tập đã lọc chứ không riêng trang đang xem (duoc-CR-744)."""
+    total, items = service.list_lines(db, f, pg["offset"], pg["limit"], sort_by, sort_dir)
     return success({"total": total, "items": items})
 
 
 @router.get("/lines/export")
-def export_lines(f: dict = Depends(line_filters), db: Session = Depends(get_db),
-                 user=Depends(require(ENTITY, "export"))):
-    data = service.export_lines_xlsx(db, f)
+def export_lines(f: dict = Depends(line_filters), sort_by: str = "", sort_dir: str = "asc",
+                 db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
+    data = service.export_lines_xlsx(db, f, sort_by, sort_dir)
     return Response(content=data,
                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": 'attachment; filename="tra-cuu-gia-hai-quan.xlsx"'})
@@ -267,13 +271,17 @@ def get_tariff(hs_code: str, db: Session = Depends(get_db), user=Depends(require
 
 @router.get("/regulations")
 def get_regulations(q: str = "", list_code: int | None = Query(None, ge=0, le=99),
+                    sort_by: str = "", sort_dir: str = "asc",
                     pg: dict = Depends(pagination), db: Session = Depends(get_db),
                     user=Depends(require(ENTITY, "read"))):
     """Mục "Pháp lý" (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản, có phân trang.
 
     Gác bằng `customs_price.read` như ô tra `/regulations/lookup`: cùng dữ liệu, chỉ khác cách
-    xem. Sửa danh mục vẫn đòi khóa riêng `customs_regulation` (mục "Cấu hình")."""
-    total, items = regulation_browse_service.list_regulations(db, q, list_code, pg["offset"], pg["limit"])
+    xem. Sửa danh mục vẫn đòi khóa riêng `customs_regulation` (mục "Cấu hình").
+
+    `sort_by` / `sort_dir`: xếp theo cột trên cả tập đã lọc (duoc-CR-744, khóa ở `regulation_sort`)."""
+    total, items = regulation_browse_service.list_regulations(
+        db, q, list_code, pg["offset"], pg["limit"], sort_by, sort_dir)
     return success({"total": total, "items": items})
 
 
@@ -353,11 +361,13 @@ def revert_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(E
 
 
 @router.get("/imports")
-def list_batches(pg: dict = Depends(pagination), db: Session = Depends(get_db),
-                 user=Depends(require(ENTITY, "read"))):
+def list_batches(sort_by: str = "", sort_dir: str = "asc", pg: dict = Depends(pagination),
+                 db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    """Lịch sử nạp. `sort_by` = khóa cột (`batch_sort.BATCH_SORT_KEYS`); khóa lạ / rỗng -> lô mới nhất lên đầu."""
     q = db.query(ImportBatch).filter(ImportBatch.module == ImportModule.CUSTOMS_DECLARATION)
     total = q.count()
-    items = q.order_by(ImportBatch.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    order = batch_order(db, sort_by, sort_dir) or [ImportBatch.id.desc()]
+    items = q.order_by(*order).offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_batch_out(db, b) for b in items]})
 
 
@@ -390,10 +400,11 @@ def download_batch_file(bid: int, db: Session = Depends(get_db), user=Depends(re
 
 
 @router.get("/imports/{bid}/logs")
-def get_batch_logs(bid: int, level: int | None = Query(None), pg: dict = Depends(pagination),
+def get_batch_logs(bid: int, level: int | None = Query(None), sort_by: str = "", sort_dir: str = "asc",
+                   pg: dict = Depends(pagination),
                    db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     batch = _get_batch(db, bid)
-    total, items = import_service.get_logs(db, bid, level, pg)
+    total, items = batch_sort.list_logs(db, bid, level, pg, sort_by, sort_dir)
     return success({"total": total, "items": [
         {"id": x.id, "row_no": x.row_no, "level": x.level, "message": x.message} for x in items],
         "pruned_note": import_service.pruned_note(batch)})

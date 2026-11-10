@@ -193,3 +193,45 @@ describe('PaymentRequestListPage — Loại nợ / Hình thức TT dời vào B�
     expect(lastCall().payment_method).toBe('cash')
   })
 })
+
+/**
+ * duoc-CR-744 — các cột Người yêu cầu / NCC / Loại nợ / Công ty / Hình thức TT / Số tiền trước đây
+ * không bật `sortable` nên bấm tiêu đề không có gì xảy ra.
+ */
+describe('PaymentRequestListPage — sắp xếp cột (duoc-CR-744)', () => {
+  function header(text: string) {
+    return screen.getByText(text, { selector: 'thead span' })
+  }
+
+  it('sends sort_by for every column that was a dead header', async () => {
+    const user = userEvent.setup()
+    build()
+
+    const cases: [string, string][] = [
+      ['Người yêu cầu', 'created_by_name'],
+      ['Nhà cung cấp', 'supplier_name'],
+      ['Loại nợ', 'source_type'],
+      ['Công ty', 'company'],
+      ['Hình thức TT', 'payment_method'],
+      ['Mã MISA', 'misa_code'],
+      ['Số tiền', 'total'],
+      ['Trạng thái', 'status'],
+    ]
+    for (const [text, key] of cases) {
+      await user.click(header(text))
+      expect(lastCall().sort_by, text).toBe(key)
+    }
+  })
+
+  it('asks for the biggest amount first, then cycles back to no sort', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Số tiền'))
+    expect(lastCall()).toMatchObject({ sort_by: 'total', sort_dir: 'desc' })
+    await user.click(header('Số tiền'))
+    expect(lastCall()).toMatchObject({ sort_by: 'total', sort_dir: 'asc' })
+    await user.click(header('Số tiền'))
+    expect(lastCall().sort_by).toBeUndefined()
+  })
+})

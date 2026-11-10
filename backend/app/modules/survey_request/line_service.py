@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.central_purchasing import get_central_dept_id
+from app.core.sort_order import build_blank_last_order, with_stable_tiebreak
 
 from .model import LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest, SurveyRequestLine
 from .base_service import ENTITY, get_line, get_sr, lines_of, options_of
@@ -56,6 +57,20 @@ def resolve_supplier_name(db: Session, code: str) -> str:
     from app.modules.supplier.model import Supplier
     sup = db.query(Supplier).filter(Supplier.code == code).first()
     return sup.name if sup else code
+
+
+def _supplier_shown_expression():
+    """Chữ ô NCC đang hiện của một dòng khảo sát: tên NCC trong danh mục, không có tên thì mã NCC.
+
+    Cùng luật với `resolve_supplier_name` + `option.supplier_name || option.supplier_code` ở giao diện,
+    nhưng làm bằng truy vấn con để xếp được trên CẢ TẬP (đúng qua phân trang)."""
+    from sqlalchemy import func, select
+    from app.modules.survey.model import SurveyProductLine
+    from app.modules.supplier.model import Supplier
+
+    name = (select(Supplier.name).where(Supplier.code == SurveyProductLine.supplier_code)
+            .limit(1).scalar_subquery())
+    return func.coalesce(func.nullif(func.trim(name), ""), func.nullif(func.trim(SurveyProductLine.supplier_code), ""))
 
 
 def survey_header(db: Session, survey_id: int):
@@ -191,6 +206,9 @@ def available_survey_lines(db: Session, supplier_code: "str | list[str]" = "",
         #  duoc-CR-738: cột ID tự thêm của bảng chọn ở giao diện v2 gửi `sort_by=id`.
         "id": SurveyProductLine.id,
         "supplier_code": SurveyProductLine.supplier_code,
+        #  duoc-CR-744: ô NCC ở hai màn xử lý hiện TÊN NCC (`resolve_supplier_name`), thiếu tên thì hiện
+        #  mã - nên xếp theo đúng chữ đó chứ không theo mã. Khóa `supplier_code` ở trên giữ cho nơi gọi cũ.
+        "supplier_name": _supplier_shown_expression(),
         "product_name": SurveyProductLine.product_name,
         "result_date": SurveyProductLine.result_date,
         "spec": SurveyProductLine.spec,
@@ -203,10 +221,14 @@ def available_survey_lines(db: Session, supplier_code: "str | list[str]" = "",
     }
     col = sort_cols.get(sort_by or "")
     if col is not None:
-        order = col.desc() if str(sort_dir).lower() == "desc" else col.asc()
+        #  duoc-CR-744: ô trống xuống cuối cả hai chiều + khóa phụ `id` giảm dần, để dòng trùng giá trị
+        #  (cùng NCC, cùng nguồn gốc…) không đổi chỗ giữa các trang.
+        order = build_blank_last_order(col, str(sort_dir).lower())
+        if sort_by != "id":
+            order = with_stable_tiebreak(order, SurveyProductLine.id)
     else:
-        order = SurveyProductLine.id.desc()   # mặc định: mới nhất trước
-    items = (q.order_by(order)
+        order = [SurveyProductLine.id.desc()]   # mặc định: mới nhất trước
+    items = (q.order_by(*order)
              .offset((page - 1) * page_size).limit(page_size).all())
     return items, total
 

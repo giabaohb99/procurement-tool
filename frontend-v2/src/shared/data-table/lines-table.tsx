@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { columnColorStyle } from './column-color-palette'
 import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
@@ -23,6 +24,7 @@ import type { DataTableColumn, LinesTableColumn } from './types'
 import { useColumnDrag } from './use-column-drag'
 import { usePinnedOffsets } from './use-pinned-offsets'
 import { useTableLayout } from './use-table-layout'
+import { useLinesTableSort } from './use-lines-table-sort'
 
 /**
  * ⚠️ Viền ô tiêu đề vẽ bằng `box-shadow`, KHÔNG dùng `border` — giống `DataTable`.
@@ -94,6 +96,22 @@ export interface LinesTableProps<T> {
   cellClassName?: (columnKey: string, row: T, index: number) => string | undefined
   /** Có thì bảng mọc thêm cột tick ở đầu — bao-CR-547. */
   selection?: LinesTableSelection<T>
+  /**
+   * Giá trị để XẾP một ô khi bấm tiêu đề (duoc-CR-744). Bỏ trống = đọc trường trùng tên
+   * khóa cột trên dòng. Truyền khi cột bày giá trị TÍNH (thành tiền) hoặc bày nhãn khác
+   * giá trị lưu (mã -> tên), kẻo bảng xếp theo thứ người dùng không nhìn thấy.
+   */
+  getSortValue?: (columnKey: string, row: T, index: number) => SortValue
+}
+
+/** Đọc trường trùng tên khóa cột — đủ cho phần lớn cột của bảng dòng. */
+function readRowField<T>(columnKey: string, row: T): SortValue {
+  const value = (row as Record<string, unknown>)[columnKey]
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    ? value
+    : value === null
+      ? null
+      : undefined
 }
 
 /**
@@ -122,6 +140,7 @@ export function LinesTable<T>({
   rowClassName,
   cellClassName,
   selection,
+  getSortValue = readRowField,
 }: LinesTableProps<T>) {
   /**
    * `useTableLayout` nhận cột của bảng danh sách; bảng dòng không khai `cell` nên
@@ -167,6 +186,31 @@ export function LinesTable<T>({
     }
     return { ...merged, ...layout.columnColors }
   }, [columns, layout.columnColors])
+
+  const { sortKey, sortDir, toggleSort, displayRows } = useLinesTableSort({
+    rows,
+    rowKey,
+    getSortValue,
+  })
+
+  /**
+   * Cột xếp được: khai `sortable: true`, hoặc bỏ trống mà có ít nhất một dòng mang giá trị
+   * (khác `undefined`). Cột khung như "No.", "Thao tác" không có trường nào trên dòng nên
+   * tự rơi ra — tiêu đề của chúng không giả vờ bấm được.
+   */
+  const sortableKeys = useMemo(() => {
+    const keys = new Set<string>()
+    for (const column of columns) {
+      if (column.sortable === false || column.headerContent) continue
+      if (
+        column.sortable ||
+        rows.some((row, index) => getSortValue(column.key, row, index) !== undefined)
+      ) {
+        keys.add(column.key)
+      }
+    }
+    return keys
+  }, [columns, rows, getSortValue])
 
   const { drag, startDrag } = useColumnDrag(moveColumn)
   const tableRef = useRef<HTMLTableElement>(null)
@@ -358,7 +402,9 @@ export function LinesTable<T>({
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
                   key={column.key}
-                  column={column}
+                  column={{ ...column, sortable: sortableKeys.has(column.key) }}
+                  sortDir={sortKey === column.key ? sortDir : null}
+                  onSort={() => toggleSort(column.key, column.sortDescFirst)}
                   width={widthOf(column)}
                   minWidth={column.minWidth ?? LINE_COLUMN_MIN_WIDTH}
                   className={cn(
@@ -388,7 +434,7 @@ export function LinesTable<T>({
               </TableRow>
             )}
 
-            {rows.map((row, index) => (
+            {displayRows.map(({ row, index }) => (
               <TableRow
                 key={rowKey(row, index)}
                 data-state={selection?.isSelected(row, index) ? 'selected' : undefined}

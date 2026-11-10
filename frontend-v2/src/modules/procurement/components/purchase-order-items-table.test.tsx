@@ -293,3 +293,151 @@ describe('PurchaseOrderItemsTable — gợi ý nút theo bản v1', () => {
     expect(screen.getByTitle('Chi tiết & giao hàng (2 lần)')).toBeInTheDocument()
   })
 })
+
+/**
+ * duoc-CR-744 — bấm tiêu đề cột xếp dòng theo đúng thứ ô ĐANG HIỆN. Khóa cột của bảng
+ * này không trùng tên trường của dòng (`code` -> `product_code`, `qty` -> `qty_order`),
+ * thành tiền là số tính, trạng thái là dòng đời — đọc nhầm trường thì cột không xếp được
+ * hoặc xếp theo thứ người dùng không nhìn thấy.
+ */
+describe('PurchaseOrderItemsTable — xếp cột khi bấm tiêu đề (duoc-CR-744)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  // Thứ tự gốc (Charlie, Alpha, Bravo) cố ý KHÔNG đã xếp sẵn theo cột nào được kiểm, để mỗi
+  // lần xếp đều làm đổi thứ tự thật. Thành tiền: Charlie 600 · Alpha 3.240 · Bravo 550.
+  const SORT_ITEMS = [
+    item({ id: 1, product_code: 'C3', product_name: 'Charlie', qty_order: 20, price: 30, vat: 0, progress_status: 'ordered', item_group: 'Nhóm B' }),
+    item({ id: 2, product_code: 'A1', product_name: 'Alpha', qty_order: 3, price: 1000, vat: 8, progress_status: 'completed', item_group: '' }),
+    item({ id: 3, product_code: 'B2', product_name: 'Bravo', qty_order: 5, price: 100, vat: 10, progress_status: 'not_ordered', item_group: 'Nhóm A' }),
+  ]
+
+  async function clickHeader(name: RegExp) {
+    const header = screen.getByRole('columnheader', { name })
+    const target = header.firstElementChild
+    if (!target) throw new Error('tiêu đề cột không có vùng bấm')
+    await userEvent.click(target)
+  }
+
+  /** Chữ trong cột `name` theo thứ tự dòng đang hiện (bỏ hàng tiêu đề). */
+  function columnTexts(name: RegExp): string[] {
+    const index = screen.getAllByRole('columnheader').findIndex((h) => name.test(h.textContent ?? ''))
+    return screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => within(row).getAllByRole('cell')[index]?.textContent ?? '')
+  }
+
+  const names = () => columnTexts(/^Tên hàng/)
+
+  it('sorts by the displayed product name asc, then desc, then back to the original order', async () => {
+    renderTable({ items: SORT_ITEMS })
+    expect(names()).toEqual(['Charlie', 'Alpha', 'Bravo'])
+
+    await clickHeader(/^Tên hàng/)
+    expect(names()).toEqual(['Alpha', 'Bravo', 'Charlie'])
+    await clickHeader(/^Tên hàng/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+    await clickHeader(/^Tên hàng/)
+    expect(names()).toEqual(['Charlie', 'Alpha', 'Bravo'])
+  })
+
+  it('sorts the code column although the row field is product_code, not code', async () => {
+    renderTable({ items: SORT_ITEMS })
+    await clickHeader(/^Mã hàng/)
+    expect(names()).toEqual(['Alpha', 'Bravo', 'Charlie'])
+  })
+
+  it('sorts SL đặt / Đơn giá by number (3 < 5 < 20, not "20" < "3")', async () => {
+    renderTable({ items: SORT_ITEMS })
+    await clickHeader(/^SL đặt/)
+    expect(names()).toEqual(['Alpha', 'Bravo', 'Charlie'])
+    await clickHeader(/^Đơn giá(?!\s*\()/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+  })
+
+  it('sorts Thành tiền by the computed qty x price x (1 + VAT), a column with no row field', async () => {
+    renderTable({ items: SORT_ITEMS })
+    //  Charlie 20x30=600 · Alpha 3x1000x1,08=3.240 · Bravo 5x100x1,1=550
+    await clickHeader(/^Thành tiền/)
+    expect(names()).toEqual(['Bravo', 'Charlie', 'Alpha'])
+    await clickHeader(/^Thành tiền/)
+    expect(names()).toEqual(['Alpha', 'Charlie', 'Bravo'])
+  })
+
+  it('sorts Đơn giá (Sau VAT) by the rounded after-VAT price', async () => {
+    renderTable({ items: SORT_ITEMS })
+    //  Charlie 30 · Alpha 1.080 · Bravo 110
+    await clickHeader(/^Đơn giá \(Sau VAT\)/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+  })
+
+  it('sorts Trạng thái along the line life cycle, not by the English code or the Vietnamese label', async () => {
+    renderTable({ items: SORT_ITEMS })
+    //  Dòng đời: not_ordered < ordered < completed. Theo mã chữ cái sẽ ra completed trước,
+    //  theo nhãn tiếng Việt sẽ ra "Chưa đặt hàng" < "Hoàn thành" < "Đã đặt hàng".
+    await clickHeader(/^Trạng thái/)
+    expect(names()).toEqual(['Bravo', 'Charlie', 'Alpha'])
+    await clickHeader(/^Trạng thái/)
+    expect(names()).toEqual(['Alpha', 'Charlie', 'Bravo'])
+  })
+
+  it('keeps blank cells last in BOTH directions (Phân loại)', async () => {
+    renderTable({ items: SORT_ITEMS })
+    await clickHeader(/^Phân loại/)
+    expect(names()).toEqual(['Bravo', 'Charlie', 'Alpha'])
+    await clickHeader(/^Phân loại/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+  })
+
+  it('sorts the Hồ sơ column by percent and puts lines without a report last', async () => {
+    const lineReport = new Map<number, LineReportProgress>([
+      [1, { itemId: 11, done: 4, total: 4, percent: 100 }],
+      [3, { itemId: 13, done: 1, total: 4, percent: 25 }],
+    ])
+    renderTable({ items: SORT_ITEMS, lineReport })
+    await clickHeader(/^Hồ sơ/)
+    expect(names()).toEqual(['Bravo', 'Charlie', 'Alpha'])
+    await clickHeader(/^Hồ sơ/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+  })
+
+  it('sorts the Quy đổi (VNĐ) column on an import order and drops lines still missing an exchange rate to the end', async () => {
+    renderTable({
+      items: [
+        item({ id: 1, product_name: 'Charlie', qty_order: 1, price: 10, currency: 'USD', exchange_rate: 0 }),
+        item({ id: 2, product_name: 'Alpha', qty_order: 1, price: 10, currency: 'USD', exchange_rate: 30 }),
+        item({ id: 3, product_name: 'Bravo', qty_order: 1, price: 10, currency: 'VND' }),
+      ],
+      order: { order_type: 2, currency: 'USD', exchange_rate: 0 },
+    })
+    await clickHeader(/^Quy đổi/)
+    //  Bravo 10 đ · Alpha 300 đ · Charlie chưa có tỷ giá (trống).
+    expect(names()).toEqual(['Bravo', 'Alpha', 'Charlie'])
+    await clickHeader(/^Quy đổi/)
+    expect(names()).toEqual(['Alpha', 'Bravo', 'Charlie'])
+  })
+
+  it('does not treat the # and Hành động headers as sortable', async () => {
+    renderTable({ items: SORT_ITEMS })
+    await clickHeader(/^Tên hàng/)
+    await clickHeader(/^Tên hàng/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+
+    //  Header bấm được thì sẽ chốt lại thứ tự (hoặc về gốc); header khung thì không làm gì.
+    await clickHeader(/^#/)
+    await clickHeader(/^Hành động/)
+    expect(names()).toEqual(['Charlie', 'Bravo', 'Alpha'])
+  })
+
+  it('keeps an empty table and a single line stable when a header is clicked', async () => {
+    const { unmount } = renderTable({ items: [] })
+    await clickHeader(/^Tên hàng/)
+    expect(screen.getByText('Chưa có dòng hàng nào.')).toBeInTheDocument()
+    unmount()
+
+    renderTable({ items: [SORT_ITEMS[0]] })
+    await clickHeader(/^Tên hàng/)
+    expect(names()).toEqual(['Charlie'])
+  })
+})

@@ -40,6 +40,8 @@ export function useSealClerkColumns({
         header: 'Văn thư đóng dấu',
         minWidth: 260,
         sortable: true,
+        //  Khóa của backend (`seal_clerk/service.py::list_grouped`) là `employee_name`, không phải `employee`.
+        sortKey: 'employee_name',
         hideable: false,
         cell: (r) => (
           <div className="flex items-center gap-3 py-1">

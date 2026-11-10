@@ -14,11 +14,13 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
+import { sortRowsByCell, type CellGetters } from '@/shared/utils/sort-rows-by-cell'
 import {
   Select,
   SelectContent,
@@ -49,15 +51,28 @@ import { LeaveStatusCell } from './leave-status-cell'
 
 const ALL = 'all'
 
+/** Giá trị ô theo khóa cột - dùng khi xếp danh sách hộp việc (đã tải hết) tại trình duyệt. */
+const LEAVE_SORT_GETTERS: CellGetters<LeaveRequest> = {
+  code: (r) => r.code,
+  status: (r) => r.status,
+  employee_name: (r) => r.employee_name,
+  leave_type_name: (r) => r.leave_type_name,
+  from_date: (r) => r.from_date,
+  to_date: (r) => r.to_date,
+  total_days: (r) => r.total_days,
+  reason: (r) => r.reason,
+}
+
 /**
  * `preserveParams`: mọi tham số khác của màn phải kể tên ở đây, không thì bấm
  * "Áp dụng" là chúng bị xóa khỏi URL — mất `scope` thì nhảy về phạm vi mặc định,
  * mất `status`/`leave_type_id` thì hai ô chọn trên thanh công cụ tự nhảy về "Tất cả".
+ * `sort_by`/`sort_dir` cũng phải kể tên: mất chúng thì bấm "Áp dụng" là cột đang xếp bị bỏ.
  */
 const FILTER_CONFIG = {
   fields: LEAVE_REQUEST_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['scope', 'tab', 'status', 'leave_type_id'],
+  preserveParams: ['scope', 'tab', 'status', 'leave_type_id', 'sort_by', 'sort_dir'],
 }
 
 /**
@@ -93,12 +108,13 @@ function UnifiedLeaveRequestContent() {
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { queryParams, queryKey } = useFilterQuery()
   const filter = useFilterContext()
 
   // Đổi điều kiện lọc hoặc phạm vi thì đưa về trang 1
-  const querySignature = `${currentScope}-${queryKey}-${status}-${leaveTypeId}-${debouncedValue}`
+  const querySignature = `${currentScope}-${queryKey}-${status}-${leaveTypeId}-${debouncedValue}-${sortBy}-${sortDir}`
   const [lastSignature, setLastSignature] = useState(querySignature)
   if (lastSignature !== querySignature) {
     setLastSignature(querySignature)
@@ -131,8 +147,30 @@ function UnifiedLeaveRequestContent() {
     if (currentScope === LEAVE_SCOPE.MINE && employeeId) {
       p.employee_id = String(employeeId)
     }
+    //  duoc-CR-744: cột người dùng bấm xếp ở MÁY CHỦ, trên cả tập (xếp lại một trang ở trình
+    //  duyệt thì đơn ở trang 2 không bao giờ nổi lên). Chưa chọn cột thì xin `mine_first`: máy
+    //  chủ tự đưa đơn đang chờ chính tôi duyệt lên đầu trên cả tập - việc mà trước đây trình
+    //  duyệt làm bằng cách xếp lại từng trang. Đã chọn cột thì BỎ luật "của tôi lên đầu" để
+    //  thứ tự đúng bằng cột đã bấm; đơn cần tôi duyệt vẫn có huy hiệu riêng và phạm vi "Cần tôi duyệt".
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    } else if (currentScope === LEAVE_SCOPE.ALL) {
+      p.mine_first = true
+    }
     return p
-  }, [page, pageSize, debouncedValue, status, leaveTypeId, currentScope, employeeId, queryParams])
+  }, [
+    page,
+    pageSize,
+    debouncedValue,
+    status,
+    leaveTypeId,
+    currentScope,
+    employeeId,
+    queryParams,
+    sortBy,
+    sortDir,
+  ])
 
   const requestsQuery = useLeaveRequests(serverParams, {
     enabled: currentScope === LEAVE_SCOPE.ALL || currentScope === LEAVE_SCOPE.MINE,
@@ -156,7 +194,7 @@ function UnifiedLeaveRequestContent() {
       if (leaveTypeId !== ALL) {
         list = list.filter((r) => String(r.leave_type_id) === leaveTypeId)
       }
-      list = applyClientFilter(list, filter.appliedState)
+      list = sortRowsByCell(applyClientFilter(list, filter.appliedState), sortBy, sortDir, LEAVE_SORT_GETTERS)
       const total = list.length
       const paged = list.slice((page - 1) * pageSize, page * pageSize)
       return {
@@ -184,7 +222,7 @@ function UnifiedLeaveRequestContent() {
       if (leaveTypeId !== ALL) {
         list = list.filter((r) => String(r.leave_type_id) === leaveTypeId)
       }
-      list = applyClientFilter(list, filter.appliedState)
+      list = sortRowsByCell(applyClientFilter(list, filter.appliedState), sortBy, sortDir, LEAVE_SORT_GETTERS)
       const total = list.length
       const paged = list.slice((page - 1) * pageSize, page * pageSize)
       return {
@@ -195,25 +233,12 @@ function UnifiedLeaveRequestContent() {
       }
     }
 
-    // currentScope === 'all' | 'mine'
+    // currentScope === 'all' | 'mine': máy chủ đã xếp xong (cột đã chọn, hoặc Chờ duyệt lên đầu +
+    // đơn của tôi lên đầu) - KHÔNG xếp lại ở đây, xem chú thích ở `serverParams`.
     const rawItems = requestsQuery.data?.items ?? []
-    // Khi xem 'all': backend đã sort Chờ duyệt lên trước (status == LR_PENDING).
-    // Ở FE, ưu tiên đẩy thêm các đơn trong hàng đợi `toApprove` của chính người dùng lên hàng đầu tiên.
-    const sorted =
-      currentScope === LEAVE_SCOPE.ALL
-        ? [...rawItems].sort((a, b) => {
-            const aMine = toApproveIds.has(a.id) ? 0 : 1
-            const bMine = toApproveIds.has(b.id) ? 0 : 1
-            if (aMine !== bMine) return aMine - bMine
-            const aPending = a.status === LEAVE_STATUS.PENDING ? 0 : 1
-            const bPending = b.status === LEAVE_STATUS.PENDING ? 0 : 1
-            if (aPending !== bPending) return aPending - bPending
-            return b.id - a.id
-          })
-        : rawItems
 
     return {
-      displayRows: sorted,
+      displayRows: rawItems,
       totalCount: requestsQuery.data?.total ?? 0,
       isLoading: requestsQuery.isLoading,
       isError: requestsQuery.isError,
@@ -236,7 +261,8 @@ function UnifiedLeaveRequestContent() {
     requestsQuery.data?.total,
     requestsQuery.isLoading,
     requestsQuery.isError,
-    toApproveIds,
+    sortBy,
+    sortDir,
   ])
 
   const scopeSelect = (
@@ -333,6 +359,7 @@ function UnifiedLeaveRequestContent() {
           )
         },
         width: 240,
+        sortable: true,
       },
       employeeColumn(),
       leaveTypeColumn(),
@@ -353,6 +380,9 @@ function UnifiedLeaveRequestContent() {
       emptyMessage={emptyMessage}
       toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
       storageKey="hr.unified-leave-requests"
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSortChange={handleSortChange}
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       mobileCard={(r) => {
         const dueAt = 'task' in r ? (r as LeaveInboxRow).task?.due_at : undefined

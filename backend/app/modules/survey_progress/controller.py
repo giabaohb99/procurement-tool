@@ -14,7 +14,7 @@ Quyền — **hai cờ RỜI, đừng gộp** (bài học CR-071):
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
@@ -27,13 +27,16 @@ from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period, range_filter
 from app.core.response import success
+from app.core.sort_order import build_blank_last_order
 from app.core.scoping import apply_scope
 from app.modules.report_access.guard import require_report
-from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
-                                              SurveyRequestLine, SurveyRequestOption)
+from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
+                                              SurveyRequestOption)
 
 from . import export as ex
 from . import summary_service as prog_summary
+from .line_state_sql import state_condition
+from .sort_expressions import get_computed_sort_expression
 
 router = APIRouter(prefix="/api/survey-progress", tags=["survey_progress"])
 
@@ -45,9 +48,9 @@ def _today():
 
 
 def _sort_map():
-    """Key cột (FE) -> cột DB thật để sort tại server. Cột TÍNH (trễ hạn, số ngày xử lý,
-    tiến độ dòng, số phương án, cụm phương án) không có ở đây — sort chúng phải làm ở FE
-    trên trang đang xem, vì giá trị không nằm trong DB."""
+    """Key cột (FE) -> cột DB thật để sort tại server (map này cũng là gốc của `_cond_map`).
+    Cột TÍNH (trễ hạn, số ngày xử lý, tiến độ dòng, số phương án), cụm phương án chốt và tên
+    công ty xếp bằng biểu thức SQL riêng ở `sort_expressions.py`."""
     return {
         "code": SurveyRequest.code, "company_id": SurveyRequest.company_id,
         "department": SurveyRequest.department, "requester": SurveyRequest.requester,
@@ -88,54 +91,6 @@ def _cond_map(show_supplier: bool) -> dict:
         for k in ex.SUPPLIER_HIDDEN_KEYS:
             m.pop(k, None)
     return m
-
-
-def _state_cond(state: str):
-    """Dịch nhãn cột TÍNH "Tiến độ dòng" thành điều kiện SQL để lọc được tại server.
-
-    Phải bám đúng thứ tự ưu tiên của `export.progress_state`: mỗi nhãn = "khớp mốc của mình
-    VÀ không khớp mốc nào xa hơn". Bỏ vế sau là lọc ra thừa — ví dụ chọn "Đang khảo sát" sẽ
-    kéo về cả những dòng đã chốt xong từ lâu, vì chúng cũng có phương án.
-
-    Trả None với nhãn lạ (người dùng sửa URL) — coi như không lọc, hơn là trả bảng rỗng khó hiểu.
-    """
-    L = SurveyRequestLine
-    chosen = exists(select(SurveyRequestOption.id)
-                    .where(SurveyRequestOption.survey_request_line_id == L.id,
-                           SurveyRequestOption.is_chosen.is_(True)))
-    any_opt = exists(select(SurveyRequestOption.id)
-                     .where(SurveyRequestOption.survey_request_line_id == L.id))
-    line_st = func.coalesce(L.line_status, "")
-    no_pr = func.coalesce(L.pr_code, "") == ""
-    answered = func.coalesce(L.result_date, "") != ""
-
-    # CR-077: HOÀN THÀNH là mốc xa nhất, đứng TRÊN "Đã tạo YCMH".
-    if state == ex.STATE_DONE:
-        return line_st == LS_COMPLETED
-    not_done = line_st != LS_COMPLETED
-    if state == ex.STATE_PR_CREATED:
-        return and_(not_done, func.coalesce(L.pr_code, "") != "")
-    r1 = and_(not_done, no_pr)                                # chưa hoàn thành, chưa tạo YCMH
-    if state == ex.STATE_RESURVEY:
-        return and_(r1, line_st == LS_RESURVEY)
-    r2 = and_(r1, line_st != LS_RESURVEY)
-    if state == ex.STATE_CHOSEN:
-        return and_(r2, chosen)
-    r3 = and_(r2, ~chosen)
-    if state == ex.STATE_NO_OPTION:
-        return and_(r3, L.no_option.is_(True))
-    r4 = and_(r3, L.no_option.is_(False))
-    if state == ex.STATE_ANSWERED:
-        return and_(r4, answered)
-    r5 = and_(r4, ~answered)
-    if state == ex.STATE_SURVEYING:
-        return and_(r5, any_opt)
-    r6 = and_(r5, ~any_opt)
-    if state == ex.STATE_RECEIVED:
-        return and_(r6, func.coalesce(L.assignee, "") != "")
-    if state == ex.STATE_NOT_RECEIVED:
-        return and_(r6, func.coalesce(L.assignee, "") == "")
-    return None
 
 
 def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_db)):
@@ -236,7 +191,7 @@ def _build_query(request: Request, db: Session, user, prof: dict,
         q = q.filter(SurveyRequestLine.line_status == line_status)
     # Cột TÍNH "Tiến độ dòng" — chọn nhiều nhãn thì HỢP (OR) các điều kiện của từng nhãn;
     # nhãn lạ bị bỏ qua, mà toàn nhãn lạ thì không lọc (giữ đúng nết cũ của một giá trị).
-    state_conds = [c for c in (_state_cond(s) for s in read_multi_param(request, "state"))
+    state_conds = [c for c in (state_condition(s) for s in read_multi_param(request, "state"))
                    if c is not None]
     if len(state_conds) == 1:
         q = q.filter(state_conds[0])
@@ -304,9 +259,17 @@ def _build_query(request: Request, db: Session, user, prof: dict,
     # ----- Sort -----
     sort_by = (request.query_params.get("sort_by") or "").strip()
     sort_dir = (request.query_params.get("sort_dir") or "asc").strip().lower()
-    col = _sort_map().get(sort_by)
+    #  Biểu thức riêng đi TRƯỚC `_sort_map()`: TT phiếu / TT dòng có trong map nhưng map xếp
+    #  theo chữ cái của MÃ, còn màn bày nhãn theo dòng đời.
+    col = get_computed_sort_expression(db, sort_by, _today().strftime("%Y-%m-%d"))
+    if col is None:
+        col = _sort_map().get(sort_by)
+    #  Cột NCC đã che thì cũng không cho xếp: thứ tự dòng theo tên NCC là đủ để mò ra NCC.
+    if not show_supplier and sort_by in ex.SUPPLIER_HIDDEN_KEYS:
+        col = None
     if col is not None:
-        q = q.order_by(col.desc() if sort_dir == "desc" else col.asc())
+        #  Ô trống xuống cuối cả hai chiều — luật chung `core/sort_order.py`.
+        q = q.order_by(*build_blank_last_order(col, sort_dir))
     return q.order_by(SurveyRequest.code, SurveyRequestLine.id)
 
 
@@ -323,7 +286,8 @@ def _decorate(db: Session, rows, show_supplier: bool, start: int) -> list[dict]:
     if line_ids:
         for o in (db.query(SurveyRequestOption)
                   .filter(SurveyRequestOption.survey_request_line_id.in_(line_ids),
-                          SurveyRequestOption.is_chosen == True).all()):
+                          SurveyRequestOption.is_chosen == True)
+                  .order_by(SurveyRequestOption.id).all()):
             chosen[o.survey_request_line_id] = o
         counts = dict(db.query(SurveyRequestOption.survey_request_line_id, func.count())
                   .filter(SurveyRequestOption.survey_request_line_id.in_(line_ids))

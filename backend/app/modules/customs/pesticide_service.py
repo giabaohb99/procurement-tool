@@ -18,6 +18,7 @@ from . import banned_ingredient_match as banned_match
 from .constants import PESTICIDE_STATUS_LABELS
 from .ingredient import retag_all
 from .model import CustomsPesticide, CustomsPesticideUse
+from .pesticide_sort import pesticide_order
 
 #  Khóa SỬA danh mục thuốc (duoc-CR-490) — cũng là entity ghi vào nhật ký. Xem vẫn theo `customs_price`.
 ENTITY = "customs_pesticide"
@@ -125,14 +126,17 @@ def _filtered(db: Session, query, q: str, status: int | None, pest_group: str, s
 
 
 def export_query(db: Session, q: str, status: int | None, pest_group: str, sector: str,
-                 banned_only: bool = False, banned_regulation_id: int | None = None):
+                 banned_only: bool = False, banned_regulation_id: int | None = None,
+                 sort_by: str = "", sort_dir: str = "asc"):
     """Câu truy vấn đã LỌC + SẮP XẾP giống đúng `list_pesticides` (chưa phân trang) — dùng lại
     cho `scope=page` của màn xuất Excel (`pesticide_export_service`, 02/10/2026) để trang xuất
-    ra luôn khớp đúng trang người dùng đang xem, không chép lại logic lọc ở hai nơi."""
+    ra luôn khớp đúng trang người dùng đang xem, không chép lại logic lọc ở hai nơi.
+    duoc-CR-744: kèm `sort_by`/`sort_dir` thì xếp theo cột đang bấm, trang xuất ra cùng thứ tự với bảng."""
     matcher = banned_match.load_matcher(db)
     banned_ids = _banned_ids(db, matcher, banned_only, banned_regulation_id)
+    order = pesticide_order(db, sort_by, sort_dir) or [CustomsPesticide.trade_name, CustomsPesticide.id]
     return (_filtered(db, db.query(CustomsPesticide), q, status, pest_group, sector, banned_ids)
-            .order_by(CustomsPesticide.trade_name, CustomsPesticide.id))
+            .order_by(*order))
 
 
 def _banned_ids(db: Session, matcher: "banned_match.BannedIngredientMatcher", banned_only: bool,
@@ -162,13 +166,15 @@ def _out(p: CustomsPesticide, use_count: int = 0, banned: list | None = None) ->
 
 def list_pesticides(db: Session, q: str, status: int | None, pest_group: str, sector: str,
                     offset: int, limit: int, banned_only: bool = False,
-                    banned_regulation_id: int | None = None) -> tuple[int, list[dict]]:
+                    banned_regulation_id: int | None = None, sort_by: str = "",
+                    sort_dir: str = "asc") -> tuple[int, list[dict]]:
     matcher = banned_match.load_matcher(db)
     banned_ids = _banned_ids(db, matcher, banned_only, banned_regulation_id)
     total = _filtered(db, db.query(func.count(CustomsPesticide.id)), q, status, pest_group,
                       sector, banned_ids).scalar() or 0
+    order = pesticide_order(db, sort_by, sort_dir) or [CustomsPesticide.trade_name, CustomsPesticide.id]
     rows = (_filtered(db, db.query(CustomsPesticide), q, status, pest_group, sector, banned_ids)
-            .order_by(CustomsPesticide.trade_name, CustomsPesticide.id)
+            .order_by(*order)
             .offset(offset).limit(limit).all())
     #  Số dòng phạm vi của CẢ TRANG trong một câu — không đếm trong vòng lặp (N+1).
     counts = dict(db.query(CustomsPesticideUse.pesticide_id, func.count(CustomsPesticideUse.id))

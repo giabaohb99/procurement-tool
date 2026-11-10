@@ -65,6 +65,14 @@ function lastCall() {
   return listCalls[listCalls.length - 1]
 }
 
+/** Bấm tiêu đề cột theo NHÃN chữ khớp trọn vẹn (không dò theo tên trợ năng của cả ô). */
+async function clickHeader(name: string) {
+  const headers = await screen.findAllByRole('columnheader')
+  const [target] = headers.flatMap((header) => within(header).queryAllByText(name))
+  if (!target) throw new Error(`Không thấy tiêu đề cột "${name}"`)
+  await userEvent.click(target)
+}
+
 beforeEach(() => {
   listCalls.length = 0
   listItems.length = 0
@@ -329,5 +337,34 @@ describe('PurchaseOrderListPage — nút đầu trang theo bản v1', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Bỏ chọn cả trang' }))
     expect(screen.getByRole('button', { name: 'Xuất Excel' })).toBeInTheDocument()
+  })
+})
+
+/**
+ * duoc-CR-744 — ô "Ngày đặt" in `created_at` nên bấm tiêu đề phải SẮP theo `created_at`. Khóa cũ
+ * `order_date` là ngày đặt hàng nhập tay, lệch ngày tạo ở đơn nhập / đơn cũ nên thứ tự không khớp ô.
+ */
+describe('PurchaseOrderListPage — sắp xếp cột Ngày đặt (duoc-CR-744)', () => {
+  it('sorts by created_at, newest first on the first click', async () => {
+    build()
+    await clickHeader('Ngày đặt')
+
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'created_at', sort_dir: 'desc' }))
+    expect(lastCall().sort_by).not.toBe('order_date')
+  })
+
+  it('flips to ascending on the second click', async () => {
+    build()
+    await clickHeader('Ngày đặt')
+    await clickHeader('Ngày đặt')
+
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'created_at', sort_dir: 'asc' }))
+  })
+
+  it('sends the Trạng thái header as the status key the backend ranks by lifecycle', async () => {
+    build()
+    await clickHeader('Trạng thái')
+
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'status', sort_dir: 'asc' }))
   })
 })

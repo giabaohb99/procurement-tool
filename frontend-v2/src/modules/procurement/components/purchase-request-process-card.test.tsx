@@ -540,6 +540,13 @@ describe('PurchaseRequestProcessCard — sorting the approved survey picker', ()
     expect(lastFilters()).not.toHaveProperty('sort_by')
   })
 
+  //  duoc-CR-744: ô NCC hiện TÊN nên sắp theo `supplier_name` (tên, thiếu tên thì mã), không theo mã.
+  it('sorts the NCC column by the displayed supplier name, not the code', () => {
+    renderPicker()
+    fireEvent.click(screen.getByText('NCC'))
+    expect(lastFilters()).toMatchObject({ sort_by: 'supplier_name', sort_dir: 'asc' })
+  })
+
   it('ignores clicks on columns the backend cannot order', () => {
     renderPicker()
     fireEvent.click(screen.getByText('Phân loại KS'))

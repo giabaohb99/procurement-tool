@@ -8,7 +8,7 @@
 // Số trang vẫn là state cục bộ (về trang 1 khi quay lại) — đổi bộ lọc phải kéo trang về 1.
 // Mặc định lọc "Còn hiệu lực" (đại ca chốt 29/09) — thuốc hết hiệu lực vẫn có, bỏ lọc là thấy.
 import { Plus, Upload } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { DataTable } from '@/shared/data-table'
@@ -16,6 +16,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { fromHere } from '@/shared/hooks/use-back-target'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -63,6 +64,10 @@ export function CustomsPesticideTab() {
   //  mở thẳng danh sách với tham số này.
   const [sector, setSector] = useUrlParamState('psector', ALL_PESTICIDE_OPTIONS)
   const [banned, setBanned] = useUrlParamState('pbanned', ALL_PESTICIDE_OPTIONS)
+  //  duoc-CR-744 — bấm tiêu đề cột: xếp tại SERVER trên cả danh mục đã lọc (backend `pesticide_sort.py`). Tên
+  //  param RIÊNG (`psort_by`/`psort_dir`) như các ô lọc `p…`: `sort_by` trên URL là của bảng dòng hàng ở mục
+  //  Danh sách, dùng chung thì đổi mục là thứ tự của bảng này bị ghi đè.
+  const [sortBy, sortDir, setSort] = useUrlRangeParam('psort_by', 'psort_dir')
   const setUrlParams = useSetUrlParams()
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [importOpen, setImportOpen] = useState(false)
@@ -79,9 +84,20 @@ export function CustomsPesticideTab() {
     pestGroup,
     sector,
     banned,
+    sortBy,
+    sortDir,
   ])
+  //  Cả danh sách lẫn "Xuất Excel > Trang hiện tại" mang thứ tự đang xem (tệp ra đúng thứ tự bảng).
+  const filterParams = {
+    ...buildPesticideParams(filters),
+    ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir === 'desc' ? 'desc' : 'asc' } : {}),
+  }
+  const handleSortChange = useCallback(
+    (nextSortBy: string, nextSortDir: 'asc' | 'desc') => setSort(nextSortBy, nextSortBy ? nextSortDir : ''),
+    [setSort],
+  )
   const options = useCustomsPesticideOptions()
-  const list = useCustomsPesticides({ ...buildPesticideParams(filters), page, page_size: pageSize })
+  const list = useCustomsPesticides({ ...filterParams, page, page_size: pageSize })
   const catalogTotal = options.data?.total ?? 0
   //  "Xóa lọc" khai tay: "xóa" nghĩa là về MẶC ĐỊNH (còn hiệu lực), không phải bỏ hết
   //  (docs/ui/table.md §3). Đặt bốn param trong MỘT lượt — gọi bốn setter liền tay thì lượt sau
@@ -114,6 +130,9 @@ export function CustomsPesticideTab() {
         storageKey={PESTICIDE_TABLE_STORAGE_KEY}
         onRowClick={(row) => openDetail(row.id)}
         mobileCard={(row) => <CustomsPesticideCard row={row} />}
+        sortBy={sortBy}
+        sortDir={sortDir === 'desc' ? 'desc' : 'asc'}
+        onSortChange={handleSortChange}
         filtersActive={filtersActive}
         onResetFilters={resetFilters}
         //  Một hàng duy nhất: tìm → ba ô chọn → Nạp danh mục …… Xóa lọc · Tải lại · Cột
@@ -150,7 +169,7 @@ export function CustomsPesticideTab() {
             )}
             {canExport && (
               <CustomsPesticideExportMenu
-                filterParams={buildPesticideParams(filters)}
+                filterParams={filterParams}
                 page={page}
                 pageSize={pageSize}
                 pageRowCount={list.data?.items.length ?? 0}

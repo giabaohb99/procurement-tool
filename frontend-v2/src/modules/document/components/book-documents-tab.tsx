@@ -33,10 +33,12 @@ interface BookDocumentsTabProps {
 
 /**
  * Mặc định sắp theo SỐ VÀO SỔ giảm dần — đọc y như quyển sổ giấy, số mới nhất
- * lên đầu. `apply_sort` ở backend đẩy NULL (chưa vào sổ) xuống cuối bất kể
- * chiều sắp (duoc-CR-474).
+ * lên đầu. Backend đẩy NULL (chưa vào sổ) xuống cuối bất kể chiều sắp
+ * (duoc-CR-474). Bấm tiêu đề cột khác thì xếp theo cột đó (duoc-CR-744); nhịp
+ * thứ ba của tiêu đề (thôi sắp xếp) quay về mặc định này chứ không về "không
+ * xếp", vì quyển sổ luôn phải đọc được theo số.
  */
-const DEFAULT_SORT = '-book_seq_no'
+const DEFAULT_SORT: { by: string; dir: 'asc' | 'desc' } = { by: 'book_seq_no', dir: 'desc' }
 
 /**
  * TAB "VĂN BẢN TRONG SỔ" của trang chi tiết Sổ văn bản (duoc-CR-474, 23/09/2026).
@@ -83,13 +85,15 @@ function BookDocumentsContent({ bookId, year, onYearChange }: BookDocumentsTabPr
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   //  Đổi năm hay đổi từ khóa tìm đều phải về trang 1 — bộ lọc lên URL của TRANG
   //  CHA (`?tab=documents`) nên state này ở lại cục bộ, không đẩy lên URL.
-  const [page, setPage] = usePageResetOnFilterChange([bookId, year, debouncedKeyword])
+  const [sort, setSort] = useState(DEFAULT_SORT)
+  const [page, setPage] = usePageResetOnFilterChange([bookId, year, debouncedKeyword, sort.by, sort.dir])
 
   const { data, isLoading, isError } = useDocuments({
     book_id: bookId,
     book_year: year,
     q: debouncedKeyword.trim() || undefined,
-    sort: DEFAULT_SORT,
+    sort_by: sort.by,
+    sort_dir: sort.dir,
     page,
     page_size: pageSize,
   })
@@ -102,6 +106,8 @@ function BookDocumentsContent({ bookId, year, onYearChange }: BookDocumentsTabPr
         width: 110,
         align: 'right',
         hideable: false,
+        sortable: true,
+        sortDescFirst: true,
         //  Chưa duyệt thì chưa vào sổ — số này cấp CÙNG LÚC với số hiệu.
         cell: (row) => (
           <span className="font-medium tabular-nums">
@@ -113,26 +119,31 @@ function BookDocumentsContent({ bookId, year, onYearChange }: BookDocumentsTabPr
         key: 'display_code',
         header: 'Số/ký hiệu',
         width: 170,
+        sortable: true,
         cell: (row) => docCodeText(row),
       },
-      { key: 'title', header: 'Trích yếu', width: 320, wrap: true, cell: (row) => row.title },
-      { key: 'doc_type_name', header: 'Loại', width: 160, cell: (row) => row.doc_type_name },
+      { key: 'title', header: 'Trích yếu', width: 320, wrap: true, sortable: true, cell: (row) => row.title },
+      { key: 'doc_type_name', header: 'Loại', width: 160, sortable: true, cell: (row) => row.doc_type_name },
       {
         key: 'effective_date',
         header: 'Ngày hiệu lực',
         width: 140,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => formatDate(row.effective_date ?? ''),
       },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 160,
+        sortable: true,
         cell: (row) => effectiveStatusBadge(row),
       },
       {
         key: 'drafter_name',
         header: 'Người soạn',
         width: 170,
+        sortable: true,
         cell: (row) => row.drafter_name,
       },
     ],
@@ -150,6 +161,9 @@ function BookDocumentsContent({ bookId, year, onYearChange }: BookDocumentsTabPr
         rows={data?.items}
         getRowId={(row: DocumentRecord) => row.id}
         storageKey="document.book-documents"
+        sortBy={sort.by}
+        sortDir={sort.dir}
+        onSortChange={(by, dir) => setSort(by ? { by, dir } : DEFAULT_SORT)}
         isLoading={isLoading}
         isError={isError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}

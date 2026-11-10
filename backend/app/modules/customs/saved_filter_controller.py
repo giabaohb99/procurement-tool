@@ -69,8 +69,9 @@ def batch_row_summary(bid: int, db: Session = Depends(get_db), user=Depends(requ
 
 
 @router.get("/imports/{bid}/rows")
-def batch_rows(bid: int, row_status: int | None = Query(None, ge=1, le=max(ImportRowStatus)), pg: dict = Depends(pagination),
+def batch_rows(bid: int, row_status: int | None = Query(None, ge=1, le=max(ImportRowStatus)),
+               sort_by: str = "", sort_dir: str = "asc", pg: dict = Depends(pagination),
                db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     _get_batch(db, bid)
-    total, items = row_log.list_rows(db, bid, row_status, pg)
+    total, items = row_log.list_rows(db, bid, row_status, pg, sort_by, sort_dir)
     return success({"total": total, "items": items, "page": pg["page"], "page_size": pg["page_size"]})

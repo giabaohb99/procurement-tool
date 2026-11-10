@@ -27,6 +27,7 @@ from .schema import (
     SealRequestCreate,
     SealRequestUpdate,
 )
+from .sort_expressions import list_sort_allow
 
 router = APIRouter(prefix="/api/seal-requests", tags=["seal-request"])
 
@@ -86,7 +87,8 @@ def list_seal_requests(
     query = apply_datetime_range(query, SealRequest, request)  # bộ lọc "Ngày tạo"
     query = service.apply_keyword_search(query, request.query_params.get("search"))
     query = apply_scope(query, SealRequest, "seal_request", user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, SealRequest, request, default=SealRequest.id.desc())
+    query = apply_sort_from_request(query, SealRequest, request, default=SealRequest.id.desc(),
+                                    allow=list_sort_allow())
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": service.serialize_seal_requests(db, items)})

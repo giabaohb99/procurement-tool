@@ -63,6 +63,7 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'seq_no',
     header: 'STT',
     width: 64,
+    sortable: true,
     //  Căn GIỮA cả tiêu đề lẫn số: căn phải thì số lệch hẳn khỏi chữ "STT" (đại ca chụp 07/10/2026).
     align: 'center',
     cell: (r) => <span className="tabular-nums">{r.seq_no}</span>,
@@ -71,6 +72,7 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'list_label',
     header: 'Phụ lục / Văn bản',
     width: 230,
+    sortable: true,
     wrap: true,
     cell: (r) => (
       <Badge className={cn('whitespace-normal', regulationTone(r.list_code))}>
@@ -82,12 +84,13 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'name',
     header: 'Tên khoa học',
     width: 260,
+    sortable: true,
     wrap: true,
     cell: (r) => r.name,
   },
-  { key: 'name_vi', header: 'Tên chất', width: 220, wrap: true, cell: (r) => r.name_vi },
-  { key: 'cas_no', header: 'Mã số CAS', width: 120, cell: (r) => r.cas_no },
-  { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, cell: (r) => r.formula },
+  { key: 'name_vi', header: 'Tên chất', width: 220, wrap: true, sortable: true, cell: (r) => r.name_vi },
+  { key: 'cas_no', header: 'Mã số CAS', width: 120, sortable: true, cell: (r) => r.cas_no },
+  { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, sortable: true, cell: (r) => r.formula },
   //  bao-CR-477 — con số quan trọng nhất của dòng đứng thành CỘT RIÊNG, chữ to đậm; trước
   //  đây nó nằm lẫn giữa một câu chữ thường ở cột "Lưu ý", đọc lướt là trôi mất.
   {
@@ -97,6 +100,7 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     //  "Không quy định ngư…" — nới rộng và cho xuống dòng thay vì để dấu ba chấm nuốt mất ý.
     width: 180,
     wrap: true,
+    sortable: true,
     cell: (r) => {
       if (r.list_code === LIST_BANNED_TT75) {
         return (
@@ -138,6 +142,7 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     header: 'Lưu ý',
     width: 360,
     wrap: true,
+    sortable: true,
     cell: (r) => r.obligation,
   },
 ]
@@ -156,6 +161,8 @@ export function buildRegulationPesticideColumn(
     header: 'Thuốc BVTV chứa',
     width: 150,
     wrap: true,
+    sortable: true,
+    sortDescFirst: true,
     cell: (r) => {
       if (r.list_code !== LIST_BANNED_TT75) return null
       if (r.pesticide_matchable === false) {

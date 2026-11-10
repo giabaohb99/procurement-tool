@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.audit import record as audit_record
 from app.core.auth import get_current_user, get_perm_profile, hash_password, require
 from app.core.password_policy import validate_password
-from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
+from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
 from . import (contact_service, department_service, pending_work_service, position_service,
-               self_contact_service, sensitive, service)
+               self_contact_service, sensitive, service, sort_expressions)
 from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
                      EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
                      EmployeeOut, EmployeeUpdate, SelfContactsIn, SelfContactUpdate)
@@ -32,7 +32,11 @@ def list_employees(
     #  duoc-CR-693: không sắp xếp theo lương — thứ tự cũng là thông tin (kéo xuống để biết ai lương cao nhất).
     if (request.query_params.get("sort_by") or "").strip() in (*sensitive.SALARY_FIELDS, "salary_updated_at"):
         raise HTTPException(400, "Không sắp xếp theo lương")
-    query = apply_sort_from_request(query, service.Employee, request)
+    #  duoc-CR-744: danh sách trắng theo cột đang hiện (xem `sort_expressions`) — ô trống xuống cuối, khóa phụ `id`.
+    #  Khóa lạ (kể cả cột nhạy cảm như `date_of_birth`, `bank_account_no`) bị bỏ qua, về thứ tự mới nhất trước.
+    order = sort_expressions.build_order_by(request.query_params.get("sort_by") or "",
+                                            request.query_params.get("sort_dir") or "asc")
+    query = query.order_by(*order) if order else query.order_by(service.Employee.id.desc())
     total, items = service.list_employees(db, query, pg)
     rows = [EmployeeOut.model_validate(i).model_dump() for i in items]
     #  Che nhóm nhạy cảm NGAY Ở ĐÂY, không để tầng giao diện tự ẩn — danh sách

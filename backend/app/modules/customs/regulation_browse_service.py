@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from . import banned_ingredient_match as banned_match
 from .constants import FORMULA_CAS, REGULATION_LIST_LABELS, RegulationList
 from .model import CustomsPesticide, CustomsRegulation
+from .regulation_sort import regulation_order
 from .service import _regulation_out
 
 
@@ -29,13 +30,16 @@ def _filtered(query, q: str, list_code: int | None):
     return query
 
 
-def list_regulations(db: Session, q: str, list_code: int | None, offset: int,
-                     limit: int) -> tuple[int, list[dict]]:
+def list_regulations(db: Session, q: str, list_code: int | None, offset: int, limit: int,
+                     sort_by: str = "", sort_dir: str = "asc") -> tuple[int, list[dict]]:
     total = _filtered(db.query(func.count(CustomsRegulation.id)), q, list_code).scalar() or 0
+    #  duoc-CR-744 — bấm tiêu đề cột thì xếp theo cột đó trên cả tập đã lọc (`regulation_sort`); không bấm
+    #  thì giữ thứ tự phụ lục của duoc-CR-598.
+    order = regulation_order(db, sort_by, sort_dir) or [
+        CustomsRegulation.list_code, CustomsRegulation.sort_order == 0,
+        CustomsRegulation.sort_order, CustomsRegulation.name, CustomsRegulation.id]
     rows = (_filtered(db.query(CustomsRegulation), q, list_code)
-            #  duoc-CR-598 — đúng thứ tự dòng của phụ lục; dòng thêm tay (`sort_order = 0`) xếp sau.
-            .order_by(CustomsRegulation.list_code, CustomsRegulation.sort_order == 0,
-                      CustomsRegulation.sort_order, CustomsRegulation.name, CustomsRegulation.id)
+            .order_by(*order)
             .offset(offset).limit(limit).all())
     counts = _pesticide_counts(db, rows)
     return total, [_regulation_out(r) | {"pesticide_count": counts.get(r.id),

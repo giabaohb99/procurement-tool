@@ -45,6 +45,7 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
     key: 'email',
     header: 'Email',
     width: 220,
+    sortable: true,
     cell: (e) => <span className="text-muted-foreground">{e.email || '—'}</span>,
   },
   {
@@ -54,19 +55,21 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
     key: 'company_name',
     header: 'Công ty',
     width: 180,
+    sortable: true,
     cell: (e) => e.company_name || '—',
   },
   {
     key: 'department_name',
     header: 'Phòng ban',
     width: 180,
+    sortable: true,
     cell: (e) => e.department_name || '—',
   },
   //  Cột đọc NHÃN (`position`) chứ không join sang danh mục: backend chép
   //  sẵn tên vào đó và giữ đồng bộ khi đổi tên (duoc-CR-320), nên một câu
   //  truy vấn là đủ. Bộ lọc thì ngược lại — lọc theo KHÓA, xem
   //  `hr-filter-fields.ts`.
-  { key: 'position', header: 'Chức vụ', width: 180, cell: (e) => e.position || '—' },
+  { key: 'position', header: 'Chức vụ', width: 180, sortable: true, cell: (e) => e.position || '—' },
   {
     //  Ba cột của HRM Đợt 2. `compactHidden` không có ở `DataTable` (đó là
     //  của `LinesTable`), nên để mặc định HIỆN — người dùng ẩn bớt bằng menu
@@ -74,12 +77,14 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
     key: 'employment_type_label',
     header: 'Hình thức',
     width: 150,
+    sortable: true,
     cell: (e) => e.employment_type_label || '—',
   },
   {
     key: 'job_level_label',
     header: 'Cấp bậc',
     width: 150,
+    sortable: true,
     cell: (e) => e.job_level_label || '—',
   },
   {
@@ -90,6 +95,7 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
     key: 'direct_manager_name',
     header: 'Quản lý trực tiếp',
     width: 200,
+    sortable: true,
     cell: (e) =>
       e.direct_manager_name ? (
         e.direct_manager_name
@@ -104,6 +110,7 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
     key: 'status',
     header: 'Tình trạng',
     width: 140,
+    sortable: true,
     cell: (e) => (
       // B-03: so với MÃ, hiện NHÃN. Bản cũ so với chuỗi 'Chính thức' — sau khi
       // chuyển mã thì không dòng nào còn tô đậm nữa mà chẳng có lỗi nào nổ ra.

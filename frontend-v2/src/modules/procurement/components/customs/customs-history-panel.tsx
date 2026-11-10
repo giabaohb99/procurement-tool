@@ -15,7 +15,7 @@
 //
 // bao-CR-608: thêm cột "Ghi đè" / "Xóa" (tệp có cột "ID" + "Thao tác"). Lô ghi đè / xóa có bản
 // chụp nên VẪN hoàn tác được: trả dòng ghi đè về bản cũ, dựng lại dòng đã xóa đúng id cũ.
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
@@ -45,6 +45,7 @@ import {
   type CustomsBatchLog,
   type CustomsImportBatch,
 } from '../../types/customs'
+import { useLocalServerSort } from '../../hooks/use-local-server-sort'
 import { formatRevertConfirm } from '../../utils/customs'
 import { CustomsBatchHistoryActions } from './customs-batch-history-actions'
 import { CustomsBatchLineCard } from './customs-batch-line-card'
@@ -82,7 +83,9 @@ export function CustomsHistoryPanel() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(HISTORY_PAGE_SIZE)
   const [logsOf, setLogsOf] = useState<CustomsImportBatch | null>(null)
-  const { data, isLoading, isError } = useCustomsBatches({ page, page_size: pageSize })
+  const resetPage = useCallback(() => setPage(1), [])
+  const sort = useLocalServerSort(resetPage)
+  const { data, isLoading, isError } = useCustomsBatches({ page, page_size: pageSize, ...sort.params })
   const revert = useRevertCustomsBatch()
   const reverting = useRef(false)
 
@@ -119,11 +122,21 @@ export function CustomsHistoryPanel() {
     )
 
     const columns: DataTableColumn<CustomsImportBatch>[] = [
-      { key: 'id', header: '#', width: 64, align: 'right', hideable: false, cell: (b) => b.id },
+      {
+        key: 'id',
+        header: '#',
+        width: 64,
+        align: 'right',
+        sortable: true,
+        sortDescFirst: true,
+        hideable: false,
+        cell: (b) => b.id,
+      },
       {
         key: 'filename',
         header: 'Tệp',
         width: 220,
+        sortable: true,
         hideable: false,
         wrap: true,
         cell: (b) => <span className="break-all">{b.filename}</span>,
@@ -132,6 +145,7 @@ export function CustomsHistoryPanel() {
         key: 'mode',
         header: 'Loại',
         width: 90,
+        sortable: true,
         hideable: false,
         cell: (b) => CUSTOMS_BATCH_MODE_LABELS[b.mode],
       },
@@ -139,6 +153,7 @@ export function CustomsHistoryPanel() {
         key: 'status',
         header: 'Trạng thái',
         width: 130,
+        sortable: true,
         hideable: false,
         cell: (b) => <CustomsBatchStatusBadge batch={b} />,
       },
@@ -147,6 +162,8 @@ export function CustomsHistoryPanel() {
         header: 'Thêm mới',
         width: 90,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => b.created_count,
       },
@@ -157,6 +174,8 @@ export function CustomsHistoryPanel() {
         header: 'Ghi đè',
         width: 80,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => b.updated_count || 0,
       },
@@ -165,15 +184,27 @@ export function CustomsHistoryPanel() {
         header: 'Xóa',
         width: 70,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => b.deleted_count || 0,
       },
-      { key: 'range', header: 'Khoảng ngày', width: 190, hideable: false, cell: formatRange },
+      {
+        key: 'range',
+        header: 'Khoảng ngày',
+        width: 190,
+        sortable: true,
+        sortDescFirst: true,
+        hideable: false,
+        cell: formatRange,
+      },
       {
         key: 'date_fixed',
         header: 'Vá ngày',
         width: 80,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => b.date_fixed || 0,
       },
@@ -182,6 +213,8 @@ export function CustomsHistoryPanel() {
         header: 'Bỏ qua (trùng)',
         width: 110,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => (b.existing_rows || 0) + (b.duplicate_rows || 0),
       },
@@ -189,6 +222,7 @@ export function CustomsHistoryPanel() {
         key: 'created_by_name',
         header: 'Người nạp',
         width: 150,
+        sortable: true,
         hideable: false,
         wrap: true,
         cell: (b) => b.created_by_name || '—',
@@ -197,6 +231,8 @@ export function CustomsHistoryPanel() {
         key: 'finished_at',
         header: 'Lúc',
         width: 140,
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (b) => formatDateTime(b.finished_at || b.created_at) || '—',
       },
@@ -233,6 +269,9 @@ export function CustomsHistoryPanel() {
         mobileCard={(b) => (
           <CustomsImportBatchCard batch={b} context="history" actions={renderActions(b)} />
         )}
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         pagination={{
           page,
           pageSize,
@@ -253,9 +292,12 @@ export function CustomsHistoryPanel() {
 function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClose: () => void }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(LOG_PAGE_SIZE)
+  const resetPage = useCallback(() => setPage(1), [])
+  const sort = useLocalServerSort(resetPage)
   const { data, isLoading, isError } = useCustomsBatchLogs(batch.id, {
     page,
     page_size: pageSize,
+    ...sort.params,
   })
 
   const columns = useMemo<DataTableColumn<CustomsBatchLog>[]>(
@@ -265,6 +307,7 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
         header: 'Dòng',
         width: 80,
         align: 'right',
+        sortable: true,
         hideable: false,
         cell: (x) => x.row_no || '—',
       },
@@ -272,10 +315,20 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
         key: 'level',
         header: 'Mức',
         width: 110,
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: renderLogLevelBadge,
       },
-      { key: 'message', header: 'Nội dung', width: 520, hideable: false, wrap: true, cell: (x) => x.message },
+      {
+        key: 'message',
+        header: 'Nội dung',
+        width: 520,
+        sortable: true,
+        hideable: false,
+        wrap: true,
+        cell: (x) => x.message,
+      },
     ],
     [],
   )
@@ -316,6 +369,9 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
                 isLoading={isLoading}
                 isError={isError}
                 emptyMessage="Không có ghi chú nào — mọi dòng đọc được bình thường."
+                sortBy={sort.sortBy}
+                sortDir={sort.sortDir}
+                onSortChange={sort.onSortChange}
                 mobileCard={(x) => (
                   <CustomsBatchLineCard
                     rowNo={x.row_no}

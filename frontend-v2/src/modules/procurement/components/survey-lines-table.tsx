@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Copy, FilePlus2, Pencil, Trash2 } from 'lucide-react'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
@@ -312,6 +313,10 @@ export function SurveyLinesTable({
           storageKey={STORAGE_KEY[table]}
           rowKey={(line, index) => line.id ?? `new-${index}`}
           renderCell={renderCell}
+          //  Cột Thành tiền là cột TÍNH khi dòng chưa lưu số — xếp theo đúng số đang hiện.
+          getSortValue={(key, line) =>
+            key === 'amount' ? rowAmount(line) : (line as Record<string, unknown>)[key] as SortValue
+          }
           defaultCompact
           title={`${lines.length} dòng`}
           actions={selectAllLabel}

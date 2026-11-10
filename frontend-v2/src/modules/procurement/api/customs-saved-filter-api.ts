@@ -35,7 +35,7 @@ export function fetchCustomsBatchRowSummary(batchId: number) {
 
 export function fetchCustomsBatchRows(
   batchId: number,
-  params: { page: number; page_size: number; row_status?: number },
+  params: { page: number; page_size: number; row_status?: number; sort_by?: string; sort_dir?: string },
 ) {
   return apiGet<CustomsBatchRowList>(`${BASE}/imports/${batchId}/rows`, { params })
 }

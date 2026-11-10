@@ -5,6 +5,7 @@ import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -23,6 +24,7 @@ import {
 } from '../hooks/use-purchase-request-support'
 import type { SurveyRequestLine } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
+import { SURVEY_PROGRESS_COLORS } from './survey-progress-state-badge'
 import { SurveyRequestLineCard } from './survey-request-line-card'
 
 /** Dòng trống khi bấm "Thêm dòng". */
@@ -51,6 +53,21 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
 
 
 const TABLE_STORAGE_KEY = 'survey-request-lines'
+
+/**
+ * Thứ tự DÒNG ĐỜI của chín nhãn tiến độ dòng (đầu -> cuối) để xếp cột Trạng thái
+ * (duoc-CR-744). Nhãn là chữ tiếng Việt suy ra ở backend (`STATES` trong
+ * `survey_request/line_state.py`), không có mã số; bảng màu `SURVEY_PROGRESS_COLORS`
+ * khai đúng chín nhãn theo thứ tự đó nên mượn luôn thứ tự khai, khỏi chép lại chín chuỗi.
+ */
+const SURVEY_LINE_STATE_ORDER = Object.keys(SURVEY_PROGRESS_COLORS)
+
+/** Hạng của một nhãn tiến độ; ô trống -> `null` (xuống cuối), nhãn lạ xếp sau cùng. */
+function getSurveyLineStateRank(state: string | undefined): number | null {
+  if (!state) return null
+  const rank = SURVEY_LINE_STATE_ORDER.indexOf(state)
+  return rank === -1 ? SURVEY_LINE_STATE_ORDER.length : rank
+}
 
 //  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
 function surveyRequestRowKey(line: SurveyRequestLine, index: number): string | number {
@@ -268,6 +285,42 @@ export function SurveyRequestLinesTable({
     lineSelection.clear()
   }
 
+  /** Tên NSTM của dòng — ô và cột xếp dùng chung một chuỗi tra. */
+  const assigneeLabel = (line: SurveyRequestLine) =>
+    line.assignee_name ||
+    purchasers.find((purchaser) => purchaser.code === line.assignee)?.name ||
+    line.assignee
+
+  /**
+   * Giá trị để XẾP từng cột khi bấm tiêu đề (duoc-CR-744) — đúng thứ ô đang hiện: cột NSTM
+   * xếp theo TÊN (không theo mã), cột Trạng thái theo dòng đời của nhãn tiến độ. "No." và
+   * "Thao tác" trả `undefined` nên tiêu đề của chúng không bấm được.
+   */
+  function getSortValue(key: string, line: SurveyRequestLine): SortValue {
+    switch (key) {
+      case 'item_group':
+        return line.item_group
+      case 'requirement_detail':
+        return line.requirement_detail
+      case 'received_date':
+        return line.received_date
+      case 'result_due_date':
+        return line.result_due_date
+      case 'request_qty':
+        return line.request_qty
+      case 'uom':
+        return line.uom
+      case 'proposed_price':
+        return line.proposed_price
+      case 'assignee':
+        return assigneeLabel(line)
+      case 'status':
+        return getSurveyLineStateRank(line.progress_state)
+      default:
+        return undefined
+    }
+  }
+
   function renderCell(key: string, line: SurveyRequestLine, index: number) {
     switch (key) {
       case 'no':
@@ -397,10 +450,7 @@ export function SurveyRequestLinesTable({
           />
         ) : (
           <span className="block break-words whitespace-normal leading-snug">
-            {line.assignee_name ||
-              purchasers.find((purchaser) => purchaser.code === line.assignee)?.name ||
-              line.assignee ||
-              '—'}
+            {assigneeLabel(line) || '—'}
           </span>
         )
 
@@ -520,6 +570,7 @@ export function SurveyRequestLinesTable({
         storageKey={TABLE_STORAGE_KEY}
         rowKey={surveyRequestRowKey}
         renderCell={renderCell}
+        getSortValue={getSortValue}
         title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
         emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
         selection={lineSelection.selection}

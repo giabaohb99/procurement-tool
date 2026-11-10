@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
@@ -6,6 +6,7 @@ import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
 
 import { useCustomsBatchRows, useCustomsBatchRowSummary } from '../../hooks/use-customs-saved-filters'
+import { useLocalServerSort } from '../../hooks/use-local-server-sort'
 import { CUSTOMS_ROW_STATUS, type CustomsBatchRow } from '../../types/customs-saved-filter'
 import { CustomsBatchLineCard } from './customs-batch-line-card'
 
@@ -57,20 +58,31 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const summary = useCustomsBatchRowSummary(batchId)
-  const rows = useCustomsBatchRows(batchId, { page, page_size: pageSize, row_status: status })
+  const resetPage = useCallback(() => setPage(1), [])
+  const sort = useLocalServerSort(resetPage)
+  const rows = useCustomsBatchRows(batchId, { page, page_size: pageSize, row_status: status, ...sort.params })
 
   const columns = useMemo<DataTableColumn<CustomsBatchRow>[]>(
     () => [
-      { key: 'row_no', header: 'Dòng', width: 80, align: 'right', hideable: false, cell: (x) => x.row_no || '—' },
+      {
+        key: 'row_no',
+        header: 'Dòng',
+        width: 80,
+        align: 'right',
+        sortable: true,
+        hideable: false,
+        cell: (x) => x.row_no || '—',
+      },
       {
         key: 'row_status',
         header: 'Kết cục',
         width: 130,
+        sortable: true,
         hideable: false,
         cell: renderRowStatusBadge,
       },
-      { key: 'product_name', header: 'Tên hàng', width: 320, wrap: true, cell: (x) => x.product_name || '—' },
-      { key: 'message', header: 'Ghi chú', width: 360, wrap: true, cell: (x) => x.message },
+      { key: 'product_name', header: 'Tên hàng', width: 320, wrap: true, sortable: true, cell: (x) => x.product_name || '—' },
+      { key: 'message', header: 'Ghi chú', width: 360, wrap: true, sortable: true, cell: (x) => x.message },
     ],
     [],
   )
@@ -135,6 +147,9 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
           isLoading={rows.isLoading}
           isError={rows.isError}
           emptyMessage={status ? 'Không có dòng nào mang kết cục này.' : 'Lô này chưa có nhật ký từng dòng.'}
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           mobileCard={(x) => (
             <CustomsBatchLineCard
               rowNo={x.row_no}

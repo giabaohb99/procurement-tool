@@ -172,13 +172,13 @@ describe('SurveyRequestProcessCard — sắp xếp bảng kết quả khảo sá
     await waitFor(() => expect(lastCall()).not.toHaveProperty('sort_by'))
   })
 
-  it('maps the NCC column to supplier_code and starts the survey date column at newest first', async () => {
+  it('maps the NCC column to supplier_name (the displayed text, not the code) and starts the survey date column at newest first', async () => {
     const user = userEvent.setup()
     renderCard()
     await screen.findByText('CÔNG TY A')
 
     await user.click(screen.getByText('NCC'))
-    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'supplier_code', sort_dir: 'asc' }))
+    await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'supplier_name', sort_dir: 'asc' }))
 
     await user.click(screen.getByText('Ngày KS'))
     await waitFor(() => expect(lastCall()).toMatchObject({ sort_by: 'result_date', sort_dir: 'desc' }))

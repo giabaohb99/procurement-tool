@@ -9,6 +9,7 @@ Danh mục phòng dựng bằng `make_crud_router` (khóa `meeting_room`): nó l
 mục thuần, không có chốt chặn nào ngoài "không xóa phòng đang có phiếu".
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
@@ -19,6 +20,7 @@ from app.core.crud import make_crud_router
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
+from app.modules.approval import task_service
 
 from . import approval_bridge, serializer, service
 from .constants import RB_APPROVED, RB_CANCELLED, RB_PENDING
@@ -26,6 +28,7 @@ from .model import MeetingRoom, RoomBooking
 from .schema import (LocalDateTime, MeetingRoomCreate, MeetingRoomResponse,
                      MeetingRoomUpdate, RoomBookingCreate, RoomBookingReschedule,
                      RoomBookingUpdate)
+from .sort_expressions import list_sort_allow
 
 ENTITY = "room_booking"
 
@@ -76,10 +79,24 @@ def list_bookings(
     search: str | None = None,
     from_time: LocalDateTime | None = Query(None, description="Lọc theo khoảng: họp TỪ lúc"),
     to_time: LocalDateTime | None = Query(None, description="Lọc theo khoảng: họp ĐẾN lúc"),
+    mine_first: bool = Query(
+        False, description="Đưa phiếu ĐANG chờ chính người gọi duyệt lên đầu (chỉ khi không chọn cột sắp xếp)"),
+    scope: str | None = Query(
+        None, description="`mine` = chỉ phiếu tôi là người đặt HOẶC tôi tạo hộ (ô Phạm vi: Phiếu của tôi)"),
     db: Session = Depends(get_db),
     user=Depends(require(ENTITY, "read")),
 ):
-    """Danh sách phiếu trong phạm vi người xem ("Phiếu của tôi" khi phạm vi = own).
+    """Danh sách phiếu trong phạm vi người xem; `scope=mine` thu về phiếu của chính người gọi.
+
+    "Phiếu của tôi" = tôi là NGƯỜI ĐẶT (`requester_employee_id`) HOẶC tôi là người TẠO hộ
+    (`created_by` — thư ký đặt hộ sếp), cùng nghĩa với phạm vi `own` ở `SCOPE_FIELDS`. Trước
+    duoc-CR-744 tham số này bị bỏ qua: chọn "Phiếu của tôi" vẫn ra mọi phiếu trong phạm vi xem.
+    Vẫn đi qua `apply_scope` nên không bao giờ rộng hơn quyền xem.
+
+    Sắp xếp: `sort_by`/`sort_dir` (Số phiếu, Trạng thái, Nội dung, Phòng, Ngày họp, Người đặt).
+    Không chọn cột thì mặc định cuộc họp mới nhất trước; thêm `mine_first=true` thì phiếu đang
+    chờ CHÍNH người gọi duyệt đứng trước hết. Có chọn cột thì `mine_first` bị bỏ qua để cột người
+    dùng bấm quyết định thứ tự trên cả tập, không chỉ trong từng trang.
 
     `from_time`/`to_time` lọc theo GIAO NHAU của khoảng, không phải theo cột
     `start_at` đơn lẻ — màn Lịch hỏi "hôm nay phòng nào bận", và một cuộc họp
@@ -88,13 +105,28 @@ def list_bookings(
     query = db.query(RoomBooking).filter(RoomBooking.is_deleted.is_(False))
     query = apply_filters(query, RoomBooking, request, service.FILTERABLE)
     query = service.apply_keyword_search(query, search)
+    if (scope or "").strip().lower() == "mine":
+        mine = [RoomBooking.created_by == user.id]
+        employee_id = getattr(user, "employee_id", 0) or 0
+        if employee_id:
+            mine.append(RoomBooking.requester_employee_id == employee_id)
+        query = query.filter(or_(*mine))
     if from_time:
         query = query.filter(RoomBooking.end_at >= from_time)
     if to_time:
         query = query.filter(RoomBooking.start_at <= to_time)
     query = apply_scope(query, RoomBooking, ENTITY, user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, RoomBooking, request,
-                                    default=RoomBooking.start_at.desc())
+    default_order = (RoomBooking.start_at.desc(), RoomBooking.id.desc())
+    sort_chosen = bool((request.query_params.get("sort_by") or "").strip())
+    if mine_first and not sort_chosen:
+        #  Việc ĐANG treo ở chính tôi (kể cả việc được ủy quyền) -> lên trước hết, làm ở SQL nên
+        #  đúng trên cả tập chứ không chỉ trong một trang như cách xếp lại ở trình duyệt.
+        mine_ids = {t["entity_id"] for t in
+                    task_service.my_tasks(db, getattr(user, "employee_id", 0) or 0, ENTITY)}
+        if mine_ids:
+            default_order = (case((RoomBooking.id.in_(mine_ids), 0), else_=1).asc(), *default_order)
+    query = apply_sort_from_request(query, RoomBooking, request, default=default_order,
+                                    allow=list_sort_allow())
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": _dump_many(db, items)})

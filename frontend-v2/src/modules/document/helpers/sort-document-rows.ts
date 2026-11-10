@@ -1,3 +1,4 @@
+import { sortRowsBy } from '@/shared/utils/compare-sort-values'
 import type { DocumentRecord } from '../types/document-record'
 
 /**
@@ -23,22 +24,27 @@ export const DOCUMENT_SORT_FIELD_LABELS: Record<DocumentSortField, string> = {
 
 export type SortDirection = 'asc' | 'desc'
 
-/** Hàm THUẦN — không sửa mảng đầu vào (`[...rows]` trước khi `sort`). */
+function documentSortValue(row: DocumentRecord, field: DocumentSortField): string {
+  switch (field) {
+    case DOCUMENT_SORT_FIELD.type:
+      return row.doc_type_name
+    case DOCUMENT_SORT_FIELD.createdAt:
+      return row.created_at
+    case DOCUMENT_SORT_FIELD.name:
+    default:
+      return row.title
+  }
+}
+
+/**
+ * Hàm THUẦN — không sửa mảng đầu vào. So bằng bộ so chung (`shared/utils/compare-sort-values.ts`): ô trống
+ * (vd văn bản chưa gán loại) xuống cuối ở cả hai chiều, không phân biệt hoa thường, hiểu số trong chữ.
+ * Bằng nhau thì giữ thứ tự gốc.
+ */
 export function sortDocumentRows(
   rows: readonly DocumentRecord[],
   field: DocumentSortField,
   dir: SortDirection,
 ): DocumentRecord[] {
-  const factor = dir === 'asc' ? 1 : -1
-  return [...rows].sort((a, b) => {
-    switch (field) {
-      case DOCUMENT_SORT_FIELD.type:
-        return factor * a.doc_type_name.localeCompare(b.doc_type_name, 'vi')
-      case DOCUMENT_SORT_FIELD.createdAt:
-        return factor * a.created_at.localeCompare(b.created_at)
-      case DOCUMENT_SORT_FIELD.name:
-      default:
-        return factor * a.title.localeCompare(b.title, 'vi')
-    }
-  })
+  return sortRowsBy(rows, (row) => documentSortValue(row, field), dir)
 }

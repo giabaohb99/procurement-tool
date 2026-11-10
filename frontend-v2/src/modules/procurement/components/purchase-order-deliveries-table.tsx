@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
@@ -21,6 +22,7 @@ import {
 } from '@/shared/ui/select'
 import { labelOf, PO_DELIVERY_STATUS } from '@/shared/constants/statuses'
 import { cn } from '@/shared/utils/cn'
+import { getStatusRank } from '@/shared/utils/status-rank'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { usePurchaseRequestWarehouses } from '../hooks/use-purchase-request-support'
@@ -288,6 +290,73 @@ export function PurchaseOrderDeliveriesTable({
     onDeliveryRemoved?.(index)
   }
 
+  /** Thành tiền nhận = SL nhận x đơn giá x (1 + VAT) của dòng hàng — ô và cột xếp dùng chung. */
+  const receivedAmount = (delivery: PurchaseOrderDelivery) =>
+    (delivery.received_qty || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100)
+
+  /**
+   * Giá trị để XẾP từng cột khi bấm tiêu đề (duoc-CR-744) — đúng thứ ô đang hiện. Ba cột
+   * dội lại từ dòng hàng (SL đặt, Đơn giá, VAT) đọc từ `item`; cột công nợ và các mốc trễ
+   * trả `null` ở đúng chỗ ô để trống (lần giao chưa lưu, chưa nhận hàng, chưa có ngày yêu
+   * cầu) để dòng đó xuống cuối. "Phiếu giao" và "Thao tác" trả `undefined` -> không bấm được.
+   */
+  function getSortValue(key: string, delivery: PurchaseOrderDelivery): SortValue {
+    switch (key) {
+      case 'delivery_no':
+        return delivery.delivery_no
+      case 'warehouse':
+        return delivery.warehouse_code
+      case 'carrier':
+        return delivery.carrier_name
+      case 'ship_qty':
+        return delivery.ship_qty
+      case 'ship_unit':
+        return delivery.ship_unit
+      //  SL đặt / Đơn giá / VAT dội từ DÒNG HÀNG nên mọi lần giao cùng một số: bật xếp thì bấm
+      //  tiêu đề không đổi gì, đúng kiểu "bấm không ăn" mà duoc-CR-744 đang dọn. Trả `undefined`.
+      case 'qty_order':
+      case 'price':
+      case 'vat':
+        return undefined
+      case 'received_qty':
+        return delivery.received_qty
+      case 'received_amount':
+        return receivedAmount(delivery)
+      case 'invoice_no':
+        return delivery.invoice_no
+      case 'invoice_date':
+        return delivery.invoice_date
+      case 'paid':
+        return delivery.id ? (delivery.paid ?? 0) : null
+      case 'remaining':
+        return delivery.id ? (delivery.remaining ?? 0) : null
+      case 'promised_date':
+        return delivery.promised_date
+      case 'received_date':
+        return delivery.received_date
+      case 'std_days':
+        return delivery.std_days
+      case 'regulated_date':
+        return delivery.regulated_date ?? null
+      case 'diff_promise':
+        return delivery.received_date ? (delivery.diff_promise ?? null) : null
+      case 'diff_regulated':
+        return delivery.received_date ? (delivery.diff_regulated ?? null) : null
+      case 'diff_required':
+        return item.required_date ? (delivery.diff_required ?? null) : null
+      case 'status':
+        return getStatusRank(PO_DELIVERY_STATUS, delivery.status)
+      case 'shipping_unit_price':
+        return delivery.shipping_unit_price
+      case 'shipping_amount':
+        return delivery.shipping_amount
+      case 'extra_request':
+        return delivery.extra_request
+      default:
+        return undefined
+    }
+  }
+
   function renderCell(key: string, delivery: PurchaseOrderDelivery, index: number) {
     switch (key) {
       case 'delivery_no':
@@ -399,10 +468,7 @@ export function PurchaseOrderDeliveriesTable({
       case 'received_amount':
         return (
           <span className="font-semibold tabular-nums">
-            {formatMoney(
-              (delivery.received_qty || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100),
-            )}{' '}
-            đ
+            {formatMoney(receivedAmount(delivery))} đ
           </span>
         )
 
@@ -635,6 +701,7 @@ export function PurchaseOrderDeliveriesTable({
       storageKey={TABLE_STORAGE_KEY}
       rowKey={(delivery, index) => delivery.id ?? `new-${index}`}
       renderCell={renderCell}
+      getSortValue={getSortValue}
       title={`Giao hàng nhiều lần (${deliveries.length} lần)`}
       emptyMessage="Chưa có lần giao nào."
       cellClassName={(key) => (key === 'files' ? 'whitespace-normal' : undefined)}

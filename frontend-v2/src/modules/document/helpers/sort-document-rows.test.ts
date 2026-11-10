@@ -47,6 +47,12 @@ describe('sortDocumentRows', () => {
     expect(sorted.map((r) => r.id)).toEqual([2, 3, 1])
   })
 
+  it('ô trống (văn bản chưa gán loại) xuống CUỐI ở cả hai chiều', () => {
+    const withBlank = [...rows, doc({ id: 4, title: 'Dê', doc_type_name: '' })]
+    expect(sortDocumentRows(withBlank, DOCUMENT_SORT_FIELD.type, 'asc').map((r) => r.id)).toEqual([2, 3, 1, 4])
+    expect(sortDocumentRows(withBlank, DOCUMENT_SORT_FIELD.type, 'desc').map((r) => r.id)).toEqual([1, 3, 2, 4])
+  })
+
   it('KHÔNG sửa mảng đầu vào (thuần, không side-effect)', () => {
     const input = [...rows]
     sortDocumentRows(input, DOCUMENT_SORT_FIELD.name, 'asc')

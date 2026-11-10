@@ -164,12 +164,14 @@ export function PaymentRequestListPage() {
         key: 'created_by_name',
         header: 'Người yêu cầu',
         width: 180,
+        sortable: true,
         cell: (r) => r.created_by_name || '—',
       },
       {
         key: 'supplier_name',
         header: 'Nhà cung cấp',
         width: 240,
+        sortable: true,
         cell: (r) => (
           <span className="truncate" title={r.supplier_name || r.supplier_code}>
             {r.supplier_name || r.supplier_code || '—'}
@@ -180,6 +182,7 @@ export function PaymentRequestListPage() {
         key: 'source_type',
         header: 'Loại nợ',
         width: 120,
+        sortable: true,
         cell: (r) => PAYMENT_SOURCE_LABELS[r.source_type] ?? r.source_type,
       },
       {
@@ -187,19 +190,29 @@ export function PaymentRequestListPage() {
         key: 'misa_code',
         header: 'Mã MISA',
         width: 150,
+        sortable: true,
         cell: (r) => r.misa_code || '—',
       },
-      { key: 'company', header: 'Công ty', width: 200, cell: (r) => companyName(r.company_id) },
+      {
+        key: 'company',
+        header: 'Công ty',
+        width: 200,
+        sortable: true,
+        cell: (r) => companyName(r.company_id),
+      },
       {
         key: 'payment_method',
         header: 'Hình thức TT',
         width: 140,
+        sortable: true,
         cell: (r) => PAYMENT_METHOD_LABELS[r.payment_method] ?? r.payment_method,
       },
       {
         key: 'total',
         header: 'Số tiền',
         width: 160,
+        sortable: true,
+        sortDescFirst: true,
         align: 'right',
         cell: (r) => <span className="font-semibold tabular-nums">{formatMoney(r.total)}</span>,
       },

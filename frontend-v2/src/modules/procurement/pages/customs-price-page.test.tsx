@@ -21,6 +21,15 @@ vi.mock('@/core/api', async (importOriginal) => {
     ...actual,
     apiGet: async (url: string, config?: { params?: Record<string, unknown> }) => {
       calls.push({ url, params: config?.params })
+      //  duoc-CR-744 — các mục có bảng phân trang phía server: chỉ cần trả bảng rỗng để thấy tiêu đề cột.
+      if (url.endsWith('/regulations/options')) return { total: 0, lists: [] }
+      if (url.endsWith('/regulations')) return { total: 0, items: [] }
+      if (url.endsWith('/pesticides/options')) {
+        return { total: 0, last_loaded_at: null, statuses: [], pest_groups: [], sectors: [], banned_rules: 0, banned_count: 0, manual_count: 0 }
+      }
+      if (url.endsWith('/pesticides')) return { total: 0, items: [] }
+      if (url.endsWith('/imports')) return { total: 0, items: [] }
+      if (/\/api\/customs-[a-z-]+$/.test(url)) return { total: 0, items: [] }
       if (url.endsWith('/coverage')) {
         return {
           total: coverageTotal,
@@ -327,5 +336,84 @@ describe('CustomsPricePage', () => {
     await waitFor(() =>
       expect(currentLocation()).toBe('/procurement/customs-prices/history?origin=CN'),
     )
+  })
+
+  //  duoc-CR-744 — bấm tiêu đề cột là gửi `sort_by`/`sort_dir` cho backend xếp trên CẢ tập, không chỉ trang
+  //  đang xem. Trước đây không cột nào bấm được (không khai `sortable`, bảng không có `onSortChange`).
+  describe('column sorting (duoc-CR-744)', () => {
+    const lastLinesCall = () => calls.filter((call) => call.url.endsWith('/lines')).at(-1)?.params ?? {}
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+
+    it('asks the server to sort the price column newest-first and keeps it on the URL', async () => {
+      build('/procurement/customs-prices')
+      await userEvent.click(await screen.findByText('Đơn giá khai báo(USD)', { selector: 'thead span' }))
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'price_usd', sort_dir: 'desc' }))
+      expect(currentLocation()).toContain('sort_by=price_usd')
+      expect(currentLocation()).toContain('sort_dir=desc')
+    })
+
+    it('cycles desc → asc → off and removes both sort params from the request and the URL', async () => {
+      build('/procurement/customs-prices')
+      await userEvent.click(await screen.findByText('Tên hàng', { selector: 'thead span' }))
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'product_name', sort_dir: 'asc' }))
+      await userEvent.click(header('Tên hàng'))
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'product_name', sort_dir: 'desc' }))
+      await userEvent.click(header('Tên hàng'))
+      await waitFor(() => expect(lastLinesCall().sort_by).toBeUndefined())
+      expect(lastLinesCall().sort_dir).toBeUndefined()
+      expect(currentLocation()).not.toContain('sort_')
+    })
+
+    it('reads the order from the URL so a shared link shows the same order, and sorts a shown-as-label column', async () => {
+      build('/procurement/customs-prices?sort_by=reg_date&sort_dir=asc&origin=CN')
+      await screen.findByText('Phương tiện vận chuyển', { selector: 'thead span' })
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'reg_date', sort_dir: 'asc', origin: 'CN' }))
+      await userEvent.click(header('Phương tiện vận chuyển'))
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'transport_mode', sort_dir: 'asc' }))
+    })
+
+    it('goes back to page 1 when the order changes', async () => {
+      build('/procurement/customs-prices')
+      await userEvent.click(await screen.findByText('Lượng', { selector: 'thead span' }))
+      await waitFor(() => expect(lastLinesCall()).toMatchObject({ sort_by: 'quantity', page: 1 }))
+    })
+
+    it('sorts the chemical table (Tra cứu hóa chất) on the server', async () => {
+      build('/procurement/customs-prices/legal')
+      await userEvent.click(await screen.findByText('Mã số CAS', { selector: 'thead span' }))
+      await waitFor(() => {
+        const call = calls.filter((c) => c.url.endsWith('/regulations')).at(-1)
+        expect(call?.params).toMatchObject({ sort_by: 'cas_no', sort_dir: 'asc' })
+      })
+    })
+
+    it('sorts the pesticide table with its own URL params so the line table order is untouched', async () => {
+      build('/procurement/customs-prices/pesticides?sort_by=price_usd&sort_dir=desc')
+      await userEvent.click(await screen.findByText('Tên thuốc', { selector: 'thead span' }))
+      await waitFor(() => {
+        const call = calls.filter((c) => c.url.endsWith('/pesticides')).at(-1)
+        expect(call?.params).toMatchObject({ sort_by: 'trade_name', sort_dir: 'asc' })
+      })
+      expect(currentLocation()).toContain('psort_by=trade_name')
+      expect(currentLocation()).toContain('sort_by=price_usd')
+    })
+
+    it('sorts the import history table on the server', async () => {
+      build('/procurement/customs-prices/history')
+      await userEvent.click(await screen.findByText('Khoảng ngày', { selector: 'thead span' }))
+      await waitFor(() => {
+        const call = calls.filter((c) => c.url.endsWith('/imports')).at(-1)
+        expect(call?.params).toMatchObject({ sort_by: 'range', sort_dir: 'desc' })
+      })
+    })
+
+    it('sorts the config catalogs on the server (physical columns of each catalog)', async () => {
+      build('/procurement/customs-prices/config')
+      await userEvent.click(await screen.findByText('Từ khóa', { selector: 'thead span' }))
+      await waitFor(() => {
+        const call = calls.filter((c) => c.url.endsWith('/customs-kind-keywords')).at(-1)
+        expect(call?.params).toMatchObject({ sort_by: 'keyword', sort_dir: 'asc' })
+      })
+    })
   })
 })

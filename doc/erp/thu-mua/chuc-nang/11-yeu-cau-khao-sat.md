@@ -747,8 +747,16 @@ Thay cho ô "chưa trả kết quả" cũ: chọn trường **Ngày trả kết 
 không có `supplier.read` thì cụm NCC không xuất hiện trong danh sách trường, đúng như cột bị ẩn.
 Lọc theo **Tiến độ dòng** được dịch sang SQL bám đúng thứ tự ưu tiên ở trên — mỗi nhãn là
 "khớp mốc của mình VÀ không khớp mốc nào xa hơn", nên chín nhãn chia trọn số dòng, không trùng không
-sót. Sắp xếp tại server theo cột thật; ba cột tính ở trên **không sort được** vì giá trị không nằm
-trong DB (sort trên trang đang xem thì làm ở trình duyệt).
+sót. **Mọi cột trừ STT đều sắp xếp được tại server** (duoc-CR-744), nên thứ tự đúng qua mọi trang
+và file Xuất Excel ra cùng thứ tự: cột thật xếp thẳng theo cột DB (`_sort_map()`); cột tính, cụm
+phương án chốt và Công ty xếp bằng biểu thức SQL ở `survey_progress/sort_expressions.py`:
+- **Trễ** / **Số ngày xử lý** tính lại bằng phép trừ ngày, ô trống (đúng hạn, chưa đủ mốc) dồn về một
+  phía; bấm lần đầu là xếp giảm (trễ nhiều nhất lên đầu).
+- **Tiến độ dòng** xếp theo **dòng đời** (Chưa tiếp nhận › … › Hoàn thành), không theo chữ cái.
+- Cụm **phương án chốt** (NCC, tên SP, đơn giá…) xếp theo phương án ĐÃ CHỐT; dòng chưa chốt dồn về
+  một phía. **Số PA** đếm mọi phương án của dòng.
+- **Công ty** xếp theo tên chứ không theo `company_id`.
+- Không có `supplier.read` thì yêu cầu xếp theo cột NCC bị bỏ qua: thứ tự theo tên NCC đủ để mò ra NCC.
 
 **Xuất Excel**: `GET /api/survey-progress/export/xlsx`, gate ở hành động **`export`** trên
 `survey_request`, xuất đúng bộ lọc + đúng cột đang hiện, trần 5.000 dòng, tên file

@@ -21,6 +21,7 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { cn } from '@/shared/utils/cn'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
@@ -54,7 +55,7 @@ const FILTER_CONFIG = {
   //  (phase 07) và ô lọc thư mục (phase 06, duoc-CR-476). Thiếu tên nào ở đây
   //  là bấm "Áp dụng" ở bộ lọc nâng cao xong mất luôn ô đó (riêng `tab` thì
   //  màn hình nhảy về tab kia).
-  preserveParams: ['q', 'type', 'status', 'tab', 'folder_id', 'folder_sub'],
+  preserveParams: ['q', 'type', 'status', 'tab', 'folder_id', 'folder_sub', 'sort_by', 'sort_dir'],
 }
 
 export function OutgoingDocumentsTab() {
@@ -97,6 +98,9 @@ function OutgoingDocumentsContent() {
   const folderId = Number(folderIdParam)
   const [folderSubParam, setFolderSubParam] = useUrlParamState('folder_sub', 'true')
   const clearUrlParams = useClearUrlParams()
+  //  Sắp xếp tại SERVER theo `sort_by`/`sort_dir` (duoc-CR-744) — xếp trên cả tập, khóa cột khớp
+  //  `document/sort_expressions.py`. Tìm TOÀN VĂN thì thứ tự là độ khớp nên không cho bấm tiêu đề cột.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
   const includeSubfolders = folderSubParam !== 'false'
   //  Bung MỘT dòng tại một thời điểm: các bản riêng phải hỏi máy chủ, mà hook
   //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
@@ -138,6 +142,8 @@ function OutgoingDocumentsContent() {
     status,
     folderId,
     includeSubfolders,
+    sortBy,
+    sortDir,
   ])
 
   //  Điều kiện lọc gom một chỗ (KHÔNG kèm `q`): bảng thường lẫn tìm toàn văn
@@ -158,7 +164,13 @@ function OutgoingDocumentsContent() {
     folder_id: folderId === FOLDER_FILTER_ALL ? undefined : folderId,
     include_subfolders: folderId === FOLDER_FILTER_ALL ? undefined : includeSubfolders,
   }
-  const filterParams = { ...baseFilterParams, q: debouncedValue.trim() || undefined }
+  //  Cột xếp gắn vào phần LỌC (không vào phần phân trang) để tệp Export ra cùng thứ tự với bảng đang xem.
+  const filterParams = {
+    ...baseFilterParams,
+    q: debouncedValue.trim() || undefined,
+    sort_by: !isFullText && sortBy ? sortBy : undefined,
+    sort_dir: !isFullText && sortBy ? sortDir : undefined,
+  }
 
   //  Gọi CẢ HAI hook mọi lượt render (luật hook cố định) — `enabled` quyết
   //  định hook nào THẬT SỰ bắn request: câu tìm ngắn/rỗng → `useDocuments`,
@@ -366,6 +378,10 @@ function OutgoingDocumentsContent() {
         rows={rows}
         getRowId={(row: DocumentRecord) => row.id}
         storageKey="document.records"
+        //  Tìm toàn văn xếp theo độ khớp: bỏ `onSortChange` thì tiêu đề cột không còn bấm được (không mũi tên giả).
+        sortBy={!isFullText && sortBy ? sortBy : undefined}
+        sortDir={sortDir}
+        onSortChange={isFullText ? undefined : handleSortChange}
         fillHeight
         //  ⚠️ `max-md:gap-2` — khe 12px của `DataTable` là cỡ cho hàng có
         //  CHỮ; hàng này ở khổ hẹp là ô tìm cộng ba nút biểu tượng, mà cụm nút

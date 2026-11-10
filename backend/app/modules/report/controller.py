@@ -229,13 +229,16 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(_requ
 
 
 def _pr_lines_filters(request: Request) -> dict:
-    """Bộ lọc chung của bảng `/pr-lines` và file xuất `/pr-lines/export` (bao-CR-691: `line_status` nhận NHIỀU
-    giá trị — `line_status=a,b` hoặc lặp tham số; một giá trị vẫn như cũ)."""
+    """Bộ lọc + thứ tự chung của bảng `/pr-lines` và file xuất `/pr-lines/export` (bao-CR-691: `line_status` nhận
+    NHIỀU giá trị — `line_status=a,b` hoặc lặp tham số; một giá trị vẫn như cũ)."""
     qp = request.query_params
     return {
         "year": qp.get("year") or str(datetime.now().year), "company_id": qp.get("company_id"),
         "status": qp.get("status") or None, "line_status": read_multi_param(request, "line_status") or None,
         "assignee": qp.get("assignee") or None, "search": (qp.get("search") or "").strip()[:100] or None,
+        #  duoc-CR-744: thứ tự do người dùng bấm tiêu đề cột; bảng và file xuất cùng nhận để ra cùng thứ tự.
+        "sort_by": (qp.get("sort_by") or "").strip()[:50] or None,
+        "sort_dir": "desc" if (qp.get("sort_dir") or "").strip().lower() == "desc" else "asc",
     }
 
 

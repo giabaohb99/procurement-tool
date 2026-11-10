@@ -128,6 +128,8 @@ const FILTER_CONFIG = {
     'date_to',
     'amount_from',
     'amount_to',
+    'sort_by',
+    'sort_dir',
   ],
 }
 
@@ -172,6 +174,10 @@ function PayableListContent() {
   //  ép sang số thì 0 và "bỏ trống" lẫn vào nhau.
   const [amountFrom, setAmountFrom] = useUrlParamState('amount_from', '')
   const [amountTo, setAmountTo] = useUrlParamState('amount_to', '')
+  //  Sắp xếp tại SERVER theo `sort_by`/`sort_dir` (duoc-CR-744): mọi cột dữ liệu xếp được
+  //  trên CẢ TẬP — biểu thức nằm ở `payable/sort_expressions.py`. Nút Xuất Excel gửi cùng
+  //  cặp này nên file ra đúng thứ tự bảng đang xem.
+  const [sortBy, sortDir, setSort] = useUrlRangeParam('sort_by', 'sort_dir')
   const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
@@ -214,6 +220,8 @@ function PayableListContent() {
     dateTo,
     amountFrom,
     amountTo,
+    sortBy,
+    sortDir,
   ]
 
   const [page, setPage] = usePageResetOnFilterChange(filterSignature)
@@ -249,8 +257,30 @@ function PayableListContent() {
     if (dateTo) filterParams[field.to] = dateTo
   }
 
-  const { data, isLoading, isError } = usePayables({ page, page_size: pageSize, ...filterParams })
+  //  Sắp xếp CHỈ đi theo danh sách + file xuất; bốn ô tổng không phụ thuộc thứ tự nên không
+  //  được đổi khóa truy vấn (refetch thừa) mỗi lần bấm tiêu đề.
+  const sortParams: ListParams = sortBy
+    ? { sort_by: sortBy, sort_dir: sortDir === 'desc' ? 'desc' : 'asc' }
+    : {}
+
+  const { data, isLoading, isError } = usePayables({
+    page,
+    page_size: pageSize,
+    ...filterParams,
+    ...sortParams,
+  })
   const { data: summary, isLoading: isSummaryLoading } = usePayableSummary(filterParams)
+
+  /**
+   * Nhịp thứ ba của tiêu đề cột (tăng → giảm → THÔI SẮP XẾP) trả khóa cột RỖNG: xóa luôn
+   * chiều sắp xếp, kẻo đường dẫn còn dính `?sort_dir=asc`.
+   */
+  const handleSortChange = useCallback(
+    (nextSortBy: string, nextSortDir: 'asc' | 'desc') => {
+      setSort(nextSortBy, nextSortBy ? nextSortDir : '')
+    },
+    [setSort],
+  )
 
   // useCallback để đưa được vào deps của `columns` mà không phá memo.
   const companyName = useCallback(
@@ -311,6 +341,7 @@ function PayableListContent() {
     const base: DataTableColumn<Payable>[] = [
       {
         key: 'supplier_name',
+        sortable: true,
         header: 'Nhà cung cấp',
         width: 240,
         hideable: false,
@@ -325,6 +356,7 @@ function PayableListContent() {
       },
       {
         key: 'supplier_code',
+        sortable: true,
         header: 'Mã NCC',
         width: 130,
         wrap: true,
@@ -332,20 +364,23 @@ function PayableListContent() {
       },
       {
         key: 'source_type',
+        sortable: true,
         header: 'Loại nợ',
         width: 120,
         cell: (p) => PAYABLE_SOURCE_LABELS[p.source_type] ?? p.source_type,
       },
       {
         key: 'company',
+        sortable: true,
         header: 'Công ty',
         width: 200,
         wrap: true,
         cell: (p) => companyName(p.company_id),
       },
-      { key: 'po_code', header: 'Mã ĐMH', width: 150, wrap: true, cell: (p) => p.po_code || '—' },
+      { key: 'po_code', sortable: true, header: 'Mã ĐMH', width: 150, wrap: true, cell: (p) => p.po_code || '—' },
       {
         key: 'invoice_no',
+        sortable: true,
         header: 'Số hóa đơn',
         width: 150,
         wrap: true,
@@ -356,6 +391,8 @@ function PayableListContent() {
       },
       {
         key: 'invoice_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày hóa đơn',
         width: 130,
         // bao-CR-306: giá trị dò từ phía ĐMH lúc đọc (đợt giao -> dòng -> incur_date),
@@ -364,6 +401,8 @@ function PayableListContent() {
       },
       {
         key: 'incur_date',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày phát sinh',
         width: 130,
         // v1 hiện `created_at` ở cột này. Dùng `incur_date` mới đúng nghĩa: đó là
@@ -374,20 +413,26 @@ function PayableListContent() {
       },
       {
         key: 'created_at',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Ngày ghi sổ',
         width: 160,
         defaultHidden: true,
         cell: (p) => formatDateTime(p.created_at) || '—',
       },
-      { key: 'due_date', header: 'Hạn trả', width: 120, cell: (p) => formatDate(p.due_date) || '—' },
+      { key: 'due_date', sortable: true, header: 'Hạn trả', width: 120, cell: (p) => formatDate(p.due_date) || '—' },
       {
         key: 'aging',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Tuổi nợ',
         width: 140,
         cell: (p) => <PayableAgingBadge aging={p.aging} />,
       },
       {
         key: 'amount',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Tiền trước VAT',
         width: 150,
         align: 'right',
@@ -396,6 +441,8 @@ function PayableListContent() {
       },
       {
         key: 'vat',
+        sortable: true,
+        sortDescFirst: true,
         header: 'VAT',
         width: 130,
         align: 'right',
@@ -404,6 +451,8 @@ function PayableListContent() {
       },
       {
         key: 'total',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Tổng nợ',
         width: 150,
         align: 'right',
@@ -411,6 +460,8 @@ function PayableListContent() {
       },
       {
         key: 'paid_amount',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Đã trả',
         width: 150,
         align: 'right',
@@ -418,6 +469,8 @@ function PayableListContent() {
       },
       {
         key: 'remaining',
+        sortable: true,
+        sortDescFirst: true,
         header: 'Còn lại',
         width: 150,
         align: 'right',
@@ -427,6 +480,7 @@ function PayableListContent() {
       },
       {
         key: 'status',
+        sortable: true,
         header: 'Trạng thái',
         width: 170,
         cell: (p) => <PayableStatusBadge status={p.status} />,
@@ -548,6 +602,7 @@ function PayableListContent() {
     const ids = selectedRows.map((r) => r.id).join(',')
     await downloadFile('/api/payables/export/xlsx', 'cong-no-phai-tra.xlsx', {
       ...filterParams,
+      ...sortParams,
       ...(ids ? { ids } : {}),
       ...(cols ? { cols } : {}),
     })
@@ -896,6 +951,9 @@ function PayableListContent() {
           columns={columns}
           rows={data?.items}
           getRowId={(p) => p.id}
+          sortBy={sortBy || undefined}
+          sortDir={sortDir === 'desc' ? 'desc' : 'asc'}
+          onSortChange={handleSortChange}
           onRowClick={
             canOpenOrder
               ? (p) => {

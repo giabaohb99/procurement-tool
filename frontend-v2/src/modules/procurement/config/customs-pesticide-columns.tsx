@@ -20,6 +20,7 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
     header: 'Tên thuốc',
     width: 200,
     defaultPinned: true,
+    sortable: true,
     cell: (row) => (
       <span className="font-medium">
         {row.trade_name}
@@ -32,7 +33,7 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
       </span>
     ),
   },
-  { key: 'active_ingredient', header: 'Hoạt chất', width: 260, cell: (row) => row.active_ingredient },
+  { key: 'active_ingredient', header: 'Hoạt chất', width: 260, sortable: true, cell: (row) => row.active_ingredient },
   //  Đối chiếu với danh sách cấm TT 75/2025 ở mục "Pháp lý" — khớp theo tên, thường trống vì
   //  nguồn đã bỏ thuốc cấm. Có chữ ở cột này là danh mục vừa lọt một thuốc cần xem lại.
   {
@@ -40,6 +41,7 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
     header: 'Hoạt chất cấm',
     width: 180,
     wrap: true,
+    sortable: true,
     cell: (row) =>
       row.banned.length > 0 ? (
         <span className="flex flex-wrap gap-1">
@@ -51,20 +53,23 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
         </span>
       ) : null,
   },
-  { key: 'concentration', header: 'Hàm lượng', width: 120, cell: (row) => row.concentration },
-  { key: 'pest_group', header: 'Phân nhóm', width: 170, cell: (row) => row.pest_group },
-  { key: 'registrant', header: 'Công ty đăng ký', width: 240, cell: (row) => row.registrant },
-  { key: 'registration_no', header: 'Số đăng ký', width: 160, cell: (row) => row.registration_no },
+  { key: 'concentration', header: 'Hàm lượng', sortable: true, width: 120, cell: (row) => row.concentration },
+  { key: 'pest_group', header: 'Phân nhóm', sortable: true, width: 170, cell: (row) => row.pest_group },
+  { key: 'registrant', header: 'Công ty đăng ký', sortable: true, width: 240, cell: (row) => row.registrant },
+  { key: 'registration_no', header: 'Số đăng ký', sortable: true, width: 160, cell: (row) => row.registration_no },
   {
     key: 'expires_on',
     header: 'Hết hạn đăng ký',
     width: 140,
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{formatDate(row.expires_on)}</span>,
   },
   {
     key: 'status',
     header: 'Tình trạng',
     width: 140,
+    sortable: true,
     cell: (row) => <CustomsPesticideStatusBadge status={row.status} label={row.status_label} />,
   },
   {
@@ -72,7 +77,9 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
     header: 'Phạm vi sử dụng',
     width: 140,
     align: 'right',
+    sortable: true,
+    sortDescFirst: true,
     cell: (row) => <span className="tabular-nums">{row.use_count || ''}</span>,
   },
-  { key: 'sector', header: 'Lĩnh vực', width: 240, defaultHidden: true, cell: (row) => row.sector },
+  { key: 'sector', header: 'Lĩnh vực', width: 240, defaultHidden: true, sortable: true, cell: (row) => row.sector },
 ]

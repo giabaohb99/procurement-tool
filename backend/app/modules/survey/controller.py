@@ -22,6 +22,7 @@ from . import service
 from .model import Survey, SurveyProductLine
 from .report_grouped_fetch import grouped_report_rows_in_range
 from .report_summary_service import build_spec as build_report_spec
+from .sort_expressions import list_sort_allow
 from .schema import LineApproveCombined, RejectIn, SurveyCreate, SurveyUpdate
 
 
@@ -152,7 +153,8 @@ def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session =
     if search:
         q = q.filter(search_condition(search))
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
-    q = apply_sort_from_request(q, Survey, request)
+    #  duoc-CR-744: Trạng thái / Loại xếp theo dòng đời / nhãn, không theo chữ cái của mã.
+    q = apply_sort_from_request(q, Survey, request, allow=list_sort_allow())
     total, items = service.list_surveys(db, q, pg)
     return success({"total": total, "items": [_survey_dict(x) for x in items]})
 

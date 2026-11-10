@@ -22,6 +22,7 @@ import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatUnitPrice } from '@/shared/utils/format-money'
 
+import { useClientTableSort } from '../../hooks/use-client-table-sort'
 import { useCustomsCompare } from '../../hooks/use-customs'
 import type { CustomsFilters, CustomsPeriod } from '../../types/customs'
 import {
@@ -46,6 +47,13 @@ interface CustomsCompareTabProps {
   filters: CustomsFilters
 }
 
+/** Giá trị ô đang hiển thị của bảng so sánh: cột `term-N` là giá của mặt hàng thứ N trong kỳ. */
+function compareSortValue(columnKey: string, row: CompareRow) {
+  if (columnKey === 'label') return row.period
+  const match = /^term-(\d+)$/.exec(columnKey)
+  return match ? (row.values[Number(match[1])] ?? null) : null
+}
+
 export function CustomsCompareTab({ filters }: CustomsCompareTabProps) {
   const [terms, setTerms] = useState<string[]>(() =>
     filters.q.trim() ? [filters.q.trim(), ''] : ['', ''],
@@ -68,16 +76,21 @@ export function CustomsCompareTab({ filters }: CustomsCompareTabProps) {
 
   const rows = useMemo(() => (data ? mergeCompareSeries(data) : []), [data])
   const unit = formatCustomsUnit(data?.unit)
+  //  duoc-CR-744 — bảng kỳ đã tải đủ: xếp ngay trên trình duyệt. Kỳ theo `period` (đúng thứ tự thời gian),
+  //  cột mỗi mặt hàng theo giá đang hiện — kỳ không có giá hiện "—" nên xuống cuối ở cả hai chiều.
+  const sorted = useClientTableSort(rows, compareSortValue)
 
   const columns = useMemo<DataTableColumn<CompareRow>[]>(() => {
     if (!data) return []
     return [
-      { key: 'label', header: 'Kỳ', width: 110, hideable: false, cell: (r) => r.label },
+      { key: 'label', header: 'Kỳ', width: 110, sortable: true, hideable: false, cell: (r) => r.label },
       ...data.terms.map<DataTableColumn<CompareRow>>((term, index) => ({
         key: `term-${index}`,
         header: `${term.term} (USD/${unit})`,
         width: 180,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) =>
           r.values[index] === null ? (
@@ -196,7 +209,10 @@ export function CustomsCompareTab({ filters }: CustomsCompareTabProps) {
           <Card className="gap-2 p-4">
             <DataTable
               columns={columns}
-              rows={rows}
+              rows={sorted.rows}
+              sortBy={sorted.sortBy}
+              sortDir={sorted.sortDir}
+              onSortChange={sorted.onSortChange}
               getRowId={(r) => r.period}
               emptyMessage="Không có kỳ nào để so sánh."
               mobileCard={(r) => (

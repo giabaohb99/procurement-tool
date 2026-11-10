@@ -149,7 +149,8 @@ def test_sap_xep_cot_lan_so_voi_chu_khong_no(db):
     assert [r["price_by_volume"] for r in got] == [900.0, 12000.5, None, None]
 
     got_desc = service.sort_report_rows(rows, "price_by_volume", "desc")
-    assert [r["price_by_volume"] for r in got_desc] == [None, None, 12000.5, 900.0]
+    #  duoc-CR-744: ô trống xuống cuối cả hai chiều.
+    assert [r["price_by_volume"] for r in got_desc] == [12000.5, 900.0, None, None]
 
 
 def test_sap_xep_cot_chu_khong_phan_biet_hoa_thuong(db):

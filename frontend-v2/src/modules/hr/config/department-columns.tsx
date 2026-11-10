@@ -20,6 +20,7 @@ export const DEPARTMENT_COLUMNS: DataTableColumn<Department>[] = [
     key: 'issue_code',
     header: 'Mã số hiệu',
     width: 140,
+    sortable: true,
     cell: (d) => d.issue_code || '—',
   },
   {
@@ -34,18 +35,21 @@ export const DEPARTMENT_COLUMNS: DataTableColumn<Department>[] = [
     key: 'kind',
     header: 'Loại đơn vị',
     width: 230,
+    sortable: true,
     cell: (d) => DEPARTMENT_KIND_LABELS[d.kind],
   },
   {
     key: 'manager_name',
     header: 'Trưởng bộ phận',
     width: 260,
+    sortable: true,
     cell: (d) => d.manager_name || '—',
   },
   {
     key: 'is_active',
     header: 'Trạng thái',
     width: 140,
+    sortable: true,
     cell: (d) => (
       <Badge variant={d.is_active ? 'default' : 'secondary'}>
         {d.is_active ? 'Hoạt động' : 'Đã ẩn'}

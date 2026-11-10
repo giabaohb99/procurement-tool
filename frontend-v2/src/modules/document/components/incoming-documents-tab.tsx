@@ -11,6 +11,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
+import { sortRowsByCell } from '@/shared/utils/sort-rows-by-cell'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { cn } from '@/shared/utils/cn'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
@@ -34,6 +36,7 @@ import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
 import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 import type { DocumentRecord } from '../types/document-record'
 import { usePrefetchDocument } from '../hooks/use-prefetch-document'
+import { buildIncomingSortGetters } from '../utils/incoming-document-sort'
 
 const ALL = 'all'
 
@@ -45,7 +48,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: DOCUMENT_APPLIED_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['review', 'tab'],
+  preserveParams: ['review', 'tab', 'sort_by', 'sort_dir'],
 }
 
 export function IncomingDocumentsTab() {
@@ -81,6 +84,8 @@ function IncomingDocumentsContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [review, setReview] = useUrlParamState('review', ALL)
   const clearUrlParams = useClearUrlParams()
+  //  Danh sách tải TRỌN một lần nên xếp tại chỗ trên cả tập, theo đúng giá trị ô đang hiện (duoc-CR-744).
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const rows = useMemo(() => {
     const needle = debouncedValue.trim().toLowerCase()
@@ -92,8 +97,13 @@ function IncomingDocumentsContent() {
       return [row.title, row.display_code, row.doc_type_name, row.legacy_code, row.keywords]
         .some((field) => (field ?? '').toLowerCase().includes(needle))
     })
-    return applyClientFilter(found, appliedState)
-  }, [data?.items, debouncedValue, review, appliedState])
+    return sortRowsByCell(
+      applyClientFilter(found, appliedState),
+      sortBy,
+      sortDir,
+      buildIncomingSortGetters(),
+    )
+  }, [data?.items, debouncedValue, review, appliedState, sortBy, sortDir])
 
   const columns = useMemo<DataTableColumn<DocumentRecord>[]>(
     () => [
@@ -101,6 +111,7 @@ function IncomingDocumentsContent() {
         key: 'display_code',
         header: 'Số hiệu',
         width: 180,
+        sortable: true,
         hideable: false,
         cell: (row) => <span className="font-mono text-navy">{row.display_code || '—'}</span>,
       },
@@ -108,6 +119,7 @@ function IncomingDocumentsContent() {
         key: 'title',
         header: 'Trích yếu',
         width: 380,
+        sortable: true,
         cell: (row) => (
           <div>
             <div className="font-medium">{row.title}</div>
@@ -115,11 +127,14 @@ function IncomingDocumentsContent() {
           </div>
         ),
       },
-      { key: 'doc_type_name', header: 'Loại', width: 160, cell: (row) => row.doc_type_name },
+      { key: 'doc_type_name', header: 'Loại', width: 160, sortable: true, cell: (row) => row.doc_type_name },
       {
         key: 'status_label',
+        //  Xếp theo HẠNG vòng đời của nhãn đang hiện, không theo chữ cái — khóa gửi lên là `status`.
+        sortKey: 'status',
         header: 'Trạng thái',
         width: 140,
+        sortable: true,
         //  Nhãn TÍNH RA lúc hiển thị (hết hạn theo ngày) như bảng Văn bản, chứ
         //  không phải trạng thái thô — hai bảng nói khác nhau về cùng một văn
         //  bản là chuyện không giải thích được với người dùng.
@@ -132,6 +147,8 @@ function IncomingDocumentsContent() {
         key: 'effective_date',
         header: 'Hiệu lực từ',
         width: 140,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => (row.effective_date ? formatDate(row.effective_date) : '—'),
       },
       {
@@ -139,6 +156,7 @@ function IncomingDocumentsContent() {
         header: 'Pháp nhân ban hành',
         width: 220,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.company_name,
       },
       {
@@ -146,6 +164,7 @@ function IncomingDocumentsContent() {
         header: 'Phòng chủ trì',
         width: 170,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.department_name,
       },
       {
@@ -153,6 +172,8 @@ function IncomingDocumentsContent() {
         header: 'Mức mật',
         width: 120,
         defaultHidden: true,
+        sortable: true,
+        sortDescFirst: true,
         cell: (row) => (
           <Badge variant="outline" className="font-normal">
             {secrecyLabel(SECURITY_LEVEL_KIND_CONFIDENTIAL, row.secrecy_level)}
@@ -164,6 +185,7 @@ function IncomingDocumentsContent() {
         header: 'Người chịu trách nhiệm',
         width: 180,
         defaultHidden: true,
+        sortable: true,
         cell: (row) => row.owner_name,
       },
     ],
@@ -197,6 +219,9 @@ function IncomingDocumentsContent() {
         rows={rows}
         getRowId={(row) => row.id}
         storageKey="document.applies-to-me"
+        sortBy={sortBy || undefined}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         fillHeight
         //  ⚠️ `max-md:gap-2` — khe 12px của `DataTable` là cỡ cho hàng có
         //  CHỮ; hàng này ở khổ hẹp là ô tìm cộng ba nút biểu tượng, mà cụm nút

@@ -11,6 +11,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatPercent, formatQuantity } from '@/shared/utils/format-money'
 
 import { useCustomsImporters } from '../../hooks/use-customs'
+import { useClientTableSort } from '../../hooks/use-client-table-sort'
 import type { CustomsFilters, CustomsImporterRow } from '../../types/customs'
 import { buildCustomsParams, formatCustomsUnit, formatUsd } from '../../utils/customs'
 import { CustomsUnitChips } from './customs-controls'
@@ -19,6 +20,32 @@ import { CustomsImporterCard } from './customs-importer-card'
 interface CustomsImportersTabProps {
   filters: CustomsFilters
   onPickImporter: (id: number, name: string) => void
+}
+
+type ImporterRow = CustomsImporterRow & { rank: number }
+
+/** Giá trị ô đang hiển thị — cột tên trống hiện "—" nên tính là ô trống; thị phần / giá BQ rỗng cũng vậy. */
+function importerSortValue(columnKey: string, row: ImporterRow) {
+  switch (columnKey) {
+    case 'rank':
+      return row.rank
+    case 'name':
+      return row.name
+    case 'tax_code':
+      return row.tax_code
+    case 'count':
+      return row.count
+    case 'qty':
+      return row.qty
+    case 'share':
+      return row.share
+    case 'wavg':
+      return row.wavg
+    case 'last_date':
+      return row.last_date
+    default:
+      return null
+  }
 }
 
 export function CustomsImportersTab({ filters, onPickImporter }: CustomsImportersTabProps) {
@@ -40,23 +67,44 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
     [data],
   )
 
-  const columns = useMemo<DataTableColumn<CustomsImporterRow & { rank: number }>[]>(
+  //  duoc-CR-744 — bảng 20 doanh nghiệp đã tải đủ nên xếp ngay trên trình duyệt; mặc định giữ thứ tự xếp hạng.
+  const sorted = useClientTableSort(rows, importerSortValue)
+
+  const columns = useMemo<DataTableColumn<ImporterRow>[]>(
     () => [
-      { key: 'rank', header: '#', width: 56, align: 'right', hideable: false, cell: (r) => r.rank },
+      {
+        key: 'rank',
+        header: '#',
+        width: 56,
+        align: 'right',
+        sortable: true,
+        hideable: false,
+        cell: (r) => r.rank,
+      },
       {
         key: 'name',
         header: 'Doanh nghiệp',
         width: 300,
         wrap: true,
+        sortable: true,
         hideable: false,
         cell: (r) => <span className="font-medium">{r.name || '—'}</span>,
       },
-      { key: 'tax_code', header: 'Mã số thuế', width: 130, hideable: false, cell: (r) => r.tax_code },
+      {
+        key: 'tax_code',
+        header: 'Mã số thuế',
+        width: 130,
+        sortable: true,
+        hideable: false,
+        cell: (r) => r.tax_code,
+      },
       {
         key: 'count',
         header: 'Số dòng',
         width: 90,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => <span className="tabular-nums">{r.count}</span>,
       },
@@ -65,6 +113,8 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
         header: `Tổng lượng (${unit})`,
         width: 140,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => <span className="tabular-nums">{formatQuantity(r.qty)}</span>,
       },
@@ -73,6 +123,8 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
         header: 'Thị phần',
         width: 150,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) =>
           r.share === null ? (
@@ -94,6 +146,8 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
         header: `Giá BQ (USD/${unit})`,
         width: 140,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => <span className="tabular-nums">{formatUsd(r.wavg)}</span>,
       },
@@ -101,6 +155,8 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
         key: 'last_date',
         header: 'Lần nhập gần nhất',
         width: 140,
+        sortable: true,
+        sortDescFirst: true,
         hideable: false,
         cell: (r) => formatDate(r.last_date),
       },
@@ -121,7 +177,10 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
       <Card className="p-4">
         <DataTable
           columns={columns}
-          rows={rows}
+          rows={sorted.rows}
+          sortBy={sorted.sortBy}
+          sortDir={sorted.sortDir}
+          onSortChange={sorted.onSortChange}
           getRowId={(r) => r.importer_id}
           isLoading={isLoading}
           isError={isError}

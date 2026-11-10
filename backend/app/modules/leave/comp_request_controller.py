@@ -17,6 +17,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from . import comp_approval_bridge as bridge, comp_request_service as service
+from . import comp_encashment_sort_expressions as sort_expr
 from .comp_request_model import LeaveCompRequest
 from .comp_request_schema import LeaveCompRequestCreate, LeaveCompRequestUpdate
 from .constants import LEAVE_COMP_STATUS_LABELS, LeaveCompStatus, label
@@ -72,8 +73,12 @@ def list_requests(request: Request, pg: dict = Depends(pagination), q: str | Non
                                  LeaveCompRequest.employee_id.in_(
                                      db.query(Employee.id).filter(Employee.full_name.like(like)))))
     query = apply_scope(query, LeaveCompRequest, ENTITY, user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, LeaveCompRequest, request,
-                                    default=(LeaveCompRequest.work_date.desc(), LeaveCompRequest.id.desc()))
+    #  duoc-CR-744: cột đang hiện xếp qua `comp_encashment_sort_expressions` (tên nhân sự, ô trống xuống cuối,
+    #  khóa phụ `id`); khóa khác về đường cũ. Chưa bấm cột nào thì giữ mặc định: ngày đi làm mới nhất trước.
+    order = sort_expr.build_comp_order_by(request.query_params.get("sort_by") or "",
+                                          request.query_params.get("sort_dir") or "asc")
+    query = query.order_by(*order) if order else apply_sort_from_request(
+        query, LeaveCompRequest, request, default=(LeaveCompRequest.work_date.desc(), LeaveCompRequest.id.desc()))
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     emps = _emps(db, items)

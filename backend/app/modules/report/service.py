@@ -762,15 +762,28 @@ def _pr_lines_filtered(db, user, *, year, company_id, status, line_status, assig
     return q, assignees
 
 
-def _pr_lines_ordered(q):
+def _pr_lines_ordered(q, db=None, sort_by=None, sort_dir=None, *, show_supplier=False):
+    """Thứ tự dòng của bảng và file xuất. Có `sort_by` hợp lệ (duoc-CR-744, xem `pr_lines_sort`) thì xếp theo cột
+    đó trước, rồi mới tới thứ tự mặc định (ngày lập mới nhất) làm khóa phụ để thứ tự ổn định qua các trang.
+    `sort_by` lạ, hoặc cột NCC khi thiếu `supplier.read`, bị bỏ qua — vẫn ra thứ tự mặc định."""
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 
-    return q.order_by(PurchaseRequest.request_date.desc(), PurchaseRequest.id.desc(), PurchaseRequestItem.id.asc())
+    from .pr_lines_sort import get_pr_lines_sort_expression
+
+    keys = []
+    expression = (get_pr_lines_sort_expression(db, sort_by.strip(), show_supplier=show_supplier)
+                  if db is not None and sort_by else None)
+    if expression is not None:
+        #  Ô trống xuống cuối cả hai chiều — luật chung `core/sort_order.py`.
+        from app.core.sort_order import build_blank_last_order
+        keys += build_blank_last_order(expression, (sort_dir or "").strip().lower())
+    keys += [PurchaseRequest.request_date.desc(), PurchaseRequest.id.desc(), PurchaseRequestItem.id.asc()]
+    return q.order_by(*keys)
 
 
 def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
                      assignee=None, search=None, page=1, page_size=50, show_supplier=False,
-                     request_scope=False) -> dict:
+                     request_scope=False, sort_by=None, sort_dir=None) -> dict:
     """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
 
     Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
@@ -785,7 +798,8 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
                                       request_scope=request_scope)
     total = q.count()
     page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))
-    pairs = _pr_lines_ordered(q).offset((page - 1) * page_size).limit(page_size).all()
+    pairs = (_pr_lines_ordered(q, db, sort_by, sort_dir, show_supplier=show_supplier)
+             .offset((page - 1) * page_size).limit(page_size).all())
     names = dict(db.query(Employee.code, Employee.full_name)
                  .filter(Employee.code.in_(assignees)).all()) if assignees else {}
     return {"items": _pr_line_rows(db, pairs, show_supplier=show_supplier), "total": total, "page": page,
@@ -793,7 +807,8 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
 
 
 def export_pr_lines_rows(db, user, *, year=None, company_id=None, status=None, line_status=None,
-                         assignee=None, search=None, show_supplier=False, request_scope=False) -> list[dict]:
+                         assignee=None, search=None, show_supplier=False, request_scope=False,
+                         sort_by=None, sort_dir=None) -> list[dict]:
     """bao-CR-691: mọi dòng theo đúng bộ lọc của bảng (không phân trang) cho file Excel — chặn ở trần dòng xuất."""
     from app.core.export_xlsx import check_row_limit
 
@@ -804,7 +819,8 @@ def export_pr_lines_rows(db, user, *, year=None, company_id=None, status=None, l
     from app.modules.purchase_request.export import STATUS_LABEL
 
     check_row_limit(q.count())
-    rows = _pr_line_rows(db, _pr_lines_ordered(q).all(), show_supplier=show_supplier)
+    rows = _pr_line_rows(db, _pr_lines_ordered(q, db, sort_by, sort_dir, show_supplier=show_supplier).all(),
+                         show_supplier=show_supplier)
     for row in rows:   # tệp Excel đọc bằng mắt: nhãn tiếng Việt thay mã (API giữ mã)
         row["status"] = STATUS_LABEL.get(row["status"], row["status"])
         row["line_status"] = PR_LINE_STATUS.label_of(row["line_status"] or "no_po", row["line_status"] or "")

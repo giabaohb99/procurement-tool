@@ -118,6 +118,8 @@ export function PurchaseProgressPage() {
         'date_field',
         'date_from',
         'date_to',
+        'sort_by',
+        'sort_dir',
       ],
     }),
     [showSupplierFields],
@@ -143,6 +145,10 @@ function PurchaseProgressContent() {
   const [recvState, setRecvState] = useUrlParamState('recv_state', ALL)
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
+  //  Sắp xếp tại SERVER theo `sort_by`/`sort_dir` (duoc-CR-744) — cột thật ở `_sort_map()`
+  //  của `purchase_progress/controller.py`, hai cột thành tiền, Công ty, Tiến độ, Hồ sơ CT
+  //  ở `sort_expressions.py`. Trước bản vá này bảng không bật cột nào, bấm tiêu đề không ăn.
+  const [sortBy, sortDir, setSort] = useUrlRangeParam('sort_by', 'sort_dir')
   const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để tệp khớp màn hình. */
@@ -183,6 +189,8 @@ function PurchaseProgressContent() {
     dateField,
     dateFrom,
     dateTo,
+    sortBy,
+    sortDir,
   ])
 
   /**
@@ -203,10 +211,27 @@ function PurchaseProgressContent() {
     if (dateFrom) filterParams[field.from] = dateFrom
     if (dateTo) filterParams[field.to] = dateTo
   }
+  //  Gắn vào phần LỌC chứ không phải phần phân trang: file Xuất Excel ra cùng
+  //  thứ tự với bảng đang xem.
+  if (sortBy) {
+    filterParams.sort_by = sortBy
+    filterParams.sort_dir = sortDir === 'desc' ? 'desc' : 'asc'
+  }
 
   const params: ListParams = { page, page_size: pageSize, ...filterParams }
 
   const { data, isLoading, isError } = usePurchaseProgress(params)
+
+  /**
+   * Nhịp thứ ba của tiêu đề cột (tăng → giảm → THÔI SẮP XẾP) trả về khóa cột
+   * RỖNG: xóa luôn chiều sắp xếp, kẻo đường dẫn còn dính `?sort_dir=asc`.
+   */
+  const handleSortChange = useCallback(
+    (nextSortBy: string, nextSortDir: 'asc' | 'desc') => {
+      setSort(nextSortBy, nextSortBy ? nextSortDir : '')
+    },
+    [setSort],
+  )
 
   /**
    * Chỉ xuất những cột đang bày trên bảng. Khóa cột của bảng trùng khớp hoàn
@@ -237,6 +262,7 @@ function PurchaseProgressContent() {
       {
         key: 'po_code',
         header: 'Mã ĐMH',
+        sortable: true,
         width: 160,
         hideable: false,
         // Bảng này rộng ~24 cột: ghim sẵn mã đơn để cuộn tới cột cuối vẫn biết
@@ -249,10 +275,11 @@ function PurchaseProgressContent() {
         wrap: true,
         cell: (row) => <span className="font-medium">{row.po_code}</span>,
       },
-      { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, wrap: true, cell: (r) => r.misa_code || '' },
+      { key: 'misa_code', header: 'Mã MISA', sortable: true, width: 120, defaultHidden: true, wrap: true, cell: (r) => r.misa_code || '' },
       {
         key: 'pr_code',
         header: 'Mã PYC',
+        sortable: true,
         width: 130,
         wrap: true,
         cell: (r) =>
@@ -267,31 +294,34 @@ function PurchaseProgressContent() {
             r.pr_code || ''
           ),
       },
-      { key: 'company', header: 'Công ty', width: 190, wrap: true, cell: (r) => companyName(r.company_id) },
-      { key: 'department', header: 'Bộ phận', width: 150, wrap: true, cell: (r) => r.department || '' },
+      { key: 'company', header: 'Công ty', sortable: true, width: 190, wrap: true, cell: (r) => companyName(r.company_id) },
+      { key: 'department', header: 'Bộ phận', sortable: true, width: 150, wrap: true, cell: (r) => r.department || '' },
       {
         key: 'supplier_name',
         header: 'Nhà cung cấp',
+        sortable: true,
         width: 230,
         supplierOnly: true,
         wrap: true,
         cell: (r) => r.supplier_name || r.supplier_code || '',
       },
-      { key: 'nspt', header: 'NSPT', width: 160, wrap: true, cell: (r) => r.nspt || '' },
-      { key: 'order_date', header: 'Ngày ĐH', width: 110, cell: (r) => formatDate(r.order_date) || '' },
-      { key: 'product_code', header: 'Mã SP', width: 150, wrap: true, cell: (r) => r.product_code || '' },
+      { key: 'nspt', header: 'NSPT', sortable: true, width: 160, wrap: true, cell: (r) => r.nspt || '' },
+      { key: 'order_date', header: 'Ngày ĐH', sortable: true, sortDescFirst: true, width: 110, cell: (r) => formatDate(r.order_date) || '' },
+      { key: 'product_code', header: 'Mã SP', sortable: true, width: 150, wrap: true, cell: (r) => r.product_code || '' },
       {
         key: 'product_name',
         header: 'Tên SP',
+        sortable: true,
         width: 240,
         wrap: true,
         cell: (r) => r.product_name || '',
       },
-      { key: 'item_group', header: 'Nhóm hàng', width: 150, defaultHidden: true, wrap: true, cell: (r) => r.item_group || '' },
-      { key: 'unit', header: 'ĐVT', width: 80, cell: (r) => r.unit || '' },
+      { key: 'item_group', header: 'Nhóm hàng', sortable: true, width: 150, defaultHidden: true, wrap: true, cell: (r) => r.item_group || '' },
+      { key: 'unit', header: 'ĐVT', sortable: true, width: 80, cell: (r) => r.unit || '' },
       {
         key: 'qty_order',
         header: 'SL đặt',
+        sortable: true,
         width: 100,
         align: 'right',
         cell: (r) => <span className="tabular-nums">{formatQuantity(r.qty_order) || 0}</span>,
@@ -299,6 +329,7 @@ function PurchaseProgressContent() {
       {
         key: 'price',
         header: 'Đơn giá',
+        sortable: true,
         width: 130,
         align: 'right',
         cell: (r) => (
@@ -310,10 +341,11 @@ function PurchaseProgressContent() {
       //  Không đánh `defaultHidden`: cột bày ra theo yêu cầu thì phải thấy ngay. Người đã từng
       //  kéo thả đổi thứ tự cột sẽ thấy hai cột này nằm ở CUỐI bảng (bản lưu trong localStorage
       //  không có khóa mới nên `useTableLayout` nối chúng vào đuôi) — kéo lại một lần là xong.
-      { key: 'currency', header: 'Đồng tiền', width: 100, cell: (r) => r.currency || '' },
+      { key: 'currency', header: 'Đồng tiền', sortable: true, width: 100, cell: (r) => r.currency || '' },
       {
         key: 'exchange_rate',
         header: 'Tỷ giá',
+        sortable: true,
         width: 110,
         align: 'right',
         //  Ô này không bao giờ trống: backend cho qua `normalize_rate`, dòng cũ chưa khai tỷ giá
@@ -323,6 +355,8 @@ function PurchaseProgressContent() {
       {
         key: 'order_amount',
         header: 'Thành tiền ĐH',
+        sortable: true,
+        sortDescFirst: true,
         width: 150,
         align: 'right',
         cell: (r) => (
@@ -332,14 +366,16 @@ function PurchaseProgressContent() {
       {
         key: 'progress_status',
         header: 'Tiến độ',
+        sortable: true,
         width: 180,
         cell: (r) => <ProgressStatusBadge status={r.progress_status} />,
       },
-      { key: 'delivery_no', header: 'Lần giao', width: 100, align: 'right', defaultHidden: true, cell: (r) => r.delivery_no ?? '' },
-      { key: 'warehouse_code', header: 'Kho', width: 120, defaultHidden: true, wrap: true, cell: (r) => r.warehouse_code || '' },
+      { key: 'delivery_no', header: 'Lần giao', sortable: true, width: 100, align: 'right', defaultHidden: true, cell: (r) => r.delivery_no ?? '' },
+      { key: 'warehouse_code', header: 'Kho', sortable: true, width: 120, defaultHidden: true, wrap: true, cell: (r) => r.warehouse_code || '' },
       {
         key: 'carrier_name',
         header: 'Đơn vị VC',
+        sortable: true,
         width: 180,
         defaultHidden: true,
         supplierOnly: true,
@@ -349,21 +385,25 @@ function PurchaseProgressContent() {
       {
         key: 'received_qty',
         header: 'SL nhận',
+        sortable: true,
         width: 110,
         align: 'right',
         cell: (r) => <span className="tabular-nums">{formatQuantity(r.received_qty) || 0}</span>,
       },
-      { key: 'received_date', header: 'Ngày nhận', width: 120, cell: (r) => formatDate(r.received_date) || '' },
+      { key: 'received_date', header: 'Ngày nhận', sortable: true, sortDescFirst: true, width: 120, cell: (r) => formatDate(r.received_date) || '' },
       // bao-CR-409 (ticket prod 51): hóa đơn được ghi ở LẦN GIAO, không phải ở dòng đơn hàng
       {
         key: 'delivery_invoice_date',
         header: 'Ngày HĐ',
+        sortable: true,
+        sortDescFirst: true,
         width: 120,
         cell: (r) => formatDate(r.delivery_invoice_date) || '',
       },
       {
         key: 'diff_regulated',
         header: 'CL quy định',
+        sortable: true,
         width: 120,
         align: 'right',
         defaultHidden: true,
@@ -373,6 +413,8 @@ function PurchaseProgressContent() {
       {
         key: 'amount',
         header: 'Thành tiền nhận',
+        sortable: true,
+        sortDescFirst: true,
         width: 160,
         align: 'right',
         cell: (r) => (
@@ -384,12 +426,15 @@ function PurchaseProgressContent() {
       {
         key: 'document_delivery_date',
         header: 'Ngày giao CT cho KT',
+        sortable: true,
+        sortDescFirst: true,
         width: 150,
         cell: (r) => formatDate(r.document_delivery_date) || '',
       },
       {
         key: 'document_status',
         header: 'Hồ sơ CT',
+        sortable: true,
         width: 190,
         cell: (r) => <DocumentStatusBadge status={r.document_status} />,
       },
@@ -580,6 +625,9 @@ function PurchaseProgressContent() {
           toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.purchase-progress"
           onVisibleColumnsChange={setVisibleColumnKeys}
+          sortBy={sortBy || undefined}
+          sortDir={sortDir === 'desc' ? 'desc' : 'asc'}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

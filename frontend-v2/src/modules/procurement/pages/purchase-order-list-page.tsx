@@ -441,6 +441,11 @@ function PurchaseOrderListContent() {
       },
       {
         key: 'order_date',
+        //  duoc-CR-744: ô in `created_at` (đúng bản v1: tiêu đề "Ngày đặt" lấy ngày tạo đơn) nên phải
+        //  SẮP theo `created_at`. Khóa `order_date` là ngày đặt hàng người dùng nhập tay, lệch ngày tạo
+        //  ở đơn nhập / đơn cũ -> thứ tự hiện ra không khớp con số trong ô. Giữ `key` để bố cục đã
+        //  lưu và bảng dịch cột xuất Excel (EXPORT_COLUMN_KEYS) không phải đổi.
+        sortKey: 'created_at',
         header: 'Ngày đặt',
         width: 150,
         sortable: true,

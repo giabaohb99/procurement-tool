@@ -326,3 +326,118 @@ describe('ReportPrLinesTab — Xuất Excel', () => {
     await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
   })
 })
+
+/**
+ * duoc-CR-744 — mọi cột đều xếp được tại server. Trước đây không cột nào khai
+ * `sortable` và máy chủ cũng bỏ qua `sort_by`: bấm tiêu đề không có gì xảy ra,
+ * người dùng báo "bấm tiêu đề cột không sắp xếp được".
+ */
+describe('ReportPrLinesTab — sắp xếp cột (duoc-CR-744)', () => {
+  function header(text: string) {
+    return screen.getByText(text, { selector: 'thead span' })
+  }
+
+  //  Khóa phải khớp `pr_lines_sort.sortable_keys()` ở backend (bài kiểm backend canh phía kia).
+  const ALL_COLUMN_KEYS = [
+    'id', 'pr_code', 'created_date', 'requester', 'department', 'product_code', 'product_name',
+    'warehouse', 'item_group', 'gram', 'qty', 'price', 'vat_pct', 'amount', 'line_status', 'status',
+    'expected_date', 'assignee', 'qty_ordered', 'qty_received', 'po_codes', 'po_count',
+    'company_name', 'purpose', 'is_urgent', 'need_date', 'required_date', 'unit',
+    'head_of_dept_name', 'approver_name', 'handler_dept_name', 'suggested_supplier',
+    'latest_po_supplier', 'latest_delivery_date', 'delivery_count', 'progress_note', 'line_note',
+  ]
+
+  it('sends no sort params until a header is clicked', () => {
+    build()
+
+    expect(lastCall().sort_by).toBeUndefined()
+    expect(lastCall().sort_dir).toBeUndefined()
+  })
+
+  it('sorts a text column ascending first and goes back to page 1', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Tên sản phẩm'))
+    expect(lastCall()).toMatchObject({ sort_by: 'product_name', sort_dir: 'asc', page: 1 })
+  })
+
+  it('cycles Thành tiền desc, asc, then off — and drops sort_dir with the key', async () => {
+    //  Cột số tiền / ngày bấm lần đầu ra GIẢM dần: người dùng muốn thấy lớn nhất / mới nhất trước.
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Thành tiền'))
+    expect(lastCall()).toMatchObject({ sort_by: 'amount', sort_dir: 'desc' })
+    await user.click(header('Thành tiền'))
+    expect(lastCall()).toMatchObject({ sort_by: 'amount', sort_dir: 'asc' })
+    await user.click(header('Thành tiền'))
+    expect(lastCall().sort_by).toBeUndefined()
+    expect(lastCall().sort_dir).toBeUndefined()
+  })
+
+  it('sorts the two status columns by their own keys, not by the label shown', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Tiến độ dòng'))
+    expect(lastCall()).toMatchObject({ sort_by: 'line_status', sort_dir: 'asc' })
+    await user.click(header('Trạng thái phiếu'))
+    expect(lastCall()).toMatchObject({ sort_by: 'status', sort_dir: 'asc' })
+  })
+
+  it('exports in the SAME order the table is showing', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('SL đã đặt'))
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
+    const [url] = downloadFile.mock.calls[0] as [string, string]
+    const parsed = new URL(url, 'http://x')
+    expect(parsed.searchParams.get('sort_by')).toBe('qty_ordered')
+    expect(parsed.searchParams.get('sort_dir')).toBe('desc')
+  })
+
+  it('does not put sort params on the export once the sort is switched off', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Mã ĐMH'))
+    await user.click(header('Mã ĐMH'))
+    await user.click(header('Mã ĐMH'))
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
+    const [url] = downloadFile.mock.calls[0] as [string, string]
+    expect(new URL(url, 'http://x').searchParams.has('sort_by')).toBe(false)
+    expect(new URL(url, 'http://x').searchParams.has('sort_dir')).toBe(false)
+  })
+
+  it('makes EVERY column sortable by its own key, hidden-by-default columns included', async () => {
+    //  Canary: thêm một cột mới mà quên `sortable` (hoặc quên khóa ở backend) là bài này đỏ.
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('button', { name: /Cột/ }))
+    const toggles = await screen.findAllByTitle('Ẩn / hiện cột')
+    for (const toggle of toggles) {
+      if (toggle.querySelector('.lucide-eye-off')) await user.click(toggle)
+    }
+    await user.keyboard('{Escape}')
+
+    const headers = await screen.findAllByRole('columnheader')
+    const sentKeys: string[] = []
+    for (const th of headers) {
+      const label = th.querySelector('span')
+      if (!label) continue
+      const before = listCalls.length
+      await user.click(label)
+      if (listCalls.length === before) continue
+      const key = String(lastCall().sort_by ?? '')
+      if (key) sentKeys.push(key)
+    }
+    expect([...sentKeys].sort()).toEqual([...ALL_COLUMN_KEYS].sort())
+  })
+})

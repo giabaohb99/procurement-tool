@@ -287,3 +287,152 @@ describe('SurveyRequestLinesTable — dấu tick không trôi khi chèn / bỏ d
     expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
   })
 })
+
+/**
+ * duoc-CR-744 — bấm tiêu đề cột xếp dòng khảo sát theo đúng thứ ô ĐANG HIỆN: ô NSTM hiện
+ * TÊN tra từ mã, cột Trạng thái xếp theo dòng đời của nhãn tiến độ (không theo chữ cái),
+ * ngày xếp theo ISO chứ không theo chữ dd/mm/yyyy trong ô.
+ */
+describe('SurveyRequestLinesTable — xếp cột khi bấm tiêu đề (duoc-CR-744)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  const base = LINES[0]
+  const SORT_LINES: SurveyRequestLine[] = [
+    {
+      ...base,
+      id: 1,
+      requirement_detail: 'Gamma',
+      item_group: 'Bao bì',
+      request_qty: 20,
+      proposed_price: 9500,
+      received_date: '2026-03-04',
+      result_due_date: '2026-03-18',
+      uom: 'Cái',
+      assignee: 'U2',
+      assignee_name: '',
+      progress_state: 'Đã chọn phương án',
+    },
+    {
+      ...base,
+      id: 2,
+      requirement_detail: 'Alpha',
+      item_group: 'Hóa chất',
+      request_qty: 3,
+      proposed_price: 100,
+      received_date: '',
+      result_due_date: '2026-01-20',
+      uom: 'Kg',
+      assignee: 'U1',
+      assignee_name: 'Trần A',
+      progress_state: 'Chưa tiếp nhận',
+    },
+    {
+      ...base,
+      id: 3,
+      requirement_detail: 'Beta',
+      item_group: 'Dịch vụ',
+      request_qty: 100,
+      proposed_price: 50,
+      received_date: '2026-02-01',
+      result_due_date: '2026-12-01',
+      uom: 'Bộ',
+      assignee: '',
+      assignee_name: '',
+      progress_state: 'Đang khảo sát',
+    },
+  ]
+  const PURCHASERS = [{ code: 'U2', name: 'Lê Zed' }]
+
+  async function clickHeader(name: RegExp) {
+    const header = screen.getByRole('columnheader', { name })
+    const clickArea = header.firstElementChild
+    if (!clickArea) throw new Error('tiêu đề cột không có vùng bấm')
+    await userEvent.click(clickArea)
+  }
+
+  /** Chữ trong cột `name` theo thứ tự dòng đang hiện (bỏ hàng tiêu đề). */
+  function columnTexts(name: RegExp): string[] {
+    const index = screen.getAllByRole('columnheader').findIndex((h) => name.test(h.textContent ?? ''))
+    return screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => within(row).getAllByRole('cell')[index]?.textContent ?? '')
+  }
+
+  const order = () => columnTexts(/^Chi tiết thông số/)
+
+  it('sorts by the specification text asc, then desc, then back to the original order', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    expect(order()).toEqual(['Gamma', 'Alpha', 'Beta'])
+
+    await clickHeader(/^Chi tiết thông số/)
+    expect(order()).toEqual(['Alpha', 'Beta', 'Gamma'])
+    await clickHeader(/^Chi tiết thông số/)
+    expect(order()).toEqual(['Gamma', 'Beta', 'Alpha'])
+    await clickHeader(/^Chi tiết thông số/)
+    expect(order()).toEqual(['Gamma', 'Alpha', 'Beta'])
+  })
+
+  it('sorts SL dự kiến and Giá đề xuất by number, not by text ("100" < "20" < "3")', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    await clickHeader(/^SL dự kiến/)
+    expect(order()).toEqual(['Alpha', 'Gamma', 'Beta'])
+    await clickHeader(/^Giá đề xuất/)
+    expect(order()).toEqual(['Beta', 'Alpha', 'Gamma'])
+  })
+
+  it('sorts the assignee by the displayed NAME (looked up from the code) and keeps the unassigned line last', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    //  U2 hiện "Lê Zed" (tra từ danh sách), U1 hiện "Trần A" (assignee_name); theo MÃ sẽ ra U1 trước U2.
+    await clickHeader(/^Nhân sự phụ trách/)
+    expect(order()).toEqual(['Gamma', 'Alpha', 'Beta'])
+    await clickHeader(/^Nhân sự phụ trách/)
+    expect(order()).toEqual(['Alpha', 'Gamma', 'Beta'])
+  })
+
+  it('sorts Trạng thái along the line life cycle, not alphabetically', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    //  Dòng đời: Chưa tiếp nhận < Đang khảo sát < Đã chọn phương án. Theo chữ cái sẽ ra
+    //  Chưa tiếp nhận < Đã chọn phương án < Đang khảo sát.
+    await clickHeader(/^Trạng thái/)
+    expect(order()).toEqual(['Alpha', 'Beta', 'Gamma'])
+    await clickHeader(/^Trạng thái/)
+    expect(order()).toEqual(['Gamma', 'Beta', 'Alpha'])
+  })
+
+  it('sorts dates by the ISO value and drops the blank received date to the end in both directions', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    await clickHeader(/^Ngày tiếp nhận/)
+    expect(order()).toEqual(['Beta', 'Gamma', 'Alpha'])
+    await clickHeader(/^Ngày tiếp nhận/)
+    expect(order()).toEqual(['Gamma', 'Beta', 'Alpha'])
+
+    //  18/03/2026 · 20/01/2026 · 01/12/2026: so chữ dd/mm sẽ đặt 01/12 đầu tiên.
+    await clickHeader(/^Ngày YC trả KQ/)
+    expect(order()).toEqual(['Alpha', 'Gamma', 'Beta'])
+  })
+
+  it('does not make the No. and Thao tác headers clickable', async () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS })
+    await clickHeader(/^Chi tiết thông số/)
+    await clickHeader(/^Chi tiết thông số/)
+    expect(order()).toEqual(['Gamma', 'Beta', 'Alpha'])
+
+    await clickHeader(/^No\./)
+    await clickHeader(/^Thao tác/)
+    expect(order()).toEqual(['Gamma', 'Beta', 'Alpha'])
+  })
+
+  it('hides the internal columns, and with them their sort, from the requester', () => {
+    renderTable({ lines: SORT_LINES, purchasers: PURCHASERS, showNstmColumns: false })
+    expect(screen.queryByRole('columnheader', { name: /^Nhân sự phụ trách/ })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: /^Ngày tiếp nhận/ })).toBeNull()
+  })
+
+  it('does not crash on an empty list', async () => {
+    renderTable({ lines: [] })
+    await clickHeader(/^Chi tiết thông số/)
+    expect(screen.getByText(/Chưa có dòng nào/)).toBeInTheDocument()
+  })
+})

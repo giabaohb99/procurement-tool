@@ -22,7 +22,7 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { DataTable } from '@/shared/data-table'
@@ -175,6 +175,9 @@ export function CustomsPricePage() {
   const [rateMin, setRateMin] = useUrlParamState('rate_min', '')
   const [rateMax, setRateMax] = useUrlParamState('rate_max', '')
   const [productKind, setProductKind] = useUrlParamState('product_kind', '')   // bao-CR-494
+  //  duoc-CR-744 — bấm tiêu đề cột: xếp tại SERVER theo `sort_by`/`sort_dir` (backend `line_sort.py`), trên
+  //  CẢ tập đã lọc chứ không riêng trang đang xem. Nằm trên URL nên gửi link là người nhận thấy đúng thứ tự.
+  const [sortBy, sortDir, setSort] = useUrlRangeParam('sort_by', 'sort_dir')
   const [searchParams] = useSearchParams()
   const setUrlParams = useSetUrlParams()
   const navigate = useNavigate()
@@ -249,12 +252,27 @@ export function CustomsPricePage() {
     ],
   )
   const filterParams = useMemo(() => buildCustomsParams(filters), [filters])
+  //  Thứ tự tách khỏi `filterParams`: bộ lọc còn đi vào "Xuất toàn bộ" (lô chạy nền, luôn theo ID) và vào
+  //  câu mô tả bộ lọc, mà hai chỗ đó không nhận thứ tự. Chỉ danh sách và "Xuất ngay" mang theo.
+  const sortParams = useMemo<Record<string, string>>(() => {
+    const next: Record<string, string> = {}
+    if (sortBy) {
+      next.sort_by = sortBy
+      next.sort_dir = sortDir === 'desc' ? 'desc' : 'asc'
+    }
+    return next
+  }, [sortBy, sortDir])
+  /** Nhịp thứ ba của tiêu đề cột trả khóa RỖNG: xóa luôn chiều sắp, kẻo URL còn dính `?sort_dir=asc`. */
+  const handleSortChange = useCallback(
+    (nextSortBy: string, nextSortDir: 'asc' | 'desc') => setSort(nextSortBy, nextSortBy ? nextSortDir : ''),
+    [setSort],
+  )
   const searchExplain = useCustomsSearchExplain(debouncedValue)   // bao-CR-495
-  const [page, setPage] = usePageResetOnFilterChange([JSON.stringify(filterParams)])
+  const [page, setPage] = usePageResetOnFilterChange([JSON.stringify(filterParams), sortBy, sortDir])
 
   const coverage = useCustomsCoverage()
   const options = useCustomsOptions()
-  const lines = useCustomsLines({ ...filterParams, page, page_size: pageSize }, tab === 'list')
+  const lines = useCustomsLines({ ...filterParams, ...sortParams, page, page_size: pageSize }, tab === 'list')
   //  Cảnh báo pháp lý chỉ so khi từ khóa từ 3 ký tự — khớp `match_alerts` của backend.
   const alerts = useCustomsAlerts(filterParams, filters.q.trim().length >= 3)
   //  bao-CR-477 — xếp nặng nhất lên đầu: dải cảnh báo chỉ bày 5 mục, nên thứ tự quyết định
@@ -370,6 +388,7 @@ export function CustomsPricePage() {
             {tab === 'list' && canExport && (
               <CustomsLineExportMenu
                 filterParams={filterParams}
+                sortParams={sortParams}
                 filterSummary={exportFilterSummary}
                 totalRows={lines.data?.total}
               />
@@ -632,6 +651,9 @@ export function CustomsPricePage() {
             //  Bộ lọc đứng NGOÀI bảng (dùng chung cho mọi mục) và đã có nút "Xóa lọc"
             //  riêng ở thanh lọc — tắt nút của bảng cho khỏi hai nút làm cùng một việc.
             filtersActive={false}
+            sortBy={sortBy}
+            sortDir={sortDir === 'desc' ? 'desc' : 'asc'}
+            onSortChange={handleSortChange}
             pagination={{
               page,
               pageSize,

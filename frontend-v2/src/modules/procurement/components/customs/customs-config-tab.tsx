@@ -8,7 +8,7 @@
 // số trang, lọc nhanh là state cục bộ; hộp Thêm/Sửa/Xóa dùng lại `CrudFormDialog` với đúng
 // cấu hình cũ (hộp tự ẩn nút Lưu / Xóa khi thiếu quyền, nên người chỉ xem vẫn mở ra đọc được).
 import { Plus } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { CrudFormDialog, useCrudList, type CrudConfig, type CrudRecord } from '@/shared/crud'
@@ -20,6 +20,7 @@ import { Card } from '@/shared/ui/card'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
+import { useLocalServerSort } from '../../hooks/use-local-server-sort'
 import { CUSTOMS_FORMULATION_CODE_CRUD_CONFIG } from '../../config/customs-formulation-code-crud'
 import { CUSTOMS_KIND_KEYWORD_CRUD_CONFIG } from '../../config/customs-kind-keyword-crud'
 import { CUSTOMS_REGULATION_CRUD_CONFIG } from '../../config/customs-regulation-crud'
@@ -82,7 +83,10 @@ function CustomsCatalogCard<T extends CrudRecord>({ config, mobileCard }: Custom
   const [quickValues, setQuickValues] = useState<Record<string, string>>({})
   const quickFilters = (config.quickFilters ?? []).filter((qf) => qf.type === 'select' && qf.options)
 
-  const params: ListParams = { page, page_size: pageSize }
+  //  duoc-CR-744 — bấm tiêu đề cột: xếp tại SERVER (`sort_by`/`sort_dir`, cột thật của bảng) trên cả danh mục.
+  const resetPage = useCallback(() => setPage(1), [])
+  const sort = useLocalServerSort(resetPage)
+  const params: ListParams = { page, page_size: pageSize, ...sort.params }
   if (debouncedKeyword) params[config.searchParam || 'name'] = debouncedKeyword
   for (const [key, value] of Object.entries(quickValues)) {
     if (value && value !== 'all') params[key] = value
@@ -123,6 +127,9 @@ function CustomsCatalogCard<T extends CrudRecord>({ config, mobileCard }: Custom
             : `Chưa có ${config.unitLabel} nào. Bấm "Thêm ${config.unitLabel}" để tạo.`
         }
         storageKey={config.storageKey}
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         onRowClick={(row: T) => setFormItem(row)}
         mobileCard={mobileCard ?? config.mobileCard}
         pagination={{

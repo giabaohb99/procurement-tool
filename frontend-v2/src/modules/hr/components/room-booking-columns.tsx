@@ -19,6 +19,7 @@ export function codeColumn<T extends RoomBooking>(): DataTableColumn<T> {
     width: 110,
     hideable: false,
     defaultPinned: true,
+    sortable: true,
     cell: (b) => <span className="font-semibold text-primary">{b.code}</span>,
   }
 }
@@ -39,6 +40,7 @@ export function titleColumn<T extends RoomBooking>(): DataTableColumn<T> {
     width: 240,
     wrap: true,
     minWidth: 180,
+    sortable: true,
     cell: (b) => <span className="font-medium">{b.title}</span>,
   }
 }
@@ -48,6 +50,7 @@ export function roomColumn<T extends RoomBooking>(): DataTableColumn<T> {
     key: 'room_name',
     header: 'Phòng',
     width: 170,
+    sortable: true,
     cell: (b) => b.room_name || `#${b.room_id}`,
   }
 }
@@ -80,6 +83,7 @@ export function requesterColumn<T extends RoomBooking>(): DataTableColumn<T> {
     key: 'requester_name',
     header: 'Người đặt',
     width: 170,
+    sortable: true,
     cell: (b) => b.requester_name || '—',
   }
 }

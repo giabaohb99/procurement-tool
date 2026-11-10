@@ -174,6 +174,64 @@ describe('PurchaseProgressPage — khoảng ngày', () => {
   })
 })
 
+/**
+ * duoc-CR-744 — bảng không bật cột nào sắp xếp được: bấm tiêu đề không có gì xảy
+ * ra. Nay mọi cột xếp tại SERVER, file Xuất Excel ra cùng thứ tự.
+ */
+describe('PurchaseProgressPage — sắp xếp cột', () => {
+  function header(text: string) {
+    return screen.getByText(text, { selector: 'thead span' })
+  }
+
+  it('sorts every visible column on the server when its header is clicked', async () => {
+    const user = userEvent.setup()
+    build()
+
+    const cases: [string, string][] = [
+      ['Mã ĐMH', 'po_code'],
+      ['Công ty', 'company'],
+      ['Nhà cung cấp', 'supplier_name'],
+      ['Tiến độ', 'progress_status'],
+      ['SL nhận', 'received_qty'],
+      ['Hồ sơ CT', 'document_status'],
+    ]
+    for (const [text, key] of cases) {
+      await user.click(header(text))
+      expect(lastCall()).toMatchObject({ sort_by: key, sort_dir: 'asc' })
+    }
+  })
+
+  it('asks for the newest date and the biggest amount first', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Ngày ĐH'))
+    expect(lastCall()).toMatchObject({ sort_by: 'order_date', sort_dir: 'desc' })
+    await user.click(header('Thành tiền ĐH'))
+    expect(lastCall()).toMatchObject({ sort_by: 'order_amount', sort_dir: 'desc' })
+  })
+
+  it('third click clears the sort, sort_dir included', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(header('Mã SP'))
+    await user.click(header('Mã SP'))
+    expect(lastCall()).toMatchObject({ sort_by: 'product_code', sort_dir: 'desc' })
+    await user.click(header('Mã SP'))
+    expect(lastCall().sort_by).toBeUndefined()
+    expect(lastCall().sort_dir).toBeUndefined()
+  })
+
+  it('exports in the SAME order the table is showing', async () => {
+    const user = userEvent.setup()
+    build('/procurement/purchase-progress?sort_by=amount&sort_dir=desc')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+    expect(downloadFile.mock.calls[0][2]).toMatchObject({ sort_by: 'amount', sort_dir: 'desc' })
+  })
+})
+
 describe('PurchaseProgressPage — cột chữ đọc đủ', () => {
   //  Khách nêu 31/08/2026: "cho show full ra chứ đừng có …". Xuống dòng là hiệu
   //  ứng CSS, jsdom không đo được, nên đành khẳng định theo class — đây là chỗ

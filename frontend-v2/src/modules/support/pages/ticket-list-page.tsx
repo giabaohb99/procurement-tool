@@ -11,6 +11,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -72,12 +73,17 @@ export function TicketListPage() {
   const [priority, setPriority] = useUrlParamState('priority', ALL)
   const [assignee, setAssignee] = useUrlParamState('assignee', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  //  Sắp xếp tại SERVER theo `sort_by`/`sort_dir` (duoc-CR-744) — xếp trên cả tập chứ không riêng trang đang xem;
+  //  khóa cột khớp `ticket/sort_expressions.py`. Nhịp thứ ba của tiêu đề cột trả khóa rỗng = về thứ tự mặc định.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
     status,
     priority,
     assignee,
+    sortBy,
+    sortDir,
   ])
 
   const params: ListParams = { page, page_size: pageSize }
@@ -85,6 +91,10 @@ export function TicketListPage() {
   if (status !== ALL) params.status = status
   if (priority !== ALL) params.priority = priority
   if (isHandler && assignee !== ALL) params.assignee = assignee
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError, refetch } = useTickets(params)
   const take = useTakeTicket()
@@ -95,6 +105,7 @@ export function TicketListPage() {
         key: 'subject',
         header: 'Chủ đề',
         width: 280,
+        sortable: true,
         hideable: false,
         defaultPinned: true,
         cell: (t) => (
@@ -110,30 +121,37 @@ export function TicketListPage() {
         key: 'requester_name',
         header: 'Người gửi',
         width: 160,
+        sortable: true,
         cell: (t) => t.requester_name || '—',
       },
       {
         key: 'department',
         header: 'Bộ phận',
         width: 180,
+        sortable: true,
         cell: (t) => <span className="text-muted-foreground">{t.department || '—'}</span>,
       },
       {
         key: 'priority',
         header: 'Ưu tiên',
         width: 120,
+        sortable: true,
+        //  Bấm lần đầu ra mức KHẨN trước (hạng cao nhất), không phải Thấp.
+        sortDescFirst: true,
         cell: (t) => <TicketPriorityBadge priority={t.priority} />,
       },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 130,
+        sortable: true,
         cell: (t) => <TicketStatusBadge status={t.status} />,
       },
       {
         key: 'assignee_name',
         header: 'Người xử lý',
         width: 160,
+        sortable: true,
         cell: (t) =>
           t.assignee_name ? (
             <span className="font-medium text-navy dark:text-foreground">{t.assignee_name}</span>
@@ -145,6 +163,8 @@ export function TicketListPage() {
         key: 'updated_at',
         header: 'Cập nhật',
         width: 150,
+        sortable: true,
+        sortDescFirst: true,
         cell: (t) => (
           <span className="whitespace-nowrap text-muted-foreground">
             {formatDateTime(t.updated_at)}
@@ -216,6 +236,9 @@ export function TicketListPage() {
           isError={isError}
           emptyMessage="Không có phiếu hỗ trợ nào khớp bộ lọc."
           storageKey="support.tickets"
+          sortBy={sortBy || undefined}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

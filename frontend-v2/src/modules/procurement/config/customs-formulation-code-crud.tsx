@@ -37,9 +37,9 @@ export const CUSTOMS_FORMULATION_CODE_CRUD_CONFIG: CrudConfig<CustomsFormulation
       hideable: false,
       cell: (row) => <span className="font-medium">{row.code}</span>,
     },
-    { key: 'name_en', header: 'Tên tiếng Anh', width: 240, wrap: true, cell: (row) => row.name_en },
-    { key: 'name_vi', header: 'Tên tiếng Việt', width: 220, wrap: true, cell: (row) => row.name_vi },
-    { key: 'description', header: 'Đặc điểm', width: 320, wrap: true, cell: (row) => row.description },
+    { key: 'name_en', header: 'Tên tiếng Anh', width: 240, wrap: true, sortable: true, cell: (row) => row.name_en },
+    { key: 'name_vi', header: 'Tên tiếng Việt', width: 220, wrap: true, sortable: true, cell: (row) => row.name_vi },
+    { key: 'description', header: 'Đặc điểm', width: 320, wrap: true, sortable: true, cell: (row) => row.description },
     {
       key: 'is_active',
       header: 'Trạng thái',

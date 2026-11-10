@@ -1,5 +1,5 @@
 import { Download } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
@@ -112,6 +112,11 @@ function SurveyProgressContent() {
   const [late, setLate] = useUrlParamState('late', ALL)
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
+  //  Sắp xếp tại SERVER theo `sort_by`/`sort_dir` — cột thật ở `_sort_map()`
+  //  của `survey_progress/controller.py`, cột TÍNH (trễ, số ngày xử lý, tiến độ
+  //  dòng, số PA), cụm phương án chốt và tên công ty ở `sort_expressions.py`
+  //  (duoc-CR-744). Mọi cột trừ STT đều xếp được; bài kiểm backend canh chỗ đó.
+  const [sortBy, sortDir, setSort] = useUrlRangeParam('sort_by', 'sort_dir')
   const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
@@ -141,6 +146,8 @@ function SurveyProgressContent() {
     dateField,
     dateFrom,
     dateTo,
+    sortBy,
+    sortDir,
   ])
 
   //  Cặp tham số ngày đã đổi tên theo mốc đang chọn. Tách riêng vì bảng và nút
@@ -162,12 +169,29 @@ function SurveyProgressContent() {
   //  `read_multi_param` bên backend đọc cả dạng này lẫn dạng lặp khóa (bao-CR-423).
   if (progressStates.length) filterParams.state = progressStates.join(',')
   if (late !== ALL) filterParams.late = late
+  //  Gắn vào phần LỌC chứ không phải phần phân trang: file Xuất Excel ra cùng
+  //  thứ tự với bảng đang xem.
+  if (sortBy) {
+    filterParams.sort_by = sortBy
+    filterParams.sort_dir = sortDir === 'desc' ? 'desc' : 'asc'
+  }
 
   const params: ListParams = { page, page_size: pageSize, ...filterParams }
 
   const { data, isLoading, isError } = useSurveyProgress(params)
   const items = data?.items ?? []
   const showSupplier = data?.show_supplier ?? canReadSupplier
+
+  /**
+   * Nhịp thứ ba của tiêu đề cột (tăng → giảm → THÔI SẮP XẾP) trả về khóa cột
+   * RỖNG: xóa luôn chiều sắp xếp, kẻo đường dẫn còn dính `?sort_dir=asc`.
+   */
+  const handleSortChange = useCallback(
+    (nextSortBy: string, nextSortDir: 'asc' | 'desc') => {
+      setSort(nextSortBy, nextSortBy ? nextSortDir : '')
+    },
+    [setSort],
+  )
 
   const handleExportExcel = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
@@ -199,50 +223,52 @@ function SurveyProgressContent() {
       { key: 'company', header: 'Công ty', width: 180, sortable: true, wrap: true, cell: (r) => r.company || '' },
       { key: 'department', header: 'Bộ phận', width: 140, sortable: true, wrap: true, cell: (r) => r.department || '' },
       { key: 'requester', header: 'Người yêu cầu', width: 150, sortable: true, wrap: true, cell: (r) => r.requester || '' },
-      { key: 'purpose', header: 'Mục đích', width: 190, defaultHidden: true, wrap: true, cell: (r) => r.purpose || '' },
-      { key: 'request_date', header: 'Ngày YC', width: 100, defaultHidden: true, cell: (r) => formatDate(r.request_date) || '' },
-      { key: 'status', header: 'TT phiếu', width: 110, wrap: true, cell: (r) => r.status || '' },
-      { key: 'internal_line_code', header: 'Mã dòng', width: 120, defaultHidden: true, supplierOnly: true, wrap: true, cell: (r) => r.internal_line_code || '' },
+      { key: 'purpose', header: 'Mục đích', width: 190, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.purpose || '' },
+      { key: 'request_date', header: 'Ngày YC', width: 100, defaultHidden: true, sortable: true, sortDescFirst: true, cell: (r) => formatDate(r.request_date) || '' },
+      { key: 'status', header: 'TT phiếu', width: 110, wrap: true, sortable: true, cell: (r) => r.status || '' },
+      { key: 'internal_line_code', header: 'Mã dòng', width: 120, defaultHidden: true, supplierOnly: true, wrap: true, sortable: true, cell: (r) => r.internal_line_code || '' },
       { key: 'item_group', header: 'Phân loại', width: 130, sortable: true, wrap: true, cell: (r) => r.item_group || '' },
-      { key: 'requirement_detail', header: 'Thông số kỹ thuật', width: 240, wrap: true, cell: (r) => r.requirement_detail || '' },
-      { key: 'other_requirement', header: 'Yêu cầu khác', width: 180, defaultHidden: true, wrap: true, cell: (r) => r.other_requirement || '' },
-      { key: 'request_qty', header: 'SL dự kiến', width: 100, align: 'right', cell: (r) => <span className="tabular-nums">{formatQuantity(r.request_qty) || 0}</span> },
-      { key: 'uom', header: 'ĐVT', width: 70, cell: (r) => r.uom || '' },
-      { key: 'proposed_price', header: 'Giá đề xuất', width: 110, align: 'right', defaultHidden: true, cell: (r) => <span className="tabular-nums">{formatUnitPrice(r.proposed_price) || 0}</span> },
-      { key: 'assignee_name', header: 'NSTM phụ trách', width: 180, wrap: true, cell: (r) => r.assignee_name || '' },
-      { key: 'received_date', header: 'Ngày tiếp nhận', width: 120, cell: (r) => formatDate(r.received_date) || '' },
-      { key: 'result_due_date', header: 'Hạn trả KQ', width: 110, cell: (r) => formatDate(r.result_due_date) || '' },
-      { key: 'result_date', header: 'Ngày trả KQ', width: 110, cell: (r) => formatDate(r.result_date) || '' },
+      { key: 'requirement_detail', header: 'Thông số kỹ thuật', width: 240, wrap: true, sortable: true, cell: (r) => r.requirement_detail || '' },
+      { key: 'other_requirement', header: 'Yêu cầu khác', width: 180, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.other_requirement || '' },
+      { key: 'request_qty', header: 'SL dự kiến', width: 100, align: 'right', sortable: true, cell: (r) => <span className="tabular-nums">{formatQuantity(r.request_qty) || 0}</span> },
+      { key: 'uom', header: 'ĐVT', width: 70, sortable: true, cell: (r) => r.uom || '' },
+      { key: 'proposed_price', header: 'Giá đề xuất', width: 110, align: 'right', defaultHidden: true, sortable: true, cell: (r) => <span className="tabular-nums">{formatUnitPrice(r.proposed_price) || 0}</span> },
+      { key: 'assignee_name', header: 'NSTM phụ trách', width: 180, wrap: true, sortable: true, cell: (r) => r.assignee_name || '' },
+      { key: 'received_date', header: 'Ngày tiếp nhận', width: 120, sortable: true, sortDescFirst: true, cell: (r) => formatDate(r.received_date) || '' },
+      { key: 'result_due_date', header: 'Hạn trả KQ', width: 110, sortable: true, sortDescFirst: true, cell: (r) => formatDate(r.result_due_date) || '' },
+      { key: 'result_date', header: 'Ngày trả KQ', width: 110, sortable: true, sortDescFirst: true, cell: (r) => formatDate(r.result_date) || '' },
       {
         key: 'days_late',
         header: 'Trễ (ngày)',
         width: 100,
         align: 'right',
+        sortable: true,
+        sortDescFirst: true,
         cell: (r) => (r.days_late && r.days_late > 0 ? <span className="font-semibold text-destructive">{r.days_late}</span> : ''),
       },
-      { key: 'handling_days', header: 'Số ngày xử lý', width: 110, align: 'right', cell: (r) => r.handling_days ?? '' },
-      { key: 'progress_state', header: 'Tiến độ dòng', width: 160, cell: (r) => <SurveyProgressStateBadge state={r.progress_state} /> },
-      { key: 'line_status', header: 'TT dòng', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.line_status || '' },
-      { key: 'option_count', header: 'Số PA', width: 80, align: 'right', cell: (r) => r.option_count ?? 0 },
-      { key: 'opt_label', header: 'Phương án chốt', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.opt_label || '' },
-      { key: 'opt_supplier_code', header: 'Mã NCC', width: 120, defaultHidden: true, supplierOnly: true, wrap: true, cell: (r) => r.opt_supplier_code || '' },
-      { key: 'opt_supplier_name', header: 'Nhà cung cấp', width: 220, supplierOnly: true, wrap: true, cell: (r) => r.opt_supplier_name || '' },
-      { key: 'opt_internal_code', header: 'Mã SP theo NCC', width: 140, defaultHidden: true, supplierOnly: true, wrap: true, cell: (r) => r.opt_internal_code || '' },
-      { key: 'opt_product_code', header: 'Mã SP hệ thống', width: 140, defaultHidden: true, wrap: true, cell: (r) => r.opt_product_code || '' },
-      { key: 'opt_product_name', header: 'Tên SP báo giá', width: 220, wrap: true, cell: (r) => <span className="font-medium">{r.opt_product_name || ''}</span> },
-      { key: 'opt_spec', header: 'Quy cách', width: 190, defaultHidden: true, wrap: true, cell: (r) => r.opt_spec || '' },
-      { key: 'opt_origin', header: 'Xuất xứ', width: 110, defaultHidden: true, wrap: true, cell: (r) => r.opt_origin || '' },
-      { key: 'opt_quote_unit', header: 'ĐVT báo giá', width: 100, defaultHidden: true, wrap: true, cell: (r) => r.opt_quote_unit || '' },
-      { key: 'opt_moq', header: 'SL tối thiểu', width: 100, align: 'right', defaultHidden: true, cell: (r) => <span className="tabular-nums">{formatQuantity(r.opt_moq) || 0}</span> },
-      { key: 'opt_price', header: 'Đơn giá báo', width: 120, align: 'right', cell: (r) => <span className="font-semibold tabular-nums">{formatUnitPrice(r.opt_price) || 0}</span> },
-      { key: 'opt_volume_range', header: 'Khoảng SL áp giá', width: 140, defaultHidden: true, wrap: true, cell: (r) => r.opt_volume_range || '' },
-      { key: 'opt_vat', header: 'VAT%', width: 70, align: 'right', defaultHidden: true, cell: (r) => r.opt_vat ?? 0 },
-      { key: 'opt_delivery_time', header: 'Thời gian giao', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.opt_delivery_time || '' },
-      { key: 'opt_delivery_place', header: 'Nơi giao', width: 160, defaultHidden: true, wrap: true, cell: (r) => r.opt_delivery_place || '' },
-      { key: 'opt_shipping_cost', header: 'Phí vận chuyển', width: 120, align: 'right', defaultHidden: true, cell: (r) => <span className="tabular-nums">{formatMoney(r.opt_shipping_cost) || 0}</span> },
-      { key: 'opt_sample_ready', header: 'Có mẫu', width: 80, defaultHidden: true, cell: (r) => (r.opt_sample_ready ? 'Có' : '') },
-      { key: 'opt_lab_result', header: 'KQ kiểm nghiệm', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.opt_lab_result || '' },
-      { key: 'opt_note', header: 'Ghi chú NSTM', width: 190, defaultHidden: true, supplierOnly: true, wrap: true, cell: (r) => r.opt_note || '' },
+      { key: 'handling_days', header: 'Số ngày xử lý', width: 110, align: 'right', sortable: true, sortDescFirst: true, cell: (r) => r.handling_days ?? '' },
+      { key: 'progress_state', header: 'Tiến độ dòng', width: 160, sortable: true, cell: (r) => <SurveyProgressStateBadge state={r.progress_state} /> },
+      { key: 'line_status', header: 'TT dòng', width: 130, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.line_status || '' },
+      { key: 'option_count', header: 'Số PA', width: 80, align: 'right', sortable: true, sortDescFirst: true, cell: (r) => r.option_count ?? 0 },
+      { key: 'opt_label', header: 'Phương án chốt', width: 130, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_label || '' },
+      { key: 'opt_supplier_code', header: 'Mã NCC', width: 120, defaultHidden: true, supplierOnly: true, wrap: true, sortable: true, cell: (r) => r.opt_supplier_code || '' },
+      { key: 'opt_supplier_name', header: 'Nhà cung cấp', width: 220, supplierOnly: true, wrap: true, sortable: true, cell: (r) => r.opt_supplier_name || '' },
+      { key: 'opt_internal_code', header: 'Mã SP theo NCC', width: 140, defaultHidden: true, supplierOnly: true, wrap: true, sortable: true, cell: (r) => r.opt_internal_code || '' },
+      { key: 'opt_product_code', header: 'Mã SP hệ thống', width: 140, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_product_code || '' },
+      { key: 'opt_product_name', header: 'Tên SP báo giá', width: 220, wrap: true, sortable: true, cell: (r) => <span className="font-medium">{r.opt_product_name || ''}</span> },
+      { key: 'opt_spec', header: 'Quy cách', width: 190, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_spec || '' },
+      { key: 'opt_origin', header: 'Xuất xứ', width: 110, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_origin || '' },
+      { key: 'opt_quote_unit', header: 'ĐVT báo giá', width: 100, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_quote_unit || '' },
+      { key: 'opt_moq', header: 'SL tối thiểu', width: 100, align: 'right', defaultHidden: true, sortable: true, cell: (r) => <span className="tabular-nums">{formatQuantity(r.opt_moq) || 0}</span> },
+      { key: 'opt_price', header: 'Đơn giá báo', width: 120, align: 'right', sortable: true, sortDescFirst: true, cell: (r) => <span className="font-semibold tabular-nums">{formatUnitPrice(r.opt_price) || 0}</span> },
+      { key: 'opt_volume_range', header: 'Khoảng SL áp giá', width: 140, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_volume_range || '' },
+      { key: 'opt_vat', header: 'VAT%', width: 70, align: 'right', defaultHidden: true, sortable: true, cell: (r) => r.opt_vat ?? 0 },
+      { key: 'opt_delivery_time', header: 'Thời gian giao', width: 130, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_delivery_time || '' },
+      { key: 'opt_delivery_place', header: 'Nơi giao', width: 160, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_delivery_place || '' },
+      { key: 'opt_shipping_cost', header: 'Phí vận chuyển', width: 120, align: 'right', defaultHidden: true, sortable: true, cell: (r) => <span className="tabular-nums">{formatMoney(r.opt_shipping_cost) || 0}</span> },
+      { key: 'opt_sample_ready', header: 'Có mẫu', width: 80, defaultHidden: true, sortable: true, cell: (r) => (r.opt_sample_ready ? 'Có' : '') },
+      { key: 'opt_lab_result', header: 'KQ kiểm nghiệm', width: 130, defaultHidden: true, wrap: true, sortable: true, cell: (r) => r.opt_lab_result || '' },
+      { key: 'opt_note', header: 'Ghi chú NSTM', width: 190, defaultHidden: true, supplierOnly: true, wrap: true, sortable: true, cell: (r) => r.opt_note || '' },
     ]
 
     return allCols.filter((col) => !col.supplierOnly || showSupplier)
@@ -418,6 +444,9 @@ function SurveyProgressContent() {
           }
           toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.survey-progress"
+          sortBy={sortBy || undefined}
+          sortDir={sortDir === 'desc' ? 'desc' : 'asc'}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

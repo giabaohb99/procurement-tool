@@ -16,6 +16,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Button } from '@/shared/ui/button'
@@ -72,6 +73,9 @@ function SealClerkListContent() {
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [tabFilter, setTabFilter] = useState<FilterTab>('all')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  //  duoc-CR-744: cột "Văn thư đóng dấu" bấm được. Danh sách tải hết một lần (xem `FETCH_LIMIT`) nên
+  //  chiều sắp gửi lên máy chủ, máy chủ xếp TRƯỚC khi trả; lọc và cắt trang tại chỗ giữ nguyên thứ tự đó.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   //  Bộ lọc nâng cao chạy TẠI CHỖ (xem `seal-clerk-filter-fields.ts`), nên lấy
   //  thẳng `appliedState` chứ không đi qua `useFilterQuery`.
@@ -87,6 +91,8 @@ function SealClerkListContent() {
     companyId,
     tabFilter,
     advancedKey,
+    sortBy,
+    sortDir,
   ])
 
   const { data: companies } = useCompanies(
@@ -99,8 +105,12 @@ function SealClerkListContent() {
     const p: ListParams = { page: 1, page_size: FETCH_LIMIT }
     if (debouncedValue) p.search = debouncedValue
     if (companyId !== ALL) p.company_id = Number(companyId)
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    }
     return p
-  }, [debouncedValue, companyId])
+  }, [debouncedValue, companyId, sortBy, sortDir])
 
   const { data, isLoading, isError } = useSealClerks(params)
   const sync = useSyncSealClerks()
@@ -265,6 +275,9 @@ function SealClerkListContent() {
               : 'Không có văn thư nào khớp bộ lọc đang chọn.'
           }
           storageKey="approval-seal.clerks"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

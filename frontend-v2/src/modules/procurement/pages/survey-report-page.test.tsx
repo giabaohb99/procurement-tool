@@ -437,6 +437,14 @@ describe('SurveyReportPage — ba nhịp sắp xếp', () => {
     expect(lastQuery()).not.toContain('sort_dir')
   })
 
+  it('sorts a column that used to be dead: Thời gian giao (duoc-CR-744)', async () => {
+    //  Cột chữ này có sẵn ở backend nhưng giao diện chưa bật sắp xếp: bấm tiêu đề không làm gì.
+    build()
+    await clickHeader('Thời gian giao')
+
+    await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: 'delivery_time', sort_dir: 'asc' }))
+  })
+
   it('restarts at ascending when a different column is picked', async () => {
     build('/procurement/survey-report?sort_by=date&sort_dir=desc')
     await clickHeader('NSPT')

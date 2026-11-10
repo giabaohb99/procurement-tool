@@ -44,6 +44,7 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
       header: 'Từ đồng nghĩa',
       width: 420,
       wrap: true,
+      sortable: true,
       cell: (row) => (
         <span className="flex flex-wrap gap-1">
           {row.synonyms
@@ -58,7 +59,7 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
         </span>
       ),
     },
-    { key: 'note', header: 'Ghi chú', width: 260, wrap: true, cell: (row) => row.note },
+    { key: 'note', header: 'Ghi chú', width: 260, wrap: true, sortable: true, cell: (row) => row.note },
     {
       key: 'is_active',
       header: 'Trạng thái',
