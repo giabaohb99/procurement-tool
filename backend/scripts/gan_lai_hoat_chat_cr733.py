@@ -12,6 +12,10 @@ nên dòng có tên hàng chứa từ hai tên thương mại trở lên mang ho
 y như nút *Gắn lại nhãn* (`ingredient.retag_all`), khác ở chỗ đọc theo khúc và chỉ ghi dòng khác; giá trị lấy từ tệp /
 sửa tay (cờ `_from_file`) giữ nguyên. Chạy lại lần hai `--dry-run` phải ra 0 dòng đổi.
 
+Sửa bộ dò (10/11): tên thương mại thuốc BVTV chỉ dò cho dòng mã HS 3808 (hoặc chưa có mã HS), nên hàng ngoài nhóm đó
+đang mang hoạt chất suy ra từ tên thương mại (hương liệu `GAULOIS ELIXIR` → Brodifacoum) được đưa về rỗng — số đó in ở
+`cleared`, chia theo mã HS bốn số ở `cleared_by_hs`; dòng mẫu kèm `hs_code`.
+
 Giữ khóa nạp tệp Tra cứu thị trường suốt lúc chạy (cùng khóa của lô nạp) để không chen vào một lô đang ghi. Gián
 đoạn giữa chừng thì chạy lại: khúc đã commit không bị ghi lại.
 """
@@ -48,7 +52,8 @@ def main() -> int:
         print(json.dumps(ex, ensure_ascii=False))
     verb = "Đã ghi" if args.apply else "Sẽ đổi (chạy thử, chưa ghi)"
     print(f"{verb} {out['changed']} / {out['total']} dòng — hoạt chất {out['active']}, hàm lượng "
-          f"{out['formulation']}, nhãn {out['kind']} — {time.perf_counter() - started:.1f} giây")
+          f"{out['formulation']}, nhãn {out['kind']}, hoạt chất đưa về rỗng {out['cleared']} — "
+          f"{time.perf_counter() - started:.1f} giây")
     return 0
 
 

@@ -292,6 +292,18 @@ hải quan đạt, ruff sạch. Đã đẩy lên erp-v2, chưa lên dev và prod
 **Còn lại:** sau khi bản này lên prod, chạy script gắn lại hoạt chất một lần (chạy thử trước, xem số dòng rồi mới ghi
 thật). Nút **Gắn lại nhãn** trên màn vẫn đọc cả bảng một lần trong tiến trình API, chưa đổi.
 
+**Sửa bộ dò trước khi ghi thật (10/11):** chạy thử script trên prod ngày 09/11 ra 381 dòng đổi, mẫu là hàng hương liệu
+đang mang hoạt chất thuốc BVTV và sau khi chạy vẫn mang một hoạt chất BVTV khác. Nguyên nhân là danh mục có thuốc tên
+đúng bằng từ thường (POWER, ELIXIR, JASMINE, ABSOLUTE, GAULOIS): tên hàng chứa hai từ như vậy thì bản cũ chọn ngẫu nhiên,
+bản sửa ở bao-CR-728 chọn từ đứng trước, cả hai đều sai vì hàng không phải thuốc. Bộ gắn nay chỉ dò tên thương mại cho
+dòng mã HS nhóm 3808 hoặc chưa có mã HS; bước dò theo tên hoạt chất giữ nguyên; sửa mã HS trên màn thì suy lại hoạt
+chất. Script gắn lại vì thế đưa về rỗng hoạt chất suy ra sai của hàng ngoài nhóm 3808 (giá trị người nhập giữ nguyên),
+in thêm số dòng đưa về rỗng và chia theo mã HS bốn số. Dữ liệu local 18.243 dòng và dev 17.175 dòng đều thuộc 3808 nên
+chạy thử ra 0 dòng đổi; số của prod phải chạy thử lại sau khi bản này lên. 411 bài kiểm hải quan đạt, ruff sạch, không
+migration.
+Mã nguồn: `customs/ingredient.py` (`allows_trade_names`, `retag_changed`), `customs/importer.py`,
+`customs/line_edit_service.py`. Kiểm: `test/backend/test_ten_thuong_mai_chi_hang_bvtv_cr733.py`.
+
 **Bài kiểm đỏ ngoài phạm vi (kiểm ngày 05/11):** một lần lỡ chạy cả bộ bài kiểm backend ra 8 bài đỏ, đều ngoài phần hải
 quan. Chạy riêng trên mã prod và trên erp-v2 cho thấy không bài nào do việc này gây ra. Năm bài phân vùng nhật ký đỏ sẵn
 từ bao-CR-732 (gọi hàm dump đã đổi tên) và đã được sửa riêng. Bài hồ sơ trường riêng chỉ đỏ vì lần chạy đó thiếu thư mục
