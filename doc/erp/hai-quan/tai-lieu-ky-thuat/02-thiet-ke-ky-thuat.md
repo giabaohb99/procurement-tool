@@ -420,7 +420,7 @@ Gắn **lúc nạp** (một lần cho cả lô, có bộ nhớ đệm theo tên 
 **Bộ nhận hoạt chất — ba nguồn, dùng lần lượt** (`customs/ingredient.py`):
 1. `tab_customs_ingredient_alias` — 99 từ khóa tay (`EMAMECTIN` → `EMAMECTIN BENZOATE`), khớp chuỗi con.
 2. **Tên hoạt chất bóc từ danh mục thuốc BVTV** (`derive_aliases`): tách theo `+`, bỏ ngoặc, bỏ hàm lượng, bỏ tên tiếng Việt và tên công ty chép nhầm vào cột hoạt chất; khớp **nguyên từ** trên chuỗi đã chuẩn hóa (gạch nối thành khoảng trắng). Thêm từ đầu của tên nhiều chữ (`KANAMYCIN` → `KANAMYCIN SULFATE`) trừ các từ chung chung (`POTASSIUM`, `ALUMINIUM`, `ACRYLIC`…) — danh sách chặn ở `_GENERIC_HEADS`, mỗi mục trong đó là một lỗi gắn nhầm đã gặp trên dữ liệu thật.
-3. Tên thương mại của thuốc BVTV — chỉ khi hai nguồn trên không ra gì, vì tên thương mại hay xuất hiện trong câu *"dùng để sản xuất thuốc X"* của một hoạt chất KHÁC.
+3. Tên thương mại của thuốc BVTV — chỉ khi hai nguồn trên không ra gì, vì tên thương mại hay xuất hiện trong câu *"dùng để sản xuất thuốc X"* của một hoạt chất KHÁC. Từ bao-CR-733 nguồn này **chỉ dò cho dòng mã HS nhóm 3808** (thuốc BVTV) hoặc dòng chưa có mã HS (`allows_trade_names`): danh mục có thuốc tên đúng bằng từ thường (`POWER` → Cypermethrin, `ELIXIR` → Chlorothalonil + Mancozeb, `JASMINE` → Difenoconazole + Propiconazole, `ABSOLUTE` → Hexaconazole + Isoprothiolane, `GAULOIS` → Brodifacoum), nên hương liệu / tinh dầu (HS 3301 / 3302) từng mang hoạt chất BVTV. Hai nguồn theo tên hoạt chất không qua cổng này (thuốc kỹ thuật hay khai ở chương 29). Sửa mã HS trên màn cũng suy lại hoạt chất.
 
 Đo trên 18.243 dòng: **51%** nhận ra hoạt chất (trước nguồn 2 là 41%), **93%** tách được hàm lượng.
 

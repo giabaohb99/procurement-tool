@@ -91,9 +91,10 @@ def update_line(db: Session, line_id: int, body: CustomsLineUpdate, user_id: int
             value = value.upper() if key in _UPPER_KEYS else value
             setattr(line, key, value)
             setattr(line, f"{key}_from_file", bool(value))
-    #  Suy lại khi tên hàng đổi (kèm nhãn Thành phẩm / Nguyên liệu) hoặc người dùng xóa trắng ô suy ra.
-    if "product_name" in data or any(key in data and not getattr(line, f"{key}_from_file") for key in _DERIVED_KEYS):
-        active, form = load_tagger(db).tag(line.product_name)
+    #  Suy lại khi tên hàng đổi (kèm nhãn Thành phẩm / Nguyên liệu) hoặc người dùng xóa trắng ô suy ra; bao-CR-733:
+    #  đổi mã HS cũng suy lại vì tên thương mại thuốc BVTV chỉ dò cho mã HS 3808.
+    if "product_name" in data or "hs_code" in data or any(key in data and not getattr(line, f"{key}_from_file") for key in _DERIVED_KEYS):
+        active, form = load_tagger(db).tag(line.product_name, line.hs_code)
         line.product_kind = load_kind_tagger(db).tag(line.product_name)
         if not line.active_ingredient_from_file:
             line.active_ingredient = active

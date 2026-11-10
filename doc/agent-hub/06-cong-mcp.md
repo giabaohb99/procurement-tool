@@ -294,7 +294,8 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 
 **Bộ mã**
 - `CallStatus` (nhật ký lượt gọi): 1 Thành công · 2 Bị từ chối · 3 Lỗi.
-- `KeyState` (khóa): 1 Chờ nhận · 2 Đang dùng · 3 Hết hạn · 4 Đã thu hồi · 5 Đang tắt (ai-CR-221).
+- `KeyState` (khóa): 1 Chờ nhận · 2 Còn hiệu lực (bao-CR-743, trước ghi *Đang dùng*) · 3 Hết hạn · 4 Đã thu hồi · 5 Đang tắt (ai-CR-221).
+- Mức dùng `usage` của khóa (bao-CR-743, chỉ khóa state 2, tính từ `last_used_at`, không lưu DB): `recent` Đang dùng (≤ 7 ngày) · `idle` Ít dùng (7–30 ngày) · `stale` Lâu không dùng (> 30 ngày) · `never` Chưa dùng; trạng thái khác → `usage: null`, `usage_label: ""`. Có trong mọi chỗ trả Key (`mcp-keys`, `mcp-key-admin/keys`) và trong bản xem trước `draft_key_revoke`.
 
 ### 7.1 Nhân sự — màn AI của tôi (G8)
 
@@ -328,8 +329,8 @@ skill_id, status, status_label, deny_reason, duration_ms, ip}`.
 | `GET ai-overview` | `agent_group.read` | — | `{generated_at, skills: {skill_sets, skills}\|null, connected_users, connected_days: 30, calls_7d, calls_prev_7d, calls_change_pct\|null, tool_calls_7d, tool_calls_prev_7d, denied_7d, error_7d, daily: [{day,total,ok,denied,error}×14], top_tools: [{key, calls}], top_users: [{key, calls, label}], top_skills: [{skill_id, calls}], keys_by_state: [{state, label, count}], expiring_keys: [{key_id, user_id, owner_label, name, expires_at, state}], expiring_days: 7}` — `skills = null` khi ERP không trả lời |
 | `GET mcp-calls` | xem người khác: `agent_group.read` | + `user_id` | như §7.1; không quyền mà hỏi người khác → 403 |
 | `GET mcp-calls/top?by=tool\|user&days=14&limit=10` | như trên | | `{by, days, items: [{key, calls, label?}]}` |
-| `GET mcp-key-admin/meta` | — | — | `{days: [7,30,90,180,365], batch_max: 50, max_keys: 5, states: [{value, label}], can_read, can_create, can_delete}` |
-| `GET mcp-key-admin/keys` | `ai_mcp_key_admin.read` | `department_id, state, user_id, batch_id, page, size≤200` | `{total, page, size, has_more, items: [Key + {owner_label, department_id, department, issued_by_label}]}` — chỉ khóa của người trong phạm vi |
+| `GET mcp-key-admin/meta` | — | — | `{days: [7,30,90,180,365], batch_max: 50, max_keys: 5, states: [{value, label}], usages: [{value, label}], can_read, can_create, can_delete}` |
+| `GET mcp-key-admin/keys` | `ai_mcp_key_admin.read` | `department_id, state, user_id, batch_id, q, usage ∈ recent\|idle\|stale\|never (sai → 422), page, size≤200` | `{total, page, size, has_more, items: [Key + {owner_label, department_id, department, issued_by_label}]}` — chỉ khóa của người trong phạm vi |
 | `POST mcp-key-admin/issue` | `ai_mcp_key_admin.create` | `{user_ids: [int] \| employee_ids: [int] \| department_id, days ∈ days, name}` — có `employee_ids` thì bỏ qua `department_id` | `{batch_id, issued: [{user_id, employee_id, label, key_id}], skipped: [{user_id, employee_id, label, reason}]}` — chỉ mức chỉ đọc; có người / nhân sự ngoài phạm vi (hoặc id nhân sự không có thật) → 403 cả lượt; tổng > 50 người → 400; người đủ 5 khóa → `skipped`; nhân sự chưa có tài khoản / tài khoản đã khóa → `skipped` với `user_id = 0` |
 | `POST mcp-key-admin/revoke` | `ai_mcp_key_admin.delete` | `{key_ids: [int]} \| {user_id} \| {batch_id}` | `{revoked: n}` — chủ khóa ngoài phạm vi → 403 cả lệnh |
 

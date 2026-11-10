@@ -38,7 +38,7 @@ from app.modules.import_tool.service import add_log
 from . import dedupe, line_change, reader, row_log
 from .constants import (COLUMNS, CONTROL_LABELS, INSERT_CHUNK, OPTIONAL_LABELS, REF_ID_KEY,
                         CustomsLineChangeAction, CustomsLineChangeSource, PartyType)
-from .ingredient import load_kind_tagger, load_tagger
+from .ingredient import allows_trade_names, load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
 
 SHEET = "GTT02"
@@ -172,13 +172,15 @@ class _Taggers:
     def __init__(self, db: Session):
         self.tagger = load_tagger(db)
         self.kinds = load_kind_tagger(db)          # bao-CR-494: nhãn Thành phẩm / Nguyên liệu
-        self.cache: dict[str, tuple[str, str, int]] = {}
+        self.cache: dict[tuple[str, bool], tuple[str, str, int]] = {}
 
-    def derive(self, name: str) -> tuple[str, str, int]:
-        if name not in self.cache:
-            active, form = self.tagger.tag(name)
-            self.cache[name] = (active, form, self.kinds.tag(name))
-        return self.cache[name]
+    def derive(self, name: str, hs_code: str | None = "") -> tuple[str, str, int]:
+        #  bao-CR-733: tên thương mại chỉ dò cho mã HS 3808 → khóa đệm gồm cả cổng đó.
+        key = (name, allows_trade_names(hs_code))
+        if key not in self.cache:
+            active, form = self.tagger.tag(name, hs_code)
+            self.cache[key] = (active, form, self.kinds.tag(name))
+        return self.cache[key]
 
     def tag(self, r: dict, previous: CustomsLine | None = None) -> None:
         """Điền hoạt chất / hàm lượng / nhãn / giá VND vào dòng `r` của tệp (sửa tại chỗ).
@@ -193,7 +195,7 @@ class _Taggers:
         Lý do: Excel xuất ra từ màn này điền sẵn cả bốn cột đó; xuất → sửa đơn giá → nạp lại mà
         coi mọi ô là "của tệp" thì giá VND cũ (tính theo đơn giá cũ) bị đóng băng thành số tay.
         """
-        active, form, r["product_kind"] = self.derive(r["product_name"])
+        active, form, r["product_kind"] = self.derive(r["product_name"], r.get("hs_code"))
         file_active = (r.get("active_ingredient") or "").strip()
         file_form = (r.get("formulation") or "").strip()
         if previous is not None:

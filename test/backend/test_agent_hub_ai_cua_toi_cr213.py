@@ -178,7 +178,7 @@ def test_tong_quan_so_lieu_va_quyen(db, cap_quyen, monkeypatch):
     assert out["top_tools"][0] == {"key": "erp_read", "calls": 5} and out["top_users"][0]["key"] == 101
     assert out["top_skills"] == [{"skill_id": 9, "calls": 1}]
     assert [k["key_id"] for k in out["expiring_keys"]] == [soon.id]
-    assert {s["label"]: s["count"] for s in out["keys_by_state"]}["Đang dùng"] == 2
+    assert {s["label"]: s["count"] for s in out["keys_by_state"]}["Còn hiệu lực"] == 2
 
     monkeypatch.setattr(erp, "skill_stats", lambda db_: (_ for _ in ()).throw(RuntimeError("ERP không trả lời")))
     assert _json(controller.ai_overview(user=SimpleNamespace(id=viewer.id), db=db))["skills"] is None

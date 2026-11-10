@@ -264,11 +264,17 @@ def _draft_key_revoke(db: Session, user, args: dict) -> dict:
     payload = {"key_ids": [r.id for r in rows]}
     preview = {"việc": f"THU HỒI {len(rows)} khóa kết nối AI — ứng dụng AI đang dùng các khóa này mất kết nối ngay",
                "khóa": [f"{people.get(int(r.user_id), {}).get('label', '#' + str(r.user_id))}: {r.name} …{r.key_hint} "
-                        f"({mcp_keys.STATE_LABELS.get(mcp_keys.state_of(r), '')}, hạn "
+                        f"({_key_state_text(r)}, hạn "
                         f"{r.expires_at.date().isoformat() if r.expires_at else 'không'})" for r in rows]}
     return {"kind": "key_revoke", "preview": preview,
             "draft": {"token": _seal(user, "key_revoke", payload), "summary": f"Thu hồi {len(rows)} khóa AI"},
             "note": NOTE}
+
+
+def _key_state_text(r) -> str:
+    """Trạng thái + mức dùng (bao-CR-743) cho bản xem trước thu hồi, ví dụ "Còn hiệu lực · Chưa dùng"."""
+    usage = mcp_keys.USAGE_LABELS.get(mcp_keys.usage_of(r), "")
+    return " · ".join(x for x in (mcp_keys.STATE_LABELS.get(mcp_keys.state_of(r), ""), usage) if x)
 
 
 def _confirm_key_issue(db: Session, user, p: dict) -> dict:

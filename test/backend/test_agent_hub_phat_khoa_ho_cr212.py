@@ -79,7 +79,7 @@ def test_phat_cho_nguoi_cung_phong_cho_nhan_chuong_va_nhan_mot_lan(db, org):
         controller.claim_my_mcp_key(row.id, user=SimpleNamespace(id=org.outsider.id), db=db)   # không phải của mình
     assert e.value.status_code == 404
     got = _json(controller.claim_my_mcp_key(row.id, user=me, db=db))
-    assert got["key"] == raw and got["state_label"] == "Đang dùng"
+    assert got["key"] == raw and got["state_label"] == "Còn hiệu lực"
     db.refresh(row)
     assert row.raw_sealed == "" and row.claimed_at is not None and mcp_keys.authenticate(db, raw) is row
     with pytest.raises(HTTPException) as e:

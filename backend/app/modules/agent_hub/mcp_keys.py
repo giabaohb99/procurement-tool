@@ -125,6 +125,7 @@ def revoke_all(db: Session, user_id: int) -> int:
 def serialize(row: AgentMcpKey) -> dict:
     iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
     st = state_of(row)
+    usage = usage_of(row)
     return {"id": row.id, "name": row.name, "hint": f"…{row.key_hint}", "scope": int(row.scope or 0),
             "scope_label": SCOPE_LABELS.get(int(row.scope or 0), "?"), "expires_at": iso(row.expires_at),
             "last_used_at": iso(row.last_used_at), "created_at": iso(row.created_at),
@@ -134,7 +135,9 @@ def serialize(row: AgentMcpKey) -> dict:
             #  ai-CR-221: `enabled` = công tắc của chủ khóa; `revealable` = xem lại được (khóa tạo trước ai-CR-221, kết nối
             #  OAuth hay khóa chưa nhận thì không — màn hiện "tạo lại để xem"). KHÔNG bao giờ trả khóa thô ở đây.
             "enabled": row.disabled_at is None, "disabled_at": iso(row.disabled_at),
-            "revealable": bool(row.raw_view) and st in (KeyState.ACTIVE, KeyState.DISABLED)}
+            "revealable": bool(row.raw_view) and st in (KeyState.ACTIVE, KeyState.DISABLED),
+            #  bao-CR-743: mức dùng theo lần dùng cuối — chỉ khóa còn hiệu lực mới có (khác thì null / chuỗi rỗng).
+            "usage": usage, "usage_label": USAGE_LABELS.get(usage, "")}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -143,14 +146,23 @@ def serialize(row: AgentMcpKey) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 class KeyState(IntEnum):
     PENDING = 1      # chờ nhận
-    ACTIVE = 2       # đang dùng
+    ACTIVE = 2       # còn hiệu lực (bao-CR-743: có dùng thật hay không xem `usage_of`)
     EXPIRED = 3      # hết hạn
     REVOKED = 4      # đã thu hồi (giữ dòng để đối soát)
     DISABLED = 5     # ai-CR-221: chủ khóa tắt tạm — bật lại được, khác thu hồi
 
 
-STATE_LABELS = {KeyState.PENDING: "Chờ nhận", KeyState.ACTIVE: "Đang dùng", KeyState.EXPIRED: "Hết hạn",
+#  bao-CR-743: ACTIVE ghi "Còn hiệu lực" — bản cũ ghi "Đang dùng" cho mọi khóa còn hạn nên quản trị tưởng khóa nào cũng
+#  đang chạy. "Đang dùng" nay là một MỨC DÙNG (USAGE_LABELS) tính từ `last_used_at`.
+STATE_LABELS = {KeyState.PENDING: "Chờ nhận", KeyState.ACTIVE: "Còn hiệu lực", KeyState.EXPIRED: "Hết hạn",
                 KeyState.REVOKED: "Đã thu hồi", KeyState.DISABLED: "Đang tắt"}
+
+#  bao-CR-743: MỨC DÙNG của khóa còn hiệu lực, tính lúc đọc (không lưu DB). Khoảng 7–30 ngày ghi "Ít dùng" chứ không để
+#  trống: mỗi khóa còn hiệu lực có đúng một nhãn, ô trống dễ đọc nhầm là khóa không còn hiệu lực (vốn cũng không có nhãn).
+USAGE_RECENT, USAGE_IDLE, USAGE_STALE, USAGE_NEVER = "recent", "idle", "stale", "never"
+USAGE_LABELS = {USAGE_RECENT: "Đang dùng", USAGE_IDLE: "Ít dùng", USAGE_STALE: "Lâu không dùng", USAGE_NEVER: "Chưa dùng"}
+USAGE_RECENT_DAYS = 7      # dùng trong 7 ngày → Đang dùng
+USAGE_STALE_DAYS = 30      # quá 30 ngày → Lâu không dùng
 ISSUE_DAYS = (7, 30, 90, 180, 365)
 BATCH_MAX = 50
 
@@ -174,6 +186,19 @@ def state_of(row: AgentMcpKey, now: datetime | None = None) -> KeyState:
     if is_unclaimed(row):
         return KeyState.PENDING
     return KeyState.DISABLED if row.disabled_at is not None else KeyState.ACTIVE
+
+
+def usage_of(row: AgentMcpKey, now: datetime | None = None) -> str | None:
+    """Mức dùng (USAGE_*) của khóa còn hiệu lực; trạng thái khác (chờ nhận / tắt / hết hạn / thu hồi) → None."""
+    now = now or datetime.now()
+    if state_of(row, now) != KeyState.ACTIVE:
+        return None
+    if row.last_used_at is None:
+        return USAGE_NEVER
+    age = now - row.last_used_at
+    if age <= timedelta(days=USAGE_RECENT_DAYS):
+        return USAGE_RECENT
+    return USAGE_STALE if age > timedelta(days=USAGE_STALE_DAYS) else USAGE_IDLE
 
 
 def live_count(db: Session, user_id: int, now: datetime | None = None) -> int:
