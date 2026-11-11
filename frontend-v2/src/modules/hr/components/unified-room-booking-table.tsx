@@ -21,6 +21,7 @@ import {
 } from '@/shared/ui/select'
 import { useMeetingRooms, useRoomBookings, useRoomHandled, useRoomToApprove } from '../hooks/use-room'
 import { ROOM_BOOKING_STATUS, ROOM_BOOKING_STATUS_LABELS, type RoomBooking, type RoomInboxRow } from '../types/room'
+import { approvalLifecycleRank } from '../utils/approval-lifecycle-rank'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import { RoomBookingCard } from './room-booking-card'
 import {
@@ -48,7 +49,8 @@ export type RoomScope = (typeof ROOM_SCOPE)[keyof typeof ROOM_SCOPE]
 /** Giá trị ô theo khóa cột - dùng khi xếp danh sách hộp việc (đã tải hết) tại trình duyệt. */
 const ROOM_SORT_GETTERS: CellGetters<RoomBooking> = {
   code: (r) => r.code,
-  status: (r) => r.status,
+  //  Hạng dòng đời như máy chủ (duoc-CR-748): Tôi đã duyệt có cả Trả về / Đã duyệt / Từ chối.
+  status: (r) => approvalLifecycleRank(r.status),
   title: (r) => r.title,
   room_name: (r) => r.room_name,
   start_at: (r) => r.start_at,

@@ -38,6 +38,7 @@ import {
   type LeaveRequest,
   type LeaveScope,
 } from '../types/leave'
+import { approvalLifecycleRank } from '../utils/approval-lifecycle-rank'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import { LeaveRequestCard } from './leave-request-card'
 import {
@@ -54,7 +55,8 @@ const ALL = 'all'
 /** Giá trị ô theo khóa cột - dùng khi xếp danh sách hộp việc (đã tải hết) tại trình duyệt. */
 const LEAVE_SORT_GETTERS: CellGetters<LeaveRequest> = {
   code: (r) => r.code,
-  status: (r) => r.status,
+  //  Hạng dòng đời như máy chủ (duoc-CR-748): Tôi đã duyệt có cả Trả về / Đã duyệt / Từ chối.
+  status: (r) => approvalLifecycleRank(r.status),
   employee_name: (r) => r.employee_name,
   leave_type_name: (r) => r.leave_type_name,
   from_date: (r) => r.from_date,

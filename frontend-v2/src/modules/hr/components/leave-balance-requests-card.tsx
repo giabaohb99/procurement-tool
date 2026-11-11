@@ -63,7 +63,7 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
         header: 'Trạng thái',
         cell: (r) => <LeaveStatusCell request={r} />,
         width: 230,
-        //  Máy chủ xếp theo mã số trạng thái (1 Nháp → 2 Chờ duyệt → 3 Đã duyệt → …) — cùng cách với màn Đơn nghỉ phép.
+        //  Máy chủ xếp theo DÒNG ĐỜI (Nháp → Chờ duyệt → Trả về → Đã duyệt → …) — cùng cách với màn Đơn nghỉ phép.
         sortable: true,
       },
       {
