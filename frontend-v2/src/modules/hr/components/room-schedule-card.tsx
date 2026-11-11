@@ -100,7 +100,7 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
         key: 'status',
         header: 'Trạng thái',
         width: 150,
-        //  Máy chủ xếp theo mã số trạng thái (1 Nháp → 2 Chờ duyệt → …) — cùng cách với màn Đặt phòng họp.
+        //  Máy chủ xếp theo DÒNG ĐỜI (Nháp → Chờ duyệt → Trả về → Đã duyệt → …) — cùng cách với màn Đặt phòng họp.
         sortable: true,
         cell: (b) => <RoomStatusBadge status={b.status} label={b.status_label} />,
       },

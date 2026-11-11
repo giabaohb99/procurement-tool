@@ -160,8 +160,9 @@ Mã nguồn: `frontend-v2/src/modules/hr/components/lookup-select.tsx`, `employe
 - Thẻ Theo dòng quỹ, ba tab trong hồ sơ nhân sự, bảng xem trước phân bổ hàng loạt, hộp đối chiếu kết sổ và lịch nghỉ theo ngày xếp ngay ở trình duyệt; bảy danh mục bật thêm các cột còn thiếu.
 - Các cột hiện tên nhưng lưu mã số, các cột tính ra và các bảng so sánh trước sau cố ý không cho xếp; ô trống luôn nằm cuối.
 - Thêm bài kiểm backend cho từng bảng và bài kiểm giao diện; bài kiểm cũ của các module liên quan và cả thư mục Nhân sự ở giao diện đều qua.
+- Lượt rà mã: hàng đợi *Tôi đã duyệt* và *Cần tôi duyệt* của đơn nghỉ, đặt phòng, nghỉ bù, thanh toán phép xếp ở trình duyệt vẫn theo số mã, nên cùng một màn mà đổi phạm vi là cột Trạng thái ra hai thứ tự khác nhau; nay dùng chung hạng dòng đời với máy chủ, kèm bài kiểm.
 
-Mã nguồn: `backend/app/core/int_code_rank_sql.py`, `backend/app/modules/employee/change_request_sort.py`, `backend/app/modules/labor_contract/template_sort.py`, `variable_sort.py`, `backend/app/modules/leave/policy_assignment_sort.py`, `balance_matrix_sort.py`, `frontend-v2/src/modules/hr/hooks/use-local-table-sort.ts`, `utils/sort-leave-balance-groups.ts`, `test/backend/test_sap_xep_nhan_su_cr748.py`
+Mã nguồn: `frontend-v2/src/modules/hr/utils/approval-lifecycle-rank.ts`, `backend/app/core/int_code_rank_sql.py`, `backend/app/modules/employee/change_request_sort.py`, `backend/app/modules/labor_contract/template_sort.py`, `variable_sort.py`, `backend/app/modules/leave/policy_assignment_sort.py`, `balance_matrix_sort.py`, `frontend-v2/src/modules/hr/hooks/use-local-table-sort.ts`, `utils/sort-leave-balance-groups.ts`, `test/backend/test_sap_xep_nhan_su_cr748.py`
 
 ## duoc-CR-745 | Nối màn Phân bổ chính sách với Quỹ phép năm và làm rõ hộp Phân bổ chính sách
 - status: xong

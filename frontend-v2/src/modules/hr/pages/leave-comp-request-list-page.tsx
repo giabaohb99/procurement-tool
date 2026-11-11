@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatDate } from '@/shared/utils/format-date'
 import { LeaveCompRequestCard } from '../components/leave-comp-request-card'
 import { LeaveStatusBadge } from '../components/leave-status-badge'
+import { approvalLifecycleRank } from '../utils/approval-lifecycle-rank'
 import { formatCompDays } from '../utils/format-comp-days'
 import { sortRowsByCell, type CellGetters } from '@/shared/utils/sort-rows-by-cell'
 import { useLeaveCompRequests, useLeaveCompToApprove } from '../hooks/use-leave-comp'
@@ -42,7 +43,7 @@ const SCOPE_LABELS: Record<Scope, string> = {
 /**
  * Giá trị ô đang hiện của từng cột xếp được — dùng để xếp hàng đợi *Cần tôi duyệt* tại chỗ (endpoint
  * `/to-approve` trả hết, không nhận `sort_by`). Hai phạm vi còn lại xếp ở server theo cùng các khóa này
- * (`leave/comp_encashment_sort_expressions.py`, duoc-CR-744). `status` là mã số đã theo thứ tự hiển thị.
+ * (`leave/comp_encashment_sort_expressions.py`, duoc-CR-744). `status` theo hạng dòng đời như máy chủ (duoc-CR-748).
  */
 const COMP_SORT_GETTERS: CellGetters<LeaveCompRequest> = {
   id: (r) => r.id,
@@ -50,7 +51,7 @@ const COMP_SORT_GETTERS: CellGetters<LeaveCompRequest> = {
   employee_name: (r) => r.employee_name,
   work_date: (r) => r.work_date,
   days: (r) => r.days,
-  status: (r) => r.status,
+  status: (r) => approvalLifecycleRank(r.status),
   reason: (r) => r.reason,
   created_at: (r) => r.created_at,
 }
