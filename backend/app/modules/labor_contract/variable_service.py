@@ -19,6 +19,7 @@ from .template_model import LaborContractTemplate
 from .variable_model import LaborContractVariable as V
 from .variable_registry import contract_value_count, template_usage
 from . import variable_rules as rules
+from . import variable_sort
 
 SYSTEM_EDITABLE = frozenset({"label", "description", "is_hidden"})
 
@@ -32,7 +33,8 @@ class VariableInUse(Exception):
 
 
 def list_variables(db: Session, *, q: str, source: int | None, value_type: int | None,
-                   is_active: bool | None, offset: int, limit: int) -> tuple[int, list[V]]:
+                   is_active: bool | None, offset: int, limit: int,
+                   sort_by: str = "", sort_dir: str = "asc") -> tuple[int, list[V]]:
     #  Dòng hệ thống có mã không còn trong code (bỏ biến khỏi `placeholder_catalog`) thì không trả.
     query = db.query(V).filter(or_(V.source == int(Src.CUSTOM), V.code.in_(KNOWN_KEYS)))
     if source:
@@ -47,7 +49,8 @@ def list_variables(db: Session, *, q: str, source: int | None, value_type: int |
         like = "%" + keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         query = query.filter(or_(V.code.like(like, escape="\\"), V.label.like(like, escape="\\")))
     total = query.count()
-    return total, query.order_by(V.source, V.sort_order, V.code).offset(offset).limit(limit).all()
+    #  duoc-CR-748: cột đang hiện xếp qua `variable_sort`; không chọn cột / khóa lạ -> thứ tự cũ.
+    return total, query.order_by(*variable_sort.build_order_by(sort_by, sort_dir)).offset(offset).limit(limit).all()
 
 
 def get_or_404(db: Session, vid: int, lock: bool = False) -> V:

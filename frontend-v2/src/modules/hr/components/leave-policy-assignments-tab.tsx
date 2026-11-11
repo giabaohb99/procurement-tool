@@ -30,8 +30,16 @@ export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTa
   const canOpenList = can('leave_balance', 'write')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  //  duoc-CR-748: xếp tại máy chủ. Giữ trong state cục bộ (không lên URL) vì tab nằm trong trang chi tiết đã có `?tab=`
+  //  của riêng nó; đổi cột xếp thì về trang 1 để không rơi vào trang trống.
+  const [sort, setSort] = useState<{ by: string; dir: 'asc' | 'desc' }>({ by: '', dir: 'asc' })
   const { data, isLoading, isError } = useLeavePolicyAssignments(
-    { policy_id: policyId, page, page_size: pageSize },
+    {
+      policy_id: policyId,
+      page,
+      page_size: pageSize,
+      ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
+    },
     { enabled: canRead },
   )
   const columns = useMemo(() => buildLeavePolicyAssignmentColumns({ showPolicy: false }), [])
@@ -58,6 +66,12 @@ export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTa
         isError={isError}
         emptyMessage="Chưa phân bổ chính sách này cho ai."
         storageKey="hr.leave-policy-assignments-tab"
+        sortBy={sort.by}
+        sortDir={sort.dir}
+        onSortChange={(by, dir) => {
+          setSort({ by, dir })
+          setPage(1)
+        }}
         onRowClick={canOpenList ? (a) => navigate(buildAssignmentListHref(policyId, a)) : undefined}
         getRowHref={canOpenList ? (a) => buildAssignmentListHref(policyId, a) : undefined}
         //  Khổ điện thoại: dùng lại thẻ của màn Phân bổ chính sách (duoc-CR-721), KHÔNG truyền nút — tab này

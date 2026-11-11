@@ -46,11 +46,11 @@ function Harness() {
   return <LeaveBalanceMatrixTable year="2026" onYearChange={() => {}} search={search} />
 }
 
-function renderTable() {
+function renderTable(url = '/hr/leave-balances?view=people') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/hr/leave-balances?view=people']}>
+      <MemoryRouter initialEntries={[url]}>
         <Harness />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -152,5 +152,56 @@ describe('LeaveBalanceMatrixTable (duoc-CR-717)', () => {
     expect(await screen.findByText('Chưa có ai được cấp quỹ phép năm 2026.')).toBeInTheDocument()
     await user.type(screen.getByPlaceholderText('Tìm tên, mã nhân sự'), 'zzz')
     expect(await screen.findByText('Không có nhân sự nào khớp bộ lọc.')).toBeInTheDocument()
+  })
+
+  //  duoc-CR-748: ba cột đầu xếp tại MÁY CHỦ; cột số ngày tính bằng Python nên không xếp được.
+  describe('sắp xếp cột (duoc-CR-748)', () => {
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+    const lastParams = () => {
+      const calls = apiGet.mock.calls.filter(([url]) => url === '/api/leave-balances/matrix')
+      return (calls.at(-1)?.[1] as { params: Record<string, unknown> }).params
+    }
+
+    it('sends sort_by for Mã NV, Họ tên and Phòng ban (department_name) and goes back to page 1', async () => {
+      const user = userEvent.setup()
+      renderTable()
+      await screen.findByText('Trần An')
+      const cases: [string, string][] = [
+        ['Mã NV', 'code'],
+        ['Họ tên', 'name'],
+        ['Phòng ban', 'department_name'],
+      ]
+      for (const [text, key] of cases) {
+        await user.click(header(text))
+        await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: key, sort_dir: 'asc', page: 1 }))
+      }
+      await user.click(header('Phòng ban'))
+      await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: 'department_name', sort_dir: 'desc' }))
+      await user.click(header('Phòng ban'))
+      await waitFor(() => expect(lastParams().sort_by).toBeUndefined())
+    })
+
+    it('does NOT sort by Chính sách, a leave-type column or Tổng còn lại', async () => {
+      const user = userEvent.setup()
+      renderTable()
+      await screen.findByText('Trần An')
+      for (const text of ['Chính sách', 'Phép năm', 'Nghỉ bù', 'Tổng còn lại']) {
+        await user.click(header(text))
+      }
+      expect(lastParams().sort_by).toBeUndefined()
+    })
+
+    it('exports in the SAME order the table is showing', async () => {
+      granted = new Set(['leave_balance.export'])
+      const user = userEvent.setup()
+      renderTable('/hr/leave-balances?view=people&sort_by=name&sort_dir=desc')
+      await screen.findByText('Trần An')
+      await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+      expect(downloadFile).toHaveBeenCalledWith(
+        '/api/leave-balances/matrix/export',
+        'quy-phep-theo-nhan-su-2026.xlsx',
+        { year: 2026, sort_by: 'name', sort_dir: 'desc' },
+      )
+    })
   })
 })

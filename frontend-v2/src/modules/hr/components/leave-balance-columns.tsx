@@ -6,6 +6,7 @@ import {
   rowTotals,
   type LeaveBalanceRow,
 } from '../utils/group-leave-balances'
+import { LEAVE_BALANCE_SORTABLE_KEYS } from '../utils/sort-leave-balance-groups'
 import { DayCount, NameCell, PolicyName } from './leave-balance-cells'
 
 /**
@@ -32,7 +33,10 @@ export function buildLeaveBalanceColumns({
   expanded,
   onToggle,
 }: BuildOptions): DataTableColumn<LeaveBalanceRow>[] {
-  return [
+  //  duoc-CR-748: mọi cột đều bấm tiêu đề để xếp được — xếp NHÓM NGƯỜI ở trình duyệt, luật ở
+  //  `utils/sort-leave-balance-groups.ts`. Bật `sortable` theo đúng bộ khóa hàm xếp hiểu, để không có cột nào
+  //  bấm mà "không ăn".
+  const columns: DataTableColumn<LeaveBalanceRow>[] = [
     {
       key: 'employee_name',
       header: 'Nhân sự',
@@ -196,4 +200,5 @@ export function buildLeaveBalanceColumns({
       hideable: false,
     },
   ]
+  return columns.map((column) => ({ ...column, sortable: LEAVE_BALANCE_SORTABLE_KEYS.has(column.key) }))
 }

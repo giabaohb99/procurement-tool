@@ -13,12 +13,14 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { sortRowsByCell, type CellGetters } from '@/shared/utils/sort-rows-by-cell'
 import {
   LEAVE_STATUS,
   LEAVE_STATUS_LABELS,
   type Holiday,
   type LeaveRequest,
 } from '../types/leave'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import { holidayNamesOn, isWeekend, toISODate } from '../utils/calendar-grid'
 import { periodOn } from '../utils/leave-periods'
 import {
@@ -37,6 +39,23 @@ import {
   statusColumn,
 } from './leave-request-columns'
 import { LeaveRequestCard } from './leave-request-card'
+
+/**
+ * Giá trị đem xếp của các cột `leave-request-columns` đã khai `sortable` (duoc-CR-748) — đúng thứ ô đang hiện:
+ * Người nghỉ theo tên, Loại nghỉ theo tên loại CHÍNH (ô hiện "Phép năm +1", cùng luật với máy chủ), Trạng thái
+ * theo mã số (Chờ duyệt trước Đã duyệt) như màn Đơn nghỉ phép. Cột Trong đợt nghỉ không xếp: bốn nhãn vị trí,
+ * xếp theo chữ cái không nói gì.
+ */
+const DAY_VIEW_SORT_GETTERS: CellGetters<LeaveRequest> = {
+  employee_name: (r) => r.employee_name || `#${r.employee_id}`,
+  status: (r) => r.status,
+  leave_type_name: (r) => r.leave_type_name,
+  from_date: (r) => r.from_date,
+  to_date: (r) => r.to_date,
+  total_days: (r) => r.total_days,
+  code: (r) => r.code,
+  reason: (r) => r.reason,
+}
 
 interface LeaveCalendarDayViewProps {
   anchor: Date
@@ -81,6 +100,8 @@ export function LeaveCalendarDayView({
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState(ALL_OPTION)
   const [typeId, setTypeId] = useState(ALL_OPTION)
+  //  Xếp ngay ở trình duyệt: danh sách người nghỉ của ngày đã nằm sẵn trong bộ nhớ (trang cha nạp cả khoảng).
+  const sort = useLocalTableSort()
 
   const iso = toISODate(anchor)
   const all = useMemo(() => requestsOn(iso), [requestsOn, iso])
@@ -92,8 +113,9 @@ export function LeaveCalendarDayView({
     const rows = filterLeaveRows(all, { keyword, typeId })
     //  Lọc trạng thái là ô RIÊNG của màn này — hai màn hộp việc duyệt không có
     //  nó (mọi dòng ở đó cùng một trạng thái), nên nó không nằm ở phần dùng chung.
-    return status === ALL_OPTION ? rows : rows.filter((r) => r.status === Number(status))
-  }, [all, keyword, typeId, status])
+    const shown = status === ALL_OPTION ? rows : rows.filter((r) => r.status === Number(status))
+    return sortRowsByCell(shown, sort.sortBy, sort.sortDir, DAY_VIEW_SORT_GETTERS)
+  }, [all, keyword, typeId, status, sort.sortBy, sort.sortDir])
 
   const approved = items.filter((r) => r.status === LEAVE_STATUS.APPROVED).length
   const pending = items.length - approved
@@ -102,7 +124,7 @@ export function LeaveCalendarDayView({
   const columns = useMemo<DataTableColumn<LeaveRequest>[]>(
     () => [
       employeeColumn(),
-      statusColumn(),
+      { ...statusColumn(), sortable: true },
       leaveTypeColumn(),
       {
         //  Cột này chỉ có nghĩa TRONG chế độ ngày nên khai tại chỗ, không đẩy
@@ -206,6 +228,9 @@ export function LeaveCalendarDayView({
           filtering ? 'Không có ai khớp bộ lọc.' : 'Không ai nghỉ ngày này.'
         }
         storageKey="hr.leave-calendar-day"
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         //  ⚠️ Phải khai CẢ HAI, đừng để `DataTable` tự suy: mặc định của nó là
         //  "URL còn param nào thì coi như đang lọc, bấm Xóa lọc là quét sạch
         //  param". Mà URL của màn này mang `mode` + `date` — hai thứ nói mình

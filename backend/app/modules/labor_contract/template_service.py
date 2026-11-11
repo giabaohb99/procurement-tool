@@ -16,7 +16,7 @@ from app.core.upload_guard import guard_upload
 from app.modules.company.model import Company
 from app.modules.document.labor_contract_archive_access import hdld_type_id
 
-from . import access, variable_registry
+from . import access, template_sort, variable_registry
 from .docx_engine import inspect_template
 from .file_response import (delete_files_after_commit, discard_new_file, load_bytes,
                             store_bytes)
@@ -71,7 +71,8 @@ def _ensure_unique_name(db: Session, company_id: int, name: str, exclude_id: int
 
 
 def list_templates(db: Session, user, profile: dict, *, company_id: int | None, contract_type: int | None,
-                   is_active: bool | None, q: str, offset: int, limit: int):
+                   is_active: bool | None, q: str, offset: int, limit: int,
+                   sort_by: str = "", sort_dir: str = "asc"):
     query = apply_scope(db.query(LaborContractTemplate), LaborContractTemplate, ENTITY, user, profile, "read")
     if company_id:
         query = query.filter(LaborContractTemplate.company_id == company_id)
@@ -85,9 +86,8 @@ def list_templates(db: Session, user, profile: dict, *, company_id: int | None, 
         query = query.filter(or_(LaborContractTemplate.name.like(like),
                                  LaborContractTemplate.original_filename.like(like)))
     total = query.count()
-    rows = (query.order_by(LaborContractTemplate.company_id, LaborContractTemplate.contract_type,
-                           LaborContractTemplate.name)
-            .offset(offset).limit(limit).all())
+    #  duoc-CR-748: cột đang hiện xếp qua `template_sort`; không chọn cột / khóa lạ -> thứ tự cũ.
+    rows = query.order_by(*template_sort.build_order_by(sort_by, sort_dir)).offset(offset).limit(limit).all()
     return total, rows
 
 

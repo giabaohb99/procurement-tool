@@ -11,6 +11,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
@@ -58,13 +59,20 @@ export function LaborContractTemplateCatalog() {
   const [editing, setEditing] = useState<LaborContractTemplate | null>(null)
   const navigate = useNavigate()
 
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, companyId, contractType, active])
+  //  duoc-CR-748: sắp xếp tại máy chủ (tên, pháp nhân, loại HĐ, số HĐ đã dùng, trạng thái, ngày tạo).
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, companyId, contractType, active, sortBy, sortDir])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.q = debouncedValue
   if (companyId !== ALL) params.company_id = Number(companyId)
   if (contractType !== ALL) params.contract_type = Number(contractType)
   if (active !== ALL) params.is_active = active === 'true'
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useLaborContractTemplates(params, { enabled: canRead })
   const { data: companies } = useCompanies({ page_size: 200 }, { enabled: canRead })
@@ -121,6 +129,9 @@ export function LaborContractTemplateCatalog() {
               : 'Chưa có mẫu hợp đồng nào. Bấm "Tải lên mẫu" ở góc trên để thêm.'
           }
           storageKey="hr.labor-contract-templates"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           mobileCard={(t) => <LaborContractTemplateCard template={t} actions={actions} />}
           pagination={{
             page,

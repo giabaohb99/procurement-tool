@@ -47,6 +47,9 @@ export interface LeaveBalanceMatrixParams {
   department_id?: number
   employee_status?: LeaveBalanceMatrixEmployeeStatus
   search?: string
+  /** duoc-CR-748: `code` · `name` · `department_name`; các cột số ngày không xếp được. Xuất Excel nhận cùng cặp này. */
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
   page?: number
   page_size?: number
 }

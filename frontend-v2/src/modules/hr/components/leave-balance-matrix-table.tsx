@@ -8,6 +8,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import type { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import { Button } from '@/shared/ui/button'
 import { SearchField } from '@/shared/ui/search-field'
 import { leaveBalanceMatrixApi, type LeaveBalanceMatrixParams } from '../api/leave-balance-matrix-api'
@@ -49,7 +50,9 @@ export function LeaveBalanceMatrixTable({ year, onYearChange, search }: LeaveBal
   const [rawStatus, setStatus] = useUrlParamState('employee_status', STATUS_WORKING)
   //  Link gõ tay `?employee_status=xyz`: coi như mặc định, không gửi giá trị lạ cho backend ăn 422.
   const status = STATUS_OPTIONS.find((o) => o.value === rawStatus)?.value ?? STATUS_WORKING
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, departmentId, status])
+  //  duoc-CR-748: sắp xếp tại máy chủ (Mã NV, Họ tên, Phòng ban), gắn vào bộ lọc để Xuất Excel cùng thứ tự.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, departmentId, status, sortBy, sortDir])
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [exporting, setExporting] = useState(false)
   const runOnce = useSingleFlight()
@@ -65,8 +68,12 @@ export function LeaveBalanceMatrixTable({ year, onYearChange, search }: LeaveBal
     const dept = Number(departmentId)
     if (departmentId !== ALL_DEPARTMENTS && Number.isInteger(dept) && dept > 0) p.department_id = dept
     if (status !== STATUS_WORKING) p.employee_status = status
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    }
     return p
-  }, [year, debouncedValue, departmentId, status])
+  }, [year, debouncedValue, departmentId, status, sortBy, sortDir])
 
   const { data, isLoading, isError } = useLeaveBalanceMatrix({ ...filters, page, page_size: pageSize })
   const typeColumns = useMemo(() => data?.columns ?? [], [data])
@@ -101,6 +108,9 @@ export function LeaveBalanceMatrixTable({ year, onYearChange, search }: LeaveBal
         filtering ? 'Không có nhân sự nào khớp bộ lọc.' : `Chưa có ai được cấp quỹ phép năm ${year}.`
       }
       storageKey="hr.leave-balances.matrix"
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSortChange={handleSortChange}
       toolbarClassName={LIST_TOOLBAR_STICKY}
       keepFilterParams={['view']}
       //  Hàng khóa theo `employee_id`, không có `id` — lúc bảng rỗng bảng không suy ra được điều

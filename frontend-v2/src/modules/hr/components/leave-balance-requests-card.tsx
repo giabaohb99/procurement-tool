@@ -6,6 +6,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { formatDate } from '@/shared/utils/format-date'
 import { useLeaveRequests } from '../hooks/use-leave'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { LeaveBalance, LeaveRequest } from '../types/leave'
 import { LeaveRequestCard } from './leave-request-card'
 import { LeaveStatusCell } from './leave-status-cell'
@@ -33,6 +34,9 @@ const MAX_ROWS = 100
  */
 export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardProps) {
   const navigate = useNavigate()
+  //  duoc-CR-748: xếp TẠI MÁY CHỦ (bảng lấy tối đa `MAX_ROWS` đơn, xếp lại phần đã lấy ở trình duyệt là sai khi
+  //  vượt trần). Khóa cho phép: cột thật của đơn + `employee_name` / `leave_type_name` (`leave/sort_expressions.py`).
+  const sort = useLocalTableSort()
 
   const { data, isLoading, isError } = useLeaveRequests({
     page: 1,
@@ -41,6 +45,7 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
     leave_type_id: String(balance.leave_type_id),
     from_date: `${balance.year}-01-01`,
     to_date: `${balance.year}-12-31`,
+    ...sort.params,
   })
 
   const columns = useMemo<DataTableColumn<LeaveRequest>[]>(
@@ -51,24 +56,29 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
         cell: (r) => <span className="font-medium tabular-nums">{r.code}</span>,
         width: 110,
         hideable: false,
+        sortable: true,
       },
       {
         key: 'status',
         header: 'Trạng thái',
         cell: (r) => <LeaveStatusCell request={r} />,
         width: 230,
+        //  Máy chủ xếp theo mã số trạng thái (1 Nháp → 2 Chờ duyệt → 3 Đã duyệt → …) — cùng cách với màn Đơn nghỉ phép.
+        sortable: true,
       },
       {
         key: 'from_date',
         header: 'Từ ngày',
         cell: (r) => <span className="tabular-nums">{formatDate(r.from_date)}</span>,
         width: 110,
+        sortable: true,
       },
       {
         key: 'to_date',
         header: 'Đến ngày',
         cell: (r) => <LeaveToDateCell request={r} />,
         width: 150,
+        sortable: true,
       },
       {
         key: 'total_days',
@@ -76,6 +86,7 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
         cell: (r) => <span className="font-medium tabular-nums">{r.total_days}</span>,
         width: 90,
         align: 'right',
+        sortable: true,
       },
       {
         key: 'reason',
@@ -83,6 +94,7 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
         cell: (r) => r.reason,
         wrap: true,
         minWidth: 180,
+        sortable: true,
       },
     ],
     [],
@@ -106,6 +118,9 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
           isError={isError}
           emptyMessage="Người này chưa nộp đơn nghỉ nào thuộc loại nghỉ này trong năm."
           storageKey="hr.leave-balance-requests"
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
           //  ⚠️ Bảng này khai 6 cột với bề rộng cứng, tổng ~830px. Trên máy
           //  390px người dùng thấy đúng "Số đơn" và một nửa "Trạng thái"; ngay

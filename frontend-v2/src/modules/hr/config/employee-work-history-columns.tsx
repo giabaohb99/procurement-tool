@@ -7,6 +7,8 @@ import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { formatDate, toDateInputValue } from '@/shared/utils/format-date'
+import type { CellGetters } from '@/shared/utils/sort-rows-by-cell'
+import { getStatusRank } from '@/shared/utils/status-rank'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { workHistoryOpenEndLabel } from '../utils/employee-work-history-display'
 
@@ -71,6 +73,28 @@ export function renderFileCell({
   )
 }
 
+/**
+ * Giá trị đem xếp của các cột bảng "Quá trình công tác" (duoc-CR-748). API trả đủ mọi dòng của một người (không phân
+ * trang) nên xếp ở trình duyệt; mỗi khóa xếp theo đúng thứ ô đang hiện, ô trống ("—") xuống cuối cả hai chiều:
+ * - Đến ngày: ngày kết thúc; dòng chưa có ngày (ô hiện huy hiệu *Đang hiệu lực* / *Chưa hiệu lực*) là ô trống;
+ * - Loại: theo thứ tự khai của bộ mã (Tuyển dụng → Điều chuyển → … → Khác), không theo chữ cái;
+ * - Tệp: số tệp đính kèm — cả người không mở được tệp cũng thấy con số này (Q4), 0 hiện "—" nên là ô trống.
+ * Bảng "Quyết định bổ nhiệm" dùng chung bộ này (cùng kiểu dòng) cộng thêm cột tóm tắt của riêng nó.
+ */
+export const EMPLOYEE_WORK_HISTORY_SORT_GETTERS: CellGetters<EmployeeWorkHistory> = {
+  from_date: (row) => row.from_date,
+  to_date: (row) => row.to_date,
+  event_type: (row) => getStatusRank(WORK_EVENT_TYPE, String(row.event_type)),
+  company_name: (row) => row.company_name,
+  department_name: (row) => row.department_name,
+  position_label: (row) => row.position_label,
+  decision_no: (row) => row.decision_no,
+  decision_date: (row) => row.decision_date,
+  files: (row) => row.file_count || null,
+  note: (row) => row.note,
+  applied_at: (row) => row.applied_at,
+}
+
 /** Dựng bộ cột của bảng "Quá trình công tác". Dùng lại ở cả tab hồ sơ và Trang cá nhân. */
 export function buildEmployeeWorkHistoryColumns({
   canOpenFiles,
@@ -80,6 +104,7 @@ export function buildEmployeeWorkHistoryColumns({
   const columns: DataTableColumn<EmployeeWorkHistory>[] = [
     {
       key: 'from_date',
+      sortable: true,
       header: 'Từ ngày',
       width: 110,
       hideable: false,
@@ -87,6 +112,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'to_date',
+      sortable: true,
       header: 'Đến ngày',
       width: 130,
       cell: (row) => {
@@ -98,6 +124,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'event_type',
+      sortable: true,
       header: 'Loại',
       width: 140,
       hideable: false,
@@ -105,6 +132,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'company_name',
+      sortable: true,
       header: 'Pháp nhân',
       width: 180,
       wrap: true,
@@ -112,6 +140,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'department_name',
+      sortable: true,
       header: 'Phòng ban',
       width: 180,
       wrap: true,
@@ -119,6 +148,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'position_label',
+      sortable: true,
       header: 'Chức vụ',
       width: 160,
       wrap: true,
@@ -126,24 +156,28 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'decision_no',
+      sortable: true,
       header: 'Số QĐ',
       width: 140,
       cell: (row) => row.decision_no || '—',
     },
     {
       key: 'decision_date',
+      sortable: true,
       header: 'Ngày ký QĐ',
       width: 120,
       cell: (row) => formatDate(row.decision_date) || '—',
     },
     {
       key: 'files',
+      sortable: true,
       header: 'Tệp',
       width: 160,
       cell: (row) => renderFileCell({ row, canOpenFiles, onOpenFiles }),
     },
     {
       key: 'note',
+      sortable: true,
       header: 'Ghi chú',
       width: 220,
       wrap: true,
@@ -152,6 +186,7 @@ export function buildEmployeeWorkHistoryColumns({
     },
     {
       key: 'applied_at',
+      sortable: true,
       header: 'Đã áp',
       width: 120,
       defaultHidden: true,

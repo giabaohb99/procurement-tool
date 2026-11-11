@@ -13,6 +13,7 @@ import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-she
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useLeaveBalances, useLeaveTypes } from '../hooks/use-leave'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import {
   flattenLeaveBalanceGroups,
   groupLeaveBalances,
@@ -20,6 +21,7 @@ import {
   type LeaveBalanceRow,
 } from '../utils/group-leave-balances'
 import { LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
+import { sortLeaveBalanceGroups } from '../utils/sort-leave-balance-groups'
 import { buildLeaveBalanceColumns } from './leave-balance-columns'
 import { LeaveBalanceRowCard } from './leave-balance-row-card'
 import { LeaveBalanceYearSelect } from './leave-balance-year-select'
@@ -65,10 +67,13 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
   const { value: keyword, setValue: setKeyword, debouncedValue } = search
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
   const clearUrlParams = useClearUrlParams()
-  //  Trang TỰ VỀ 1 khi đổi bộ lọc: kết quả mới thường ít hơn, giữ số trang cũ
+  //  duoc-CR-748: bấm tiêu đề cột xếp các NHÓM NGƯỜI ngay ở trình duyệt (bảng đã nạp trọn năm) — giữ ở state, không
+  //  lên URL: cùng trang còn thẻ Ma trận với bảng riêng của nó, hai bảng không tranh nhau một cặp `sort_by`.
+  const sort = useLocalTableSort()
+  //  Trang TỰ VỀ 1 khi đổi bộ lọc hoặc đổi thứ tự: kết quả mới thường ít hơn, giữ số trang cũ
   //  là rơi vào trang trống. Theo dõi giá trị tìm kiếm ĐÃ HOÃN, không theo ô
   //  nhập thô — kẻo mỗi ký tự gõ vào là một lần đặt lại trang.
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, leaveTypeId])
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, leaveTypeId, sort.sortBy, sort.sortDir])
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { data: typeData } = useLeaveTypes()
 
@@ -93,7 +98,11 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
   }, [year, debouncedValue, leaveTypeId])
   const { data, isLoading, isError } = useLeaveBalances(params)
 
-  const groups = useMemo(() => groupLeaveBalances(data?.items), [data])
+  //  Xếp TRƯỚC khi cắt trang — xếp trong một trang là người đứng đầu trang 2 trông như người đầu danh sách.
+  const groups = useMemo(
+    () => sortLeaveBalanceGroups(groupLeaveBalances(data?.items), sort.sortBy, sort.sortDir),
+    [data, sort.sortBy, sort.sortDir],
+  )
   //  Vượt trần `page_size` thì danh sách bị cắt cụt ở backend và mọi tổng đều
   //  thiếu. Nói ra chứ đừng để người dùng đọc một con số sai mà không biết.
   const truncated = (data?.total ?? 0) > (data?.items?.length ?? 0)
@@ -158,6 +167,9 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
         //  từng đụng menu "Cột" thì bản lưu trong localStorage THẮNG `defaultHidden`, nên giữ khóa cũ là họ
         //  vẫn thấy nguyên cái bảng tràn màn hình vừa đi sửa.
         storageKey="hr.leave-balances.v2"
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         toolbarClassName={LIST_TOOLBAR_STICKY}
         onRowClick={openRow}
         //  Ba mức nền: hàng thường · hàng CHA ĐANG BUNG (nổi bật) · hàng con. Luật ở `leaveBalanceRowClass`.

@@ -135,4 +135,51 @@ describe('LeavePolicyAssignmentListPage (duoc-CR-717)', () => {
     expect(screen.getAllByRole('button', { name: 'Kết thúc' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Xóa' })).toHaveLength(1)
   })
+
+  //  duoc-CR-748: sắp xếp tại MÁY CHỦ, khóa gửi đi khác khóa cột ở ba cột (tên, chính chính sách, trạng thái dẫn xuất).
+  describe('sắp xếp cột (duoc-CR-748)', () => {
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+    const lastParams = () => {
+      const calls = apiGet.mock.calls.filter(([url]) => url === '/api/leave-policy-assignments')
+      return (calls.at(-1)?.[1] as { params: Record<string, unknown> }).params
+    }
+
+    it('sends the backend sort key of every sortable column and returns to page 1', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await screen.findByText('Sắp tới')
+      const cases: [string, string][] = [
+        ['Nhân sự', 'employee_name'],
+        ['Chính sách', 'policy_name'],
+        ['Từ ngày', 'effective_from'],
+        ['Đến ngày', 'effective_to'],
+        ['Trạng thái', 'state'],
+        ['Ghi chú', 'note'],
+      ]
+      for (const [text, key] of cases) {
+        await user.click(header(text))
+        await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: key, sort_dir: 'asc', page: 1 }))
+      }
+    })
+
+    it('cycles asc -> desc -> off and drops both params', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await screen.findByText('Sắp tới')
+      await user.click(header('Từ ngày'))
+      await user.click(header('Từ ngày'))
+      await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: 'effective_from', sort_dir: 'desc' }))
+      await user.click(header('Từ ngày'))
+      await waitFor(() => expect(lastParams().sort_by).toBeUndefined())
+      expect(lastParams().sort_dir).toBeUndefined()
+    })
+
+    it('does NOT sort by "Hạn mức năm nay" (quota comes from another table)', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await screen.findByText('Sắp tới')
+      await user.click(header('Hạn mức năm nay'))
+      expect(lastParams().sort_by).toBeUndefined()
+    })
+  })
 })

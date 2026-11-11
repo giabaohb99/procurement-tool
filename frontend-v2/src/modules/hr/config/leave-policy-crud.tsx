@@ -87,6 +87,8 @@ export const LEAVE_POLICY_CRUD_CONFIG: CrudConfig<LeavePolicy> = {
       key: 'note',
       header: 'Ghi chú',
       width: 320,
+      //  Cột thật; dòng không ghi chú là ô trống, xuống cuối cả hai chiều (duoc-CR-748).
+      sortable: true,
       cell: (p) => (p.note ? p.note : <span className="text-muted-foreground">Không ghi chú</span>),
     },
   ],

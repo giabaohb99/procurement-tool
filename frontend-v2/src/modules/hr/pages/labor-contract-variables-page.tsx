@@ -13,6 +13,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -48,13 +49,19 @@ export function LaborContractVariablesPage() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   //  `undefined` = đóng · `null` = THÊM mới · biến = SỬA.
   const [editing, setEditing] = useState<LaborContractVariable | null | undefined>(undefined)
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, source, valueType, active])
+  //  duoc-CR-748: sắp xếp tại máy chủ; cột "Số mẫu dùng" không xếp được (tính bằng Python ở backend).
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, source, valueType, active, sortBy, sortDir])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.q = debouncedValue
   if (source !== ALL) params.source = Number(source)
   if (valueType !== ALL) params.value_type = Number(valueType)
   if (active !== ALL) params.is_active = active === 'true'
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useLaborContractVariables(params, { enabled: canRead })
   const update = useUpdateLaborContractVariable()
@@ -160,6 +167,9 @@ export function LaborContractVariablesPage() {
             isFiltering ? 'Không có biến nào khớp bộ lọc.' : 'Chưa có biến tùy chỉnh. Bấm "Thêm biến".'
           }
           storageKey="hr.labor-contract-variables"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           mobileCard={(v) => <LaborContractVariableCard variable={v} actions={actions} />}
           pagination={{
             page,

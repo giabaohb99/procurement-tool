@@ -36,6 +36,7 @@ export function buildLaborContractVariableColumns(
       header: 'Biến',
       width: 260,
       hideable: false,
+      sortable: true,
       cell: (v) => (
         <span className="flex items-center gap-1">
           <code className="truncate font-mono text-xs">{formatPlaceholderToken(v.code)}</code>
@@ -43,12 +44,13 @@ export function buildLaborContractVariableColumns(
         </span>
       ),
     },
-    { key: 'label', header: 'Tên hiển thị', width: 240, hideable: false, wrap: true, cell: (v) => v.label },
-    { key: 'group', header: 'Nhóm', width: 170, cell: (v) => v.group },
+    { key: 'label', header: 'Tên hiển thị', width: 240, hideable: false, wrap: true, sortable: true, cell: (v) => v.label },
+    { key: 'group', header: 'Nhóm', width: 170, sortable: true, cell: (v) => v.group },
     {
       key: 'value_type',
       header: 'Kiểu',
       width: 130,
+      sortable: true,
       cell: (v) =>
         v.source === VARIABLE_SOURCE_SYSTEM ? '—' : labelOf(LABOR_CONTRACT_VARIABLE_TYPE, String(v.value_type)) || '—',
     },
@@ -56,16 +58,19 @@ export function buildLaborContractVariableColumns(
       key: 'example',
       header: 'Ví dụ',
       width: 200,
+      sortable: true,
       cell: (v) => <span className="truncate" title={v.example}>{v.example || '—'}</span>,
     },
     {
       key: 'is_required',
       header: 'Bắt buộc',
       width: 100,
+      sortable: true,
       cell: (v) => (v.source !== VARIABLE_SOURCE_SYSTEM && v.is_required ? <Badge variant="secondary">Bắt buộc</Badge> : '—'),
     },
     { key: 'template_count', header: 'Số mẫu dùng', width: 120, align: 'right', cell: (v) => v.template_count },
-    { key: 'status', header: 'Trạng thái', width: 120, cell: renderVariableStatusBadge },
+    //  "Số mẫu dùng" ở trên cố ý KHÔNG xếp được: số đếm quét JSON của mọi mẫu ở backend, SQL không có giá trị khớp.
+    { key: 'status', header: 'Trạng thái', width: 120, sortable: true, cell: renderVariableStatusBadge },
   ]
   if (actions.canManage || actions.canDelete) {
     columns.push({

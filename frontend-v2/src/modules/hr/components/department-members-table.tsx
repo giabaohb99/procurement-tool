@@ -15,6 +15,7 @@ import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-she
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useEmployees } from '../hooks/use-employees'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { ListParams } from '@/shared/types/api'
 import { EMPLOYEE_STATUS_OPTIONS, type Employee } from '../types/employee'
 
@@ -57,10 +58,19 @@ export function DepartmentMembersTable({
   const debouncedKeyword = useDebouncedValue(keyword, SEARCH_DELAY_MS)
   const [status, setStatus] = useState(ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([debouncedKeyword, status, departmentId])
+  //  duoc-CR-748: bấm tiêu đề cột xếp TẠI MÁY CHỦ (bảng phân trang thật) — khóa nào cũng phải có trong
+  //  `employee/sort_expressions.py`. Đổi thứ tự thì về trang 1, đứng giữa thứ tự cũ là lạc.
+  const sort = useLocalTableSort()
+  const [page, setPage] = usePageResetOnFilterChange([
+    debouncedKeyword,
+    status,
+    departmentId,
+    sort.sortBy,
+    sort.sortDir,
+  ])
 
   //  Chỉ gửi key nằm trong whitelist FILTERABLE của backend.
-  const params: ListParams = { department_id: departmentId, page, page_size: pageSize }
+  const params: ListParams = { department_id: departmentId, page, page_size: pageSize, ...sort.params }
   if (debouncedKeyword) params.full_name = debouncedKeyword
   if (status !== ALL) params.status = status
 
@@ -68,12 +78,13 @@ export function DepartmentMembersTable({
 
   const columns = useMemo<DataTableColumn<Employee>[]>(
     () => [
-      { key: 'code', header: 'Mã NV', width: 140, cell: (e) => e.code },
+      { key: 'code', header: 'Mã NV', width: 140, sortable: true, cell: (e) => e.code },
       {
         key: 'full_name',
         header: 'Họ tên',
         width: 300,
         hideable: false,
+        sortable: true,
         cell: (employee) => (
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate">{employee.full_name}</span>
@@ -81,14 +92,17 @@ export function DepartmentMembersTable({
           </span>
         ),
       },
-      { key: 'position', header: 'Chức danh', width: 220, cell: (e) => e.position || '—' },
+      { key: 'position', header: 'Chức danh', width: 220, sortable: true, cell: (e) => e.position || '—' },
       {
         key: 'status',
         header: 'Tình trạng',
         width: 140,
+        //  Máy chủ xếp theo DÒNG ĐỜI của bộ mã (Chính thức → Nghỉ việc), không theo chữ cái của mã.
+        sortable: true,
         cell: (e) => <Badge variant="secondary">{e.status_label || '—'}</Badge>,
       },
-      { key: 'email', header: 'Email', width: 220, defaultHidden: true, cell: (e) => e.email || '—' },
+      { key: 'email', header: 'Email', width: 220, defaultHidden: true, sortable: true, cell: (e) => e.email || '—' },
+      //  Không cho xếp: `phone` không có trong danh sách trắng của máy chủ (bấm sẽ "không ăn").
       { key: 'phone', header: 'Điện thoại', width: 150, defaultHidden: true, cell: (e) => e.phone || '—' },
     ],
     [managerId],
@@ -134,6 +148,9 @@ export function DepartmentMembersTable({
               : 'Chưa có nhân sự nào thuộc phòng ban này.'
           }
           storageKey="hr.department-members"
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           //  Bảng con: bộ lọc nằm ở state cục bộ chứ không lên URL, nên phải tự
           //  khai — nút "Xóa lọc" mặc định của DataTable chỉ biết dọn URL.
           filtersActive={keyword !== '' || status !== ALL}

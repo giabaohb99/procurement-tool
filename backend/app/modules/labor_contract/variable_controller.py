@@ -4,7 +4,7 @@ Không entity quyền mới: tái dùng `labor_contract_template` (read xem · w
 GHI còn đòi phạm vi "tất cả pháp nhân" (`variable_access`). Danh mục là toàn hệ thống nên KHÔNG `apply_scope`
 lên bảng biến. `/input-fields` PHẢI khai TRƯỚC `/{variable_id}`.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
@@ -28,11 +28,12 @@ def _one(db: Session, row) -> dict:
 
 @router.get("")
 def list_variables(q: str = "", source: int | None = None, value_type: int | None = None,
-                   is_active: bool | None = None, pg: dict = Depends(pagination),
+                   is_active: bool | None = None, sort_by: str = Query("", max_length=40),
+                   sort_dir: str = Query("asc", max_length=4), pg: dict = Depends(pagination),
                    db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     profile = get_perm_profile(db, user)
     total, rows = svc.list_variables(db, q=q, source=source, value_type=value_type, is_active=is_active,
-                                     offset=pg["offset"], limit=pg["limit"])
+                                     offset=pg["offset"], limit=pg["limit"], sort_by=sort_by, sort_dir=sort_dir)
     return success({"total": total, "items": ser.serialize_variables(db, rows),
                     "can_manage": variable_access.is_unrestricted(user, profile, "write"),
                     "can_delete": variable_access.is_unrestricted(user, profile, "delete")})

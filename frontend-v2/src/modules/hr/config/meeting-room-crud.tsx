@@ -144,7 +144,8 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
       hideable: false,
       cell: (r) => <span className="font-medium">{r.name}</span>,
     },
-    { key: 'location', header: 'Vị trí', width: 180, cell: (r) => r.location || '—' },
+    //  Vị trí, Thiết bị: cột thật, ô trống ("—") xuống cuối cả hai chiều (duoc-CR-748).
+    { key: 'location', header: 'Vị trí', width: 180, sortable: true, cell: (r) => r.location || '—' },
     {
       key: 'capacity',
       header: 'Sức chứa',
@@ -165,12 +166,14 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
       width: 260,
       wrap: true,
       minWidth: 180,
+      sortable: true,
       cell: (r) => r.equipment || '—',
     },
     {
       key: 'company_id',
       header: 'Pháp nhân',
       width: 160,
+      //  Không cho xếp (duoc-CR-748): khóa `company_id` chỉ xếp được theo số id ở máy chủ.
       cell: (r) =>
         r.company_id ? `#${r.company_id}` : (
           <span className="text-muted-foreground">Dùng chung</span>

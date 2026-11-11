@@ -2,7 +2,7 @@
 
 `/placeholders` PHẢI khai TRƯỚC `/{template_id}` (FastAPI dò theo thứ tự khai trong cùng router).
 """
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -47,12 +47,13 @@ def list_placeholders(db: Session = Depends(get_db), user=Depends(get_current_us
 
 @router.get("")
 def list_templates(company_id: int | None = None, contract_type: int | None = None,
-                   is_active: bool | None = None, q: str = "", pg: dict = Depends(pagination),
+                   is_active: bool | None = None, q: str = "", sort_by: str = Query("", max_length=40),
+                   sort_dir: str = Query("asc", max_length=4), pg: dict = Depends(pagination),
                    db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     profile = get_perm_profile(db, user)
     total, rows = template_service.list_templates(
         db, user, profile, company_id=company_id, contract_type=contract_type, is_active=is_active,
-        q=q, offset=pg["offset"], limit=pg["limit"])
+        q=q, offset=pg["offset"], limit=pg["limit"], sort_by=sort_by, sort_dir=sort_dir)
     return success({"total": total, "items": serialize_templates(db, rows)})
 
 

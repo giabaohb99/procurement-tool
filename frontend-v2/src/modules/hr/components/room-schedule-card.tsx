@@ -5,6 +5,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { formatDate } from '@/shared/utils/format-date'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import { useRoomBookings } from '../hooks/use-room'
 import { BLOCKING_ROOM_STATUSES, type RoomBooking } from '../types/room'
 import { formatTimeRange, toApiTime, toLocalInput } from '../utils/room-time'
@@ -32,12 +33,31 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
   //  liên tục và bảng tự gọi lại API không lý do.
   const now = useMemo(() => toApiTime(toLocalInput(new Date())), [])
 
+  //  duoc-CR-748: mỗi bảng một thứ tự riêng, xếp TẠI MÁY CHỦ — bảng chỉ lấy 50 phiếu đầu, xếp lại 50 dòng đó ở
+  //  trình duyệt là xếp sai (phiếu thứ 51 theo thứ tự mới không bao giờ hiện). Chưa bấm cột nào (hoặc bấm nhịp
+  //  thứ ba) thì về thứ tự mặc định của từng bảng: Sắp tới gần nhất trước, Đã qua mới nhất trước. Khóa cho
+  //  phép: cột thật của phiếu + `requester_name` (`meeting_room/sort_expressions.py`).
+  const upcomingSort = useLocalTableSort()
+  const pastSort = useLocalTableSort()
+
   const upcoming = useRoomBookings(
-    { page: 1, page_size: 50, room_id: roomId, from_time: now, sort_by: 'start_at', sort_dir: 'asc' },
+    {
+      page: 1,
+      page_size: 50,
+      room_id: roomId,
+      from_time: now,
+      ...(upcomingSort.sortBy ? upcomingSort.params : { sort_by: 'start_at', sort_dir: 'asc' }),
+    },
     roomId > 0,
   )
   const past = useRoomBookings(
-    { page: 1, page_size: 50, room_id: roomId, to_time: now, sort_by: 'start_at', sort_dir: 'desc' },
+    {
+      page: 1,
+      page_size: 50,
+      room_id: roomId,
+      to_time: now,
+      ...(pastSort.sortBy ? pastSort.params : { sort_by: 'start_at', sort_dir: 'desc' }),
+    },
     roomId > 0,
   )
 
@@ -47,9 +67,11 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
         key: 'start_at',
         header: 'Ngày',
         width: 120,
+        sortable: true,
         cell: (b) => formatDate(b.start_at),
       },
       {
+        //  Không cho xếp: giờ trong ngày không có cột riêng ở máy chủ, xếp theo `start_at` là cột Ngày.
         key: 'time',
         header: 'Khung giờ',
         width: 140,
@@ -63,24 +85,30 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
         width: 260,
         wrap: true,
         minWidth: 180,
+        sortable: true,
         cell: (b) => <span className="font-medium">{b.title}</span>,
       },
       {
         key: 'requester_name',
         header: 'Người đặt',
         width: 180,
+        //  Máy chủ xếp theo TÊN người đặt, không theo id.
+        sortable: true,
         cell: (b) => b.requester_name || '—',
       },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 150,
+        //  Máy chủ xếp theo mã số trạng thái (1 Nháp → 2 Chờ duyệt → …) — cùng cách với màn Đặt phòng họp.
+        sortable: true,
         cell: (b) => <RoomStatusBadge status={b.status} label={b.status_label} />,
       },
       {
         key: 'code',
         header: 'Số phiếu',
         width: 110,
+        sortable: true,
         cell: (b) => <span className="text-muted-foreground">{b.code}</span>,
       },
     ],
@@ -114,6 +142,9 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
           isError={upcoming.isError}
           emptyMessage="Phòng này chưa có ai giữ trong thời gian tới."
           storageKey="hr.room-schedule-upcoming"
+          sortBy={upcomingSort.sortBy}
+          sortDir={upcomingSort.sortDir}
+          onSortChange={upcomingSort.onSortChange}
           onRowClick={(b) => navigate(appRoutes.hr.roomBookingDetail(b.id))}
           mobileCard={renderCard}
         />
@@ -128,6 +159,9 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
           isError={past.isError}
           emptyMessage="Phòng này chưa từng được đặt."
           storageKey="hr.room-schedule-past"
+          sortBy={pastSort.sortBy}
+          sortDir={pastSort.sortDir}
+          onSortChange={pastSort.onSortChange}
           onRowClick={(b) => navigate(appRoutes.hr.roomBookingDetail(b.id))}
           mobileCard={renderCard}
         />

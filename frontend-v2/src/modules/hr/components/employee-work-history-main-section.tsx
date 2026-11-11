@@ -7,10 +7,13 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { toDateInputValue } from '@/shared/utils/format-date'
+import { sortRowsByCell } from '@/shared/utils/sort-rows-by-cell'
 import {
   buildEmployeeWorkHistoryColumns,
+  EMPLOYEE_WORK_HISTORY_SORT_GETTERS,
   type EmployeeWorkHistoryRowActions,
 } from '../config/employee-work-history-columns'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { EmployeeWorkHistoryTimeline } from './employee-work-history-timeline'
 import { EmployeeWorkHistoryTimelineToolbar, EmployeeWorkHistoryToolbarTitle } from './employee-work-history-toolbar'
@@ -70,6 +73,14 @@ export function EmployeeWorkHistoryMainSection({
     [canOpenFiles, onOpenFiles, actions],
   )
 
+  //  duoc-CR-748: dạng Bảng bấm tiêu đề cột để xếp, ngay ở trình duyệt (`items` là đủ mọi dòng của người này).
+  //  Dạng Dòng thời gian giữ thứ tự riêng của nó (mới nhất ở trên).
+  const sort = useLocalTableSort()
+  const sortedItems = useMemo(
+    () => sortRowsByCell(items, sort.sortBy, sort.sortDir, EMPLOYEE_WORK_HISTORY_SORT_GETTERS),
+    [items, sort.sortBy, sort.sortDir],
+  )
+
   const showCreateFromProfile = items.length === 0 && !isLoading && !isError && Boolean(onCreateFromProfileClick)
 
   //  Size mặc định (h-9) — khớp chiều cao Tải lại/Cột/ToggleGroup đứng cùng
@@ -111,8 +122,11 @@ export function EmployeeWorkHistoryMainSection({
       ) : (
         <DataTable
           columns={columns}
-          rows={items}
+          rows={sortedItems}
           getRowId={(row) => row.id}
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}

@@ -7,7 +7,12 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { toDateInputValue } from '@/shared/utils/format-date'
-import { buildEmployeeWorkHistoryDecisionColumns } from '../config/employee-work-history-decision-columns'
+import { sortRowsByCell } from '@/shared/utils/sort-rows-by-cell'
+import {
+  buildEmployeeWorkHistoryDecisionColumns,
+  EMPLOYEE_WORK_HISTORY_DECISION_SORT_GETTERS,
+} from '../config/employee-work-history-decision-columns'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { filterDecisionRows } from '../utils/employee-work-history-display'
 import { EmployeeWorkHistoryTimeline } from './employee-work-history-timeline'
@@ -63,6 +68,12 @@ export function EmployeeWorkHistoryDecisionSection({
   const view: WorkHistoryViewMode = rawView === 'timeline' ? 'timeline' : 'table'
 
   const decisions = useMemo(() => filterDecisionRows(items), [items])
+  //  duoc-CR-748: dạng Bảng xếp ngay ở trình duyệt (cùng nguồn đủ dòng với khu Quá trình công tác).
+  const sort = useLocalTableSort()
+  const sortedDecisions = useMemo(
+    () => sortRowsByCell(decisions, sort.sortBy, sort.sortDir, EMPLOYEE_WORK_HISTORY_DECISION_SORT_GETTERS),
+    [decisions, sort.sortBy, sort.sortDir],
+  )
   const columns = useMemo(
     () => buildEmployeeWorkHistoryDecisionColumns({ canOpenFiles, onOpenFiles }),
     [canOpenFiles, onOpenFiles],
@@ -109,8 +120,11 @@ export function EmployeeWorkHistoryDecisionSection({
       ) : (
         <DataTable
           columns={columns}
-          rows={decisions}
+          rows={sortedDecisions}
           getRowId={(row) => row.id}
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}

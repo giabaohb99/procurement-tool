@@ -6,8 +6,9 @@ Trước đây bảng không khai `sortable` nên không bấm được cột n�
 - Người nghỉ / Người được thanh toán: xếp theo HỌ TÊN nhân sự (giao diện hiện tên kèm mã), không theo
   `employee_id` (ra thứ tự số vô nghĩa). Nhân sự đã xóa -> ô trống, xuống CUỐI cả hai chiều.
 - Loại nghỉ: xếp theo TÊN loại nghỉ.
-- Trạng thái phiếu: mã số 1 Nháp → 2 Chờ duyệt → 3 Đã duyệt → 4 Từ chối → 5 Trả về → 6 Đã hủy đã theo thứ
-  tự hiển thị. Lý do thanh toán: 1 Phép dư cuối năm → 2 Nghỉ việc.
+- Trạng thái phiếu: xếp theo hạng DÒNG ĐỜI Nháp → Chờ duyệt → Trả về chỉnh sửa → Đã duyệt → Từ chối → Đã hủy
+  (duoc-CR-748; mã số thô 3 Đã duyệt, 4 Từ chối, 5 Trả về đặt "Trả về" sai chỗ). Lý do thanh toán: 1 Phép dư
+  cuối năm → 2 Nghỉ việc.
 - Trạng thái chi (đọc từ YCTT sinh ra khi duyệt): xếp theo HẠNG vòng đời Nháp → Chờ duyệt → Đã duyệt → Đã chi
   → Đã từ chối; phiếu chưa có YCTT là ô trống, xuống CUỐI.
 - Khóa phụ luôn là `id` giảm dần để thứ tự ổn định giữa các trang.
@@ -16,6 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import aliased
 
 from app.core.code_rank_sql import build_value_rank_expression
+from app.core.int_code_rank_sql import build_int_rank_expression
 from app.core.sort_order import build_blank_last_order, with_stable_tiebreak
 from app.modules.employee.model import Employee
 from app.modules.payment_request.model import PaymentRequest
@@ -23,6 +25,7 @@ from app.modules.payment_request.model import PaymentRequest
 from .catalog_model import LeaveType
 from .comp_request_model import LeaveCompRequest
 from .encashment_model import LeaveEncashment
+from .sort_expressions import APPROVAL_LIFECYCLE_ORDER
 
 #  Bí danh để câu con không tự "tương quan" nhầm với bảng nhân sự khác trong truy vấn ngoài (ô tìm `q`).
 _EMPLOYEE = aliased(Employee)
@@ -51,7 +54,7 @@ _COMP_SPEC: dict = {
     "employee_name": (_employee_name(LeaveCompRequest.employee_id), True),
     "work_date": (LeaveCompRequest.work_date, False),
     "days": (LeaveCompRequest.days, False),
-    "status": (LeaveCompRequest.status, False),
+    "status": (build_int_rank_expression(LeaveCompRequest.status, APPROVAL_LIFECYCLE_ORDER), False),
     "reason": (LeaveCompRequest.reason, True),
     "created_at": (LeaveCompRequest.created_at, False),
 }
@@ -70,7 +73,7 @@ _ENCASH_SPEC: dict = {
     "balance_year": (LeaveEncashment.balance_year, False),
     "reason_kind": (LeaveEncashment.reason_kind, False),
     "days": (LeaveEncashment.days, False),
-    "status": (LeaveEncashment.status, False),
+    "status": (build_int_rank_expression(LeaveEncashment.status, APPROVAL_LIFECYCLE_ORDER), False),
     #  Hạng 0 (chưa có YCTT / mã lạ ở đầu) đổi thành NULL để rơi vào nhóm ô trống.
     "payment_status": (
         func.nullif(build_value_rank_expression(_ENCASH_PAYMENT_STATUS, _PAYMENT_STATUS_ORDER), 0), False),

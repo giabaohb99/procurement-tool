@@ -15,7 +15,7 @@ from app.core.scoping import apply_scope
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
-from . import balance_service, carryover_service
+from . import balance_matrix_sort, balance_service, carryover_service
 from .balance_model import LeaveBalance
 from .balance_report_spec import employee_conds
 from .catalog_model import LeaveType
@@ -26,7 +26,8 @@ EXPORT_LIMIT = 5000
 
 
 def build_matrix(db: Session, user, prof: dict, action: str, year: int, company_id: int | None,
-                 department_id: int | None, status: str, search: str | None, offset: int, limit: int) -> dict:
+                 department_id: int | None, status: str, search: str | None, offset: int, limit: int,
+                 sort_by: str = "", sort_dir: str = "asc") -> dict:
     q = apply_scope(db.query(LeaveBalance), LeaveBalance, ENTITY, user, prof, action).filter(LeaveBalance.year == year)
     if company_id is not None:
         q = q.filter(LeaveBalance.company_id == company_id)       # chỉ THU HẸP, sau apply_scope
@@ -41,7 +42,7 @@ def build_matrix(db: Session, user, prof: dict, action: str, year: int, company_
                                    Employee.full_name.contains(needle, autoescape=True)))
     total = people.with_entities(func.count(Employee.id)).scalar() or 0
     page = (people.with_entities(Employee.id, Employee.code, Employee.full_name, Employee.department_id)
-            .order_by(Employee.code, Employee.id).offset(offset).limit(limit).all())
+            .order_by(*balance_matrix_sort.build_order_by(sort_by, sort_dir)).offset(offset).limit(limit).all())
 
     types = (q.join(LeaveType, LeaveType.id == LeaveBalance.leave_type_id)
              .filter(LeaveType.counts_balance.is_(True))

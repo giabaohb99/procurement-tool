@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { sortRowsBy, type SortValue } from '@/shared/utils/compare-sort-values'
 import { formatDate } from '@/shared/utils/format-date'
 import type { PolicyPreviewItem } from '../types/leave-policy'
 import {
@@ -9,11 +10,46 @@ import {
   summarizeQuotaChanges,
   type LeaveTypeNameLookup,
 } from '../utils/leave-policy-display'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import { LeavePolicyBulkPreviewCard } from './leave-policy-bulk-preview-card'
 
 /** Dòng "ngoài phạm vi" (`conflict: 'scope'`) không có tên — vẫn phải gọi được người đó là ai. */
 function displayName(item: PolicyPreviewItem): string {
   return item.name || `Nhân sự #${item.employee_id}`
+}
+
+/** Chữ của ô "Chính sách hiện tại" — dòng `scope` và dòng *Chưa có* (chữ mờ) là ô trống. */
+function currentPolicyText(item: PolicyPreviewItem): string {
+  if (item.conflict === 'scope' || !item.current) return ''
+  return `${item.current.policy_name} (${formatPolicyRange(item.current.from, item.current.to)})`
+}
+
+/** Chữ của ô "Lý do không phân bổ được" — dòng phân bổ được thì ô rỗng. */
+function conflictText(item: PolicyPreviewItem): string {
+  if (!item.conflict) return ''
+  return item.conflict === 'self' ? 'Không tự phân bổ chính sách cho chính mình.' : item.conflict_message
+}
+
+/** Giá trị đem xếp của một dòng ở cột `columnKey` — đúng chữ ô đang hiện (duoc-CR-748). */
+function previewSortValue(item: PolicyPreviewItem, columnKey: string, typeName: LeaveTypeNameLookup): SortValue {
+  switch (columnKey) {
+    case 'code':
+      return item.code
+    case 'name':
+      return displayName(item)
+    case 'department':
+      return item.department_name
+    case 'hire_date':
+      return item.hire_date
+    case 'current':
+      return currentPolicyText(item)
+    case 'changes':
+      return item.conflict ? '' : summarizeQuotaChanges(item.changes, typeName)
+    case 'conflict':
+      return conflictText(item)
+    default:
+      return null
+  }
 }
 
 interface LeavePolicyBulkPreviewTableProps {
@@ -41,6 +77,21 @@ export function LeavePolicyBulkPreviewTable({
   const allSelected =
     selectable.length > 0 && selectable.every((i) => selectedIds.has(i.employee_id))
   const someSelected = selectable.some((i) => selectedIds.has(i.employee_id))
+
+  //  duoc-CR-748: bấm tiêu đề cột xếp ngay ở trình duyệt — bản xem trước nạp một lượt (≤ 500 người, backend tự cắt
+  //  theo mã và báo `truncated`), và nút Phân bổ chỉ chạy trên đúng những người đang bày ở đây. Ô tick đi theo
+  //  `employee_id` chứ không theo vị trí dòng, nên xếp lại không làm lệch người đã chọn.
+  //  Mỗi khóa xếp theo đúng chữ ô đang hiện; bằng nhau thì theo mã nhân sự.
+  const sort = useLocalTableSort()
+  const sortedItems = useMemo(() => {
+    if (!sort.sortBy) return items
+    return sortRowsBy(
+      items,
+      (item) => previewSortValue(item, sort.sortBy, typeName),
+      sort.sortDir,
+      (x, y) => x.employee_id - y.employee_id,
+    )
+  }, [items, sort.sortBy, sort.sortDir, typeName])
 
   const columns = useMemo<DataTableColumn<PolicyPreviewItem>[]>(
     () => [
@@ -75,6 +126,7 @@ export function LeavePolicyBulkPreviewTable({
         key: 'code',
         header: 'Mã',
         width: 110,
+        sortable: true,
         cell: (i) => <span className="tabular-nums">{i.code}</span>,
       },
       {
@@ -82,13 +134,15 @@ export function LeavePolicyBulkPreviewTable({
         header: 'Tên',
         width: 200,
         hideable: false,
+        sortable: true,
         cell: (i) => <span className="font-medium">{displayName(i)}</span>,
       },
-      { key: 'department', header: 'Phòng', width: 170, cell: (i) => i.department_name },
+      { key: 'department', header: 'Phòng', width: 170, sortable: true, cell: (i) => i.department_name },
       {
         key: 'hire_date',
         header: 'Ngày vào làm',
         width: 120,
+        sortable: true,
         cell: (i) => <span className="tabular-nums">{formatDate(i.hire_date)}</span>,
       },
       {
@@ -96,11 +150,12 @@ export function LeavePolicyBulkPreviewTable({
         header: 'Chính sách hiện tại',
         width: 240,
         wrap: true,
+        sortable: true,
         cell: (i) =>
           i.conflict === 'scope' ? (
             ''
           ) : i.current ? (
-            `${i.current.policy_name} (${formatPolicyRange(i.current.from, i.current.to)})`
+            currentPolicyText(i)
           ) : (
             <span className="text-muted-foreground">Chưa có</span>
           ),
@@ -110,6 +165,7 @@ export function LeavePolicyBulkPreviewTable({
         header: 'Thay đổi quỹ năm nay',
         width: 240,
         wrap: true,
+        sortable: true,
         cell: (i) => (i.conflict ? '' : summarizeQuotaChanges(i.changes, typeName)),
       },
       {
@@ -117,16 +173,8 @@ export function LeavePolicyBulkPreviewTable({
         header: 'Lý do không phân bổ được',
         width: 300,
         wrap: true,
-        cell: (i) =>
-          i.conflict ? (
-            <span className="text-destructive">
-              {i.conflict === 'self'
-                ? 'Không tự phân bổ chính sách cho chính mình.'
-                : i.conflict_message}
-            </span>
-          ) : (
-            ''
-          ),
+        sortable: true,
+        cell: (i) => (i.conflict ? <span className="text-destructive">{conflictText(i)}</span> : ''),
       },
     ],
     [allSelected, someSelected, selectable.length, selectedIds, onToggle, onToggleAll, typeName],
@@ -151,8 +199,11 @@ export function LeavePolicyBulkPreviewTable({
       )}
       <DataTable
         columns={columns}
-        rows={items}
+        rows={sortedItems}
         getRowId={(i) => i.employee_id}
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         emptyMessage="Không có nhân sự nào khớp bộ lọc (hoặc tất cả đã có chính sách hiệu lực)."
         storageKey="hr.leave-policy-bulk-preview"
         mobileCard={(i) => (

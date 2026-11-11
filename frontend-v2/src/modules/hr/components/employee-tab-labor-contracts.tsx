@@ -4,13 +4,18 @@ import { useCallback, useMemo, useState } from 'react'
 import { DataTable } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { sortRowsByCell } from '@/shared/utils/sort-rows-by-cell'
 import { laborContractApi } from '../api/labor-contract-api'
-import { buildEmployeeLaborContractColumns } from '../config/employee-labor-contract-columns'
+import {
+  buildEmployeeLaborContractColumns,
+  EMPLOYEE_LABOR_CONTRACT_SORT_GETTERS,
+} from '../config/employee-labor-contract-columns'
 import {
   useDeleteLaborContract,
   useEmployeeLaborContracts,
   useUploadSignedLaborContract,
 } from '../hooks/use-employee-labor-contracts'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { EmployeeDetail } from '../types/employee'
 import type { LaborContract } from '../types/labor-contract'
 import { LaborContractCard } from './labor-contract-card'
@@ -43,6 +48,13 @@ export function EmployeeTabLaborContracts({ employee }: EmployeeTabLaborContract
   const [generateRow, setGenerateRow] = useState<LaborContract | null>(null)
   const [pending, setPending] = useState<PendingTransition | null>(null)
   const [busyIds, setBusyIds] = useState<ReadonlySet<number>>(new Set())
+  //  duoc-CR-748: bấm tiêu đề cột xếp ngay ở trình duyệt — API trả đủ mọi hợp đồng của người này, không phân trang.
+  const sort = useLocalTableSort()
+  const items = data?.items
+  const rows = useMemo(
+    () => items && sortRowsByCell(items, sort.sortBy, sort.sortDir, EMPLOYEE_LABOR_CONTRACT_SORT_GETTERS),
+    [items, sort.sortBy, sort.sortDir],
+  )
 
   /** Chạy một lệnh gọi trên dòng, khóa nút của dòng đó trong lúc chạy. Lỗi đã được toast sẵn. */
   const runOnRow = useCallback(async (id: number, task: () => Promise<unknown>) => {
@@ -108,8 +120,11 @@ export function EmployeeTabLaborContracts({ employee }: EmployeeTabLaborContract
     <div className="flex flex-col gap-4">
       <DataTable
         columns={columns}
-        rows={data?.items}
+        rows={rows}
         getRowId={(r) => r.id}
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         isLoading={isLoading}
         isError={isError}
         errorMessage="Không tải được danh sách hợp đồng."

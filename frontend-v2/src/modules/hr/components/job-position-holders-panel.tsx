@@ -24,6 +24,7 @@ import {
 import { nameInitials } from '@/shared/utils/name-initials'
 import { useDepartments } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import { DETAIL_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
 import type { Employee } from '../types/employee'
@@ -104,7 +105,10 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   //
   //  ⚠️ Theo dõi `search` (giá trị ĐÃ HOÃN), không theo `keyword`: theo `keyword`
   //  là mỗi ký tự gõ ra một lần đặt lại trang, kể cả khi truy vấn chưa hề đổi.
-  const [page, setPage] = usePageResetOnFilterChange([search, status, departmentId])
+  //
+  //  duoc-CR-748: đổi thứ tự (bấm tiêu đề cột, xếp TẠI MÁY CHỦ) cũng là đổi tập đang xem — về trang 1.
+  const sort = useLocalTableSort()
+  const [page, setPage] = usePageResetOnFilterChange([search, status, departmentId, sort.sortBy, sort.sortDir])
 
   //  ⚠️ Ô lọc phòng ban đọc DANH MỤC phòng ban, không đọc bảng đếm ngược
   //  (19/09/2026 — endpoint `/api/job-positions/stats` đã bỏ cùng hai cột đếm ở
@@ -133,6 +137,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
       //  xem `apply_keyword_search`. Khác `apply_filters`: ở đó mỗi tham số lọc
       //  riêng một cột rồi ghép AND.
       ...(search ? { search } : {}),
+      ...sort.params,
     },
     { enabled: allowed },
   )
@@ -225,6 +230,8 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             key: 'code',
             header: 'Mã NV',
             width: 130,
+            //  Bốn cột đều có trong danh sách trắng `employee/sort_expressions.py` (duoc-CR-748).
+            sortable: true,
             cell: (row: Employee) => (
               <span className="font-semibold text-primary">{row.code}</span>
             ),
@@ -233,6 +240,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             key: 'full_name',
             header: 'Họ tên',
             width: 260,
+            sortable: true,
             cell: (row: Employee) => (
               <span className="flex items-center gap-2">
                 <Avatar size="sm">
@@ -249,12 +257,17 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             key: 'department_name',
             header: 'Phòng ban',
             width: 240,
+            //  Máy chủ xếp theo TÊN phòng; người chưa gắn phòng (ô hiện "(Chưa gắn phòng ban)") là ô trống,
+            //  xuống cuối cả hai chiều.
+            sortable: true,
             cell: (row: Employee) => row.department_name || '(Chưa gắn phòng ban)',
           },
           {
             key: 'status',
             header: 'Tình trạng',
             width: 150,
+            //  Xếp theo dòng đời của bộ mã (Chính thức → Nghỉ việc), không theo chữ cái của mã.
+            sortable: true,
             //  Đọc `status_label` backend gửi kèm, đừng tự dịch mã ở đây — bộ mã
             //  đổi thì chỉ một chỗ phải sửa.
             cell: (row: Employee) => row.status_label || '—',
@@ -295,6 +308,9 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
         )}
         rows={data?.items}
         getRowId={(row: Employee) => String(row.id)}
+        sortBy={sort.sortBy}
+        sortDir={sort.sortDir}
+        onSortChange={sort.onSortChange}
         isLoading={isLoading}
         isError={isError}
         emptyMessage={

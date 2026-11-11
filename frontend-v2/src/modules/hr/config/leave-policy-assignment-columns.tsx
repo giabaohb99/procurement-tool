@@ -27,6 +27,9 @@ export function buildLeavePolicyAssignmentColumns({
       header: 'Nhân sự',
       width: 240,
       hideable: false,
+      //  duoc-CR-748: xếp theo HỌ TÊN (ô hiện tên kèm mã), không theo id nhân sự.
+      sortable: true,
+      sortKey: 'employee_name',
       cell: (a) => (
         <span className="min-w-0">
           <span className="font-medium">{a.employee_name || `#${a.employee_id}`}</span>
@@ -40,6 +43,8 @@ export function buildLeavePolicyAssignmentColumns({
       key: 'policy',
       header: 'Chính sách',
       width: 220,
+      sortable: true,
+      sortKey: 'policy_name',
       cell: (a) => a.policy_name || `#${a.policy_id}`,
     })
   }
@@ -48,12 +53,15 @@ export function buildLeavePolicyAssignmentColumns({
       key: 'effective_from',
       header: 'Từ ngày',
       width: 120,
+      sortable: true,
       cell: (a) => <span className="tabular-nums">{formatDate(a.effective_from)}</span>,
     },
     {
       key: 'effective_to',
       header: 'Đến ngày',
       width: 140,
+      //  "Không thời hạn" là ô trống nên luôn xuống CUỐI cả hai chiều (luật chung của bảng, không coi là vô hạn).
+      sortable: true,
       cell: (a) =>
         a.effective_to ? (
           <span className="tabular-nums">{formatDate(a.effective_to)}</span>
@@ -65,9 +73,13 @@ export function buildLeavePolicyAssignmentColumns({
       key: 'state',
       header: 'Trạng thái',
       width: 140,
+      //  Dòng đời Sắp tới → Đang hiệu lực → Đã kết thúc, dẫn xuất theo ngày hôm nay (giờ VN) ở backend.
+      sortable: true,
+      sortKey: 'state',
       cell: (a) => <LeavePolicyAssignmentStateBadge state={a.state} />,
     },
     {
+      //  Cột "Hạn mức năm nay" cố ý KHÔNG xếp được: số lấy từ bảng quỹ phép ở truy vấn khác, không có biểu thức SQL khớp.
       //  duoc-CR-745: kiểu mục Leaves của ERPNext — quỹ năm nay mà phân bổ này quyết định, bấm sang dòng quỹ.
       key: 'current_year_quotas',
       header: 'Hạn mức năm nay',
@@ -78,6 +90,7 @@ export function buildLeavePolicyAssignmentColumns({
       key: 'note',
       header: 'Ghi chú',
       width: 260,
+      sortable: true,
       cell: (a) => a.note,
     },
   )

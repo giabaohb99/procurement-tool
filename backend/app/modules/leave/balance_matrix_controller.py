@@ -26,19 +26,22 @@ def _run(request: Request, db: Session, user, action: str, year: int, search: st
     qp = request.query_params
     return build_matrix(db, user, get_perm_profile(db, user), action, year or vn_today().year,
                         valid_company_id(qp.get("company_id")), valid_department_id(qp.get("department_id")),
-                        valid_employee_status(qp.get("employee_status")), search, offset, limit)
+                        valid_employee_status(qp.get("employee_status")), search, offset, limit,
+                        (qp.get("sort_by") or "").strip()[:40], (qp.get("sort_dir") or "asc").strip()[:4])
 
 
 @router.get("/matrix")
 def leave_balance_matrix(request: Request, year: int = Query(0, ge=0, le=2100), search: str | None = None,
                          pg: dict = Depends(pagination), db: Session = Depends(get_db),
                          user=Depends(require(ENTITY, "read"))):
+    """Ma trận nhân sự x loại nghỉ. Xếp: `sort_by` = `code` · `name` · `department_name` kèm `sort_dir`; cột số ngày không xếp được (duoc-CR-748)."""
     return success(_run(request, db, user, "read", year, search, pg["offset"], pg["limit"]))
 
 
 @router.get("/matrix/export")
 def leave_balance_matrix_export(request: Request, year: int = Query(0, ge=0, le=2100), search: str | None = None,
                                 db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
+    """Xuất Excel ma trận — nhận cùng `sort_by` / `sort_dir` với bảng nên tệp ra đúng thứ tự đang xem."""
     data = _run(request, db, user, "export", year, search, 0, EXPORT_LIMIT)
     columns = [Col("code", "Mã NV", width=14), Col("name", "Họ tên", width=26),
                Col("department_name", "Phòng ban", width=24), Col("policy_name", "Chính sách", width=26)]

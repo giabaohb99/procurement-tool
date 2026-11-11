@@ -106,4 +106,31 @@ describe('LaborContractVariablesPage', () => {
     await waitFor(() => expect(api.list).toHaveBeenCalled())
     expect(api.list.mock.calls.at(-1)?.[0]).toMatchObject({ page: 1, source: 2 })
   })
+
+  //  duoc-CR-748: sắp xếp tại MÁY CHỦ; "Số mẫu dùng" tính bằng Python nên không xếp được.
+  it('bấm tiêu đề cột gửi đúng khóa xếp lên API, chu kỳ tăng - giảm - tắt', async () => {
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+    const lastParams = () => api.list.mock.calls.at(-1)?.[0] as Record<string, unknown>
+    renderPage({ labor_contract_template: { read: true } })
+    await screen.findByText('{{ ho_ten }}')
+    const cases: [string, string][] = [
+      ['Biến', 'code'],
+      ['Tên hiển thị', 'label'],
+      ['Nhóm', 'group'],
+      ['Kiểu', 'value_type'],
+      ['Ví dụ', 'example'],
+      ['Bắt buộc', 'is_required'],
+      ['Trạng thái', 'status'],
+    ]
+    for (const [text, key] of cases) {
+      await userEvent.click(header(text))
+      await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: key, sort_dir: 'asc', page: 1 }))
+    }
+    await userEvent.click(header('Trạng thái'))
+    await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: 'status', sort_dir: 'desc' }))
+    await userEvent.click(header('Trạng thái'))
+    await waitFor(() => expect(lastParams().sort_by).toBeUndefined())
+    await userEvent.click(header('Số mẫu dùng'))
+    expect(lastParams().sort_by).toBeUndefined()
+  })
 })

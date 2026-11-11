@@ -89,6 +89,8 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
       key: 'is_recurring',
       header: 'Lặp hằng năm',
       width: 150,
+      //  Cột thật (đúng/sai): máy chủ xếp "Chỉ năm này" trước "Lặp theo ngày/tháng" ở chiều tăng.
+      sortable: true,
       cell: (h) =>
         h.is_recurring ? (
           <Badge variant="default">Lặp theo ngày/tháng</Badge>
@@ -100,6 +102,7 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
       key: 'company_id',
       header: 'Pháp nhân',
       width: 160,
+      //  Không cho xếp (duoc-CR-748): khóa là `company_id`, máy chủ chỉ xếp được theo SỐ id — không phải thứ ô hiện.
       //  `0` KHÔNG phải "chưa chọn" — nó là "áp cho mọi pháp nhân", và đó là
       //  giá trị của gần hết các dòng. Hiện số 0 thì đọc thành dữ liệu lỗi.
       cell: (h) =>

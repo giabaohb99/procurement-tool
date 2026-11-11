@@ -83,6 +83,8 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
       header: 'Cấp áp dụng',
       width: 140,
       hideable: false,
+      //  Mã số 1 Toàn hệ thống → 4 Nhân sự: thứ tự số là thứ tự rộng → hẹp của bộ mã (duoc-CR-748).
+      sortable: true,
       cell: (row) => <Badge variant="outline">{row.target_level_label}</Badge>,
     },
     {
@@ -90,6 +92,8 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
       header: 'Đối tượng',
       width: 240,
       hideable: false,
+      //  Không cho xếp: tên đối tượng do máy chủ ghép từ `target_level` + `target_id`, không phải cột thật.
+      //  Cùng lý do cho Mẫu lịch (`schedule_id` chỉ xếp được theo số id) và Hiệu lực (suy ra theo ngày hôm nay).
       cell: (row) => <span className="font-medium">{targetLabel(row)}</span>,
     },
     {
@@ -102,12 +106,15 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
       key: 'effective_from',
       header: 'Từ ngày',
       width: 120,
+      sortable: true,
       cell: (row) => formatDate(row.effective_from),
     },
     {
       key: 'effective_to',
       header: 'Đến ngày',
       width: 130,
+      //  "Không thời hạn" là ô trống (NULL): xuống cuối ở cả hai chiều.
+      sortable: true,
       cell: (row) =>
         row.effective_to ? (
           formatDate(row.effective_to)
@@ -129,6 +136,7 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
       key: 'note',
       header: 'Ghi chú',
       width: 220,
+      sortable: true,
       cell: (row) => row.note || <span className="text-muted-foreground">—</span>,
     },
   ],

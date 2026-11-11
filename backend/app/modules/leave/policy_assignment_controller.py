@@ -24,6 +24,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from . import policy_assignment_service as service
+from . import policy_assignment_sort as sort_order
 from .policy_assignment_plan import SELF_MESSAGE, plan_change
 from .policy_assignment_view import dump_assignment, lookup_names, search_condition
 from .policy_balance_links import quotas_for_assignments
@@ -62,9 +63,13 @@ def _commit(db: Session) -> None:
 @router.get("")
 def list_assignments(request: Request, pg: dict = Depends(pagination),
                      search: str | None = Query(None, max_length=MAX_SEARCH),
-                     active_on: date | None = None, db: Session = Depends(get_db),
+                     active_on: date | None = None, sort_by: str = Query("", max_length=40),
+                     sort_dir: str = Query("asc", max_length=4), db: Session = Depends(get_db),
                      user=Depends(require(ENTITY, "read"))):
     """Phân bổ trong phạm vi người xem. Lọc: `employee_id`, `policy_id`, `company_id`, `active_on` (ngày), `search` (tên / mã).
+
+    Xếp: `sort_by` = `employee_name` · `policy_name` · `effective_from` · `effective_to` · `state` · `note` kèm
+    `sort_dir` (`asc`/`desc`); ô trống luôn xuống cuối, khóa lạ / không chọn thì `từ ngày` giảm dần như cũ (duoc-CR-748).
 
     Mỗi dòng kèm `current_year_quotas` (duoc-CR-745): hạn mức năm nay theo loại nghỉ của gói + `balance_id` dòng quỹ
     (0 = chưa cấp); rỗng khi phân bổ không chạm năm nay. Dòng quỹ lọc theo phạm vi `leave_balance` của người xem.
@@ -79,10 +84,10 @@ def list_assignments(request: Request, pg: dict = Depends(pagination),
     prof = get_perm_profile(db, user)
     query = apply_scope(query, LeavePolicyAssignment, ENTITY, user, prof)
     total = query.count()
-    rows = (query.order_by(LeavePolicyAssignment.effective_from.desc(), LeavePolicyAssignment.id.desc())
+    today = vn_today()
+    rows = (query.order_by(*sort_order.build_order_by(sort_by, sort_dir, today))
             .offset(pg["offset"]).limit(pg["limit"]).all())
     emps, policies = lookup_names(db, rows)
-    today = vn_today()
     #  duoc-CR-745: hạn mức năm nay của các loại trong gói, kèm id dòng quỹ để bấm sang Quỹ phép năm.
     quotas = quotas_for_assignments(db, rows, user, prof, today.year)
     items = [{**dump_assignment(r, emps, policies, today), "current_year_quotas": quotas.get(r.id, [])} for r in rows]

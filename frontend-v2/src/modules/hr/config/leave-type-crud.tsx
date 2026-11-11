@@ -177,6 +177,9 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       key: 'counts_balance',
       header: 'Trừ quỹ phép',
       width: 150,
+      //  Cột thật (đúng/sai), duoc-CR-748: chiều tăng là "Không" trước rồi tới các loại trừ quỹ. Số ngày/năm trên
+      //  huy hiệu không tham gia — trong cùng nhóm, thứ tự theo khóa phụ id.
+      sortable: true,
       cell: (t) =>
         t.counts_balance ? (
           <Badge variant="default">{t.annual_quota_days} ngày/năm</Badge>
@@ -188,12 +191,15 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       key: 'is_paid',
       header: 'Hưởng lương',
       width: 130,
+      sortable: true,
       cell: (t) => (t.is_paid ? 'Có' : 'Không'),
     },
     {
       key: 'max_days_per_request',
       header: 'Tối đa / lần',
       width: 130,
+      //  CỐ Ý không cho xếp (duoc-CR-748): `0` hiện là "Không giới hạn" (lớn nhất), nhưng máy chủ xếp cột số thô
+      //  nên chiều tăng đưa "Không giới hạn" lên ĐẦU, đọc như hạn mức nhỏ nhất. Cần biểu thức xếp riêng ở backend.
       //  `0` nghĩa là KHÔNG giới hạn, hiện số 0 thì đọc thành "không cho nghỉ".
       cell: (t) =>
         t.max_days_per_request ? `${t.max_days_per_request} ngày` : (
@@ -204,6 +210,9 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       key: 'gender',
       header: 'Áp dụng cho',
       width: 130,
+      //  Mã số 0 Mọi giới · 1 Nam · 2 Nữ: thứ tự số trùng thứ tự nhãn (cả theo chữ cái lẫn chung → riêng), nên
+      //  xếp cột thật ở máy chủ ra đúng thứ ô đang hiện (duoc-CR-748).
+      sortable: true,
       cell: (t) => GENDER_LABELS[t.gender] ?? GENDER_LABELS[GENDER.UNKNOWN],
     },
     {

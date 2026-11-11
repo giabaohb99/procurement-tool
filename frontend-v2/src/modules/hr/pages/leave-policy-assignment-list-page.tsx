@@ -11,6 +11,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -48,7 +49,9 @@ export function LeavePolicyAssignmentListPage() {
   const [active, setActive] = useUrlParamState('active', ALL)
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, policyId, active, companyId, pageSize])
+  //  duoc-CR-748: sắp xếp tại máy chủ (nhân sự, chính sách, từ / đến ngày, trạng thái, ghi chú); không chọn = từ ngày mới nhất trước.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, policyId, active, companyId, pageSize, sortBy, sortDir])
 
   const params = useMemo<ListParams>(() => {
     const p: ListParams = { page, page_size: pageSize }
@@ -56,8 +59,12 @@ export function LeavePolicyAssignmentListPage() {
     if (policyId !== ALL) p.policy_id = policyId
     if (companyId !== ALL) p.company_id = companyId
     if (active === ASSIGNMENT_ACTIVE_TODAY) p.active_on = todayInVietnamISO()
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    }
     return p
-  }, [page, pageSize, debouncedValue, policyId, companyId, active])
+  }, [page, pageSize, debouncedValue, policyId, companyId, active, sortBy, sortDir])
   const { data, isLoading, isError } = useLeavePolicyAssignments(params)
 
   //  Mọi gói (kể cả đã ngừng) — lọc theo gói đã ngừng vẫn phải được.
@@ -127,6 +134,9 @@ export function LeavePolicyAssignmentListPage() {
           isError={isError}
           emptyMessage={filtered ? 'Không có phân bổ nào khớp bộ lọc.' : 'Chưa phân bổ chính sách cho ai.'}
           storageKey="hr.leave-policy-assignments"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           mobileCard={(a) => (
             <LeavePolicyAssignmentMobileCard assignment={a} actions={canWrite ? renderActions(a) : undefined} />
           )}

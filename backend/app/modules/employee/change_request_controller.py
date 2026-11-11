@@ -24,6 +24,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
 from . import change_request_service as svc
+from . import change_request_sort as sort
 from . import change_request_view as view
 from . import self_contact_service
 from .change_request_model import EmployeeChangeRequest as Req
@@ -126,6 +127,7 @@ def withdraw_change_request(rid: int, db: Session = Depends(get_db), user=Depend
 @router.get("/change-requests")
 def list_change_requests(
     status: int | None = Query(None), employee_id: int | None = Query(None), q: str | None = Query(None, max_length=100),
+    sort_by: str = Query("", max_length=40), sort_dir: str = Query("asc", max_length=4),
     pg: dict = Depends(pagination), db: Session = Depends(get_db),
     user=Depends(require("employee", "write")),
 ):
@@ -143,7 +145,9 @@ def list_change_requests(
         query = query.filter(or_(Employee.code.like(like, escape="\\"),
                                  Employee.full_name.like(like, escape="\\")))
     total = query.count()
-    rows = query.order_by(Req.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    #  duoc-CR-748: cột đang hiện xếp qua `change_request_sort` (ô trống xuống cuối, khóa phụ `id`);
+    #  không chọn cột / khóa lạ -> `id` giảm dần như cũ.
+    rows = query.order_by(*sort.build_order_by(sort_by, sort_dir)).offset(pg["offset"]).limit(pg["limit"]).all()
     emps = {e.id: e for e in db.query(Employee).filter(Employee.id.in_({r.employee_id for r in rows})).all()}
     v, names = view.Viewer(db, user, profile), view.user_names(db, rows)
     return success({"total": total,

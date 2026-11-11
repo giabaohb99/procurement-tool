@@ -8,6 +8,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Card } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -56,13 +57,16 @@ export function ProfileChangeRequestListPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', DEFAULT_STATUS)
   const [pageSize, setPageSize] = useState(20)
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, status, pageSize])
+  //  duoc-CR-748: sắp xếp tại máy chủ (mã NV, họ tên, ngày gửi, trạng thái theo dòng đời); gắn vào tham số lọc.
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, status, pageSize, sortBy, sortDir])
 
   const params: ListParams = {
     page,
     page_size: pageSize,
     ...(debouncedValue ? { q: debouncedValue } : {}),
     ...(status !== ALL ? { status: Number(status) } : {}),
+    ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
   }
   const { data, isLoading, isError } = useChangeRequests(params, canReview)
   const pendingCount = useChangeRequestPendingCount(canReview).data?.count ?? 0
@@ -74,9 +78,17 @@ export function ProfileChangeRequestListPage() {
         header: 'Mã NV',
         width: 120,
         hideable: false,
+        sortable: true,
         cell: (row) => <span className="font-mono">{row.employee_code}</span>,
       },
-      { key: 'employee_name', header: 'Họ tên', width: 220, hideable: false, cell: (row) => row.employee_name },
+      {
+        key: 'employee_name',
+        header: 'Họ tên',
+        width: 220,
+        hideable: false,
+        sortable: true,
+        cell: (row) => row.employee_name,
+      },
       {
         key: 'groups',
         header: 'Nhóm thay đổi',
@@ -85,11 +97,19 @@ export function ProfileChangeRequestListPage() {
         cell: (row) => listChangedGroups(row).join(', '),
       },
       { key: 'count', header: 'Số trường', width: 100, align: 'right', cell: (row) => countChangedFields(row) },
-      { key: 'created_at', header: 'Ngày gửi', width: 160, cell: (row) => formatDateTime(row.created_at) },
+      {
+        key: 'created_at',
+        header: 'Ngày gửi',
+        width: 160,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (row) => formatDateTime(row.created_at),
+      },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 130,
+        sortable: true,
         cell: (row) => <EmployeeChangeRequestStatusBadge status={row.status} />,
       },
     ],
@@ -126,6 +146,9 @@ export function ProfileChangeRequestListPage() {
           isError={isError}
           emptyMessage={describeEmpty(debouncedValue, status)}
           storageKey="hr.profile-change-requests"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           onRowClick={(row) => navigate(appRoutes.hr.profileChangeRequestDetail(row.id))}
           mobileCard={(row) => <ProfileChangeRequestCard request={row} />}
           pagination={{

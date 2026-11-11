@@ -27,13 +27,14 @@ export function buildLaborContractTemplateColumns(
   actions: LaborContractTemplateColumnActions,
 ): DataTableColumn<LaborContractTemplate>[] {
   const columns: DataTableColumn<LaborContractTemplate>[] = [
-    { key: 'id', header: 'ID', width: 80, hideable: false, cell: (t) => t.id },
+    { key: 'id', header: 'ID', width: 80, hideable: false, sortable: true, cell: (t) => t.id },
     {
       key: 'name',
       header: 'Tên mẫu',
       width: 260,
       hideable: false,
       wrap: true,
+      sortable: true,
       cell: (t) => t.name,
     },
     {
@@ -41,6 +42,8 @@ export function buildLaborContractTemplateColumns(
       header: 'Pháp nhân',
       width: 240,
       wrap: true,
+      //  Xếp theo TÊN pháp nhân (không theo id) — duoc-CR-748.
+      sortable: true,
       cell: (t) => (
         <span>
           {t.company_name}
@@ -52,6 +55,7 @@ export function buildLaborContractTemplateColumns(
       key: 'contract_type',
       header: 'Loại HĐ',
       width: 190,
+      sortable: true,
       cell: (t) => labelOf(LABOR_CONTRACT_TYPE, String(t.contract_type)) || '—',
     },
     {
@@ -72,12 +76,14 @@ export function buildLaborContractTemplateColumns(
       header: 'Số HĐ đã dùng',
       width: 130,
       align: 'right',
+      sortable: true,
       cell: (t) => t.contract_count,
     },
     {
       key: 'is_active',
       header: 'Trạng thái',
       width: 130,
+      sortable: true,
       //  Cùng kiểu nhãn với bảng "Văn bản mẫu" ở tab bên cạnh (xanh đặc = đang dùng).
       cell: (t) => <Badge variant={t.is_active ? 'default' : 'secondary'}>{t.is_active ? 'Đang dùng' : 'Ngừng'}</Badge>,
     },
@@ -87,6 +93,8 @@ export function buildLaborContractTemplateColumns(
       header: 'Ngày tạo',
       width: 170,
       wrap: true,
+      sortable: true,
+      sortDescFirst: true,
       //  Hai dòng như cột Pháp nhân: ngày ở trên, người tạo nhỏ bên dưới (gộp một dòng thì bị cắt cụt).
       cell: (t) => (
         <span>

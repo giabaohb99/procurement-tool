@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -71,5 +71,32 @@ describe('LaborContractTemplateCatalog — gác quyền', () => {
     renderAs({ labor_contract_template: { read: true } })
     await userEvent.click(await screen.findByRole('button', { name: /Danh sách biến/ }))
     expect(await screen.findByText('Trang danh sách biến')).toBeInTheDocument()
+  })
+
+  //  duoc-CR-748: sắp xếp tại MÁY CHỦ; "Tệp gốc" và "Thao tác" không xếp được.
+  it('bấm tiêu đề cột gửi đúng khóa xếp lên API và về trang 1', async () => {
+    const header = (text: string) => screen.getByText(text, { selector: 'thead span' })
+    const lastParams = () => {
+      const calls = apiGet.mock.calls.filter(([url]) => url === '/api/labor-contract-templates')
+      return (calls.at(-1)?.[1] as { params: Record<string, unknown> }).params
+    }
+    renderAs({ labor_contract_template: { read: true } })
+    await screen.findByText('Tên mẫu', { selector: 'thead span' })
+    //  Cột "Ngày tạo" khai `sortDescFirst`: lần bấm đầu xếp GIẢM (mới nhất trước).
+    const cases: [string, string, string][] = [
+      ['Tên mẫu', 'name', 'asc'],
+      ['Pháp nhân', 'company', 'asc'],
+      ['Loại HĐ', 'contract_type', 'asc'],
+      ['Số HĐ đã dùng', 'contract_count', 'asc'],
+      ['Trạng thái', 'is_active', 'asc'],
+      ['Ngày tạo', 'created_at', 'desc'],
+    ]
+    for (const [text, key, dir] of cases) {
+      await userEvent.click(header(text))
+      await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: key, sort_dir: dir, page: 1 }))
+    }
+    await userEvent.click(header('Tệp gốc'))
+    await userEvent.click(header('Ngày tạo'))
+    await waitFor(() => expect(lastParams()).toMatchObject({ sort_by: 'created_at', sort_dir: 'asc' }))
   })
 })

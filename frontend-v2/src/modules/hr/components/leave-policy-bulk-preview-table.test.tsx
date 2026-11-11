@@ -81,3 +81,60 @@ describe('LeavePolicyBulkPreviewTable — khổ điện thoại', () => {
     expect(screen.queryByRole('checkbox', { name: /Chọn tất cả/ })).not.toBeInTheDocument()
   })
 })
+
+describe('LeavePolicyBulkPreviewTable — xếp cột (duoc-CR-748)', () => {
+  function renderDesktop(items: PolicyPreviewItem[], selected: number[] = []) {
+    const onToggle = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <LeavePolicyBulkPreviewTable
+          items={items}
+          selectedIds={new Set(selected)}
+          onToggle={onToggle}
+          onToggleAll={vi.fn()}
+          typeName={buildLeaveTypeNameLookup([])}
+        />
+      </QueryClientProvider>,
+    )
+    return { onToggle }
+  }
+
+  function renderedNames() {
+    return screen.getAllByRole('checkbox', { name: /^Chọn (?!tất cả)/ }).map((el) => el.getAttribute('aria-label'))
+  }
+
+  it('reorders by name (Vietnamese) in the browser and back to the preview order on the third click', () => {
+    renderDesktop([item(1, { name: 'Đặng Hà' }), item(2, { name: 'Bùi An' }), item(3, { name: 'An Bình' })])
+    const nameHeader = screen.getByText('Tên', { selector: 'thead span' })
+    fireEvent.click(nameHeader)
+    expect(renderedNames()).toEqual(['Chọn An Bình', 'Chọn Bùi An', 'Chọn Đặng Hà'])
+    fireEvent.click(nameHeader)
+    expect(renderedNames()).toEqual(['Chọn Đặng Hà', 'Chọn Bùi An', 'Chọn An Bình'])
+    fireEvent.click(nameHeader)
+    expect(renderedNames()).toEqual(['Chọn Đặng Hà', 'Chọn Bùi An', 'Chọn An Bình'])
+  })
+
+  it('keeps each tick on the SAME person after sorting, and a click still toggles that person', () => {
+    //  Ô tick đi theo `employee_id`: xếp lại mà ô đi theo vị trí dòng là phân bổ nhầm người.
+    const { onToggle } = renderDesktop([item(1, { name: 'Cường' }), item(2, { name: 'An' })], [1])
+    fireEvent.click(screen.getByText('Tên', { selector: 'thead span' }))
+    expect(renderedNames()).toEqual(['Chọn An', 'Chọn Cường'])
+    expect(screen.getByRole('checkbox', { name: 'Chọn Cường' })).toHaveAttribute('data-state', 'checked')
+    expect(screen.getByRole('checkbox', { name: 'Chọn An' })).toHaveAttribute('data-state', 'unchecked')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn An' }))
+    expect(onToggle).toHaveBeenCalledWith(2)
+  })
+
+  it('puts people without a current policy ("Chưa có") at the end in both directions', () => {
+    renderDesktop([
+      item(1, { name: 'Không gói' }),
+      item(2, { name: 'Gói B', current: { policy_name: 'Văn phòng', from: '2026-01-01', to: null } }),
+      item(3, { name: 'Gói A', current: { policy_name: 'Ca kíp', from: '2026-01-01', to: null } }),
+    ])
+    const currentHeader = screen.getByText('Chính sách hiện tại', { selector: 'thead span' })
+    fireEvent.click(currentHeader)
+    expect(renderedNames()).toEqual(['Chọn Gói A', 'Chọn Gói B', 'Chọn Không gói'])
+    fireEvent.click(currentHeader)
+    expect(renderedNames()).toEqual(['Chọn Gói B', 'Chọn Gói A', 'Chọn Không gói'])
+  })
+})

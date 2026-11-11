@@ -13,11 +13,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import { sortRowsBy, type SortValue } from '@/shared/utils/compare-sort-values'
 import { closeYearReviewExportUrl } from '../api/leave-api'
 import { useCloseYearReview } from '../hooks/use-leave'
+import { useLocalTableSort } from '../hooks/use-local-table-sort'
 import type { LeaveCloseYearReviewRow } from '../types/leave'
 import { formatCloseYearDays as formatDays } from '../utils/format-close-year-days'
 import { LeaveCloseYearReviewCard } from './leave-close-year-review-card'
+
+/** Chữ ô "Nhân sự" — một chỗ cho cả ô lẫn phép xếp. */
+function employeeText(r: LeaveCloseYearReviewRow): string {
+  return `${r.employee_name} (${r.employee_code})`
+}
+
+/**
+ * Giá trị đem xếp của từng cột (duoc-CR-748) — đúng thứ ô đang hiện. Cột số in cả số 0 nên 0 là giá trị thật;
+ * "Sang loại" chưa khai (chữ *Chưa khai*) là ô trống, xuống cuối cả hai chiều.
+ */
+const REVIEW_SORT_GETTERS: Record<string, (r: LeaveCloseYearReviewRow) => SortValue> = {
+  employee: employeeText,
+  source: (r) => r.source_type_name,
+  before: (r) => r.before_days,
+  after: (r) => r.after_days,
+  diff: (r) => r.diff_days,
+  dest: (r) => r.dest_type_name,
+  credited: (r) => r.credited_days,
+}
+
+/** Bằng nhau thì theo người rồi theo loại nghỉ nguồn — dòng không có `id`, khóa dòng là cặp đó. */
+function byEmployeeThenSource(a: LeaveCloseYearReviewRow, b: LeaveCloseYearReviewRow): number {
+  return a.employee_id - b.employee_id || a.source_type_id - b.source_type_id
+}
 
 interface LeaveCloseYearReviewDialogProps {
   /** Năm VỪA kết sổ (năm cũ). `null` = đóng hộp. */
@@ -37,21 +63,30 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
   const { can } = usePermission()
   const { data, isLoading, isError } = useCloseYearReview(year ?? 0, year !== null)
   const [exporting, setExporting] = useState(false)
+  //  Xếp ngay ở trình duyệt: API trả đủ mọi dòng của năm (không phân trang).
+  const sort = useLocalTableSort()
+  const items = data?.items
+  const rows = useMemo(() => {
+    const getValue = REVIEW_SORT_GETTERS[sort.sortBy]
+    if (!items || !getValue) return items
+    return sortRowsBy(items, getValue, sort.sortDir, byEmployeeThenSource)
+  }, [items, sort.sortBy, sort.sortDir])
 
   const columns = useMemo<DataTableColumn<LeaveCloseYearReviewRow>[]>(
     () => [
-      { key: 'employee', header: 'Nhân sự', width: 200, hideable: false, wrap: true,
-        cell: (r) => `${r.employee_name} (${r.employee_code})` },
-      { key: 'source', header: 'Loại nghỉ', width: 130, wrap: true, cell: (r) => r.source_type_name },
-      { key: 'before', header: 'Số cũ (trước)', width: 110, align: 'right',
+      { key: 'employee', header: 'Nhân sự', width: 200, hideable: false, wrap: true, sortable: true,
+        cell: employeeText },
+      { key: 'source', header: 'Loại nghỉ', width: 130, wrap: true, sortable: true,
+        cell: (r) => r.source_type_name },
+      { key: 'before', header: 'Số cũ (trước)', width: 110, align: 'right', sortable: true,
         cell: (r) => formatDays(r.before_days) },
-      { key: 'after', header: 'Số mới (sau)', width: 110, align: 'right',
+      { key: 'after', header: 'Số mới (sau)', width: 110, align: 'right', sortable: true,
         cell: (r) => formatDays(r.after_days) },
-      { key: 'diff', header: 'Chênh', width: 90, align: 'right',
+      { key: 'diff', header: 'Chênh', width: 90, align: 'right', sortable: true,
         cell: (r) => formatDays(r.diff_days) },
-      { key: 'dest', header: 'Sang loại', width: 130, wrap: true,
+      { key: 'dest', header: 'Sang loại', width: 130, wrap: true, sortable: true,
         cell: (r) => r.dest_type_name || 'Chưa khai' },
-      { key: 'credited', header: 'Cộng vào năm sau', width: 120, align: 'right',
+      { key: 'credited', header: 'Cộng vào năm sau', width: 120, align: 'right', sortable: true,
         cell: (r) => formatDays(r.credited_days) },
     ],
     [],
@@ -83,8 +118,11 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
 
         <DataTable
           columns={columns}
-          rows={data?.items}
+          rows={rows}
           getRowId={(r) => `${r.employee_id}-${r.source_type_id}`}
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={sort.onSortChange}
           isLoading={isLoading}
           isError={isError}
           emptyMessage={`Chưa có dòng nào được kết sổ cho năm ${year}.`}

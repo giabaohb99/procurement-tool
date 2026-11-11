@@ -66,6 +66,8 @@ export const LEAVE_BLOCK_CRUD_CONFIG: CrudConfig<LeaveBlockPeriod> = {
       key: 'reason',
       header: 'Lý do',
       width: 300,
+      //  Cột thật; dòng không ghi lý do là ô trống, xuống cuối cả hai chiều (duoc-CR-748).
+      sortable: true,
       cell: (b) =>
         b.reason ? b.reason : <span className="text-muted-foreground">Không ghi lý do</span>,
     },
@@ -73,6 +75,7 @@ export const LEAVE_BLOCK_CRUD_CONFIG: CrudConfig<LeaveBlockPeriod> = {
       key: 'company_id',
       header: 'Pháp nhân',
       width: 140,
+      //  Không cho xếp (duoc-CR-748): khóa `*_id` chỉ xếp được theo số id ở máy chủ. Cùng lý do cho Phòng ban.
       //  `0` = áp cho mọi pháp nhân, không phải dữ liệu lỗi — xem `holiday-crud`.
       cell: (b) =>
         b.company_id ? `#${b.company_id}` : <span className="text-muted-foreground">Mọi pháp nhân</span>,

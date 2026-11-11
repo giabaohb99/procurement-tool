@@ -155,7 +155,16 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       hideable: false,
       cell: (r) => <span className="font-medium">{r.name}</span>,
     },
-    { key: 'note', header: 'Ghi chú', width: 280, wrap: true, minWidth: 180, cell: (r) => r.note || '—' },
+    {
+      key: 'note',
+      header: 'Ghi chú',
+      width: 280,
+      wrap: true,
+      minWidth: 180,
+      //  Cột thật; ghi chú trống ("—") xuống cuối cả hai chiều (duoc-CR-748).
+      sortable: true,
+      cell: (r) => r.note || '—',
+    },
     {
       key: 'is_active',
       header: 'Trạng thái',
