@@ -202,6 +202,7 @@ function VehicleBookingListContent() {
       {
         key: 'route',
         header: 'Lộ trình',
+        sortable: true,
         cell: (r) => {
           const stopNames = (r.stops ?? []).map((s) => s.location).filter(Boolean)
           const parts = [r.start_location, ...stopNames, r.end_location].filter(Boolean)
@@ -227,6 +228,7 @@ function VehicleBookingListContent() {
       {
         key: 'assigned',
         header: 'Xe / Tài xế',
+        sortable: true,
         cell: (r) => {
           const parts = [r.assigned_vehicle_label, r.assigned_driver_label].filter(Boolean)
           return parts.length ? parts.join(' · ') : '—'

@@ -112,6 +112,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
     {
       key: 'party_type',
       header: 'Bên ký kết',
+      sortable: true,
       width: 220,
       wrap: true,
       cell: (c) => (
@@ -126,6 +127,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
     {
       key: 'contract_type',
       header: 'Loại hợp đồng',
+      sortable: true,
       width: 140,
       cell: (c) => contractTypeLabel(c.contract_type) || '—',
     },
@@ -146,6 +148,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
     {
       key: 'expiry',
       header: 'Hiệu lực',
+      sortable: true,
       width: 120,
       cell: (c) =>
         c.expiry ? (
@@ -162,6 +165,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
     {
       key: 'signed',
       header: 'Trạng thái ký',
+      sortable: true,
       width: 110,
       cell: (c) => (
         <Badge variant={c.signed ? 'default' : 'secondary'}>

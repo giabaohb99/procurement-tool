@@ -114,6 +114,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-744-luot-d | Hợp đồng và Đặt xe: bấm xếp được các cột còn lại
+- status: xong
+- date: 2026-11-10
+- list: Thu mua
+- pic: A1
+- tag: Được
+**Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy Hợp đồng không xếp được 4 cột, Đặt xe không xếp được 2 cột.
+
+**Đã làm**
+- Hợp đồng: **Bên ký kết** xếp theo tên; **Loại hợp đồng** theo nhãn đang hiện; **Hiệu lực** theo Đã hết hạn, Sắp hết hạn, Còn hiệu lực, Không thời hạn; **Trạng thái ký** Chưa ký trước Đã ký.
+- Đặt xe: **Lộ trình** xếp theo điểm đi rồi điểm đến; **Xe / Tài xế** theo biển số, không có xe thì tên tài xế, tự lái thì tên người tạo, chưa phân thì xuống cuối.
+- Sáu bài kiểm mới.
+
+Mã nguồn: `backend/app/modules/contract/sort_expressions.py`, `backend/app/modules/vehicle_booking/sort_expressions.py`, hai controller, `contract-crud.tsx`, `vehicle-booking-list-page.tsx`, `test/backend/test_sap_xep_hop_dong_dat_xe_cr744.py`
+
 ## duoc-CR-744-luot-c | Sắp xếp cột: SL nhận ở Tiến độ mua hàng và Loại đơn ở ĐMH xếp đúng chữ đang hiện
 - status: xong
 - date: 2026-11-10

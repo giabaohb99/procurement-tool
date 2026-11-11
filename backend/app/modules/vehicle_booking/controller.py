@@ -29,6 +29,7 @@ from .schema import (
     VehicleBookingCreate,
     VehicleBookingUpdate,
 )
+from .sort_expressions import list_sort_allow
 
 router = APIRouter(prefix="/api/vehicle-bookings", tags=["vehicle-booking"])
 
@@ -84,7 +85,7 @@ def _booking_query(request: Request, db: Session, user, action: str = "read"):
     if request.query_params.get("mine"):
         query = service.filter_my_trips(query, db, user)
     return apply_sort_from_request(query, VehicleBooking, request,
-                                   default=VehicleBooking.id.desc())
+                                   default=VehicleBooking.id.desc(), allow=list_sort_allow())
 
 
 @router.get("")

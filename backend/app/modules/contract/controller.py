@@ -17,6 +17,7 @@ from app.modules.supplier.model import Supplier
 
 from .model import Contract
 from .schema import ContractCreate, ContractUpdate
+from .sort_expressions import list_sort_allow
 
 router = APIRouter(prefix="/api/contracts", tags=["contract"])
 # end_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày hết hạn (end_date__lte/between…);
@@ -118,7 +119,7 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         elif expiry == "valid":
             q = q.filter(Contract.end_date > t30)
     total = q.count()
-    q = apply_sort_from_request(q, Contract, request, default=Contract.id.desc())
+    q = apply_sort_from_request(q, Contract, request, default=Contract.id.desc(), allow=list_sort_allow())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(c) for c in items]})
 
