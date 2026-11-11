@@ -57,6 +57,8 @@ SKILLS: tuple[tuple[str, str, str], ...] = (
      "Duyệt dấu (xin đóng dấu): tra phiếu duyệt dấu, soạn phiếu mới. Đọc khi hỏi về đóng dấu hay trước khi soạn phiếu."),
     ("90-dien-dan.md", "dien-dan",
      "Diễn đàn nội bộ: tìm bài viết theo chữ, người viết, box. Đọc khi hỏi về bài trên diễn đàn."),
+    ("95-kho.md", "kho",
+     "Tồn kho theo kho và mã hàng: còn bao nhiêu, mã hết hàng, tồn âm. Đọc khi hỏi về tồn kho."),
     ("nhamay-tri-thuc-co-dong.md", "nha-may-he-thong-cong-viec",
      "Hệ thống công việc Nhà máy DEGO Organic: quy định QĐ.HT, giao thức trợ lý AI nhà máy, bộ câu hỏi làm rõ việc, thuật "
      "ngữ, sổ đăng ký công việc, danh mục tài liệu. Đọc khi hỏi về nhà máy, sản xuất, ca làm, cải tiến. Bản gốc chi tiết nằm "
