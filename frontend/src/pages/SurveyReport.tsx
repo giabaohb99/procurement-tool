@@ -10,6 +10,8 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import TableScroll from '../components/TableScroll'
+import { fmtPrice, fmtVND } from '../utils/money'
+import { fmtDateStr } from '../utils/datetime'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -62,6 +64,144 @@ interface SurveyReportItem {
   line_approve: string
   line_approve_note: string
   survey_status: string
+  /** bao-CR-746: các cột thêm (giá, NCC, SP, mốc ngày) — máy chủ trả đủ bộ khóa cho cả dòng NCC lẫn dòng SP,
+   *  loại nào không có thì chữ rỗng / số null. Danh sách khóa xem `ALL_EXTRA`. */
+  [field: string]: any
+}
+
+/** Số (SL, MOQ) kiểu Việt, tối đa 3 số lẻ. */
+const fmtQty = (v: any) => Number(v).toLocaleString('vi-VN', { maximumFractionDigits: 3 })
+
+type ExtraKind = 'text' | 'price' | 'money' | 'qty' | 'pct' | 'date'
+
+/** Chữ hiển thị của một ô thêm — dùng chung cho bảng và tệp CSV. Ô trống (null / '') ra chuỗi rỗng,
+ *  KHÔNG in 0: cột giá chỉ có ở dòng SP, dòng NCC in 0 là một bức tường số không. */
+function extraText(value: any, kind: ExtraKind = 'text'): string {
+  if (value == null || value === '') return ''
+  switch (kind) {
+    case 'price': return fmtPrice(value)
+    case 'money': return fmtVND(value)
+    case 'qty': return fmtQty(value)
+    case 'pct': return `${Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
+    case 'date': return fmtDateStr(value)
+    default: return String(value)
+  }
+}
+
+const SURVEY_TYPE_LABEL: Record<string, string> = { combined: 'Khảo sát NCC & SP', supplier: 'Khảo sát NCC', product: 'Khảo sát SP' }
+const SURVEY_STATUS_LABEL: Record<string, string> = {
+  draft: 'Nháp', submitted: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Bị trả lại', cancelled: 'Đã từ chối',
+}
+
+interface ExtraField {
+  key: string
+  label: string
+  width: number
+  kind?: ExtraKind
+  /** Cột phụ: ẩn sẵn, bật trong menu Cột. Cột không ẩn = hiện ngay, kể cả với người đã lưu bố cục cũ. */
+  hidden?: boolean
+  labels?: Record<string, string>
+}
+
+/**
+ * bao-CR-746 — cột v1 còn thiếu so với Báo cáo khảo sát v2 (`frontend-v2/.../survey-report-page.tsx`,
+ * cùng API `/api/survey-report/lines`, cùng bộ hiện / ẩn sẵn). Người nhà máy chỉ dùng v1 nên trước
+ * đây không xem được giá khảo sát ở báo cáo. Chia nhóm theo chỗ đứng trong bảng (xem `COLS`).
+ */
+const EXTRA_AFTER_CONTENT: ExtraField[] = [
+  { key: 'supplier_code', label: 'Mã NCC', width: 120 },
+  { key: 'supplier_name', label: 'Tên NCC', width: 200, hidden: true },
+  { key: 'survey_type', label: 'Loại phiếu', width: 150, hidden: true, labels: SURVEY_TYPE_LABEL },
+  { key: 'survey_status', label: 'Trạng thái phiếu', width: 130, hidden: true, labels: SURVEY_STATUS_LABEL },
+  { key: 'sr_code', label: 'Mã YCBG', width: 140, hidden: true },
+  { key: 'pr_code', label: 'Mã PYC', width: 140, hidden: true },
+]
+
+const EXTRA_AFTER_GROUP: ExtraField[] = [
+  { key: 'item_name', label: 'Tên VTBB', width: 200 },
+  { key: 'uom', label: 'ĐVT', width: 80 },
+  { key: 'request_qty', label: 'SL dự kiến', width: 100, kind: 'qty' },
+  { key: 'price_by_volume', label: 'Đơn giá', width: 120, kind: 'price' },
+  { key: 'vat', label: 'VAT', width: 70, kind: 'pct' },
+  { key: 'amount', label: 'Thành tiền', width: 130, kind: 'money' },
+  { key: 'last_purchase_price', label: 'Giá mua gần nhất', width: 130, kind: 'price', hidden: true },
+  { key: 'max_purchase_price', label: 'Giá mua cao nhất', width: 130, kind: 'price', hidden: true },
+  { key: 'proposed_rate', label: 'Giá đề xuất', width: 120, kind: 'price', hidden: true },
+  { key: 'quote_unit', label: 'ĐVT báo giá', width: 100, hidden: true },
+  { key: 'moq', label: 'MOQ', width: 90, kind: 'qty', hidden: true },
+  { key: 'volume_range', label: 'Khoảng sản lượng', width: 140, hidden: true },
+  { key: 'shipping_cost', label: 'Phí vận chuyển', width: 120, kind: 'money', hidden: true },
+  { key: 'extra_shipping_cost', label: 'Phí giao tận kho', width: 130, kind: 'money', hidden: true },
+  { key: 'shipping_policy', label: 'Chính sách vận chuyển', width: 180, hidden: true },
+  { key: 'delivery_time', label: 'Thời gian giao', width: 130 },
+  { key: 'delivery_place', label: 'Nơi giao hàng', width: 160, hidden: true },
+  { key: 'debt_policy', label: 'Ngày công nợ', width: 110 },
+  { key: 'internal_code', label: 'Mã SP theo NCC', width: 130, hidden: true },
+  { key: 'invoice_name', label: 'Tên trên hóa đơn', width: 180, hidden: true },
+  { key: 'spec', label: 'Quy cách', width: 180, hidden: true },
+  { key: 'active_ingredient', label: 'Hàm lượng hoạt chất', width: 160, hidden: true },
+  { key: 'origin', label: 'Xuất xứ', width: 110, hidden: true },
+  { key: 'requirement_detail', label: 'Yêu cầu kỹ thuật', width: 200, hidden: true },
+  { key: 'sample_ready', label: 'Có mẫu', width: 80, hidden: true },
+  { key: 'sample_date', label: 'Ngày nhận mẫu', width: 110, kind: 'date', hidden: true },
+  { key: 'sample_qty', label: 'SL mẫu', width: 90, kind: 'qty', hidden: true },
+  { key: 'lab_result', label: 'Kết quả kiểm nghiệm', width: 180, hidden: true },
+  { key: 'tax_code', label: 'Mã số thuế', width: 120, hidden: true },
+  { key: 'contact_person', label: 'Người liên hệ', width: 140, hidden: true },
+  { key: 'contact_phone', label: 'Điện thoại', width: 110, hidden: true },
+  { key: 'supply_group', label: 'Nhóm hàng cung cấp', width: 180, hidden: true },
+  { key: 'source_of_information', label: 'Nguồn thông tin', width: 150, hidden: true },
+  { key: 'production_time', label: 'Thời gian sản xuất', width: 140, hidden: true },
+  { key: 'nvkd_eval', label: 'Đánh giá NVKD', width: 140, hidden: true },
+  { key: 'invoice_policy', label: 'Chính sách hóa đơn', width: 170, hidden: true },
+  { key: 'reliability', label: 'Độ tin cậy', width: 150, hidden: true },
+  { key: 'delivery_policy', label: 'Chính sách giao hàng', width: 170, hidden: true },
+  { key: 'defect_return', label: 'Đổi trả hàng lỗi', width: 170, hidden: true },
+]
+
+const EXTRA_AFTER_DATE: ExtraField[] = [
+  { key: 'contact_date', label: 'Ngày liên hệ', width: 110, kind: 'date', hidden: true },
+  { key: 'reply_date', label: 'Ngày phản hồi', width: 110, kind: 'date', hidden: true },
+  { key: 'result_date', label: 'Ngày trả KQ', width: 110, kind: 'date', hidden: true },
+  { key: 'received_date', label: 'Ngày tiếp nhận', width: 110, kind: 'date', hidden: true },
+  { key: 'result_due_date', label: 'Hạn trả KQ', width: 110, kind: 'date', hidden: true },
+]
+
+const EXTRA_AFTER_NOTE: ExtraField[] = [
+  { key: 'nspt_note', label: 'Ghi chú NSPT', width: 180, hidden: true },
+  { key: 'note', label: 'Ghi chú', width: 180, hidden: true },
+]
+
+const ALL_EXTRA: ExtraField[] = [...EXTRA_AFTER_CONTENT, ...EXTRA_AFTER_GROUP, ...EXTRA_AFTER_DATE, ...EXTRA_AFTER_NOTE]
+const EXTRA_BY_KEY: Record<string, ExtraField> = Object.fromEntries(ALL_EXTRA.map((f) => [f.key, f]))
+const NUMERIC_KINDS: ExtraKind[] = ['price', 'money', 'qty', 'pct']
+
+function extraFieldText(it: SurveyReportItem, f: ExtraField): string {
+  const raw = it[f.key]
+  return extraText(f.labels ? (f.labels[raw] ?? raw) : raw, f.kind)
+}
+
+function toColumn(f: ExtraField, ellipsis: React.CSSProperties): TableColumn<SurveyReportItem> {
+  const numeric = NUMERIC_KINDS.includes(f.kind || 'text')
+  return {
+    key: f.key, label: f.label, sort: f.key, width: f.width, th: { width: f.width },
+    align: numeric ? 'right' : undefined,
+    //  bao-CR-705: cột ẩn sẵn thêm sau thì người đã lưu bố cục từ trước cũng thấy nó ẩn.
+    defaultHidden: f.hidden, hiddenForOlderLayouts: f.hidden,
+    td: numeric ? undefined : { ...ellipsis, maxWidth: f.width },
+    cell: (it) => {
+      const text = extraFieldText(it, f)
+      return numeric ? text : <span title={text}>{text}</span>
+    },
+  }
+}
+
+/** Chữ của một ô trong tệp CSV — cột thêm đi qua `extraFieldText`, cột gốc in thẳng giá trị như bản trước. */
+function csvText(it: SurveyReportItem, key: string): string {
+  const extra = EXTRA_BY_KEY[key]
+  if (extra) return extraFieldText(it, extra)
+  if (key === 'kind') return KIND_LABEL[it.kind] || it.kind
+  return String(it[key] ?? '')
 }
 
 interface SummaryMap {
@@ -131,10 +271,13 @@ export default function SurveyReport() {
       td: { ...ELLIPSIS, maxWidth: 260 },
       cell: (it) => <span title={it.content}>{it.content || ''}</span>,
     },
+    ...EXTRA_AFTER_CONTENT.map((f) => toColumn(f, ELLIPSIS)),
     { key: 'item_code', label: 'Mã hàng', sort: 'item_code', width: 120, th: { width: 120 }, cell: (it) => <span title={it.main_content}>{it.item_code || ''}</span> },
     { key: 'item_group', label: 'Phân loại', sort: 'item_group', width: 130, th: { width: 130 }, cell: (it) => it.item_group || '' },
+    ...EXTRA_AFTER_GROUP.map((f) => toColumn(f, ELLIPSIS)),
     { key: 'nspt', label: 'NSPT', sort: 'nspt', width: 120, th: { width: 120 }, cell: (it) => it.nspt || '' },
     { key: 'date', label: 'Ngày', sort: 'date', width: 100, align: 'center', th: { width: 100 }, cell: (it) => it.date || '' },
+    ...EXTRA_AFTER_DATE.map((f) => toColumn(f, ELLIPSIS)),
     {
       key: 'line_approve', label: 'Trạng thái duyệt', sort: 'line_approve', width: 130, align: 'center',
       th: { width: 130 }, cell: (it) => lineApproveBadge(it.line_approve),
@@ -144,6 +287,7 @@ export default function SurveyReport() {
       td: { ...ELLIPSIS, maxWidth: 220 },
       cell: (it) => <span title={it.line_approve_note}>{it.line_approve_note || ''}</span>,
     },
+    ...EXTRA_AFTER_NOTE.map((f) => toColumn(f, ELLIPSIS)),
   ], [page])
   const table = useTableColumns('survey-report', COLS)
 
@@ -204,13 +348,10 @@ export default function SurveyReport() {
 
   function exportCsv() {
     if (items.length === 0) { toast.error('Không có dữ liệu để xuất.'); return }
-    const headers = ['Mã phiếu', 'Loại', 'Nội dung', 'Mã hàng', 'Nội dung chính', 'Phân loại', 'NSPT', 'Ngày', 'Trạng thái duyệt', 'Ghi chú duyệt']
-    const rows = items.map((it) => [
-      it.survey_code, KIND_LABEL[it.kind] || it.kind, it.content || '',
-      it.item_code || '', it.main_content || '',
-      it.item_group || '', it.nspt || '', it.date || '',
-      it.line_approve || '', it.line_approve_note || '',
-    ])
+    //  bao-CR-746: tệp xuất theo đúng các cột ĐANG HIỆN trên bảng (bản trước chép tay 10 tiêu đề cố định).
+    const cols = table.columns.filter((c) => c.key !== 'stt')
+    const headers = cols.map((c) => String(c.label))
+    const rows = items.map((it) => cols.map((c) => csvText(it, c.key)))
     const csv = [headers, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
