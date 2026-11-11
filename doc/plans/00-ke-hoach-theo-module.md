@@ -38,7 +38,7 @@ Gom từ Phase 1 của các module, xếp theo rủi ro trước, giá trị sau
 1. **Lỗ bảo mật đang có thật trên prod:** `AN1-1` (giải mã bí mật hỏng im lặng — sao lưu có thể chết không ai biết), `AN1-3` (`/api/uploads` không kiểm quyền), `HR1-1` + `NT1-1` (xuất CSV nhân sự và danh mục chỉ đòi quyền đọc), `AN1-2` (header bảo mật nginx).
 2. **Người dùng thật đang vướng:** `TM1-1` (ĐMH, YCTT không báo người duyệt), `HR1-3` (công ty khác chưa có chuông duyệt nghỉ phép).
 3. **Đợt prod tiếp theo:** `AI1-1` (D1 của anh Dược đang nằm trên dev), kèm các bản vá ở mục 1–2.
-4. **AI chia việc:** `AI1-2`, `AI1-3` sau khi chốt phòng thử.
+4. **AI chia việc:** `AI1-2`, `AI1-3` đã xong và lên prod; bước tiếp là `AI2-2` thử với một phòng, sau khi chốt phòng thử.
 5. **Nền vận hành:** `NT1-2` (CI tối thiểu), `NT1-6` (thử phục hồi sao lưu), `NT1-3` (gắn công ty cho nhân sự).
 6. Còn lại của Phase 1 các module, rồi mới sang Phase 2.
 
@@ -401,8 +401,8 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
 | AI1-1 | Đưa D1 lên prod: duoc-CR-655..657 (báo cáo mức dùng chức năng, chỉ số Dùng AI, năng lực theo loại việc, hàm gợi ý người nhận việc) | Chạy trên prod. Quản trị mở được báo cáo theo chức năng và nhóm 3.7, 3.8 | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI1-2 | A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §7 |
-| AI1-3 | A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
+| AI1-2 | **XONG — kh-AI1-2, commit eddaef4f (22/10/2026), đã lên prod.** A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §7 |
+| AI1-3 | **XONG — kh-AI1-3, commit ce504943 + 445d2296 (22/10/2026), đã lên prod.** A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
 | AI1-4 | Vận hành sau đợt prod: khóa model riêng cho prod (đang dùng chung khóa dev); hỏi trạm modelapi.vn về khoảng 40k token dư mỗi lượt; thử claude.ai web và Claude Desktop với prod | Prod có khóa riêng. Có câu trả lời của trạm. Hai ứng dụng nối prod chạy được một lượt đọc và một lượt soạn nháp | `doc/agent-hub/20-loi-hoi-thoai-moi.md`; `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §7.2 P6 |
 
 **Phase 2** (AI2-x)
@@ -412,8 +412,8 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 | AI2-1 | A3 vòng học: đóng task thì so ước lượng với thực tế, hiệu chỉnh `task_type_stats`; tra kế hoạch tương tự | Sau mỗi task xong có dòng so sánh. Số thống kê tự cập nhật | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
 | AI2-2 | T1 thử với một phòng: soạn bộ skill phòng, trưởng phòng dùng 2–4 tuần, đo đề xuất đúng sai | Có số đo sau thời gian thử. Có danh sách sửa trước khi mở cả công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7, §8 câu 2 |
 | AI2-3 | P5 phủ công cụ cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận. Làm một phần: `erp_read` mới có phiếu nhận hàng | Mỗi phân hệ có ít nhất một công cụ đọc đúng quyền. Có skill hướng dẫn khi nào gọi | `doc/erp/tro-ly-ai/plans/03-lo-trinh-phase.md` Phase 5 |
-| AI2-4 | Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (chưa có trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §8 |
-| AI2-5 | O-01: đếm lỗi 5xx và độ dài hàng đợi cho dịch vụ AI (cần kiểm lại) | Có số đếm theo giờ. Vượt ngưỡng thì báo | `doc/agent-hub/13-lo-trinh.md` §0 phase 7 |
+| AI2-4 | **XONG — kh-AI2-4, commit 5ab05363 (23/10/2026), đã lên prod.** Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (`list_prompts`, `prompts/list`, `prompts/get` trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §8 |
+| AI2-5 | **XONG — kh-AI2-4, commit 5ab05363 (23/10/2026), đã lên prod.** O-01: đếm lỗi 5xx và độ dài hàng đợi cho dịch vụ AI | Có số đếm theo giờ. Vượt ngưỡng thì báo | `doc/agent-hub/13-lo-trinh.md` §0 phase 7 |
 
 **Phase 3 — khi cần** (AI3-x)
 
