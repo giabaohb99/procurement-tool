@@ -53,6 +53,8 @@ SKILLS: tuple[tuple[str, str, str], ...] = (
     #  ai-CR-235: bốn cẩm nang văn phòng. Hệ đã gieo thì `scripts/publish_handbook_update.py` thêm các skill này vào bộ.
     ("70-dat-xe.md", "dat-xe",
      "Đặt xe công tác / giao hàng: tra phiếu đặt xe, soạn phiếu mới. Đọc khi hỏi về đặt xe hay trước khi soạn phiếu đặt xe."),
+    ("80-duyet-dau.md", "duyet-dau",
+     "Duyệt dấu (xin đóng dấu): tra phiếu duyệt dấu, soạn phiếu mới. Đọc khi hỏi về đóng dấu hay trước khi soạn phiếu."),
     ("nhamay-tri-thuc-co-dong.md", "nha-may-he-thong-cong-viec",
      "Hệ thống công việc Nhà máy DEGO Organic: quy định QĐ.HT, giao thức trợ lý AI nhà máy, bộ câu hỏi làm rõ việc, thuật "
      "ngữ, sổ đăng ký công việc, danh mục tài liệu. Đọc khi hỏi về nhà máy, sản xuất, ca làm, cải tiến. Bản gốc chi tiết nằm "
