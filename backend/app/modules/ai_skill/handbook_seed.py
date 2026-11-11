@@ -5,7 +5,7 @@ Trước K7 trợ lý web / bot nhồi 7 gói `assistant/packs/*.md` vào lời 
 tệp đó dời về `seed_handbook/` và chỉ dùng làm hạt giống.
 
 `ensure_system_handbook` chạy ở `seed.py` + `seed_prod.py` (mỗi lần deploy):
-  - chưa có bộ mã `SYS-HANDBOOK` → tạo bộ (Đang dùng, mức Mở), 7 skill, xuất bản phiên bản 1, gắn 11 tệp gốc nhà máy làm
+  - chưa có bộ mã `SYS-HANDBOOK` → tạo bộ (Đang dùng, mức Mở), đủ skill trong `SKILLS`, xuất bản phiên bản 1, gắn 11 tệp gốc nhà máy làm
     tệp đính kèm của skill nhà máy, gán quyền đọc cho TỪNG pháp nhân đang có;
   - có rồi (kể cả quản trị đã xóa mềm / lưu trữ / sửa nội dung) → KHÔNG đụng gì. Đúng luật seed prod không ghi đè.
 Pháp nhân tạo SAU lần gieo phải gán tay ở màn Bộ skill (checklist "thêm pháp nhân", doc/agent-hub/06 §2.5).
@@ -50,6 +50,9 @@ SKILLS: tuple[tuple[str, str, str], ...] = (
      "Đặt phòng họp: xem phòng trống, lập phiếu đặt, gửi duyệt, đổi / hủy. Đọc khi hỏi về phòng họp."),
     ("60-nhan-su-ho-so.md", "nhan-su-ho-so",
      "Hồ sơ nhân sự và danh mục Chức vụ: thông tin nhân viên, ai sửa được gì, hợp đồng lao động. Đọc khi hỏi về hồ sơ nhân sự."),
+    #  ai-CR-235: bốn cẩm nang văn phòng. Hệ đã gieo thì `scripts/publish_handbook_update.py` thêm các skill này vào bộ.
+    ("70-dat-xe.md", "dat-xe",
+     "Đặt xe công tác / giao hàng: tra phiếu đặt xe, soạn phiếu mới. Đọc khi hỏi về đặt xe hay trước khi soạn phiếu đặt xe."),
     ("nhamay-tri-thuc-co-dong.md", "nha-may-he-thong-cong-viec",
      "Hệ thống công việc Nhà máy DEGO Organic: quy định QĐ.HT, giao thức trợ lý AI nhà máy, bộ câu hỏi làm rõ việc, thuật "
      "ngữ, sổ đăng ký công việc, danh mục tài liệu. Đọc khi hỏi về nhà máy, sản xuất, ca làm, cải tiến. Bản gốc chi tiết nằm "

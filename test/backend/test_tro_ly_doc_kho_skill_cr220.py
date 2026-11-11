@@ -37,7 +37,7 @@ def handbook(db, seed):
 def test_gieo_du_bo_cam_nang_cho_moi_phap_nhan(db, handbook):
     assert (handbook.status, handbook.security_level) == (int(SkillSetStatus.ACTIVE), int(SecurityLevel.OPEN))
     skills = db.query(AiSkill).filter(AiSkill.skill_set_id == handbook.id).all()
-    assert len(skills) == 7 and all(s.current_version_id for s in skills)
+    assert len(skills) == len(handbook_seed.SKILLS) and all(s.current_version_id for s in skills)
     for s in skills:
         v = db.get(AiSkillVersion, s.current_version_id)
         assert v.version_no == 1 and v.body_md.strip() and 0 < len(v.summary) <= 500
@@ -86,7 +86,7 @@ def test_tro_ly_noi_bo_doc_duoc_bo_khoa_cong_mcp_thi_khong(db, user, handbook):
     assert "content" not in outer and "mức Khóa" in outer["note"]
     assert mcp_read.file_for_ai(db, user, handbook_seed.FACTORY_SLUG, inner["files"][0]["path"]).get("denied")
     listed = run_tool(db, user, "list_skills", {})
-    assert listed["total"] == 7 and all(i["content_readable"] for i in listed["items"])
+    assert listed["total"] == len(handbook_seed.SKILLS) and all(i["content_readable"] for i in listed["items"])
 
 
 def test_nguoi_khong_duoc_gan_khong_doc_duoc(db, seed, handbook):
