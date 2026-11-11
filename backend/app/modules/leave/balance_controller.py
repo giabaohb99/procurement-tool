@@ -9,6 +9,7 @@ chính là lý do nó tách khỏi `leave_request` chứ không đi chung một 
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
@@ -208,16 +209,29 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     employees = apply_scope(employees, Employee, "employee", user,
                             get_perm_profile(db, user)).all()
 
-    created, missing_hire_date = 0, []
-    for employee in employees:
-        for leave_type in types:
-            before = balance_service.get_balance(db, employee.id, year, leave_type.id)
-            balance_service.ensure_balance(db, employee, year, leave_type, user.id)
-            if before is None:
-                created += 1
-        if getattr(employee, "hire_date", None) is None:
-            missing_hire_date.append(employee.full_name)
-    db.commit()
+    #  duoc-CR-749: hai lượt "Cấp quỹ" chạy CÙNG LÚC (hai người bấm, hoặc bấm đúp) cùng thấy "chưa có dòng" rồi cùng
+    #  chèn — lượt sau vấp UNIQUE (nhân sự, năm, loại) lúc commit và trước đây trả 500 (dữ liệu vẫn đúng nhờ UNIQUE, nhưng
+    #  người bấm thấy "Có lỗi xảy ra" và cả lô của họ bị hủy). Đường này chỉ TẠO dòng còn thiếu nên chạy lại là an
+    #  toàn: lùi lại rồi chạy lại một lần; vẫn vấp thì báo 409 bằng lời.
+    #  ⚠️ Lỗi văng ra ngay trong `ensure_balance` (nó `flush` dòng mới), không đợi tới `commit` — nên bọc CẢ vòng.
+    for attempt in (1, 2):
+        created, missing_hire_date = 0, []
+        try:
+            for employee in employees:
+                for leave_type in types:
+                    before = balance_service.get_balance(db, employee.id, year, leave_type.id)
+                    balance_service.ensure_balance(db, employee, year, leave_type, user.id)
+                    if before is None:
+                        created += 1
+                if getattr(employee, "hire_date", None) is None:
+                    missing_hire_date.append(employee.full_name)
+            db.commit()
+            break
+        except IntegrityError as exc:
+            db.rollback()
+            if attempt == 2:
+                raise HTTPException(409, "Một lượt cấp quỹ khác đang chạy cùng lúc — tải lại trang để xem, "
+                                         "còn thiếu thì bấm Cấp quỹ lại.") from exc
 
     audit_record(db, user.id, ENTITY, 0, "create",
                  f"Cấp quỹ phép năm {year}: {created} dòng cho {len(employees)} nhân sự")
