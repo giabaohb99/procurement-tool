@@ -200,7 +200,7 @@ Nháp  ───────────────────►  Chờ duy�
 </ul>
 
 <h2>Đặt hộ người khác</h2>
-<p>Thư ký đặt hộ sếp thì điền <strong>người đặt</strong> vào ô riêng. <strong>Phòng ban và pháp nhân của phiếu lấy theo người được đặt hộ</strong>, không lấy theo người ngồi gõ. Cả hai đều thấy phiếu trong tab <em>Phiếu của tôi</em>.</p>
+<p>Thư ký đặt hộ sếp thì điền <strong>người đặt</strong> vào ô riêng. <strong>Phòng ban và pháp nhân của phiếu lấy theo người được đặt hộ</strong>, không lấy theo người ngồi gõ. Cả hai đều thấy phiếu khi chọn Phạm vi <em>Phiếu của tôi</em>.</p>
 
 <h2>Lưu nháp hay Gửi duyệt?</h2>
 <table>
@@ -266,24 +266,27 @@ Nháp  ───────────────────►  Chờ duy�
         {
             "title": THEO_DOI,
             "icon": "clipboard-list",
-            "summary": "Ba tab, sáu trạng thái, bảng làm-được-gì, và khác nhau giữa xóa và hủy",
+            "summary": "Ô Phạm vi, sáu trạng thái, bảng làm-được-gì, và khác nhau giữa xóa và hủy",
             "content": f"""<h2>Theo dõi, sửa và hủy phiếu đặt phòng</h2>
 
-<h2>Ba tab trong màn Phiếu đặt phòng</h2>
+<h2>Ô Phạm vi trong màn Phiếu đặt phòng họp</h2>
+<p>Màn chỉ có <strong>một bảng</strong>. Ô <strong>Phạm vi</strong> trên thanh công cụ chọn bảng đang bày phiếu nào:</p>
 <table>
-<thead><tr><th>Tab</th><th>Chứa gì</th></tr></thead>
+<thead><tr><th>Phạm vi</th><th>Chứa gì</th></tr></thead>
 <tbody>
-<tr><td><strong>Cần tôi duyệt</strong></td><td>Phiếu đang chờ chữ ký của bạn. Đứng <strong>đầu</strong> và <strong>tự được chọn khi có việc</strong>, kèm con số việc đang chờ.</td></tr>
-<tr><td><strong>Phiếu của tôi</strong></td><td>Phiếu bạn đặt, hoặc phiếu người khác đặt hộ bạn.</td></tr>
+<tr><td><strong>Tất cả</strong></td><td>Mọi phiếu bạn được quyền xem. Chưa bấm xếp cột nào thì phiếu <strong>đang chờ bạn duyệt</strong> đứng đầu, trên mọi trang.</td></tr>
+<tr><td><strong>Cần tôi duyệt</strong></td><td>Phiếu đang chờ chữ ký của bạn, kèm con số việc đang chờ ngay trong ô chọn.</td></tr>
+<tr><td><strong>Phiếu của tôi</strong></td><td>Phiếu bạn là người đặt (kể cả phiếu người khác đặt hộ bạn), và phiếu <strong>bạn đặt hộ người khác</strong>.</td></tr>
 <tr><td><strong>Tôi đã duyệt</strong></td><td>Phiếu bạn từng ký — <strong>chỉ 30 ngày gần đây</strong>.</td></tr>
 </tbody>
 </table>
+<p>Bấm tiêu đề cột để xếp bảng; luật xếp chung (ô trống nằm cuối, trạng thái theo thứ tự các bước) xem bài {ref("Sắp xếp bảng danh sách bằng cách bấm tiêu đề cột", "Sắp xếp bảng danh sách bằng cách bấm tiêu đề cột")}.</p>
 
 <h2>Tìm một tờ phiếu</h2>
 <ul>
 <li>Ô tìm khớp <strong>số phiếu</strong> hoặc <strong>nội dung cuộc họp</strong>.</li>
 <li>Hai ô lọc: <strong>Phòng</strong> và <strong>Trạng thái</strong>.</li>
-<li>Cột bảng: <em>Trạng thái · Nội dung cuộc họp · Phòng · Ngày họp · Người đặt</em>. Tab <em>Cần tôi duyệt</em> có thêm <em>Việc của tôi</em> và <strong>Hạn xử lý</strong>.</li>
+<li>Cột bảng: <em>Trạng thái · Nội dung cuộc họp · Phòng · Ngày họp · Người đặt</em>. Chọn Phạm vi <em>Cần tôi duyệt</em> thì có thêm <em>Việc của tôi</em> và <strong>Hạn xử lý</strong>.</li>
 </ul>
 <p>Đây cũng là chỗ <strong>nhìn xa hơn một ngày</strong> — lịch chỉ vẽ được một ngày, còn danh sách thì lọc theo phòng bao nhiêu ngày cũng được.</p>
 
@@ -332,12 +335,12 @@ Nháp  ───────────────────►  Chờ duy�
             "icon": "workflow",
             "summary": "Nhận việc, ba nút và hậu quả, điều gì xảy ra với phòng sau khi ký",
             "content": f"""<h2>Duyệt phiếu đặt phòng</h2>
-<p>Dành cho người được giao ký. Duyệt ngay trong <strong>Nhân sự ▸ Đặt phòng họp ▸ tab <strong>Phiếu đặt phòng</strong> ▸ Cần tôi duyệt</strong>, không phải sang màn Phê duyệt.</p>
+<p>Dành cho người được giao ký. Duyệt ngay trong <strong>Nhân sự ▸ Đặt phòng họp ▸ Phiếu đặt phòng</strong>, ô Phạm vi chọn <strong>Cần tôi duyệt</strong>, không phải sang màn Phê duyệt.</p>
 
 <h2>Nhận việc</h2>
 <ul>
 <li>Có việc mới, bạn nhận <strong>thông báo chuông</strong> kèm liên kết mở thẳng tờ phiếu.</li>
-<li>Tab <em>Cần tôi duyệt</em> đứng đầu, <strong>tự được chọn khi có việc</strong>, kèm con số việc đang chờ.</li>
+<li>Ô Phạm vi <em>Cần tôi duyệt</em> hiện con số việc đang chờ. Để Phạm vi <em>Tất cả</em> thì phiếu chờ bạn duyệt vẫn <strong>đứng đầu bảng</strong> khi chưa bấm xếp cột nào.</li>
 <li>Cột <strong>Hạn xử lý</strong> cho biết việc đến hạn khi nào.</li>
 </ul>
 
@@ -363,7 +366,7 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Vài điều đáng biết</h2>
 <ul>
-<li><strong>Đang có việc trên tờ phiếu thì bạn đọc được nó</strong>, kể cả khi phạm vi dữ liệu của bạn không với tới. <strong>Ký xong quyền đó đóng lại</strong> — xem lại thì vào tab <strong>Tôi đã duyệt</strong> (30 ngày gần đây).</li>
+<li><strong>Đang có việc trên tờ phiếu thì bạn đọc được nó</strong>, kể cả khi phạm vi dữ liệu của bạn không với tới. <strong>Ký xong quyền đó đóng lại</strong> — xem lại thì chọn Phạm vi <strong>Tôi đã duyệt</strong> (30 ngày gần đây).</li>
 <li>Chỗ nào <strong>chưa khai luồng duyệt</strong> thì người có quyền duyệt bấm <strong>Duyệt phiếu</strong> thẳng trên phiếu. Phiếu <em>đang</em> chạy trong luồng thì đường đó bị chặn.</li>
 <li>Duyệt xong <strong>không rút lại được</strong>. Cần chặn một phiếu đã duyệt thì bảo người đặt <strong>hủy phiếu</strong>.</li>
 <li>Người đặt <strong>vẫn kéo thả đổi giờ được</strong> sau khi bạn đã duyệt, và <strong>không phải duyệt lại</strong> — {ref(KEO_THA, "xem bài Kéo thả")}. Người dự sẽ nhận thông báo đổi giờ.</li>

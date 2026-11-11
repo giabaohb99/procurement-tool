@@ -114,6 +114,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-744-luot-e | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý sau đợt sửa sắp xếp cột
+- status: xong
+- date: 2026-11-11
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đợt duoc-CR-744 hôm 10/11 mới ghi sổ và một tài liệu chức năng, chưa có bài hướng dẫn nào nói về luật sắp xếp mới; bài Đặt phòng họp còn tả màn Phiếu là ba tab và chưa nói Phiếu của tôi gồm cả phiếu mình đặt hộ người khác.
+
+**Đã làm**
+- Thêm bài **Sắp xếp bảng danh sách bằng cách bấm tiêu đề cột** dưới thẻ Bắt đầu: bấm mấy lần ra gì, xếp theo đúng chữ đang hiện, ô trống luôn nằm cuối, sang trang không lặp dòng, Excel xuất cùng thứ tự, bảng dòng hàng trong phiếu, khi nào không xếp được (cột bị che theo quyền).
+- Sửa bài Đặt phòng họp cho khớp màn hiện tại: màn Phiếu là một bảng với ô Phạm vi bốn lựa chọn; Phiếu của tôi gồm phiếu mình là người đặt và phiếu mình đặt hộ người khác; Phạm vi Tất cả đưa phiếu chờ mình duyệt lên đầu.
+- Cẩm nang trợ lý Đặt phòng họp thêm đoạn ô Phạm vi, ra phiên bản 2 ở local; tài liệu chức năng Đặt phòng họp lên bản 1.2.
+- Chạy seed hai lần ở local không lỗi; bài kiểm cẩm nang trợ lý qua hết. Chưa nạp chỉ mục trợ lý trên dev vì máy này không có đường vào dev.
+
+Mã nguồn: `backend/scripts/seed_help_sap_xep_cot_cr744.py`, `backend/scripts/seed_help_dat_phong_hop.py`, `backend/app/modules/ai_skill/seed_handbook/50-dat-phong-hop.md`, `doc/tai-lieu-chuc-nang/18-dat-phong-hop.md`
+
 ## duoc-CR-744-luot-d | Hợp đồng và Đặt xe: bấm xếp được các cột còn lại
 - status: xong
 - date: 2026-11-10

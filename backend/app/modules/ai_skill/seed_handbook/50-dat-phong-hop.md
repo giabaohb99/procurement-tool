@@ -90,6 +90,10 @@ thời gian — lưới không có chế độ tuần.
 - **Đặt hộ người khác được** (thư ký đặt hộ sếp): điền người đặt vào ô riêng.
   Phòng ban và pháp nhân của phiếu lấy theo **người được đặt hộ**, không lấy theo
   người ngồi gõ.
+- **Màn Phiếu đặt phòng là một bảng, chọn ô *Phạm vi***: *Tất cả* · *Cần tôi duyệt* ·
+  *Phiếu của tôi* · *Tôi đã duyệt* (30 ngày gần đây). *Phiếu của tôi* = phiếu mình
+  là người đặt (kể cả được đặt hộ) **và** phiếu mình đặt hộ người khác. Người hỏi
+  "sao không thấy phiếu tôi đặt cho sếp" thì chỉ họ chọn *Phiếu của tôi*.
 - **Phòng ngừng dùng thì không đặt được nữa** nhưng phiếu cũ vẫn đọc được. Muốn
   dẹp một phòng thì **bỏ tick *Đang dùng***, đừng xoá — phòng đang có phiếu thì
   hệ chặn xoá.

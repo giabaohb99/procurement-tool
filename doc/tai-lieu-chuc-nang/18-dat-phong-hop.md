@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | **1.1 — 04/09/2026** (duoc-CR-279 — thêm §1.1 kéo thả) |
+| Bản | **1.2 — 11/11/2026** (duoc-CR-744 — ô *Phạm vi* của màn Phiếu, sắp xếp cột); 1.1 — 04/09/2026 (duoc-CR-279 — thêm §1.1 kéo thả) |
 | Nằm ở đâu | Phân hệ **Nhân sự** → mục menu *Đặt phòng họp* |
 | Backend | `backend/app/modules/meeting_room/` |
 | Frontend | `frontend-v2/src/modules/hr/` (tiền tố `room-*` / `meeting-room-*`) |
@@ -10,13 +10,20 @@
 
 ## 1. Làm được gì
 
-Ba màn, một mục menu, chuyển qua lại bằng thanh tab:
+Ba màn, một mục menu, chuyển qua lại bằng menu con ở thanh bên trái:
 
 | Màn | Đường dẫn | Ai dùng |
 |---|---|---|
 | **Lịch đặt phòng** | `/hr/room-calendar` | mọi người — xem phòng nào trống, bấm ô trống đặt luôn, **kéo thả đổi lịch** |
-| **Phiếu đặt phòng** | `/hr/room-bookings` | mọi người — phiếu trong phạm vi dữ liệu của mình |
+| **Phiếu đặt phòng** | `/hr/room-bookings` | mọi người — phiếu trong phạm vi dữ liệu của mình; một bảng, ô *Phạm vi* chọn *Tất cả* · *Cần tôi duyệt* · *Phiếu của tôi* · *Tôi đã duyệt* (30 ngày) |
 | **Danh mục phòng** | `/hr/meeting-rooms` | quản trị — khai phòng, sức chứa, thiết bị |
+
+Ô *Phạm vi* = *Phiếu của tôi* gửi `scope=mine`: máy chủ lọc phiếu mình là người đặt
+(`requester_employee_id`) **HOẶC** mình lập / đặt hộ (`created_by`), vẫn bó trong `apply_scope`
+(duoc-CR-744 lượt b; trước đó `list_bookings` bỏ qua tham số này). Phạm vi *Tất cả* chưa bấm cột
+nào thì gửi `mine_first=true`: phiếu đang chờ mình duyệt lên đầu, xếp tại máy chủ nên đúng trên
+mọi trang. Bấm tiêu đề cột thì theo luật xếp chung (ô trống cuối, khóa phụ `id` — duoc-CR-744).
+Nội dung ở đây và ở `backend/scripts/seed_help_dat_phong_hop.py` phải khớp nhau.
 
 Vòng đời phiếu: **Nháp → Chờ duyệt → Đã duyệt**, ba lối rẽ *Từ chối* · *Trả về
 chỉnh sửa* · *Đã hủy*. Chạy trên **bộ máy duyệt dùng chung** như Nghỉ phép và
