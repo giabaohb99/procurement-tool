@@ -93,3 +93,12 @@ export function DayCount({
   const prefix = signed && value > 0 ? '+' : ''
   return <span className={cn('tabular-nums', className)}>{`${prefix}${value}`}</span>
 }
+
+/**
+ * Ô CHÍNH SÁCH (duoc-CR-745): tên gói quyết định hạn mức, hoặc chữ mờ *Theo loại nghỉ* khi không gói nào khai loại
+ * đó. Vắng trường (backend cũ) cũng ra *Theo loại nghỉ* — đúng với hệ chưa có phân bổ nào.
+ */
+export function PolicyName({ name }: { name: string | undefined }) {
+  if (!name) return <span className="text-muted-foreground">Theo loại nghỉ</span>
+  return <span className="truncate">{name}</span>
+}

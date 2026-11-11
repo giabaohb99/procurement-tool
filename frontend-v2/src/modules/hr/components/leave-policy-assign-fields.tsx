@@ -1,11 +1,13 @@
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
+import { HelpHint } from '@/shared/ui/help-hint'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { LeavePolicySelect } from './leave-policy-select'
+import { LEAVE_POLICY_FROM_DATE_HINT, LEAVE_POLICY_TO_DATE_HINT } from '../utils/leave-policy-date-hints'
 
 interface AssignEmployeeOption {
   id: number
@@ -21,6 +23,7 @@ interface LeavePolicyAssignFieldsProps {
   employeeId: number
   onEmployeeChange: (id: number) => void
   policies: readonly { id: number; code: string; name: string }[]
+  policiesLoading: boolean
   policyId: number
   onPolicyChange: (id: number) => void
   from: string
@@ -46,6 +49,7 @@ export function LeavePolicyAssignFields({
   employeeId,
   onEmployeeChange,
   policies,
+  policiesLoading,
   policyId,
   onPolicyChange,
   from,
@@ -87,18 +91,13 @@ export function LeavePolicyAssignFields({
           Chính sách
           <RequiredMark />
         </Label>
-        <Select value={policyId ? String(policyId) : ''} onValueChange={(v) => onPolicyChange(Number(v))}>
-          <SelectTrigger id="assign-policy" className="w-full">
-            <SelectValue placeholder="Chọn chính sách đang dùng" />
-          </SelectTrigger>
-          <SelectContent>
-            {policies.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>
-                {p.name} ({p.code})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LeavePolicySelect
+          id="assign-policy"
+          policies={policies}
+          isLoading={policiesLoading}
+          value={policyId}
+          onChange={onPolicyChange}
+        />
       </div>
 
       <div className="space-y-1.5">
@@ -106,6 +105,7 @@ export function LeavePolicyAssignFields({
           <Label>
             Từ ngày
             <RequiredMark />
+            <HelpHint label="Giải thích Từ ngày">{LEAVE_POLICY_FROM_DATE_HINT}</HelpHint>
           </Label>
           <Button
             type="button"
@@ -122,7 +122,10 @@ export function LeavePolicyAssignFields({
         <DatePicker value={from} onChange={onFromChange} clearable={false} />
       </div>
       <div className="space-y-1.5">
-        <Label>Đến ngày</Label>
+        <Label>
+          Đến ngày
+          <HelpHint label="Giải thích Đến ngày">{LEAVE_POLICY_TO_DATE_HINT}</HelpHint>
+        </Label>
         <DatePicker value={to} onChange={onToChange} placeholder="Không thời hạn" />
         {rangeError && <p className="text-xs text-destructive">{rangeError}</p>}
       </div>

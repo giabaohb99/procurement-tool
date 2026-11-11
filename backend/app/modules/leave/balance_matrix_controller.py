@@ -41,10 +41,11 @@ def leave_balance_matrix_export(request: Request, year: int = Query(0, ge=0, le=
                                 db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
     data = _run(request, db, user, "export", year, search, 0, EXPORT_LIMIT)
     columns = [Col("code", "Mã NV", width=14), Col("name", "Họ tên", width=26),
-               Col("department_name", "Phòng ban", width=24)]
+               Col("department_name", "Phòng ban", width=24), Col("policy_name", "Chính sách", width=26)]
     columns += [Col(f"t{c['leave_type_id']}", c["name"], kind="qty", width=14) for c in data["columns"]]
     columns.append(Col("total", "Tổng còn lại", kind="qty", width=14))
-    rows = [{"code": i["code"], "name": i["name"], "department_name": i["department_name"], "total": i["total"],
+    rows = [{"code": i["code"], "name": i["name"], "department_name": i["department_name"],
+             "policy_name": i["policy_name"] or "Theo loại nghỉ", "total": i["total"],
              **{f"t{c['leave_type_id']}": i["cells"].get(str(c["leave_type_id"]), 0) for c in data["columns"]}}
             for i in data["items"]]
     return xlsx_response(f"tong-hop-quy-phep-{data['year']}", columns, rows, sheet_title="Quy phep")

@@ -3,10 +3,11 @@ import type {
   LeaveBalanceMatrixColumn,
   LeaveBalanceMatrixRow,
 } from '../api/leave-balance-matrix-api'
+import { PolicyName } from './leave-balance-cells'
 import { MatrixDayCell } from './leave-balance-matrix-day-cell'
 
 /**
- * Bộ cột của ma trận: Mã NV · Họ tên · Phòng ban · một cột mỗi loại nghỉ (theo `columns` backend
+ * Bộ cột của ma trận: Mã NV · Họ tên · Phòng ban · Chính sách · một cột mỗi loại nghỉ (theo `columns` backend
  * trả, ĐỦ cho cả kết quả chứ không riêng trang đang xem) · Tổng còn lại.
  */
 export function buildLeaveBalanceMatrixColumns(
@@ -27,6 +28,13 @@ export function buildLeaveBalanceMatrixColumns(
       header: 'Phòng ban',
       width: 170,
       cell: (r) => r.department_name || <span className="text-muted-foreground">Chưa gắn</span>,
+    },
+    {
+      //  duoc-CR-745: chính sách nào đang quyết định hạn mức — nối sang màn Phân bổ chính sách.
+      key: 'policy',
+      header: 'Chính sách',
+      width: 190,
+      cell: (r) => <PolicyName name={r.policy_name} />,
     },
     ...columns.map<DataTableColumn<LeaveBalanceMatrixRow>>((c) => ({
       //  Tiền tố `lt-` để khóa cột loại nghỉ không đụng `code` / `name` / `total`.

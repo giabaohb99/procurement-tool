@@ -94,6 +94,10 @@ người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
   đầu từ (hoặc trước, hoặc trong tháng) ngày vào làm thì áp **cả năm** theo số của gói (vào làm 01/10, gói 15 → 15).
 - Ô ***Tính lại hạn mức năm nay cho quỹ đã cấp*** (mặc định bật) chỉ sửa cột *Hạn mức* của quỹ **năm nay**; tắt thì
   áp từ lần cấp quỹ sau. Năm đã qua không bao giờ đổi. Sửa số ngày trong gói **không** tự tính lại quỹ đã cấp.
+- **Hai màn nối nhau** (từ 11/11/2026): danh sách *Phân bổ chính sách* có cột ***Hạn mức năm nay*** (*Phép năm 15
+  ngày*, bấm sang đúng dòng quỹ; *chưa cấp quỹ* khi chưa có dòng); *Quỹ phép năm* có cột ***Chính sách*** ở cả hai thẻ
+  (*Theo loại nghỉ* khi không gói nào khai loại đó). Người hỏi "quỹ tôi lấy theo chính sách nào" thì chỉ cột này.
+  Hai màn không ghi đè nhau: phân bổ chỉ đổi cột *Hạn mức*, điều chỉnh tay ở Quỹ phép năm nằm ở cột *Điều chỉnh tay*.
 - **Không ai (trừ quản trị) tự tạo / sửa / xóa phân bổ của chính mình** — người hỏi muốn tự gán thì bảo nhờ người khác
   trong phòng Nhân sự. Người được phân bổ phải trong **phạm vi ghi quỹ phép** của người làm; người đã nghỉ việc không
   phân bổ được. Một người tại một ngày chỉ có **một** chính sách — chồng ngày thì tick ***Kết thúc chính sách đang hiệu

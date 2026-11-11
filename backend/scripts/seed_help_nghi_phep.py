@@ -846,7 +846,7 @@ Nghỉ việc:
         {
             "title": NS_QUY,
             "icon": "coins",
-            "summary": "Hai thẻ Theo dòng quỹ / Theo nhân sự của Quỹ phép năm, hộp Cấp quỹ có lọc, dòng Chính sách đang áp, điều chỉnh tay, kết sổ cuối năm và dấu vết",
+            "summary": "Hai thẻ Theo dòng quỹ / Theo nhân sự của Quỹ phép năm, cột Chính sách, hộp Cấp quỹ có lọc, dòng Chính sách đang áp, điều chỉnh tay, kết sổ cuối năm và dấu vết",
             "content": f"""<h2>Nhân sự — Cấp và điều chỉnh quỹ phép</h2>
 <p>Mục <strong>Nhân sự ▸ Nghỉ phép ▸ Quỹ phép năm</strong> (khóa quyền <code>leave_balance</code>). Mỗi dòng là <strong>một người × một năm × một loại nghỉ</strong>.</p>
 
@@ -854,11 +854,12 @@ Nghỉ việc:
 <p>Dưới tiêu đề trang có hai thẻ. <strong>Theo dòng quỹ</strong> (mặc định) là bảng chi tiết để cấp, soát và điều chỉnh. <strong>Theo nhân sự</strong> là bảng tổng hợp mỗi người một dòng, để trả lời nhanh câu <em>anh A còn mấy ngày mỗi loại</em>. Đổi thẻ thì ô tìm và năm được giữ lại.</p>
 
 <h2>Đọc thẻ Theo dòng quỹ</h2>
-<p>Bảng gom theo <strong>người</strong>: mỗi người một dòng, bấm để bung ra các dòng con theo <strong>loại nghỉ</strong>. Mặc định chỉ bày năm cột; các cột giải thích ẩn sẵn, bật lại ở menu <strong>Cột</strong> của bảng.</p>
+<p>Bảng gom theo <strong>người</strong>: mỗi người một dòng, bấm để bung ra các dòng con theo <strong>loại nghỉ</strong>. Mặc định chỉ bày sáu cột; các cột giải thích ẩn sẵn, bật lại ở menu <strong>Cột</strong> của bảng.</p>
 <table>
 <thead><tr><th>Cột</th><th>Nghĩa</th></tr></thead>
 <tbody>
 <tr><td><strong>Nhân sự</strong></td><td>Người sở hữu quỹ; dòng con là từng loại nghỉ có trừ quỹ.</td></tr>
+<tr><td><strong>Chính sách</strong></td><td>Chính sách nghỉ phép quyết định hạn mức của loại nghỉ đó trong năm đang xem. Ghi <em>Theo loại nghỉ</em> khi người đó không được phân bổ chính sách nào khai loại này. Hàng người gộp tên các chính sách của các dòng con. Đổi chính sách giữa năm thì ghi cả hai, ví dụ <em>Chính sách tiêu chuẩn → Chính sách cấp quản lý</em>. Muốn đổi thì vào {ref(NS_PHAN_BO, "Phân bổ chính sách")}.</td></tr>
 <tr><td><strong>Tổng cấp</strong></td><td>Tổng các phần cộng: hạn mức, thâm niên, chuyển năm trước, điều chỉnh tay, nghỉ bù cộng thêm.</td></tr>
 <tr><td><strong>Đã nghỉ</strong></td><td>Cộng dồn đơn đã duyệt.</td></tr>
 <tr><td><strong>Chờ duyệt</strong></td><td>Ngày đang giữ chỗ cho đơn đã gửi duyệt.</td></tr>
@@ -873,7 +874,7 @@ Nghỉ việc:
 <p>Bộ lọc: ô tìm theo <strong>tên hoặc mã nhân sự</strong>, ô chọn <strong>loại nghỉ</strong>, ô chọn <strong>năm</strong>.</p>
 
 <h2>Đọc thẻ Theo nhân sự</h2>
-<p>Mỗi người một dòng, mỗi loại nghỉ có trừ quỹ một cột, ô là <strong>số còn dùng được hôm nay</strong> của loại đó; cột cuối <strong>Tổng còn lại</strong> cộng các ô của người đó. Cột đầu là <strong>Mã NV</strong> · <strong>Họ tên</strong> · <strong>Phòng ban</strong>.</p>
+<p>Mỗi người một dòng, mỗi loại nghỉ có trừ quỹ một cột, ô là <strong>số còn dùng được hôm nay</strong> của loại đó; cột cuối <strong>Tổng còn lại</strong> cộng các ô của người đó. Cột đầu là <strong>Mã NV</strong> · <strong>Họ tên</strong> · <strong>Phòng ban</strong> · <strong>Chính sách</strong> (chính sách áp trong năm đang xem, hoặc <em>Theo loại nghỉ</em>). Tệp Excel xuất ra có cùng cột đó.</p>
 <ul>
 <li>Ô ghi <strong>—</strong> mờ nghĩa là người đó <strong>chưa có dòng quỹ</strong> loại đó trong năm (rê chuột lên đọc <em>Chưa có quỹ loại nghỉ này</em>), khác với số <strong>0</strong> là đã dùng hết. Số âm tô đỏ (đang ứng phép).</li>
 <li>Bộ lọc: ô tìm <strong>Tìm tên, mã nhân sự</strong>, <strong>Phòng ban</strong> (phòng hiện tại của người đó), <strong>Trạng thái nhân sự</strong> (<em>Đang làm</em> mặc định · <em>Đã nghỉ</em> · <em>Tất cả nhân sự</em>) và <strong>Năm</strong>.</li>
@@ -987,17 +988,18 @@ Nghỉ việc:
         {
             "title": NS_PHAN_BO,
             "icon": "users",
-            "summary": "Gán chính sách nghỉ phép cho một người (xem trước hạn mức năm nay) hoặc tối đa 500 người một lượt; đổi giữa năm chia theo tháng; ô Tính lại hạn mức; Kết thúc, Xóa; các câu chặn",
+            "summary": "Gán chính sách nghỉ phép cho một người (xem trước hạn mức năm nay) hoặc tối đa 500 người một lượt; cột Hạn mức năm nay bấm sang Quỹ phép năm; đổi giữa năm chia theo tháng; ô Tính lại hạn mức; Kết thúc, Xóa; các câu chặn",
             "content": f"""<h2>Phân bổ chính sách ở đâu</h2>
-<p>Menu <strong>Nhân sự ▸ Nghỉ phép ▸ Phân bổ chính sách</strong> (ngay sau Quỹ phép năm). Mỗi dòng là <em>một người được gán một chính sách trong một khoảng ngày</em>. Cột: <strong>Nhân sự</strong> · <strong>Chính sách</strong> · <strong>Từ ngày</strong> · <strong>Đến ngày</strong> (trống hiện <em>Không thời hạn</em>) · <strong>Trạng thái</strong> · <strong>Ghi chú</strong> · <strong>Thao tác</strong>.</p>
+<p>Menu <strong>Nhân sự ▸ Nghỉ phép ▸ Phân bổ chính sách</strong> (ngay sau Quỹ phép năm). Mỗi dòng là <em>một người được gán một chính sách trong một khoảng ngày</em>. Cột: <strong>Nhân sự</strong> · <strong>Chính sách</strong> · <strong>Từ ngày</strong> · <strong>Đến ngày</strong> (trống hiện <em>Không thời hạn</em>) · <strong>Trạng thái</strong> · <strong>Hạn mức năm nay</strong> · <strong>Ghi chú</strong> · <strong>Thao tác</strong>.</p>
+<p><strong>Hạn mức năm nay</strong> cho biết quỹ phép năm nay của người đó đang cấp bao nhiêu ngày cho từng loại nghỉ có trong chính sách, ví dụ <em>Phép năm 15 ngày</em>. Bấm vào số đó để mở đúng dòng {ref(NS_QUY, "Quỹ phép năm")} của người đó. Số này là hạn mức đang cấp thật, nên nếu đổi chính sách giữa năm thì nó là số đã chia theo tháng, và nếu lúc phân bổ bỏ tick tính lại thì nó vẫn là số cũ. Loại nghỉ chưa có dòng quỹ năm nay ghi <em>chưa cấp quỹ</em>. Phân bổ không chạm năm nay (đã kết thúc từ năm trước, hoặc bắt đầu từ năm sau) ghi dấu gạch.</p>
 <p><strong>Trạng thái</strong> tự tính theo ngày hôm nay, không ai sửa tay: <em>Sắp tới</em> (chưa tới ngày bắt đầu) · <em>Đang hiệu lực</em> · <em>Đã kết thúc</em>. Bộ lọc: ô <strong>Tìm tên, mã NV…</strong>, ô chính sách (<em>Mọi chính sách</em>), ô hiệu lực (<em>Mọi phân bổ</em> / <em>Đang hiệu lực hôm nay</em>), ô <em>Mọi pháp nhân</em>.</p>
 <p>Chính sách phải khai trước ở {ref(NS_CHINH_SACH, "Thiết lập ▸ Chính sách nghỉ phép")}.</p>
 
 <h2>Phân bổ cho một người</h2>
 <ol>
 <li>Bấm <strong>Phân bổ</strong> ở góc trên bên phải. Hộp <strong>Phân bổ chính sách nghỉ phép</strong> mở ra.</li>
-<li>Chọn <strong>Nhân sự</strong> (gõ tên hoặc mã để tìm) và <strong>Chính sách</strong> (chỉ hiện chính sách đang dùng).</li>
-<li>Chọn <strong>Từ ngày</strong>. Nút nhỏ <strong>Từ ngày vào làm</strong> điền sẵn ngày vào làm của người đó (mờ nếu hồ sơ chưa có ngày vào làm). <strong>Đến ngày</strong> để trống là không thời hạn.</li>
+<li>Chọn <strong>Nhân sự</strong> (gõ tên hoặc mã để tìm) và <strong>Chính sách</strong> (chỉ hiện chính sách đang dùng). Hệ thống chưa có chính sách nào đang dùng thì ô bị khóa và ghi <em>Chưa có chính sách nào đang dùng</em>, kèm đường sang Thiết lập để tạo (nếu bạn có quyền).</li>
+<li>Chọn <strong>Từ ngày</strong>. Nút nhỏ <strong>Từ ngày vào làm</strong> điền sẵn ngày vào làm của người đó (mờ nếu hồ sơ chưa có ngày vào làm). <strong>Đến ngày</strong> để trống là không thời hạn. Rê chuột lên dấu <strong>?</strong> cạnh hai ô ngày để đọc giải thích ngay trên màn.</li>
 <li>Ghi chú nếu cần. Ô <strong>Tính lại hạn mức năm nay cho quỹ đã cấp</strong> để bật (mặc định) — xem mục dưới.</li>
 <li>Đọc khối xem trước hiện ngay dưới: <em>Chính sách hiện tại</em> của người đó và bảng <strong>Hạn mức quỹ phép năm nay</strong> với cột <strong>Hiện tại → Sau phân bổ</strong> cho từng loại nghỉ.</li>
 <li>Bấm <strong>Phân bổ</strong>. Thông báo nói số dòng quỹ được tính lại, cấp mới hay giữ nguyên.</li>

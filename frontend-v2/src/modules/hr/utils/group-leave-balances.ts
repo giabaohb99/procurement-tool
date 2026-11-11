@@ -313,3 +313,16 @@ export function leaveBalanceRowClass(row: LeaveBalanceRow, expanded: boolean): s
   }
   return 'odd:bg-card even:bg-card has-aria-expanded:bg-card'
 }
+
+/**
+ * Tên chính sách của một hàng bảng Quỹ phép năm (duoc-CR-745). Hàng người gộp tên các gói của các dòng con, bỏ trùng,
+ * giữ thứ tự xuất hiện; không dòng nào có gói → chuỗi rỗng (ô hiện *Theo loại nghỉ*).
+ */
+export function policyNameOfRow(row: LeaveBalanceRow): string {
+  const balances = row.kind === 'group' ? row.group.balances : [row.balance]
+  const names: string[] = []
+  for (const b of balances) {
+    if (b.policy_name && !names.includes(b.policy_name)) names.push(b.policy_name)
+  }
+  return names.join(', ')
+}

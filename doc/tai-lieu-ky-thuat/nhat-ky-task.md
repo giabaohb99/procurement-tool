@@ -114,6 +114,23 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-745 | Nối màn Phân bổ chính sách với Quỹ phép năm và làm rõ hộp Phân bổ chính sách
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** hai màn Phân bổ chính sách và Quỹ phép năm không nhìn thấy nhau, người dùng không biết phân bổ đã đổi quỹ ra sao và quỹ lấy hạn mức theo chính sách nào; hộp Phân bổ chính sách mở ra trống trơn khi chưa có chính sách, hai ô ngày khó hiểu, và nút giải thích bị giật khi rê chuột.
+
+**Đã làm**
+- Danh sách Phân bổ chính sách có thêm cột Hạn mức năm nay, bấm vào số là mở đúng dòng quỹ của người đó, giống mục Leaves của NextERP.
+- Quỹ phép năm có thêm cột Chính sách ở cả thẻ theo dòng quỹ, thẻ theo nhân sự và tệp Excel xuất ra; người không được phân bổ ghi Theo loại nghỉ.
+- Ô chọn chính sách báo rõ khi chưa có chính sách nào đang dùng, hai ô ngày có nút dấu hỏi giải thích, câu báo quỹ không đổi nêu đủ lý do.
+- Sửa nút dấu hỏi dùng chung bị giật khi rê chuột, áp cho mọi màn đang dùng nó.
+- Cập nhật bài hướng dẫn sử dụng Nghỉ phép, cẩm nang trợ lý và tài liệu kỹ thuật; thêm bài kiểm backend đếm số truy vấn và bài kiểm giao diện.
+
+Mã nguồn: `backend/app/modules/leave/policy_balance_links.py`, `policy_assignment_controller.py`, `balance_controller.py`, `balance_matrix_service.py`, `balance_matrix_controller.py`, `frontend-v2/src/modules/hr/components/leave-policy-select.tsx`, `leave-policy-current-year-quotas.tsx`, `frontend-v2/src/shared/ui/help-hint.tsx`, `test/backend/test_noi_phan_bo_quy_phep_cr745.py`
+
 ## duoc-CR-744-luot-e | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý sau đợt sửa sắp xếp cột
 - status: xong
 - date: 2026-11-11

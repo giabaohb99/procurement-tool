@@ -62,7 +62,7 @@ function AssignForm({ onClose }: { onClose: () => void }) {
     { enabled: canPickEmployee },
   )
   const employees = useMemo(() => employeeData?.items ?? [], [employeeData])
-  const { data: policyData } = useActiveLeavePolicies()
+  const { data: policyData, isLoading: policiesLoading } = useActiveLeavePolicies()
   const { data: typeData } = useLeaveTypes(false)
   const typeName = useMemo(() => buildLeaveTypeNameLookup(typeData?.items), [typeData])
 
@@ -118,6 +118,7 @@ function AssignForm({ onClose }: { onClose: () => void }) {
         employeeId={employeeId}
         onEmployeeChange={setEmployeeId}
         policies={policyData?.items ?? []}
+        policiesLoading={policiesLoading}
         policyId={policyId}
         onPolicyChange={setPolicyId}
         from={from}

@@ -53,7 +53,12 @@ export function HelpHint({ children, label = 'Giải thích', className }: HelpH
             <HelpCircle className="size-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs text-pretty">{children}</TooltipContent>
+        {/* Chống giật (11/11/2026): `sideOffset` mặc định 0 + hiệu ứng trượt lên làm mũi tooltip ĐÈ lên icon
+            14px trong lúc đang hiện — con trỏ bị tính là rời nút, tooltip đóng rồi mở lại liên tục. Cách thêm một
+            khoảng và cho khung tooltip không nhận con trỏ (`disableHoverableContent` đã bật, rê vào cũng vô ích). */}
+        <TooltipContent sideOffset={6} className="pointer-events-none max-w-xs text-pretty">
+          {children}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )

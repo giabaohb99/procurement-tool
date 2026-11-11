@@ -139,8 +139,10 @@ def test_ma_tran_export_cot_dong(db, world, client_as):
     import io
     from openpyxl import load_workbook
     ws = load_workbook(io.BytesIO(r.content)).active
-    assert [c.value for c in ws[1]] == ["Mã NV", "Họ tên", "Phòng ban", "Phép năm", "Phép cộng dần", "Tổng còn lại"]
-    assert [c.value for c in ws[2]][3:] == [12, 0, 12]
+    #  duoc-CR-745: thêm cột Chính sách sau Phòng ban; người chưa phân bổ ghi "Theo loại nghỉ".
+    assert [c.value for c in ws[1]] == ["Mã NV", "Họ tên", "Phòng ban", "Chính sách", "Phép năm", "Phép cộng dần",
+                                        "Tổng còn lại"]
+    assert [c.value for c in ws[2]][3:] == ["Theo loại nghỉ", 12, 0, 12]
     _, ro = _actor(world, client_as, actions=("read",), key="a2")
     assert ro.get(MATRIX + "/export").status_code == 403
 

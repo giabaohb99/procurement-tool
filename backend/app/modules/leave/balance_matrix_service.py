@@ -4,7 +4,7 @@ Employee Leave Balance Summary). `GET /api/leave-balances/matrix` (+ `/matrix/ex
 Số ô = `available_days` (trừ phần chưa tới tháng của loại cộng dần) — cùng số với màn Quỹ phép / form đơn.
 Cột = loại `counts_balance` có ít nhất một dòng quỹ trong KẾT QUẢ (cả trang khác, để cột không nhảy khi lật trang).
 Số truy vấn CỐ ĐỊNH: đếm người + trang người + loại (cột) + quỹ của trang + (loại + ngày vào làm của
-`available_days_map`) + tên phòng; cộng 1 câu loại khi có dòng mang sang cần thu hồi quá hạn.
+`available_days_map`) + tên phòng + 2 câu chính sách đang áp (duoc-CR-745); cộng 1 câu loại khi có dòng mang sang cần thu hồi quá hạn.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from . import balance_service, carryover_service
 from .balance_model import LeaveBalance
 from .balance_report_spec import employee_conds
 from .catalog_model import LeaveType
+from .policy_balance_links import policy_names_for_year
 
 ENTITY = "leave_balance"
 EXPORT_LIMIT = 5000
@@ -62,8 +63,10 @@ def build_matrix(db: Session, user, prof: dict, action: str, year: int, company_
     dept_name = ({d.id: d.name for d in db.query(Department.id, Department.name)
                   .filter(Department.id.in_({p.department_id for p in page if p.department_id})).all()}
                  if page else {})
+    policy_name = policy_names_for_year(db, [p.id for p in page], year) if page else {}
     items = [{"employee_id": p.id, "code": p.code, "name": p.full_name,
               "department_name": dept_name.get(p.department_id, ""),
+              "policy_name": policy_name.get(p.id, ""),
               "cells": {str(t): v for t, v in cells.get(p.id, {}).items()},
               "total": round(sum(cells.get(p.id, {}).values()), 2)} for p in page]
     return {"year": year, "columns": columns, "items": items, "total": total}

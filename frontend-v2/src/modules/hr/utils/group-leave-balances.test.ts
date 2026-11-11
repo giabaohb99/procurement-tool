@@ -5,6 +5,7 @@ import {
   flattenLeaveBalanceGroups,
   groupLeaveBalances,
   leaveBalanceRowClass,
+  policyNameOfRow,
   rowHasRealQuota,
   rowTotals,
 } from './group-leave-balances'
@@ -375,5 +376,27 @@ describe('groupLeaveBalances — đã thanh toán ra tiền (duoc-CR-719)', () =
       makeBalance({}),
     ])
     expect(group.totals.encashed_days).toBe(4.5)
+  })
+})
+
+describe('policyNameOfRow', () => {
+  //  duoc-CR-745: cột "Chính sách" của bảng Quỹ phép năm.
+  it('joins distinct policy names of the children on the employee row, skipping types without a policy', () => {
+    const groups = groupLeaveBalances([
+      makeBalance({ leave_type_id: 1, policy_name: 'Cấp quản lý' }),
+      makeBalance({ leave_type_id: 2, policy_name: '' }),
+      makeBalance({ leave_type_id: 3, policy_name: 'Cấp quản lý' }),
+      makeBalance({ leave_type_id: 4, policy_name: 'Thâm niên' }),
+    ])
+    const rows = flattenLeaveBalanceGroups(groups, new Set([1]))
+    const group = rows.find((r) => r.kind === 'group')
+    expect(group && policyNameOfRow(group)).toBe('Cấp quản lý, Thâm niên')
+    const children = rows.filter((r) => r.kind === 'child').map(policyNameOfRow)
+    expect(children).toEqual(['Cấp quản lý', '', 'Cấp quản lý', 'Thâm niên'])
+  })
+
+  it('returns an empty string when the backend did not send policy_name (old backend)', () => {
+    const rows = flattenLeaveBalanceGroups(groupLeaveBalances([makeBalance()]), new Set())
+    expect(policyNameOfRow(rows[0])).toBe('')
   })
 })

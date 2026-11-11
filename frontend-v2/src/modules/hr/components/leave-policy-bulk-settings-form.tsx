@@ -2,15 +2,17 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
+import { HelpHint } from '@/shared/ui/help-hint'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { LeavePolicySelect } from './leave-policy-select'
 import { EmployeeFilterSelect } from './employee-filter-select'
 import { useCompanies } from '../hooks/use-companies'
 import { useDepartments } from '../hooks/use-departments'
 import { useActiveLeavePolicies } from '../hooks/use-leave-policy'
 import { EMPLOYMENT_TYPE_FILTER_OPTIONS, JOB_LEVEL_FILTER_OPTIONS } from '../types/employee-codes'
 import type { BulkSettings } from '../utils/leave-policy-bulk'
+import { LEAVE_POLICY_FROM_DATE_HINT, LEAVE_POLICY_TO_DATE_HINT } from '../utils/leave-policy-date-hints'
 
 interface LeavePolicyBulkSettingsFormProps {
   value: BulkSettings
@@ -39,7 +41,7 @@ export function LeavePolicyBulkSettingsForm({ value, onChange }: LeavePolicyBulk
   const canReadDepartment = can('department', 'read')
   const set = <K extends keyof BulkSettings>(key: K, v: BulkSettings[K]) => onChange({ ...value, [key]: v })
 
-  const { data: policyData } = useActiveLeavePolicies()
+  const { data: policyData, isLoading: policiesLoading } = useActiveLeavePolicies()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true }, { enabled: canReadCompany })
   //  ⚠️ Phòng ban KHÔNG lọc theo pháp nhân (review M5): phòng ban dùng chung (`company_id = 0`, không có dòng
   //  `tab_department_company`) nên `?company_id=` trả rỗng. Backend tự giao hai ô lọc lúc xem trước.
@@ -58,28 +60,27 @@ export function LeavePolicyBulkSettingsForm({ value, onChange }: LeavePolicyBulk
               Chính sách
               <RequiredMark />
             </Label>
-            <Select value={value.policyId ? String(value.policyId) : ''} onValueChange={(v) => set('policyId', Number(v))}>
-              <SelectTrigger id="bulk-policy" className="w-full">
-                <SelectValue placeholder="Chọn chính sách đang dùng" />
-              </SelectTrigger>
-              <SelectContent>
-                {(policyData?.items ?? []).map((p) => (
-                  <SelectItem key={p.id} value={String(p.id)}>
-                    {p.name} ({p.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <LeavePolicySelect
+              id="bulk-policy"
+              policies={policyData?.items ?? []}
+              isLoading={policiesLoading}
+              value={value.policyId}
+              onChange={(id) => set('policyId', id)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>
               Từ ngày
               <RequiredMark />
+              <HelpHint label="Giải thích Từ ngày">{LEAVE_POLICY_FROM_DATE_HINT}</HelpHint>
             </Label>
             <DatePicker value={value.from} onChange={(v) => set('from', v)} clearable={false} />
           </div>
           <div className="space-y-1.5">
-            <Label>Đến ngày</Label>
+            <Label>
+              Đến ngày
+              <HelpHint label="Giải thích Đến ngày">{LEAVE_POLICY_TO_DATE_HINT}</HelpHint>
+            </Label>
             <DatePicker value={value.to} onChange={(v) => set('to', v)} placeholder="Không thời hạn" />
             {rangeError && (
               <p className="text-xs text-destructive">

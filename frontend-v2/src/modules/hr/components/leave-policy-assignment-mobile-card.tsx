@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { LeavePolicyAssignment } from '../types/leave-policy'
 import { formatPolicyRange } from '../utils/leave-policy-display'
 import { LeavePolicyAssignmentStateBadge } from './leave-policy-assignment-state-badge'
+import { LeavePolicyCurrentYearQuotas } from './leave-policy-current-year-quotas'
 
 interface LeavePolicyAssignmentMobileCardProps {
   assignment: LeavePolicyAssignment
@@ -38,6 +39,7 @@ export function LeavePolicyAssignmentMobileCard({
       <p className="text-muted-foreground tabular-nums">
         {formatPolicyRange(a.effective_from, a.effective_to)}
       </p>
+      <LeavePolicyCurrentYearQuotas quotas={a.current_year_quotas} />
       {a.note && <p className="text-muted-foreground">{a.note}</p>}
       {actions && <div className="flex gap-1 pt-1">{actions}</div>}
     </div>

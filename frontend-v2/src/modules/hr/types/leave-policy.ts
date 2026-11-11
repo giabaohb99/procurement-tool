@@ -54,6 +54,20 @@ export interface LeavePolicyAssignment {
   policy_name: string
   state: LeavePolicyAssignmentState
   updated_at?: string | null
+  /**
+   * Hạn mức năm nay theo loại nghỉ của gói (duoc-CR-745, chỉ danh sách trả). Rỗng = phân bổ không chạm năm nay.
+   * Vắng = backend cũ hoặc đường chi tiết.
+   */
+  current_year_quotas?: PolicyCurrentYearQuota[]
+}
+
+/** Một loại nghỉ của gói: hạn mức đang cấp năm nay + id dòng quỹ để bấm sang (0 = chưa cấp quỹ). */
+export interface PolicyCurrentYearQuota {
+  leave_type_id: number
+  leave_type_name: string
+  /** `null` = chưa có dòng quỹ năm nay. */
+  allocated_days: number | null
+  balance_id: number
 }
 
 /** Một loại nghỉ đổi hạn mức năm nay: `before` = số đang cấp (hoặc sẽ cấp nếu chưa có dòng). */

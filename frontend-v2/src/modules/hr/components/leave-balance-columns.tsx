@@ -1,11 +1,12 @@
 import type { DataTableColumn } from '@/shared/data-table'
 import { cn } from '@/shared/utils/cn'
 import {
+  policyNameOfRow,
   rowHasRealQuota,
   rowTotals,
   type LeaveBalanceRow,
 } from '../utils/group-leave-balances'
-import { DayCount, NameCell } from './leave-balance-cells'
+import { DayCount, NameCell, PolicyName } from './leave-balance-cells'
 
 /**
  * Cột của bảng QUỸ PHÉP NĂM — bảng gom theo NGƯỜI, loại nghỉ là dòng con.
@@ -43,6 +44,13 @@ export function buildLeaveBalanceColumns({
       minWidth: 240,
       hideable: false,
       defaultPinned: true,
+    },
+    {
+      //  duoc-CR-745: hạn mức lấy theo chính sách nào (hàng người gộp tên các gói của các dòng con).
+      key: 'policy_name',
+      header: 'Chính sách',
+      cell: (row) => <PolicyName name={policyNameOfRow(row)} />,
+      width: 190,
     },
     {
       key: 'total_days',

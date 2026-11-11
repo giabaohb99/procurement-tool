@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { DataTableColumn } from '@/shared/data-table'
 import { formatDate } from '@/shared/utils/format-date'
 import { LeavePolicyAssignmentStateBadge } from '../components/leave-policy-assignment-state-badge'
+import { LeavePolicyCurrentYearQuotas } from '../components/leave-policy-current-year-quotas'
 import type { LeavePolicyAssignment } from '../types/leave-policy'
 
 /**
@@ -65,6 +66,13 @@ export function buildLeavePolicyAssignmentColumns({
       header: 'Trạng thái',
       width: 140,
       cell: (a) => <LeavePolicyAssignmentStateBadge state={a.state} />,
+    },
+    {
+      //  duoc-CR-745: kiểu mục Leaves của ERPNext — quỹ năm nay mà phân bổ này quyết định, bấm sang dòng quỹ.
+      key: 'current_year_quotas',
+      header: 'Hạn mức năm nay',
+      width: 190,
+      cell: (a) => <LeavePolicyCurrentYearQuotas quotas={a.current_year_quotas} />,
     },
     {
       key: 'note',

@@ -239,6 +239,8 @@ export interface LeaveBalance {
   note: string
   total_days: number
   remaining_days: number
+  /** Chính sách quyết định hạn mức loại này năm đó (duoc-CR-745); rỗng = theo luật của loại nghỉ. Backend cũ: vắng. */
+  policy_name?: string
 }
 
 export interface LeaveHandover {

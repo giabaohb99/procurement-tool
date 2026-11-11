@@ -26,6 +26,7 @@ from app.modules.employee.model import Employee
 from . import policy_assignment_service as service
 from .policy_assignment_plan import SELF_MESSAGE, plan_change
 from .policy_assignment_view import dump_assignment, lookup_names, search_condition
+from .policy_balance_links import quotas_for_assignments
 from .policy_assignment_scope import is_own_employee, writable_employee_query
 from .policy_model import LeavePolicy, LeavePolicyAssignment
 from .policy_schema import (AssignmentBulk, AssignmentCreate, AssignmentPreview, AssignmentUpdate,
@@ -63,7 +64,11 @@ def list_assignments(request: Request, pg: dict = Depends(pagination),
                      search: str | None = Query(None, max_length=MAX_SEARCH),
                      active_on: date | None = None, db: Session = Depends(get_db),
                      user=Depends(require(ENTITY, "read"))):
-    """Phân bổ trong phạm vi người xem. Lọc: `employee_id`, `policy_id`, `company_id`, `active_on` (ngày), `search` (tên / mã)."""
+    """Phân bổ trong phạm vi người xem. Lọc: `employee_id`, `policy_id`, `company_id`, `active_on` (ngày), `search` (tên / mã).
+
+    Mỗi dòng kèm `current_year_quotas` (duoc-CR-745): hạn mức năm nay theo loại nghỉ của gói + `balance_id` dòng quỹ
+    (0 = chưa cấp); rỗng khi phân bổ không chạm năm nay. Dòng quỹ lọc theo phạm vi `leave_balance` của người xem.
+    """
     query = apply_filters(db.query(LeavePolicyAssignment), LeavePolicyAssignment, request, FILTERABLE)
     if search and search.strip():
         query = query.filter(search_condition(search))
@@ -71,13 +76,17 @@ def list_assignments(request: Request, pg: dict = Depends(pagination),
         query = query.filter(LeavePolicyAssignment.effective_from <= active_on,
                              (LeavePolicyAssignment.effective_to.is_(None))
                              | (LeavePolicyAssignment.effective_to >= active_on))
-    query = apply_scope(query, LeavePolicyAssignment, ENTITY, user, get_perm_profile(db, user))
+    prof = get_perm_profile(db, user)
+    query = apply_scope(query, LeavePolicyAssignment, ENTITY, user, prof)
     total = query.count()
     rows = (query.order_by(LeavePolicyAssignment.effective_from.desc(), LeavePolicyAssignment.id.desc())
             .offset(pg["offset"]).limit(pg["limit"]).all())
     emps, policies = lookup_names(db, rows)
     today = vn_today()
-    return success({"total": total, "items": [dump_assignment(r, emps, policies, today) for r in rows]})
+    #  duoc-CR-745: hạn mức năm nay của các loại trong gói, kèm id dòng quỹ để bấm sang Quỹ phép năm.
+    quotas = quotas_for_assignments(db, rows, user, prof, today.year)
+    items = [{**dump_assignment(r, emps, policies, today), "current_year_quotas": quotas.get(r.id, [])} for r in rows]
+    return success({"total": total, "items": items})
 
 
 @router.post("/preview")

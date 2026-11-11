@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| Bản | 2.1 — 11/11/2026 (**nối Phân bổ chính sách với Quỹ phép năm** — duoc-CR-745: §15.6a mới) · 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
 | CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` · CR-719: `doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` |
@@ -1064,6 +1064,25 @@ total}` — khóa `cells` là **chuỗi**; người thiếu dòng quỹ một lo
 `available_days`. Số truy vấn cố định (bài kiểm 2 vs 42 người). Giao diện `leave-balance-matrix-table.tsx` (cột Mã NV ·
 Họ tên · Phòng ban · từng loại · Tổng còn lại; lọc tìm / phòng ban / *Trạng thái nhân sự* / năm; *Xuất Excel* gác
 `leave_balance.export`). Đổi thẻ giữ tìm + năm; thẻ dòng quỹ tắt truy vấn 5000 dòng khi đang ở thẻ nhân sự.
+
+### 15.6a. Nối Phân bổ chính sách với Quỹ phép năm (duoc-CR-745, 11/11/2026)
+
+Kiểu mục *Leaves* / liên kết ngược của ERPNext (ở ERPNext, gửi một Leave Policy Assignment sinh ngay một Leave
+Allocation mỗi loại nghỉ, mỗi allocation trỏ ngược về assignment). Mình không sinh bản ghi mới, chỉ ĐỌC chéo —
+`leave/policy_balance_links.py`, số truy vấn cố định theo trang (bài kiểm đếm truy vấn 2 vs 32 người):
+
+| Đường | Trường mới | Nghĩa |
+|---|---|---|
+| `GET /api/leave-policy-assignments` | `current_year_quotas: [{leave_type_id, leave_type_name, allocated_days \| null, balance_id}]` | Hạn mức `allocated_days` năm nay của các loại trong gói (chỉ loại `counts_balance`, thứ tự danh mục); `null` + `balance_id = 0` = chưa có dòng quỹ; `[]` = phân bổ không chạm năm nay. Dòng quỹ qua `apply_scope(leave_balance)` |
+| `GET /api/leave-balances` | `policy_name` | Gói của các phân bổ chạm năm của dòng VÀ khai đúng loại đó, nối ` → ` theo ngày bắt đầu; rỗng = theo luật của loại |
+| `GET /api/leave-balances/matrix` (+ `/export`) | `policy_name` (Excel: cột *Chính sách*, rỗng ghi *Theo loại nghỉ*) | Gói của các phân bổ chạm năm đang xem |
+
+Giao diện: cột *Hạn mức năm nay* (`leave-policy-current-year-quotas.tsx`, cả thẻ điện thoại) · cột *Chính sách* hiện sẵn
+ở thẻ *Theo dòng quỹ* (6 cột hiện sẵn, hàng người gộp tên gói của dòng con — `policyNameOfRow`) và thẻ *Theo nhân sự*.
+Các cột này không xếp được (giá trị tính ra). Hai màn **không ghi đè nhau**: phân bổ chỉ đổi `allocated_days`, điều
+chỉnh tay ghi `adjusted_days`; mỗi (người, loại, năm) một dòng quỹ nên không cộng hai lần. Cùng CR: ô chọn chính sách
+khóa và báo *Chưa có chính sách nào đang dùng* khi rỗng (`leave-policy-select.tsx`), nút **?** giải thích *Từ ngày* /
+*Đến ngày* (`utils/leave-policy-date-hints.ts`), câu *quỹ năm nay không đổi* nêu đủ ba lý do.
 
 ### 15.7. Cấp quỹ có lọc
 

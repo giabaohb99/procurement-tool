@@ -23,6 +23,7 @@ from app.modules.employee.model import Employee
 from . import balance_service, carryover_review_service, carryover_service
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
+from .policy_balance_links import policy_names_for_balances
 from .schema import (LeaveBalanceAdjust, LeaveBalanceAllocate,
                      LeaveBalanceCloseYear, LeaveBalanceResponse)
 
@@ -34,7 +35,7 @@ FILTERABLE = ["employee_id", "year", "leave_type_id", "company_id"]
 
 
 def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int, str],
-          available: dict[int, float] | None = None) -> dict:
+          available: dict[int, float] | None = None, policies: dict[int, str] | None = None) -> dict:
     data = LeaveBalanceResponse.model_validate(obj).model_dump()
     #  Hai số dẫn xuất — `model_validate` không lấy được `@property` nên gán tay.
     data["total_days"] = obj.total_days
@@ -44,6 +45,8 @@ def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int
                               else balance_service.available_days(db, obj))
     data["employee_name"] = names.get(obj.employee_id, "")
     data["leave_type_name"] = types.get(obj.leave_type_id, "")
+    #  duoc-CR-745: chính sách quyết định hạn mức của loại này năm đó; rỗng = theo luật của loại nghỉ.
+    data["policy_name"] = (policies or {}).get(obj.id, "")
     return data
 
 
@@ -122,7 +125,8 @@ def list_balances(request: Request, pg: dict = Depends(pagination),
     names = _names(db, {i.employee_id for i in items})
     types = _type_names(db)
     avail = balance_service.available_days_map(db, items)
-    return success({"total": total, "items": [_dump(db, i, names, types, avail) for i in items]})
+    policies = policy_names_for_balances(db, items)
+    return success({"total": total, "items": [_dump(db, i, names, types, avail, policies) for i in items]})
 
 
 @router.get("/{bid}")

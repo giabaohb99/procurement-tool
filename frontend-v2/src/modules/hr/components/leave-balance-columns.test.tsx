@@ -45,16 +45,19 @@ function column(
 }
 
 describe('buildLeaveBalanceColumns', () => {
-  it('bày sẵn đúng năm cột, tám cột giải thích ẩn sẵn (thêm "Nghỉ bù cộng thêm" duoc-CR-715, "Đã thanh toán ra tiền" duoc-CR-719)', () => {
+  it('bày sẵn đúng sáu cột (thêm "Chính sách" duoc-CR-745), tám cột giải thích ẩn sẵn (thêm "Nghỉ bù cộng thêm" duoc-CR-715, "Đã thanh toán ra tiền" duoc-CR-719)', () => {
     //  ⚠️ Đây là lý do tồn tại của lần bố trí lại 19/09/2026: bản cũ bày cả
     //  mười một cột và ở màn 1600px thứ bị đẩy ra ngoài mép phải chính là
     //  "Còn lại" — con số duy nhất người ta mở màn này để xem. Thêm cột vào
     //  nhóm bày sẵn thì phải đo lại bề ngang trước.
+    //  duoc-CR-745 thêm "Chính sách" (190px): đã đo ở 1280px, sáu cột vẫn
+    //  lọt khung và "Còn lại" vẫn nằm trong màn.
     const columns = buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() })
     const shown = columns.filter((c) => !c.defaultHidden).map((c) => c.key)
 
     expect(shown).toEqual([
       'employee_name',
+      'policy_name',
       'total_days',
       'used_days',
       'pending_days',

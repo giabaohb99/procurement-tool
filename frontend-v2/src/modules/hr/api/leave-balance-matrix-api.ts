@@ -18,6 +18,8 @@ export interface LeaveBalanceMatrixRow {
   code: string
   name: string
   department_name: string
+  /** Chính sách áp trong năm đang xem (duoc-CR-745), nhiều gói nối bằng mũi tên; rỗng = theo loại nghỉ. */
+  policy_name?: string
   /**
    * ⚠️ Khóa là CHUỖI id loại nghỉ (JSON không có khóa số). Người thiếu dòng quỹ của một loại thì
    * VẮNG khóa đó — khác hẳn số `0` (có quỹ, đã dùng hết).

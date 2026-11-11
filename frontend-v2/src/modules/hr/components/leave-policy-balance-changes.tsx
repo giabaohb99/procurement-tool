@@ -20,8 +20,8 @@ export function LeavePolicyBalanceChanges({ changes, typeName, className }: Leav
   if (changes.length === 0) {
     return (
       <p className={cn('text-sm text-muted-foreground', className)}>
-        Không loại nghỉ nào của quỹ năm nay đổi hạn mức (khoảng ngày không chạm năm nay, hoặc chính sách chưa khai
-        loại nghỉ nào).
+        Quỹ năm nay không đổi hạn mức loại nghỉ nào. Thường vì số ngày của chính sách bằng đúng hạn mức đang cấp, chính
+        sách chỉ khai loại nghỉ không trừ quỹ (ốm đau, cưới hỏi, tang chế…), hoặc khoảng ngày không chạm năm nay.
       </p>
     )
   }
