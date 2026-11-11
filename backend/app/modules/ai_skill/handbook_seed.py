@@ -89,28 +89,36 @@ def factory_reference_files() -> list[tuple[str, str]]:
             for p in sorted(FACTORY_REFS_DIR.glob("*.md"))]
 
 
+def create_seed_skill(db: Session, skill_set_id: int, slug: str, title: str, summary: str, body: str,
+                      sort_order: int, note: str) -> AiSkill:
+    """Tạo MỘT skill hạt giống đã xuất bản phiên bản 1 (người đứng tên 0). Không commit, không kiểm trùng — người gọi
+    phải chắc slug chưa có trong bộ (gieo lần đầu, hoặc `scripts/publish_handbook_update.py` thêm cẩm nang mới)."""
+    now = datetime.now()
+    skill = AiSkill(skill_set_id=skill_set_id, slug=slug, title=title, summary=summary[:500],
+                    status=int(SkillStatus.ACTIVE), draft_body_md=body, draft_updated_at=now, sort_order=sort_order)
+    db.add(skill)
+    db.flush()
+    version = AiSkillVersion(skill_id=skill.id, version_no=1, title=title, summary=summary[:500], body_md=body,
+                             change_note=note, published_at=now, published_by=0)
+    db.add(version)
+    db.flush()
+    skill.current_version_id = version.id
+    return skill
+
+
 def ensure_system_handbook(db: Session) -> int:
     """Gieo bộ "Cẩm nang hệ thống" nếu CHƯA từng có (kể cả bản đã xóa mềm). Trả số skill vừa tạo (0 = không đụng)."""
     from app.modules.company.model import Company
 
     if db.query(AiSkillSet.id).filter(AiSkillSet.code == SET_CODE).first() is not None:
         return 0
-    now = datetime.now()
     skill_set = AiSkillSet(code=SET_CODE, name=SET_NAME, description=SET_DESCRIPTION[:500], company_id=0,
                            owner_department_id=0, status=int(SkillSetStatus.ACTIVE),
                            security_level=int(SecurityLevel.OPEN), sort_order=0)
     db.add(skill_set)
     db.flush()
     for order, (slug, title, summary, body) in enumerate(seed_files(), start=1):
-        skill = AiSkill(skill_set_id=skill_set.id, slug=slug, title=title, summary=summary[:500],
-                        status=int(SkillStatus.ACTIVE), draft_body_md=body, draft_updated_at=now, sort_order=order * 10)
-        db.add(skill)
-        db.flush()
-        version = AiSkillVersion(skill_id=skill.id, version_no=1, title=title, summary=summary[:500], body_md=body,
-                                 change_note=CHANGE_NOTE, published_at=now, published_by=0)
-        db.add(version)
-        db.flush()
-        skill.current_version_id = version.id
+        skill = create_seed_skill(db, skill_set.id, slug, title, summary, body, order * 10, CHANGE_NOTE)
         if slug == FACTORY_SLUG:
             for path, text in factory_reference_files():
                 raw = text.encode("utf-8")
@@ -124,4 +132,4 @@ def ensure_system_handbook(db: Session) -> int:
     return len(SKILLS)
 
 
-__all__ = ["ensure_system_handbook", "seed_files", "factory_reference_files", "SET_CODE", "SKILLS"]
+__all__ = ["ensure_system_handbook", "create_seed_skill", "seed_files", "factory_reference_files", "SET_CODE", "SKILLS"]

@@ -23,6 +23,8 @@ Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mớ
   - khác, mà quản trị ĐÃ sửa tay (có phiên bản do người xuất bản, hoặc nháp lệch bản xuất bản, hoặc skill
     đã lưu trữ / xóa)                                          → KHÔNG đè, chỉ báo để người có quyền tự hợp nhất;
   - `--force`: đè cả ca vừa nói (phiên bản cũ vẫn còn trong lịch sử, lùi lại được ở màn Bộ skill).
+  - skill CHƯA có trong bộ (cẩm nang mới thêm vào `SKILLS`, ai-CR-235) → TẠO skill, xuất bản phiên bản 1. Chỉ thêm:
+    skill quản trị đã xóa mềm vẫn còn dòng nên rơi vào ca "KHÔNG ĐÈ" ở trên, không bị hồi sinh; không xóa skill nào.
 Bộ SYS-HANDBOOK không tồn tại → không làm gì (để `seed` gieo bản đầu).
 """
 import argparse
@@ -36,7 +38,7 @@ import app.core.all_models  # noqa: F401,E402 — nạp đủ mapper trước kh
 from app.core.audit import record  # noqa: E402
 from app.core.database import SessionLocal  # noqa: E402
 from app.modules.ai_skill.constants import SkillStatus  # noqa: E402
-from app.modules.ai_skill.handbook_seed import SET_CODE, seed_files  # noqa: E402
+from app.modules.ai_skill.handbook_seed import SET_CODE, create_seed_skill, seed_files  # noqa: E402
 from app.modules.ai_skill.model import AiSkill, AiSkillSet, AiSkillVersion  # noqa: E402
 
 CHANGE_NOTE = "Cập nhật cẩm nang theo tính năng ngày 22/10/2026 (duoc-CR-670)"  # mặc định của `--note`
@@ -76,6 +78,22 @@ def publish_new_version(db, skill: AiSkill, versions: list[AiSkillVersion], body
     return version_no
 
 
+def add_missing_skill(db, skill_set: AiSkillSet, slug: str, title: str, summary: str, body: str, order: int,
+                      note: str) -> AiSkill | None:
+    """Tạo skill hạt giống CHƯA có trong bộ (tìm cả dòng đã xóa mềm). Có rồi → None, không đụng gì."""
+    if db.query(AiSkill.id).filter(AiSkill.skill_set_id == skill_set.id, AiSkill.slug == slug).first() is not None:
+        return None
+    skill = create_seed_skill(db, skill_set.id, slug, title, summary, body, order * 10, note)
+    db.commit()
+    try:
+        record(db, SEED_USER_ID, AUDIT_SKILL, skill.id, "create", f"Thêm skill cẩm nang {slug} phiên bản 1: {note}",
+               doc_code=slug, parent=(AUDIT_SET, skill_set.id))
+    except Exception:  # nhật ký hỏng không được làm mất skill đã tạo
+        db.rollback()
+        log.warning("Không ghi được nhật ký cho skill %s", slug, exc_info=True)
+    return skill
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Xuất bản phiên bản mới cho skill cẩm nang khi tệp hạt giống đổi")
     parser.add_argument("--dry-run", action="store_true", help="Chỉ báo sẽ làm gì, không ghi DB")
@@ -93,14 +111,17 @@ def main() -> int:
         if skill_set is None:
             print(f"Chưa có bộ {SET_CODE} trên DB — chạy seed để gieo bản đầu, không cần script này.")
             return 0
-        published = skipped = 0
-        for slug, title, _summary, body in seed_files():
+        published = created = skipped = 0
+        for order, (slug, title, summary, body) in enumerate(seed_files(), start=1):
             if only and slug not in only:
                 continue
             skill = db.query(AiSkill).filter(AiSkill.skill_set_id == skill_set.id, AiSkill.slug == slug).first()
             if skill is None:
-                print(f"[bỏ qua] {slug}: skill không có trong bộ (quản trị đã xóa hẳn hoặc chưa từng gieo).")
-                skipped += 1
+                if args.dry_run:
+                    print(f"[sẽ tạo] {slug}: skill mới, phiên bản 1 ({len(body)} ký tự).")
+                elif add_missing_skill(db, skill_set, slug, title, summary, body, order, args.note):
+                    print(f"[đã tạo] {slug}: skill mới, phiên bản 1.")
+                created += 1
                 continue
             versions = db.query(AiSkillVersion).filter(AiSkillVersion.skill_id == skill.id).all()
             current = next((v for v in versions if v.id == skill.current_version_id), None)
@@ -129,8 +150,8 @@ def main() -> int:
                 log.warning("Không ghi được nhật ký cho skill %s", slug, exc_info=True)
             print(f"[đã xuất bản] {slug}: phiên bản {version_no}.")
             published += 1
-        verb = "sẽ xuất bản" if args.dry_run else "đã xuất bản"
-        print(f"Xong: {verb} {published} skill, bỏ qua / không đè {skipped}.")
+        verb = "sẽ" if args.dry_run else "đã"
+        print(f"Xong: {verb} tạo {created} skill mới, {verb} xuất bản {published} skill, bỏ qua / không đè {skipped}.")
         return 0
     except Exception:
         db.rollback()
