@@ -6,6 +6,7 @@ import { Card } from '@/shared/ui/card'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { SectionHeading } from '@/shared/ui/section-heading'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
@@ -299,6 +300,28 @@ function PeopleCell({ id, kind, value, placeholder, disabled, onChange }: People
   //  SMALLINT theo R2/QĐ-11.
   if (kind === 'gender' || kind === 'relation') {
     const options = kind === 'gender' ? EMPLOYEE_GENDER_OPTIONS : RELATION_OPTIONS
+    //  Mục `0` là "chưa khai" — nhãn của nó rỗng, nên phải mượn `placeholder`
+    //  của cột, không thì ô chọn có một dòng trắng không ai biết bấm vào để làm gì.
+    const items = options.map((item) => ({
+      value: String(item.value),
+      label: item.value === 0 ? (placeholder ?? '— Chưa khai —') : item.label,
+    }))
+    //  duoc-CR-747: "Quan hệ" có 15 mục (cha, mẹ, vợ, chồng, con, anh, chị…) nên dùng ô có tìm; "Giới tính"
+    //  chỉ ba mục thì gõ tìm là thừa, giữ ô chọn thường.
+    if (kind === 'relation') {
+      return (
+        <SearchSelect
+          id={id}
+          value={String((value as number) ?? 0)}
+          onChange={(v) => onChange(Number(v) || 0)}
+          options={items}
+          placeholder={placeholder}
+          searchPlaceholder="Gõ để tìm…"
+          emptyMessage="Không có quan hệ này."
+          disabled={disabled}
+        />
+      )
+    }
     return (
       <Select
         value={String((value as number) ?? 0)}
@@ -309,12 +332,9 @@ function PeopleCell({ id, kind, value, placeholder, disabled, onChange }: People
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((item) => (
-            <SelectItem key={item.value} value={String(item.value)}>
-              {/*  Mục `0` là "chưa khai" — nhãn của nó rỗng, nên phải mượn
-                   `placeholder` của cột, không thì ô chọn có một dòng trắng
-                   không ai biết bấm vào để làm gì. */}
-              {item.value === 0 ? (placeholder ?? '— Chưa khai —') : item.label}
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
             </SelectItem>
           ))}
         </SelectContent>

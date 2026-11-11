@@ -114,6 +114,39 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-747 | Ô chọn ở hồ sơ nhân sự gõ tìm được
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** trang chi tiết nhân sự có các ô chọn công ty, phòng ban, chức vụ, người quản lý trực tiếp không gõ tìm được, danh sách người quản lý dài vài trăm tên phải cuộn tay.
+
+**Đã làm**
+- Mọi ô chọn danh mục của phân hệ Nhân sự (công ty, phòng ban, chức vụ, người quản lý, trưởng bộ phận, người đại diện) đổi sang ô có tìm kiếm, gõ không dấu vẫn ra.
+- Ô quan hệ trong bảng người thân có mười lăm lựa chọn nên cũng có tìm; các ô cố định ngắn như giới tính, cấp bậc giữ ô chọn thường.
+- Viết lại bài kiểm canh lỗi mất dữ liệu cũ của ô chọn và thêm bài kiểm gõ tìm; toàn bộ bài kiểm giao diện Nhân sự liên quan qua.
+
+Mã nguồn: `frontend-v2/src/modules/hr/components/lookup-select.tsx`, `employee-people-editor.tsx`, `lookup-select.test.tsx`
+
+## duoc-CR-748 | Bật sắp xếp cột cho các bảng còn thiếu của phân hệ Nhân sự
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** rà 36 bảng của phân hệ Nhân sự thấy 21 bảng không bấm tiêu đề cột để xếp được, 9 bảng mới xếp được một phần, và trạng thái đơn nghỉ, nghỉ bù, thanh toán phép, đặt phòng đang xếp theo số mã nên phiếu trả về đứng sau phiếu từ chối.
+
+**Đã làm**
+- Duyệt sửa hồ sơ, Mẫu hợp đồng lao động, Biến mẫu, Phân bổ chính sách và thẻ Theo nhân sự của Quỹ phép xếp được tại máy chủ, tệp Excel xuất ra cùng thứ tự với bảng.
+- Trạng thái của đơn nghỉ, phiếu nghỉ bù, phiếu thanh toán phép và phiếu đặt phòng xếp theo đúng thứ tự các bước của phiếu.
+- Các bảng con trong trang chi tiết (nhân sự thuộc phòng ban, người giữ chức vụ, lịch phòng họp, đơn trong dòng quỹ) xếp được.
+- Thẻ Theo dòng quỹ, ba tab trong hồ sơ nhân sự, bảng xem trước phân bổ hàng loạt, hộp đối chiếu kết sổ và lịch nghỉ theo ngày xếp ngay ở trình duyệt; bảy danh mục bật thêm các cột còn thiếu.
+- Các cột hiện tên nhưng lưu mã số, các cột tính ra và các bảng so sánh trước sau cố ý không cho xếp; ô trống luôn nằm cuối.
+- Thêm bài kiểm backend cho từng bảng và bài kiểm giao diện; bài kiểm cũ của các module liên quan và cả thư mục Nhân sự ở giao diện đều qua.
+
+Mã nguồn: `backend/app/core/int_code_rank_sql.py`, `backend/app/modules/employee/change_request_sort.py`, `backend/app/modules/labor_contract/template_sort.py`, `variable_sort.py`, `backend/app/modules/leave/policy_assignment_sort.py`, `balance_matrix_sort.py`, `frontend-v2/src/modules/hr/hooks/use-local-table-sort.ts`, `utils/sort-leave-balance-groups.ts`, `test/backend/test_sap_xep_nhan_su_cr748.py`
+
 ## duoc-CR-745 | Nối màn Phân bổ chính sách với Quỹ phép năm và làm rõ hộp Phân bổ chính sách
 - status: xong
 - date: 2026-11-11

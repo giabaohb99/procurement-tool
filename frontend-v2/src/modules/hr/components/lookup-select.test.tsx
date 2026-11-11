@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LookupSelect } from './lookup-select'
@@ -10,51 +11,53 @@ const DANH_SACH = [
 
 describe('LookupSelect', () => {
   //  Lỗi khách báo 24/08/2026: chọn trưởng bộ phận (hoặc phòng ban của nhân sự),
-  //  bấm Lưu, ô trở lại "— Chưa chỉ định —" và dữ liệu mất thật trên máy chủ.
-  //
-  //  Radix dựng thêm một `<select>` nguyên bản ẩn. Danh mục nạp bất đồng bộ nên
-  //  có nhịp `value` đã là 5 mà `<option value="5">` chưa sinh ra; trình duyệt
-  //  thấy không option nào khớp thì kéo về rỗng và bắn `change` — Radix chuyển
-  //  tiếp thành `onValueChange("")`. `Number("")` = 0 ghi đè trường trong form,
-  //  lần Lưu kế tiếp gửi 0 xuống và xóa thật.
-  it('bỏ qua giá trị RỖNG do thẻ select ẩn của Radix bắn ra, không ghi đè trường', () => {
+  //  bấm Lưu, ô trở lại "— Chưa chỉ định —" và dữ liệu mất thật trên máy chủ. Gốc
+  //  lỗi là thẻ `<select>` ẩn của Radix tự bắn chuỗi rỗng khi danh mục về muộn.
+  //  duoc-CR-747 chuyển sang `SearchSelect` (không có thẻ ẩn) — bài này canh để
+  //  không ai đưa một ô chọn tự-bắn-change quay lại.
+  it('does not call onChange by itself when the catalog arrives after the value (old Radix data-loss bug)', () => {
     const doi = vi.fn()
-
-    //  Thẻ `<select>` ẩn chỉ được Radix dựng khi ô nằm TRONG một form — cũng
-    //  đúng bối cảnh thật: cả hai màn dính lỗi đều là form chi tiết.
-    render(
+    const { rerender } = render(
       <form>
         <LookupSelect value={5} onChange={doi} items={[]} placeholder="Chọn nhân sự" />
       </form>,
     )
-
-    //  Mô phỏng đúng nhịp hỏng: thẻ select ẩn bắn `change` với chuỗi rỗng.
-    const hidden = document.querySelector('select')
-    expect(hidden).not.toBeNull()
-    fireEvent.change(hidden as HTMLSelectElement, { target: { value: '' } })
-
-    expect(doi).not.toHaveBeenCalled()
-  })
-
-  it('người dùng chọn mục "bỏ chọn" thì VẪN báo 0 — đừng chặn nhầm', () => {
-    const doi = vi.fn()
-
-    render(
+    rerender(
       <form>
-        <LookupSelect
-          value={5}
-          onChange={doi}
-          items={DANH_SACH}
-          placeholder="Chọn nhân sự"
-          emptyLabel="— Chưa chỉ định —"
-        />
+        <LookupSelect value={5} onChange={doi} items={DANH_SACH} placeholder="Chọn nhân sự" />
       </form>,
     )
+    expect(document.querySelector('select')).toBeNull()
+    expect(doi).not.toHaveBeenCalled()
+    expect(screen.getByText('DEMO_MANAGER — Trưởng bộ phận')).toBeInTheDocument()
+  })
 
-    const hidden = document.querySelector('select') as HTMLSelectElement
-    fireEvent.change(hidden, { target: { value: '0' } })
-
+  it('still reports 0 when the user picks the "unassign" item', async () => {
+    const user = userEvent.setup()
+    const doi = vi.fn()
+    render(
+      <LookupSelect
+        value={5}
+        onChange={doi}
+        items={DANH_SACH}
+        placeholder="Chọn nhân sự"
+        emptyLabel="— Chưa chỉ định —"
+      />,
+    )
+    await user.click(screen.getByRole('combobox'))
+    await user.click(await screen.findByText('— Chưa chỉ định —'))
     expect(doi).toHaveBeenCalledWith(0)
+  })
+
+  it('filters the list by typing, ignoring Vietnamese diacritics', async () => {
+    const user = userEvent.setup()
+    const doi = vi.fn()
+    render(<LookupSelect value={0} onChange={doi} items={DANH_SACH} placeholder="Chọn nhân sự" />)
+    await user.click(screen.getByRole('combobox'))
+    await user.type(screen.getByPlaceholderText('Gõ để tìm…'), 'nhan vien')
+    expect(screen.queryByText('DEMO_MANAGER — Trưởng bộ phận')).not.toBeInTheDocument()
+    await user.click(screen.getByText('DEMONV — Nhân viên'))
+    expect(doi).toHaveBeenCalledWith(7)
   })
 
   it('giá trị đang lưu KHÔNG có trong danh sách thì vẫn hiện tên, không hiện trống', () => {
