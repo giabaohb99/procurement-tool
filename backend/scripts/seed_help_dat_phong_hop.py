@@ -270,7 +270,7 @@ Nháp  ───────────────────►  Chờ duy�
             "content": f"""<h2>Theo dõi, sửa và hủy phiếu đặt phòng</h2>
 
 <h2>Ô Phạm vi trong màn Phiếu đặt phòng họp</h2>
-<p>Màn chỉ có <strong>một bảng</strong>. Ô <strong>Phạm vi</strong> trên thanh công cụ chọn bảng đang bày phiếu nào:</p>
+<p>Màn chỉ có <strong>một bảng</strong>. Ô Phạm vi là <strong>ô chọn đầu tiên trên thanh công cụ</strong>, ngay sau ô tìm, lúc mới mở đang hiện <em>Tất cả</em>. Ô này <strong>không có nhãn chữ</strong>, chỉ hiện giá trị đang chọn; trên điện thoại nó nằm trong nút <strong>Bộ lọc</strong>, dòng <em>Phạm vi</em>. Ô chọn bảng đang bày phiếu nào:</p>
 <table>
 <thead><tr><th>Phạm vi</th><th>Chứa gì</th></tr></thead>
 <tbody>
@@ -286,7 +286,8 @@ Nháp  ───────────────────►  Chờ duy�
 <ul>
 <li>Ô tìm khớp <strong>số phiếu</strong> hoặc <strong>nội dung cuộc họp</strong>.</li>
 <li>Hai ô lọc: <strong>Phòng</strong> và <strong>Trạng thái</strong>.</li>
-<li>Cột bảng: <em>Trạng thái · Nội dung cuộc họp · Phòng · Ngày họp · Người đặt</em>. Chọn Phạm vi <em>Cần tôi duyệt</em> thì có thêm <em>Việc của tôi</em> và <strong>Hạn xử lý</strong>.</li>
+<li>Cột bảng: <em>Trạng thái · Nội dung cuộc họp · Phòng · Ngày họp · Người đặt</em>. Chọn Phạm vi <em>Cần tôi duyệt</em> thì có thêm <em>Luồng duyệt</em>, <em>Việc của tôi</em> và <strong>Hạn xử lý</strong>.</li>
+<li>Cột <strong>Luồng duyệt</strong> chỉ hiện ở hai phạm vi <em>Cần tôi duyệt</em> và <em>Tôi đã duyệt</em>: một dòng chữ cho biết phiếu đang ở đâu trong luồng, ví dụ <em>Đang ở chặng 1/2 · tên người đang giữ việc</em>, <em>Đã duyệt đủ 2/2 chặng</em> hoặc <em>Dừng ở chặng 2/2 · bị từ chối</em>.</li>
 </ul>
 <p>Đây cũng là chỗ <strong>nhìn xa hơn một ngày</strong> — lịch chỉ vẽ được một ngày, còn danh sách thì lọc theo phòng bao nhiêu ngày cũng được.</p>
 

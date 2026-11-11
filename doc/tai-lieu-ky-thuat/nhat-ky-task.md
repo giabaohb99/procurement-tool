@@ -194,6 +194,7 @@ Mã nguồn: `backend/app/modules/leave/policy_balance_links.py`, `policy_assign
 - Sửa bài Đặt phòng họp cho khớp màn hiện tại: màn Phiếu là một bảng với ô Phạm vi bốn lựa chọn; Phiếu của tôi gồm phiếu mình là người đặt và phiếu mình đặt hộ người khác; Phạm vi Tất cả đưa phiếu chờ mình duyệt lên đầu.
 - Cẩm nang trợ lý Đặt phòng họp thêm đoạn ô Phạm vi, ra phiên bản 2 ở local; tài liệu chức năng Đặt phòng họp lên bản 1.2.
 - Chạy seed hai lần ở local không lỗi; bài kiểm cẩm nang trợ lý qua hết. Chưa nạp chỉ mục trợ lý trên dev vì máy này không có đường vào dev.
+- Sửa câu chữ bài Theo dõi, sửa và hủy phiếu đặt phòng sau khi soát màn: ô Phạm vi không có nhãn chữ nên bài chỉ ra là ô chọn đầu tiên trên thanh công cụ, đang hiện Tất cả; thêm câu tả cột Luồng duyệt hiện ở hai phạm vi Cần tôi duyệt và Tôi đã duyệt. Cẩm nang trợ lý sửa cùng câu; chạy seed, nạp lại chỉ mục và đăng lại cẩm nang trên dev.
 
 Mã nguồn: `backend/scripts/seed_help_sap_xep_cot_cr744.py`, `backend/scripts/seed_help_dat_phong_hop.py`, `backend/app/modules/ai_skill/seed_handbook/50-dat-phong-hop.md`, `doc/tai-lieu-chuc-nang/18-dat-phong-hop.md`
 

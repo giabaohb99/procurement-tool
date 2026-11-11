@@ -91,7 +91,11 @@ thời gian — lưới không có chế độ tuần.
   Phòng ban và pháp nhân của phiếu lấy theo **người được đặt hộ**, không lấy theo
   người ngồi gõ.
 - **Màn Phiếu đặt phòng là một bảng, chọn ô *Phạm vi***: *Tất cả* · *Cần tôi duyệt* ·
-  *Phiếu của tôi* · *Tôi đã duyệt* (30 ngày gần đây). *Phiếu của tôi* = phiếu mình
+  *Phiếu của tôi* · *Tôi đã duyệt* (30 ngày gần đây). Ô này KHÔNG có nhãn chữ trên
+  màn máy tính: chỉ người dùng tới **ô chọn đầu tiên trên thanh công cụ, ngay sau ô
+  tìm (lúc mới mở đang hiện *Tất cả*)**; trên điện thoại nó nằm trong nút *Bộ lọc*.
+  Hai phạm vi *Cần tôi duyệt* và *Tôi đã duyệt* có thêm cột *Luồng duyệt*: một dòng
+  chữ phiếu đang ở chặng nào, ai đang giữ việc (vd *Đang ở chặng 1/2 · tên người*). *Phiếu của tôi* = phiếu mình
   là người đặt (kể cả được đặt hộ) **và** phiếu mình đặt hộ người khác. Người hỏi
   "sao không thấy phiếu tôi đặt cho sếp" thì chỉ họ chọn *Phiếu của tôi*.
 - **Phòng ngừng dùng thì không đặt được nữa** nhưng phiếu cũ vẫn đọc được. Muốn
