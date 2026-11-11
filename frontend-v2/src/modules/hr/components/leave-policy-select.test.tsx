@@ -33,9 +33,10 @@ describe('LeavePolicySelect', () => {
     renderSelect()
     expect(screen.getByText('Chưa có chính sách nào đang dùng')).toBeInTheDocument()
     expect(screen.getByRole('combobox')).toBeDisabled()
-    expect(screen.getByRole('link', { name: 'Thiết lập › Chính sách nghỉ phép' })).toHaveAttribute(
+    //  duoc-CR-750: gói chính sách rời Thiết lập, sang tab Chính sách của màn gộp — link đi thẳng tới tab đó.
+    expect(screen.getByRole('link', { name: 'Chính sách nghỉ phép › tab Chính sách' })).toHaveAttribute(
       'href',
-      '/hr/leave-policies',
+      '/hr/leave-policy-assignments?tab=policies',
     )
   })
 

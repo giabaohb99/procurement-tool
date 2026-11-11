@@ -84,8 +84,8 @@ Nhân sự khai ở *Thiết lập ▸ Loại nghỉ* (tab *Thông tin* / *Bậc
 ## Chính sách nghỉ phép và phân bổ (từ 03/11/2026)
 
 **Chính sách nghỉ phép** = gói *loại nghỉ → số ngày/năm* (ví dụ *Chính sách cấp quản lý*: Phép năm 15). Nhân sự khai ở
-*Nghỉ phép ▸ Thiết lập ▸ thẻ Chính sách nghỉ phép* (tab *Thông tin* · *Loại nghỉ & số ngày* · *Đang phân bổ*), rồi gán
-cho người ở menu ***Nghỉ phép ▸ Phân bổ chính sách*** (nút ***Phân bổ*** cho một người, ***Phân bổ hàng loạt*** tối đa 500
+menu ***Nghỉ phép ▸ Chính sách nghỉ phép*** — MỘT màn hai tab (từ 11/11/2026): tab ***Chính sách*** khai gói (chi tiết gói có
+*Thông tin* · *Loại nghỉ & số ngày* · *Đang phân bổ*), tab ***Phân bổ*** gán cho người (nút ***Phân bổ*** cho một người, ***Phân bổ hàng loạt*** tối đa 500
 người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
 
 - **Thứ tự hạn mức**: phân bổ chính sách của người > hình thức nhân viên > cấp bậc > hạn mức của loại. Loại **không có

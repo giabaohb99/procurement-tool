@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { buildLeavePolicyHubHref } from '../utils/leave-policy-hub-tabs'
 
 interface LeavePolicySelectProps {
   id: string
@@ -15,7 +15,8 @@ interface LeavePolicySelectProps {
 /**
  * Ô chọn chính sách nghỉ phép ĐANG DÙNG — dùng chung cho hộp Phân bổ một người và trang Phân bổ hàng loạt
  * (duoc-CR-744 lượt f). Danh sách rỗng thì ô tắt và nói thẳng là chưa có chính sách nào, kèm đường sang
- * Thiết lập > Chính sách nghỉ phép cho người có quyền tạo (`leave_type.write`, cùng tab đó). Trước đây ô vẫn
+ * tab Chính sách của màn Chính sách nghỉ phép cho người có quyền tạo (`leave_type.write`, cùng luật hiện tab đó —
+ * duoc-CR-750, trước đó là Thiết lập > Chính sách nghỉ phép). Trước đây ô vẫn
  * mời "Chọn chính sách đang dùng" rồi mở ra trống trơn, người dùng tưởng ô bị hỏng.
  */
 export function LeavePolicySelect({ id, policies, isLoading, value, onChange }: LeavePolicySelectProps) {
@@ -41,8 +42,8 @@ export function LeavePolicySelect({ id, policies, isLoading, value, onChange }: 
           {can('leave_type', 'write') ? (
             <>
               Tạo chính sách và để trạng thái đang dùng ở{' '}
-              <Link to={appRoutes.hr.leavePolicies} className="font-medium text-primary underline">
-                Thiết lập › Chính sách nghỉ phép
+              <Link to={buildLeavePolicyHubHref('policies')} className="font-medium text-primary underline">
+                Chính sách nghỉ phép › tab Chính sách
               </Link>
               .
             </>

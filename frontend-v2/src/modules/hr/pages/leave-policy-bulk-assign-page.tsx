@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { ArrowLeft, ListChecks, Loader2, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -24,6 +23,7 @@ import {
   validateBulkSettings,
 } from '../utils/leave-policy-bulk'
 import { buildLeaveTypeNameLookup } from '../utils/leave-policy-display'
+import { buildLeavePolicyHubHref } from '../utils/leave-policy-hub-tabs'
 
 /**
  * PHÂN BỔ HÀNG LOẠT — `/hr/leave-policy-assignments/bulk` (duoc-CR-717, kiểu Leave Control Panel của ERPNext).
@@ -116,7 +116,7 @@ export function LeavePolicyBulkAssignPage() {
             size="icon"
             title="Về danh sách phân bổ"
             aria-label="Về danh sách phân bổ"
-            onClick={() => navigate(appRoutes.hr.leavePolicyAssignments)}
+            onClick={() => navigate(buildLeavePolicyHubHref('assignments'))}
           >
             <ArrowLeft className="size-4" />
           </Button>

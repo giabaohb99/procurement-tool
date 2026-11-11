@@ -50,12 +50,8 @@ const SETTING_TABS: SectionTab[] = [
     path: appRoutes.hr.leaveBlocks,
     visible: (can) => can('leave_type', 'write'),
   },
-  {
-    // duoc-CR-717: gói "loại nghỉ → số ngày/năm", cũng gác khóa `leave_type` (D4a, không thêm khóa).
-    label: 'Chính sách nghỉ phép',
-    path: appRoutes.hr.leavePolicies,
-    visible: (can) => can('leave_type', 'write'),
-  },
+  //  duoc-CR-750: tab "Chính sách nghỉ phép" (duoc-CR-717) đã RỜI khỏi đây — gói chính sách nay là tab
+  //  "Chính sách" của màn Nghỉ phép › Chính sách nghỉ phép, cạnh tab "Phân bổ" (`leave-policy-hub-page.tsx`).
 ]
 
 /** Đang đứng ở màn của tab này chưa — kể cả các đường con của nó. */
@@ -90,7 +86,8 @@ export function LeaveSectionTabs({ sticky = false }: LeaveSectionTabsProps) {
   )
 }
 
-function SubTabLink({
+/** Một tab gạch chân dạng LINK — dùng chung với thanh tab của màn Chính sách nghỉ phép (duoc-CR-750). */
+export function SubTabLink({
   to,
   children,
   active,

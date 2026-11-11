@@ -581,11 +581,17 @@ export const appRoutes = {
     leaveBlocks: '/hr/leave-blocks',
     leaveBlockNew: '/hr/leave-blocks/new',
     leaveBlockDetail: (id: number | string) => `/hr/leave-blocks/${id}`,
-    /** Chính sách nghỉ phép (duoc-CR-717): gói "loại nghỉ → số ngày/năm", thẻ thứ 4 của Thiết lập. */
+    /**
+     * Chính sách nghỉ phép (duoc-CR-717): gói "loại nghỉ → số ngày/năm". Từ duoc-CR-750 danh sách gói là tab
+     * Chính sách của màn `leavePolicyAssignments`; đường danh sách cũ chỉ còn chuyển hướng về đó.
+     */
     leavePolicies: '/hr/leave-policies',
     leavePolicyNew: '/hr/leave-policies/new',
     leavePolicyDetail: (id: number | string) => `/hr/leave-policies/${id}`,
-    /** Phân bổ chính sách cho nhân sự (duoc-CR-717) — mục con của Nghỉ phép; trang hàng loạt nằm DƯỚI nó. */
+    /**
+     * Màn CHÍNH SÁCH NGHỈ PHÉP (duoc-CR-750): `?tab=assignments` (phân bổ, duoc-CR-717) · `?tab=policies` (gói).
+     * Giữ đường của màn phân bổ cũ cho link cũ khỏi chết; trang hàng loạt nằm DƯỚI nó.
+     */
     leavePolicyAssignments: '/hr/leave-policy-assignments',
     leavePolicyBulkAssign: '/hr/leave-policy-assignments/bulk',
     /** Lịch làm việc: mẫu lịch tuần (trang riêng vì form dài) và việc gán lịch theo cấp. */

@@ -26,7 +26,7 @@ interface LeaveBalancePolicyNoteProps {
  * không dựng gì — nói "không có chính sách nào" khi thật ra là không tải được thì sai sự thật.
  *
  * Gác `leave_balance.read` (khóa của phân bổ); thiếu quyền thì không dựng gì, không gọi API. Liên kết sang
- * gói chỉ hiện khi QUẢN LÝ được loại nghỉ (`canManageEntity('leave_type')`, đúng luật của thẻ Thiết lập —
+ * gói chỉ hiện khi QUẢN LÝ được loại nghỉ (`canManageEntity('leave_type')`, đúng mục ẩn gác `/hr/leave-policies/*` —
  * route gói gác quyền quản lý, chỉ có `read` thì bấm vào là 403); còn lại tên gói là chữ thường.
  */
 export function LeaveBalancePolicyNote({ employeeId, leaveTypeId, year }: LeaveBalancePolicyNoteProps) {

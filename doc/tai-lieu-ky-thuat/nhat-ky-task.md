@@ -130,6 +130,37 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-750 | Gộp thiết lập chính sách và phân bổ chính sách nghỉ phép vào một màn
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** chính sách nghỉ phép khai ở Thiết lập còn phân bổ nằm ở một mục menu khác, người dùng phải nhảy qua lại nên thấy lan man.
+
+**Đã làm**
+- Gộp thành một màn Chính sách nghỉ phép có hai tab Phân bổ và Chính sách, nút trên đầu trang đổi theo tab, thay cho mục menu Phân bổ chính sách.
+- Bỏ thẻ Chính sách khỏi Thiết lập; đường dẫn cũ vẫn mở được và tự chuyển về đúng tab, trang chi tiết chính sách và trang phân bổ hàng loạt quay lại đúng tab.
+- Quyền giữ như cũ: tab Phân bổ cho người được sửa quỹ phép, tab Chính sách cho người được sửa loại nghỉ, mục menu hiện khi có một trong hai.
+- Cập nhật bài hướng dẫn sử dụng Nghỉ phép, cẩm nang trợ lý và tài liệu kỹ thuật; bài kiểm giao diện thư mục Nhân sự qua.
+
+Mã nguồn: `frontend-v2/src/modules/hr/pages/leave-policy-hub-page.tsx`, `components/leave-policy-hub-tabs.tsx`, `utils/leave-policy-hub-tabs.ts`, `pages/leave-policies-legacy-redirect.tsx`, `routes.tsx`, `components/leave-section-tabs.tsx`
+
+## duoc-CR-749 | Kiểm lại Quỹ phép năm với Chính sách nghỉ phép và sửa lỗi cấp quỹ song song
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** cần chắc rằng Quỹ phép năm và Phân bổ chính sách nghỉ phép không bị trùng hay chồng chéo nhau.
+
+**Đã làm**
+- Chạy thật mười sáu kịch bản trên dữ liệu thử ở máy local: chồng phân bổ, trùng dòng quỹ, điều chỉnh tay so với phân bổ, đổi chính sách giữa năm, kết thúc, xóa, bỏ tính lại, sửa số trong chính sách, phân bổ từ ngày vào làm, cấp quỹ năm sau và ba màn hiện cùng một con số; tất cả đều đúng.
+- Tìm ra một lỗi: hai người bấm Cấp quỹ cùng lúc thì một người nhận lỗi hệ thống dù dữ liệu không sai; đã sửa để lượt đó tự chạy lại, vẫn vướng thì báo bằng lời.
+- Thêm bài kiểm cho lỗi trên và ghi báo cáo kiểm thử.
+
+Mã nguồn: `backend/app/modules/leave/balance_controller.py`, `test/backend/test_cap_quy_dong_thoi_cr749.py`
+
 ## duoc-CR-747 | Ô chọn ở hồ sơ nhân sự gõ tìm được
 - status: xong
 - date: 2026-11-11

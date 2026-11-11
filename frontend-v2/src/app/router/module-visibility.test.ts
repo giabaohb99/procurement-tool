@@ -474,16 +474,26 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       }
     })
 
-    it('/hr/leave-policy-assignments (duoc-CR-717): cả danh sách lẫn trang hàng loạt cần leave_balance.write — chỉ nhân sự', () => {
+    it('/hr/leave-policy-assignments (duoc-CR-750): the merged screen opens with leave_balance.write OR leave_type.write, never with read only', () => {
       const list = '/hr/leave-policy-assignments'
-      const bulk = '/hr/leave-policy-assignments/bulk'
       //  Seed cấp `leave_balance.read` (phạm vi "của tôi") cho MỌI nhân viên — gác `read` là ai cũng vào được.
       expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read'] }))).toBe(false)
       expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
-      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['write'] }))).toBe(false)
+      //  Người khai gói (trước ở Thiết lập) nay vào màn gộp để mở tab Chính sách.
+      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['write'] }))).toBe(true)
+      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['read'] }))).toBe(false)
+      //  Chỉ tạo / chỉ xóa không mở màn: luật là `write` trên TỪNG khóa, không phải `manage`.
+      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['create'], leave_balance: ['delete'] }))).toBe(false)
+      expect(canAccessRoute(hr, list, makeCan({ leave_request: ['read', 'create', 'write'] }))).toBe(false)
       expect(canAccessRoute(hr, list, makeCan({}))).toBe(false)
+    })
+
+    it('/hr/leave-policy-assignments/bulk (duoc-CR-717): bulk page stays leave_balance.write only, even for policy writers', () => {
+      const bulk = '/hr/leave-policy-assignments/bulk'
       expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read'] }))).toBe(false)
       expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
+      //  Mục ẩn dài hơn thắng: vào được màn gộp nhờ `leave_type.write` KHÔNG kéo theo trang hàng loạt.
+      expect(canAccessRoute(hr, bulk, makeCan({ leave_type: ['write'] }))).toBe(false)
       expect(canAccessRoute(hr, bulk, makeCan({}))).toBe(false)
     })
 
@@ -517,17 +527,17 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Lịch nghỉ'])
     })
 
-    it('chỉ ĐỌC quỹ phép (seed cấp cho mọi nhân viên): thấy Quỹ phép năm, KHÔNG thấy Phân bổ chính sách (duoc-CR-717)', () => {
+    it('chỉ ĐỌC quỹ phép (seed cấp cho mọi nhân viên): thấy Quỹ phép năm, KHÔNG thấy Chính sách nghỉ phép (duoc-CR-717/750)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu).toBeDefined()
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
     })
 
-    it('người quản lý quỹ phép (leave_balance.write): thấy Quỹ phép năm + Phân bổ chính sách (duoc-CR-717)', () => {
+    it('người quản lý quỹ phép (leave_balance.write): thấy Quỹ phép năm + Chính sách nghỉ phép (duoc-CR-750)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read', 'write'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
-      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Phân bổ chính sách'])
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Chính sách nghỉ phép'])
     })
 
     it('chỉ có leave_encashment.read (duoc-CR-719): thấy đúng mục Thanh toán nghỉ phép', () => {
@@ -555,11 +565,11 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       ])
     })
 
-    it('người quản lý danh mục (leave_type:write): chỉ thấy Thiết lập', () => {
+    it('người quản lý danh mục (leave_type:write): thấy Chính sách nghỉ phép (tab Chính sách) + Thiết lập (duoc-CR-750)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_type: ['write'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu).toBeDefined()
-      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Thiết lập'])
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Chính sách nghỉ phép', 'Thiết lập'])
     })
 
     it('quản trị viên nhân sự có đủ mọi quyền: thấy trọn vẹn 4 mục', () => {
@@ -579,7 +589,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
         'Đơn nghỉ phép',
         'Lịch nghỉ',
         'Quỹ phép năm',
-        'Phân bổ chính sách',
+        'Chính sách nghỉ phép',
         'Thiết lập',
       ])
     })

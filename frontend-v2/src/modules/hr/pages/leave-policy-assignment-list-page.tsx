@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Plus, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { useCrudList } from '@/shared/crud'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
@@ -27,17 +28,33 @@ import { buildLeavePolicyAssignmentColumns } from '../config/leave-policy-assign
 import { useCompanies } from '../hooks/use-companies'
 import { useLeavePolicyAssignments } from '../hooks/use-leave-policy'
 import type { LeavePolicy, LeavePolicyAssignment } from '../types/leave-policy'
+import { LEAVE_POLICY_HUB_TITLE } from '../utils/leave-policy-hub-tabs'
 import { ASSIGNMENT_ACTIVE_TODAY, ASSIGNMENT_FILTER_ALL as ALL } from '../utils/leave-policy-assignment-filters'
 import { todayInVietnamISO } from '../utils/work-roster-range'
 
+interface LeavePolicyAssignmentListPageProps {
+  /** Thanh tab của màn Chính sách nghỉ phép — chèn giữa tiêu đề và bảng (cùng khe của `CrudListPage`). */
+  beforeContent?: ReactNode
+  /** Class ghim thanh công cụ ở khổ điện thoại, mốc `top` theo dải nằm trên (`list-sticky.ts`). */
+  toolbarClassName?: string
+}
+
 /**
- * PHÂN BỔ CHÍNH SÁCH — `/hr/leave-policy-assignments` (duoc-CR-717, mục con của Nghỉ phép sau Quỹ phép năm).
+ * Tab PHÂN BỔ của màn Chính sách nghỉ phép — `/hr/leave-policy-assignments?tab=assignments` (duoc-CR-717 dựng thành
+ * màn riêng "Phân bổ chính sách"; duoc-CR-750 gom làm tab, `leave-policy-hub-page.tsx` dựng nó).
  *
- * Route gác `leave_balance.write` (mục menu — chỉ nhân sự, xem `routes.tsx`); các nút ghi vẫn tự gác `write`
- * phòng khi trang được dựng ở chỗ khác. Ô "Trạng thái" lọc phân bổ CÒN HIỆU LỰC HÔM NAY (`active_on`, giờ VN),
- * cột Trạng thái đọc `state` của backend. Dòng của chính người đang đăng nhập không có nút Kết thúc / Xóa (D5).
+ * Tiêu đề trang vẫn do chính màn này vẽ để hai nút Phân bổ · Phân bổ hàng loạt nằm ở đầu trang và đổi theo tab
+ * (tab Chính sách thì `CrudListPage` vẽ tiêu đề kèm nút Thêm chính sách).
+ *
+ * Route gác `leave_balance.write` HOẶC `leave_type.write` (mục menu, xem `routes.tsx`); tab này chỉ dựng khi có
+ * `leave_balance.write`, các nút ghi vẫn tự gác `write` phòng khi trang được dựng ở chỗ khác. Ô "Trạng thái" lọc phân
+ * bổ CÒN HIỆU LỰC HÔM NAY (`active_on`, giờ VN), cột Trạng thái đọc `state` của backend. Dòng của chính người đang
+ * đăng nhập không có nút Kết thúc / Xóa (D5).
  */
-export function LeavePolicyAssignmentListPage() {
+export function LeavePolicyAssignmentListPage({
+  beforeContent,
+  toolbarClassName,
+}: LeavePolicyAssignmentListPageProps = {}) {
   const navigate = useNavigate()
   const { can } = usePermission()
   const canWrite = can('leave_balance', 'write')
@@ -96,15 +113,17 @@ export function LeavePolicyAssignmentListPage() {
   )
 
   const filtered = Boolean(debouncedValue) || policyId !== ALL || active !== ALL || companyId !== ALL
+  //  Dải ghim đầu trang chỉ đổ bóng khi đã cuộn — cùng khuôn `CrudListPage` (tab Chính sách) để hai tab giống nhau.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
 
   return (
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
-        title="Phân bổ chính sách"
+        title={LEAVE_POLICY_HUB_TITLE}
         description={
           <span className="max-md:hidden">
-            Gán chính sách nghỉ phép cho từng nhân sự theo khoảng ngày. Người không có phân bổ nhận hạn mức của loại
-            nghỉ.
+            Gán chính sách cho từng nhân sự theo khoảng ngày. Người không có phân bổ nhận hạn mức của loại nghỉ.
           </span>
         }
         actions={
@@ -124,46 +143,51 @@ export function LeavePolicyAssignmentListPage() {
         actionsClassName="max-md:[&>button]:flex-1"
       />
 
-      <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
-        <DataTable
-          fillHeight
-          columns={columns}
-          rows={data?.items}
-          getRowId={(a) => a.id}
-          isLoading={isLoading}
-          isError={isError}
-          emptyMessage={filtered ? 'Không có phân bổ nào khớp bộ lọc.' : 'Chưa phân bổ chính sách cho ai.'}
-          storageKey="hr.leave-policy-assignments"
-          sortBy={sortBy}
-          sortDir={sortDir}
-          onSortChange={handleSortChange}
-          mobileCard={(a) => (
-            <LeavePolicyAssignmentMobileCard assignment={a} actions={canWrite ? renderActions(a) : undefined} />
-          )}
-          pagination={{
-            page,
-            pageSize,
-            total: data?.total ?? 0,
-            onPageChange: setPage,
-            onPageSizeChange: setPageSize,
-            unitLabel: 'phân bổ',
-          }}
-          toolbar={
-            <LeavePolicyAssignmentListToolbar
-              keyword={keyword}
-              onKeywordChange={setKeyword}
-              policyId={policyId}
-              onPolicyIdChange={setPolicyId}
-              policies={policyData?.items ?? []}
-              active={active}
-              onActiveChange={setActive}
-              companies={canReadCompany ? (companies?.items ?? []) : undefined}
-              companyId={companyId}
-              onCompanyIdChange={setCompanyId}
-            />
-          }
-        />
-      </Card>
+      <div ref={stickyRef} data-scrolled={scrolled ? '' : undefined} className="group flex min-h-0 flex-1 flex-col">
+        {beforeContent}
+
+        <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
+          <DataTable
+            fillHeight
+            columns={columns}
+            rows={data?.items}
+            getRowId={(a) => a.id}
+            isLoading={isLoading}
+            isError={isError}
+            emptyMessage={filtered ? 'Không có phân bổ nào khớp bộ lọc.' : 'Chưa phân bổ chính sách cho ai.'}
+            storageKey="hr.leave-policy-assignments"
+            toolbarClassName={toolbarClassName}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={handleSortChange}
+            mobileCard={(a) => (
+              <LeavePolicyAssignmentMobileCard assignment={a} actions={canWrite ? renderActions(a) : undefined} />
+            )}
+            pagination={{
+              page,
+              pageSize,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              unitLabel: 'phân bổ',
+            }}
+            toolbar={
+              <LeavePolicyAssignmentListToolbar
+                keyword={keyword}
+                onKeywordChange={setKeyword}
+                policyId={policyId}
+                onPolicyIdChange={setPolicyId}
+                policies={policyData?.items ?? []}
+                active={active}
+                onActiveChange={setActive}
+                companies={canReadCompany ? (companies?.items ?? []) : undefined}
+                companyId={companyId}
+                onCompanyIdChange={setCompanyId}
+              />
+            }
+          />
+        </Card>
+      </div>
 
       <LeavePolicyAssignDialog open={assignOpen} onOpenChange={setAssignOpen} />
       <LeavePolicyAssignmentEndDialog assignment={ending} onClose={() => setEnding(null)} />

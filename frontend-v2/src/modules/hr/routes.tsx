@@ -147,7 +147,8 @@ export const hrModule: ErpModule = {
     //   1. Đơn nghỉ phép (leaveRequests)
     //   2. Lịch nghỉ (leaveCalendar)
     //   3. Quỹ phép năm (leaveBalances)
-    //   4. Thiết lập (leaveTypes + holidays)
+    //   4. Chính sách nghỉ phép (tab Phân bổ + tab Chính sách, duoc-CR-750)
+    //   5. Thiết lập (leaveTypes + holidays + leaveBlocks)
     {
       label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
@@ -212,16 +213,21 @@ export const hrModule: ErpModule = {
           entity: 'leave_balance',
         },
         {
-          //  duoc-CR-717. ⚠️ `entity` + `action` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ).
-          //  Gác `leave_balance.WRITE` chứ không `read`: seed cấp `leave_balance.read` phạm vi "của tôi" cho
-          //  MỌI nhân viên, gác `read` là ai cũng thấy mục này — màn này là việc của nhân sự (đại ca chốt
-          //  03/11/2026). Trang hàng loạt có mục ẩn riêng, cùng gác `write`.
-          label: 'Phân bổ chính sách',
+          //  duoc-CR-750: màn gộp HAI TAB — Phân bổ (`leave_balance.write`) · Chính sách (`leave_type.write`) — thay
+          //  mục "Phân bổ chính sách" (duoc-CR-717) và tab thứ tư của Thiết lập. ⚠️ Mục này LÀ hàng rào của route
+          //  (gác điều hướng mặc định MỞ), nên phải hiện khi có ÍT NHẤT một trong hai quyền và tắt khi thiếu cả hai:
+          //  `entities` = "bất kỳ khóa nào", `action: 'write'` áp cho TỪNG khóa (`module-visibility.entityAllowed`) —
+          //  ra đúng `leave_balance.write || leave_type.write`, cùng luật hiện tab ở `utils/leave-policy-hub-tabs.ts`
+          //  (bài kiểm canh hai luật bằng nhau). KHÔNG gác `read`: seed cấp `leave_balance.read` phạm vi "của tôi" cho
+          //  MỌI nhân viên (đại ca chốt 03/11/2026). Không dùng `manage` vì nó mở cả người chỉ có `create`/`delete`
+          //  trên quỹ phép, rộng hơn màn phân bổ cũ. Trang hàng loạt có mục ẩn riêng gác `leave_balance.write`;
+          //  chi tiết / thêm gói (`/hr/leave-policies/*`) có mục ẩn riêng gác quản lý `leave_type`.
+          label: 'Chính sách nghỉ phép',
           path: appRoutes.hr.leavePolicyAssignments,
-          icon: UserCheck,
-          entity: 'leave_balance',
+          icon: ScrollText,
+          entities: ['leave_balance', 'leave_type'],
           action: 'write',
-          matchPaths: [appRoutes.hr.leavePolicyBulkAssign],
+          matchPaths: [appRoutes.hr.leavePolicyBulkAssign, appRoutes.hr.leavePolicies],
         },
         {
           label: 'Thiết lập',
@@ -229,7 +235,7 @@ export const hrModule: ErpModule = {
           icon: CalendarDays,
           entities: ['leave_type', 'holiday'],
           manage: true,
-          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks, appRoutes.hr.leavePolicies],
+          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks],
         },
       ],
     },
@@ -251,11 +257,12 @@ export const hrModule: ErpModule = {
       manage: true,
       hidden: true,
     },
-    //  duoc-CR-717: hai mục ẩn làm hàng rào route. Chính sách nghỉ phép gác `leave_type` (cùng Thiết lập);
-    //  trang Phân bổ hàng loạt nằm DƯỚI `/hr/leave-policy-assignments` nhưng cần quyền GHI — mục ẩn dài hơn
-    //  thắng (gác khớp đường dài nhất), nên người chỉ có `leave_balance.read` không mở được trang đó.
+    //  duoc-CR-717: hai mục ẩn làm hàng rào route. `/hr/leave-policies/*` (thêm gói, chi tiết gói, và đường cũ của
+    //  danh sách — nay chuyển hướng về tab Chính sách, duoc-CR-750) gác quản lý `leave_type`; trang Phân bổ hàng loạt
+    //  nằm DƯỚI `/hr/leave-policy-assignments` nhưng chỉ dành cho người GHI quỹ phép — mục ẩn dài hơn thắng (gác khớp
+    //  đường dài nhất), nên người chỉ có `leave_type.write` (vào được màn gộp) không mở được trang đó.
     {
-      label: 'Chính sách nghỉ phép',
+      label: 'Chi tiết chính sách nghỉ phép',
       path: appRoutes.hr.leavePolicies,
       icon: ScrollText,
       entity: 'leave_type',
@@ -518,13 +525,14 @@ export const hrModule: ErpModule = {
         Component: (await import('./pages/leave-block-detail-page')).LeaveBlockDetailPage,
       }),
     },
-    //  ── Chính sách nghỉ phép + Phân bổ chính sách (duoc-CR-717) ──────────────
-    //  Hàng rào: mục ẩn "Chính sách nghỉ phép" (`leave_type`), mục "Phân bổ chính sách" và mục ẩn
-    //  "Phân bổ hàng loạt" (cả hai `leave_balance` + write).
+    //  ── Chính sách nghỉ phép (duoc-CR-717, gộp hai tab ở duoc-CR-750) ──────────────
+    //  Hàng rào: mục "Chính sách nghỉ phép" (`leave_balance` hoặc `leave_type`, write), mục ẩn "Chi tiết chính
+    //  sách nghỉ phép" (quản lý `leave_type`) và mục ẩn "Phân bổ hàng loạt" (`leave_balance.write`).
     {
+      //  Đường CŨ của danh sách gói → tab Chính sách. Giữ cho dấu trang / HDSD / tin cũ.
       path: appRoutes.hr.leavePolicies,
       lazy: async () => ({
-        Component: (await import('./pages/leave-policy-list-page')).LeavePolicyListPage,
+        Component: (await import('./pages/leave-policies-legacy-redirect')).LeavePoliciesLegacyRedirect,
       }),
     },
     {
@@ -541,10 +549,11 @@ export const hrModule: ErpModule = {
       }),
     },
     {
+      //  Màn gộp hai tab — giữ đường của màn phân bổ cũ nên mọi link `?policy_id=` cũ vẫn mở đúng (tab Phân bổ là
+      //  tab mặc định của người có quyền phân bổ).
       path: appRoutes.hr.leavePolicyAssignments,
       lazy: async () => ({
-        Component: (await import('./pages/leave-policy-assignment-list-page'))
-          .LeavePolicyAssignmentListPage,
+        Component: (await import('./pages/leave-policy-hub-page')).LeavePolicyHubPage,
       }),
     },
     {

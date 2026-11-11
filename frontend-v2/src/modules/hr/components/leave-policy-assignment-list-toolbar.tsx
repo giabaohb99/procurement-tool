@@ -21,7 +21,7 @@ interface LeavePolicyAssignmentListToolbarProps {
   onCompanyIdChange: (value: string) => void
 }
 
-/** Thanh lọc của màn Phân bổ chính sách (duoc-CR-717): tìm · chính sách · hiệu lực hôm nay · pháp nhân. */
+/** Thanh lọc của tab Phân bổ, màn Chính sách nghỉ phép (duoc-CR-717): tìm · chính sách · hiệu lực hôm nay · pháp nhân. */
 export function LeavePolicyAssignmentListToolbar({
   keyword,
   onKeywordChange,

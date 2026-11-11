@@ -37,7 +37,7 @@ export function buildLeaveBalanceMatrixColumns(
       cell: (r) => r.department_name || <span className="text-muted-foreground">Chưa gắn</span>,
     },
     {
-      //  duoc-CR-745: chính sách nào đang quyết định hạn mức — nối sang màn Phân bổ chính sách.
+      //  duoc-CR-745: chính sách nào đang quyết định hạn mức — nối sang tab Phân bổ của màn Chính sách nghỉ phép.
       key: 'policy',
       header: 'Chính sách',
       width: 190,

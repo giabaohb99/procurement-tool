@@ -7,11 +7,13 @@ import { Badge } from '@/shared/ui/badge'
 import { LeavePolicyAssignmentsTab } from '../components/leave-policy-assignments-tab'
 import { LeavePolicyLinesCard } from '../components/leave-policy-lines-card'
 import type { LeavePolicy } from '../types/leave-policy'
+import { buildLeavePolicyHubHref, LEAVE_POLICY_HUB_TAB_PARAM, LEAVE_POLICY_HUB_TITLE } from '../utils/leave-policy-hub-tabs'
 
 /**
  * CHÍNH SÁCH NGHỈ PHÉP (duoc-CR-717) — gói "loại nghỉ → số ngày mỗi năm", chép ý Leave Policy của ERPNext.
  *
- * Gán gói cho người ở màn "Phân bổ chính sách". Lúc cấp quỹ, hạn mức lấy theo thứ tự: phân bổ chính sách
+ * Danh sách gói là tab "Chính sách" của màn Nghỉ phép › Chính sách nghỉ phép, gán gói cho người ở tab "Phân bổ" cùng
+ * màn (duoc-CR-750, trước đó là tab thứ tư của Thiết lập + màn riêng "Phân bổ chính sách"). Lúc cấp quỹ, hạn mức lấy theo thứ tự: phân bổ chính sách
  * của người → hạn mức theo nhóm (hình thức NV, cấp bậc) → "Hạn mức mỗi năm" của loại nghỉ (D1a).
  * Khóa quyền dùng chung `leave_type` — cùng "Thiết lập" nghỉ phép (D4a, không thêm khóa).
  *
@@ -34,12 +36,14 @@ const policyChips = (p: LeavePolicy) => [
 export const LEAVE_POLICY_CRUD_CONFIG: CrudConfig<LeavePolicy> = {
   entity: 'leave_type',
   auditEntity: 'leave_policy',
-  title: 'Chính sách nghỉ phép',
-  description: 'Gói số ngày phép mỗi năm theo loại nghỉ, gán cho từng nhân sự ở màn Phân bổ chính sách.',
+  title: LEAVE_POLICY_HUB_TITLE,
+  description: 'Gói số ngày phép mỗi năm theo loại nghỉ, gán cho từng nhân sự ở tab Phân bổ.',
   unitLabel: 'chính sách',
   apiPath: '/api/leave-policies',
   storageKey: 'hr.leave-policies',
-  listRoute: appRoutes.hr.leavePolicies,
+  //  duoc-CR-750: nút quay lại / xóa xong ở trang chi tiết về đúng tab Chính sách của màn gộp. Đường cũ
+  //  `/hr/leave-policies` vẫn chạy (chuyển hướng sang đây) nhưng đi thẳng thì khỏi một nhịp chuyển.
+  listRoute: buildLeavePolicyHubHref('policies'),
   detailRoute: (id) => appRoutes.hr.leavePolicyDetail(id),
   createRoute: appRoutes.hr.leavePolicyNew,
   detailLayout: 'flat',
@@ -93,6 +97,9 @@ export const LEAVE_POLICY_CRUD_CONFIG: CrudConfig<LeavePolicy> = {
     },
   ],
   filterConfig: {
+    //  ⚠️ Bấm "Áp dụng" bộ lọc nâng cao VIẾT LẠI cả chuỗi truy vấn, chỉ chừa tham số khai ở đây — thiếu `tab` thì
+    //  người có cả hai quyền lọc xong bị đá về tab Phân bổ (tab mặc định), duoc-CR-750.
+    preserveParams: [LEAVE_POLICY_HUB_TAB_PARAM],
     fields: [
       { name: 'code', label: 'Mã chính sách', type: 'text' },
       { name: 'name', label: 'Tên chính sách', type: 'text' },

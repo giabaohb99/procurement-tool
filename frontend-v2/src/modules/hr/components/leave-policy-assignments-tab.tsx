@@ -15,12 +15,12 @@ interface LeavePolicyAssignmentsTabProps {
 
 /**
  * Tab "Đang phân bổ" của một chính sách (duoc-CR-717) — bảng CHỈ ĐỌC: ai đang / đã / sắp được gán gói
- * này. Sửa (kết thúc, xóa) làm ở màn Phân bổ chính sách — bấm dòng là sang đó, đã lọc sẵn.
+ * này. Sửa (kết thúc, xóa) làm ở tab Phân bổ của màn Chính sách nghỉ phép — bấm dòng là sang đó, đã lọc sẵn.
  *
  * Gác `leave_balance.read` (khóa của phân bổ), không phải `leave_type`: người khai danh mục chưa chắc
  * được xem phân bổ của từng người. Thiếu quyền thì KHÔNG gọi API (mount là ăn lỗi 403).
  *
- * Dòng chỉ BẤM ĐƯỢC khi có `leave_balance.write` — màn Phân bổ chính sách gác `write` (chỉ nhân sự), chỉ
+ * Dòng chỉ BẤM ĐƯỢC khi có `leave_balance.write` — tab Phân bổ gác `write` (chỉ nhân sự), chỉ
  * đọc mà vẫn cho bấm là dẫn người ta tới trang bị chặn.
  */
 export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTabProps) {
@@ -56,7 +56,7 @@ export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTa
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         Ai đang, đã hoặc sắp được gán chính sách này.
-        {canOpenList && ' Bấm một dòng để kết thúc hoặc xóa ở màn Phân bổ chính sách.'}
+        {canOpenList && ' Bấm một dòng để kết thúc hoặc xóa ở tab Phân bổ của màn Chính sách nghỉ phép.'}
       </p>
       <DataTable
         columns={columns}
@@ -74,7 +74,7 @@ export function LeavePolicyAssignmentsTab({ policyId }: LeavePolicyAssignmentsTa
         }}
         onRowClick={canOpenList ? (a) => navigate(buildAssignmentListHref(policyId, a)) : undefined}
         getRowHref={canOpenList ? (a) => buildAssignmentListHref(policyId, a) : undefined}
-        //  Khổ điện thoại: dùng lại thẻ của màn Phân bổ chính sách (duoc-CR-721), KHÔNG truyền nút — tab này
+        //  Khổ điện thoại: dùng lại thẻ của tab Phân bổ (duoc-CR-721), KHÔNG truyền nút — tab này
         //  chỉ đọc, kết thúc / xóa làm ở màn kia; có quyền mở thì cả thẻ là vùng bấm sang đó.
         mobileCard={(a) => <LeavePolicyAssignmentMobileCard assignment={a} showPolicy={false} />}
         pagination={{

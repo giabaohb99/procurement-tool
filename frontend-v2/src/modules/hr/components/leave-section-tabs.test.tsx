@@ -101,35 +101,28 @@ describe('LeaveSectionTabs', () => {
     expect(activeLabels()).toEqual(['Ngày cấm nghỉ'])
   })
 
-  it('duoc-CR-717: shows the 4th tab "Chính sách nghỉ phép" to leave_type writers, lit on its own screens', () => {
+  it('duoc-CR-750: Settings no longer carries the policy tab — it moved to the Leave policy screen', () => {
     grants = NHAN_SU
-    build(appRoutes.hr.leavePolicyDetail(3))
+    build(appRoutes.hr.leaveTypes)
     expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual([
       'Loại nghỉ',
       'Lịch ngày lễ',
       'Ngày cấm nghỉ',
-      'Chính sách nghỉ phép',
     ])
-    expect(activeLabels()).toEqual(['Chính sách nghỉ phép'])
   })
 
-  it('duoc-CR-717: hides the policy tab without leave_type.write even when other setting tabs are visible', () => {
-    //  `leave_type.read` (chỉ đọc) KHÔNG đủ: còn mỗi tab "Lịch ngày lễ", một tab thì thanh ẩn hẳn.
-    grants = [...NHAN_VIEN, 'holiday.write', 'leave_type.read']
-    const { container } = render(
-      <MemoryRouter initialEntries={[appRoutes.hr.leavePolicies]}>
-        <LeaveSectionTabs />
-      </MemoryRouter>,
-    )
-    expect(screen.queryByRole('link', { name: 'Chính sách nghỉ phép' })).not.toBeInTheDocument()
-    expect(container).toBeEmptyDOMElement()
-  })
-
-  it('duoc-CR-717: the policy path does not light "Loại nghỉ" by prefix accident', () => {
-    //  `/hr/leave-policies` không bắt đầu bằng `/hr/leave-types` — nhưng canh luôn để ai đổi tên đường
-    //  thành tiền tố của đường khác thì đỏ ngay.
+  it('duoc-CR-750: policy detail pages no longer draw the Settings bar (they belong to the Leave policy screen)', () => {
+    //  Trước CR này `/hr/leave-policies/:id` sáng tab thứ tư của Thiết lập; nay nó thuộc màn Chính sách nghỉ phép,
+    //  dựng thanh Thiết lập ở đó là chỉ sai chỗ.
     grants = NHAN_SU
-    build(appRoutes.hr.leavePolicies)
-    expect(activeLabels()).toEqual(['Chính sách nghỉ phép'])
+    for (const path of [appRoutes.hr.leavePolicies, appRoutes.hr.leavePolicyDetail(3)]) {
+      const { container, unmount } = render(
+        <MemoryRouter initialEntries={[path]}>
+          <LeaveSectionTabs />
+        </MemoryRouter>,
+      )
+      expect(container).toBeEmptyDOMElement()
+      unmount()
+    }
   })
 })
