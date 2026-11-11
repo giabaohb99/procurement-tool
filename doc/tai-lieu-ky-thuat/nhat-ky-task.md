@@ -9,6 +9,22 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
+- status: xong
+- date: 2026-11-11
+- list: Thu mua
+- pic: A1
+- tag: Bảo
+**Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
+
+**Đã làm**
+- Thêm vào bảng v1 các cột v2 đang có. Hiện sẵn: Mã NCC, Tên VTBB, ĐVT, SL dự kiến, Đơn giá, VAT, Thành tiền, Thời gian giao, Ngày công nợ. Ẩn sẵn, bật ở menu Cột: Giá mua gần nhất, Giá mua cao nhất, Giá đề xuất, phí vận chuyển, thông tin NCC, quy cách, mẫu, các mốc ngày, ghi chú.
+- Cột thêm đều bấm tiêu đề để xếp được; người đã lưu bố cục cũ vẫn thấy ngay các cột hiện sẵn, cột ẩn sẵn vẫn ẩn.
+- Xuất CSV theo đúng các cột đang hiện trên bảng.
+- Máy chủ không đổi: API đã trả đủ các trường này từ trước.
+
+Mã nguồn: `frontend/src/pages/SurveyReport.tsx`
+
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
