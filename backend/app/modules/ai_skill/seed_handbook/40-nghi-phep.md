@@ -94,7 +94,7 @@ người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
   đầu từ (hoặc trước, hoặc trong tháng) ngày vào làm thì áp **cả năm** theo số của gói (vào làm 01/10, gói 15 → 15).
 - Ô ***Tính lại hạn mức năm nay cho quỹ đã cấp*** (mặc định bật) chỉ sửa cột *Hạn mức* của quỹ **năm nay**; tắt thì
   áp từ lần cấp quỹ sau. Năm đã qua không bao giờ đổi. Sửa số ngày trong gói **không** tự tính lại quỹ đã cấp.
-- **Hai màn nối nhau** (từ 11/11/2026): danh sách *Phân bổ chính sách* có cột ***Hạn mức năm nay*** (*Phép năm 15
+- **Hai màn nối nhau** (từ 11/11/2026): tab *Phân bổ* của màn *Chính sách nghỉ phép* có cột ***Hạn mức năm nay*** (*Phép năm 15
   ngày*, bấm sang đúng dòng quỹ; *chưa cấp quỹ* khi chưa có dòng); *Quỹ phép năm* có cột ***Chính sách*** ở cả hai thẻ
   (*Theo loại nghỉ* khi không gói nào khai loại đó). Người hỏi "quỹ tôi lấy theo chính sách nào" thì chỉ cột này.
   Hai màn không ghi đè nhau: phân bổ chỉ đổi cột *Hạn mức*, điều chỉnh tay ở Quỹ phép năm nằm ở cột *Điều chỉnh tay*.
@@ -112,7 +112,22 @@ người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
 - Màn *Quỹ phép năm* có hai thẻ ***Theo dòng quỹ*** · ***Theo nhân sự*** (mỗi người một dòng, mỗi loại nghỉ một cột, ô là
   số dùng được hôm nay, ***Tổng còn lại***, ***Xuất Excel***). Ô **—** = chưa có dòng quỹ loại đó, khác **0** = đã dùng hết.
 - Nút ***Cấp quỹ năm …*** mở hộp lọc: loại nghỉ (nhiều), pháp nhân, phòng ban, hình thức nhân viên, cấp bậc — ô trống là
-  không lọc. Vẫn chỉ tạo dòng còn thiếu.
+  không lọc. Vẫn chỉ tạo dòng còn thiếu. Hai người bấm cùng lúc thì hệ tự chạy lại; vẫn vướng thì báo *Một lượt cấp quỹ
+  khác đang chạy cùng lúc* — bảo người dùng tải lại trang, còn thiếu thì bấm lại (không mất, không nhân đôi ngày).
+- **Bảng Quỹ phép năm chỉ có dòng cho loại bật *Trừ vào quỹ phép*** (thường chỉ Phép năm, có nơi thêm Nghỉ bù). Ốm đau,
+  cưới hỏi, tang chế, thai sản… không trừ quỹ nên không có dòng — người hỏi "sao tôi chỉ thấy Phép năm" thì giải thích
+  vậy, đừng nói là thiếu quỹ. Người có nhiều loại thì hàng người có mũi tên bung ra từng loại.
+
+## Ba thao tác hay nhầm: Cấp quỹ · Phân bổ chính sách · Điều chỉnh tay
+
+| | ***Cấp quỹ*** (Quỹ phép năm) | ***Phân bổ*** (Chính sách nghỉ phép › tab Phân bổ) | ***Điều chỉnh tay*** (chi tiết dòng quỹ) |
+|---|---|---|---|
+| Làm gì | Mở dòng quỹ CÒN THIẾU cho năm (đầu năm, người mới) | Gán gói luật cho người theo khoảng ngày | Cộng / trừ ngày cho một dòng quỹ |
+| Đụng dòng đã có | **Không** | Chỉ ô *Hạn mức* năm nay (khi tick tính lại) | Chỉ ô *Điều chỉnh tay* (ghi đè, có nhật ký) |
+| Khi nào dùng | Đầu năm, có người mới | Người đổi chế độ (lên chức, đủ thâm niên, thử việc) | Trường hợp lẻ một người, một lần |
+
+Một câu: *Chính sách* = luật · *Phân bổ* = ai áp luật nào từ lúc nào · *Quỹ phép năm* = sổ ngày phép thực tế. Không bấm
+Cấp quỹ thì người dùng vẫn nộp đơn được — mở form chọn loại nghỉ là hệ tự mở dòng quỹ còn thiếu cho riêng người đó.
 
 ## Báo cáo "Làm việc vào ngày lễ, ngày nghỉ" (khóa báo cáo 30, từ 03/11/2026)
 
@@ -382,8 +397,8 @@ và không tự bấm Lưu thay người dùng.
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
 | `leave_comp_request` | Nghỉ bù (phiếu xin nghỉ bù) |
 | `leave_encashment` | Thanh toán nghỉ phép (kèm quyền thấy YCTT nghỉ phép bên Tài chính) |
-| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · Phân bổ chính sách |
-| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Ngày cấm nghỉ, Chính sách nghỉ phép |
+| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · tab *Phân bổ* của màn Chính sách nghỉ phép (cần quyền **sửa**) |
+| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Ngày cấm nghỉ · tab *Chính sách* của màn Chính sách nghỉ phép (cần quyền **sửa**) |
 | `holiday` | Thiết lập ▸ Lịch ngày lễ |
 
 Tách như vậy vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
@@ -414,4 +429,4 @@ phạm vi phủ phòng / công ty của người nộp — đừng đoán tên n
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là **Lịch ngày lễ**) |
 | Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
 | Mang sang năm sau | bảo lưu phép, cộng dồn phép |
-| Chính sách nghỉ phép · Phân bổ chính sách | gói phép, chế độ phép, gán quỹ |
+| Chính sách nghỉ phép (tab Chính sách · tab Phân bổ) | gói phép, chế độ phép, gán quỹ, phân bổ chính sách |

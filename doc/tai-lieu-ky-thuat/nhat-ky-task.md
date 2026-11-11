@@ -130,6 +130,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-751 | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý cho quỹ phép, chính sách nghỉ phép và hồ sơ nhân sự
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau các thay đổi trong ngày về quỹ phép, chính sách nghỉ phép, sắp xếp cột và ô chọn ở hồ sơ nhân sự, bài hướng dẫn sử dụng và trợ lý AI cần nói đúng màn hiện tại và giải thích rõ ba thao tác hay nhầm.
+
+**Đã làm**
+- Bài hướng dẫn quỹ phép có bảng phân biệt Cấp quỹ, Phân bổ chính sách và Điều chỉnh tay, giải thích vì sao quỹ chỉ có dòng cho loại nghỉ có trừ quỹ, và câu báo khi hai người cùng bấm cấp quỹ.
+- Bài hướng dẫn sắp xếp ghi rõ thứ tự trạng thái của các loại phiếu nghỉ, bài hồ sơ nhân sự ghi các ô chọn đã gõ tìm được.
+- Cẩm nang trợ lý nghỉ phép đổi sang tên màn mới và thêm phần phân biệt ba thao tác; công cụ MCP và trợ lý web không cần sửa vì đã trả đủ thông tin chính sách.
+- Đã chạy seed, xuất bản cẩm nang và nạp lại chỉ mục trợ lý trên máy local và trên dev.
+
+Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `seed_help_sap_xep_cot_cr744.py`, `seed_help_nhan_su.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`
+
 ## duoc-CR-750 | Gộp thiết lập chính sách và phân bổ chính sách nghỉ phép vào một màn
 - status: xong
 - date: 2026-11-11

@@ -136,6 +136,7 @@ TREE = {
 <ol>
 <li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>, cuộn xuống thẻ <strong>Đề nghị sửa hồ sơ</strong> (ngay dưới phần Liên hệ và người báo tin).</li>
 <li>Bấm <strong>Đề nghị sửa thông tin</strong>. Hộp <em>Đề nghị sửa thông tin hồ sơ</em> mở ra với bốn tab <strong>Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình</strong>, mọi ô đã điền sẵn giá trị hồ sơ hiện tại.</li>
+<li>Các ô chọn <strong>Công ty</strong>, <strong>Phòng ban</strong>, <strong>Vị trí / Chức vụ</strong>, <strong>Người quản lý trực tiếp</strong> và ô <strong>Quan hệ</strong> ở bảng người thân có ô tìm: bấm vào ô rồi gõ vài chữ của tên (không dấu cũng được) để lọc, khỏi phải cuộn danh sách dài.</li>
 <li>Chỉ sửa những ô cần đổi. Chuyển qua lại giữa các tab không làm mất chữ đã gõ. Ô <strong>Số con</strong> chỉ hiện khi tình trạng hôn nhân là <em>Có gia đình</em>.</li>
 <li>Tab <strong>Hộ gia đình</strong>: bấm <strong>Thêm dòng</strong> để thêm người, biểu tượng thùng rác để xóa một dòng. Danh sách bạn gửi sẽ <strong>thay cho cả danh sách hiện tại</strong> khi được duyệt, nên giữ lại đủ những người vẫn còn. Dòng chưa có họ tên không được tính; tối đa 30 dòng.</li>
 <li>Nếu cần giải thích, ghi vào ô <strong>Ghi chú cho phòng Nhân sự</strong> (tối đa 500 ký tự), ví dụ <em>đổi ngân hàng nhận lương từ tháng sau</em>.</li>

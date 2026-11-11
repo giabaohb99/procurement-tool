@@ -18,7 +18,7 @@ START_ROOT = "Bắt đầu"
 TITLE = "Sắp xếp bảng danh sách bằng cách bấm tiêu đề cột"
 
 CONTENT = """<h2>Sắp xếp bảng danh sách bằng cách bấm tiêu đề cột</h2>
-<p>Mọi bảng danh sách trong ERP (YCMH, ĐMH, Công nợ, Nghỉ phép, Văn bản, Tồn kho, Đặt phòng họp…) xếp được bằng cách
+<p>Mọi bảng danh sách trong ERP (YCMH, ĐMH, Công nợ, Nghỉ phép, Quỹ phép năm, Chính sách nghỉ phép, Hợp đồng lao động, Văn bản, Tồn kho, Đặt phòng họp…) xếp được bằng cách
 <strong>bấm vào tên cột</strong> ở hàng tiêu đề. Cột xếp được có biểu tượng mũi tên mờ bên cạnh tên cột.</p>
 
 <h3>1. Bấm mấy lần thì ra gì</h3>
@@ -35,7 +35,7 @@ CONTENT = """<h2>Sắp xếp bảng danh sách bằng cách bấm tiêu đề c�
 <h3>2. Bảng xếp theo đúng chữ bạn đang thấy</h3>
 <ul>
 <li><strong>Cột tên</strong> (Nhà cung cấp, Người đặt, Bên ký kết…) xếp theo <strong>tên</strong> hiện trong ô, không theo mã ngầm phía sau.</li>
-<li><strong>Cột trạng thái</strong> xếp theo <strong>thứ tự các bước</strong> của phiếu (ví dụ Nháp → Chờ duyệt → Đã duyệt), không theo chữ cái.
+<li><strong>Cột trạng thái</strong> xếp theo <strong>thứ tự các bước</strong> của phiếu, không theo chữ cái. Đơn nghỉ phép, phiếu nghỉ bù, phiếu thanh toán nghỉ phép và phiếu đặt phòng họp xếp <em>Nháp → Chờ duyệt → Trả về chỉnh sửa → Đã duyệt → Từ chối → Đã hủy</em>; phân bổ chính sách nghỉ phép xếp <em>Sắp tới → Đang hiệu lực → Đã kết thúc</em>.
 Cột Hiệu lực của Hợp đồng xếp <em>Hết hạn → Sắp hết hạn → Còn hiệu lực → Không thời hạn</em>.</li>
 <li><strong>Cột số tính ra</strong> (SL nhận, còn lại, thành tiền…) xếp theo đúng con số trong ô. Số <strong>0</strong> là một giá trị như mọi số khác.</li>
 </ul>

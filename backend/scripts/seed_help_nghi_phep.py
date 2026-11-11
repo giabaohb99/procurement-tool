@@ -854,7 +854,7 @@ Nghỉ việc:
 <p>Dưới tiêu đề trang có hai thẻ. <strong>Theo dòng quỹ</strong> (mặc định) là bảng chi tiết để cấp, soát và điều chỉnh. <strong>Theo nhân sự</strong> là bảng tổng hợp mỗi người một dòng, để trả lời nhanh câu <em>anh A còn mấy ngày mỗi loại</em>. Đổi thẻ thì ô tìm và năm được giữ lại.</p>
 
 <h2>Đọc thẻ Theo dòng quỹ</h2>
-<p>Bảng gom theo <strong>người</strong>: mỗi người một dòng, bấm để bung ra các dòng con theo <strong>loại nghỉ</strong>. Mặc định chỉ bày sáu cột; các cột giải thích ẩn sẵn, bật lại ở menu <strong>Cột</strong> của bảng.</p>
+<p>Bảng gom theo <strong>người</strong>: mỗi người một dòng, bấm để bung ra các dòng con theo <strong>loại nghỉ</strong>. Chỉ loại nghỉ bật <strong>Trừ vào quỹ phép</strong> (thường là Phép năm, có nơi thêm Nghỉ bù) mới có dòng quỹ; ốm đau, cưới hỏi, tang chế, thai sản… nghỉ theo luật, không trừ quỹ nên không hiện ở đây. Người chỉ có một loại thì không có mũi tên, tên loại ghi ngay sau tên người. Mặc định chỉ bày sáu cột; các cột giải thích ẩn sẵn, bật lại ở menu <strong>Cột</strong> của bảng.</p>
 <table>
 <thead><tr><th>Cột</th><th>Nghĩa</th></tr></thead>
 <tbody>
@@ -895,13 +895,26 @@ Nghỉ việc:
 </table>
 <p>Bấm <strong>Cấp quỹ</strong>. Hệ báo số dòng vừa thêm. Lọc chỉ <strong>thu hẹp</strong> trong phạm vi bạn được ghi quỹ, không mở rộng.</p>
 <ul>
-<li><strong>Chạy lại được</strong>: chỉ tạo dòng còn thiếu. Bấm hai lần không nhân đôi.</li>
+<li><strong>Chạy lại được</strong>: chỉ tạo dòng còn thiếu. Bấm hai lần không nhân đôi. Hai người bấm cùng lúc thì hệ tự chạy lại; hiếm khi vẫn vướng thì báo <em>Một lượt cấp quỹ khác đang chạy cùng lúc — tải lại trang để xem, còn thiếu thì bấm Cấp quỹ lại.</em> Không mất ngày nào, không nhân đôi.</li>
+<li><strong>Không bấm thì nhân viên vẫn nộp đơn được</strong>: mở form nộp đơn, chọn loại nghỉ là hệ tự mở dòng quỹ còn thiếu cho riêng người đó, cùng cách tính. Nút này để Nhân sự mở sổ cho cả công ty một lượt.</li>
 <li>Thêm người giữa năm thì <strong>bấm lại</strong> là họ có quỹ, không phải tạo tay.</li>
 <li>Cấp <strong>một lần đầu năm</strong>; thâm niên tính tại 01/01, không cộng dần theo tháng.</li>
 <li>Số ngày mỗi người nhận theo <strong>Cách cấp quỹ</strong> của loại nghỉ: <em>Đủ hạn mức đầu năm</em> thì ai cũng đủ; <em>Theo tỷ lệ tháng làm việc</em> thì người vào làm trong năm nhận theo số tháng còn lại (vào làm ngày 1–15 tính cả tháng, từ ngày 16 tính từ tháng sau, làm tròn tới nửa ngày; ví dụ hạn mức 12, vào làm 10/03 được 10 ngày, vào làm 20/03 được 9 ngày); <em>Cộng dần theo tháng</em> thì dòng quỹ ghi đủ cả năm nhưng mỗi tháng mới mở thêm một phần mười hai. Xem {ref(NS_DANH_MUC, "bài Loại nghỉ")}.</li>
 </ul>
 <p>⚠️ Cố ý <strong>không cập nhật dòng đã có</strong> theo hạn mức mới: đổi hạn mức giữa năm thì quỹ đã cấp giữ nguyên, luật mới áp cho lần cấp sau. Muốn áp ngay cho vài người thì dùng <strong>điều chỉnh tay</strong>. Ngoại lệ duy nhất là <strong>phân bổ chính sách</strong>: tạo, kết thúc hay xóa một phân bổ có ô <strong>Tính lại hạn mức năm nay cho quỹ đã cấp</strong> (mặc định bật) — xem {ref(NS_PHAN_BO, "bài Phân bổ chính sách")}.</p>
 <p>⚠️ Cấp quỹ <strong>trước khi</strong> hồ sơ có <strong>ngày vào làm</strong> thì thâm niên ra 0. Nhập bù ngày vào làm rồi phải sửa lại bằng điều chỉnh tay — cấp lại không sửa dòng cũ.</p>
+
+<h2>Cấp quỹ, Phân bổ chính sách, Điều chỉnh tay khác nhau thế nào</h2>
+<table>
+<thead><tr><th></th><th>Cấp quỹ</th><th>Phân bổ chính sách</th><th>Điều chỉnh tay</th></tr></thead>
+<tbody>
+<tr><td><strong>Làm gì</strong></td><td>Mở dòng quỹ còn thiếu cho cả năm</td><td>Gán một gói luật cho người theo khoảng ngày</td><td>Cộng hoặc trừ ngày cho một dòng quỹ</td></tr>
+<tr><td><strong>Đụng dòng đã có không</strong></td><td>Không</td><td>Chỉ ô <em>Hạn mức</em> năm nay (khi tick tính lại)</td><td>Chỉ ô <em>Điều chỉnh tay</em></td></tr>
+<tr><td><strong>Khi nào dùng</strong></td><td>Đầu năm, hoặc có người mới</td><td>Người đổi chế độ: lên chức, đủ thâm niên, thử việc</td><td>Trường hợp lẻ một người, một lần</td></tr>
+<tr><td><strong>Ở đâu</strong></td><td>Quỹ phép năm, nút góc trên</td><td>{ref(NS_PHAN_BO, "Chính sách nghỉ phép › tab Phân bổ")}</td><td>Chi tiết một dòng quỹ</td></tr>
+</tbody>
+</table>
+<p>Dễ nhớ: <strong>Chính sách</strong> là luật, <strong>Phân bổ</strong> là ai áp luật nào từ lúc nào, <strong>Quỹ phép năm</strong> là sổ ngày phép thực tế mà luật đó đổ số vào. Nhịp gợi ý: đầu năm bấm Cấp quỹ một lần; trong năm ai đổi chế độ thì phân bổ, trường hợp lẻ thì điều chỉnh tay; cuối năm kết sổ.</p>
 
 <h2>Điều chỉnh tay</h2>
 <p>Mở một dòng quỹ ra, dùng thẻ <strong>Điều chỉnh tay</strong>: nhập số và <strong>lý do</strong>, bấm <strong>Lưu điều chỉnh</strong>.</p>
