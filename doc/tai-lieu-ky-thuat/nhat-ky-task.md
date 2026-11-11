@@ -131,7 +131,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## ai-CR-235 | Cẩm nang trợ lý cho bốn phân hệ văn phòng: đặt xe, duyệt dấu, diễn đàn, kho
-- status: dang-lam
+- status: xong
 - date: 2026-11-11
 - list: Kế hoạch hệ agent
 - tag: Agent 4
@@ -142,7 +142,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Cẩm nang đặt xe và duyệt dấu dạy cách soạn phiếu nháp; phiếu duyệt dấu chỉ lưu ở **Nháp** vì gửi duyệt cần tệp đính kèm nên người dùng tự gửi trên web.
 - Script phát hành cẩm nang nay thêm được skill mới khi bộ chưa có; skill đã có, kể cả đã xóa mềm, thì bỏ qua, không ghi đè và không xóa.
 - Bài kiểm canh cẩm nang chỉ nhắc tên công cụ có thật, không emoji, không ngoặc kép góc, và kiểm hai nhánh của script: chưa có thì tạo, có rồi thì bỏ qua.
-- Hai nhóm công cụ văn phòng trên cổng MCP vẫn tắt mặc định. Việc chạy script trên prod chờ người chủ quyết; việc còn lại chờ Agent 2 rà.
+- Hai nhóm công cụ văn phòng trên cổng MCP vẫn tắt mặc định. Việc chạy script trên prod chờ người chủ quyết; Agent 2 đã rà đạt.
 
 Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/70-dat-xe.md`, `80-duyet-dau.md`, `90-dien-dan.md`, `95-kho.md`, `handbook_seed.py`, `backend/scripts/publish_handbook_update.py`, `test/backend/test_cam_nang_van_phong_cr235.py`
 Commit: a1a9cdf9, dd88fbac, 9b7bfb8d, d11d0c44, 83f17c27
