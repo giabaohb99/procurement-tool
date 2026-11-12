@@ -133,6 +133,14 @@ export interface ModuleNavItem {
    * đầu. Bấm từ chỗ khác vào thì không mang theo gì (query của màn khác vô nghĩa).
    */
   keepSearch?: boolean
+  /**
+   * Khai trên mục CHA có `children`: thanh bên vẽ nó thành **một dòng**, không sổ xuống — bấm vào mở mục con ĐẦU
+   * TIÊN người đó được phép, dòng sáng khi đang ở bất kỳ mục con nào. Mục con hiện thành **dải tab** ở đầu từng màn
+   * (trang tự dựng dải đó, đọc `visibleNavChildren`), nên luật quyền vẫn khai MỘT chỗ ở đây và vẫn là hàng rào route.
+   *
+   * Sinh ra cho cụm Thiết lập của Nhân sự (duoc-CR-753): sáu màn cấu hình sổ xuống chiếm cả nửa menu.
+   */
+  childrenAsTabs?: boolean
 }
 
 /**

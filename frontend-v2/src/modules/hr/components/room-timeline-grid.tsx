@@ -101,7 +101,7 @@ export function RoomTimelineGrid({
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
         <p className="text-sm font-medium">Không có phòng nào</p>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Bỏ bớt bộ lọc, hoặc vào tab <strong>Danh mục phòng</strong> để thêm phòng.
+          Bỏ bớt bộ lọc, hoặc vào <strong>Thiết lập</strong>, tab <strong>Danh mục phòng họp</strong> để thêm phòng.
         </p>
       </div>
     )

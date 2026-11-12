@@ -125,7 +125,7 @@ trong một tệp sẽ đẻ ra một chức vụ rác. Nhập xong nên rà l�
 
 ## Sơ đồ tổ chức (từ 22/10/2026)
 
-Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức**. Không có bản vẽ nào lưu sẵn: màn **tự dựng từ dữ liệu**
+Menu **Nhân sự ▸ Sơ đồ tổ chức**. Không có bản vẽ nào lưu sẵn: màn **tự dựng từ dữ liệu**
 phòng ban, trưởng phòng và **Người quản lý trực tiếp** — đổi phòng hay đổi người quản lý xong, sơ đồ
 tự đúng. Cấu trúc: **pháp nhân › phòng ban (phòng con thụt vào) › người** (cấp dưới thụt dưới người quản lý cùng
 phòng). Bấm tên phòng để mở / thu gọn (hai tầng đầu mở sẵn); đầu mỗi phòng có **Trưởng phòng** và **số người**; bấm
@@ -143,7 +143,7 @@ tên người để mở hồ sơ.
 
 ## Cài đặt nhân sự — tab Nhân viên / Hợp đồng (từ 02/11/2026)
 
-*Nhân sự ▸ Master ▸ Cài đặt nhân sự* (quyền `setting`). Những con số dưới đây là **cài đặt**, mỗi công ty có thể khác —
+*Nhân sự ▸ Thiết lập*, tab *Cài đặt nhân sự* (quyền `setting`). Những con số dưới đây là **cài đặt**, mỗi công ty có thể khác —
 đừng khẳng định số mặc định khi người dùng hỏi về hệ của họ, bảo họ xem ở màn này.
 
 - **Tiền tố mã nhân sự** (mặc định `NSU`): áp cho hồ sơ **tạo mới**; mã đã cấp không đổi.
@@ -211,7 +211,7 @@ Hai cách sửa hồ sơ của chính mình — trợ lý phải nói đúng cá
 - Duyệt xong hồ sơ cập nhật ngay; duyệt hay từ chối đều có thông báo chuông (**Yêu cầu sửa hồ sơ đã được duyệt** /
   **Yêu cầu sửa hồ sơ bị từ chối**), từ chối kèm lý do người duyệt viết.
 
-**Phía phòng Nhân sự** — menu **Nhân sự ▸ Danh mục ▸ *Duyệt sửa hồ sơ*** (`/hr/profile-change-requests`, con số cạnh
+**Phía phòng Nhân sự** — menu **Nhân sự ▸ *Duyệt sửa hồ sơ*** (`/hr/profile-change-requests`, con số cạnh
 menu = số đang chờ trong phạm vi). Cần quyền **ghi** hồ sơ nhân sự (`employee.write`), chỉ thấy đề nghị của người trong
 phạm vi được sửa. Danh sách mặc định lọc **Chờ duyệt**, tìm theo mã / tên. Hồ sơ đang có đề nghị chờ thì màn chi tiết nhân
 sự hiện dải nhắc kèm liên kết ***Xem đề nghị***.

@@ -54,6 +54,11 @@ Nhãn đối chiếu bằng đọc `hr/pages/leave-encashment-*.tsx`, `hr/compon
 `hr/config/leave-type-encashment-fields.ts`, `hr/components/leave-balance-columns.tsx`, câu báo lỗi ở
 `leave/encashment_service.py`, `encashment_transitions.py`, `encashment_serializer.py`, và màn thật localhost:8083.
 
+duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới. Menu Nghỉ phép còn năm mục; Chính sách nghỉ phép và Thiết lập
+(Loại nghỉ · Lịch ngày lễ · Ngày cấm nghỉ) thành tab của mục Thiết lập: một dòng menu, vào trong là MỘT dải
+tab phẳng (Cài đặt nhân sự · Phân bổ chính sách · Gói chính sách · Loại nghỉ · Lịch ngày lễ · Ngày cấm nghỉ · ...),
+không còn tab con lồng bên trong. Địa chỉ trang và quyền không đổi.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
     # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
@@ -134,8 +139,8 @@ TREE = {
 <p>Phân hệ để nhân viên <strong>nộp đơn nghỉ phép</strong>, <strong>xin nghỉ bù</strong> và <strong>thanh toán ngày phép chưa nghỉ ra tiền</strong>, người quản lý duyệt, và phòng Nhân sự cấp <strong>quỹ phép năm</strong>. Vào bằng menu <strong>Nhân sự ▸ Nghỉ phép</strong>.</p>
 <p>Thứ đáng giá nhất ở đây không phải tờ đơn — mà là <strong>số ngày phép còn lại hiện ngay lúc bạn đang nhập</strong>. Toàn bộ phần quỹ phép, bậc thâm niên và lịch ngày lễ tồn tại để con số đó đúng.</p>
 
-<h2>Bảy mục trong menu Nghỉ phép</h2>
-<p>Bấm <strong>Nghỉ phép</strong> ở menu trái để mở bảy mục con:</p>
+<h2>Năm mục trong menu Nghỉ phép</h2>
+<p>Bấm <strong>Nghỉ phép</strong> ở menu trái để mở năm mục con:</p>
 <table>
 <thead><tr><th>Mục</th><th>Dùng để</th><th>Ai thấy</th></tr></thead>
 <tbody>
@@ -144,11 +149,20 @@ TREE = {
 <tr><td><strong>Thanh toán nghỉ phép</strong></td><td>Lập phiếu đổi ngày phép chưa nghỉ ra tiền (phép dư cuối năm hoặc khi nghỉ việc), duyệt phiếu, theo dõi kế toán đã chi chưa</td><td>Mọi người có quyền Thanh toán nghỉ phép</td></tr>
 <tr><td><strong>Lịch nghỉ</strong></td><td>Ai nghỉ ngày nào — xem theo ngày / tuần / tháng</td><td>Mọi người</td></tr>
 <tr><td><strong>Quỹ phép năm</strong></td><td>Số ngày phép của từng người từng năm, cấp phát và điều chỉnh</td><td>Phòng Nhân sự</td></tr>
-<tr><td><strong>Chính sách nghỉ phép</strong></td><td>Một màn hai tab: <strong>Phân bổ</strong> (ai đang áp chính sách nào, gán cho từng người hoặc cả nhóm người trong một khoảng ngày) và <strong>Chính sách</strong> (khai các gói số ngày phép)</td><td>Phòng Nhân sự</td></tr>
-<tr><td><strong>Thiết lập</strong></td><td>Ba thẻ chuyển qua lại ở đầu trang: <strong>Loại nghỉ</strong> (kèm bậc thâm niên và hạn mức theo nhóm), <strong>Lịch ngày lễ</strong>, <strong>Ngày cấm nghỉ</strong></td><td>Phòng Nhân sự</td></tr>
 </tbody>
 </table>
-<p>Không thấy đủ bảy mục <strong>không phải lỗi</strong> — đó là phân quyền. Xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>
+<p>Các màn cấu hình của nghỉ phép nằm ở mục <strong>Thiết lập</strong> cuối menu Nhân sự: bấm <strong>Thiết lập</strong> rồi chọn tab ở dải tab đầu trang (cùng dải với <strong>Cài đặt nhân sự</strong>):</p>
+<table>
+<thead><tr><th>Tab của Thiết lập</th><th>Dùng để</th><th>Ai thấy</th></tr></thead>
+<tbody>
+<tr><td><strong>Phân bổ chính sách</strong></td><td>Ai đang áp chính sách nào; gán cho từng người hoặc cả nhóm người trong một khoảng ngày</td><td>Phòng Nhân sự</td></tr>
+<tr><td><strong>Gói chính sách</strong></td><td>Khai các gói số ngày phép mỗi năm cho một nhóm người</td><td>Phòng Nhân sự</td></tr>
+<tr><td><strong>Loại nghỉ</strong></td><td>Luật của từng loại nghỉ, kèm bậc thâm niên và hạn mức theo nhóm</td><td>Phòng Nhân sự</td></tr>
+<tr><td><strong>Lịch ngày lễ</strong></td><td>Ngày lễ không trừ vào phép</td><td>Phòng Nhân sự</td></tr>
+<tr><td><strong>Ngày cấm nghỉ</strong></td><td>Khoảng ngày công ty không muốn ai nghỉ</td><td>Phòng Nhân sự</td></tr>
+</tbody>
+</table>
+<p>Không thấy đủ các mục trên <strong>không phải lỗi</strong> — đó là phân quyền. Xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>
 
 <h2>Bốn khái niệm đừng lẫn</h2>
 <table>
@@ -185,7 +199,7 @@ Nháp  ─────────────────────►  Chờ
 <h2>Đọc theo việc bạn cần làm</h2>
 <p><strong>Người đi nghỉ:</strong> {ref(NOP_DON, "Nộp đơn")} · {ref(QUY_PHEP, "hiểu quỹ phép")} · {ref(THEO_DOI, "theo dõi, sửa, hủy")} · {ref(NGHI_BU, "xin nghỉ bù")} · {ref(THANH_TOAN, "thanh toán nghỉ phép")} · {ref(TINH_HUONG, "tình huống thường gặp")} · {ref(BAO_LOI, "câu báo lỗi")}.</p>
 <p><strong>Người duyệt:</strong> {ref(DUYET, "Duyệt đơn nghỉ phép")} · {ref(NGHI_BU, "duyệt phiếu nghỉ bù")} · {ref(THANH_TOAN, "duyệt phiếu thanh toán nghỉ phép")} · {ref(LICH_NGHI, "xem Lịch nghỉ")}.</p>
-<p><strong>Phòng Nhân sự:</strong> {ref(NS_QUY, "cấp và điều chỉnh quỹ")} · {ref(NS_CHINH_SACH, "chính sách nghỉ phép")} · {ref(NS_PHAN_BO, "phân bổ chính sách")} · {ref(NS_DANH_MUC, "loại nghỉ, ngày lễ và ngày cấm nghỉ")} · {ref(NS_QUYEN, "phân quyền và luồng duyệt")}. Các công tắc chặn đơn lùi ngày, chặn tự duyệt và vai trò được duyệt qua ngày cấm nghỉ nằm ở <strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong>, tab <strong>Nghỉ phép</strong>.</p>""",
+<p><strong>Phòng Nhân sự:</strong> {ref(NS_QUY, "cấp và điều chỉnh quỹ")} · {ref(NS_CHINH_SACH, "chính sách nghỉ phép")} · {ref(NS_PHAN_BO, "phân bổ chính sách")} · {ref(NS_DANH_MUC, "loại nghỉ, ngày lễ và ngày cấm nghỉ")} · {ref(NS_QUYEN, "phân quyền và luồng duyệt")}. Các công tắc chặn đơn lùi ngày, chặn tự duyệt và vai trò được duyệt qua ngày cấm nghỉ nằm ở <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Cài đặt nhân sự</strong>, rồi tab <strong>Nghỉ phép</strong> trong màn.</p>""",
     "children": [
         {
             "title": NOP_DON,
@@ -583,7 +597,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><em>Ngày … đã có phiếu nghỉ bù NB… — mỗi ngày một phiếu</em></td><td>Ngày này đã có một phiếu khác còn hiệu lực.</td><td>Mở phiếu đó ra xem. Muốn lập lại thì hủy phiếu cũ trước.</td></tr>
 <tr><td><em>Phiếu vừa được xử lý bởi lượt khác — tải lại trang</em></td><td>Bạn bấm hai lần liền, hoặc người khác vừa duyệt / hủy phiếu này cùng lúc.</td><td>Tải lại trang để thấy trạng thái mới. Hệ chỉ ghi nhận một lượt, ngày bù không bị cộng hai lần.</td></tr>
 <tr><td><em>Không hủy được: ngày nghỉ bù của phiếu này (… ngày) đã được dùng để nghỉ.</em></td><td>Số ngày còn dùng được của loại nhận ngày bù đã ít hơn số ngày trên phiếu.</td><td>Hủy hoặc sửa đơn nghỉ đã dùng quỹ này trước, rồi hủy phiếu.</td></tr>
-<tr><td><em>Chưa có loại nghỉ nào bật <strong>Loại nhận ngày nghỉ bù</strong>…</em></td><td>Danh mục Loại nghỉ chưa có loại nào nhận ngày bù.</td><td>Phòng Nhân sự vào <strong>Nghỉ phép ▸ Thiết lập ▸ Loại nghỉ</strong>, mở một loại (thường là Phép năm), bật <strong>Loại nhận ngày nghỉ bù</strong> và <strong>Trừ vào quỹ phép năm</strong>, rồi lưu. Nhiều loại cùng bật thì hệ lấy loại xếp trước.</td></tr>
+<tr><td><em>Chưa có loại nghỉ nào bật <strong>Loại nhận ngày nghỉ bù</strong>…</em></td><td>Danh mục Loại nghỉ chưa có loại nào nhận ngày bù.</td><td>Phòng Nhân sự vào <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Loại nghỉ</strong>, mở một loại (thường là Phép năm), bật <strong>Loại nhận ngày nghỉ bù</strong> và <strong>Trừ vào quỹ phép năm</strong>, rồi lưu. Nhiều loại cùng bật thì hệ lấy loại xếp trước.</td></tr>
 </tbody>
 </table>
 
@@ -814,7 +828,7 @@ Nghỉ việc:
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>Đơn nghỉ này rơi vào ngày cấm nghỉ: … Chưa duyệt được — nhờ người có vai trò được miễn (Cài đặt nhân sự › Nghỉ phép) duyệt, hoặc trả đơn về để người nghỉ đổi ngày.</em></td><td>Đơn đụng một khoảng ở <strong>Nghỉ phép ▸ Thiết lập ▸ Ngày cấm nghỉ</strong>, và người bấm duyệt chặng cuối (hoặc duyệt thẳng) không thuộc vai trò được miễn.</td><td>Bấm <strong>Trả về</strong> để người nghỉ đổi ngày, hoặc nhờ quản trị / người có vai trò được miễn duyệt. Đơn vẫn Chờ duyệt, quỹ phép không bị trừ.</td></tr>
+<tr><td><em>Đơn nghỉ này rơi vào ngày cấm nghỉ: … Chưa duyệt được — nhờ người có vai trò được miễn (Cài đặt nhân sự › Nghỉ phép) duyệt, hoặc trả đơn về để người nghỉ đổi ngày.</em></td><td>Đơn đụng một khoảng khai ở <strong>Thiết lập</strong>, tab <strong>Ngày cấm nghỉ</strong>, và người bấm duyệt chặng cuối (hoặc duyệt thẳng) không thuộc vai trò được miễn.</td><td>Bấm <strong>Trả về</strong> để người nghỉ đổi ngày, hoặc nhờ quản trị / người có vai trò được miễn duyệt. Đơn vẫn Chờ duyệt, quỹ phép không bị trừ.</td></tr>
 <tr><td><em>Cài đặt nhân sự đang chặn tự duyệt: bạn không duyệt được đơn nghỉ của chính mình.</em></td><td>Công ty bật <strong>Chặn tự duyệt đơn nghỉ</strong>, mà bạn đang duyệt đơn của chính mình.</td><td>Nhờ quản trị chuyển việc duyệt đó cho người khác ở màn quản lý luồng duyệt.</td></tr>
 <tr><td><em>Bạn không được tự duyệt phiếu nghỉ bù của chính mình.</em></td><td>Phiếu nghỉ bù luôn chặn tự duyệt, không phụ thuộc công tắc nào.</td><td>Để người khác có quyền duyệt xử lý. Xem {ref(NGHI_BU, "bài Xin nghỉ bù")}.</td></tr>
 </tbody>
@@ -911,7 +925,7 @@ Nghỉ việc:
 <tr><td><strong>Làm gì</strong></td><td>Mở dòng quỹ còn thiếu cho cả năm</td><td>Gán một gói luật cho người theo khoảng ngày</td><td>Cộng hoặc trừ ngày cho một dòng quỹ</td></tr>
 <tr><td><strong>Đụng dòng đã có không</strong></td><td>Không</td><td>Chỉ ô <em>Hạn mức</em> năm nay (khi tick tính lại)</td><td>Chỉ ô <em>Điều chỉnh tay</em></td></tr>
 <tr><td><strong>Khi nào dùng</strong></td><td>Đầu năm, hoặc có người mới</td><td>Người đổi chế độ: lên chức, đủ thâm niên, thử việc</td><td>Trường hợp lẻ một người, một lần</td></tr>
-<tr><td><strong>Ở đâu</strong></td><td>Quỹ phép năm, nút góc trên</td><td>{ref(NS_PHAN_BO, "Chính sách nghỉ phép › tab Phân bổ")}</td><td>Chi tiết một dòng quỹ</td></tr>
+<tr><td><strong>Ở đâu</strong></td><td>Quỹ phép năm, nút góc trên</td><td>{ref(NS_PHAN_BO, "Thiết lập › tab Phân bổ chính sách")}</td><td>Chi tiết một dòng quỹ</td></tr>
 </tbody>
 </table>
 <p>Dễ nhớ: <strong>Chính sách</strong> là luật, <strong>Phân bổ</strong> là ai áp luật nào từ lúc nào, <strong>Quỹ phép năm</strong> là sổ ngày phép thực tế mà luật đó đổ số vào. Nhịp gợi ý: đầu năm bấm Cấp quỹ một lần; trong năm ai đổi chế độ thì phân bổ, trường hợp lẻ thì điều chỉnh tay; cuối năm kết sổ.</p>
@@ -939,7 +953,7 @@ Nghỉ việc:
 <tr><td><strong>Số cũ (trước)</strong></td><td>Số ngày còn của năm cũ <strong>trước</strong> khi kết sổ.</td></tr>
 <tr><td><strong>Số mới (sau)</strong></td><td>Số ngày còn của năm cũ <strong>sau</strong> khi kết sổ — phần đã chuyển đi không còn nằm ở đây.</td></tr>
 <tr><td><strong>Chênh</strong></td><td><strong>Số mới trừ số cũ</strong>, nên thường là <strong>số âm</strong> — đúng bằng phần ngày đã chuyển đi khỏi năm cũ.</td></tr>
-<tr><td><strong>Sang loại</strong></td><td>Loại nghỉ nhận phần chuyển ở năm sau (với <strong>Mang sang năm sau</strong> thì chính là loại đó). Ghi <em>Chưa khai</em> nghĩa là loại quy đổi này chưa khai loại nhận — nhờ phòng Nhân sự khai ở Thiết lập ▸ Loại nghỉ.</td></tr>
+<tr><td><strong>Sang loại</strong></td><td>Loại nghỉ nhận phần chuyển ở năm sau (với <strong>Mang sang năm sau</strong> thì chính là loại đó). Ghi <em>Chưa khai</em> nghĩa là loại quy đổi này chưa khai loại nhận — nhờ phòng Nhân sự khai ở Thiết lập, tab Loại nghỉ.</td></tr>
 <tr><td><strong>Cộng vào năm sau</strong></td><td>Số ngày được cộng sang năm sau = phần đã chuyển đi × tỷ lệ quy đổi của loại nghỉ (mang sang nguyên loại thì tỷ lệ là 1; quy đổi 2 ngày lấy 1 ngày bù thì chỉ bằng một nửa).</td></tr>
 </tbody>
 </table>
@@ -956,7 +970,7 @@ Nghỉ việc:
         {
             "title": NS_CHINH_SACH,
             "icon": "tags",
-            "summary": "Tab Chính sách của màn Chính sách nghỉ phép: gói số ngày mỗi năm theo loại nghỉ cho một nhóm người (cấp quản lý, thử việc…); ba tab Thông tin / Loại nghỉ & số ngày / Đang phân bổ; ngừng, xóa",
+            "summary": "Thiết lập, tab Gói chính sách: gói số ngày mỗi năm theo loại nghỉ cho một nhóm người (cấp quản lý, thử việc…); ba tab Thông tin / Loại nghỉ & số ngày / Đang phân bổ; ngừng, xóa",
             "content": f"""<h2>Chính sách nghỉ phép là gì</h2>
 <p>Một <strong>chính sách nghỉ phép</strong> là một gói <em>loại nghỉ → số ngày mỗi năm</em>, ví dụ <em>Chính sách cấp quản lý</em>: Phép năm 15 ngày. Phòng Nhân sự khai gói một lần rồi <strong>phân bổ</strong> cho từng người hoặc cả nhóm người ở mục {ref(NS_PHAN_BO, "Phân bổ chính sách")}. Người không được phân bổ gói nào vẫn nhận hạn mức như trước.</p>
 <p>Dùng chính sách khi một nhóm người cần số ngày khác hẳn luật chung mà không gom được theo <em>hình thức nhân viên</em> hay <em>cấp bậc</em> (hai thứ đó đã có tab <strong>Hạn mức theo nhóm</strong> trên loại nghỉ), hoặc khi cần đổi số ngày của một người từ một ngày cụ thể.</p>
@@ -971,7 +985,7 @@ Nghỉ việc:
 
 <h2>Tạo một chính sách</h2>
 <ol>
-<li>Vào <strong>Nhân sự ▸ Nghỉ phép ▸ Chính sách nghỉ phép</strong>, bấm tab <strong>Chính sách</strong> (tab <strong>Phân bổ</strong> bên cạnh là nơi gán chính sách cho người). Từ 11/11/2026 chính sách không còn nằm trong Thiết lập.</li>
+<li>Vào <strong>Nhân sự ▸ Thiết lập</strong>, chọn tab <strong>Gói chính sách</strong> (tab <strong>Phân bổ chính sách</strong> bên cạnh là nơi gán chính sách cho người).</li>
 <li>Bấm <strong>Thêm chính sách</strong>. Trang riêng mở ra.</li>
 <li>Điền <strong>Mã chính sách</strong> (tối đa 30 ký tự, không trùng, <strong>không đổi được sau khi tạo</strong>; ví dụ <code>CS-QUANLY</code>), <strong>Tên chính sách</strong> (tối đa 150 ký tự — tên này hiện trong ô chọn khi phân bổ và trên chi tiết quỹ phép của từng người), <strong>Ghi chú</strong> nếu cần. Để công tắc <strong>Đang dùng</strong> bật.</li>
 <li>Bấm <strong>Tạo chính sách</strong>. Tạo xong mới có thêm hai tab <strong>Loại nghỉ &amp; số ngày</strong> và <strong>Đang phân bổ</strong>.</li>
@@ -987,7 +1001,7 @@ Nghỉ việc:
 <tbody>
 <tr><td><strong>Thông tin</strong></td><td>Mã, tên, ghi chú, công tắc <strong>Đang dùng</strong>; nút <strong>Lưu</strong> ở hàng tiêu đề.</td></tr>
 <tr><td><strong>Loại nghỉ &amp; số ngày</strong></td><td>Danh sách <em>loại nghỉ — N ngày/năm</em> và khung thêm dòng. Chưa khai dòng nào thì người được phân bổ vẫn nhận hạn mức của từng loại nghỉ.</td></tr>
-<tr><td><strong>Đang phân bổ</strong></td><td>Ai đang được phân bổ chính sách này, từ ngày nào đến ngày nào, trạng thái. Bấm một dòng để sang tab <strong>Phân bổ</strong> đã lọc sẵn đúng người đó (cần quyền xem Quỹ phép năm).</td></tr>
+<tr><td><strong>Đang phân bổ</strong></td><td>Ai đang được phân bổ chính sách này, từ ngày nào đến ngày nào, trạng thái. Bấm một dòng để sang tab <strong>Phân bổ chính sách</strong> đã lọc sẵn đúng người đó (cần quyền xem Quỹ phép năm).</td></tr>
 </tbody>
 </table>
 
@@ -996,17 +1010,17 @@ Nghỉ việc:
 <li>Tắt <strong>Đang dùng</strong> (trạng thái <em>Ngừng</em>): không phân bổ mới được nữa — chọn nó thì hệ báo <em>Chính sách đã ngừng dùng — không phân bổ mới được.</em> Các phân bổ đã có <strong>vẫn giữ nguyên và vẫn áp</strong>.</li>
 <li>Xóa chính sách đang được phân bổ cho ai đó bị chặn: <em>Chính sách đang được phân bổ cho N nhân sự — kết thúc / xóa phân bổ trước.</em> Muốn ẩn khỏi ô chọn mà vẫn giữ phân bổ cũ thì tắt <strong>Đang dùng</strong>.</li>
 </ul>
-<p>Chính sách dùng chung khóa quyền với <em>Loại nghỉ</em> (<code>leave_type</code>): ai sửa được Thiết lập ▸ Loại nghỉ thì thấy thẻ này. Không có khóa quyền mới. Xem {ref(NS_QUYEN, "bài Phân quyền")}.</p>""",
+<p>Chính sách dùng chung khóa quyền với <em>Loại nghỉ</em> (<code>leave_type</code>): ai sửa được loại nghỉ (Thiết lập, tab Loại nghỉ) thì thấy tab Gói chính sách. Không có khóa quyền mới. Xem {ref(NS_QUYEN, "bài Phân quyền")}.</p>""",
         },
         {
             "title": NS_PHAN_BO,
             "icon": "users",
             "summary": "Gán chính sách nghỉ phép cho một người (xem trước hạn mức năm nay) hoặc tối đa 500 người một lượt; cột Hạn mức năm nay bấm sang Quỹ phép năm; đổi giữa năm chia theo tháng; ô Tính lại hạn mức; Kết thúc, Xóa; các câu chặn",
             "content": f"""<h2>Phân bổ chính sách ở đâu</h2>
-<p>Menu <strong>Nhân sự ▸ Nghỉ phép ▸ Chính sách nghỉ phép</strong> (ngay sau Quỹ phép năm), tab <strong>Phân bổ</strong>. Cùng màn này có tab <strong>Chính sách</strong> để khai các gói, nút trên đầu trang đổi theo tab đang mở. Mỗi dòng là <em>một người được gán một chính sách trong một khoảng ngày</em>. Cột: <strong>Nhân sự</strong> · <strong>Chính sách</strong> · <strong>Từ ngày</strong> · <strong>Đến ngày</strong> (trống hiện <em>Không thời hạn</em>) · <strong>Trạng thái</strong> · <strong>Hạn mức năm nay</strong> · <strong>Ghi chú</strong> · <strong>Thao tác</strong>.</p>
+<p>Menu <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Phân bổ chính sách</strong>. Các gói thì khai ở tab <strong>Gói chính sách</strong> ngay cạnh. Mỗi dòng là <em>một người được gán một chính sách trong một khoảng ngày</em>. Cột: <strong>Nhân sự</strong> · <strong>Chính sách</strong> · <strong>Từ ngày</strong> · <strong>Đến ngày</strong> (trống hiện <em>Không thời hạn</em>) · <strong>Trạng thái</strong> · <strong>Hạn mức năm nay</strong> · <strong>Ghi chú</strong> · <strong>Thao tác</strong>.</p>
 <p><strong>Hạn mức năm nay</strong> cho biết quỹ phép năm nay của người đó đang cấp bao nhiêu ngày cho từng loại nghỉ có trong chính sách, ví dụ <em>Phép năm 15 ngày</em>. Bấm vào số đó để mở đúng dòng {ref(NS_QUY, "Quỹ phép năm")} của người đó. Số này là hạn mức đang cấp thật, nên nếu đổi chính sách giữa năm thì nó là số đã chia theo tháng, và nếu lúc phân bổ bỏ tick tính lại thì nó vẫn là số cũ. Loại nghỉ chưa có dòng quỹ năm nay ghi <em>chưa cấp quỹ</em>. Phân bổ không chạm năm nay (đã kết thúc từ năm trước, hoặc bắt đầu từ năm sau) ghi dấu gạch.</p>
 <p><strong>Trạng thái</strong> tự tính theo ngày hôm nay, không ai sửa tay: <em>Sắp tới</em> (chưa tới ngày bắt đầu) · <em>Đang hiệu lực</em> · <em>Đã kết thúc</em>. Bộ lọc: ô <strong>Tìm tên, mã NV…</strong>, ô chính sách (<em>Mọi chính sách</em>), ô hiệu lực (<em>Mọi phân bổ</em> / <em>Đang hiệu lực hôm nay</em>), ô <em>Mọi pháp nhân</em>.</p>
-<p>Chính sách phải khai trước ở tab {ref(NS_CHINH_SACH, "Chính sách")} của cùng màn.</p>
+<p>Chính sách phải khai trước ở tab {ref(NS_CHINH_SACH, "Gói chính sách")}.</p>
 
 <h2>Phân bổ cho một người</h2>
 <ol>
@@ -1075,9 +1089,9 @@ Nghỉ việc:
             "icon": "settings",
             "summary": "Khai luật cho từng loại nghỉ, bảng bậc thâm niên, cái bẫy Tết Âm lịch, và khoảng Ngày cấm nghỉ",
             "content": f"""<h2>Nhân sự — Loại nghỉ, bậc thâm niên và Lịch ngày lễ</h2>
-<p>Vào <strong>Nhân sự ▸ Nghỉ phép ▸ Thiết lập</strong>. Đầu trang có ba thẻ chuyển qua lại: <strong>Loại nghỉ</strong> · <strong>Lịch ngày lễ</strong> · <strong>Ngày cấm nghỉ</strong> (mỗi thẻ chỉ hiện với người được sửa danh mục đó). Gói chính sách nghỉ phép nằm ở màn riêng, xem bài {ref(NS_CHINH_SACH, "Chính sách nghỉ phép")}. Đây là nơi <strong>đổi luật bằng dữ liệu</strong> — không phải sửa mã, không phải chờ bản cập nhật.</p>
+<p>Vào <strong>Nhân sự ▸ Thiết lập</strong>. Ba danh mục của bài này là ba tab đứng ngang hàng trong dải tab Thiết lập: <strong>Loại nghỉ</strong> · <strong>Lịch ngày lễ</strong> · <strong>Ngày cấm nghỉ</strong> (mỗi tab chỉ hiện với người được sửa danh mục đó). Gói chính sách nghỉ phép nằm ở màn riêng, xem bài {ref(NS_CHINH_SACH, "Chính sách nghỉ phép")}. Đây là nơi <strong>đổi luật bằng dữ liệu</strong> — không phải sửa mã, không phải chờ bản cập nhật.</p>
 
-<h2>Thiết lập ▸ Loại nghỉ</h2>
+<h2>Tab Loại nghỉ</h2>
 <p>Nút <strong>Thêm loại nghỉ</strong> mở <strong>một trang riêng</strong> chứ không mở hộp thoại, vì form dài. Trang làm theo kiểu ERPNext: một mặt phẳng trắng, hàng tiêu đề <strong>dính</strong> ở trên (mũi tên lùi về danh sách, tên loại nghỉ, nhãn trạng thái, nút <strong>Lưu</strong> — lúc thêm mới là <strong>Tạo loại nghỉ</strong>), ngay dưới là dải tab:</p>
 <ul>
 <li><strong>Thông tin</strong>: mã, tên và bốn nhóm ô <strong>Quỹ phép và lương</strong> · <strong>Điều kiện áp dụng</strong> · <strong>Số dư cuối năm</strong> · <strong>Thanh toán nghỉ phép</strong>, mỗi nhóm bấm tiêu đề để gập / mở. Lời giải thích của từng ô nằm sau biểu tượng <strong>(i)</strong> cạnh nhãn (nút <em>Xem giải thích</em>) — bấm vào để đọc. Cuối tab có khối <strong>Hoạt động</strong> ghi ai đã sửa ô nào, lúc nào.</li>
@@ -1140,7 +1154,7 @@ Nghỉ việc:
 <p>⚠️ Hệ lấy <strong>bậc cao nhất khớp được, KHÔNG cộng dồn</strong>. Khai bậc theo lối cộng dồn (5→+1, 10→+1, 15→+1) thì người 15 năm chỉ được +1, không phải +3.</p>
 <p>Công ty đổi sang bậc không đều thì <strong>sửa bảng này</strong> — luật nằm ở dữ liệu chứ không nằm trong mã.</p>
 
-<h2>Thiết lập ▸ Lịch ngày lễ</h2>
+<h2>Tab Lịch ngày lễ</h2>
 <p>Quyết định ngày nào <strong>không</strong> bị trừ vào phép của toàn công ty. Sai ở đây thì cả công ty bị trừ oan, mà không ai phát hiện ngay.</p>
 <ul>
 <li><strong>Không khai pháp nhân</strong> = áp cho <strong>mọi pháp nhân</strong>. Pháp nhân có lịch riêng thì thêm dòng của nó — hai nguồn được <strong>gộp</strong>, không loại trừ nhau.</li>
@@ -1149,8 +1163,8 @@ Nghỉ việc:
 <p>⚠️ <strong>Cái bẫy lớn nhất của cả phân hệ:</strong> <strong>Tết Âm lịch và Giỗ Tổ trôi theo lịch âm</strong>, dương lịch mỗi năm một khác — <strong>không</strong> đánh dấu lặp hằng năm được, <strong>mỗi năm phải nhập lại bằng tay</strong>. Quên là cả công ty bị trừ phép vào những ngày nghỉ Tết. Đặt việc này vào lịch tháng 12 hằng năm.</p>
 <p>Sửa lịch lễ <strong>không</strong> tính lại các đơn đã nộp — số ngày đã chốt trên tờ đơn. Sửa lễ sau khi người ta đã nộp thì phải rà lại đơn trong khoảng đó bằng tay.</p>
 
-<h2>Thiết lập ▸ Ngày cấm nghỉ</h2>
-<p>Nơi khai những khoảng ngày công ty <strong>không muốn ai nghỉ</strong> — chốt sổ cuối năm, kiểm kê kho, mùa cao điểm. Vào <strong>Nghỉ phép ▸ Thiết lập</strong>, bấm thẻ <strong>Ngày cấm nghỉ</strong> (cần quyền sửa danh mục Loại nghỉ), rồi bấm <strong>Thêm khoảng cấm nghỉ</strong>. Cũng vào được từ lối tắt <strong>Ngày cấm nghỉ</strong> ở cuối tab Nghỉ phép của Cài đặt nhân sự.</p>
+<h2>Tab Ngày cấm nghỉ</h2>
+<p>Nơi khai những khoảng ngày công ty <strong>không muốn ai nghỉ</strong> — chốt sổ cuối năm, kiểm kê kho, mùa cao điểm. Vào <strong>Nhân sự ▸ Thiết lập</strong>, chọn tab <strong>Ngày cấm nghỉ</strong> (cần quyền sửa danh mục Loại nghỉ), rồi bấm <strong>Thêm khoảng cấm nghỉ</strong>. Cũng vào được từ lối tắt <strong>Ngày cấm nghỉ</strong> ở cuối tab Nghỉ phép của Cài đặt nhân sự.</p>
 <table>
 <thead><tr><th>Ô</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
@@ -1164,7 +1178,7 @@ Nghỉ việc:
 <ul>
 <li><strong>Lập, sửa, gửi duyệt: không chặn.</strong> Ngay khi người nghỉ chọn ngày, form hiện <strong>khung vàng</strong> <em>Đơn nghỉ này rơi vào ngày cấm nghỉ</em> kèm ngày và lý do. Trang chi tiết đơn cũng hiện khung này để người duyệt biết.</li>
 <li><strong>Duyệt ở chặng cuối (hoặc duyệt thẳng khi chưa khai luồng): bị chặn.</strong> Người duyệt cuối bấm duyệt sẽ nhận câu <em>Đơn nghỉ này rơi vào ngày cấm nghỉ: … Chưa duyệt được</em>; đơn vẫn ở trạng thái Chờ duyệt, quỹ phép vẫn đang giữ chỗ, không có gì bị trừ. Người duyệt có thể <strong>Trả về</strong> để người nghỉ đổi ngày.</li>
-<li><strong>Ngoại lệ:</strong> quản trị hệ thống và các vai trò khai ở ô <strong>Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ</strong> (<strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong>, tab Nghỉ phép) duyệt qua được. Để trống ô đó thì chỉ quản trị duyệt qua được.</li>
+<li><strong>Ngoại lệ:</strong> quản trị hệ thống và các vai trò khai ở ô <strong>Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ</strong> (<strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Cài đặt nhân sự</strong>, tab Nghỉ phép trong màn) duyệt qua được. Để trống ô đó thì chỉ quản trị duyệt qua được.</li>
 <li><strong>Đơn nhiều khoảng ngày:</strong> chỉ khoảng nào thật sự giao với ngày cấm mới tính. Ngày nằm ở <em>khe</em> giữa hai khoảng thì không bị coi là nghỉ.</li>
 </ul>
 <p>Thêm hay tắt một khoảng cấm <strong>không</strong> làm đổi đơn đã duyệt. Đơn đang chờ duyệt thì được kiểm lại ở lượt duyệt cuối theo đúng danh sách tại thời điểm bấm.</p>""",
@@ -1180,18 +1194,18 @@ Nghỉ việc:
 <thead><tr><th>Khóa</th><th>Mở màn nào</th></tr></thead>
 <tbody>
 <tr><td><code>leave_request</code></td><td>Đơn nghỉ phép · Lịch nghỉ</td></tr>
-<tr><td><code>leave_balance</code></td><td>Quỹ phép năm (cấp phát, <strong>điều chỉnh tay</strong>) · tab <strong>Phân bổ</strong> của màn Chính sách nghỉ phép (phân bổ / kết thúc / xóa cần quyền sửa)</td></tr>
+<tr><td><code>leave_balance</code></td><td>Quỹ phép năm (cấp phát, <strong>điều chỉnh tay</strong>) · tab <strong>Phân bổ chính sách</strong> của Thiết lập (phân bổ / kết thúc / xóa cần quyền sửa)</td></tr>
 <tr><td><code>leave_comp_request</code> — nhãn <em>Nghỉ phép › Phiếu nghỉ bù</em></td><td>Nghỉ bù (lập, duyệt, hủy phiếu nghỉ bù)</td></tr>
 <tr><td><code>leave_encashment</code> — nhãn <em>Nghỉ phép › Thanh toán nghỉ phép</em></td><td>Thanh toán nghỉ phép (lập, duyệt, hủy phiếu); kèm theo là quyền <strong>thấy YCTT nghỉ phép</strong> bên Tài chính</td></tr>
-<tr><td><code>leave_type</code></td><td>Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Thiết lập ▸ Ngày cấm nghỉ và tab <strong>Chính sách</strong> của màn Chính sách nghỉ phép</td></tr>
-<tr><td><code>holiday</code></td><td>Thiết lập ▸ Lịch ngày lễ</td></tr>
+<tr><td><code>leave_type</code></td><td>Ba tab của Thiết lập: <strong>Loại nghỉ</strong> (kèm bậc thâm niên, hạn mức theo nhóm), <strong>Ngày cấm nghỉ</strong> và <strong>Gói chính sách</strong></td></tr>
+<tr><td><code>holiday</code></td><td>Tab <strong>Lịch ngày lễ</strong> của Thiết lập</td></tr>
 </tbody>
 </table>
 <p>Chính sách nghỉ phép và phân bổ chính sách (từ 03/11/2026) <strong>không thêm khóa mới</strong> — vai trò đang có hai khóa trên tự thấy hai màn đó.</p>
 <p>Tách riêng vì <strong><code>leave_balance</code> ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai</strong>. Gộp nó với <code>leave_request</code> thì cho ai xem đơn của mình là cho họ tự cộng phép.</p>
 <p><strong>Phiếu nghỉ bù có khóa riêng</strong> vì duyệt một phiếu là <em>tạo thêm ngày phép</em>. Vì cùng lý do đó, phiếu nghỉ bù <strong>luôn chặn tự duyệt</strong>, không phụ thuộc công tắc ở Cài đặt nhân sự.</p>
 <p><strong>Thanh toán nghỉ phép có khóa riêng</strong> vì duyệt phiếu là <em>đổi ngày phép ra tiền</em>; phiếu này cũng <strong>luôn chặn tự duyệt</strong>.</p>
-<p>Có quyền sửa <strong>một trong hai</strong> danh mục (<code>leave_type</code> hoặc <code>holiday</code>) thì vẫn vào được mục <em>Thiết lập</em>; chỉ sửa được một thẻ thì hệ không dựng hàng thẻ con.</p>
+<p>Mỗi tab ở Thiết lập hiện theo quyền riêng của nó: sửa được <code>leave_type</code> thì thấy tab Loại nghỉ, Ngày cấm nghỉ, Gói chính sách; sửa được <code>holiday</code> thì thấy tab Lịch ngày lễ. Người chỉ được vào đúng một tab thì không hiện dải tab.</p>
 
 <h2><em>Không thấy menu Nghỉ phép</em></h2>
 <p>⚠️ Gần như <strong>luôn</strong> là phân quyền. Sáu khóa trên là khóa <strong>mới</strong> (khóa <code>leave_comp_request</code> có từ 02/11/2026, <code>leave_encashment</code> từ 03/11/2026), mà seed cố ý <strong>không ghi đè</strong> phân quyền đã chỉnh tay trên hệ đang chạy — nên vai trò cũ <strong>không tự có</strong> chúng.</p>

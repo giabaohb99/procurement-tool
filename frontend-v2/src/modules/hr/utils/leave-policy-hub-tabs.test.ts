@@ -37,16 +37,15 @@ describe('leave policy hub tabs (duoc-CR-750)', () => {
     }
   })
 
-  it('the menu entry is labelled like the page title and sits right after Quỹ phép năm', () => {
+  it('the menu entry is labelled like the page title and lives in the Thiết lập cluster, not under Nghỉ phép (duoc-CR-753)', () => {
     const can = makeCan(['leave_balance.read', 'leave_balance.write', 'leave_type.write', 'holiday.write'])
-    const leave = visibleNavItems(hrModule, can).find((i) => i.label === 'Nghỉ phép')
-    const labels = leave?.children?.map((c) => c.label) ?? []
-    expect(labels.slice(labels.indexOf('Quỹ phép năm'), labels.indexOf('Quỹ phép năm') + 2)).toEqual([
-      'Quỹ phép năm',
-      LEAVE_POLICY_HUB_TITLE,
-    ])
+    const items = visibleNavItems(hrModule, can)
+    const setupLabels = items.find((i) => i.label === 'Thiết lập')?.children?.map((c) => c.label) ?? []
+    expect(setupLabels[0]).toBe(LEAVE_POLICY_HUB_TITLE)
+    const leaveLabels = items.find((i) => i.label === 'Nghỉ phép')?.children?.map((c) => c.label) ?? []
+    expect(leaveLabels).toEqual(['Quỹ phép năm'])
     //  Mục cũ "Phân bổ chính sách" không còn đứng song song.
-    expect(labels).not.toContain('Phân bổ chính sách')
+    expect([...setupLabels, ...leaveLabels]).not.toContain('Phân bổ chính sách')
   })
 
   it('read-only rights (the seed gives leave_balance.read to everyone) open no tab', () => {

@@ -927,7 +927,7 @@ cho *Phiếu nghỉ bù* — quản trị tự bật bộ máy duyệt nếu mu�
 
 ## 14. Cài đặt nhân sự — tab Nghỉ phép (duoc-CR-713, 02/11/2026)
 
-Trang `/hr/settings` (menu *Nhân sự ▸ Master ▸ Cài đặt nhân sự*), bố cục HR Settings của ERPNext: dải tab gạch chân
+Trang `/hr/settings` (menu *Nhân sự ▸ Thiết lập ▸ Cài đặt nhân sự*), bố cục HR Settings của ERPNext: dải tab gạch chân
 *Nhân viên · Nghỉ phép · Hợp đồng lao động*, nút *Lưu* ở đầu phải dải tab lưu cả ba tab một lần. Gác `setting.read`
 (xem) / `setting.write` (sửa); lưu qua `PUT /api/settings` nên ghi chung nhật ký *Lịch sử thay đổi* của Cấu hình hệ
 thống; khóa thuộc nhóm `hr` (màn Cấu hình hệ thống không vẽ nhóm này). Bộ đệm cấu hình 30 giây. Tiêu đề trang trùng chữ

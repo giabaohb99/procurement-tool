@@ -39,6 +39,9 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     Hợp đồng lao động (`seed_help_hop_dong_lao_dong.py`). Bài Lương sửa bước mở nhóm Lương: duoc-CR-708 (khung
     ERPNext, nhóm gập / mở) và khối Hoạt động của duoc-CR-710 đã bị bao-CR-724 (04/11) trả về giao diện cũ — nhóm
     Lương nay nằm cuối thẻ Công việc, không gập; cuối trang là khối Lịch sử thao tác.
+  * duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới (một danh sách không tiêu đề nhóm; cụm Master đổi tên
+    Danh mục; Cài đặt nhân sự cùng các màn cấu hình của Nghỉ phép, Lịch làm việc, Đặt phòng họp gom vào mục Thiết lập —
+    một dòng menu, vào trong là MỘT dải tab phẳng chín tab, không có tab con lồng bên trong).
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -95,18 +98,33 @@ TREE = {
 </ul>
 
 <h2>Các màn trong menu Nhân sự</h2>
-<p>Menu trái của phân hệ Nhân sự, nhóm <em>Danh mục</em>, có ba mục đứng riêng: <strong>Nhân sự</strong> (danh sách hồ sơ), <strong>Duyệt sửa hồ sơ</strong>, <strong>Sơ đồ tổ chức</strong>. Các danh mục nền gom vào một cụm sổ xuống tên <strong>Master</strong>: bấm <strong>Master</strong> để mở ra các mục con.</p>
+<p>Menu trái của phân hệ Nhân sự là một danh sách xếp từ trên xuống, không chia tiêu đề nhóm: <strong>Tổng quan</strong> · <strong>Nhân sự</strong> (danh sách hồ sơ) · <strong>Duyệt sửa hồ sơ</strong> · <strong>Sơ đồ tổ chức</strong> · <strong>Nghỉ phép</strong> (Đơn nghỉ phép, Nghỉ bù, Thanh toán nghỉ phép, Lịch nghỉ, Quỹ phép năm) · <strong>Lịch làm việc</strong> (một mục bấm vào là xem lịch, không sổ xuống) · <strong>Đặt phòng họp</strong> (Lịch phòng họp, Phiếu đặt phòng) · <strong>Danh mục</strong> · <strong>Thiết lập</strong>. Mục có mục con (Nghỉ phép, Đặt phòng họp, Danh mục) thì bấm vào để sổ xuống; <strong>Thiết lập</strong> là một dòng, không sổ xuống.</p>
+<p>Cụm <strong>Danh mục</strong> gom các danh mục nền:</p>
 <table>
-<thead><tr><th>Mục con của Master</th><th>Dùng để</th></tr></thead>
+<thead><tr><th>Mục con của Danh mục</th><th>Dùng để</th></tr></thead>
 <tbody>
 <tr><td><strong>Phòng ban</strong></td><td>Danh mục phòng ban, phòng ban cấp trên, trưởng bộ phận</td></tr>
 <tr><td><strong>Công ty</strong></td><td>Danh mục pháp nhân</td></tr>
 <tr><td><strong>Chức vụ</strong></td><td>Danh sách chức danh dùng ở ô Vị trí / Chức vụ, kèm {ref(POSITION_ROLES, "quyền mặc định theo chức vụ")}</td></tr>
 <tr><td><strong>Mẫu hợp đồng</strong></td><td>Mẫu Word hợp đồng lao động của từng pháp nhân, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
-<tr><td><strong>Cài đặt nhân sự</strong></td><td>{ref(HR_SETTINGS, "Cài đặt nhân sự")}</td></tr>
 </tbody>
 </table>
-<p>Thanh đường dẫn ở đầu trang ghi theo cụm, ví dụ <em>Nhân sự › Master › Chức vụ</em>. Mỗi mục con vẫn theo quyền của riêng nó: bạn chỉ thấy mục mình được vào, và cụm <strong>Master</strong> hiện khi bạn được vào ít nhất một mục con.</p>
+<p>Mục <strong>Thiết lập</strong> gom mọi màn cấu hình nền của phân hệ, trước đây nằm rải ở Nghỉ phép, Lịch làm việc và Đặt phòng họp. Bấm <strong>Thiết lập</strong> là mở màn đầu tiên bạn có quyền; ở đầu mỗi màn có <strong>một dải tab</strong> nằm ngang để chuyển sang màn khác, không có tab con lồng bên trong. Bạn chỉ thấy tab của màn mình được vào; được vào đúng một màn thì không hiện dải tab.</p>
+<table>
+<thead><tr><th>Tab của Thiết lập</th><th>Dùng để</th></tr></thead>
+<tbody>
+<tr><td><strong>Cài đặt nhân sự</strong></td><td>Tiền tố mã nhân sự, ai xem sơ đồ tổ chức, luật chặn đơn nghỉ, ngày báo hợp đồng hết hạn; xem {ref(HR_SETTINGS, "Cài đặt nhân sự")}</td></tr>
+<tr><td><strong>Phân bổ chính sách</strong></td><td>Gán gói chính sách nghỉ phép cho từng người hoặc cả nhóm người trong một khoảng ngày</td></tr>
+<tr><td><strong>Gói chính sách</strong></td><td>Khai gói số ngày nghỉ mỗi năm cho một nhóm người (cấp quản lý, thử việc…)</td></tr>
+<tr><td><strong>Loại nghỉ</strong></td><td>Luật của từng loại nghỉ, bậc thâm niên, hạn mức theo nhóm</td></tr>
+<tr><td><strong>Lịch ngày lễ</strong></td><td>Ngày lễ không trừ vào phép</td></tr>
+<tr><td><strong>Ngày cấm nghỉ</strong></td><td>Khoảng ngày công ty không muốn ai nghỉ</td></tr>
+<tr><td><strong>Mẫu lịch tuần</strong></td><td>Khai giờ làm từng ngày trong tuần của một mẫu lịch</td></tr>
+<tr><td><strong>Gán lịch</strong></td><td>Gán mẫu lịch tuần cho người, phòng ban hay pháp nhân</td></tr>
+<tr><td><strong>Danh mục phòng họp</strong></td><td>Khai phòng họp, sức chứa, thiết bị (chỉ quản trị phòng họp)</td></tr>
+</tbody>
+</table>
+<p>Thanh đường dẫn ở đầu trang ghi theo cụm, ví dụ <em>Nhân sự › Danh mục › Chức vụ</em> hay <em>Nhân sự › Thiết lập › Cài đặt nhân sự</em>. Dời menu không đổi quyền của màn nào và không đổi địa chỉ trang: mỗi màn vẫn theo quyền của riêng nó, bạn chỉ thấy mục hay tab mình được vào, và <strong>Danh mục</strong> hay <strong>Thiết lập</strong> chỉ hiện khi bạn được vào ít nhất một màn bên trong.</p>
 <p>Nghỉ phép có bộ hướng dẫn riêng ở thẻ <strong>Hướng dẫn sử dụng Nghỉ phép</strong>; hợp đồng lao động ở thẻ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}.</p>""",
     "children": [
         {
@@ -141,7 +159,7 @@ TREE = {
 <ul>
 <li>Ở hồ sơ và hộp <strong>Thêm nhân sự</strong>: <strong>Công ty</strong> (hộp thêm ghi là <strong>Pháp nhân</strong>), <strong>Phòng ban</strong>, <strong>Vị trí / Chức vụ</strong>, <strong>Người quản lý trực tiếp</strong>.</li>
 <li>Ở hộp thêm dòng quá trình công tác: pháp nhân, phòng ban, chức vụ.</li>
-<li>Ở màn <strong>Phòng ban</strong> và <strong>Công ty</strong> (cụm Master): các ô chọn pháp nhân, phòng ban, nhân sự, ví dụ <strong>Phòng ban cấp trên</strong>, <strong>Trưởng bộ phận</strong>, <strong>Người đại diện pháp lý</strong>.</li>
+<li>Ở màn <strong>Phòng ban</strong> và <strong>Công ty</strong> (cụm Danh mục): các ô chọn pháp nhân, phòng ban, nhân sự, ví dụ <strong>Phòng ban cấp trên</strong>, <strong>Trưởng bộ phận</strong>, <strong>Người đại diện pháp lý</strong>.</li>
 <li>Ô <strong>Quan hệ</strong> ở bảng người thân, hộ gia đình.</li>
 </ul>
 <p>Các ô ngắn vài lựa chọn (Giới tính, Tình trạng hôn nhân, Trình độ học vấn, Hình thức nhân viên, Cấp bậc) vẫn là ô chọn thường.</p>
@@ -217,7 +235,7 @@ TREE = {
 <tr><td>Không thấy nút <strong>Nhập Excel</strong></td><td>Thiếu một trong các quyền ở mục trên</td><td>Nhờ quản trị cấp</td></tr>
 <tr><td>Cảnh báo cột nhạy cảm bị bỏ qua</td><td>Thiếu quyền ghi thông tin nhạy cảm</td><td>Nhờ người có quyền nhập, hoặc xin quyền</td></tr>
 <tr><td>Dòng lỗi vì mã NV trùng</td><td>Một mã NV xuất hiện hai lần trong tệp</td><td>Gộp hai dòng thành một</td></tr>
-<tr><td>Dòng cảnh báo Rà soát ở cột chức vụ</td><td>Chữ ở cột chức vụ không khớp danh mục Chức vụ, hệ thống giữ nguyên chữ làm chức danh</td><td>Sửa cho khớp tên / mã trong <strong>Master ▸ Chức vụ</strong>, hoặc thêm chức vụ mới</td></tr>
+<tr><td>Dòng cảnh báo Rà soát ở cột chức vụ</td><td>Chữ ở cột chức vụ không khớp danh mục Chức vụ, hệ thống giữ nguyên chữ làm chức danh</td><td>Sửa cho khớp tên / mã trong <strong>Danh mục ▸ Chức vụ</strong>, hoặc thêm chức vụ mới</td></tr>
 <tr><td>Bấm <strong>Ghi thật</strong> lần hai trên cùng bản chạy thử bị từ chối</td><td>Bản chạy thử đó đã được ghi thật một lần</td><td>Mở lô ghi thật đã có để xem kết quả; cần nhập thêm thì chạy thử một tệp mới</td></tr>
 <tr><td>Lúc lô đang ghi, người khác thêm nhân sự bằng tay phải chờ</td><td>Lô đang giữ bộ sinh mã NV tới khi ghi xong</td><td>Điền sẵn Mã NV trong tệp để lô chạy nhẹ hơn</td></tr>
 </tbody>
@@ -315,13 +333,13 @@ TREE = {
         {
             "title": REVIEW_CHANGE,
             "icon": "shield-check",
-            "summary": "Menu Nhân sự ▸ Danh mục ▸ 'Duyệt sửa hồ sơ': bảng so sánh Lúc gửi · Hiện tại · Đề nghị, Duyệt ghi vào hồ sơ, Từ chối kèm lý do; ai được duyệt",
+            "summary": "Menu Nhân sự ▸ 'Duyệt sửa hồ sơ': bảng so sánh Lúc gửi · Hiện tại · Đề nghị, Duyệt ghi vào hồ sơ, Từ chối kèm lý do; ai được duyệt",
             "content": f"""<h2>Duyệt đề nghị sửa hồ sơ của nhân viên</h2>
 <p>Nhân viên tự gửi đề nghị sửa thông tin cá nhân, ngân hàng, giấy tờ và hộ gia đình từ Trang cá nhân (xem {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}). Đề nghị <strong>chưa đụng vào hồ sơ</strong> cho tới khi phòng Nhân sự bấm <strong>Duyệt</strong>.</p>
 
 <h2>Tìm đề nghị cần xử lý</h2>
 <ul>
-<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Duyệt sửa hồ sơ</strong>. Con số cạnh tên menu là số đề nghị đang chờ duyệt trong phạm vi của bạn.</li>
+<li>Vào <strong>Nhân sự ▸ Duyệt sửa hồ sơ</strong>. Con số cạnh tên menu là số đề nghị đang chờ duyệt trong phạm vi của bạn.</li>
 <li>Danh sách mặc định lọc <strong>Chờ duyệt</strong>; đổi ô trạng thái sang <strong>Tất cả trạng thái</strong> để xem cả đề nghị đã xử lý. Ô tìm kiếm tìm theo mã hoặc tên nhân viên.</li>
 <li>Các cột: <strong>Mã NV · Họ tên · Nhóm thay đổi · Số trường · Ngày gửi · Trạng thái</strong>. Bấm vào một dòng để mở chi tiết.</li>
 <li>Mở hồ sơ một nhân viên đang có đề nghị chờ duyệt, đầu màn hiện dải <em>Nhân viên này đang có một đề nghị sửa hồ sơ chờ duyệt.</em> kèm liên kết <strong>Xem đề nghị</strong>.</li>
@@ -490,9 +508,9 @@ TREE = {
         {
             "title": SO_DO,
             "icon": "building",
-            "summary": "Menu Nhân sự > Danh mục > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban; chỉ hiện người trong phạm vi bạn được xem",
+            "summary": "Menu Nhân sự > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban; chỉ hiện người trong phạm vi bạn được xem",
             "content": f"""<h2>Sơ đồ tổ chức</h2>
-<p>Vào <strong>Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
+<p>Vào <strong>Nhân sự ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
 
 <h2>Đọc sơ đồ</h2>
 <ul>
@@ -532,7 +550,7 @@ TREE = {
 <tbody>
 <tr><td>Người nằm nhầm phòng</td><td>Hồ sơ nhân sự ▸ ô <strong>Phòng ban</strong></td></tr>
 <tr><td>Người báo cáo nhầm sếp</td><td>Hồ sơ nhân sự ▸ ô <strong>Người quản lý trực tiếp</strong></td></tr>
-<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Master ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
+<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
 <tr><td>Màn trống</td><td>Chưa có nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này. Trống sau khi chọn phòng ban thì phòng đó chưa có ai: bỏ bớt bộ lọc</td></tr>
 </tbody>
 </table>
@@ -581,9 +599,9 @@ TREE = {
         {
             "title": HR_SETTINGS,
             "icon": "settings",
-            "summary": "Menu Nhân sự > Master > Cài đặt nhân sự: tiền tố mã, sơ đồ tổ chức, mốc kỷ niệm; chặn đơn nghỉ lùi ngày, vai trò duyệt qua ngày cấm nghỉ, chặn tự duyệt; ngày báo HĐLĐ hết hạn",
+            "summary": "Menu Nhân sự > Thiết lập, tab Cài đặt nhân sự: tiền tố mã, sơ đồ tổ chức, mốc kỷ niệm; chặn đơn nghỉ lùi ngày, vai trò duyệt qua ngày cấm nghỉ, chặn tự duyệt; ngày báo HĐLĐ hết hạn",
             "content": f"""<h2>Cài đặt nhân sự</h2>
-<p>Vào <strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong> (cụm <strong>Master</strong> nằm trong nhóm <em>Danh mục</em> ở menu trái). Tên trang hiện trên thanh đường dẫn ở đầu màn (<em>Nhân sự › Master › Cài đặt nhân sự</em>) nên trang không lặp lại tiêu đề lần nữa. Trang có ba tab <strong>Nhân viên</strong> · <strong>Nghỉ phép</strong> · <strong>Hợp đồng lao động</strong>; mọi ô mặc định đúng như hệ vẫn chạy trước nay, và mỗi ô có sẵn lời giải thích ngay dưới nhãn.</p>
+<p>Vào <strong>Nhân sự ▸ Thiết lập</strong> (mục cuối của menu trái), chọn tab <strong>Cài đặt nhân sự</strong> ở dải tab đầu trang. Tên trang hiện trên thanh đường dẫn ở đầu màn (<em>Nhân sự › Thiết lập › Cài đặt nhân sự</em>) nên trang không lặp lại tiêu đề lần nữa. Trang có ba tab <strong>Nhân viên</strong> · <strong>Nghỉ phép</strong> · <strong>Hợp đồng lao động</strong>; mọi ô mặc định đúng như hệ vẫn chạy trước nay, và mỗi ô có sẵn lời giải thích ngay dưới nhãn.</p>
 <p>Sửa ở tab nào cũng được, rồi bấm <strong>Lưu</strong> ở đầu phải dải tab (lưu cả ba tab một lần; nút chỉ sáng khi có thay đổi). Lưu xong màn báo <em>Đã lưu cài đặt nhân sự</em>; thay đổi có hiệu lực sau tối đa khoảng nửa phút (máy chủ giữ bộ nhớ đệm cấu hình 30 giây), không cần khởi động lại gì.</p>
 <p>Ai mở được trang: người có quyền <strong>Cấu hình hệ thống</strong> (xem). Ai sửa được: người có quyền Cấu hình hệ thống (sửa) — thường chỉ quản trị. Người chỉ có quyền xem thì không thấy nút Lưu, các ô bị khóa và đầu mỗi tab có câu <em>Bạn chỉ xem được — sửa cần quyền Cấu hình hệ thống.</em> Mỗi lần lưu đều ghi vào tab <strong>Lịch sử thay đổi</strong> của màn <strong>Quản trị ▸ Cấu hình hệ thống</strong>.</p>
 
@@ -605,7 +623,7 @@ TREE = {
 
 <h2>Tab Nghỉ phép — vai trò duyệt qua ngày cấm nghỉ</h2>
 <ul>
-<li>Ô <strong>Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ</strong> đi cặp với danh mục <strong>Nghỉ phép ▸ Thiết lập ▸ Ngày cấm nghỉ</strong>. Đơn nghỉ đụng một khoảng cấm vẫn lập và gửi duyệt được, nhưng lượt duyệt cuối bị chặn — trừ người có vai trò chọn ở ô này.</li>
+<li>Ô <strong>Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ</strong> đi cặp với tab <strong>Ngày cấm nghỉ</strong> của Thiết lập. Đơn nghỉ đụng một khoảng cấm vẫn lập và gửi duyệt được, nhưng lượt duyệt cuối bị chặn — trừ người có vai trò chọn ở ô này.</li>
 <li>Quản trị hệ thống luôn được duyệt qua. Để trống là chỉ quản trị.</li>
 <li>Ô này không có công tắc riêng: danh mục Ngày cấm nghỉ trống thì không có gì để chặn.</li>
 </ul>
@@ -631,13 +649,13 @@ TREE = {
         {
             "title": POSITION_ROLES,
             "icon": "key-round",
-            "summary": "Master ▸ Chức vụ ▸ tab Quyền mặc định: khai gói vai trò cho một chức vụ, tài khoản của người giữ chức vụ được tự cấp khi cấp tài khoản và khi đổi chức vụ; nút Áp lại cho người đang giữ chức vụ; nhãn Theo chức vụ ở Phân quyền tài khoản",
+            "summary": "Danh mục ▸ Chức vụ ▸ tab Quyền mặc định: khai gói vai trò cho một chức vụ, tài khoản của người giữ chức vụ được tự cấp khi cấp tài khoản và khi đổi chức vụ; nút Áp lại cho người đang giữ chức vụ; nhãn Theo chức vụ ở Phân quyền tài khoản",
             "content": f"""<h2>Dùng để làm gì</h2>
 <p>Người mới vào công ty có tài khoản là <strong>làm việc được ngay</strong>, không phải chờ quản trị gán từng vai trò. Mỗi chức vụ khai sẵn một <strong>gói vai trò</strong>; tài khoản của người giữ chức vụ đó được hệ thống tự cấp gói, và đổi chức vụ thì gói tự đổi theo.</p>
 
 <h2>Khai gói vai trò cho một chức vụ</h2>
 <ol>
-<li>Vào <strong>Nhân sự ▸ Master ▸ Chức vụ</strong>, bấm vào chức vụ cần khai.</li>
+<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Chức vụ</strong>, bấm vào chức vụ cần khai.</li>
 <li>Chọn tab <strong>Quyền mặc định</strong>. Khung <strong>Quyền mặc định của chức vụ</strong> liệt kê các vai trò đang có trong gói (cột <strong>Vai trò</strong> và <strong>Mã</strong>).</li>
 <li>Ở ô <em>Chọn vai trò để thêm…</em>, gõ để tìm rồi chọn một vai trò, bấm <strong>Thêm</strong>. Lặp lại cho đủ. Bỏ một vai trò bằng biểu tượng thùng rác ở dòng đó.</li>
 <li>Bấm <strong>Lưu</strong>.</li>

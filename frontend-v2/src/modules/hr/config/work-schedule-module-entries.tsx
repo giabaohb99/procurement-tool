@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarCog, CalendarDays, UserRoundCog } from 'lucide-react'
+import { CalendarClock, CalendarCog, UserRoundCog } from 'lucide-react'
 import type { RouteObject } from 'react-router-dom'
 
 import type { ModuleNavItem } from '@/app/router/module-definition'
@@ -13,41 +13,36 @@ import { appRoutes } from '@/shared/constants/app-routes'
  * MỞ cho mọi người đăng nhập. Hai đường `/hr/work-schedules` và
  * `/hr/work-schedule-assignments` KHÔNG là con tiền tố của nhau nên mỗi đường có
  * mục menu riêng.
+ *
+ * duoc-CR-753: hai màn quản lý (Mẫu lịch tuần, Gán lịch) dời vào cụm **Thiết lập** của menu
+ * (`hr-setup-nav-item.tsx`); ở nhóm Nghiệp vụ chỉ còn một mục Xem lịch, không sổ xuống.
  */
 export const workScheduleNavItem: ModuleNavItem = {
   label: 'Lịch làm việc',
-  //  Cha trỏ vào "Xem lịch" (ai cũng có `employee.read` là vào được), không phải màn quản lý.
-  //  Cha có con nên `itemAllowed` chỉ xét con: hiện khi CÓ ÍT NHẤT MỘT con được phép. Khai
-  //  `entities` ở cha cho đúng nghĩa; KHÔNG khai `manage` ở cha nữa.
   path: appRoutes.hr.workRoster,
   icon: CalendarClock,
-  entities: ['employee', 'work_schedule'],
-  group: 'Danh mục',
-  matchPaths: [appRoutes.hr.workSchedules, appRoutes.hr.workScheduleAssignments],
-  children: [
-    {
-      label: 'Xem lịch',
-      path: appRoutes.hr.workRoster,
-      icon: CalendarDays,
-      //  ⚠️ `employee` (đọc), KHÔNG `manage` và KHÔNG `work_schedule`: người xem lịch không cần quyền quản lý lịch.
-      entity: 'employee',
-    },
-    {
-      label: 'Mẫu lịch tuần',
-      path: appRoutes.hr.workSchedules,
-      icon: CalendarCog,
-      entity: 'work_schedule',
-      manage: true,
-    },
-    {
-      label: 'Gán lịch',
-      path: appRoutes.hr.workScheduleAssignments,
-      icon: UserRoundCog,
-      entity: 'work_schedule',
-      manage: true,
-    },
-  ],
+  //  ⚠️ `employee` (đọc), KHÔNG `manage` và KHÔNG `work_schedule`: người xem lịch không cần quyền quản lý lịch.
+  //  Mục này LÀ hàng rào của `/hr/work-roster` (gác điều hướng mặc định MỞ).
+  entity: 'employee',
 }
+
+/** Hai màn quản lý lịch — con của cụm Thiết lập. Mỗi đường một mục vì không là tiền tố của nhau. */
+export const workScheduleSetupNavItems: ModuleNavItem[] = [
+  {
+    label: 'Mẫu lịch tuần',
+    path: appRoutes.hr.workSchedules,
+    icon: CalendarCog,
+    entity: 'work_schedule',
+    manage: true,
+  },
+  {
+    label: 'Gán lịch',
+    path: appRoutes.hr.workScheduleAssignments,
+    icon: UserRoundCog,
+    entity: 'work_schedule',
+    manage: true,
+  },
+]
 
 export const workScheduleRoutes: RouteObject[] = [
   {

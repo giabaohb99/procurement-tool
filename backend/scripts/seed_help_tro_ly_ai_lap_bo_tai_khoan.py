@@ -14,6 +14,7 @@ rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không t�
 mục 3 (phần "Làm nhanh Bước 3 và 4 bằng Trợ lý AI") và với tool T49
 `propose_account_setup` (`app/modules/assistant/tools/account_setup_tool.py`, bao-CR-435).
 Đổi hành vi tool thì sửa cả ba chỗ.
+duoc-CR-753: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
 """
 import re
 import sys
@@ -126,7 +127,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <tr><td>"... chưa có tài khoản đăng nhập"</td><td>Làm Bước 2 của hướng dẫn bộ tài khoản (tab Tài khoản trong hồ sơ), rồi hỏi lại</td></tr>
 <tr><td>"Nhiều hồ sơ khớp"</td><td>Nói lại bằng <strong>mã nhân viên</strong> thay vì tên</td></tr>
 <tr><td>Không tìm thấy hồ sơ</td><td>Kiểm hồ sơ có thật và nằm trong phạm vi nhân sự bạn được xem; ngoài phạm vi thì với trợ lý cũng như không có</td></tr>
-<tr><td>Không tìm thấy phòng cần loại trừ</td><td>Gõ đúng tên phòng trong danh mục <strong>Nhân sự › Master › Phòng ban</strong>; hai phòng trùng tên ở hai công ty sẽ bị trừ cả hai</td></tr>
+<tr><td>Không tìm thấy phòng cần loại trừ</td><td>Gõ đúng tên phòng trong danh mục <strong>Nhân sự › Danh mục › Phòng ban</strong>; hai phòng trùng tên ở hai công ty sẽ bị trừ cả hai</td></tr>
 <tr><td>"Không tự đổi quyền của chính mình được"</td><td>Nhờ quản trị khác</td></tr>
 <tr><td>Thẻ báo <em>"đã đúng bộ"</em></td><td>Không cần làm gì, tài khoản đã đúng như yêu cầu</td></tr>
 </tbody></table>

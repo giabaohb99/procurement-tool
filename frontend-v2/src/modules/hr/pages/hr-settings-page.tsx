@@ -2,6 +2,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HrSetupTabs } from '../components/hr-setup-tabs'
 import { HrSettingsForm } from '../components/hr-settings-form'
 import { useHrSettings } from '../hooks/use-hr-settings'
 
@@ -28,9 +29,11 @@ export function HrSettingsPage() {
   }
 
   return (
-    <PageContainer className="flex min-h-full flex-col bg-card p-0 lg:p-0">
+    <PageContainer className="flex min-h-full flex-col">
+      {/*  duoc-CR-753: dải tab của mục menu Thiết lập — chuyển sang năm màn cấu hình còn lại. */}
+      <HrSetupTabs />
       {isPending ? (
-        <div className="space-y-3 p-4 md:p-6">
+        <div className="space-y-3">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-28" />
           <Skeleton className="h-20" />

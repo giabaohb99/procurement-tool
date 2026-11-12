@@ -24,6 +24,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 let granted = new Set<string>()
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: (entity: string, action: string) => granted.has(`${entity}.${action}`) }),
+  //  Dải tab Thiết lập (duoc-CR-753) đọc bối cảnh menu.
+  useNavContext: () => ({}),
 }))
 
 const POLICIES = { total: 1, items: [{ id: 4, code: 'CS-QL', name: 'Cấp quản lý', note: '', is_active: true }] }
@@ -67,7 +69,8 @@ function renderAt(path: string) {
   )
 }
 
-const tabLinks = () => screen.getAllByRole('link').filter((a) => a.closest('nav[aria-label="Chính sách nghỉ phép"]'))
+//  duoc-CR-753: hai tab nằm trên dải Thiết lập PHẲNG (nhãn "Phân bổ chính sách" / "Gói chính sách"), không còn thanh riêng.
+const tabLinks = () => screen.queryAllByRole('link').filter((a) => a.closest('nav[aria-label="Thiết lập nhân sự"]'))
 const activeTab = () => tabLinks().find((a) => a.getAttribute('aria-current') === 'page')?.textContent
 const calledUrls = () => apiGet.mock.calls.map(([url]) => url as string)
 
@@ -90,8 +93,9 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
     granted = new Set(['leave_balance.read', 'leave_balance.write', 'leave_type.read', 'leave_type.write', 'leave_type.create'])
     renderAt(appRoutes.hr.leavePolicyAssignments)
     expect(await screen.findByText('Trần An')).toBeInTheDocument()
-    expect(tabLinks().map((a) => a.textContent)).toEqual(['Phân bổ', 'Chính sách'])
-    expect(activeTab()).toBe('Phân bổ')
+    //  `leave_type.write` mở thêm Loại nghỉ + Ngày cấm nghỉ trên cùng dải phẳng.
+    expect(tabLinks().map((a) => a.textContent)).toEqual(['Phân bổ chính sách', 'Gói chính sách', 'Loại nghỉ', 'Ngày cấm nghỉ'])
+    expect(activeTab()).toBe('Phân bổ chính sách')
     expect(screen.getByRole('button', { name: 'Phân bổ' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Phân bổ hàng loạt' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Thêm chính sách/ })).not.toBeInTheDocument()
@@ -103,9 +107,9 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
     renderAt(`${appRoutes.hr.leavePolicyAssignments}?policy_id=4&q=NSU011`)
     await screen.findByText('Trần An')
 
-    await user.click(screen.getByRole('link', { name: 'Chính sách' }))
+    await user.click(screen.getByRole('link', { name: 'Gói chính sách' }))
     expect(await screen.findByText('Cấp quản lý', { selector: 'span' })).toBeInTheDocument()
-    expect(activeTab()).toBe('Chính sách')
+    expect(activeTab()).toBe('Gói chính sách')
     expect(screen.getByRole('button', { name: /Thêm chính sách/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Phân bổ hàng loạt' })).not.toBeInTheDocument()
     //  Bộ lọc của bảng phân bổ không dính sang bảng gói.
@@ -116,8 +120,8 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
     granted = new Set(['leave_type.read', 'leave_type.write'])
     renderAt(`${appRoutes.hr.leavePolicyAssignments}?tab=assignments`)
     expect(await screen.findByText('Cấp quản lý', { selector: 'span' })).toBeInTheDocument()
-    expect(tabLinks().map((a) => a.textContent)).toEqual(['Chính sách'])
-    expect(activeTab()).toBe('Chính sách')
+    expect(tabLinks().map((a) => a.textContent)).not.toContain('Phân bổ chính sách')
+    expect(activeTab()).toBe('Gói chính sách')
     expect(calledUrls()).not.toContain('/api/leave-policy-assignments')
   })
 
@@ -125,8 +129,9 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
     granted = new Set(['leave_balance.read', 'leave_balance.write'])
     renderAt(`${appRoutes.hr.leavePolicyAssignments}?tab=policies`)
     expect(await screen.findByText('Trần An')).toBeInTheDocument()
-    expect(tabLinks().map((a) => a.textContent)).toEqual(['Phân bổ'])
-    expect(activeTab()).toBe('Phân bổ')
+    //  Chỉ một tab được phép: dải Thiết lập không dựng (một tab thì không có gì để chuyển) — bảng phân bổ vẫn mở đúng.
+    expect(tabLinks()).toEqual([])
+    expect(screen.getByRole('button', { name: 'Phân bổ hàng loạt' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Thêm chính sách/ })).not.toBeInTheDocument()
   })
 
@@ -134,7 +139,7 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
     granted = new Set(['leave_balance.read', 'leave_balance.write', 'leave_type.write'])
     renderAt(`${appRoutes.hr.leavePolicyAssignments}?tab=%3Cscript%3E`)
     expect(await screen.findByText('Trần An')).toBeInTheDocument()
-    expect(activeTab()).toBe('Phân bổ')
+    expect(activeTab()).toBe('Phân bổ chính sách')
   })
 
   it('shows 403 and calls no API for someone with read-only rights (route fence bypassed)', () => {
@@ -152,7 +157,7 @@ describe('LeavePolicyHubPage (duoc-CR-750)', () => {
         '/hr/leave-policy-assignments?tab=policies&is_active=false',
       ),
     )
-    expect(activeTab()).toBe('Chính sách')
+    expect(activeTab()).toBe('Gói chính sách')
     await waitFor(() =>
       expect(apiGet).toHaveBeenCalledWith(
         '/api/leave-policies',

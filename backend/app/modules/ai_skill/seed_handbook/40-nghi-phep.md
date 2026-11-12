@@ -66,7 +66,7 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
 
 ## Loại nghỉ cấp quỹ thế nào (từ 02/11/2026)
 
-Nhân sự khai ở *Thiết lập ▸ Loại nghỉ* (tab *Thông tin* / *Bậc thâm niên* / *Hạn mức theo nhóm*). Tool trả
+Nhân sự khai ở *Thiết lập*, tab *Loại nghỉ* (trang một loại có tab *Thông tin* / *Bậc thâm niên* / *Hạn mức theo nhóm*). Tool trả
 `accrual_mode_label` cho từng loại:
 
 | Cách cấp | Nghĩa |
@@ -84,8 +84,8 @@ Nhân sự khai ở *Thiết lập ▸ Loại nghỉ* (tab *Thông tin* / *Bậc
 ## Chính sách nghỉ phép và phân bổ (từ 03/11/2026)
 
 **Chính sách nghỉ phép** = gói *loại nghỉ → số ngày/năm* (ví dụ *Chính sách cấp quản lý*: Phép năm 15). Nhân sự khai ở
-menu ***Nghỉ phép ▸ Chính sách nghỉ phép*** — MỘT màn hai tab (từ 11/11/2026): tab ***Chính sách*** khai gói (chi tiết gói có
-*Thông tin* · *Loại nghỉ & số ngày* · *Đang phân bổ*), tab ***Phân bổ*** gán cho người (nút ***Phân bổ*** cho một người, ***Phân bổ hàng loạt*** tối đa 500
+menu ***Nhân sự ▸ Thiết lập***, hai tab đứng cạnh nhau trong dải tab Thiết lập (từ 12/11/2026): tab ***Gói chính sách*** khai gói (chi tiết gói có
+*Thông tin* · *Loại nghỉ & số ngày* · *Đang phân bổ*), tab ***Phân bổ chính sách*** gán cho người (nút ***Phân bổ*** cho một người, ***Phân bổ hàng loạt*** tối đa 500
 người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
 
 - **Thứ tự hạn mức**: phân bổ chính sách của người > hình thức nhân viên > cấp bậc > hạn mức của loại. Loại **không có
@@ -94,7 +94,7 @@ người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
   đầu từ (hoặc trước, hoặc trong tháng) ngày vào làm thì áp **cả năm** theo số của gói (vào làm 01/10, gói 15 → 15).
 - Ô ***Tính lại hạn mức năm nay cho quỹ đã cấp*** (mặc định bật) chỉ sửa cột *Hạn mức* của quỹ **năm nay**; tắt thì
   áp từ lần cấp quỹ sau. Năm đã qua không bao giờ đổi. Sửa số ngày trong gói **không** tự tính lại quỹ đã cấp.
-- **Hai màn nối nhau** (từ 11/11/2026): tab *Phân bổ* của màn *Chính sách nghỉ phép* có cột ***Hạn mức năm nay*** (*Phép năm 15
+- **Hai màn nối nhau** (từ 11/11/2026): tab *Phân bổ chính sách* có cột ***Hạn mức năm nay*** (*Phép năm 15
   ngày*, bấm sang đúng dòng quỹ; *chưa cấp quỹ* khi chưa có dòng); *Quỹ phép năm* có cột ***Chính sách*** ở cả hai thẻ
   (*Theo loại nghỉ* khi không gói nào khai loại đó). Người hỏi "quỹ tôi lấy theo chính sách nào" thì chỉ cột này.
   Hai màn không ghi đè nhau: phân bổ chỉ đổi cột *Hạn mức*, điều chỉnh tay ở Quỹ phép năm nằm ở cột *Điều chỉnh tay*.
@@ -120,7 +120,7 @@ người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
 
 ## Ba thao tác hay nhầm: Cấp quỹ · Phân bổ chính sách · Điều chỉnh tay
 
-| | ***Cấp quỹ*** (Quỹ phép năm) | ***Phân bổ*** (Chính sách nghỉ phép › tab Phân bổ) | ***Điều chỉnh tay*** (chi tiết dòng quỹ) |
+| | ***Cấp quỹ*** (Quỹ phép năm) | ***Phân bổ*** (Thiết lập › tab Phân bổ chính sách) | ***Điều chỉnh tay*** (chi tiết dòng quỹ) |
 |---|---|---|---|
 | Làm gì | Mở dòng quỹ CÒN THIẾU cho năm (đầu năm, người mới) | Gán gói luật cho người theo khoảng ngày | Cộng / trừ ngày cho một dòng quỹ |
 | Đụng dòng đã có | **Không** | Chỉ ô *Hạn mức* năm nay (khi tick tính lại) | Chỉ ô *Điều chỉnh tay* (ghi đè, có nhật ký) |
@@ -143,7 +143,7 @@ ngày lễ · 2 ngày nghỉ theo lịch, `department_id`).
 
 ## Ngày cấm nghỉ (từ 02/11/2026)
 
-Nhân sự khai ở *Thiết lập ▸ Ngày cấm nghỉ* (khoảng ngày + lý do, áp cho cả công ty, một pháp nhân hoặc một phòng).
+Nhân sự khai ở *Thiết lập*, tab *Ngày cấm nghỉ* (khoảng ngày + lý do, áp cho cả công ty, một pháp nhân hoặc một phòng).
 
 - **Lập, sửa, gửi duyệt KHÔNG bị chặn** — chỉ hiện khung vàng *Đơn nghỉ này rơi vào ngày cấm nghỉ.*
 - **Lượt duyệt CUỐI bị chặn** (kể cả duyệt thẳng), trừ người có vai trò được miễn (*Cài đặt nhân sự ▸ Nghỉ phép*) hoặc
@@ -202,7 +202,7 @@ khi **cuối năm còn dư** hoặc khi **nghỉ việc** (Điều 113 khoản 3
 
 ## Cài đặt nhân sự — hai công tắc nghỉ phép (từ 02/11/2026)
 
-*Nhân sự ▸ Master ▸ Cài đặt nhân sự*, tab **Nghỉ phép**; cả hai mặc định **TẮT**.
+*Nhân sự ▸ Thiết lập*, tab *Cài đặt nhân sự*, tab **Nghỉ phép** trong màn; cả hai mặc định **TẮT**.
 
 - **Chặn đơn nghỉ lùi ngày**: bật thì không lập / sửa / gửi duyệt được đơn có ngày nghỉ **trước hôm nay** — hệ báo
   *Không lập được đơn nghỉ cho ngày đã qua (dd/mm/yyyy)…*. Hôm nay vẫn lập được. Vai trò được miễn (khai ở cùng tab) và
@@ -212,7 +212,7 @@ khi **cuối năm còn dư** hoặc khi **nghỉ việc** (Điều 113 khoản 3
 
 ## Phép không dùng hết thì đi đâu (kết sổ cuối năm)
 
-**Tùy từng loại nghỉ**, phòng Nhân sự khai ở *Thiết lập ▸ Loại nghỉ*. Ba nước:
+**Tùy từng loại nghỉ**, phòng Nhân sự khai ở *Thiết lập*, tab *Loại nghỉ*. Ba nước:
 ***Hết năm là mất*** (mặc định) · ***Mang sang năm sau*** · ***Quy đổi sang loại
 nghỉ khác*** (đổi theo tỷ lệ, ví dụ 2 ngày phép đổi 1 ngày nghỉ bù).
 
@@ -303,8 +303,8 @@ Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **khôn
 
 - **Nghỉ ốm không phải báo trước** (đúng vậy — không ai biết trước mai mình ốm),
   nhưng **có thể** phải đính kèm giấy khám bệnh.
-- **Loại nghỉ bắt buộc đính kèm giấy tờ** (phòng Nhân sự bật cờ ***Bắt buộc đính kèm*** ở *Thiết lập ▸
-  Loại nghỉ*; Nghỉ ốm, Nghỉ vợ sinh con thường bật): đơn phải có **ít nhất một tệp** trước khi
+- **Loại nghỉ bắt buộc đính kèm giấy tờ** (phòng Nhân sự bật cờ ***Bắt buộc đính kèm*** ở *Thiết lập*, tab
+  *Loại nghỉ*; Nghỉ ốm, Nghỉ vợ sinh con thường bật): đơn phải có **ít nhất một tệp** trước khi
   **Gửi duyệt**. **Lưu nháp thì không bị chặn.** Thứ tự đúng: **Lưu nháp** → tải tệp lên ở mục
   ***Tệp đính kèm*** (mục này chỉ có sau khi đơn đã được lưu) → bấm **Gửi duyệt**. Chưa có tệp mà gửi
   thì hệ chặn bằng câu: ***Loại nghỉ *Nghỉ ốm* bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng
@@ -397,9 +397,9 @@ và không tự bấm Lưu thay người dùng.
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
 | `leave_comp_request` | Nghỉ bù (phiếu xin nghỉ bù) |
 | `leave_encashment` | Thanh toán nghỉ phép (kèm quyền thấy YCTT nghỉ phép bên Tài chính) |
-| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · tab *Phân bổ* của màn Chính sách nghỉ phép (cần quyền **sửa**) |
-| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Ngày cấm nghỉ · tab *Chính sách* của màn Chính sách nghỉ phép (cần quyền **sửa**) |
-| `holiday` | Thiết lập ▸ Lịch ngày lễ |
+| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · tab *Phân bổ chính sách* của Thiết lập (cần quyền **sửa**) |
+| `leave_type` | Ba tab của Thiết lập: *Loại nghỉ* (kèm bậc thâm niên, hạn mức theo nhóm), *Ngày cấm nghỉ*, *Gói chính sách* (cần quyền **sửa**) |
+| `holiday` | Tab *Lịch ngày lễ* của Thiết lập |
 
 Tách như vậy vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
 Đó là việc của phòng Nhân sự (vai trò mẫu **`hr_leave`**), không phải của người nộp đơn.
@@ -429,4 +429,4 @@ phạm vi phủ phòng / công ty của người nộp — đừng đoán tên n
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là **Lịch ngày lễ**) |
 | Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
 | Mang sang năm sau | bảo lưu phép, cộng dồn phép |
-| Chính sách nghỉ phép (tab Chính sách · tab Phân bổ) | gói phép, chế độ phép, gán quỹ, phân bổ chính sách |
+| Chính sách nghỉ phép (tab Gói chính sách · tab Phân bổ chính sách) | gói phép, chế độ phép, gán quỹ, phân bổ chính sách |
