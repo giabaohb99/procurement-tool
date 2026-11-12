@@ -1,28 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Seed Trung tâm trợ giúp: TRA CỨU GIÁ HẢI QUAN (bao-CR-470, A-04 của doc/erp/hai-quan/01).
+"""Seed Trung tâm trợ giúp: TRA CỨU THỊ TRƯỜNG (bao-CR-470, A-04 của doc/erp/hai-quan/01; sửa ở duoc-CR-752).
 
-Dựng MỘT bài dưới nhóm có sẵn "Dành cho Nhân viên Mua hàng" (không đẻ nhóm mới):
-"Tra cứu giá hải quan" — kể đủ: dữ liệu là gì (dòng hàng, không phải tờ khai), năm thẻ của
-màn hình, bốn luật đọc biểu đồ, cảnh báo pháp lý, nạp dữ liệu và hoàn tác, hỏi trợ lý AI.
+Hai bài dưới nhóm DỰNG TAY "Dành cho Nhân viên Mua hàng" (cây Thu mua, không có script sở hữu):
+- "Tra cứu thị trường": dữ liệu là gì (dòng hàng, không phải tờ khai), năm thẻ của Giá thị trường, Tra cứu
+  hóa chất (nút Cột ẩn / hiện mọi cột, duoc-CR-609/610), bốn luật đọc biểu đồ, cảnh báo pháp lý, nạp dữ liệu và
+  hoàn tác, hỏi trợ lý AI.
+- "Tra cứu thị trường: cấu hình ...": bốn khối của mục Cấu hình (bao-CR-501, mã dạng chế phẩm duoc-CR-684).
 
 Chạy trong container api (LOCAL / dev — KHÔNG chạy ở prod khi đại ca chưa bảo):
     docker compose exec -T api python scripts/seed_help_customs_prices.py
+    docker compose exec -T api python scripts/seed_help_customs_prices.py --dry-run
 
-Idempotent: đã có bài cùng tiêu đề dưới đúng nhóm thì xóa bài đó (kèm bài con, nếu có) rồi
-chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự tạo bài gốc.
+duoc-CR-752: bỏ kiểu xóa bài rồi chèn lại (đổi id mỗi lần chạy, để lại mảnh RAG mồ côi) — nay dùng
+`help_seed_common.run_article_upsert`: chỉ thêm hoặc ghi đè đúng bài cùng tiêu đề dưới thẻ cha, giữ id, không
+đụng bài khác của cây Thu mua; thiếu thẻ cha thì bỏ qua bài đó. Chạy lại vô hại.
 
-Nội dung phải KHỚP với doc/erp/hai-quan/chuc-nang/11-giao-dien.md và màn /customs-prices. Không nêu
-tên doanh nghiệp có trong dữ liệu.
+Nội dung phải KHỚP với doc/erp/hai-quan/chuc-nang/11-giao-dien.md, màn /procurement/customs-prices và
+`frontend-v2/src/modules/procurement/config/customs-*-crud.tsx`. Không nêu tên doanh nghiệp có trong dữ liệu.
 """
-import sys
-
-sys.path.insert(0, "/app")
-
-from sqlalchemy import text  # noqa: E402
-
-import app.core.all_models  # noqa: E402,F401
-from app.core.database import SessionLocal  # noqa: E402
-from app.modules.help_center.model import HelpArticle  # noqa: E402
+from help_seed_common import ref, run_article_upsert
 
 STAFF_PARENT_TITLE = "Dành cho Nhân viên Mua hàng"
 ARTICLE_TITLE = "Tra cứu thị trường"  # bao-CR-500: đổi từ "Tra cứu giá hải quan"
@@ -55,7 +51,10 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 </ul>
 <p>Bảng trống có hai câu khác nhau: <em>Chưa có dữ liệu hải quan</em> nghĩa là chưa ai nạp gì; <em>Không có dòng hàng nào khớp bộ lọc</em> nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>
 
-<h2>V. Năm thẻ</h2>
+<h2>V. Năm thẻ của Giá thị trường và các mục khác</h2>
+<p>Menu <strong>Tra cứu thị trường</strong> có các mục con: <strong>Giá thị trường</strong> (năm thẻ chuyển qua lại trên đầu trang, bảng dưới),
+<strong>Tra cứu hóa chất</strong>, <strong>Tra cứu Thuốc BVTV</strong>, <strong>Lịch sử nạp</strong> và <strong>Cấu hình</strong> (chỉ người được giao mới thấy, xem bài
+{config_ref}).</p>
 <table>
 <thead><tr><th>Thẻ</th><th>Cho biết gì</th></tr></thead>
 <tbody>
@@ -63,9 +62,14 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <tr><td><strong>Biểu đồ</strong></td><td>Giá thấp nhất, bình quân, cao nhất và lượng nhập theo <strong>tháng / quý / năm</strong>. Chỉ hiện khi đã nhập từ khóa hoặc chọn mã HS.</td></tr>
 <tr><td><strong>Doanh nghiệp</strong></td><td>20 doanh nghiệp nhập nhiều nhất mặt hàng đang lọc: số dòng, tổng lượng, thị phần, giá bình quân, lần nhập gần nhất. Gộp theo mã số thuế.</td></tr>
 <tr><td><strong>So sánh</strong></td><td>Đặt 2–5 mặt hàng hoặc hoạt chất cạnh nhau trên cùng một biểu đồ, cùng một đơn vị tính.</td></tr>
-<tr><td><strong>Pháp lý &amp; thuế</strong></td><td>Tra hóa chất trong các danh mục pháp lý theo tên, số CAS hoặc công thức (ví dụ H2SO4); tra thuế suất XNK, VAT và thuế theo hiệp định thương mại theo mã HS.</td></tr>
+<tr><td><strong>Thuế</strong></td><td>Gõ mã HS (ít nhất 4 chữ số, ví dụ 38089199) để xem thuế suất XNK, VAT và thuế theo hiệp định thương mại tự do.</td></tr>
 </tbody>
 </table>
+<p><strong>Tra cứu hóa chất</strong> (mục riêng trên menu): tìm hóa chất trong các danh mục pháp lý theo tên, số CAS hoặc công thức (ví dụ H2SO4), lọc
+theo văn bản. Bảng có nút <strong>Cột</strong> ở góc phải hàng lọc: bỏ tick để ẩn cột không cần, tick lại để hiện, kéo để đổi thứ tự. Cột nào cũng
+ẩn được, kể cả <em>Phụ lục / Văn bản</em>, <em>Mã số CAS</em>, <em>Ngưỡng / Mức cấm</em> và <em>Lưu ý</em>; lựa chọn được nhớ trên máy cho lần mở sau. Trên điện
+thoại bảng hiện thành thẻ nên không có nút này. Bản Thu mua cũ cũng có nút <strong>Cột</strong> trên bảng này, báo <em>Cột (ẩn n)</em> khi đang ẩn, kèm
+<strong>Chọn tất cả</strong> và <strong>Mặc định</strong> để hiện lại.</p>
 
 <h2>VI. Đọc biểu đồ cho đúng — bốn điều</h2>
 <ol>
@@ -78,7 +82,7 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 
 <h2>VII. Cảnh báo pháp lý</h2>
 <p>Gõ từ khóa trùng một hóa chất trong danh sách <strong>hoạt chất cấm</strong>, danh sách <strong>có ngưỡng khối lượng</strong> hoặc danh sách <strong>phải công bố theo lô</strong> thì một dải cảnh báo đỏ hiện ngay dưới thanh lọc, nói rõ văn bản và việc cần lưu ý. Đây là tra cứu tham khảo; trước khi quyết định vẫn phải đối chiếu văn bản gốc.</p>
-<p>Các danh sách đó nằm ở <em>Danh mục → Hóa chất theo văn bản</em> (quyền riêng). Khi văn bản thay đổi, người có quyền sửa trực tiếp ở đó.</p>
+<p>Các danh sách đó nằm ở khối <em>Danh mục hóa chất theo văn bản</em> trong mục <strong>Cấu hình</strong> (quyền riêng). Khi văn bản thay đổi, người có quyền sửa trực tiếp ở đó.</p>
 
 <h2>VIII. Nạp dữ liệu (người có quyền nạp)</h2>
 <ol>
@@ -111,93 +115,54 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <p><strong>Doanh nghiệp tôi tìm có hai cách viết tên?</strong> Hệ thống gộp doanh nghiệp theo mã số thuế, nên hai cách viết vẫn là một doanh nghiệp ở thẻ Doanh nghiệp.</p>
 """
 
+CONFIG_TITLE = "Tra cứu thị trường: cấu hình từ khóa, từ đồng nghĩa và mã dạng chế phẩm"  # duoc-CR-752
+
+CONFIG_SUMMARY = (
+    "Dành cho người được giao cấu hình Tra cứu thị trường: bốn khối ở mục Cấu hình (từ khóa Thành phẩm / Nguyên liệu, "
+    "từ đồng nghĩa tìm kiếm, mã dạng chế phẩm thuốc BVTV, danh mục hóa chất theo văn bản), khi nào bấm Gắn lại nhãn"
+)
+
+CONFIG_CONTENT = """<h2>I. Mở ở đâu, ai thấy</h2>
+<p>Vào <strong>Mua hàng ▸ Tra cứu thị trường ▸ Cấu hình</strong>. Mục này gom các danh mục điều khiển cách màn tra cứu gắn nhãn và tìm kiếm, nên không có màn riêng ở chỗ khác.</p>
+<ul>
+<li>Ba khối đầu (từ khóa, từ đồng nghĩa, mã dạng chế phẩm) hiện với người có quyền <strong>thêm, sửa hoặc xóa</strong> ở Tra cứu thị trường.</li>
+<li>Khối <strong>Danh mục hóa chất theo văn bản</strong> hiện với người có quyền <strong>xem</strong> danh mục hóa chất (quyền riêng).</li>
+<li>Không có quyền nào ở trên thì menu không có mục <strong>Cấu hình</strong>.</li>
+<li>Bản Thu mua cũ cũng có thẻ <strong>Cấu hình</strong> với cùng các khối từ khóa, từ đồng nghĩa và mã dạng chế phẩm; dữ liệu là một.</li>
+</ul>
+
+<h2>II. Bốn khối</h2>
+<table>
+<thead><tr><th>Khối</th><th>Dùng để</th><th>Lưu ý</th></tr></thead>
+<tbody>
+<tr><td><strong>Từ khóa Thành phẩm / Nguyên liệu</strong></td><td>Hệ thống tự gắn nhãn từng dòng hàng: tên hàng chứa từ khóa loại <em>Nguyên liệu</em> thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Nhãn này là bộ lọc <em>Phân loại</em> trên màn tra cứu.</td><td>Thêm, sửa hay xóa từ khóa xong phải bấm <strong>Gắn lại nhãn</strong> thì các dòng đã nạp mới đổi theo. Từ ngắn (TC, TG…) chỉ khớp khi đứng thành một từ; từ dài khớp cả khi nằm trong chuỗi. Chọn <em>Thành phẩm</em> cho từ khóa ngoại lệ muốn thắng ngược.</td></tr>
+<tr><td><strong>Từ đồng nghĩa tìm kiếm</strong></td><td>Khai một nhóm gồm <strong>Từ gốc</strong> và các <strong>Từ đồng nghĩa</strong>. Gõ từ nào trong nhóm vào ô tìm của màn tra cứu cũng ra kết quả của cả nhóm, ví dụ nhóm WG gồm WDG, cốm phân tán.</td><td>Mỗi cách viết một dòng hoặc ngăn bằng dấu chấm phẩy; không phân biệt hoa thường. Nồng độ (3,6% · 3.6EC · 36 G/L) hệ thống tự quy đổi, không cần khai.</td></tr>
+<tr><td><strong>Mã dạng chế phẩm</strong></td><td>Tra ý nghĩa mã dạng chế phẩm thuốc BVTV trên tên hàng (EC, SC, WG…): tên tiếng Anh, tên tiếng Việt, đặc điểm.</td><td>Số đứng trước mã: dạng rắn (WP, WG, SG, SP, GR) là % khối lượng, dạng lỏng (EC, SC, SL, EW…) thường là g/L. Khối này chỉ để tra cứu, không ảnh hưởng gắn nhãn hay tìm kiếm.</td></tr>
+<tr><td><strong>Danh mục hóa chất theo văn bản</strong></td><td>Nguồn của dải cảnh báo pháp lý trên màn tra cứu và của mục <strong>Tra cứu hóa chất</strong>.</td><td>Cảnh báo chỉ lấy từ ba danh sách: hoạt chất cấm, NĐ 24 Phụ lục IV (có ngưỡng) và danh sách phải công bố. Chuyển sang ngừng dùng thì hóa chất không còn hiện trong tra cứu và cảnh báo.</td></tr>
+</tbody>
+</table>
+
+<h2>III. Thêm, sửa, tạm tắt</h2>
+<ol>
+<li>Tìm nhanh bằng ô tìm của từng khối, lọc <strong>Trạng thái</strong> (<em>Đang dùng</em> / <em>Ngừng dùng</em>); khối từ khóa lọc thêm theo <strong>Loại</strong>.</li>
+<li>Bấm nút <strong>Thêm từ khóa</strong>, <strong>Thêm nhóm từ</strong>, <strong>Thêm mã dạng</strong> hoặc <strong>Thêm hóa chất</strong> ở góc phải khối để thêm mới; bấm vào một dòng để mở hộp sửa.</li>
+<li>Muốn tạm tắt mà không mất dữ liệu: mở dòng, tắt công tắc <strong>Đang sử dụng</strong> rồi lưu. Xóa hẳn chỉ khi chắc không dùng lại.</li>
+<li>Sửa ở khối từ khóa xong: bấm <strong>Gắn lại nhãn</strong>. Hệ thống báo đã gắn lại bao nhiêu dòng, bao nhiêu nguyên liệu, bao nhiêu thành phẩm.</li>
+</ol>
+<p>Người chỉ có quyền xem vẫn mở được hộp để đọc, nhưng không có nút lưu hay xóa.</p>
+
+<h2>IV. Dữ liệu có sẵn</h2>
+<p>Ngày 26/10/2026 bộ cấu hình ban đầu đã được nạp sẵn: thêm 4 từ khóa nguyên liệu, 10 nhóm từ đồng nghĩa (phần lớn là cách viết khác nhau của mã dạng chế phẩm, như WG và WDG) và 18 mã dạng chế phẩm, rồi gắn lại nhãn cho toàn bộ dòng hàng. Người được giao chỉ cần bổ sung khi gặp cách viết mới.</p>
+<p>Cách tìm và đọc số liệu xem ở bài {main_ref}.</p>
+"""
+
 ARTICLES = [
-    (STAFF_PARENT_TITLE, ARTICLE_TITLE, SUMMARY, CONTENT, 7),
+    (STAFF_PARENT_TITLE, ARTICLE_TITLE, SUMMARY,
+     CONTENT.replace("{config_ref}", ref(CONFIG_TITLE, CONFIG_TITLE))),
+    (STAFF_PARENT_TITLE, CONFIG_TITLE, CONFIG_SUMMARY,
+     CONFIG_CONTENT.replace("{main_ref}", ref(ARTICLE_TITLE, ARTICLE_TITLE))),
 ]
 
 
-def find_group(db, title: str):
-    """Nhóm cha là bài GỐC (parent_id rỗng); trùng tiêu đề thì ưu tiên bài gốc."""
-    candidates = db.query(HelpArticle).filter(HelpArticle.title == title).all()
-    if not candidates:
-        return None
-    for art in candidates:
-        if art.parent_id is None:
-            return art
-    return candidates[0]
-
-
-def collect_descendants(db, root_id):
-    nodes = []
-    stack = [root_id]
-    while stack:
-        nid = stack.pop()
-        nodes.append(nid)
-        for (cid,) in db.query(HelpArticle.id).filter(HelpArticle.parent_id == nid).all():
-            stack.append(cid)
-    return nodes
-
-
-def delete_subtree(db, root_id):
-    #  Xóa RAW theo thứ tự sâu-trước: FK tự tham chiếu parent_id KHÔNG cascade.
-    nodes = collect_descendants(db, root_id)
-    for nid in reversed(nodes):
-        db.execute(text("DELETE FROM tab_help_home_item WHERE article_id = :id"), {"id": nid})
-        db.execute(text("DELETE FROM tab_help_article_slide WHERE article_id = :id"), {"id": nid})
-        db.execute(text("DELETE FROM tab_help_article WHERE id = :id"), {"id": nid})
-    db.flush()
-    return len(nodes)
-
-
-def seed_one(db, parent, title: str, summary: str, content: str, default_order: int):
-    old = (
-        db.query(HelpArticle)
-        .filter(HelpArticle.title == title, HelpArticle.parent_id == parent.id)
-        .first()
-    )
-    order = None
-    if old is not None:
-        order = old.sort_order
-        removed = delete_subtree(db, old.id)
-        print(f"  Đã xóa bài cũ '{title}': {removed} bài (id={old.id}).")
-    if order is None:
-        order = default_order
-
-    art = HelpArticle(
-        parent_id=parent.id,
-        title=title,
-        summary=summary,
-        content=content,
-        sort_order=order,
-    )
-    db.add(art)
-    db.flush()
-    print(f"  Đã dựng '{title}' (id={art.id}) dưới '{parent.title}' "
-          f"(id={parent.id}, sort_order={order}).")
-
-
-def main():
-    db = SessionLocal()
-    try:
-        groups = {}
-        for parent_title, *_ in ARTICLES:
-            group = find_group(db, parent_title)
-            if group is None:
-                print(f"Không thấy nhóm '{parent_title}' — dừng, không tạo bài gốc mới.")
-                sys.exit(1)
-            groups[parent_title] = group
-
-        for parent_title, title, summary, content, default_order in ARTICLES:
-            seed_one(db, groups[parent_title], title, summary, content, default_order)
-
-        db.commit()
-        print("Xong.")
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-
 if __name__ == "__main__":
-    main()
+    run_article_upsert(ARTICLES, "Nạp bài HDSD Tra cứu thị trường (bao-CR-470, duoc-CR-752) + kho vector")

@@ -30,7 +30,16 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
   * duoc-CR-711 (02/11): Sơ đồ tổ chức làm lại theo ERPNext — khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp,
     nút mở nhóm, khung thông tin, tìm người, Tìm tôi, Mở hết, hai kiểu vẽ, lọc pháp nhân / phòng ban. Nhãn đối chiếu
     bằng đọc `hr/pages/org-chart-page.tsx`, `hr/components/org-chart-{board,canvas,person-popover}.tsx`.
-(Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`.)
+  * duoc-CR-752 (12/11/2026) thêm bốn bài cho các đợt đã lên mà chưa có HDSD, để Trợ lý AI trích được qua RAG:
+    Sửa hồ sơ ở màn chi tiết (ô chọn có ô tìm của duoc-CR-747 đặt đúng chỗ: trước đó câu này nằm nhầm ở bài Tự đề
+    nghị sửa hồ sơ, nơi hộp đề nghị KHÔNG có ô Công ty / Phòng ban / Chức vụ / Quản lý), Nhập Excel nhân sự
+    (duoc-CR-628), Quyền mặc định theo chức vụ (duoc-CR-653), Quyền Xuất / Nhập và che cột nhạy cảm khi xuất
+    (duoc-CR-660 — thuộc Nền tảng, gác ở Quản trị ▸ Phân quyền tài khoản và Quản trị ▸ Xuất dữ liệu, đặt ở đây vì
+    câu hỏi hay gặp là xuất danh sách nhân sự); thẻ gốc thêm đoạn cụm menu Master (duoc-CR-712) và nối sang bộ
+    Hợp đồng lao động (`seed_help_hop_dong_lao_dong.py`). Bài Lương sửa bước mở nhóm Lương: duoc-CR-708 (khung
+    ERPNext, nhóm gập / mở) và khối Hoạt động của duoc-CR-710 đã bị bao-CR-724 (04/11) trả về giao diện cũ — nhóm
+    Lương nay nằm cuối thẻ Công việc, không gập; cuối trang là khối Lịch sử thao tác.
+(Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
 (`frontend-v2/.../config/employee-info-print-sections.ts`). Có mẫu gốc mà thứ tự mục đổi thì soát lại bài PRINT_INFO.
@@ -45,7 +54,14 @@ Idempotent: xóa nguyên cây cùng tiêu đề gốc rồi dựng lại ở đ�
 bằng `scripts/publish_handbook_update.py`) và `doc/erp/hrm/01-ho-so-nhan-su.md`.
 """
 from help_seed_common import rebuild_tree, ref
+from seed_help_hop_dong_lao_dong import check_unique_titles
 
+EDIT_PROFILE = "Nhân sự — Sửa hồ sơ nhân sự ở màn chi tiết"
+IMPORT_EXCEL = "Nhân sự — Nhập hồ sơ hàng loạt bằng tệp Excel"
+POSITION_ROLES = "Nhân sự — Quyền mặc định theo chức vụ cho tài khoản mới"
+EXPORT_PERM = "Nhân sự — Quyền Xuất, Nhập và che cột nhạy cảm khi xuất tệp"
+#  Thẻ gốc của bộ Hợp đồng lao động (`seed_help_hop_dong_lao_dong.py`) — chỉ để nối liên kết.
+HDLD_ROOT = "Hướng dẫn sử dụng Hợp đồng lao động"
 SO_DO = "Nhân sự — Xem Sơ đồ tổ chức"
 KHOA = "Nhân sự — Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo"
 PRINT_INFO = "Nhân sự — In Phiếu thông tin nhân viên"
@@ -60,10 +76,12 @@ PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nh
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
     "icon": "users",
-    "summary": "In phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; chuyển việc duyệt treo khi khóa tài khoản; cài đặt nhân sự (chặn đơn lùi ngày, tự duyệt)",
+    "summary": "Sửa hồ sơ, nhập Excel hàng loạt; in phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; chuyển việc duyệt treo khi khóa tài khoản; cài đặt nhân sự; quyền mặc định theo chức vụ; quyền xuất / nhập",
     "content": f"""<h2>Nhân sự — Hồ sơ và tổ chức</h2>
-<p>Phân hệ <strong>Nhân sự</strong> giữ hồ sơ nhân viên, phòng ban, chức vụ và (ở bộ hướng dẫn riêng) nghỉ phép. Bộ hướng dẫn này gom các tính năng <strong>mới</strong> về hồ sơ và tổ chức:</p>
+<p>Phân hệ <strong>Nhân sự</strong> giữ hồ sơ nhân viên, phòng ban, chức vụ và (ở bộ hướng dẫn riêng) nghỉ phép, hợp đồng lao động. Bộ hướng dẫn này gom các tính năng về hồ sơ và tổ chức:</p>
 <ul>
+<li>Cần sửa thông tin trong hồ sơ một người (phòng ban, chức vụ, quản lý trực tiếp…): {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")}.</li>
+<li>Cần tạo hoặc cập nhật nhiều hồ sơ một lượt: {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</li>
 <li>Cần in tờ khai thông tin của một người (hay của chính mình) để ký nộp: {ref(PRINT_INFO, "In Phiếu thông tin nhân viên")}.</li>
 <li>Bạn thấy hồ sơ của mình sai ngày sinh, đổi tài khoản ngân hàng, làm lại CCCD hay có thêm người trong hộ gia đình: {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}.</li>
 <li>Bạn ở phòng Nhân sự và cần xem, duyệt hay từ chối các đề nghị đó: {ref(REVIEW_CHANGE, "Duyệt đề nghị sửa hồ sơ của nhân viên")}.</li>
@@ -72,9 +90,139 @@ TREE = {
 <li>Muốn xem ai thuộc phòng nào, ai quản lý ai: {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</li>
 <li>Sắp khóa tài khoản hay cho một người nghỉ việc mà người đó còn phiếu cần duyệt: {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}.</li>
 <li>Muốn đổi tiền tố mã nhân sự, giới hạn ai xem sơ đồ tổ chức, chặn đơn nghỉ lùi ngày / tự duyệt, hay đổi số ngày báo HĐLĐ hết hạn: {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
+<li>Bạn là quản trị, muốn người mới có tài khoản là có đủ quyền theo chức vụ: {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ cho tài khoản mới")}.</li>
+<li>Bạn là quản trị, cần biết ai được xuất danh sách nhân sự ra tệp, ai được nhập tệp, và vì sao có cột bị để trống: {ref(EXPORT_PERM, "Quyền Xuất, Nhập và che cột nhạy cảm khi xuất tệp")}.</li>
 </ul>
-<p>Nghỉ phép có bộ hướng dẫn riêng ở thẻ <strong>Hướng dẫn sử dụng Nghỉ phép</strong>.</p>""",
+
+<h2>Các màn trong menu Nhân sự</h2>
+<p>Menu trái của phân hệ Nhân sự, nhóm <em>Danh mục</em>, có ba mục đứng riêng: <strong>Nhân sự</strong> (danh sách hồ sơ), <strong>Duyệt sửa hồ sơ</strong>, <strong>Sơ đồ tổ chức</strong>. Các danh mục nền gom vào một cụm sổ xuống tên <strong>Master</strong>: bấm <strong>Master</strong> để mở ra các mục con.</p>
+<table>
+<thead><tr><th>Mục con của Master</th><th>Dùng để</th></tr></thead>
+<tbody>
+<tr><td><strong>Phòng ban</strong></td><td>Danh mục phòng ban, phòng ban cấp trên, trưởng bộ phận</td></tr>
+<tr><td><strong>Công ty</strong></td><td>Danh mục pháp nhân</td></tr>
+<tr><td><strong>Chức vụ</strong></td><td>Danh sách chức danh dùng ở ô Vị trí / Chức vụ, kèm {ref(POSITION_ROLES, "quyền mặc định theo chức vụ")}</td></tr>
+<tr><td><strong>Mẫu hợp đồng</strong></td><td>Mẫu Word hợp đồng lao động của từng pháp nhân, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
+<tr><td><strong>Cài đặt nhân sự</strong></td><td>{ref(HR_SETTINGS, "Cài đặt nhân sự")}</td></tr>
+</tbody>
+</table>
+<p>Thanh đường dẫn ở đầu trang ghi theo cụm, ví dụ <em>Nhân sự › Master › Chức vụ</em>. Mỗi mục con vẫn theo quyền của riêng nó: bạn chỉ thấy mục mình được vào, và cụm <strong>Master</strong> hiện khi bạn được vào ít nhất một mục con.</p>
+<p>Nghỉ phép có bộ hướng dẫn riêng ở thẻ <strong>Hướng dẫn sử dụng Nghỉ phép</strong>; hợp đồng lao động ở thẻ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}.</p>""",
     "children": [
+        {
+            "title": EDIT_PROFILE,
+            "icon": "users",
+            "summary": "Nhân sự ▸ Nhân sự ▸ mở hồ sơ: các tab, thẻ Thông tin cá nhân và Công việc, ô chọn Công ty / Phòng ban / Vị trí / Chức vụ / Người quản lý trực tiếp có ô gõ để tìm, nút Lưu, khối Lịch sử thao tác",
+            "content": f"""<h2>Mở hồ sơ một người</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Nhân sự</strong>. Gõ vào ô tìm nhanh (tên, mã NV, email, số điện thoại) hoặc lọc theo phòng ban, tình trạng.</li>
+<li>Bấm vào dòng của người cần sửa. Màn chi tiết mở ra; đầu trang có nút <strong>Danh sách nhân sự</strong> để quay về (mở từ chỗ khác thì nút ghi <strong>Quay lại</strong>), và bên phải là <strong>In phiếu thông tin</strong>, <strong>Lưu</strong>, <strong>Xóa</strong> (hai nút sau chỉ hiện khi bạn có quyền).</li>
+</ol>
+<p>Người mới thì bấm <strong>Thêm mới</strong> ở góc phải màn danh sách, điền hộp <strong>Thêm nhân sự</strong>. Nhiều người một lượt thì dùng tệp Excel: {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</p>
+
+<h2>Các tab của hồ sơ</h2>
+<table>
+<thead><tr><th>Tab</th><th>Có gì</th></tr></thead>
+<tbody>
+<tr><td><strong>Chung</strong></td><td>Thẻ <strong>Thông tin cá nhân</strong> và thẻ <strong>Công việc</strong> (Công ty, Phòng ban, Vị trí / Chức vụ, Người quản lý trực tiếp, Tình trạng làm việc, Trạng thái hồ sơ, nhóm Lương)</td></tr>
+<tr><td><strong>Quá trình công tác</strong></td><td>Lịch sử bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc</td></tr>
+<tr><td><strong>Quyết định bổ nhiệm</strong></td><td>Các quyết định liên quan người này</td></tr>
+<tr><td><strong>Liên hệ &amp; Ngân hàng</strong></td><td>Số điện thoại, địa chỉ, tài khoản ngân hàng, người báo tin (xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")})</td></tr>
+<tr><td><strong>Giấy tờ &amp; BHXH</strong></td><td>CCCD, mã số thuế, BHXH, BHYT, hộ gia đình</td></tr>
+<tr><td><strong>Hợp đồng</strong></td><td>Hợp đồng lao động; chỉ hiện với người có quyền xem hợp đồng, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
+<tr><td><strong>Quỹ phép</strong></td><td>Quỹ phép năm của người này</td></tr>
+<tr><td><strong>Tài khoản</strong></td><td>Tài khoản đăng nhập gắn với hồ sơ</td></tr>
+</tbody>
+</table>
+<p>Một nút <strong>Lưu</strong> ở đầu trang lưu mọi ô của các tab hồ sơ một lần, sửa ở tab này rồi sang tab kia bấm Lưu vẫn đủ. Các bảng riêng (người báo tin, hộ gia đình, quá trình công tác, hợp đồng…) có nút lưu của riêng chúng.</p>
+
+<h2>Ô chọn gõ được để tìm</h2>
+<p>Các ô chọn có danh sách dài trong phân hệ Nhân sự đều có ô tìm: bấm vào ô, gõ vài chữ vào dòng <em>Gõ để tìm…</em> (không dấu cũng được), rồi chọn. Không khớp mục nào thì ô báo <em>Không tìm thấy mục nào.</em></p>
+<ul>
+<li>Ở hồ sơ và hộp <strong>Thêm nhân sự</strong>: <strong>Công ty</strong> (hộp thêm ghi là <strong>Pháp nhân</strong>), <strong>Phòng ban</strong>, <strong>Vị trí / Chức vụ</strong>, <strong>Người quản lý trực tiếp</strong>.</li>
+<li>Ở hộp thêm dòng quá trình công tác: pháp nhân, phòng ban, chức vụ.</li>
+<li>Ở màn <strong>Phòng ban</strong> và <strong>Công ty</strong> (cụm Master): các ô chọn pháp nhân, phòng ban, nhân sự, ví dụ <strong>Phòng ban cấp trên</strong>, <strong>Trưởng bộ phận</strong>, <strong>Người đại diện pháp lý</strong>.</li>
+<li>Ô <strong>Quan hệ</strong> ở bảng người thân, hộ gia đình.</li>
+</ul>
+<p>Các ô ngắn vài lựa chọn (Giới tính, Tình trạng hôn nhân, Trình độ học vấn, Hình thức nhân viên, Cấp bậc) vẫn là ô chọn thường.</p>
+
+<h2>Những ô cần đọc kỹ trước khi đổi</h2>
+<table>
+<thead><tr><th>Ô</th><th>Đổi xong thì sao</th></tr></thead>
+<tbody>
+<tr><td><strong>Công ty</strong></td><td>Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân sẽ <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả phòng kiêm nhiệm. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực</td></tr>
+<tr><td><strong>Người quản lý trực tiếp</strong></td><td>Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước <em>Quản lý trực tiếp người nộp</em>; bỏ trống thì bước đó chuyển cho trưởng bộ phận. Sơ đồ tổ chức cũng vẽ theo ô này</td></tr>
+<tr><td><strong>Vị trí / Chức vụ</strong></td><td>Chức danh in trên phiếu. Nếu chức vụ đó đã khai gói quyền, tài khoản của người này được cấp lại vai trò theo chức vụ mới: xem {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ cho tài khoản mới")}</td></tr>
+<tr><td><strong>Tình trạng làm việc</strong> sang nghỉ việc</td><td>Hệ thống hỏi trước và khóa tài khoản đăng nhập: xem {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}</td></tr>
+</tbody>
+</table>
+<p>Thiếu quyền xem thông tin nhạy cảm thì hồ sơ có dòng <em>Một số ô đang ẩn với bạn: CCCD, tài khoản ngân hàng, địa chỉ nhà, ngày sinh, mã số thuế và số BHXH.</em> Các ô đó hiện trống dù hồ sơ có thể đã có dữ liệu, và bấm Lưu <strong>không làm mất</strong> phần đó.</p>
+
+<h2>Xem ai đã sửa gì</h2>
+<p>Cuối trang, dưới mọi tab, là khối <strong>Lịch sử thao tác</strong>: mỗi lần lưu là một dòng, ghi người sửa, lúc nào và sửa gì. Quản trị bấm vào liên kết ở từng dòng để mở lượt ghi tương ứng ở Nhật ký hệ thống. Riêng lương không bao giờ hiện số trong lịch sử.</p>""",
+        },
+        {
+            "title": IMPORT_EXCEL,
+            "icon": "database",
+            "summary": "Màn Nhân sự ▸ nút Nhập Excel: Tải file mẫu, Chạy thử xem lỗi từng dòng, Ghi thật, Hoàn tác cả lô; ô trống là giữ nguyên, __/empty_value/__ là xóa; cột nhạy cảm cần quyền ghi thông tin nhạy cảm; tối đa 2000 dòng, không xóa nhân sự qua tệp",
+            "content": f"""<h2>Dùng khi nào</h2>
+<p>Phòng Nhân sự tạo mới hoặc cập nhật <strong>nhiều hồ sơ một lượt</strong> bằng tệp Excel: nhập hồ sơ ban đầu, bổ sung ngày vào làm, đổi phòng ban cho cả một nhóm… Hệ thống cho <strong>chạy thử</strong> để xem trước từng dòng sẽ thành gì, rồi mới ghi thật, và <strong>hoàn tác</strong> được cả lô nếu nhập sai.</p>
+
+<h2>Các bước</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Nhân sự</strong>, bấm <strong>Nhập Excel</strong> ở góc phải (cạnh <strong>Thêm mới</strong>). Hộp <strong>Nhập dữ liệu</strong> mở ra, bảng dữ liệu đã khóa sẵn là Nhân sự.</li>
+<li>Bấm <strong>Tải file mẫu</strong> để lấy tệp mẫu. Tệp có sheet hướng dẫn giải thích từng cột; điền dữ liệu vào sheet chính, mỗi người một dòng.</li>
+<li>Ở ô <strong>Chế độ</strong>, giữ <strong>Chạy thử</strong> (mặc định): hệ thống kiểm toàn bộ tệp nhưng <strong>chưa ghi</strong> gì.</li>
+<li>Kéo thả tệp .xlsx (hoặc .csv) vào ô <strong>File nhập dữ liệu</strong>, bấm <strong>Bắt đầu import</strong>.</li>
+<li>Màn chuyển sang trang chi tiết lần nhập: số <strong>Tổng dòng · Tạo · Cập nhật · Bỏ qua · Cảnh báo · Rà soát · Lỗi</strong>, và bảng nhật ký từng dòng (lọc <strong>Lỗi</strong>, <strong>Cần rà soát</strong>, <strong>Cảnh báo</strong>). Sửa tệp theo các dòng lỗi rồi chạy thử lại cho tới khi sạch.</li>
+<li>Bấm <strong>Ghi thật</strong> ở góc phải trang chi tiết, xác nhận <strong>Ghi thật</strong> trong hộp <em>Ghi thật dữ liệu từ bản chạy thử?</em>. Hệ thống chạy lại đúng tệp đó và lưu vào hồ sơ. Mỗi bản chạy thử chỉ ghi thật được <strong>một lần</strong>.</li>
+</ol>
+<p>Chọn chế độ <strong>Ghi</strong> ngay từ đầu cũng được, nhưng nên chạy thử trước: nhập nhầm 500 dòng rồi mới thấy thì phải hoàn tác cả lô.</p>
+
+<h2>Luật của tệp</h2>
+<ul>
+<li><strong>Mã NV</strong>: mã đã có thì <strong>cập nhật</strong> hồ sơ đó, mã chưa có thì <strong>tạo mới</strong>, để trống thì tạo mới và hệ thống tự sinh mã (ghi trong nhật ký lô). Một mã NV chỉ được xuất hiện <strong>một lần</strong> trong tệp.</li>
+<li><strong>Ô trống hoặc thiếu cột là giữ nguyên</strong> giá trị cũ, không xóa. Muốn xóa một ô thì ghi đúng <em>__/empty_value/__</em>. Không xóa được Họ tên, Trạng thái, Đang dùng.</li>
+<li>Cột tham chiếu ghi theo mã: <strong>Công ty (mã)</strong> (mã, tên, mã số thuế hoặc tên viết tắt của pháp nhân), <strong>Phòng ban (mã)</strong> (mã, hoặc tên chính xác trong đúng công ty), <strong>Chức vụ (mã/tên)</strong>, <strong>Quản lý trực tiếp (mã NV)</strong> (người đã có, hoặc ở dòng phía trên trong cùng tệp).</li>
+<li>Các ô mã số (Giới tính, Tình trạng hôn nhân, Trình độ học vấn, Hình thức nhân viên, Cấp bậc, Trạng thái) ghi số hoặc chữ như sheet hướng dẫn. Giá trị lạ là <strong>lỗi dòng</strong>, hệ thống không đoán.</li>
+<li>Ngày ghi <em>dd/mm/yyyy</em> hoặc <em>yyyy-mm-dd</em>, hoặc ô kiểu ngày của Excel. Định dạng các cột Số CCCD, Số tài khoản, Điện thoại là <strong>Văn bản</strong> để Excel không cắt số 0 ở đầu.</li>
+<li>Cột <strong>Ngày vào làm</strong> có trong tệp: đây là cách nhanh nhất để nhập bù ngày vào làm cho hồ sơ cũ (thiếu ngày này thì thâm niên phép tính bằng 0).</li>
+<li>Tối đa <strong>2000 dòng</strong> một tệp.</li>
+<li><strong>Không xóa nhân sự qua tệp.</strong> Muốn ngưng một người thì đặt Trạng thái là nghỉ việc (khóa luôn tài khoản đăng nhập) hoặc Đang dùng = 0.</li>
+<li>Không nhập qua tệp: ảnh CCCD, người thân / người báo tin, kiêm nhiệm phòng ban, tài khoản đăng nhập, <strong>lương</strong> (cột Lương / Phụ cấp bị bỏ qua kèm cảnh báo). Những thứ đó làm ở màn hồ sơ.</li>
+<li>Cột số điện thoại khác và nhãn số chính: xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")}.</li>
+</ul>
+
+<h2>Cột nhạy cảm</h2>
+<p>Ngày sinh, mã số thuế, địa chỉ, ngân hàng, CCCD, BHXH là cột nhạy cảm. Bạn cần <strong>quyền ghi thông tin nhạy cảm</strong> của nhân sự mới nhập được các cột này; thiếu quyền thì <strong>cả cột bị bỏ qua</strong> kèm một cảnh báo, các cột khác vẫn ghi. Tệp gốc của lô có thể chứa CCCD, số tài khoản nên nút <strong>Tải file</strong> ở trang chi tiết lô cần quyền xem thông tin nhạy cảm. Nhật ký và câu báo lỗi không bao giờ chứa giá trị của các cột này.</p>
+
+<h2>Hoàn tác một lô</h2>
+<ol>
+<li>Mở lại lô ở <strong>Quản trị ▸ Nhập dữ liệu</strong> (hoặc đường dẫn trang chi tiết vừa ghi).</li>
+<li>Bấm <strong>Hoàn tác</strong>, xác nhận <strong>Hoàn tác</strong> trong hộp <em>Hoàn tác lần import này?</em>.</li>
+</ol>
+<ul>
+<li>Hồ sơ bị <strong>sửa</strong> trở về giá trị trước khi nhập. Nếu một ô đã bị ai sửa tiếp sau lô thì hệ thống <strong>từ chối cả lượt hoàn tác</strong> và nêu mã NV cùng tên cột, để không đè mất lần sửa sau.</li>
+<li>Hồ sơ <strong>tạo mới</strong> bởi lô bị xóa, trừ khi đã có dữ liệu con (người báo tin, người thân, quá trình công tác, hợp đồng, kiêm nhiệm) hoặc đã bị sửa sau lô.</li>
+<li>Ai đủ quyền trong phạm vi đều hoàn tác được, không riêng người tạo lô. Hoàn tác về trạng thái nghỉ việc thì tài khoản bị khóa lại; hoàn tác không mở lại tài khoản đã khóa vì nghỉ việc.</li>
+</ul>
+
+<h2>Ai dùng được</h2>
+<p>Nút <strong>Nhập Excel</strong> chỉ hiện khi bạn có đủ: quyền <strong>Xem</strong> và <strong>Tạo</strong> ở dòng <strong>Nhập dữ liệu (Import)</strong>, cộng quyền <strong>Tạo</strong> hoặc <strong>Sửa</strong> hồ sơ nhân viên. Hoàn tác lô có tạo hồ sơ mới cần thêm quyền <strong>Xóa</strong> hồ sơ. Mỗi dòng chỉ ghi được cho người trong phạm vi của bạn; bạn không chuyển được ai ra khỏi phạm vi của mình và không tự đổi phòng của chính mình. Vai trò cũ không tự có các quyền này; quản trị tick ở <strong>Quản trị ▸ Phân quyền tài khoản</strong>. Lưu ý quyền xem Nhập dữ liệu là quyền chung: người có nó thấy cả danh sách lô nhập của các phân hệ khác.</p>
+
+<h2>Gặp lỗi</h2>
+<table>
+<thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td>Không thấy nút <strong>Nhập Excel</strong></td><td>Thiếu một trong các quyền ở mục trên</td><td>Nhờ quản trị cấp</td></tr>
+<tr><td>Cảnh báo cột nhạy cảm bị bỏ qua</td><td>Thiếu quyền ghi thông tin nhạy cảm</td><td>Nhờ người có quyền nhập, hoặc xin quyền</td></tr>
+<tr><td>Dòng lỗi vì mã NV trùng</td><td>Một mã NV xuất hiện hai lần trong tệp</td><td>Gộp hai dòng thành một</td></tr>
+<tr><td>Dòng cảnh báo Rà soát ở cột chức vụ</td><td>Chữ ở cột chức vụ không khớp danh mục Chức vụ, hệ thống giữ nguyên chữ làm chức danh</td><td>Sửa cho khớp tên / mã trong <strong>Master ▸ Chức vụ</strong>, hoặc thêm chức vụ mới</td></tr>
+<tr><td>Bấm <strong>Ghi thật</strong> lần hai trên cùng bản chạy thử bị từ chối</td><td>Bản chạy thử đó đã được ghi thật một lần</td><td>Mở lô ghi thật đã có để xem kết quả; cần nhập thêm thì chạy thử một tệp mới</td></tr>
+<tr><td>Lúc lô đang ghi, người khác thêm nhân sự bằng tay phải chờ</td><td>Lô đang giữ bộ sinh mã NV tới khi ghi xong</td><td>Điền sẵn Mã NV trong tệp để lô chạy nhẹ hơn</td></tr>
+</tbody>
+</table>""",
+        },
         {
             "title": PRINT_INFO,
             "icon": "printer",
@@ -136,7 +284,7 @@ TREE = {
 <ol>
 <li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>, cuộn xuống thẻ <strong>Đề nghị sửa hồ sơ</strong> (ngay dưới phần Liên hệ và người báo tin).</li>
 <li>Bấm <strong>Đề nghị sửa thông tin</strong>. Hộp <em>Đề nghị sửa thông tin hồ sơ</em> mở ra với bốn tab <strong>Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình</strong>, mọi ô đã điền sẵn giá trị hồ sơ hiện tại.</li>
-<li>Các ô chọn <strong>Công ty</strong>, <strong>Phòng ban</strong>, <strong>Vị trí / Chức vụ</strong>, <strong>Người quản lý trực tiếp</strong> và ô <strong>Quan hệ</strong> ở bảng người thân có ô tìm: bấm vào ô rồi gõ vài chữ của tên (không dấu cũng được) để lọc, khỏi phải cuộn danh sách dài.</li>
+<li>Ô <strong>Quan hệ</strong> ở bảng người thân có ô tìm: bấm vào ô rồi gõ vài chữ (không dấu cũng được) để lọc, khỏi phải cuộn danh sách dài.</li>
 <li>Chỉ sửa những ô cần đổi. Chuyển qua lại giữa các tab không làm mất chữ đã gõ. Ô <strong>Số con</strong> chỉ hiện khi tình trạng hôn nhân là <em>Có gia đình</em>.</li>
 <li>Tab <strong>Hộ gia đình</strong>: bấm <strong>Thêm dòng</strong> để thêm người, biểu tượng thùng rác để xóa một dòng. Danh sách bạn gửi sẽ <strong>thay cho cả danh sách hiện tại</strong> khi được duyệt, nên giữ lại đủ những người vẫn còn. Dòng chưa có họ tên không được tính; tối đa 30 dòng.</li>
 <li>Nếu cần giải thích, ghi vào ô <strong>Ghi chú cho phòng Nhân sự</strong> (tối đa 500 ký tự), ví dụ <em>đổi ngân hàng nhận lương từ tháng sau</em>.</li>
@@ -211,7 +359,7 @@ TREE = {
         {
             "title": SALARY,
             "icon": "wallet",
-            "summary": "Nhập Lương và Phụ cấp ở hồ sơ nhân sự (tab Chung ▸ nhóm Lương): chỉ chính người đó xem được số ở Trang cá nhân ▸ thẻ 'Lương của tôi', người khác chỉ thấy 'Đã nhập (ẩn)'; ký HĐLĐ tự cập nhật",
+            "summary": "Nhập Lương và Phụ cấp ở hồ sơ nhân sự (tab Chung ▸ thẻ Công việc ▸ nhóm Lương): chỉ chính người đó xem được số ở Trang cá nhân ▸ thẻ 'Lương của tôi', người khác chỉ thấy 'Đã nhập (ẩn)'; ký HĐLĐ tự cập nhật",
             "content": f"""<h2>Lương ở hồ sơ dùng để làm gì</h2>
 <p>Mỗi hồ sơ nhân sự có hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>. Đây là <strong>chỗ duy nhất</strong> giữ lương của một người trên ERP: báo cáo <strong>Quỹ lương theo pháp nhân</strong> cộng hai ô này lại (xem {ref(PAYROLL, "Đọc báo cáo Quỹ lương theo pháp nhân")}).</p>
 <p>⚠️ <strong>Chỉ chính nhân sự đó xem được số lương của mình.</strong> Người khác, kể cả người vừa nhập, trưởng phòng Nhân sự hay quản trị hệ thống, chỉ biết được ô đã nhập hay chưa. Trợ lý AI cũng không đọc được lương, và nhật ký thay đổi của hồ sơ chỉ ghi là có cập nhật lương, không ghi số.</p>
@@ -220,7 +368,7 @@ TREE = {
 <p>Người làm được việc này là người <strong>sửa được hồ sơ nhân sự</strong> của người đó (thường là phòng Nhân sự), trong phạm vi hồ sơ mình được sửa.</p>
 <ol>
 <li>Vào <strong>Nhân sự</strong> ▸ <strong>Nhân sự</strong>, bấm vào người cần nhập để mở hồ sơ.</li>
-<li>Ở tab <strong>Chung</strong>, kéo xuống dưới nhóm <strong>Vào làm &amp; nghỉ việc</strong>, bấm vào dòng <strong>Lương</strong> (nhóm này gập sẵn) để mở ra hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>.</li>
+<li>Ở tab <strong>Chung</strong>, kéo xuống cuối thẻ <strong>Công việc</strong> tới nhóm <strong>Lương</strong>, có hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>.</li>
 <li>Gõ số tiền một tháng, tính bằng đồng, vào từng ô. Người không có phụ cấp thì để trống ô Phụ cấp.</li>
 <li>Bấm <strong>Lưu</strong> ở đầu trang.</li>
 </ol>
@@ -480,8 +628,98 @@ TREE = {
 </ul>
 <p>Liên quan: {ref("Nộp đơn nghỉ phép", "Nộp đơn nghỉ phép")} · {ref("Nhân sự — Phân quyền và luồng duyệt", "Phân quyền và luồng duyệt nghỉ phép")} · {ref("Nhân sự — Loại nghỉ, bậc thâm niên và Lịch ngày lễ", "Loại nghỉ và Ngày cấm nghỉ")} · {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</p>""",
         },
+        {
+            "title": POSITION_ROLES,
+            "icon": "key-round",
+            "summary": "Master ▸ Chức vụ ▸ tab Quyền mặc định: khai gói vai trò cho một chức vụ, tài khoản của người giữ chức vụ được tự cấp khi cấp tài khoản và khi đổi chức vụ; nút Áp lại cho người đang giữ chức vụ; nhãn Theo chức vụ ở Phân quyền tài khoản",
+            "content": f"""<h2>Dùng để làm gì</h2>
+<p>Người mới vào công ty có tài khoản là <strong>làm việc được ngay</strong>, không phải chờ quản trị gán từng vai trò. Mỗi chức vụ khai sẵn một <strong>gói vai trò</strong>; tài khoản của người giữ chức vụ đó được hệ thống tự cấp gói, và đổi chức vụ thì gói tự đổi theo.</p>
+
+<h2>Khai gói vai trò cho một chức vụ</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Master ▸ Chức vụ</strong>, bấm vào chức vụ cần khai.</li>
+<li>Chọn tab <strong>Quyền mặc định</strong>. Khung <strong>Quyền mặc định của chức vụ</strong> liệt kê các vai trò đang có trong gói (cột <strong>Vai trò</strong> và <strong>Mã</strong>).</li>
+<li>Ở ô <em>Chọn vai trò để thêm…</em>, gõ để tìm rồi chọn một vai trò, bấm <strong>Thêm</strong>. Lặp lại cho đủ. Bỏ một vai trò bằng biểu tượng thùng rác ở dòng đó.</li>
+<li>Bấm <strong>Lưu</strong>.</li>
+</ol>
+<p><strong>Lưu gói chưa đổi quyền của ai.</strong> Từ lúc này, người <em>mới</em> được cấp tài khoản hay <em>mới</em> đổi sang chức vụ này sẽ nhận gói. Muốn áp cho những người <strong>đang</strong> giữ chức vụ, xem mục dưới.</p>
+
+<h2>Áp lại cho người đang giữ chức vụ</h2>
+<ol>
+<li>Lưu gói xong, bấm <strong>Áp lại cho người đang giữ chức vụ (N người)</strong>. Nút mờ khi gói còn thay đổi chưa lưu (rê chuột thấy <em>Lưu gói trước khi áp lại</em>) hoặc khi chưa ai giữ chức vụ.</li>
+<li>Hộp <strong>Áp lại quyền mặc định</strong> nói rõ sẽ làm gì với N người: thêm vai trò còn thiếu trong gói, gỡ vai trò hệ thống đã tự cấp trước đây mà nay không còn trong gói; vai trò quản trị gán tay không bị đụng tới. Bấm <strong>Áp lại</strong>.</li>
+</ol>
+
+<h2>Hệ thống tự cấp khi nào</h2>
+<ul>
+<li>Cấp tài khoản cho một nhân sự.</li>
+<li>Đổi chức vụ: lưu hồ sơ, nhập Excel, hoàn tác lô nhập, áp một dòng quá trình công tác.</li>
+<li>Mở khóa lại tài khoản.</li>
+</ul>
+<p>Tài khoản đang khóa hoặc hồ sơ đã nghỉ việc thì bỏ qua. Đổi chức vụ từ X sang Y thì hệ thống <strong>chỉ gỡ những vai trò đã tự cấp theo X</strong>; vai trò quản trị gán tay giữ nguyên. Ở <strong>Quản trị ▸ Phân quyền tài khoản</strong>, vai trò được cấp theo gói có nhãn <strong>Theo chức vụ: …</strong> để phân biệt với vai trò gán tay.</p>
+
+<h2>Luật đã chốt</h2>
+<ul>
+<li><strong>Gói chỉ là danh sách vai trò, không có mức phạm vi.</strong> Mức xem của mình / cả phòng / cả công ty nằm ở cấu hình của từng vai trò. Muốn trưởng phòng xem cả phòng thì chọn vai trò đã cấu hình phạm vi đó.</li>
+<li>Không đưa vào gói được: vai trò quản trị, và vai trò có quyền tạo / sửa / xóa ở <strong>Vai trò &amp; phân quyền</strong> hoặc <strong>Tài khoản</strong>.</li>
+<li><strong>Không ai tự cấp cho chính mình.</strong> Người không phải quản trị đổi chức vụ của chính mình thì không nhận gói (thu hồi vẫn chạy). Người đang giữ một chức vụ không thêm được vai trò vào gói của chính chức vụ đó.</li>
+<li><strong>Không vượt quyền người thao tác.</strong> Người không phải quản trị chỉ cấp được vai trò mà mình có đủ quyền; vai trò còn lại bị bỏ qua và ghi nhật ký.</li>
+<li>Sửa gói cần quyền <strong>Sửa</strong> ở dòng <strong>Vai trò &amp; phân quyền</strong> (không phải quyền sửa danh mục chức vụ). Thiếu quyền xem vai trò thì tab ghi <em>Bạn cần quyền xem Vai trò để xem quyền mặc định của chức vụ.</em></li>
+<li>Một vai trò đang nằm trong gói của chức vụ nào đó thì không xóa được vai trò đó.</li>
+</ul>
+
+<h2>Hạn chế cần biết</h2>
+<ul>
+<li><strong>Bỏ một vai trò của gói cho riêng một người</strong>: phải sửa gói hoặc đổi chức vụ của họ. Bỏ tick ở Phân quyền tài khoản sẽ bị cấp lại ở lần <strong>Áp lại</strong> hay lần đổi chức vụ sau.</li>
+<li>Vai trò vừa gỡ có thể còn tác dụng tối đa khoảng một phút; người đang đăng nhập nên đăng xuất rồi đăng nhập lại để thấy đúng quyền mới.</li>
+</ul>
+<p>Liên quan: {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")} · {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</p>""",
+        },
+        {
+            "title": EXPORT_PERM,
+            "icon": "shield-check",
+            "summary": "Cột Xuất và cột Nhập trong ma trận quyền là quyền riêng, không còn đi theo Xem / Sửa; xuất danh sách nhân sự lọc theo phạm vi của quyền Xuất; cột nhạy cảm để trống khi thiếu quyền xem thông tin nhạy cảm; ai tải lại được tệp đã xuất",
+            "content": f"""<h2>Xuất và Nhập là quyền riêng</h2>
+<p>Trong ma trận quyền của vai trò (<strong>Quản trị ▸ Phân quyền tài khoản</strong> ▸ tab <strong>Vai trò &amp; quyền</strong>), mỗi dòng chức năng có hai cột riêng:</p>
+<table>
+<thead><tr><th>Cột</th><th>Cho làm gì</th><th>Trước đây</th></tr></thead>
+<tbody>
+<tr><td><strong>Xuất</strong></td><td>Tải danh sách ra tệp CSV / Excel: hồ sơ nhân sự, phòng ban, sản phẩm, nhà cung cấp và các danh mục khác có nút xuất tệp</td><td>Ai có <strong>Xem</strong> là xuất được</td></tr>
+<tr><td><strong>Nhập</strong></td><td>Nhập tệp CSV hàng loạt vào các danh mục có nút nhập tệp (ví dụ sản phẩm, nhà cung cấp)</td><td>Ai có <strong>Sửa</strong> là nhập được</td></tr>
+</tbody>
+</table>
+<p>Lý do tách: một tệp xuất là cả danh sách mang ra ngoài hệ thống, và một tệp nhập có thể tạo / sửa hàng trăm dòng một lúc; hai việc này không nên tự đi kèm quyền xem hay quyền sửa từng dòng. <strong>Vai trò cũ không tự có hai cột này</strong>: sau khi lên bản mới, quản trị tick lại <strong>Xuất</strong> / <strong>Nhập</strong> cho những vai trò trước đây vẫn xuất / nhập được.</p>
+<p>Nhập hồ sơ nhân sự bằng tệp Excel ở màn Nhân sự đi đường khác, cần quyền ở dòng <strong>Nhập dữ liệu (Import)</strong>: xem {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</p>
+
+<h2>Xuất danh sách nhân sự</h2>
+<ul>
+<li>Cần quyền <strong>Xuất</strong> ở dòng <strong>Nhân viên</strong>. Ở bản mới, cách làm là <strong>Quản trị ▸ Xuất dữ liệu</strong> ▸ nút <strong>Xuất dữ liệu</strong> ▸ chọn phân hệ Nhân sự, bảng Nhân sự, định dạng <strong>Excel (XLSX)</strong> hoặc <strong>CSV</strong> ▸ bấm <strong>Xuất dữ liệu</strong>. Chưa được cấp quyền xuất bảng nào thì hộp báo <em>Bạn chưa được cấp quyền xuất bảng nào.</em></li>
+<li>Tệp chỉ gồm những hồ sơ nằm trong <strong>phạm vi của quyền Xuất</strong> (không phải phạm vi của quyền Xem). Ví dụ vai trò xem được cả công ty nhưng chỉ được xuất phòng mình thì tệp chỉ có phòng mình.</li>
+<li><strong>Cột nhạy cảm</strong> (ngày sinh, mã số thuế, địa chỉ, ngân hàng, CCCD, BHXH) để <strong>trống</strong> nếu người xuất không có quyền xem thông tin nhạy cảm của nhân sự; dòng hồ sơ của chính người xuất thì vẫn đủ. Ô trống trong tệp vì thế không có nghĩa là hồ sơ chưa nhập.</li>
+<li>Lương không bao giờ có trong tệp xuất.</li>
+</ul>
+
+<h2>Ai tải lại được tệp đã xuất</h2>
+<p>Mỗi lần xuất được ghi vào bảng ở <strong>Quản trị ▸ Xuất dữ liệu</strong>, kèm nút tải lại tệp. Tệp là ảnh chụp theo quyền của <strong>người đã xuất</strong>, nên chỉ những người sau tải lại được:</p>
+<ul>
+<li>Chính người đã xuất.</li>
+<li>Người có quyền <strong>Xuất</strong> phạm vi <strong>tất cả</strong> trên đúng bảng đó. Với bảng Nhân sự còn cần thêm quyền xem thông tin nhạy cảm phạm vi tất cả, vì tệp do người có quyền đó xuất ra chứa đủ CCCD, tài khoản ngân hàng.</li>
+</ul>
+<p>Người khác bấm tải sẽ bị báo <em>Chỉ người đã xuất, hoặc người có quyền xuất toàn hệ trên bảng này, được tải lại tệp</em>.</p>
+
+<h2>Cấp quyền gợi ý</h2>
+<table>
+<thead><tr><th>Ai</th><th>Nên có</th></tr></thead>
+<tbody>
+<tr><td>Nhân viên phòng Nhân sự làm hồ sơ</td><td>Nhân viên: Xem, Tạo, Sửa; Xuất trong phạm vi pháp nhân mình. Thông tin nhạy cảm: Xem, Sửa nếu được giao nhập CCCD, ngân hàng</td></tr>
+<tr><td>Trưởng phòng ban khác</td><td>Nhân viên: Xem phạm vi phòng mình. Thường <strong>không</strong> cần Xuất</td></tr>
+</tbody>
+</table>
+<p>Người đang đăng nhập giữ quyền cũ tới khi đăng xuất rồi đăng nhập lại.</p>""",
+        },
     ],
 }
 
 if __name__ == "__main__":
+    check_unique_titles(TREE)
     rebuild_tree(TREE)

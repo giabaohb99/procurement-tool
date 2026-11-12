@@ -130,6 +130,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-752 | Viết hướng dẫn sử dụng cho các đợt Nhân sự, Hợp đồng lao động, Đặt xe, Tra cứu thị trường chưa có bài để Trợ lý AI trích được
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** kho tìm kiếm của Trợ lý AI chỉ nạp bài hướng dẫn sử dụng và câu hỏi thường gặp, nên tính năng nào chưa có bài thì trợ lý không trả lời được. Rà các đợt từ đầu tháng 10 thì thấy cụm Hợp đồng lao động, Nhập Excel nhân sự, quyền theo chức vụ, cấu hình Tra cứu thị trường và cách dùng trên điện thoại chưa có bài nào.
+
+**Đã làm**
+- Dựng bộ bài mới **Hướng dẫn sử dụng Hợp đồng lao động** gồm bảy bài: lập hợp đồng theo mẫu của từng pháp nhân, menu Thao tác, mẫu Word và danh sách biến, cảnh báo sắp hết hạn, xem lại hợp đồng của tôi ở Trang cá nhân, và phân quyền.
+- Thêm bốn bài vào bộ Nhân sự: sửa hồ sơ ở màn chi tiết, nhập hồ sơ hàng loạt bằng Excel, quyền mặc định theo chức vụ, quyền Xuất / Nhập và che cột nhạy cảm; sửa bài Lương cho đúng chỗ của nhóm Lương trên màn hiện tại và chuyển câu ô chọn gõ tìm được về đúng bài.
+- Sửa bài Đặt xe và bài Phê duyệt theo quyền: người khác cùng quyền mà phạm vi phủ phiếu cũng duyệt được, chuông và thư chỉ tới người được chọn.
+- Thêm bài cấu hình từ khóa, từ đồng nghĩa và mã dạng chế phẩm của Tra cứu thị trường, sửa bảng thẻ cũ đã sai; script Tra cứu thị trường chuyển sang ghi đè đúng bài thay vì xóa rồi chèn lại để không sinh đoạn mồ côi trong kho tìm kiếm.
+- Thêm bài **Dùng ERP trên điện thoại**: bảng chuyển thành thẻ ở Thu mua, Nhân sự, Đặt xe, và cách bản mới tự tải lại.
+- Cố ý không viết bài cho Hồ sơ cách làm việc, Bộ chỉ số và Năng lực theo loại việc vì kho tìm kiếm chưa lọc theo quyền, ai hỏi cũng sẽ được trích.
+- Khối Hoạt động trên hồ sơ không viết vì bao-CR-724 đã gỡ khỏi màn.
+- Trên máy local đã chạy seed hai lần và nạp lại chỉ mục kèm dọn đoạn mồ côi, kho đủ 159 bài và 11 câu hỏi thường gặp; hỏi thử sáu câu đều trích đúng bài mới. Dev và prod nạp ở lần deploy tới theo mục B.6 của quy trình deploy.
+
+Mã nguồn: `backend/scripts/seed_help_hop_dong_lao_dong.py`, `seed_help_nhan_su.py`, `seed_help_dat_xe_chon_nguoi_duyet.py`, `seed_help_phe_duyet_theo_quyen.py`, `seed_help_customs_prices.py`, `seed_help_he_thong_cap_nhat.py`
+
 ## ai-CR-235 | Cẩm nang trợ lý cho bốn phân hệ văn phòng: đặt xe, duyệt dấu, diễn đàn, kho
 - status: xong
 - date: 2026-11-11
