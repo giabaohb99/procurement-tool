@@ -16,7 +16,7 @@ import { LeavePolicyAssignmentListPage } from './leave-policy-assignment-list-pa
  * sách gói). Tab nhớ trên URL; vắng hoặc sai / không có quyền thì mở tab đầu tiên người đó được thấy.
  *
  * ⚠️ **Mỗi tab là CẢ một màn danh sách có sẵn, không phải phần thân nhúng dưới một tiêu đề chung** — nút đầu trang
- * tự đổi theo tab mà không phải chép khung bảng nào. Từ duoc-CR-753 hai tab KHÔNG còn thanh riêng: chúng là hai tab
+ * tự đổi theo tab mà không phải chép khung bảng nào. Từ duoc-CR-754 hai tab KHÔNG còn thanh riêng: chúng là hai tab
  * **Phân bổ chính sách** · **Gói chính sách** của dải Thiết lập phẳng (`utils/hr-setup-tab-list.ts`).
  *
  * Đổi tab = đổi `?tab=` và BỎ bộ lọc của tab cũ (link của dải tab không mang tham số khác): hai bảng có bộ lọc

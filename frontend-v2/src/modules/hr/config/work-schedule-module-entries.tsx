@@ -14,7 +14,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
  * `/hr/work-schedule-assignments` KHÔNG là con tiền tố của nhau nên mỗi đường có
  * mục menu riêng.
  *
- * duoc-CR-753: hai màn quản lý (Mẫu lịch tuần, Gán lịch) dời vào cụm **Thiết lập** của menu
+ * duoc-CR-754: hai màn quản lý (Mẫu lịch tuần, Gán lịch) dời vào cụm **Thiết lập** của menu
  * (`hr-setup-nav-item.tsx`); ở nhóm Nghiệp vụ chỉ còn một mục Xem lịch, không sổ xuống.
  */
 export const workScheduleNavItem: ModuleNavItem = {

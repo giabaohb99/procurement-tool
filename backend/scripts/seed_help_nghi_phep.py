@@ -54,7 +54,7 @@ Nhãn đối chiếu bằng đọc `hr/pages/leave-encashment-*.tsx`, `hr/compon
 `hr/config/leave-type-encashment-fields.ts`, `hr/components/leave-balance-columns.tsx`, câu báo lỗi ở
 `leave/encashment_service.py`, `encashment_transitions.py`, `encashment_serializer.py`, và màn thật localhost:8083.
 
-duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới. Menu Nghỉ phép còn năm mục; Chính sách nghỉ phép và Thiết lập
+duoc-CR-754 (12/11/2026): đổi đường menu theo menu mới. Menu Nghỉ phép còn năm mục; Chính sách nghỉ phép và Thiết lập
 (Loại nghỉ · Lịch ngày lễ · Ngày cấm nghỉ) thành tab của mục Thiết lập: một dòng menu, vào trong là MỘT dải
 tab phẳng (Cài đặt nhân sự · Phân bổ chính sách · Gói chính sách · Loại nghỉ · Lịch ngày lễ · Ngày cấm nghỉ · ...),
 không còn tab con lồng bên trong. Địa chỉ trang và quyền không đổi.

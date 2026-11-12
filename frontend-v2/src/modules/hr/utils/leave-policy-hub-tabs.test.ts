@@ -37,7 +37,7 @@ describe('leave policy hub tabs (duoc-CR-750)', () => {
     }
   })
 
-  it('the menu entry is labelled like the page title and lives in the Thiết lập cluster, not under Nghỉ phép (duoc-CR-753)', () => {
+  it('the menu entry is labelled like the page title and lives in the Thiết lập cluster, not under Nghỉ phép (duoc-CR-754)', () => {
     const can = makeCan(['leave_balance.read', 'leave_balance.write', 'leave_type.write', 'holiday.write'])
     const items = visibleNavItems(hrModule, can)
     const setupLabels = items.find((i) => i.label === 'Thiết lập')?.children?.map((c) => c.label) ?? []

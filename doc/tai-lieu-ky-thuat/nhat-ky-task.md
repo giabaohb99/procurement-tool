@@ -130,13 +130,13 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
-## duoc-CR-753 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
+## duoc-CR-754 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
 - status: xong
 - date: 2026-11-12
 - list: Nhân sự
 - pic: NSU231
 - tag: Được
-**Bối cảnh:** menu trái phân hệ Nhân sự để mọi mục dưới một tiêu đề nhóm, cụm danh mục mang chữ tiếng Anh **Master**, còn sáu màn cấu hình rải ở bốn cụm khác nhau nên menu dài và khó tìm.
+**Bối cảnh:** (mục này từng mang mã duoc-CR-753 ở commit `aa51621b`; đổi sang 754 vì số 753 đã được bao-CR-753 đặt trước.) Menu trái phân hệ Nhân sự để mọi mục dưới một tiêu đề nhóm, cụm danh mục mang chữ tiếng Anh **Master**, còn sáu màn cấu hình rải ở bốn cụm khác nhau nên menu dài và khó tìm.
 
 **Đã làm**
 - Menu Nhân sự thành một danh sách xếp từ trên xuống, không còn tiêu đề nhóm; cụm **Master** đổi tên thành **Danh mục** gồm Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng.

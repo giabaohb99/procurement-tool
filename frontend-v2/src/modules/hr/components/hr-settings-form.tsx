@@ -69,7 +69,7 @@ export function HrSettingsForm({ fields, canWrite, canReadRoles }: HrSettingsFor
 
   return (
     <Tabs defaultValue={tabs[0].value} className="flex min-h-0 flex-1 flex-col gap-0">
-      {/*  duoc-CR-753: cùng khuôn với các màn khác của cụm Thiết lập — tab con đứng hàng tiêu đề (kiểu gạch chân như
+      {/*  duoc-CR-754: cùng khuôn với các màn khác của cụm Thiết lập — tab con đứng hàng tiêu đề (kiểu gạch chân như
            `SubTabLink`), nút Lưu bên phải, tiêu đề chỉ còn cho trình đọc màn hình (`hideTitle`). Nút Lưu vẫn lưu MỌI
            tab một lần. */}
       <PageHeader

@@ -9,7 +9,7 @@ Bản 2 (04/09/2026) viết dày hơn hẳn bản đầu: đi theo TỪNG BƯỚ
 và nhãn ô trên màn hình, thêm ba bài mới — *theo dõi/sửa/hủy phiếu*, *xử lý câu
 báo lỗi*, và tách phần quản trị thành *danh mục phòng* + *phân quyền & luồng*.
 
-duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới. Menu Đặt phòng họp sổ xuống hai mục Lịch phòng họp, Phiếu
+duoc-CR-754 (12/11/2026): đổi đường menu theo menu mới. Menu Đặt phòng họp sổ xuống hai mục Lịch phòng họp, Phiếu
 đặt phòng; Danh mục phòng họp dời vào mục Thiết lập của menu Nhân sự (một tab của dải tab Thiết lập). Thanh tab
 Lịch · Phiếu · Danh mục trong màn đã bỏ từ trước (chuyển sang mục con ở menu), bài sửa theo.
 

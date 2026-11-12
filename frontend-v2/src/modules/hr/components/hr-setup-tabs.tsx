@@ -6,7 +6,7 @@ import { buildHrSetupTabs } from '../utils/hr-setup-tab-list'
 import { SubTabLink } from './sub-tab-link'
 
 /**
- * Dải tab của mục menu **Thiết lập** phân hệ Nhân sự (duoc-CR-753). Menu chỉ còn MỘT dòng Thiết lập; chuyển giữa các
+ * Dải tab của mục menu **Thiết lập** phân hệ Nhân sự (duoc-CR-754). Menu chỉ còn MỘT dòng Thiết lập; chuyển giữa các
  * màn cấu hình bằng dải này, đặt ở đầu từng màn danh sách.
  *
  * ⚠️ Danh sách tab do `buildHrSetupTabs` dựng: MỘT hàng phẳng (không tab lồng trong tab), cùng luật quyền với menu và

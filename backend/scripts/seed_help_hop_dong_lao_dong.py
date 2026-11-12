@@ -19,7 +19,7 @@ Nhãn đối chiếu bằng đọc mã ngày 12/11/2026: `hr/components/employee
 `hr/pages/labor-contract-variables-page.tsx`, `labor-contract-variable-*.tsx`, `expiring-labor-contracts-card.tsx`,
 `app/components/profile/profile-labor-contracts-tab.tsx`, `hr/routes.tsx` (cụm Master); câu lỗi lấy từ
 `backend/app/modules/labor_contract/` (`service.py`, `rules.py`, `contract_custom_values.py`, `expiry_service.py`).
-duoc-CR-753: đổi đường menu theo menu mới (cụm Master đổi tên Danh mục; Cài đặt nhân sự là một tab của mục Thiết lập).
+duoc-CR-754: đổi đường menu theo menu mới (cụm Master đổi tên Danh mục; Cài đặt nhân sự là một tab của mục Thiết lập).
 
 Chạy trong container api (KHÔNG chạy lên prod; prod đồng bộ Help Center theo đợt riêng):
     docker compose exec -T api python scripts/seed_help_hop_dong_lao_dong.py

@@ -48,7 +48,7 @@ const ADMIN = [
   'meeting_room.write',
 ]
 
-describe('HrSetupTabs (duoc-CR-753)', () => {
+describe('HrSetupTabs (duoc-CR-754)', () => {
   it('shows ONE flat row of nine screens for an HR admin — no tab inside a tab', () => {
     grants = ADMIN
     build('/hr/settings')

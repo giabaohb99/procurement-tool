@@ -138,7 +138,7 @@ export interface ModuleNavItem {
    * TIÊN người đó được phép, dòng sáng khi đang ở bất kỳ mục con nào. Mục con hiện thành **dải tab** ở đầu từng màn
    * (trang tự dựng dải đó, đọc `visibleNavChildren`), nên luật quyền vẫn khai MỘT chỗ ở đây và vẫn là hàng rào route.
    *
-   * Sinh ra cho cụm Thiết lập của Nhân sự (duoc-CR-753): sáu màn cấu hình sổ xuống chiếm cả nửa menu.
+   * Sinh ra cho cụm Thiết lập của Nhân sự (duoc-CR-754): sáu màn cấu hình sổ xuống chiếm cả nửa menu.
    */
   childrenAsTabs?: boolean
 }

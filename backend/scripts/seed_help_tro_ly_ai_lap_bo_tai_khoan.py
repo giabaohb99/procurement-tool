@@ -14,7 +14,7 @@ rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không t�
 mục 3 (phần "Làm nhanh Bước 3 và 4 bằng Trợ lý AI") và với tool T49
 `propose_account_setup` (`app/modules/assistant/tools/account_setup_tool.py`, bao-CR-435).
 Đổi hành vi tool thì sửa cả ba chỗ.
-duoc-CR-753: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
+duoc-CR-754: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
 """
 import re
 import sys

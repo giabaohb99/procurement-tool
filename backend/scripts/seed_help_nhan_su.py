@@ -39,7 +39,7 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     Hợp đồng lao động (`seed_help_hop_dong_lao_dong.py`). Bài Lương sửa bước mở nhóm Lương: duoc-CR-708 (khung
     ERPNext, nhóm gập / mở) và khối Hoạt động của duoc-CR-710 đã bị bao-CR-724 (04/11) trả về giao diện cũ — nhóm
     Lương nay nằm cuối thẻ Công việc, không gập; cuối trang là khối Lịch sử thao tác.
-  * duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới (một danh sách không tiêu đề nhóm; cụm Master đổi tên
+  * duoc-CR-754 (12/11/2026): đổi đường menu theo menu mới (một danh sách không tiêu đề nhóm; cụm Master đổi tên
     Danh mục; Cài đặt nhân sự cùng các màn cấu hình của Nghỉ phép, Lịch làm việc, Đặt phòng họp gom vào mục Thiết lập —
     một dòng menu, vào trong là MỘT dải tab phẳng chín tab, không có tab con lồng bên trong).
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)

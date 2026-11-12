@@ -5,8 +5,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { workScheduleSetupNavItems } from './work-schedule-module-entries'
 
 /**
- * Cụm **Thiết lập** của menu Nhân sự (duoc-CR-753): gom mọi màn cấu hình nền vào MỘT mục sổ xuống thay vì rải ở
- * Master, Nghỉ phép, Lịch làm việc và Đặt phòng họp như trước.
+ * Mục **Thiết lập** của menu Nhân sự (duoc-CR-754): gom mọi màn cấu hình nền vào MỘT dòng menu (không sổ xuống, mục
+ * con thành dải tab phẳng) thay vì rải ở Master, Nghỉ phép, Lịch làm việc và Đặt phòng họp như trước.
  *
  * ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `entities` / `action` / `manage` / `matchPaths` như lúc còn ở cụm cũ: bộ gác
  * route (`canAccessRoute`) duyệt cả mục con và khớp theo đường dẫn dài nhất, nên dời cụm không đổi quyền của màn nào.

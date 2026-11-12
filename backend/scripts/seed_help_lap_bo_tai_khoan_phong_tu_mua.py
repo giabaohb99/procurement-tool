@@ -16,7 +16,7 @@ rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không t�
 ⚠️ Nội dung ở đây phải KHỚP với `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
 (mục 1 → 8) và với hành vi thật của màn Nhân sự / Phân quyền tài khoản / hộp Phạm vi.
 Bài cố ý nói bằng TÊN VAI TRÒ, không nêu mã tài khoản mẫu của môi trường thử.
-duoc-CR-753: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
+duoc-CR-754: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
 """
 import re
 import sys

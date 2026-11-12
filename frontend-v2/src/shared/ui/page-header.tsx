@@ -54,7 +54,7 @@ interface PageHeaderProps {
   sticky?: boolean
   /**
    * Ẩn tiêu đề khỏi mắt (giữ `sr-only` — trang vẫn có `<h1>`). Dùng khi hàng tiêu đề đã có dải tab con nói rõ đang
-   * xem bảng nào (duoc-CR-753): tiêu đề đứng thêm một hàng riêng phía trên tab là khoảng trống thừa.
+   * xem bảng nào (duoc-CR-754): tiêu đề đứng thêm một hàng riêng phía trên tab là khoảng trống thừa.
    */
   hideTitle?: boolean
 }
@@ -95,7 +95,7 @@ export function PageHeader({
           riêng — đúng thứ tự ưu tiên, vì tiêu đề nói ĐANG XEM CÁI GÌ. */}
       <div className="flex min-w-0 flex-[1_1_16rem] items-start gap-3">
         {leading}
-        {/*  `min-w-0`: cho dòng mô tả `truncate` (hàng tiêu đề gọn, duoc-CR-753) cắt được "…" thay vì đẩy tràn. */}
+        {/*  `min-w-0`: cho dòng mô tả `truncate` (hàng tiêu đề gọn, duoc-CR-754) cắt được "…" thay vì đẩy tràn. */}
         <div className="min-w-0">
           <h1 className={cn('text-xl font-semibold tracking-tight text-navy', (duplicate || hideTitle) && 'sr-only')}>
             {title}

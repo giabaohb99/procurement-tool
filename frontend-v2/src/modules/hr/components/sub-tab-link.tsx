@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/shared/utils/cn'
 
 /**
- * Một tab gạch chân dạng LINK — dải tab Thiết lập của Nhân sự (duoc-CR-753) và các thanh chuyển màn khác của phân hệ.
+ * Một tab gạch chân dạng LINK — dải tab Thiết lập của Nhân sự (duoc-CR-754) và các thanh chuyển màn khác của phân hệ.
  * Tách khỏi `leave-section-tabs.tsx` khi dải tab con Loại nghỉ / Lịch ngày lễ / Ngày cấm nghỉ gộp vào dải Thiết lập.
  */
 export function SubTabLink({

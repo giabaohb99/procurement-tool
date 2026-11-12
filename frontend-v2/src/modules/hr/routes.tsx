@@ -40,7 +40,7 @@ export const hrModule: ErpModule = {
   enabled: true,
   entity: 'employee',
 
-  //  duoc-CR-753: menu Nhân sự là MỘT danh sách xếp từ trên xuống, KHÔNG khai `group` (không tiêu đề nhóm) — anh Được
+  //  duoc-CR-754: menu Nhân sự là MỘT danh sách xếp từ trên xuống, KHÔNG khai `group` (không tiêu đề nhóm) — anh Được
   //  chốt 12/11/2026. Mọi mục cùng đứng trong rổ không tiêu đề nên không còn cảnh vài mục lửng dưới "Tổng quan" như
   //  lần khách nêu 14/09/2026 (lỗi đó chỉ xảy ra khi rổ không tiêu đề và rổ có tiêu đề đứng chung).
   nav: [
@@ -80,7 +80,7 @@ export const hrModule: ErpModule = {
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Submenu chỉ còn các màn NGHIỆP VỤ: đơn nghỉ, nghỉ bù, thanh toán nghỉ phép, lịch nghỉ, quỹ phép năm.
-    //  Chính sách nghỉ phép và Loại nghỉ / ngày lễ / ngày cấm nghỉ dời sang cụm Thiết lập (duoc-CR-753).
+    //  Chính sách nghỉ phép và Loại nghỉ / ngày lễ / ngày cấm nghỉ dời sang cụm Thiết lập (duoc-CR-754).
     {
       label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
@@ -175,7 +175,7 @@ export const hrModule: ErpModule = {
     //  ── Lịch làm việc: chỉ còn Xem lịch; Mẫu lịch tuần + Gán lịch ở cụm Thiết lập — xem `work-schedule-module-entries.tsx`.
     workScheduleNavItem,
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
-    //  Submenu: Lịch phòng họp + Phiếu đặt phòng. Danh mục phòng họp (chỉ quản trị viên) ở cụm Thiết lập (duoc-CR-753).
+    //  Submenu: Lịch phòng họp + Phiếu đặt phòng. Danh mục phòng họp (chỉ quản trị viên) ở cụm Thiết lập (duoc-CR-754).
     {
       label: 'Đặt phòng họp',
       path: appRoutes.hr.roomCalendar,
@@ -197,7 +197,7 @@ export const hrModule: ErpModule = {
         },
       ],
     },
-    //  ── Danh mục (duoc-CR-712, đổi tên từ "Master" ở duoc-CR-753) ─────────────
+    //  ── Danh mục (duoc-CR-712, đổi tên từ "Master" ở duoc-CR-754) ─────────────
     //  Gom các danh mục nền (phòng ban, công ty, chức vụ, mẫu HĐLĐ) vào một cụm sổ xuống cho menu gọn.
     //  ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `manage` của mình: bộ gác route (`canAccessRoute`) duyệt cả
     //  mục con và khớp theo đường dẫn dài nhất, mục con xét trước mục cha — nên dời vào cụm không đổi
@@ -248,7 +248,7 @@ export const hrModule: ErpModule = {
         },
       ],
     },
-    //  ── Thiết lập (duoc-CR-753): mọi màn cấu hình nền gom một mục sổ xuống — xem `config/hr-setup-nav-item.tsx`.
+    //  ── Thiết lập (duoc-CR-754): mọi màn cấu hình nền gom một mục sổ xuống — xem `config/hr-setup-nav-item.tsx`.
     hrSetupNavItem,
     //  "Phân quyền tài khoản" đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
     //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.

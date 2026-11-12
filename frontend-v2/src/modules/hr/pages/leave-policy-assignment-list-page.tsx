@@ -33,9 +33,9 @@ import { ASSIGNMENT_ACTIVE_TODAY, ASSIGNMENT_FILTER_ALL as ALL } from '../utils/
 import { todayInVietnamISO } from '../utils/work-roster-range'
 
 interface LeavePolicyAssignmentListPageProps {
-  /** Dải tab Thiết lập nhân sự — đặt TRÊN tiêu đề, cùng khe `topContent` của `CrudListPage` (duoc-CR-753). */
+  /** Dải tab Thiết lập nhân sự — đặt TRÊN tiêu đề, cùng khe `topContent` của `CrudListPage` (duoc-CR-754). */
   topContent?: ReactNode
-  /** Hàng tiêu đề gọn trong cụm tab Thiết lập — cùng nghĩa `compactHeader` của `CrudListPage` (duoc-CR-753). */
+  /** Hàng tiêu đề gọn trong cụm tab Thiết lập — cùng nghĩa `compactHeader` của `CrudListPage` (duoc-CR-754). */
   compactHeader?: boolean
   /** Thanh tab của màn Chính sách nghỉ phép — chèn giữa tiêu đề và bảng (cùng khe của `CrudListPage`). */
   beforeContent?: ReactNode

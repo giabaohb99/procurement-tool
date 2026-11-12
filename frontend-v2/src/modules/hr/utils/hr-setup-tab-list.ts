@@ -41,7 +41,7 @@ function onPath(pathname: string, path: string): boolean {
 }
 
 /**
- * Dải tab PHẲNG của mục Thiết lập Nhân sự (duoc-CR-753) — một hàng, không tab lồng trong tab (theo cách Frappe HRMS:
+ * Dải tab PHẲNG của mục Thiết lập Nhân sự (duoc-CR-754) — một hàng, không tab lồng trong tab (theo cách Frappe HRMS:
  * mỗi danh mục một trang phẳng; chỉ form Cài đặt nhân sự có nhóm ô bên trong).
  *
  * Đi theo thứ tự mục con của `hrSetupNavItem` (cùng luật quyền với menu và hàng rào route), rồi TRẢI hai mục gom nhiều

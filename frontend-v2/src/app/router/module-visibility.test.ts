@@ -567,7 +567,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       ])
     })
 
-    it('người quản lý danh mục (leave_type:write): hai màn của họ nằm ở cụm Thiết lập, Nghỉ phép ẩn vì không có màn nghiệp vụ nào (duoc-CR-753)', () => {
+    it('người quản lý danh mục (leave_type:write): hai màn của họ nằm ở cụm Thiết lập, Nghỉ phép ẩn vì không có màn nghiệp vụ nào (duoc-CR-754)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_type: ['write'], employee: ['read'] }))
       expect(items.find((i) => i.label === 'Nghỉ phép')).toBeUndefined()
       const setupMenu = items.find((i) => i.label === 'Thiết lập')
@@ -828,7 +828,7 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write', 'create', 'delete'] }))).toBe(false)
   })
 
-  it('người chỉ có employee.read thấy "Lịch làm việc" là một mục thẳng, không thấy cụm Thiết lập (duoc-CR-753)', () => {
+  it('người chỉ có employee.read thấy "Lịch làm việc" là một mục thẳng, không thấy cụm Thiết lập (duoc-CR-754)', () => {
     const viewer = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['read'] }))
     const item = viewer.find((i) => i.label === 'Lịch làm việc')
     expect(item?.path).toBe('/hr/work-roster')
@@ -841,7 +841,7 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     expect(nav.some((i) => i.label === 'Lịch làm việc')).toBe(false)
   })
 
-  it('người sửa được work_schedule thấy hai mục quản lý trong cụm Thiết lập; Xem lịch vẫn cần employee.read (duoc-CR-753)', () => {
+  it('người sửa được work_schedule thấy hai mục quản lý trong cụm Thiết lập; Xem lịch vẫn cần employee.read (duoc-CR-754)', () => {
     const editor = visibleNavItems(hr, makeCan({ work_schedule: ['write'] }))
     expect(editor.some((i) => i.label === 'Lịch làm việc')).toBe(false)
     expect(editor.find((i) => i.label === 'Thiết lập')?.children?.map((c) => c.label)).toEqual([

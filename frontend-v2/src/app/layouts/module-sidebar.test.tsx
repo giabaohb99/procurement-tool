@@ -146,7 +146,7 @@ describe('ModuleSidebar with submenu', () => {
   })
 })
 
-//  duoc-CR-753: mục `childrenAsTabs` vẽ thành MỘT dòng — mục con là dải tab trên trang, không phải submenu.
+//  duoc-CR-754: mục `childrenAsTabs` vẽ thành MỘT dòng — mục con là dải tab trên trang, không phải submenu.
 describe('ModuleSidebar with childrenAsTabs', () => {
   const tabsModule: ErpModule = {
     ...testModule,

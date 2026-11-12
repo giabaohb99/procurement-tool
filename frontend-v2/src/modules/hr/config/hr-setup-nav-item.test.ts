@@ -4,7 +4,7 @@ import type { PermissionAction, PermissionEntity } from '@/core/authorization/pe
 import { canAccessRoute, visibleNavItems } from '@/app/router/module-visibility'
 import { hrModule } from '../routes'
 
-/** duoc-CR-753: menu Nhân sự là một danh sách xếp từ trên xuống (không tiêu đề nhóm), mọi màn cấu hình gom vào MỘT cụm Thiết lập. */
+/** duoc-CR-754: menu Nhân sự là một danh sách xếp từ trên xuống (không tiêu đề nhóm), mọi màn cấu hình gom vào MỘT cụm Thiết lập. */
 
 function makeCan(perms: Partial<Record<PermissionEntity, readonly PermissionAction[]>>) {
   return (entity: PermissionEntity, action: PermissionAction = 'read') => perms[entity]?.includes(action) ?? false
@@ -12,7 +12,7 @@ function makeCan(perms: Partial<Record<PermissionEntity, readonly PermissionActi
 
 const allowEverything = () => true
 
-describe('bố cục menu Nhân sự (duoc-CR-753)', () => {
+describe('bố cục menu Nhân sự (duoc-CR-754)', () => {
   it('is one flat top-to-bottom list without group headings, setup items last', () => {
     //  Anh Được chốt 12/11/2026: không chia tiêu đề nhóm, chỉ xếp từ trên xuống.
     const items = visibleNavItems(hrModule, allowEverything).filter((i) => !i.hidden)

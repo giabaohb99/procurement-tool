@@ -24,7 +24,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 let granted = new Set<string>()
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: (entity: string, action: string) => granted.has(`${entity}.${action}`) }),
-  //  Dải tab Thiết lập (duoc-CR-753) đọc bối cảnh menu.
+  //  Dải tab Thiết lập (duoc-CR-754) đọc bối cảnh menu.
   useNavContext: () => ({}),
 }))
 
@@ -69,7 +69,7 @@ function renderAt(path: string) {
   )
 }
 
-//  duoc-CR-753: hai tab nằm trên dải Thiết lập PHẲNG (nhãn "Phân bổ chính sách" / "Gói chính sách"), không còn thanh riêng.
+//  duoc-CR-754: hai tab nằm trên dải Thiết lập PHẲNG (nhãn "Phân bổ chính sách" / "Gói chính sách"), không còn thanh riêng.
 const tabLinks = () => screen.queryAllByRole('link').filter((a) => a.closest('nav[aria-label="Thiết lập nhân sự"]'))
 const activeTab = () => tabLinks().find((a) => a.getAttribute('aria-current') === 'page')?.textContent
 const calledUrls = () => apiGet.mock.calls.map(([url]) => url as string)

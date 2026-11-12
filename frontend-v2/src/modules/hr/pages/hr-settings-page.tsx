@@ -30,7 +30,7 @@ export function HrSettingsPage() {
 
   return (
     <PageContainer className="flex min-h-full flex-col">
-      {/*  duoc-CR-753: dải tab của mục menu Thiết lập — chuyển sang năm màn cấu hình còn lại. */}
+      {/*  duoc-CR-754: dải tab của mục menu Thiết lập — chuyển sang năm màn cấu hình còn lại. */}
       <HrSetupTabs />
       {isPending ? (
         <div className="space-y-3">

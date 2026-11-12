@@ -42,14 +42,14 @@ interface CrudListPageProps<T> {
    */
   /**
    * Thứ đặt TRÊN tiêu đề trang, ở đúng mép trên khung — dùng cho dải tab chuyển giữa các màn anh em (vd dải tab
-   * Thiết lập của Nhân sự, duoc-CR-753). Đặt ở đây chứ không ở `beforeContent` để dải đứng YÊN một chỗ khi chuyển
+   * Thiết lập của Nhân sự, duoc-CR-754). Đặt ở đây chứ không ở `beforeContent` để dải đứng YÊN một chỗ khi chuyển
    * màn: tiêu đề / mô tả / cụm nút mỗi màn cao khác nhau, đặt dưới chúng là dải nhảy lên xuống mỗi lần bấm tab.
    */
   topContent?: ReactNode
   /**
    * Hàng tiêu đề GỌN cho màn nằm trong một cụm tab (vd Thiết lập Nhân sự, `topContent` là dải tab): tiêu đề ẩn khỏi
    * mắt (tab đang sáng đã nói tên màn) và câu mô tả gói MỘT dòng (cắt "…") — mọi màn trong cụm có hàng tiêu đề CÙNG
-   * chiều cao, bảng bắt đầu đúng một chỗ khi chuyển tab (duoc-CR-753).
+   * chiều cao, bảng bắt đầu đúng một chỗ khi chuyển tab (duoc-CR-754).
    */
   compactHeader?: boolean
   beforeContent?: ReactNode
