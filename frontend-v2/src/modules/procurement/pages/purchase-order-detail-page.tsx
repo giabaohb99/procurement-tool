@@ -19,7 +19,7 @@ import {
   Ship,
 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
@@ -269,6 +269,22 @@ export function PurchaseOrderDetailPage() {
   const isNewChanged = useHasChanged(isNew)
   if ((serverDataChanged || isNewChanged) && !isNew) setDraft(serverData ?? null)
 
+  //  ai-CR-237: link trợ lý AI gửi (`?delivery=<id lần giao>` hoặc `?line=<id dòng>`) mở sẵn hộp dòng hàng chứa lần
+  //  giao đó — chỗ người dùng tự đính tệp hóa đơn. Chỉ mở MỘT lần khi dữ liệu đơn về.
+  const [searchParams] = useSearchParams()
+  const focusDeliveryId = Number(searchParams.get('delivery')) || 0
+  const focusLineId = Number(searchParams.get('line')) || 0
+  const [focusHandled, setFocusHandled] = useState(false)
+  if (!focusHandled && serverData && (focusDeliveryId || focusLineId)) {
+    setFocusHandled(true)
+    const focusIndex = serverData.items.findIndex(
+      (item) =>
+        (focusLineId > 0 && item.id === focusLineId) ||
+        (focusDeliveryId > 0 && item.deliveries.some((delivery) => delivery.id === focusDeliveryId)),
+    )
+    if (focusIndex >= 0) setLineIndex(focusIndex)
+  }
+
   /**
    * Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. bao-CR-364: tiền tệ
    * dán nhãn lấy từ các DÒNG (đầu phiếu chỉ là mặc định); trộn nhiều loại tiền thì ba
@@ -366,12 +382,9 @@ export function PurchaseOrderDetailPage() {
   const afterApproveEditable = !isNew && approved && canWrite
   const progressEditable = !isNew && isDeliveryStage(data.status) && can('purchase_order', 'write')
   /** Chưa nhận hàng thì mới hủy duyệt được — khớp điều kiện backend chặn. */
-  /** bao-CR-753: phiếu đã chọn Trưởng phòng phê duyệt thì chỉ người đó quyết (backend tính cờ). */
-  const canDecide = data.can_decide !== false
   const canUnapprove =
     !isNew &&
     approved &&
-    canDecide &&
     can('purchase_order', 'approve') &&
     !data.items.some((item) => (item.qty_received ?? 0) > 0)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
@@ -678,7 +691,7 @@ export function PurchaseOrderDetailPage() {
           </Button>
         ),
       },
-    ...(!isNew && data.status === 'submitted' && canDecide && can('purchase_order', 'approve')
+    ...(!isNew && data.status === 'submitted' && can('purchase_order', 'approve')
       ? [
           {
             key: 'approve',

@@ -67,7 +67,7 @@ lõi. Cổng MCP phải nằm trong backend ERP có tên miền thật (dev rồ
 | M-01 | **XONG 25/09/2026 (ai-CR-063).** Cổng MCP trên backend ERP (Streamable HTTP) — dùng CHUNG bộ tool với Trợ lý web và Telegram, không viết lại | L | Cần gộp phần bot vào `erp-v2` |
 | M-02 | **XONG 25/09/2026 (ai-CR-063).** Khóa kết nối cá nhân lấy ở Trang cá nhân: có hạn, gỡ được, tách chỉ đọc / được ghi, nhật ký từng lượt gọi | M | Tool chạy đúng phạm vi dữ liệu của người đó. Phần khóa Gemini cá nhân cho kênh chat đã kéo lên phase 2 (D-01) |
 | M-03 | **XONG 25/09/2026 (ai-CR-063).** Tool chỉ đọc qua MCP: tra số liệu, tình trạng phiếu, báo cáo | M | Bước thử đầu tiên, 1-2 người |
-| M-04 | **XONG 25/09/2026 (ai-CR-063).** Tool tạo / gửi duyệt qua MCP, xác nhận hai bước phía server (dùng lại `draft_create`) | M | Đề nghị thanh toán chỉ trên web |
+| M-04 | **XONG 25/09/2026 (ai-CR-063).** Tool tạo / gửi duyệt qua MCP, xác nhận hai bước phía server (dùng lại `draft_create`) | M | Đề nghị thanh toán: từ ai-CR-236 (12/11/2026) tạo được Nháp qua MCP, không gửi duyệt |
 | M-05 | **XONG 25/09/2026 (ai-CR-063).** Tool báo lỗi qua MCP → phiếu hỗ trợ → Đậu Đậu | S | Duyệt / gộp vẫn theo nhóm K |
 | M-06 | **XONG 25/09/2026 (ai-CR-064).** Mỗi người tự nối Google của mình (Drive, Lịch), tool lịch / Drive đọc dữ liệu của chính họ | L | Thay N-03 theo hướng từng người; khóa OAuth lưu mã hóa |
 | M-07 | **Một phần 07/10/2026 (ai-CR-098): sổ khóa chung; web vẫn dùng khóa công ty — khóa cá nhân cho web chưa làm.** Trợ lý trên web chạy bằng AI + khóa do từng người chọn (khóa lưu mã hóa, chỉ người đó dùng) | M | Công ty thôi trả tiền model theo lượt. Đại ca chốt 24/09: trên dev, web vẫn dùng khóa công ty; D-01 chỉ cho kênh chat |

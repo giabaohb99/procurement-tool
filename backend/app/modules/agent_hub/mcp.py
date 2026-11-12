@@ -87,7 +87,9 @@ CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
                     "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ, vehicle_booking = phiếu đặt xe, seal_request = phiếu duyệt "
-                    "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù, po_receipt = ghi lần nhận hàng vào ĐMH theo phiếu "
+                    "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù, payment = đề nghị thanh toán công nợ (draft của "
+                    "draft_payment_request; LUÔN chỉ lưu Nháp, người lập tự vào web bấm Gửi duyệt), po_receipt = ghi lần nhận "
+                    "hàng vào ĐMH theo phiếu "
                     "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); skill / "
                     "skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
@@ -98,7 +100,7 @@ CONFIRM_DRAFT_DEF = {
                     "vehicle_booking/leave_comp)."),
     "inputSchema": {"type": "object", "properties": {
         "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
-                                            "leave_comp", "po_receipt", "update", "delete", "approval",
+                                            "leave_comp", "payment", "po_receipt", "update", "delete", "approval",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -199,6 +201,8 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"denied": True, "error": f"Công cụ '{name}' không mở cho khóa này."}
     result = _mark_paging(_absolute_downloads(erp.run_tool(db, user, name, args or {})))
+    if name == "draft_payment_request":
+        return _payment_draft_note(result)
     return _proposal_note(result) if name in PROPOSAL_TOOLS else result
 
 
@@ -277,7 +281,8 @@ def _offset(args: dict) -> int:
 
 #  kind của confirm_draft → tool soạn nháp của nó; nhóm G7 chứa tool đó đang tắt thì không cho tạo qua cổng.
 _GROUP_GATED_KINDS = {"vehicle_booking": "draft_vehicle_booking", "seal_request": "draft_seal_request",
-                      "leave_comp": "draft_leave_comp_request", "po_receipt": "draft_po_receipt"}
+                      "leave_comp": "draft_leave_comp_request", "po_receipt": "draft_po_receipt",
+                      "payment": "draft_payment_request"}       # ai-CR-236: nhóm "Công nợ và thanh toán"
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -294,8 +299,6 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
             return {"denied": True, "error": blocked}
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
-    if kind == "payment":
-        return {"error": "Đề nghị thanh toán chỉ tạo trên web: " + draft_create.payment_link(draft)}
     submit = bool(args.get("submit"))
     if submit and kind in draft_create.SUBMITTABLE:
         if missing := draft_create.missing_for_submit(kind, draft):
@@ -308,16 +311,49 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
             erp.submit_draft(db, user, kind, oid)
     except draft_create.DraftError as e:
         return {"error": str(e)}
+    if kind == "payment":
+        return _payment_created(code, oid, asked_submit=submit)
     if kind == "po_receipt":
         #  bao-CR-740: một nháp ghi được nhiều ĐMH — đọc lại từng đơn (đặt / đã nhận / dư) cho người dùng.
+        from app.modules.assistant.tools import po_receipt_tool
+        from . import telegram
+
         po_ids = list(dict.fromkeys(int(r.get("po_id") or 0) for r in draft.get("rows") or [] if isinstance(r, dict)))
-        return {"ok": True, "code": code, "id": oid, "submitted": False,
-                "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
-                "links": [draft_create.DETAIL_PATHS[kind].format(id=pid) for pid in po_ids],
-                "note": "Đã ghi lần nhận hàng. Báo người dùng từng ĐMH đã ghi và phần dư (nếu có)."}
+        out = {"ok": True, "code": code, "id": oid, "submitted": False,
+               "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
+               "links": [telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=pid)) for pid in po_ids],
+               #  ai-CR-237: link mở đúng lần giao / dòng hàng để người dùng tự đính tệp hóa đơn trên web.
+               "attach_links": po_receipt_tool.attach_links(draft.get("rows") or []),
+               "note": ("Đã ghi vào ĐMH. Báo người dùng từng ĐMH đã ghi, số + ngày hóa đơn đã ghi và phần dư (nếu có). "
+                        + po_receipt_tool.ATTACH_NOTE)}
+        _absolutize(out, telegram.absolute_url)
+        return out
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
             "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
+
+
+def _payment_created(code: str, oid: int, asked_submit: bool) -> dict:
+    """ai-CR-236: kết quả tạo đề nghị thanh toán — luôn ở Nháp. Một bản nháp có thể tách nhiều phiếu (mỗi cặp NCC + công
+    ty một phiếu); cổng B chỉ chở các mã nối dấu phẩy + id phiếu đầu, còn id từng phiếu suy từ mã (`YCTT{id:05d}`,
+    `payment_request.service.create_requests`)."""
+    path = draft_create.DETAIL_PATHS["payment"]
+    items = []
+    for c in [x.strip() for x in str(code or "").split(",") if x.strip()]:
+        rid = int(c[4:]) if c.startswith("YCTT") and c[4:].isdigit() else (oid if not items else 0)
+        items.append({"code": c, "id": rid, "link": path.format(id=rid) if rid else ""})
+    note = ("Phiếu đang ở trạng thái Nháp, CHƯA gửi duyệt. Gửi người dùng mã phiếu + link, nhắc họ vào web xem lại số "
+            "tiền, số hóa đơn, phần cấn trừ rồi tự bấm Gửi duyệt.")
+    if asked_submit:
+        note = ("Đề nghị thanh toán không gửi duyệt qua AI nên đã bỏ qua submit — phiếu nằm ở Nháp. " + note)
+    if len(items) > 1:
+        note += f" Hệ thống đã tách {len(items)} phiếu theo nhà cung cấp và công ty nhận hóa đơn."
+    from . import telegram
+
+    out = {"ok": True, "code": code, "id": oid, "submitted": False, "status": "draft",
+           "link": path.format(id=oid), "items": items, "note": note}
+    _absolutize(out, telegram.absolute_url)          # link tuyệt đối — ứng dụng AI ngoài không tự nối gốc ERP
+    return out
 
 
 def _confirm_proposal(db: Session, user, kind: str, proposal: dict | None) -> dict:
@@ -352,6 +388,18 @@ def _change_source_mcp() -> int:
     from app.modules.assistant.change_model import ChangeSource
 
     return int(ChangeSource.MCP)
+
+
+def _payment_draft_note(result):
+    """ai-CR-236: lời dặn của tool soạn YCTT viết cho Trợ lý web (bấm nút mở form) — qua cổng MCP thay bằng bước
+    confirm_draft(kind="payment"), phiếu chỉ lưu Nháp."""
+    if isinstance(result, dict) and isinstance(result.get("draft"), dict) and result.get("reminder"):
+        result["reminder"] = (result["reminder"].replace(
+            "mời người dùng bấm nút 'Tạo đề nghị thanh toán' dưới câu trả lời — form mở ra đã tick sẵn các khoản này,",
+            "hỏi người dùng có tạo phiếu không; chỉ khi họ đồng ý rõ thì gọi confirm_draft với kind=\"payment\" và draft "
+            "= đúng đối tượng `draft` này. Phiếu tạo ra CHỈ ở Nháp (không gửi duyệt qua AI),")
+            + " Phiếu tạo xong ở trạng thái Nháp: người lập vào web xem lại rồi tự bấm Gửi duyệt.")
+    return result
 
 
 def _proposal_note(result):

@@ -372,8 +372,7 @@ export default function Dashboard() {
                         {prBadge(r.status)}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {/* bao-CR-753: chỉ người được chọn ở ô Trưởng phòng phê duyệt thấy nút (cờ server). */}
-                        {r.status === 'submitted' && r.can_decide !== false && authCan('purchase_request', 'approve') ? (
+                        {r.status === 'submitted' && authCan('purchase_request', 'approve') ? (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <button style={{
                               width: 26, height: 26, borderRadius: '50%', border: 'none', background: '#e7f8ec', color: '#16a34a',

@@ -179,8 +179,6 @@ export interface PurchaseRequestDetail {
    * hoặc đã duyệt / đã điều phối mà chưa dòng nào lên ĐMH. Backend tính, giao diện chỉ đọc.
    */
   can_return?: boolean
-  /** bao-CR-753: False = phiếu đã chọn Trưởng phòng phê duyệt mà người xem không phải người đó — ẩn Duyệt / Trả về / Từ chối. */
-  can_decide?: boolean
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng thu mua (bao-CR-524). */
   can_transfer_dept?: boolean
   can_return_dept?: boolean

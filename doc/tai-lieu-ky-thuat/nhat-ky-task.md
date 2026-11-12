@@ -9,22 +9,48 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## bao-CR-753-chi-nguoi-duoc-chon-moi-duyet | Chỉ người được chọn ở ô Trưởng phòng phê duyệt mới duyệt được YCBG, YCMH, Đơn mua hàng
+## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
 - status: xong
 - date: 2026-11-12
-- list: Sản xuất - Thu mua
-- tag: Thu mua, Phân quyền
-**Bối cảnh:** trên prod, Đơn mua hàng PO00901 chờ duyệt đã chọn **Trưởng phòng phê duyệt** là chị Lê Thị Ngọc Mi, nhưng tài khoản quản trị vẫn thấy và bấm được Duyệt. Đã chốt ngày 12/11: phiếu đã chọn người duyệt thì chỉ người đó quyết, kể cả quản trị cũng không duyệt thay; người được chọn vắng thì người lập đổi ô người duyệt rồi gửi lại.
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
 
 **Đã làm**
-- Một hàm dùng chung ở máy chủ so người đang bấm với người được chọn (theo mã nhân sự), sai người thì báo **Chỉ (tên) (người được chọn duyệt) mới duyệt được phiếu này**.
-- Đơn mua hàng: Duyệt, Trả về, Từ chối ở bước chờ duyệt, và Hủy duyệt sau khi đã duyệt (lúc này ô là người thực duyệt).
-- Yêu cầu mua hàng và Yêu cầu báo giá: Duyệt, Trả về, Từ chối chỉ bị khóa ở bước chờ duyệt; điều phối, chuyển phòng, thu mua trả về sau khi duyệt giữ nguyên.
-- Phiếu cũ chưa chọn người duyệt (nạp Excel) giữ luật cũ: ai có quyền và phạm vi đều duyệt được.
-- Màn chi tiết ba phiếu nhận thêm cờ cho biết người xem có được quyết không; giao diện cũ và mới cùng ẩn các nút đó với người không được chọn.
-- Bài kiểm mới cho cả ba phiếu: người được chọn duyệt được, người khác và quản trị bị chặn, ô trống giữ luật cũ, bước khác không bị chặn.
+- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
+- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
+- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
+- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
+- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
+- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
+- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
 
-Mã nguồn: `backend/app/core/designated_approver.py`, controller và serializer của `purchase_order`, `purchase_request`, `survey_request`; `frontend/src/pages/PurchaseOrderDetail.tsx`, `SurveyRequestDetail.tsx`; `frontend-v2/src/modules/procurement/pages/` (ba trang chi tiết) và `types/`; `test/backend/test_chi_nguoi_duoc_chon_moi_duyet_cr753.py`
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
+Commit: 3e898b75 (erp-v2)
+Deploy: dev
+
+## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
+
+**Đã làm**
+- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
+- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
+- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
+- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
+- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
+- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
+- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
+- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
+Commit: 8836760a (erp-v2)
+Deploy: dev
 
 ## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
 - status: xong

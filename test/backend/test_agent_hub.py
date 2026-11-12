@@ -5443,7 +5443,8 @@ def test_cong_mcp_confirm_draft_va_report_issue(db, monkeypatch):
     out = mcp.call_tool(db, lan, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "leave", "draft": {"reason": "x"}, "submit": True})
     assert out["ok"] and out["code"] == "NP0042" and out["submitted"] and out["link"] == "/hr/leave-requests/42"
     assert created == [(lan.id, "leave"), ("submit", "leave", 42)]
-    assert "chỉ tạo trên web" in mcp.call_tool(db, lan, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "payment", "draft": {}})["error"]
+    #  ai-CR-236: đề nghị thanh toán tạo được Nháp qua cổng, nhưng nhóm "Công nợ và thanh toán" (mặc định tắt) chặn trước.
+    assert mcp.call_tool(db, lan, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "payment", "draft": {}})["denied"] is True
     #  Báo lỗi → phiếu hỗ trợ đúng bộ phận của bot (M-05), ai cũng gọi được.
     monkeypatch.setattr(settings, "AGENT_TICKET_DEPARTMENTS", "Lập trình & IT nội bộ, Khác")
     out = mcp.call_tool(db, lan, mcp_keys.SCOPE_READ, "report_issue", {"title": "Màn công nợ lọc sai ngày", "detail": "Chọn tháng 9 ra tháng 8.", "screen_url": "/finance/payables"})

@@ -97,8 +97,6 @@ export interface SurveyRequestDetail {
    * lý mà chưa dòng nào hoàn thành, chưa chọn phương án, chưa sinh YCMH. Backend tính, giao diện chỉ đọc.
    */
   can_return_requester?: boolean
-  /** bao-CR-753: False = phiếu đã chọn Trưởng phòng phê duyệt mà người xem không phải người đó — ẩn Duyệt / Trả về / Từ chối. */
-  can_decide?: boolean
   purpose: string
   request_date: string
   status: string

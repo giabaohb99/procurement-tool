@@ -55,7 +55,7 @@ lên dev xong đối chiếu lại nhãn.
 | Mức | AI làm được | Dùng khi |
 |---|---|---|
 | **Chỉ đọc** (mặc định) | Tra cứu trong danh sách trắng `READ_TOOLS` + 3 tool skill + `report_issue` | Lần đầu nối; máy dùng chung |
-| **Được ghi** | Thêm `draft_*`, `ticket_create`, ghi chú, `confirm_draft`. Tạo phiếu luôn **hai bước** nháp → xác nhận; đề nghị thanh toán chỉ tạo trên web | Nhờ AI lập phiếu |
+| **Được ghi** | Thêm `draft_*`, `ticket_create`, ghi chú, `confirm_draft`. Tạo phiếu luôn **hai bước** nháp → xác nhận; đề nghị thanh toán chỉ lưu Nháp, người lập tự gửi duyệt trên web (ai-CR-236) | Nhờ AI lập phiếu |
 
 **Bước 3 — Kiểm tra kết nối**: mỗi khóa còn hiệu lực hiện *Đã nối, lượt thành công gần nhất lúc…* hoặc *Chưa thấy AI gọi
 lần nào* (`GET mcp-keys/{id}/last-call`, `connected` = có ít nhất một lượt thành công); nút **Kiểm tra lại**.
