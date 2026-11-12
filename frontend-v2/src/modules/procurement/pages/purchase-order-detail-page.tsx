@@ -366,9 +366,12 @@ export function PurchaseOrderDetailPage() {
   const afterApproveEditable = !isNew && approved && canWrite
   const progressEditable = !isNew && isDeliveryStage(data.status) && can('purchase_order', 'write')
   /** Chưa nhận hàng thì mới hủy duyệt được — khớp điều kiện backend chặn. */
+  /** bao-CR-753: phiếu đã chọn Trưởng phòng phê duyệt thì chỉ người đó quyết (backend tính cờ). */
+  const canDecide = data.can_decide !== false
   const canUnapprove =
     !isNew &&
     approved &&
+    canDecide &&
     can('purchase_order', 'approve') &&
     !data.items.some((item) => (item.qty_received ?? 0) > 0)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
@@ -675,7 +678,7 @@ export function PurchaseOrderDetailPage() {
           </Button>
         ),
       },
-    ...(!isNew && data.status === 'submitted' && can('purchase_order', 'approve')
+    ...(!isNew && data.status === 'submitted' && canDecide && can('purchase_order', 'approve')
       ? [
           {
             key: 'approve',

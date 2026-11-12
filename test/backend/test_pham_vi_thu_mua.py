@@ -168,13 +168,13 @@ def create_survey(db, *, code, created_by=0, status="submitted", sr_code=""):
 
 
 def create_order(db, *, code, company_id, created_by=0, status="draft", pr_code="",
-                 survey_code="", nspt_id=0):
+                 survey_code="", nspt_id=0, approver_employee_id=0):
     from app.modules.purchase_order.model import PurchaseOrder
 
     row = PurchaseOrder(code=code, company_id=company_id, status=status, pr_code=pr_code,
                         survey_code=survey_code, nspt_id=nspt_id, supplier_code="NX",
                         supplier_name="Nhà Xuất NX", created_by=created_by,
-                        approver_employee_id=999901)   # bao-CR-742
+                        approver_employee_id=approver_employee_id)   # bao-CR-742 / bao-CR-753
     db.add(row)
     db.flush()
     return row
@@ -1592,10 +1592,11 @@ def test_d10_gui_duyet_va_tien_do_dong_dmh_kiem_pham_vi_hai_chieu(world, docs):
                          created_by=world.actor("a1").user.id, status="approved")
     ngoai = create_order(world.db, code="PO_NGOAI", company_id=world.co["B"],
                          created_by=world.actor("b1").user.id, status="approved")
+    #  bao-CR-742: gửi duyệt buộc có người duyệt — nhân sự 999901 không gắn tài khoản.
     trong_nhap = create_order(world.db, code="PO_TRONG_NHAP", company_id=world.co["A"],
-                              created_by=world.actor("a1").user.id)
+                              created_by=world.actor("a1").user.id, approver_employee_id=999901)
     ngoai_nhap = create_order(world.db, code="PO_NGOAI_NHAP", company_id=world.co["B"],
-                              created_by=world.actor("b1").user.id)
+                              created_by=world.actor("b1").user.id, approver_employee_id=999901)
     dong_day_du = dict(item_group="Nguyên liệu", invoice_name="Hàng A (hóa đơn)",
                        required_date="2026-08-25", expected_date="2026-08-25", unit="Cái",
                        qty_request=10, qty_order=10, price=670)
