@@ -1155,8 +1155,7 @@ export default function PurchaseOrderDetail() {
             <i className="ti ti-send" />Gửi duyệt
           </button>
         )}
-        {/* bao-CR-753: phiếu đã chọn Trưởng phòng phê duyệt thì chỉ người đó thấy nút quyết (cờ server). */}
-        {!isNew && po.status === 'submitted' && po.can_decide !== false && can('purchase_order', 'approve') && (
+        {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
             <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} onClick={async () => { const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để người tạo sửa & gửi duyệt lại):', confirmText: 'Trả về' }); if (r !== null) action('return', { reason: r }) }}><i className="ti ti-corner-up-left" />Trả về</button>
@@ -1166,7 +1165,7 @@ export default function PurchaseOrderDetail() {
         {/* CR-108: đơn đã duyệt bị khóa nội dung — muốn sửa thì người DUYỆT hạ đơn về Nháp,
             sửa rồi gửi duyệt lại. Ẩn khi đã nhận hàng (backend cũng chặn): hàng đã vào kho
             và đã sinh công nợ thì không hạ đơn xuống được nữa. */}
-        {!isNew && approved && po.can_decide !== false && can('purchase_order', 'approve') && !items.some((it: any) => Number(it.qty_received || 0) > 0) && (
+        {!isNew && approved && can('purchase_order', 'approve') && !items.some((it: any) => Number(it.qty_received || 0) > 0) && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
             onClick={async () => {
               const r = await askPrompt({ title: 'Hủy duyệt', message: 'Lý do hủy duyệt (đơn về Nháp để sửa, sau đó phải gửi duyệt lại):', confirmText: 'Hủy duyệt' })

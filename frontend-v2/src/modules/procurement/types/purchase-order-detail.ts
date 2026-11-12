@@ -133,8 +133,6 @@ export interface PurchaseOrderDetail {
    * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
    */
   approver_employee_id?: number
-  /** bao-CR-753: False = phiếu đã chọn Trưởng phòng phê duyệt mà người xem không phải người đó — ẩn Duyệt / Trả về / Từ chối. */
-  can_decide?: boolean
   approver_employee_name?: string
   dept_head_name?: string
   /** Nhân sự thu mua phụ trách. */
