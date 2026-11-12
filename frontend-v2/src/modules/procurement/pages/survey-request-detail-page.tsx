@@ -607,7 +607,6 @@ export function SurveyRequestDetailPage() {
     },
     !isNew &&
       status === 'submitted' &&
-      data.can_decide !== false &&   // bao-CR-753
       can('survey_request', 'approve') && {
         key: 'approve',
         primary: true,
@@ -627,7 +626,6 @@ export function SurveyRequestDetailPage() {
       },
     !isNew &&
       status === 'submitted' &&
-      data.can_decide !== false &&   // bao-CR-753
       can('survey_request', 'approve') && {
         key: 'reject',
         node: (

@@ -611,8 +611,7 @@ export default function SurveyRequestDetail() {
         )}
 
         {/* Nút Duyệt / Trả lại (khi chờ duyệt + có quyền approve) */}
-        {/* bao-CR-753: chỉ người được chọn duyệt mới thấy nút (cờ server `can_decide`). */}
-        {!isNew && sv.status === 'submitted' && sv.can_decide !== false && can('survey_request', 'approve') && (
+        {!isNew && sv.status === 'submitted' && can('survey_request', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}>
               <i className="ti ti-check" />Duyệt

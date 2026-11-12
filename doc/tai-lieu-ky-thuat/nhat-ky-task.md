@@ -9,23 +9,6 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## bao-CR-753-chi-nguoi-duoc-chon-moi-duyet | Chỉ người được chọn ở ô Trưởng phòng phê duyệt mới duyệt được YCBG, YCMH, Đơn mua hàng
-- status: xong
-- date: 2026-11-12
-- list: Sản xuất - Thu mua
-- tag: Thu mua, Phân quyền
-**Bối cảnh:** trên prod, Đơn mua hàng PO00901 chờ duyệt đã chọn **Trưởng phòng phê duyệt** là chị Lê Thị Ngọc Mi, nhưng tài khoản quản trị vẫn thấy và bấm được Duyệt. Đã chốt ngày 12/11: phiếu đã chọn người duyệt thì chỉ người đó quyết, kể cả quản trị cũng không duyệt thay; người được chọn vắng thì người lập đổi ô người duyệt rồi gửi lại.
-
-**Đã làm**
-- Một hàm dùng chung ở máy chủ so người đang bấm với người được chọn (theo mã nhân sự), sai người thì báo **Chỉ (tên) (người được chọn duyệt) mới duyệt được phiếu này**.
-- Đơn mua hàng: Duyệt, Trả về, Từ chối ở bước chờ duyệt, và Hủy duyệt sau khi đã duyệt (lúc này ô là người thực duyệt).
-- Yêu cầu mua hàng và Yêu cầu báo giá: Duyệt, Trả về, Từ chối chỉ bị khóa ở bước chờ duyệt; điều phối, chuyển phòng, thu mua trả về sau khi duyệt giữ nguyên.
-- Phiếu cũ chưa chọn người duyệt (nạp Excel) giữ luật cũ: ai có quyền và phạm vi đều duyệt được.
-- Màn chi tiết ba phiếu nhận thêm cờ cho biết người xem có được quyết không; giao diện cũ và mới cùng ẩn các nút đó với người không được chọn.
-- Bài kiểm mới cho cả ba phiếu: người được chọn duyệt được, người khác và quản trị bị chặn, ô trống giữ luật cũ, bước khác không bị chặn.
-
-Mã nguồn: `backend/app/core/designated_approver.py`, controller và serializer của `purchase_order`, `purchase_request`, `survey_request`; `frontend/src/pages/PurchaseOrderDetail.tsx`, `SurveyRequestDetail.tsx`; `frontend-v2/src/modules/procurement/pages/` (ba trang chi tiết) và `types/`; `test/backend/test_chi_nguoi_duoc_chon_moi_duyet_cr753.py`
-
 ## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
 - status: xong
 - date: 2026-11-11

@@ -87,13 +87,10 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
         "cả TBP (CR-474) lẫn người được chọn duyệt đều nhận chuông"
 
     #  Bấm Duyệt: cột đổi thành người THỰC duyệt, bản in in người đó.
-    #  bao-CR-753: chỉ người được chọn (NSTM ở đây) mới bấm Duyệt được.
-    chosen = SimpleNamespace(id=seed.u_nstm_id, employee_id=seed.emp_nstm_id)
-    pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=chosen)
+    pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)
     db.refresh(pr)
-    assert pr.approver_employee_id == db.get(User, seed.u_nstm_id).employee_id
-    from app.core.print_signers import person_block
-    assert pr_ser._approval_signers(db, pr)["approver_name"] == person_block(db, seed.emp_nstm_id)["name"]
+    assert pr.approver_employee_id == db.get(User, USER.id).employee_id
+    assert pr_ser._approval_signers(db, pr)["approver_name"] == "Người YC"
 
 
 def test_pr_update_can_change_the_chosen_approver_while_draft(db, seed):
@@ -125,27 +122,24 @@ def test_po_chosen_approver_is_notified_and_kept_after_unapprove(db, seed, captu
     dept = _dept(db, seed)
     po = PurchaseOrder(code="PO-499", company_id=seed.company_id, department=dept.name,
                        department_id=dept.id, supplier_code="NCCA", supplier_name="NCC",
-                       order_date="2026-09-01", status="submitted", approver_employee_id=seed.emp_nstm_id,
+                       order_date="2026-09-01", status="submitted", approver_employee_id=seed.emp_tp_id,
                        created_by=seed.u_req_id, updated_by=seed.u_req_id)
     db.add(po)
     db.commit()
     #  Chưa duyệt: ô người duyệt trên bản in để TRỐNG (bao-CR-521, ticket prod #57) — người được
     #  chọn chỉ hiện ở màn chi tiết.
-    assert po.approver_employee_id == seed.emp_nstm_id
+    assert po.approver_employee_id == seed.emp_tp_id
     signers = po_ser.resolve_print_signers(db, po)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
 
-    #  bao-CR-753: chỉ người được chọn (NSTM ở đây) mới bấm Duyệt / Hủy duyệt được.
-    chosen = SimpleNamespace(id=seed.u_nstm_id, employee_id=seed.emp_nstm_id)
-    po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=chosen)
+    po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=USER)
     db.refresh(po)
-    actual = db.get(User, seed.u_nstm_id).employee_id
+    actual = db.get(User, USER.id).employee_id
     assert po.approver_employee_id == actual
-    from app.core.print_signers import person_block
-    assert po_ser.resolve_print_signers(db, po)["approver_name"] == person_block(db, seed.emp_nstm_id)["name"]
+    assert po_ser.resolve_print_signers(db, po)["approver_name"] == "Người YC"
 
     #  Hủy duyệt: KHÔNG xóa cột nữa — người vừa duyệt vẫn là người được chọn cho lần sau.
-    po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=chosen)
+    po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
     db.refresh(po)
     assert po.approver_employee_id == actual
 
