@@ -315,11 +315,19 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
         return _payment_created(code, oid, asked_submit=submit)
     if kind == "po_receipt":
         #  bao-CR-740: một nháp ghi được nhiều ĐMH — đọc lại từng đơn (đặt / đã nhận / dư) cho người dùng.
+        from app.modules.assistant.tools import po_receipt_tool
+        from . import telegram
+
         po_ids = list(dict.fromkeys(int(r.get("po_id") or 0) for r in draft.get("rows") or [] if isinstance(r, dict)))
-        return {"ok": True, "code": code, "id": oid, "submitted": False,
-                "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
-                "links": [draft_create.DETAIL_PATHS[kind].format(id=pid) for pid in po_ids],
-                "note": "Đã ghi lần nhận hàng. Báo người dùng từng ĐMH đã ghi và phần dư (nếu có)."}
+        out = {"ok": True, "code": code, "id": oid, "submitted": False,
+               "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
+               "links": [telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=pid)) for pid in po_ids],
+               #  ai-CR-237: link mở đúng lần giao / dòng hàng để người dùng tự đính tệp hóa đơn trên web.
+               "attach_links": po_receipt_tool.attach_links(draft.get("rows") or []),
+               "note": ("Đã ghi vào ĐMH. Báo người dùng từng ĐMH đã ghi, số + ngày hóa đơn đã ghi và phần dư (nếu có). "
+                        + po_receipt_tool.ATTACH_NOTE)}
+        _absolutize(out, telegram.absolute_url)
+        return out
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
             "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}

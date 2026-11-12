@@ -9,6 +9,27 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
+
+**Đã làm**
+- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
+- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
+- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
+- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
+- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
+- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
+- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
+Commit: (điền sau khi đẩy)
+Deploy: dev
+
 ## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
 - status: xong
 - date: 2026-11-12
