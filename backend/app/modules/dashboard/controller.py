@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
+from app.core.designated_approver import is_designated_approver
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.response import success
@@ -226,7 +227,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
             amt = sum(float(it.amount or 0) for it in db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all())
             recent_prs.append({"id": pr.id, "code": pr.code, "requester": pr.requester,
                                "description": pr.purpose or "Yêu cầu mua hàng", "department": pr.department or "",
-                               "date": pr.request_date or tstr, "status": pr.status, "total": round(amt, 0)})
+                               "date": pr.request_date or tstr, "status": pr.status, "total": round(amt, 0),
+                               #  bao-CR-753: nút Duyệt / Từ chối nhanh chỉ cho người được chọn duyệt.
+                               "can_decide": pr.status != "submitted" or is_designated_approver(pr, user, db)})
 
     # ===== Đơn mua hàng + phân tích =====
     if can("purchase_order"):
@@ -306,7 +309,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
 
         recent = sorted(pos.values(), key=lambda p: (p.order_date or "", p.id), reverse=True)[:8]
         recent_pos = [{"id": p.id, "code": p.code, "supplier": p.supplier_name or p.supplier_code,
-                       "order_date": p.order_date, "status": p.status, "total": round(po_total.get(p.id, 0), 0)} for p in recent]
+                       "order_date": p.order_date, "status": p.status, "total": round(po_total.get(p.id, 0), 0),
+                       "can_decide": p.status != "submitted" or is_designated_approver(p, user, db)}   # bao-CR-753
+                      for p in recent]
 
     # ===== Khảo sát =====
     if can("survey"):
