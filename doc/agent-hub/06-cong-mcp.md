@@ -48,7 +48,7 @@ lần cuối**. Tối đa **5 khóa còn hiệu lực** mỗi tài khoản. Ngh�
 | **Được ghi** (chỉ người dùng tự tạo — Q5) | Thêm `draft_*`, `ticket_create`, lịch / sổ nhớ / ghi chú, xuất tệp, `confirm_draft` | Tạo phiếu luôn **hai bước**: nháp → người dùng xem → `confirm_draft` |
 
 Không bao giờ mở qua MCP: `propose_*` (xác nhận bằng nút trên web / Telegram), `report_missing_feature`, `propose_glossary_term`
-(`HIDDEN`); đề nghị thanh toán chỉ tạo trên web (`confirm_draft` trả link form điền sẵn). Ba tool báo cáo mua hàng cũ đã
+(`HIDDEN`); đề nghị thanh toán (ai-CR-236, 12/11/2026) tạo được qua `confirm_draft(kind="payment")` nhưng **chỉ lưu Nháp**: cùng service form web (`payment_request.service.ensure_payables_in_scope` + `create_requests`, một bản nháp có thể tách nhiều phiếu theo NCC + công ty), `submit=true` bị bỏ qua và ghi rõ trong `note`, kết quả trả mã + link tuyệt đối từng phiếu (`items`); nhóm G7 *Công nợ và thanh toán* tắt thì chặn cả bước tạo. Trợ lý web vẫn mở form điền sẵn, bot Telegram (đóng băng) vẫn gửi link form. Ba tool báo cáo mua hàng cũ đã
 **rời MCP** (§3.4). Ngoài mức khóa còn lớp **nhóm tool** do quản trị bật / tắt (§4) — tool phải qua cả hai lớp.
 
 ### 2.2 Phát hộ, nhận, thu hồi (ai-CR-212, 215)

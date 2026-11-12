@@ -9,6 +9,28 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
+
+**Đã làm**
+- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
+- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
+- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
+- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
+- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
+- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
+- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
+- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
+Commit: (điền sau khi đẩy)
+Deploy: dev
+
 ## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
 - status: xong
 - date: 2026-11-11

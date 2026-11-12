@@ -380,7 +380,9 @@ _DRAFT_DESC = (
     "offset_total + cash_total — chi thật = còn lại trừ cấn trừ, thực thi khi phiếu được "
     "DUYỆT theo CR-260) và form mở ra điền sẵn cột cấn trừ. Sau khi gọi, báo người dùng bấm "
     "nút 'Tạo đề nghị thanh toán' dưới câu trả lời — nhấn mạnh phiếu CHƯA được tạo, số tiền "
-    "đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form."
+    "đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form. Qua cổng MCP (ai-CR-236): người dùng "
+    "đồng ý thì gọi confirm_draft(kind=\"payment\") với đúng bản nháp — phiếu chỉ lưu Nháp, người lập tự vào web bấm "
+    "Gửi duyệt."
 )
 
 
