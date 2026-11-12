@@ -13,7 +13,7 @@ khớp theo `key` ở đầu tiêu đề).
 - status: xong
 - date: 2026-11-11
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Bảo
 **Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
 
@@ -266,7 +266,7 @@ Mã nguồn: `backend/scripts/seed_help_sap_xep_cot_cr744.py`, `backend/scripts/
 - status: xong
 - date: 2026-11-10
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Được
 **Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy Hợp đồng không xếp được 4 cột, Đặt xe không xếp được 2 cột.
 
@@ -281,7 +281,7 @@ Mã nguồn: `backend/app/modules/contract/sort_expressions.py`, `backend/app/mo
 - status: xong
 - date: 2026-11-10
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Được
 **Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy hai cột xếp lệch với số / chữ đang hiện trên màn.
 
