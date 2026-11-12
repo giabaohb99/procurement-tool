@@ -31,6 +31,8 @@ export interface RecentPurchaseRequest {
   date: string
   status: string
   total: number
+  /** bao-CR-753: False = phiếu chờ duyệt đã chọn người duyệt khác — ẩn nút duyệt nhanh. */
+  can_decide?: boolean
 }
 
 export interface LowStockItem {

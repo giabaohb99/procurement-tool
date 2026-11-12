@@ -220,3 +220,21 @@ def test_sr_detail_flag(db, seed):
     s = _sr(db, seed, seed.emp_tp_id)
     d = sr_ser._out(db, s, ADMIN)
     assert d["can_decide"] is False and d["can_return_requester"] is False
+
+
+# ── Tổng quan (bảng YCMH / ĐMH gần đây, duyệt nhanh) ─────────────────────────
+
+def test_dashboard_recent_rows_carry_can_decide(db, seed, cap_quyen):
+    import json
+
+    from app.modules.dashboard import controller as dash_ctl
+    for entity in ("purchase_request", "purchase_order"):
+        cap_quyen(ADMIN.id, entity, scope="all", read=True)
+    pr = _pr(db, seed, seed.emp_tp_id)
+    po = _po(db, seed, seed.emp_tp_id)
+    data = json.loads(dash_ctl.overview(db=db, user=ADMIN).body)["data"]
+    pr_row = next(r for r in data["recent_prs"] if r["id"] == pr.id)
+    po_row = next(r for r in data["recent_pos"] if r["id"] == po.id)
+    assert pr_row["can_decide"] is False and po_row["can_decide"] is False
+    mine = json.loads(dash_ctl.overview(db=db, user=_chosen(seed)).body)["data"]
+    assert all(r["can_decide"] for r in mine["recent_prs"])
