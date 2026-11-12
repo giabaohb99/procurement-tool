@@ -16,6 +16,12 @@ Luật chia (chủ hệ thống chốt 07/11/2026):
 5. Sửa lần giao chỉ đổi SL nhận / ngày nhận (+ kho nhận, SL gửi nếu người dùng nêu); không xóa lần giao qua AI (xóa gỡ
    phiếu nhập kho / công nợ — làm trên màn ĐMH).
 
+Hóa đơn (ai-CR-237): nháp nhận thêm `invoice_no` + `invoice_date` (theo phiếu hoặc từng dòng) ghi cùng lần nhận, và
+chế độ `invoice_deliveries` ghi số + ngày hóa đơn vào lần giao CÓ SẴN theo id (không đổi số lượng) — cùng đường `update_po`
+của màn web nên công nợ hàng lấy lại số HĐ. Ngày hóa đơn do người dùng / hóa đơn cung cấp, không đoán (bao-CR-367): có
+số mà thiếu ngày (hay ngược lại) là lỗi. Lần giao đã có số HĐ khác thì nháp cảnh báo GHI ĐÈ; xác nhận chặn khi hóa đơn
+của lần giao đổi sau lúc soạn. Tệp hóa đơn không gửi qua AI: kết quả trả `attach_links` mở đúng lần giao để tự đính.
+
 Quyền: đọc cần `purchase_order.read` + `supplier.read` (phiếu nêu tên NCC — cùng luật ẩn NCC của các tool thu mua), chỉ
 ĐMH trong phạm vi đọc. Soạn nháp cần thêm `purchase_order.write`, chỉ chia vào ĐMH trong phạm vi GHI. Lúc xác nhận kiểm
 lại quyền + phạm vi `write` (đúng action của `PATCH /api/purchase-orders/{id}`) cho TỪNG ĐMH, và chặn khi dòng / lần giao
@@ -46,6 +52,12 @@ MAX_QTY = 1e9
 PAGE_MAX = 200
 PAGE_DEFAULT = 50
 PO_URL = "/procurement/purchase-orders/{id}"
+#  ai-CR-237: màn chi tiết ĐMH (v2) mở sẵn hộp dòng hàng chứa lần giao (`?delivery=`) hoặc đúng dòng (`?line=`, lần giao
+#  mới chưa có id lúc soạn) — chỗ đính tệp của từng lần giao nằm trong hộp đó.
+ATTACH_DELIVERY_URL = PO_URL + "?delivery={delivery_id}"
+ATTACH_LINE_URL = PO_URL + "?line={po_item_id}"
+ATTACH_NOTE = ("Tệp hóa đơn / phiếu giao không gửi được qua AI: đưa người dùng `attach_links` — bấm link để mở đúng lần "
+               "giao trên web và tự đính tệp hóa đơn.")
 _STATUS_LABELS = {"approved": "Đã duyệt", "partial": "Đã nhận một phần", "received": "Đã nhận đủ",
                   "processing": "Đang xử lý", "completed": "Hoàn thành"}
 _LEGAL = re.compile(r"\b(cong ty|cty|ctcp|tnhh|co phan|mot thanh vien|mtv|trach nhiem huu han|chi nhanh|cn)\b")
@@ -265,9 +277,71 @@ def _parse_lines(args: dict) -> tuple[list[dict], list[str]]:
         slot = merged.setdefault(code, {"product_code": code, "qty": 0.0, "assign": []})
         slot["qty"] = round(slot["qty"] + qty, 3)
         slot["assign"] += assign
+        if ln.get("invoice_no") or ln.get("invoice_date"):
+            inv, problem = _invoice_of(ln, f"Mã {code}: ")
+            if problem:
+                errors.append(problem)
+            else:
+                slot["invoice"] = inv
     if len(raw) > MAX_LINES:
         errors.append(f"Phiếu quá {MAX_LINES} dòng — tách làm nhiều lượt.")
     return list(merged.values()), errors
+
+
+def _invoice_of(src: dict, where: str = "", default: tuple[str, str] | None = None) -> tuple[tuple[str, str] | None, str]:
+    """(số HĐ, ngày HĐ YYYY-MM-DD) từ `src`, thiếu cả hai thì lấy `default`. Ngày KHÔNG đoán (bao-CR-367): có số mà thiếu
+    ngày, có ngày mà thiếu số, ngày sai dạng đều là lỗi đọc được. Trả (None, "") khi không có hóa đơn."""
+    no, raw_date = _text(src.get("invoice_no"), 50), _text(src.get("invoice_date"), 20)
+    if not no and not raw_date:
+        return default, ""
+    when = parse_date(raw_date)
+    if raw_date and not when:
+        return None, f"{where}ngày hóa đơn **{raw_date}** sai dạng (YYYY-MM-DD hoặc DD/MM/YYYY)."
+    if no and not when:
+        return None, (f"{where}có số hóa đơn {no} nhưng thiếu ngày hóa đơn — đọc trên hóa đơn hoặc hỏi người dùng, không tự "
+                      "đoán (không lấy ngày hôm nay, không lấy ngày nhận hàng).")
+    if when and not no:
+        return None, f"{where}có ngày hóa đơn nhưng thiếu số hóa đơn — hỏi người dùng."
+    return (no, when), ""
+
+
+def _overwrite_warning(r: dict, d: dict) -> str:
+    return (f"GHI ĐÈ hóa đơn lần giao #{d['delivery_id']} ({r['po_code']} · {r['product_code']}): đang là số "
+            f"{d['invoice_no']}{' ngày ' + d['invoice_date'] if d['invoice_date'] else ''}, sẽ thành {r['invoice_no']} ngày "
+            f"{r['invoice_date']}. Hỏi người dùng có chắc thay không.")
+
+
+def _set_invoice(r: dict, inv: tuple[str, str] | None, d: dict | None, warnings: list[str]) -> None:
+    """Gắn hóa đơn vào một dòng nháp + chụp hóa đơn cũ của lần giao (để xác nhận chặn khi đã đổi)."""
+    if inv is None:
+        return
+    r["invoice_no"], r["invoice_date"] = inv
+    r["invoice_before"] = d["invoice_no"] if d else ""
+    r["invoice_date_before"] = d["invoice_date"] if d else ""
+    r["overwrite"] = bool(d and d["invoice_no"] and d["invoice_no"] != r["invoice_no"])
+    if r["overwrite"]:
+        warnings.append(_overwrite_warning(r, d))
+
+
+def attach_links(rows: list[dict]) -> list[dict]:
+    """Link (tương đối — cổng MCP nối gốc) mở đúng chỗ đính tệp: lần giao có sẵn theo id, lần giao mới theo dòng hàng."""
+    out, seen = [], set()
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            po_id, item_id, did = int(r.get("po_id") or 0), int(r.get("po_item_id") or 0), int(r.get("delivery_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        key = ("d", did) if did else ("l", item_id)
+        if po_id <= 0 or key in seen:
+            continue
+        seen.add(key)
+        url = (ATTACH_DELIVERY_URL.format(id=po_id, delivery_id=did) if did
+               else ATTACH_LINE_URL.format(id=po_id, po_item_id=item_id))
+        out.append({"po_code": r.get("po_code") or "", "product_code": r.get("product_code") or "",
+                    "delivery_id": did, "url": url})
+    return out
 
 
 class _Plan:
@@ -435,10 +509,78 @@ def _code_problems(ctx: ToolContext, lines: list[dict], pool: list[dict], read_p
     return set(lost), warnings
 
 
+def _draft_invoice_only(ctx: ToolContext, args: dict) -> dict:
+    """ai-CR-237: chế độ ghi số + ngày hóa đơn vào các lần giao CÓ SẴN (theo id từ po_open_lines), không đổi số lượng."""
+    raw = args.get("invoice_deliveries")
+    raw = raw if isinstance(raw, list) else [raw]
+    default, problem = _invoice_of(args)
+    errors = [problem] if problem else []
+    wants: list[tuple[int, tuple[str, str] | None]] = []
+    for i, x in enumerate(raw[:MAX_LINES * MAX_ASSIGN], 1):
+        src = x if isinstance(x, dict) else {"delivery_id": x}
+        try:
+            did = int(src.get("delivery_id") or 0)
+        except (TypeError, ValueError):
+            did = 0
+        if did <= 0:
+            errors.append(f"Phần tử {i} của invoice_deliveries thiếu delivery_id (id lần giao lấy từ po_open_lines).")
+            continue
+        inv, problem = _invoice_of(src, f"Lần giao #{did}: ", default)
+        if problem:
+            errors.append(problem)
+        elif inv is None:
+            errors.append(f"Lần giao #{did}: thiếu số + ngày hóa đơn (invoice_no, invoice_date).")
+        else:
+            wants.append((did, inv))
+    if errors:
+        return {"error": " ".join(dict.fromkeys(errors))}
+    sup, problem = _resolve_supplier(ctx, args.get("supplier"))
+    if problem:
+        return problem
+    pool, read_pool = _lines(ctx, sup[0], None, "write"), _lines(ctx, sup[0], None, "read")
+    by_did = {d["delivery_id"]: (r, d) for r in pool for d in r["deliveries"]}
+    read_dids = {d["delivery_id"]: r["po_code"] for r in read_pool for d in r["deliveries"]}
+    rows, warnings, seen = [], [], set()
+    for did, inv in wants:
+        if did in seen:
+            warnings.append(f"Lần giao #{did} được nêu hai lần — chỉ lấy lần đầu.")
+            continue
+        seen.add(did)
+        hit = by_did.get(did)
+        if hit is None:
+            warnings.append(f"Lần giao #{did}: ĐMH {read_dids[did]} bạn chỉ được xem, không được ghi — bỏ qua."
+                            if did in read_dids else
+                            f"Lần giao #{did}: không thấy trong các ĐMH đang mở của NCC này trong phạm vi của bạn (đơn đã "
+                            "Hoàn thành / dòng đã đóng thì sửa trên màn ĐMH) — bỏ qua.")
+            continue
+        ln, d = hit
+        r = {"op": "invoice", "po_id": ln["po_id"], "po_code": ln["po_code"], "misa_code": ln["misa_code"],
+             "order_date": ln["order_date"], "po_item_id": ln["po_item_id"], "product_code": ln["product_code"],
+             "product_name": ln["product_name"], "unit": ln["unit"], "delivery_id": did,
+             "delivery_no": d["delivery_no"], "received_qty": d["received_qty"], "received_date": d["received_date"]}
+        _set_invoice(r, inv, d, warnings)
+        rows.append(r)
+    if not rows:
+        return {"error": "Không có lần giao nào ghi được hóa đơn.", "warnings": warnings}
+    rows.sort(key=lambda r: (r["po_code"], r["product_code"], r["delivery_no"]))
+    draft = {"mode": "invoice", "supplier_code": sup[0], "supplier_name": sup[1], "slip_no": "", "slip_date": "",
+             "rows": rows}
+    draft["draft_ref"] = _draft_ref(draft)
+    return {"draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
+            "note": ("Đã soạn nháp ghi HÓA ĐƠN, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã hàng, lần giao số "
+                     "mấy, SL đã nhận, số + ngày hóa đơn sẽ ghi) và đọc rõ từng cảnh báo, nhất là GHI ĐÈ. Họ đồng ý rõ thì "
+                     "gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. " + ATTACH_NOTE)}
+
+
 def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("purchase_order", "write") or not ctx.can("supplier"):
         return denied("ghi lần nhận hàng vào đơn mua hàng")
+    if args.get("invoice_deliveries"):
+        return _draft_invoice_only(ctx, args)
+    slip_inv, inv_problem = _invoice_of(args)
     lines, errors = _parse_lines(args)
+    if inv_problem:
+        errors.insert(0, inv_problem)
     slip_date = parse_date(args.get("slip_date"))
     if not slip_date:
         errors.append("Thiếu / sai ngày trên phiếu xuất kho (`slip_date` YYYY-MM-DD) — ngày này là ngày nhận hàng.")
@@ -472,6 +614,10 @@ def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
     rows = _rows(plan, slip_date, default_wh)
     if not rows:
         return {"error": "Không chia được dòng nào vào ĐMH.", "warnings": warnings}
+    line_inv = {ln["product_code"]: ln.get("invoice") for ln in lines}
+    for r in rows:
+        d = next((x for x in plan.lines[r["po_item_id"]]["deliveries"] if x["delivery_id"] == r["delivery_id"]), None)
+        _set_invoice(r, line_inv.get(r["product_code"]) or slip_inv, d, warnings)
     for r in rows:
         if r["over"] > EPS:
             warnings.append(f"GIAO DƯ {vn(r['over'])} {r['unit']} mã {r['product_code']} ở {r['po_code']}: sau khi ghi đã "
@@ -482,12 +628,12 @@ def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
     draft = {"supplier_code": sup[0], "supplier_name": sup[1], "slip_no": _text(args.get("slip_no"), 50),
              "slip_date": slip_date, "rows": rows}
     draft["draft_ref"] = _draft_ref(draft)
-    return {"draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)),
+    return {"draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
             "note": ("Đã soạn nháp, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã MISA, mã hàng, SL ghi, thêm lần "
                      "giao mới hay điền lần giao số mấy, đã nhận sau khi ghi / đặt) và đọc rõ từng cảnh báo, nhất là GIAO "
                      "DƯ. Người dùng muốn chia khác thì gọi lại tool này với `assign` / SL mới (đừng tự sửa `draft`). Họ "
                      "đồng ý rõ thì gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. Đừng tự "
-                     "báo là đã ghi.")}
+                     "báo là đã ghi. " + ATTACH_NOTE)}
 
 
 # ── xác nhận (chạy phía ERP: agent_hub.draft_create.create → kind po_receipt) ───────────────
@@ -503,8 +649,12 @@ def _validated_rows(draft: dict) -> list[dict]:
         raise _err("Bản nháp không có dòng nào để ghi — gọi lại draft_po_receipt.")
     out = []
     for r in rows:
-        if not isinstance(r, dict) or r.get("op") not in ("add", "update"):
+        if not isinstance(r, dict) or r.get("op") not in ("add", "update", "invoice"):
             raise _err("Bản nháp hỏng (thao tác lạ) — gọi lại draft_po_receipt, đừng tự sửa bản nháp.")
+        inv = _validated_invoice(r)
+        if r["op"] == "invoice":
+            out.append(_validated_invoice_row(r, inv))
+            continue
         qty, rdate = parse_qty(r.get("qty")), parse_date(r.get("received_date"))
         try:
             po_id, item_id, did = int(r.get("po_id") or 0), int(r.get("po_item_id") or 0), int(r.get("delivery_id") or 0)
@@ -517,10 +667,33 @@ def _validated_rows(draft: dict) -> list[dict]:
         out.append({"op": r["op"], "po_id": po_id, "po_item_id": item_id, "delivery_id": did, "qty": qty,
                     "received_date": rdate, "warehouse_code": _text(r.get("warehouse_code"), 50),
                     "ship_qty": ship, "product_code": _code(r.get("product_code")),
-                    "line_received_before": line_before, "delivery_received_before": d_before})
-    if len({r["delivery_id"] for r in out if r["op"] == "update"}) != sum(r["op"] == "update" for r in out):
+                    "line_received_before": line_before, "delivery_received_before": d_before, **inv})
+    touched = [r["delivery_id"] for r in out if r["op"] in ("update", "invoice")]
+    if len(set(touched)) != len(touched):
         raise _err("Bản nháp sửa một lần giao hai lần — gọi lại draft_po_receipt.")
     return out
+
+
+def _validated_invoice(r: dict) -> dict:
+    """Phần hóa đơn của một dòng nháp (ai-CR-237): cả số + ngày hợp lệ, hoặc không có gì."""
+    if not r.get("invoice_no") and not r.get("invoice_date"):
+        return {}
+    no, when = _text(r.get("invoice_no"), 50), parse_date(r.get("invoice_date"))
+    if not no or not when:
+        raise _err("Bản nháp có hóa đơn thiếu số hoặc ngày — gọi lại draft_po_receipt.")
+    return {"invoice_no": no, "invoice_date": when, "invoice_before": _text(r.get("invoice_before"), 50),
+            "invoice_date_before": _text(r.get("invoice_date_before"), 10)}
+
+
+def _validated_invoice_row(r: dict, inv: dict) -> dict:
+    try:
+        po_id, item_id, did = int(r.get("po_id") or 0), int(r.get("po_item_id") or 0), int(r.get("delivery_id") or 0)
+    except (TypeError, ValueError):
+        raise _err("Bản nháp hỏng (số không hợp lệ) — gọi lại draft_po_receipt.") from None
+    if not inv or po_id <= 0 or item_id <= 0 or did <= 0:
+        raise _err("Bản nháp ghi hóa đơn thiếu lần giao / số / ngày hóa đơn — gọi lại draft_po_receipt.")
+    return {"op": "invoice", "po_id": po_id, "po_item_id": item_id, "delivery_id": did, "qty": 0.0, "received_date": "",
+            "warehouse_code": "", "ship_qty": None, "product_code": _code(r.get("product_code")), **inv}
 
 
 def _check_po(db, user, profile, po_id: int, rows: list[dict], supplier_code: str):
@@ -542,6 +715,14 @@ def _check_po(db, user, profile, po_id: int, rows: list[dict], supplier_code: st
             raise _err(f"Dòng mã {r['product_code']} không thuộc ĐMH {po.code} — chưa ghi gì.")
         if (it.progress_status or "") in CLOSED_LINE_PROGRESS:
             raise _err(f"Dòng {r['product_code']} của {po.code} đã Hoàn thành / Hủy — chưa ghi gì.")
+        if r.get("invoice_no") and r["delivery_id"]:
+            d = next((x for x in deliveries_of(db, it.id) if x.id == r["delivery_id"]), None)
+            if d is None or ((d.invoice_no or "").strip(), (d.invoice_date or "").strip()) != \
+                    (r["invoice_before"], r["invoice_date_before"]):
+                raise _err(f"Hóa đơn của lần giao #{r['delivery_id']} ({po.code}) đã đổi sau lúc soạn nháp (đang là "
+                           f"{(d.invoice_no if d else '') or 'trống'}) — gọi lại draft_po_receipt. Chưa ghi gì.")
+        if r["op"] == "invoice":
+            continue
         if abs(_num(it.qty_received) - r["line_received_before"]) > EPS:
             raise _err(f"Dòng {r['product_code']} của {po.code} đã có người ghi nhận hàng sau lúc soạn nháp (đã nhận "
                        f"{vn(_num(it.qty_received))}) — gọi lại draft_po_receipt để soạn nháp mới. Chưa ghi gì.")
@@ -563,7 +744,7 @@ def _payload(db, po, rows: list[dict], note: str):
 
     from .update_tool import _row_to_input
 
-    updates = {r["delivery_id"]: r for r in rows if r["op"] == "update"}
+    updates = {r["delivery_id"]: r for r in rows if r["op"] in ("update", "invoice")}
     adds: dict[int, list[dict]] = {}
     for r in rows:
         if r["op"] == "add":
@@ -576,7 +757,9 @@ def _payload(db, po, rows: list[dict], note: str):
             for d in existing:
                 din = _row_to_input(DeliveryIn, d)
                 if (u := updates.get(d.id)) is not None:
-                    change = {"received_qty": u["qty"], "received_date": u["received_date"]}
+                    change = {} if u["op"] == "invoice" else {"received_qty": u["qty"], "received_date": u["received_date"]}
+                    if u.get("invoice_no"):          # ai-CR-237
+                        change.update(invoice_no=u["invoice_no"], invoice_date=u["invoice_date"])
                     if u["warehouse_code"]:
                         change["warehouse_code"] = u["warehouse_code"]
                     if u["ship_qty"]:
@@ -587,7 +770,8 @@ def _payload(db, po, rows: list[dict], note: str):
             for a in adds.get(it.id, []):
                 delivs.append(DeliveryIn(delivery_no=nxt, warehouse_code=a["warehouse_code"] or (it.warehouse_code or ""),
                                          ship_qty=a["ship_qty"] or a["qty"], ship_unit=it.unit or "",
-                                         received_qty=a["qty"], received_date=a["received_date"], progress_note=note))
+                                         received_qty=a["qty"], received_date=a["received_date"], progress_note=note,
+                                         invoice_no=a.get("invoice_no") or "", invoice_date=a.get("invoice_date") or ""))
                 nxt += 1
             items_in.append(POItemIn(**{**_row_to_input(POItemIn, it).model_dump(exclude={"deliveries"}),
                                         "deliveries": delivs}))
@@ -597,8 +781,14 @@ def _payload(db, po, rows: list[dict], note: str):
 
 
 def _summary(po, rows: list[dict]) -> str:
-    parts = [f"{r['product_code']} {'+' if r['op'] == 'add' else 'lần giao #' + str(r['delivery_id']) + ' = '}{vn(r['qty'])}"
-             for r in rows]
+    parts = []
+    for r in rows:
+        inv = f"HĐ {r['invoice_no']} ngày {r['invoice_date']}" if r.get("invoice_no") else ""
+        if r["op"] == "invoice":
+            parts.append(f"{r['product_code']} lần giao #{r['delivery_id']}: {inv}")
+        else:
+            head = '+' if r['op'] == 'add' else 'lần giao #' + str(r['delivery_id']) + ' = '
+            parts.append(f"{r['product_code']} {head}{vn(r['qty'])}" + (f" · {inv}" if inv else ""))
     return f"{po.code}: " + "; ".join(parts)
 
 
@@ -628,8 +818,10 @@ def confirm_receipt(db, user, draft: dict, source: int = 0) -> tuple[str, int]:
     for pid, prow in by_po.items():
         po = pos[pid]
         code = po.code
-        before = {"deliveries": [{"delivery_id": r["delivery_id"], "received_qty": r["delivery_received_before"]}
-                                 for r in prow if r["op"] == "update"]}
+        before = {"deliveries": [{"delivery_id": r["delivery_id"], "received_qty": r.get("delivery_received_before"),
+                                  **({"invoice_no": r["invoice_before"], "invoice_date": r["invoice_date_before"]}
+                                     if r.get("invoice_no") else {})}
+                                 for r in prow if r["op"] in ("update", "invoice")]}
         try:
             po_service.update_po(db, pid, _payload(db, po, prow, note), user.id)
         except HTTPException as e:
@@ -637,12 +829,15 @@ def confirm_receipt(db, user, draft: dict, source: int = 0) -> tuple[str, int]:
             head = f"Đã ghi {', '.join(done)}; " if done else ""
             raise _err(f"{head}{code} chưa ghi: {e.detail}") from None
         summary = _summary(po, prow)
-        audit_record(db, user.id, "purchase_order", pid,
-                     "update", f"Ghi lần nhận hàng qua trợ lý AI (nháp {ref or '?'}, phiếu xuất kho "
-                               f"{slip_no or 'không số'} ngày {prow[0]['received_date']}): {summary}"[:1000],
-                     doc_code=code)
+        what = (f"Ghi hóa đơn vào lần giao qua trợ lý AI (nháp {ref or '?'})"
+                if all(r["op"] == "invoice" for r in prow) else
+                f"Ghi lần nhận hàng qua trợ lý AI (nháp {ref or '?'}, phiếu xuất kho {slip_no or 'không số'} ngày "
+                f"{next((r['received_date'] for r in prow if r['received_date']), '?')})")
+        audit_record(db, user.id, "purchase_order", pid, "update", f"{what}: {summary}"[:1000], doc_code=code)
         change_service.record_change(db, user, entity="purchase_order", entity_id=pid, doc_code=code,
-                                     action=ChangeAction.UPDATE, summary=f"Ghi lần nhận hàng {summary}",
+                                     action=ChangeAction.UPDATE,
+                                     summary=f"{'Ghi hóa đơn' if all(r['op'] == 'invoice' for r in prow) else 'Ghi lần nhận hàng'} "
+                                             f"{summary}",
                                      before=before, after={"draft_ref": ref, "slip_no": slip_no, "rows": prow},
                                      after_sig="", source=source)
         done.append(code)
@@ -669,8 +864,12 @@ def summary_lines(draft: dict) -> list[str]:
     out = [f"NCC: {draft.get('supplier_name') or draft.get('supplier_code') or '?'}",
            f"Phiếu xuất kho: {draft.get('slip_no') or '(không số)'} · ngày {draft.get('slip_date') or '?'}"]
     for r in (draft.get("rows") or [])[:12]:
+        inv = f" · HĐ {r.get('invoice_no')} ngày {r.get('invoice_date')}" if r.get("invoice_no") else ""
+        if r.get("op") == "invoice":
+            out.append(f"- {r.get('po_code')} · {r.get('product_code')}: lần giao số {r.get('delivery_no')}{inv}")
+            continue
         how = "thêm lần giao" if r.get("op") == "add" else f"điền lần giao số {r.get('delivery_no')}"
-        out.append(f"- {r.get('po_code')} · {r.get('product_code')}: {vn(r.get('qty'))} ({how})")
+        out.append(f"- {r.get('po_code')} · {r.get('product_code')}: {vn(r.get('qty'))} ({how}){inv}")
     return out
 
 
@@ -680,8 +879,10 @@ PO_OPEN_LINES_SPEC = ToolSpec(
     name="po_open_lines",
     description=("Các dòng ĐƠN MUA HÀNG (ĐMH) đã duyệt CÒN THIẾU HÀNG của một NCC: mã ĐMH, mã MISA, ngày đặt, trạng thái, mã "
                  "hàng, tên, SL đặt / đã nhận / còn thiếu, và các LẦN GIAO đã có (lần thứ mấy, kho, đơn vị vận chuyển, SL "
-                 "gửi, SL nhận, ngày nhận, trạng thái, hóa đơn). Dùng để giải thích cho người dùng khi đối chiếu phiếu "
-                 "xuất kho / phiếu giao hàng của NCC. Muốn GHI lần nhận thì dùng draft_po_receipt."),
+                 "gửi, SL nhận, ngày nhận, trạng thái, hóa đơn — `delivery_id` là id lần giao). Dùng để giải thích cho "
+                 "người dùng khi đối chiếu phiếu xuất kho / phiếu giao hàng / HÓA ĐƠN của NCC: tìm ĐMH theo NCC, mã hàng, "
+                 "SL, tên hàng trên hóa đơn (đơn giá xem bằng procurement_doc_read nếu cần). Muốn GHI lần nhận hoặc ghi "
+                 "số + ngày hóa đơn thì dùng draft_po_receipt."),
     parameters={"type": "object", "properties": {
         "supplier": _SUPPLIER,
         "product_codes": {"type": "array", "items": {"type": "string"}, "description": "Lọc theo mã hàng (tùy chọn)."},
@@ -699,15 +900,29 @@ DRAFT_PO_RECEIPT_SPEC = ToolSpec(
                  "giao đang chờ khớp số, không thì thêm lần giao mới), báo GIAO DƯ / mã không có đơn / ngoài quyền. KHÔNG "
                  "ghi gì. Quy trình: đọc ảnh → gọi tool này → trình bảng + cảnh báo → người dùng sửa thì gọi lại với SL / "
                  "assign mới → họ đồng ý rõ thì confirm_draft(kind=po_receipt, draft=đúng `draft`). Ngày nhận = ngày "
-                 "trên phiếu. Không xóa lần giao qua AI."),
+                 "trên phiếu. Không xóa lần giao qua AI. HÓA ĐƠN (ai-CR-237): truyền invoice_no + invoice_date (theo phiếu "
+                 "hoặc từng dòng) để ghi cùng lần nhận; hóa đơn về SAU khi đã nhận hàng thì tìm lần giao bằng po_open_lines "
+                 "(NCC, mã hàng, SL, tên trên hóa đơn) rồi gọi tool này với invoice_deliveries = [id lần giao] + "
+                 "invoice_no + invoice_date (khỏi lines / slip_date). Ngày hóa đơn lấy trên hóa đơn hoặc hỏi người dùng, "
+                 "KHÔNG đoán. Tệp hóa đơn không gửi qua AI: đưa người dùng `attach_links` để tự đính trên web."),
     parameters={"type": "object", "properties": {
         "supplier": _SUPPLIER,
         "slip_date": {"type": "string", "description": "Ngày trên phiếu YYYY-MM-DD — ghi làm ngày nhận hàng."},
         "slip_no": {"type": "string", "description": "Số phiếu xuất kho (nếu có)."},
         "warehouse_code": {"type": "string", "description": "Kho nhận (tùy chọn; trống = kho mặc định của dòng ĐMH)."},
+        "invoice_no": {"type": "string", "description": "Số hóa đơn NCC (tùy chọn) — ghi vào các lần giao của nháp."},
+        "invoice_date": {"type": "string", "description": "Ngày hóa đơn YYYY-MM-DD, bắt buộc khi có số hóa đơn."},
+        "invoice_deliveries": {"type": "array", "maxItems": MAX_LINES, "description": (
+            "Chế độ CHỈ ghi hóa đơn vào lần giao CÓ SẴN: mỗi phần tử {delivery_id (từ po_open_lines), invoice_no, "
+            "invoice_date} — bỏ trống số / ngày thì lấy invoice_no / invoice_date của tool. Không đổi số lượng."),
+            "items": {"type": "object", "properties": {
+                "delivery_id": {"type": "integer"}, "invoice_no": {"type": "string"},
+                "invoice_date": {"type": "string"}}, "required": ["delivery_id"]}},
         "lines": {"type": "array", "maxItems": MAX_LINES, "items": {"type": "object", "properties": {
             "product_code": {"type": "string", "description": "Mã hàng trên phiếu (trùng mã hàng của dòng ĐMH)."},
             "qty": {"type": "number", "description": "Tổng SL của mã trên phiếu (3.780 trên phiếu = 3780)."},
+            "invoice_no": {"type": "string", "description": "Số hóa đơn riêng của mã này (tùy chọn)."},
+            "invoice_date": {"type": "string", "description": "Ngày hóa đơn riêng của mã này."},
             "assign": {"type": "array", "maxItems": MAX_ASSIGN, "description": (
                 "Tùy chọn — người dùng chỉ định chia: mỗi phần tử một ĐMH. Có delivery_id / delivery_no = SỬA lần giao "
                 "đó (SL nhận = qty), không có = thêm lần giao mới. Phần SL phiếu còn lại tool tự chia."),
@@ -721,7 +936,7 @@ DRAFT_PO_RECEIPT_SPEC = ToolSpec(
                     "ship_qty": {"type": "number", "description": "SL gửi (chỉ khi người dùng nêu)."}},
                     "required": ["po_code", "qty"]}}},
             "required": ["product_code", "qty"]}}},
-        "required": ["supplier", "slip_date", "lines"]},
+        "required": ["supplier"]},
     handler=draft_po_receipt,
 )
 

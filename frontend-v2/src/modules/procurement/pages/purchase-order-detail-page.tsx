@@ -19,7 +19,7 @@ import {
   Ship,
 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
@@ -268,6 +268,22 @@ export function PurchaseOrderDetailPage() {
   const serverDataChanged = useHasChanged(serverData)
   const isNewChanged = useHasChanged(isNew)
   if ((serverDataChanged || isNewChanged) && !isNew) setDraft(serverData ?? null)
+
+  //  ai-CR-237: link trợ lý AI gửi (`?delivery=<id lần giao>` hoặc `?line=<id dòng>`) mở sẵn hộp dòng hàng chứa lần
+  //  giao đó — chỗ người dùng tự đính tệp hóa đơn. Chỉ mở MỘT lần khi dữ liệu đơn về.
+  const [searchParams] = useSearchParams()
+  const focusDeliveryId = Number(searchParams.get('delivery')) || 0
+  const focusLineId = Number(searchParams.get('line')) || 0
+  const [focusHandled, setFocusHandled] = useState(false)
+  if (!focusHandled && serverData && (focusDeliveryId || focusLineId)) {
+    setFocusHandled(true)
+    const focusIndex = serverData.items.findIndex(
+      (item) =>
+        (focusLineId > 0 && item.id === focusLineId) ||
+        (focusDeliveryId > 0 && item.deliveries.some((delivery) => delivery.id === focusDeliveryId)),
+    )
+    if (focusIndex >= 0) setLineIndex(focusIndex)
+  }
 
   /**
    * Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. bao-CR-364: tiền tệ
