@@ -114,7 +114,7 @@ export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
               </TableCell>
               {canApprove && (
                 <TableCell className="text-center">
-                  {row.status === 'submitted' ? (
+                  {row.status === 'submitted' && row.can_decide !== false ? (
                     <QuickActions id={row.id} code={row.code} />
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
@@ -175,7 +175,7 @@ function RecentRequestCard({
         {/*  Nút bám mép phải của CHÍNH hàng huy hiệu, không xuống một hàng
              riêng: hàng riêng cho hai nút biểu tượng làm mỗi phiếu cao thêm
              40px × 8 phiếu, mà chỗ trống bên phải huy hiệu thì đang bỏ không. */}
-        {canApprove && row.status === 'submitted' && (
+        {canApprove && row.status === 'submitted' && row.can_decide !== false && (
           <div className="ml-auto">
             <QuickActions id={row.id} code={row.code} />
           </div>

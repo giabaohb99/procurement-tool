@@ -7,6 +7,7 @@ from app.core.auth import (get_current_user, get_perm_profile, require,
 from app.core.base_controller import apply_sort_from_request, pagination
 from app.core.central_purchasing import get_central_dept_id
 from app.core.database import get_db
+from app.core.designated_approver import ensure_designated_approver
 from app.core.response import success
 from app.core.scoping import (apply_scope, approves_only_in_dept_proc, holds_handling_dept,
                               scope_condition)
@@ -305,10 +306,18 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     return success(_out(db, s), "Đã gửi duyệt")
 
 
+def _ensure_designated_if_waiting(db: Session, s, user) -> None:
+    """bao-CR-753: ở bước CHỜ Trưởng phòng phê duyệt (`submitted`) chỉ người được chọn mới quyết.
+    Trả về khi đã duyệt / đang xử lý (bao-CR-554) và chuyển phòng không bị chặn ở đây."""
+    if s.status == "submitted":
+        ensure_designated_approver(db, s, user)
+
+
 @router.post("/{sid}/approve")
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
     """Duyệt YCBG và ghi người duyệt lên bản in."""
     _in_scope(db, sid, user, "approve")
+    _ensure_designated_if_waiting(db, service.get_sr(db, sid), user)   # bao-CR-753
     s = service.set_status(db, sid, "approved", user.id)
     # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
     from app.core.print_signers import stamp_approver
@@ -353,6 +362,7 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     """TRẢ ĐƠN — trả về để người YC sửa & gửi lại (như nháp). status → rejected (còn sửa được).
     bao-CR-554: trả được cả phiếu đã duyệt / đang xử lý khi việc khảo sát chưa bắt đầu."""
     _in_scope(db, sid, user, "approve")
+    _ensure_designated_if_waiting(db, service.get_sr(db, sid), user)   # bao-CR-753
     s = service.return_to_requester(db, sid, data.reason, user.id)
     reqs = service.users_with_id(db, s.created_by or user.id)
     _notify(db, reqs, f"{s.code} — Bị trả lại YCBG",
@@ -366,6 +376,7 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
             user=Depends(require("survey_request", "approve"))):
     """TỪ CHỐI — khóa đơn hẳn (không sửa được nữa, phải làm đơn mới). status → cancelled."""
     _in_scope(db, sid, user, "approve")
+    _ensure_designated_if_waiting(db, service.get_sr(db, sid), user)   # bao-CR-753
     s = service.set_status(db, sid, "cancelled", user.id, data.reason)
     reqs = service.users_with_id(db, s.created_by or user.id)
     _notify(db, reqs, f"{s.code} — Từ chối YCBG",

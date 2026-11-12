@@ -14,7 +14,7 @@ from app.modules.purchase_order import controller, service
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_order.schema import RejectIn
 
-USER = SimpleNamespace(id=1)
+USER = SimpleNamespace(id=1, employee_id=999901)   # bao-CR-753: là người được chọn
 #  bao-CR-742: nhân sự không gắn tài khoản — đủ để qua chốt "Trưởng phòng phê duyệt".
 APPROVER = 999901
 

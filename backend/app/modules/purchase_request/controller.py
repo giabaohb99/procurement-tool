@@ -7,6 +7,7 @@ from app.core.central_purchasing import get_central_dept_id, is_central_dept
 from app.core.scoping import apply_scope, approves_only_in_dept_proc, holds_handling_dept
 from app.core.base_controller import apply_sort_from_request, pagination
 from app.core.database import get_db
+from app.core.designated_approver import ensure_designated_approver
 from app.core.response import success
 from app.modules.notification.service import trigger_notification
 
@@ -303,12 +304,22 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
 @router.post("/{pid}/cancel")
 def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     """Hủy YCMH kèm lý do và báo người tạo."""
-    _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
+    current = service.get_pr(db, pid)
+    _ensure_can_return_or_reject(db, user, current)
+    #  bao-CR-753: nút "Từ chối" của v2 đi đường này — ở bước chờ duyệt chỉ người được chọn.
+    _ensure_designated_if_waiting(db, current, user)
     pr = service.cancel_pr(db, pid, data.reason, user.id)
     trigger_notification(db=db, event="pr_cancelled", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
     return success(_out(db, pr, user), "Đã hủy phiếu")
+
+
+def _ensure_designated_if_waiting(db: Session, pr, user) -> None:
+    """bao-CR-753: ở bước CHỜ Trưởng phòng phê duyệt (`submitted`) chỉ người được chọn mới quyết.
+    Các bước khác (điều phối, thu mua trả về sau duyệt, chuyển phòng) không bị chặn ở đây."""
+    if pr.status == "submitted":
+        ensure_designated_approver(db, pr, user)
 
 
 @router.post("/{pid}/return")
@@ -320,6 +331,7 @@ def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
             raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
                                      "lên đơn mua hàng — hủy đơn liên quan trước")
         raise HTTPException(403, "Bạn không có quyền trả về phiếu này")
+    _ensure_designated_if_waiting(db, pr, user)   # bao-CR-753: chỉ bước chờ duyệt; thu mua trả về sau duyệt giữ nguyên
     pr = service.return_pr(db, pid, data.reason, user.id)
     trigger_notification(db=db, event="pr_returned", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,
@@ -483,6 +495,7 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     """Duyệt YCMH; phiếu thuộc diện bỏ qua điều phối thì tự chuyển sang bước kế."""
     if not _in_approve_scope(db, user, pid):
         raise HTTPException(403, "Ngoài phạm vi được phép duyệt")
+    _ensure_designated_if_waiting(db, service.get_pr(db, pid), user)   # bao-CR-753
     # CR-071 — KHÔNG chặn theo `head_of_dept_id`: ô TBP chỉ để lưu + in, luật duyệt giữ như cũ.
     # CR-034: mặc định KHÔNG tự động phân bổ NSTM ở đây — phiếu dừng ở "Đã duyệt", chờ Quản lý/Admin
     # thu mua duyệt lần 2 (/dispatch). Nếu công tắc `pr_dispatch_enabled` bị TẮT thì chạy luôn bước
@@ -566,6 +579,7 @@ def dispatch_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depen
 def reject_pr(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     """Từ chối YCMH kèm lý do và báo người tạo."""
     _in_scope(db, pid, user, "approve")
+    _ensure_designated_if_waiting(db, service.get_pr(db, pid), user)   # bao-CR-753
     pr = service.set_status(db, pid, "rejected", user.id, data.reason)
     trigger_notification(
         db=db,

@@ -17,6 +17,7 @@ from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn,
                      ItemProgressIn, POCreate, POUpdate, RejectIn)
 from .sort_expressions import list_sort_allow
 from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
+from app.core.designated_approver import ensure_designated_approver, is_designated_approver
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
@@ -155,7 +156,11 @@ def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
                          PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     if not scoped.first():
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    return success(_out(db, service.get_po(db, pid)))
+    po = service.get_po(db, pid)
+    data = _out(db, po)
+    #  bao-CR-753: giao diện (v1 + v2) ẩn Duyệt / Trả về / Từ chối / Hủy duyệt khi cờ này False.
+    data["can_decide"] = is_designated_approver(po, user, db)
+    return success(data)
 
 
 @router.get("/{pid}/print")
@@ -307,8 +312,9 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                user=Depends(require("purchase_order", "approve"))):
     """Duyệt ĐMH đang chờ duyệt và ghi người duyệt lên bản in."""
-    _in_scope(db, pid, user, "approve")
+    po = _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "duyệt")
+    ensure_designated_approver(db, service.get_po(db, pid), user)   # bao-CR-753
     po = service.set_status(db, pid, "approved", user.id)
     # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
     from app.core.print_signers import stamp_approver
@@ -328,7 +334,9 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     Chỉ người có quyền DUYỆT được bấm: sau khi duyệt, đơn là cam kết đã ký với NCC, mở
     lại để sửa là quyết định của trưởng phòng chứ không phải của người lập đơn.
     """
-    _in_scope(db, pid, user, "approve")
+    po = _in_scope(db, pid, user, "approve")
+    #  bao-CR-753: sau duyệt cột là người THỰC duyệt — chỉ người đó hủy duyệt được.
+    ensure_designated_approver(db, service.get_po(db, pid), user)
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
     po = service.unapprove_po(db, pid, user.id, data.reason.strip())
@@ -343,8 +351,9 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
               user=Depends(require("purchase_order", "approve"))):
     # Từ chối = KHÓA đơn (Đã từ chối) — không sửa/gửi lại được, phải Nhân bản thành đơn mới.
     """Từ chối ĐMH đang chờ duyệt (đơn chuyển Đã hủy) kèm lý do, báo người tạo."""
-    _in_scope(db, pid, user, "approve")
+    po = _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "từ chối")
+    ensure_designated_approver(db, service.get_po(db, pid), user)   # bao-CR-753
     po = service.set_status(db, pid, "cancelled", user.id, data.reason)
     trigger_notification(db=db, event="po_rejected", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
@@ -357,8 +366,9 @@ def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
               user=Depends(require("purchase_order", "approve"))):
     # Trả về = Bị trả lại — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCMH).
     """Trả ĐMH đang chờ duyệt về người tạo để sửa, kèm lý do."""
-    _in_scope(db, pid, user, "approve")
+    po = _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "trả về")
+    ensure_designated_approver(db, service.get_po(db, pid), user)   # bao-CR-753
     po = service.set_status(db, pid, "rejected", user.id, data.reason)
     trigger_notification(db=db, event="po_returned", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
