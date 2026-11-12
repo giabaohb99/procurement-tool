@@ -896,6 +896,7 @@ export function PurchaseRequestDetailPage() {
         ),
       },
       data.status === 'submitted' &&
+        data.can_decide !== false &&   // bao-CR-753
         (data.can_approve || canManage) && {
           key: 'reject',
           node: (

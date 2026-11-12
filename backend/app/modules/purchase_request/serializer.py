@@ -208,11 +208,15 @@ def _out_action_flags(db: Session, pr, user, d: dict) -> None:
     # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
     # CR-071: ô TBP (`head_of_dept_id`) CHỈ để lưu + in, KHÔNG khóa quyền duyệt — chọn ai
     # thì ai có quyền trong phạm vi vẫn duyệt được như trước.
-    d["can_approve"] = bool(user is not None and pr.status == "submitted"
+    #  bao-CR-753: ở bước chờ duyệt, phiếu đã chọn "Trưởng phòng phê duyệt" thì chỉ người đó quyết
+    #  (kể cả quản trị). Giao diện ẩn Duyệt / Trả về / Từ chối theo cờ này.
+    from app.core.designated_approver import is_designated_approver
+    d["can_decide"] = bool(user is not None and (pr.status != "submitted" or is_designated_approver(pr, user, db)))
+    d["can_approve"] = bool(user is not None and pr.status == "submitted" and d["can_decide"]
                             and user_has_permission(db, user, "purchase_request", "approve")
                             and _in_approve_scope(db, user, pr.id))
     # bao-CR-554: nút "Trả về" cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
-    d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
+    d["can_return"] = bool(user is not None and d["can_decide"] and _can_return_requester(db, user, pr))
 
 
 def _out_people_and_signatures(db: Session, pr, d: dict) -> None:

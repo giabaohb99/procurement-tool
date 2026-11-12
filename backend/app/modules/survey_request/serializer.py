@@ -79,7 +79,12 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     base["can_return_dept"] = bool(can_transfer and not is_central_dept(db, s.handler_dept_id))
     # bao-CR-554: nút "Trả về" cho người yêu cầu — người có quyền duyệt, phiếu chờ duyệt hoặc đã
     # duyệt mà việc khảo sát chưa bắt đầu. Giao diện chỉ bày nút theo cờ này.
-    base["can_return_requester"] = bool(user is not None and service.can_return_requester(db, s)
+    #  bao-CR-753: ở bước chờ duyệt, phiếu đã chọn "Trưởng phòng phê duyệt" thì chỉ người đó quyết
+    #  (kể cả quản trị). Giao diện ẩn Duyệt / Trả về / Từ chối theo cờ này.
+    from app.core.designated_approver import is_designated_approver
+    base["can_decide"] = bool(user is not None and (s.status != "submitted" or is_designated_approver(s, user, db)))
+    base["can_return_requester"] = bool(user is not None and base["can_decide"]
+                                        and service.can_return_requester(db, s)
                                         and user_has_permission(db, user, "survey_request", "approve"))
     return base
 
