@@ -12,8 +12,10 @@ người dùng nhắn "tạo" là bot tạo đúng như nút Lưu của web:
 
 Phiếu tạo ra ở trạng thái NHÁP như bấm Lưu trên web; nhắn "tạo và gửi duyệt" thì gửi duyệt luôn
 (ai-CR-047, `submit` ở cuối tệp).
-⚠️ Đề nghị thanh toán KHÔNG tạo từ chat: dính tiền, một bản nháp có thể tách thành nhiều phiếu theo
-NCC + pháp nhân, và phần kiểm phạm vi công nợ nằm ở đường API. Bot gửi link mở form web điền sẵn.
+Đề nghị thanh toán (ai-CR-236, đại ca chốt hướng A 12/11): cổng MCP tạo được phiếu NHÁP bằng đúng service của form
+web (kiểm phạm vi công nợ + `create_requests`, một bản nháp có thể tách nhiều phiếu theo NCC + pháp nhân), KHÔNG BAO
+GIỜ gửi duyệt (không có trong `SUBMITTABLE`) — người lập vào web xem lại rồi tự bấm Gửi duyệt. Bot Telegram (đóng băng)
+vẫn gửi link form web điền sẵn như cũ.
 """
 from __future__ import annotations
 
@@ -77,6 +79,7 @@ DETAIL_PATHS = {
     "seal_request": "/approval-seal/{id}",
     "leave_comp": "/hr/leave-comp-requests/{id}",
     "po_receipt": "/procurement/purchase-orders/{id}",
+    "payment": "/finance/payment-requests/{id}",       # ai-CR-236
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -255,6 +258,8 @@ def _doc_of(db: Session, kind: str, oid: int):
         from app.modules.seal_request.model import SealRequest as model
     elif kind == "leave_comp":
         from app.modules.leave.comp_request_model import LeaveCompRequest as model
+    elif kind == "payment":
+        from app.modules.payment_request.model import PaymentRequest as model
     else:
         return None
     return db.get(model, int(oid or 0)) if oid else None
@@ -317,6 +322,8 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
             code, oid = _create_seal_request(db, user, draft)
         elif kind == "leave_comp":
             code, oid = _create_leave_comp(db, user, draft)
+        elif kind == "payment":
+            reqs = _create_payment(db, user, draft)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -325,8 +332,53 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
     except (ValueError, TypeError) as e:
         db.rollback()
         raise DraftError(f"Bản nháp chưa đủ dữ liệu: {str(e)[:300]}") from None
+    if kind == "payment":
+        #  Một bản nháp có thể tách nhiều phiếu (mỗi cặp NCC + công ty một phiếu): ghi sổ từng phiếu, trả các mã nối
+        #  bằng dấu phẩy + id phiếu đầu (đường cổng B chỉ chở một cặp mã / id).
+        for r in reqs:
+            log_change(db, user, kind, r.id, r.code, ChangeAction.CREATE, f"Tạo {LABELS[kind]} {r.code}", None, source)
+        return ", ".join(r.code for r in reqs), int(reqs[0].id)
     log_change(db, user, kind, oid, code, ChangeAction.CREATE, f"Tạo {LABELS[kind]} {code}", None, source)
     return code, oid
+
+
+def _create_payment(db: Session, user, draft: dict) -> list:
+    """ai-CR-236 — tạo YCTT NHÁP từ bản nháp `draft_payment_request`, dựng đúng gói dữ liệu mà form web
+    `/finance/payment-requests/new?payables=...&offsets=...` gửi lên `POST /api/payment-requests` (khoản nợ đã tick, số đề
+    nghị = nợ còn lại trừ phần cấn trừ đề xuất, cấn trừ kẹp trong [0, nợ còn lại] như `splitLineOffset`), rồi gọi cùng
+    hai hàm service mà đường API gọi. Đọc lại nợ từ DB lúc tạo — không tin số trong bản nháp."""
+    from app.modules.payable.model import Payable
+    from app.modules.payment_request import service as pr_service
+    from app.modules.payment_request.schema import LineIn, PRequestCreate
+
+    raw = draft.get("payable_ids") if isinstance(draft.get("payable_ids"), list) else []
+    ids = list(dict.fromkeys(int(i) for i in raw if str(i).isdigit() and int(i) > 0))[:200]
+    if not ids:
+        raise DraftError("Bản nháp chưa có khoản công nợ nào — gọi draft_payment_request để chọn khoản nợ rồi xác nhận lại.")
+    pr_service.ensure_payables_in_scope(db, user, ids)           # 403 như web → DraftError ở `create`
+    found = {p.id: p for p in db.query(Payable).filter(Payable.id.in_(ids)).all()}
+    rows = [found[i] for i in ids if i in found and found[i].status != "paid" and float(found[i].remaining or 0) > 0]
+    if not rows:
+        raise DraftError("Các khoản trong bản nháp không còn khoản nào còn phải trả (đã tất toán hoặc không còn) — "
+                         "tra lại bằng payable_lookup rồi soạn nháp mới. Chưa tạo gì.")
+    no_company = [p.po_code or f"#{p.id}" for p in rows if not int(p.company_id or 0)]
+    if no_company:
+        raise DraftError(f"Khoản công nợ {', '.join(no_company[:5])} chưa gắn công ty nhận hóa đơn nên phiếu không biết "
+                         "đứng tên công ty nào — hỏi người dùng, hoặc bỏ các khoản đó khỏi bản nháp. Chưa tạo gì.")
+    offsets: dict[int, float] = {}
+    for k, v in (draft.get("offsets") or {}).items() if isinstance(draft.get("offsets"), dict) else ():
+        if str(k).isdigit() and isinstance(v, (int, float)) and v > 0:
+            offsets[int(k)] = float(v)
+    lines = []
+    for p in rows:
+        remaining = max(0.0, float(p.remaining or 0))         # form web: `row.remaining`
+        offset = round(min(offsets.get(p.id, 0.0), remaining), 2)
+        lines.append(LineIn(payable_id=p.id, po_code=p.po_code or "", invoice_no=p.invoice_no or "", invoice_date="",
+                            amount=round(remaining - offset, 2), offset_amount=offset))
+    data = PRequestCreate(request_date=now_local().date().isoformat(), note="", payment_method="transfer", prepay=0,
+                          supplier_code=rows[0].supplier_code or "", company_id=0,
+                          source_type=rows[0].source_type or "goods", lines=lines)
+    return pr_service.create_requests(db, data, user.id)
 
 
 def _hold_plan_for_review(db: Session, user, draft: dict) -> None:

@@ -5,7 +5,9 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.auth import get_perm_profile
 from app.core.base_model import mark_deleted
+from app.core.scoping import apply_scope
 from app.modules.payable.model import Payable
 from app.modules.payable.service import recalc_status
 from app.modules.supplier.model import Supplier
@@ -228,6 +230,21 @@ def resolve_creator_dept_id(db: Session, user_id: int) -> int:
     user = db.get(User, user_id) if user_id else None
     emp = db.get(Employee, user.employee_id) if (user and user.employee_id) else None
     return int(emp.department_id or 0) if emp else 0
+
+
+def ensure_payables_in_scope(db: Session, user, ids) -> None:
+    """bao-CR-274 — khoản nợ gắn vào phiếu phải nằm trong phạm vi `payable` người tạo được xem: `create_requests` lấy
+    nợ theo id (`db.get`) nên bỏ qua lọc phạm vi, gõ thẳng id là kéo được nợ của pháp nhân khác vào phiếu.
+    ai-CR-236: tách khỏi controller để cổng MCP (`agent_hub/draft_create`) gọi chung một luật với form web."""
+    ids = {int(i) for i in ids if i}
+    if not ids:
+        return
+    visible = {pid for (pid,) in apply_scope(
+        db.query(Payable.id).filter(Payable.id.in_(ids)), Payable, "payable",
+        user, get_perm_profile(db, user)).all()}
+    if ids - visible:
+        raise HTTPException(403, "Có khoản công nợ ngoài phạm vi bạn được xem — "
+                                 "không đưa vào phiếu được")
 
 
 def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[PaymentRequest]:
