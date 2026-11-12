@@ -22,6 +22,8 @@ interface EmployeeWorkHistoryFilesDialogListProps {
   onPreview: (file: WorkHistoryFile) => void
   onDownload: (file: WorkHistoryFile) => void
   onDelete: (fileId: number) => void
+  /** Cụm chữ chỉ dòng chủ của tệp trong câu xác nhận gỡ — hộp tệp kiêm nhiệm (duoc-CR-755) truyền câu riêng. */
+  ownerPhrase?: string
 }
 
 /**
@@ -38,6 +40,7 @@ export function EmployeeWorkHistoryFilesDialogList({
   onPreview,
   onDownload,
   onDelete,
+  ownerPhrase = 'dòng quá trình công tác này',
 }: EmployeeWorkHistoryFilesDialogListProps) {
   if (isLoading) {
     return (
@@ -97,7 +100,7 @@ export function EmployeeWorkHistoryFilesDialogList({
                   icon={Trash2}
                   title="Gỡ tệp"
                   confirmTitle="Gỡ tệp đính kèm?"
-                  confirmDescription={`Gỡ "${file.filename}" khỏi dòng quá trình công tác này?`}
+                  confirmDescription={`Gỡ "${file.filename}" khỏi ${ownerPhrase}?`}
                   destructive
                   disabled={deleting}
                   onConfirm={() => onDelete(file.id)}

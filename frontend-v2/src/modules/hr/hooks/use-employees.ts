@@ -68,7 +68,8 @@ export function useEmployee(id: number, options: { enabled?: boolean } = {}) {
  * thành công và làm mới cache.
  */
 /**
- * Phòng chính + phòng kiêm nhiệm của một nhân sự, tách bạch hai khóa.
+ * Phòng chính + phòng kiêm nhiệm (CÙNG công ty chính, còn hiệu lực) của một nhân sự — chỉ ĐỌC.
+ * Ghi kiêm nhiệm nay đi tab Kiêm nhiệm (`use-employee-concurrents.ts`, duoc-CR-755); đường `PUT` cũ đã gỡ.
  * `options.enabled` cùng lý do với `useEmployee`: màn mượn dữ liệu nhân sự
  * (popup phạm vi, bao-CR-430) phải tự tắt khi người dùng thiếu `employee.read`.
  */
@@ -80,20 +81,6 @@ export function useEmployeeDepartments(
     queryKey: queryKeys.hr.employeeDepartments(employeeId),
     queryFn: () => employeeApi.getDepartments(employeeId),
     enabled: employeeId > 0 && (options.enabled ?? true),
-  })
-}
-
-export function useSaveEmployeeDepartments(employeeId: number) {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (extraDepartmentIds: number[]) =>
-      employeeApi.setDepartments(employeeId, extraDepartmentIds),
-    onSuccess: () => {
-      toast.success('Đã cập nhật kiêm nhiệm')
-      //  Đổi kiêm nhiệm là đổi phạm vi dữ liệu, nạp lại cả nhánh nhân sự.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
-    },
   })
 }
 

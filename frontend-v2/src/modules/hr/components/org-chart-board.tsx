@@ -12,6 +12,7 @@ import { cn } from '@/shared/utils/cn'
 import { OrgChartContext, type OrgChartLayout } from '../utils/org-chart-context'
 import { getOrgChartManagerPath, listOrgChartManagers, type OrgChartForest } from '../utils/org-chart-forest'
 import { OrgChartCanvas, type OrgChartCanvasHandle } from './org-chart-canvas'
+import { OrgChartConcurrentSection } from './org-chart-concurrent-section'
 import { OrgChartPersonPopover } from './org-chart-person-popover'
 import { OrgChartTreeNode } from './org-chart-tree-node'
 
@@ -23,6 +24,8 @@ interface OrgChartBoardProps {
   onLayoutChange: (layout: 'tree' | 'columns') => void
   /** Ô lọc pháp nhân / phòng ban của trang, đặt cạnh ô tìm người. */
   filters?: ReactNode
+  /** Backend cắt danh sách kiêm nhiệm ở trần dòng — báo ở phần Kiêm nhiệm. */
+  concurrentsTruncated?: boolean
 }
 
 /** Một người đứng đầu = trưởng cả cây, nên mở sẵn nhóm của họ (như ERPNext). */
@@ -34,7 +37,14 @@ function initialExpanded(forest: OrgChartForest): Set<number> {
  * Sơ đồ đang xem: giữ nhóm nào đang mở, thẻ nào đang chọn, và các lệnh nhảy tới người.
  * Trang gắn `key` theo bộ lọc nên đổi pháp nhân / phòng là sơ đồ dựng lại từ đầu.
  */
-export function OrgChartBoard({ forest, meId, layout, onLayoutChange, filters }: OrgChartBoardProps) {
+export function OrgChartBoard({
+  forest,
+  meId,
+  layout,
+  onLayoutChange,
+  filters,
+  concurrentsTruncated = false,
+}: OrgChartBoardProps) {
   const canvas = useRef<OrgChartCanvasHandle>(null)
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => initialExpanded(forest))
@@ -180,16 +190,22 @@ export function OrgChartBoard({ forest, meId, layout, onLayoutChange, filters }:
           </>
         }
       >
-        {forest.roots.length === 0 ? (
+        {forest.roots.length === 0 && forest.concurrentGroups.length === 0 ? (
           <p className="rounded-lg border bg-card px-6 py-4 text-sm text-muted-foreground">
             Không có ai trong phần đang xem — thử bỏ bớt bộ lọc.
           </p>
         ) : (
-          <div className={cn('flex items-start', layout === 'tree' ? 'gap-8' : 'flex-col gap-6')}>
-            {forest.roots.map((id) => (
-              <OrgChartTreeNode key={id} id={id} />
-            ))}
-          </div>
+          <>
+            {forest.roots.length > 0 && (
+              <div className={cn('flex items-start', layout === 'tree' ? 'gap-8' : 'flex-col gap-6')}>
+                {forest.roots.map((id) => (
+                  <OrgChartTreeNode key={id} id={id} />
+                ))}
+              </div>
+            )}
+            {/*  duoc-CR-755: người kiêm nhiệm ở phòng đang xem — ngoài cây quản lý, không thêm vào quân số. */}
+            <OrgChartConcurrentSection groups={forest.concurrentGroups} truncated={concurrentsTruncated} />
+          </>
         )}
       </OrgChartCanvas>
     </OrgChartContext.Provider>

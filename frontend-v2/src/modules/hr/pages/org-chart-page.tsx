@@ -124,7 +124,7 @@ export function OrgChartPage() {
             Tải lại
           </button>
         </ErrorState>
-      ) : data.employees.length === 0 ? (
+      ) : data.employees.length === 0 && (data.concurrents?.length ?? 0) === 0 ? (
         <p className="p-6 text-sm text-muted-foreground">Chưa có nhân sự nào trong phạm vi bạn được xem.</p>
       ) : (
         <div className="relative min-h-0 flex-1">
@@ -132,6 +132,7 @@ export function OrgChartPage() {
             //  Đổi bộ lọc = sơ đồ mới: nhóm đang mở / thẻ đang chọn của bộ lọc cũ không còn nghĩa.
             key={`${company}|${department}`}
             forest={forest}
+            concurrentsTruncated={data.concurrents_truncated}
             meId={meId}
             layout={layout}
             onLayoutChange={changeLayout}

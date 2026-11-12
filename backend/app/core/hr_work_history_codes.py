@@ -63,7 +63,7 @@ APPLICABLE: frozenset[WorkEventType] = frozenset(MAIN_TRACK | {WorkEventType.CON
 #  Loại sự kiện đổi company_id/department_id/position_id CHÍNH của hồ sơ (áp
 #  qua `update_employee`). RESIGN áp qua nhánh `has_left_company` của cùng hàm
 #  đó nhưng KHÔNG đổi ba cột này, nên không nằm trong nhóm này. CONCURRENT áp
-#  qua `set_extra_departments` (khác hàm), cũng không nằm trong nhóm này.
+#  qua `concurrent_transition_service.upsert_from_work_history` (khác hàm), cũng không nằm trong nhóm này.
 POSITION_TRACK: frozenset[WorkEventType] = frozenset({
     WorkEventType.HIRE,
     WorkEventType.TRANSFER,

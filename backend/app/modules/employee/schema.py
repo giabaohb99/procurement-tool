@@ -1,4 +1,6 @@
 from datetime import date, datetime
+from typing import Annotated
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.status_codes import EMPLOYEE_STATUS
@@ -290,6 +292,11 @@ class EmployeeUpdate(BaseModel):
     #  người đó vẫn thấy phiếu của phòng cũ (phạm vi dữ liệu tính theo MỌI phòng), như ca NSU012 ngày 31/10.
     #  Cờ điều khiển, không phải cột hồ sơ: `update_employee_core` bóc ra trước vòng `setattr`.
     keep_old_department: bool | None = None
+    #  duoc-CR-755 (Q4): đổi pháp nhân chính thì các dòng KIÊM NHIỆM ở công ty CŨ mặc định KẾT THÚC (đến ngày = hôm qua;
+    #  dòng chưa bắt đầu thì xóa). `False` = giữ hết; `keep_concurrent_ids` = giữ riêng các dòng này (hộp hỏi ở màn hồ sơ).
+    #  Dòng ở công ty KHÁC công ty cũ không bao giờ bị đụng. Cờ điều khiển, không phải cột hồ sơ.
+    end_old_company_concurrent: bool | None = None
+    keep_concurrent_ids: list[Annotated[int, Field(gt=0)]] | None = Field(None, max_length=30)
     position: Str100 | None = None
     position_id: int | None = None
     role_name: Str100 | None = None

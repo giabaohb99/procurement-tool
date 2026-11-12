@@ -1,6 +1,18 @@
 import type { PermissionMap } from '@/core/authorization/permission-types'
 
 /** Hồ sơ người dùng do `/api/auth/login|refresh|me` trả về (payload `_me_payload`). */
+/** Một dòng kiêm nhiệm đang hiệu lực trong `/api/auth/me` (khóa `concurrents`) — duoc-CR-755. */
+export interface AuthConcurrent {
+  department_id: number
+  company_id: number
+  department_name: string
+  /** Rỗng khi dòng chưa gắn công ty. */
+  company_name: string
+  position_label: string
+  /** Bật = dòng mở thêm phạm vi quyền đúng cặp (phòng, công ty); tắt = chỉ ghi nhận. */
+  counts_scope: boolean
+}
+
 export interface AuthUser {
   id: number
   email: string
@@ -23,8 +35,16 @@ export interface AuthUser {
   role_name?: string
   role_names?: string[]
   position?: string
-  /** Tên các phòng ban KIÊM NHIỆM (phòng phụ, không tính phòng chính). */
+  /**
+   * Kiêm nhiệm ĐANG HIỆU LỰC dạng câu: `Phòng X — Công ty B (Chức vụ)` (duoc-CR-755) — cùng hoặc khác công ty chính,
+   * kể cả dòng tắt công tắc phạm vi. Cấu trúc đầy đủ ở `concurrents`.
+   */
   kiem_nhiem?: string[]
+  /**
+   * Kiêm nhiệm đang hiệu lực có cấu trúc (duoc-CR-755) — cho hộp thoại phạm vi. Chỉ dòng `counts_scope` mới mở thêm
+   * phạm vi quyền. Thiếu trường (phiên cũ lưu trong localStorage) = coi như không có.
+   */
+  concurrents?: AuthConcurrent[]
   /**
    * Vị này có hồ sơ TÀI XẾ (`tab_driver.user_id`) không — để hiện mục "Chuyến của
    * tôi" (Đặt xe) cho lái xe. Điều phối viên nhận ra qua quyền `vehicle_booking.approve`.

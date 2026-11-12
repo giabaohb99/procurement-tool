@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 
 from app.core import reference_guard
 from app.core.scoping import get_perm_profile, get_scoped
-from app.modules.employee import department_service, position_role_service, service
+from app.modules.employee import concurrent_transition_service, department_service, position_role_service, service
+from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.contact_model import EmployeeContact, EmployeeFamily
-from app.modules.employee.department_model import EmployeeDepartment
 from app.modules.employee.model import Employee
 from app.modules.employee.schema import EmployeeUpdate
 from app.modules.employee.work_history_model import EmployeeWorkHistory
@@ -23,6 +23,8 @@ from app.modules.user.model import User
 from .employee_import import dept_pairs
 from .employee_import_fields import DATE_ATTRS, SENSITIVE_ATTRS, label_of
 
+#  Khóa phụ trong bản chụp, không phải cột của hồ sơ.
+_META_COLS = ("_depts", "_stamp", "_concurrent_ended")
 _MANAGER_REF_LABEL = "nhân sự do người này quản lý"
 _PENDING_KEY = "employee_revert_after"
 
@@ -66,10 +68,8 @@ def _child_problem(db: Session, emp: Employee, stamp: str) -> str | None:
                          ("quá trình công tác", EmployeeWorkHistory), ("hợp đồng lao động", LaborContract)):
         if db.query(model).filter(model.employee_id == emp.id).count():
             found.append(label)
-    extra = db.query(EmployeeDepartment).filter(EmployeeDepartment.employee_id == emp.id,
-                                                EmployeeDepartment.department_id != (emp.department_id or 0)).count()
-    if extra:
-        found.append("phòng kiêm nhiệm")
+    if db.query(EmployeeConcurrent.id).filter(EmployeeConcurrent.employee_id == emp.id).first():
+        found.append("kiêm nhiệm")     # duoc-CR-755: bảng riêng, thay cho phòng phụ của `tab_employee_department`
     if found:
         return "đã có thêm dữ liệu sau khi nhập: " + ", ".join(found)
     if not stamp or not emp.updated_at or emp.updated_at.isoformat() != stamp:
@@ -78,7 +78,8 @@ def _child_problem(db: Session, emp: Employee, stamp: str) -> str | None:
 
 
 def _label(attr: str) -> str:
-    return {"position": "Chức vụ", "_depts": "Phòng ban kiêm nhiệm"}.get(attr) or label_of(attr)
+    return {"position": "Chức vụ", "_depts": "Phòng ban chính",
+            "_concurrent_ended": "Kiêm nhiệm ở công ty cũ"}.get(attr) or label_of(attr)
 
 
 def revert_blockers(db: Session, changes, user_id: int, batch=None) -> list[str]:
@@ -136,10 +137,21 @@ def revert_blockers(db: Session, changes, user_id: int, batch=None) -> list[str]
                             + ", ".join(label_of(a) for a in sens))
             continue
         conflict = [a for a, pair in cols.items()
-                    if a not in ("_depts", "_stamp") and _norm(a, getattr(emp, a, None)) != _norm(a, pair[1])]
+                    if a not in _META_COLS and _norm(a, getattr(emp, a, None)) != _norm(a, pair[1])]
         depts = cols.get("_depts")
+        #  Lô trước duoc-CR-755 ghi phòng PHỤ vào `_depts` -> hoàn tác tự động không dựng lại được kiêm nhiệm kiểu cũ.
+        if depts and any(not is_primary for side in depts for _d, is_primary in side):
+            problems.append(f"{code}: lô nhập này ghi phòng kiêm nhiệm theo cách cũ — không hoàn tác tự động được, "
+                            "chỉnh tay ở tab Kiêm nhiệm của hồ sơ")
+            continue
         if depts and dept_pairs(db, emp.id) != depts[1]:
             conflict.append("_depts")
+        ended = cols.get("_concurrent_ended") or []
+        if ended:
+            issues = concurrent_transition_service.revert_problems(db, emp, ended, profile)
+            if issues:
+                problems.append(f"{code}: kiêm nhiệm ở công ty cũ — " + "; ".join(issues))
+                continue
         if conflict:
             problems.append(f"{code}: đã bị sửa sau khi nhập ở cột " + ", ".join(
                 _label(a) for a in conflict))
@@ -148,9 +160,12 @@ def revert_blockers(db: Session, changes, user_id: int, batch=None) -> list[str]
         if depts or "department_id" in cols or "company_id" in cols:
             old_ids = [d for d, _ in (depts[0] if depts else [])] or \
                       ([cols["department_id"][0]] if cols.get("department_id") and cols["department_id"][0] else [])
+            #  duoc-CR-755 (C1): cặp (phòng khôi phục, công ty ĐÍCH sau hoàn tác) — công ty cũ nếu lô có đổi pháp nhân.
+            target_company = (cols["company_id"][0] if cols.get("company_id") else emp.company_id) or 0
             try:
                 department_service.block_edit_own_department(db, emp.id, user)
-                department_service.block_out_of_scope_departments(db, old_ids, user, profile)
+                for old_id in old_ids:
+                    department_service.block_out_of_scope_primary_department(db, old_id, target_company, profile)
             except HTTPException as e:
                 problems.append(f"{code}: {e.detail}")
     return problems
@@ -164,6 +179,8 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
     Nhật ký + xóa cache quyền chạy SAU commit qua `after_revert`."""
     deleted = restored = 0
     pending = db.info.setdefault(_PENDING_KEY, [])
+    actor = db.get(User, user_id)
+    profile = get_perm_profile(db, actor) if actor else {}      # cho `restore_ended` (L2 theo cặp)
     for ch in changes:
         emp = db.get(Employee, ch.survey_id)
         if not emp:
@@ -177,7 +194,8 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
         cols = _cols(ch)
         cols.pop("_stamp", None)
         depts = cols.pop("_depts", None)
-        if not cols and not depts:
+        ended = cols.pop("_concurrent_ended", None)
+        if not cols and not depts and not ended:
             continue
         old = {a: pair[0] for a, pair in cols.items()}
         for a in DATE_ATTRS:
@@ -186,16 +204,19 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
                 old[a] = date.fromisoformat(v[:10]) if isinstance(v, str) and v else None
         #  Chức vụ khôi phục TRỰC TIẾP (id + nhãn): qua `sync_label` sẽ chặn chức vụ đã ngừng dùng.
         pos_id, pos_label = old.pop("position_id", None), old.pop("position", None)
+        #  Đổi pháp nhân ngược lại KHÔNG được kết thúc kiêm nhiệm ở công ty "cũ" (= công ty lô đã chuyển sang):
+        #  dòng đã kết thúc do lô thì trả bằng `restore_ended` bên dưới, dòng khác để nguyên.
+        old["end_old_company_concurrent"] = False
         data = EmployeeUpdate.model_construct(_fields_set=set(old), **old)
         try:
             #  lock_users=True (chốt sản phẩm): hoàn tác về "nghỉ việc / ngưng dùng" thì khóa lại tài khoản.
             out = service.update_employee_core(db, emp, data, user_id, lock_users=True)
             if depts:
-                #  Khôi phục CHÍNH XÁC tập phòng ban (cả phòng kiêm nhiệm bị hạ/gỡ), tránh để lại phạm vi rộng hơn.
-                before = depts[0]
-                primary = next((d for d, is_primary in before if is_primary), None)
-                department_service.set_departments(db, emp, [d for d, _ in before], user_id,
-                                                   primary_department=primary)
+                #  Khôi phục CHÍNH XÁC phòng chính trước khi nhập (`_depts` chỉ còn dòng chính từ duoc-CR-755).
+                primary = next((d for d, is_primary in depts[0] if is_primary), 0)
+                department_service.set_primary_department(db, emp, primary, user_id)
+            if ended:
+                concurrent_transition_service.restore_ended(db, emp, ended, profile)
         except HTTPException as e:
             raise HTTPException(400, f"Không hoàn tác được {code}: {e.detail}") from None
         if pos_id is not None:
@@ -205,7 +226,7 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
         if pos_id is not None:
             position_role_service.sync_employee_roles(db, emp, user_id, "hoàn tác lô nhập")
         pending.append((emp.id, "update", f"Hoàn tác lô nhập Excel #{ch.batch_id}",
-                        out.scope_changed or bool(depts), [(u.id, u.email or str(u.id)) for u in out.locked_users], code))
+                        out.scope_changed or bool(depts) or bool(ended), [(u.id, u.email or str(u.id)) for u in out.locked_users], code))
         db.flush()          # để chốt tham chiếu của lần xóa kế tiếp thấy trạng thái đã khôi phục
         restored += 1
     db.flush()

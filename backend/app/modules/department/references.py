@@ -13,6 +13,7 @@ from app.modules.document.recipient_model import RECIPIENT_DEPARTMENT, DocumentR
 from app.modules.document.request_model import DocumentRequest
 from app.modules.document.scope_model import DocumentScope
 from app.modules.dossier.model import Dossier
+from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.department_model import EmployeeDepartment
 from app.modules.employee.model import Employee
 from app.modules.employee.position_model import JobPosition
@@ -45,6 +46,7 @@ rg.register(ENTITY, "Phòng ban", [
     rg.Reference(Department, "parent", "phòng ban con"),
     rg.Reference(Employee, "department_id", "nhân sự"),
     rg.Reference(EmployeeDepartment, "department_id", "kiêm nhiệm của nhân sự"),
+    rg.Reference(EmployeeConcurrent, "department_id", "dòng kiêm nhiệm của nhân sự"),
     rg.Reference(JobPosition, "department_id", "chức vụ"),
     rg.Reference(EmployeeWorkHistory, "department_id", "quá trình công tác"),
     rg.Reference(LaborContract, "department_id", "hợp đồng lao động"),

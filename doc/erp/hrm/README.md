@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.5 — 03/11/2026 (dòng `02` + kế hoạch: thanh toán nghỉ phép — duoc-CR-719) · 1.4 — 03/11/2026 (dòng `01`, `02`: Cài đặt nhân sự — duoc-CR-713; nghỉ phép kiểu ERPNext — duoc-CR-715) · 1.3 — 27/10/2026 (thêm `05-bao-cao-nhan-su.md`: kho mẫu báo cáo Nhân sự) · 1.2 — 26/10/2026 (§5: gỡ **In Phiếu** và **Nhân viên tự khai** đã xong ở duoc-CR-676, gỡ **luồng duyệt chỉ đọc loại chính** vì đã chốt bỏ ở duoc-CR-683) · 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng **chưa có tài liệu riêng** — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
+| Bản | 1.6 — 12/11/2026 (dòng `01`: **Kiêm nhiệm** tab riêng, khác công ty — duoc-CR-755; thêm ba tệp bắt buộc `chuc-nang/01`, `chuc-nang/02`, `tai-lieu-ky-thuat/api.md` dạng Nháp) · 1.5 — 03/11/2026 (dòng `02` + kế hoạch: thanh toán nghỉ phép — duoc-CR-719) · 1.4 — 03/11/2026 (dòng `01`, `02`: Cài đặt nhân sự — duoc-CR-713; nghỉ phép kiểu ERPNext — duoc-CR-715) · 1.3 — 27/10/2026 (thêm `05-bao-cao-nhan-su.md`: kho mẫu báo cáo Nhân sự) · 1.2 — 26/10/2026 (§5: gỡ **In Phiếu** và **Nhân viên tự khai** đã xong ở duoc-CR-676, gỡ **luồng duyệt chỉ đọc loại chính** vì đã chốt bỏ ở duoc-CR-683) · 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng **chưa có tài liệu riêng** — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
 | Dùng để làm gì | Cửa vào duy nhất cho người mới nhận việc ở phân hệ Nhân sự: đã có gì, nằm ở đâu, luật nào không được phá, việc nào đang cần người làm tiếp |
 | Ai đọc | Người (hoặc trợ lý AI) sắp sửa mã hay viết tài liệu cho phân hệ Nhân sự |
 | Giao diện | Chỉ có trên `frontend-v2/` (cổng 8083), menu *Nhân sự*. `frontend/` cũ đã đóng băng, không thêm màn nhân sự ở đó |
@@ -20,12 +20,17 @@
 
 | Tệp | Chức năng | Màn chính | Mã nguồn backend |
 |---|---|---|---|
-| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11), **Sơ đồ tổ chức** (§7.12), **việc treo trước khi khóa tài khoản** (§7.13), **Cài đặt nhân sự tab Nhân viên** (§7.17) | `/hr/employees` · `/hr/job-positions` · `/hr/settings` | `modules/employee/` |
+| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11), **Sơ đồ tổ chức** (§7.12), **việc treo trước khi khóa tài khoản** (§7.13), **Cài đặt nhân sự tab Nhân viên** (§7.17), **Kiêm nhiệm** tab riêng, kiêm nhiệm ở công ty khác, phạm vi theo cặp (phòng, công ty) (§7.18) | `/hr/employees` (tab **Kiêm nhiệm**) · `/hr/job-positions` · `/hr/settings` | `modules/employee/` |
 | [`02-nghi-phep.md`](02-nghi-phep.md) | **Nghỉ phép**: đơn nghỉ (nhiều loại nghỉ trong một đơn, nửa ngày, theo giờ), quỹ phép năm và kết sổ cuối năm, loại nghỉ (cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép), lịch ngày lễ, **ngày cấm nghỉ**, **phiếu nghỉ bù** (§13), duyệt, sáu khóa phân quyền, **Cài đặt nhân sự tab Nghỉ phép** (§14), chính sách nghỉ phép (§15), **thanh toán nghỉ phép** (§16) | `/hr/leave-requests` · `/hr/leave-comp-requests` · `/hr/leave-encashments` · `/hr/leave-balances` · `/hr/leave-calendar` · `/hr/leave-types` · `/hr/holidays` · `/hr/leave-blocks` | `modules/leave/` |
 | [`03-lich-lam-viec.md`](03-lich-lam-viec.md) | **Lịch làm việc**: mẫu lịch tuần, gán theo bốn cấp (hệ thống, pháp nhân, phòng ban, nhân sự), xem ai làm ai nghỉ, và **nối vào cách tính số ngày nghỉ phép** | `/hr/work-roster` · `/hr/work-schedules` · `/hr/work-schedule-assignments` | `modules/work_schedule/` |
 | [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) | **Hợp đồng lao động** (mẫu Word theo pháp nhân, biến mẫu, sinh tệp, ký, bản lưu trữ ở Văn bản, cảnh báo sắp hết hạn, **Hợp đồng của tôi**) · **Quyền mặc định theo chức vụ** · **Nhập Excel nhân sự** | `/hr/employees/:id?tab=labor-contracts` · `/hr/labor-contract-templates` · `/hr/job-positions/:id` (tab **Quyền mặc định**) · nút **Nhập Excel** ở `/hr/employees` | `modules/labor_contract/` · `modules/employee/position_role_*.py` · `modules/import_tool/employee_import*.py` |
 | [`05-bao-cao-nhan-su.md`](05-bao-cao-nhan-su.md) | **Kho mẫu báo cáo Nhân sự**: 8 nhóm, 19 mẫu (3 đã có: Biến động nhân sự, Tình hình nghỉ phép, Quỹ phép năm; còn lại là đề xuất, chưa chốt), chỗ thiếu của 3 báo cáo đang chạy, phiếu khai một mẫu báo cáo | `/report` nhóm **Nhân sự** | `modules/employee/report_*.py` · `modules/leave/*report*` |
 | [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md) | **Kế hoạch nhân sự** (thiết kế 28/10/2026, chưa code): kỳ Năm / Bán niên / Quý / Tháng, định biên theo vị trí, khoản chi phí do người dùng tự định nghĩa theo mẫu, căn cứ duyệt, so với thực tế từ HĐLĐ | `/hr/headcount-plans` | `modules/headcount_plan/` |
+
+**Ba tệp bắt buộc** (luật `.claude/rules/chung-tai-lieu.md`, dựng ở duoc-CR-755, trạng thái Nháp — mới viết phần Kiêm nhiệm, phần còn lại vẫn ở các tệp `01`…`06` trên):
+[`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) (mã `CN-HRM-NN`) ·
+[`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) (mã `PCN-HRM-NN`) ·
+[`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) (bảng đường API cả phân hệ, mục 1 dựng bằng máy).
 
 **Hai tệp `02` và `03` dời từ `doc/tai-lieu-chuc-nang/` sang đây ngày 22/10/2026** (trước là `17-nghi-phep.md` và `21-lich-lam-viec.md`). Tệp cũ chỉ còn một dòng trỏ sang đây để các liên kết trong sổ thay đổi và kế hoạch cũ khỏi gãy. Viết tài liệu Nhân sự mới thì đặt vào thư mục này, đánh số tiếp `04`, `05`…
 
@@ -36,6 +41,7 @@
 | [`plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/`](plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md) | Nghỉ phép kiểu ERPNext: cách cấp quỹ, hạn mức theo nhóm, ngày cấm nghỉ, phiếu nghỉ bù | xong |
 | [`plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/`](plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md) | Chính sách nghỉ phép + phân bổ, báo cáo làm việc ngày lễ, quỹ theo nhân sự, cấp quỹ có lọc | xong |
 | [`plans/261103-thanh-toan-nghi-phep-duoc-cr-719/`](plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md) | Thanh toán nghỉ phép (Leave Encashment): phiếu ghi số ngày, duyệt trừ quỹ, sinh YCTT cho kế toán nhập tiền | đang làm (mã xong ở local, chờ commit) |
+| [`plans/261112-kiem-nhiem-khac-cong-ty-duoc-cr-755/`](plans/261112-kiem-nhiem-khac-cong-ty-duoc-cr-755/plan.md) | Kiêm nhiệm thành tab riêng, kiêm nhiệm ở công ty khác, phạm vi quyền theo cặp (phòng, công ty), hiện ở phòng B | đang làm (mã + tài liệu xong ở local, chờ commit) |
 
 ### Báo cáo nhân sự
 
@@ -64,7 +70,7 @@ Chi tiết từng luật ở các tệp luật cho trợ lý AI (tự nạp khi 
 
 | Tệp | Nội dung |
 |---|---|
-| `.claude/rules/hr-employee-profile.md` | Hồ sơ mở rộng, `employee_sensitive`, danh mục Chức vụ, Quá trình công tác, Nhập Excel nhân sự, Quyền mặc định theo chức vụ |
+| `.claude/rules/hr-employee-profile.md` | Hồ sơ mở rộng, `employee_sensitive`, danh mục Chức vụ, Quá trình công tác, Nhập Excel nhân sự, Quyền mặc định theo chức vụ, Kiêm nhiệm |
 | `.claude/rules/hr-leave.md` | Khóa quyền nghỉ phép, giữ chỗ quỹ, đơn nhiều loại nghỉ, duyệt ngay trong màn |
 | `.claude/rules/hr-labor-contract-variables.md` | Danh mục biến mẫu HĐLĐ, `custom_values`, `json_extract`, mặc định sao lúc lập |
 

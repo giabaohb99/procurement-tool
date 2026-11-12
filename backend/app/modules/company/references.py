@@ -22,6 +22,7 @@ from app.modules.document.scope_model import DocumentScope
 from app.modules.doc_catalog.folder_access_model import DocFolderAccess
 from app.modules.dossier.model import Dossier
 from app.modules.employee.model import Employee
+from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.work_history_model import EmployeeWorkHistory
 from app.modules.forum.model import ForumPost
 from app.modules.goods_receipt.model import GoodsReceipt
@@ -63,6 +64,7 @@ rg.register(ENTITY, "Công ty", [
     rg.Reference(DepartmentCompany, "company_id", "phòng ban hiện diện tại pháp nhân"),
     rg.Reference(Employee, "company_id", "nhân sự"),
     rg.Reference(EmployeeWorkHistory, "company_id", "quá trình công tác"),
+    rg.Reference(EmployeeConcurrent, "company_id", "dòng kiêm nhiệm của nhân sự"),
     rg.Reference(LaborContract, "company_id", "hợp đồng lao động"),
     rg.Reference(LaborContractTemplate, "company_id", "mẫu hợp đồng lao động"),
     rg.Reference(ApprovalFlow, "company_id", "luồng duyệt"),

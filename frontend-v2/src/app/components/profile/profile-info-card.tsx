@@ -32,7 +32,8 @@ const HR_FIELDS: ProfileField[] = [
   { key: 'company_name', label: 'Công ty / Pháp nhân', icon: Building2 },
   { key: 'department_name', label: 'Phòng ban', icon: Building },
   { key: 'position', label: 'Vị trí / Chức vụ', icon: BriefcaseBusiness },
-  // Kiêm nhiệm = các phòng phụ (tab_employee_department). Đặt ngay dưới Vị trí.
+  // Kiêm nhiệm = các dòng ĐANG HIỆU LỰC của tab Kiêm nhiệm (cùng hoặc khác công ty), dạng
+  // "Phòng X — Công ty B (Chức vụ)" (duoc-CR-755). Đặt ngay dưới Vị trí.
   { key: 'kiem_nhiem', label: 'Kiêm nhiệm', icon: Layers },
   { key: 'role_name', label: 'Vai trò', icon: ShieldCheck },
 ]
@@ -49,6 +50,13 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
   const value = profile[field.key]
   // kiem_nhiem/role_names là mảng — nối lại; còn lại là chuỗi.
   const text = Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
+  // Kiêm nhiệm: mỗi dòng là một câu "Phòng X — Công ty B (Chức vụ)" đã có dấu phẩy / ngoặc bên trong, nên nối bằng
+  // dấu phẩy sẽ khó đọc — mỗi dòng một hàng, cho xuống dòng thay vì cắt bằng "…" (duoc-CR-755).
+  const kiemNhiemLines =
+    field.key === 'kiem_nhiem' && Array.isArray(value)
+      ? value.filter((line): line is string => typeof line === 'string')
+      : []
+  const lines = kiemNhiemLines.length > 0 ? kiemNhiemLines : null
   return (
     //  ⚠️ Khổ hẹp XẾP CHỒNG nhãn trên / giá trị dưới. Một hàng ngang thì riêng
     //  nhãn `w-40` đã chiếm 160px trong 358px dùng được, phần còn lại không đủ
@@ -64,11 +72,19 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
            quan trọng hơn giữ mỗi dòng đúng một hàng. */}
       <span
         className={cn(
-          'min-w-0 flex-1 pl-7 text-sm break-words sm:pl-0 sm:truncate',
+          'min-w-0 flex-1 pl-7 text-sm break-words sm:pl-0',
+          !lines && 'sm:truncate',
           text ? 'font-medium text-navy dark:text-foreground' : 'text-muted-foreground italic',
         )}
       >
-        {text || 'Chưa cập nhật'}
+        {lines
+          ? lines.map((line, index) => (
+              // Khóa kèm thứ tự: hai dòng cùng chữ (dữ liệu cũ nhập trùng) không được đè khóa của nhau.
+              <span key={`${index}-${line}`} className="block">
+                {line}
+              </span>
+            ))
+          : text || 'Chưa cập nhật'}
       </span>
     </div>
   )

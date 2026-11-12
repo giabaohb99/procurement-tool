@@ -17,6 +17,7 @@ rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không t�
 (mục 1 → 8) và với hành vi thật của màn Nhân sự / Phân quyền tài khoản / hộp Phạm vi.
 Bài cố ý nói bằng TÊN VAI TRÒ, không nêu mã tài khoản mẫu của môi trường thử.
 duoc-CR-754: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
+duoc-CR-755: kiêm nhiệm khai ở tab Kiêm nhiệm (nút Thêm kiêm nhiệm), không còn thẻ Kiêm nhiệm ở tab Chung.
 """
 import re
 import sys
@@ -101,7 +102,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li><strong>Vị trí / Chức vụ</strong>: chọn chức danh in trên phiếu. Chức vụ <strong>chỉ là nhãn</strong>, không cấp quyền gì.</li>
 <li><strong>Tình trạng làm việc</strong>: Chính thức. <strong>Trạng thái hồ sơ</strong>: Đang hoạt động. Bấm <strong>Lưu</strong>.</li>
 </ul>
-<p>Người phụ trách thu mua cho <strong>nhiều phòng tự mua</strong> thì mở hồ sơ vừa tạo, tab <strong>Chung</strong>, kéo xuống thẻ <strong>Kiêm nhiệm</strong>, chọn thêm phòng rồi bấm <strong>Lưu kiêm nhiệm</strong> (nút riêng, không phải nút Lưu ở đầu trang). Bậc trong phòng tính cả phòng kiêm nhiệm.</p>
+<p>Người phụ trách thu mua cho <strong>nhiều phòng tự mua</strong> thì mở hồ sơ vừa tạo, tab <strong>Kiêm nhiệm</strong>, bấm <strong>Thêm kiêm nhiệm</strong>, chọn <strong>Công ty</strong> và <strong>Phòng ban</strong> của phòng tự mua kia, <strong>Từ ngày</strong>, giữ công tắc <strong>Tính vào phạm vi quyền</strong> bật rồi bấm <strong>Lưu</strong> (mỗi phòng một dòng). Bậc trong phòng tính cả phòng kiêm nhiệm đang hiệu lực và bật công tắc. Cách khai đủ xem bài {ref("Nhân sự — Khai kiêm nhiệm (kể cả ở công ty khác)", "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</p>
 
 <h3>Bước 2 — Tạo tài khoản đăng nhập</h3>
 <ul>

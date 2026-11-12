@@ -147,6 +147,25 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-755 | Kiêm nhiệm thành tab riêng trên hồ sơ nhân sự và cho phép kiêm nhiệm ở công ty khác
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** kiêm nhiệm trước đây chỉ là danh sách phòng phụ nằm trong tab Chung của hồ sơ, không có công ty, chức vụ, thời hạn hay quyết định, và bị chặn cứng ở pháp nhân khác. ERPNext cũng không có sẵn chức năng này nên phải tự thiết kế.
+
+**Đã làm**
+- Tạo bảng kiêm nhiệm riêng: mỗi dòng có công ty, phòng ban, chức vụ, từ ngày, đến ngày, số và ngày quyết định, tệp quyết định, ghi chú và công tắc tính vào phạm vi quyền; dòng tự hết hiệu lực khi qua đến ngày. Dữ liệu kiêm nhiệm cũ đã chuyển sang bảng mới.
+- Phạm vi quyền tính theo cặp phòng và công ty: người kiêm nhiệm ở công ty B làm được như nhân viên phòng đó ở công ty B nhưng không thấy cả công ty B; văn bản, thư mục, báo cáo và skill AI chia theo phòng cũng tính phòng kiêm nhiệm; trưởng phòng ở công ty B đọc được hồ sơ người kiêm nhiệm.
+- Người gán kiêm nhiệm phải có quyền trên cả hồ sơ lẫn phòng đích ở công ty kia, và không ai tự sửa kiêm nhiệm của chính mình.
+- Đổi pháp nhân chính thì các dòng ở công ty cũ kết thúc vào hôm qua, có hộp hỏi để giữ lại; áp quá trình công tác loại kiêm nhiệm, nhập Excel và hoàn tác đều ghi theo bảng mới.
+- Hồ sơ nhân sự có tab Kiêm nhiệm riêng; trang phòng ban và sơ đồ tổ chức hiện người kiêm nhiệm có nhãn, báo cáo quân số và quỹ lương không đếm trùng; trang cá nhân, popup phạm vi và trợ lý AI cũng hiện kiêm nhiệm.
+- Rà mã độc lập phát hiện chốt đổi phòng chính chưa xét công ty, có thể dời người ở công ty khác vào phòng ngoài tầm của người thao tác; đã sửa cùng ba lỗi nhỏ hơn và thêm bài kiểm canh.
+- Viết tài liệu nhân sự, tài liệu API, mục phân quyền, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý; đã nạp lại kho tìm kiếm của trợ lý ở máy local.
+
+Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn755a_bang_kiem_nhiem.py`, `frontend-v2/src/modules/hr/components/employee-tab-concurrent.tsx`, `employee-concurrent-form-dialog.tsx`, `employee-company-change-concurrent-dialog.tsx`, `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`
+
 ## duoc-CR-754 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
 - status: xong
 - date: 2026-11-12

@@ -246,9 +246,10 @@ def get_perm_profile(db: Session, user) -> dict:
     company_id, dept_name, emp_code, dept_id, emp_name = 0, "", "", 0, ""
     dept_ids: list[int] = []
     dept_names: list[str] = []
+    concurrent_pairs: list[list[int]] = []
     if getattr(user, "employee_id", 0):
         from app.modules.department.model import Department
-        from app.modules.employee.department_service import departments_of
+        from app.modules.employee.concurrent_service import active_concurrent_rows
         from app.modules.employee.model import Employee
         emp = db.get(Employee, user.employee_id)
         if emp:
@@ -257,14 +258,31 @@ def get_perm_profile(db: Session, user) -> dict:
             emp_name = emp.full_name or ""   # dùng khớp NSPT (ĐMH lưu theo tên)
             dept_id = emp.department_id or 0
 
-            #  KIÊM NHIỆM (CR-167) — người này có chân ở những phòng nào. Phòng
-            #  CHÍNH đứng đầu danh sách; `dept_id` / `dept_name` số ít vẫn là
-            #  phòng chính, giữ nguyên cho những nơi chỉ dùng được một phòng.
+            #  KIÊM NHIỆM (CR-167, duoc-CR-755) — người này có chân ở những phòng nào. Phòng
+            #  CHÍNH (`tab_employee.department_id`) đứng đầu; `dept_id` / `dept_name` số ít vẫn
+            #  là phòng chính, giữ nguyên cho những nơi chỉ dùng được một phòng.
             #
-            #  ⚠️ Lùi về đúng phòng chính khi bảng kiêm nhiệm chưa có dòng nào
-            #  (hồ sơ tạo trước migration, hoặc dữ liệu nhập tay): thiếu nhánh
-            #  này là người đó mất sạch phạm vi phòng ban.
-            dept_ids = departments_of(db, user.employee_id) or ([dept_id] if dept_id else [])
+            #  Phòng kiêm nhiệm lấy từ `tab_employee_concurrent`: dòng CÒN HIỆU LỰC hôm nay
+            #  (giờ VN) + bật công tắc "Tính vào phạm vi quyền". Một truy vấn, số truy vấn không đổi
+            #  theo số dòng. Chia hai nhóm (duoc-CR-755 giai đoạn 02):
+            #    · CÙNG công ty chính (công ty dòng = 0 coi như công ty chính — phòng dùng chung /
+            #      nhân sự chưa gắn pháp nhân) → nối vào `dept_ids` (hành vi y CR-167);
+            #    · KHÁC công ty → khóa `concurrent_pairs` = [[phòng, công ty], ...]. KHÔNG nối vào
+            #      `dept_ids` vì nó không mang công ty: nối vào là mở phòng đó ở CÔNG TY CHÍNH. Cặp
+            #      chỉ được `core/scoping` cộng ở những nhánh tự ràng `AND công ty == c`; còn
+            #      `company_id` giữ MỘT số nên bậc "công ty" không phình.
+            dept_ids = [dept_id] if dept_id else []
+            seen_pairs: set[tuple[int, int]] = set()
+            for row in active_concurrent_rows(db, user.employee_id, counts_scope_only=True):
+                if not row.department_id:
+                    continue
+                row_company = row.company_id or company_id
+                if row_company == company_id:
+                    if row.department_id not in dept_ids:
+                        dept_ids.append(row.department_id)
+                else:
+                    seen_pairs.add((int(row.department_id), int(row_company)))
+            concurrent_pairs = [[d, c] for c, d in sorted((c, d) for d, c in seen_pairs)]
             if dept_ids:
                 department_names = dict(db.query(Department.id, Department.name)
                                  .filter(Department.id.in_(dept_ids)).all())
@@ -275,6 +293,8 @@ def get_perm_profile(db: Session, user) -> dict:
                "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code, "emp_name": emp_name,
                #  Danh sách ĐẦY ĐỦ cho phạm vi dữ liệu — xem `core/scoping._dept_match`.
                "dept_ids": dept_ids, "dept_names": dept_names,
+               #  Cặp (phòng, công ty) kiêm nhiệm KHÁC công ty chính — xem chú thích ở trên.
+               "concurrent_pairs": concurrent_pairs,
                "employee_id": getattr(user, "employee_id", 0) or 0}
     _PERM_CACHE[user.id] = (profile, now + _PERM_TTL)
     return profile

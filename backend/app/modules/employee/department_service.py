@@ -1,5 +1,9 @@
 """KIÊM NHIỆM PHÒNG BAN — đọc, ghi, và ba chốt chặn chống vượt quyền (CR-167).
 
+duoc-CR-755: kiêm nhiệm nay nằm ở `tab_employee_concurrent` (`concurrent_service.py`) và dùng lại ba chốt L1/L2/L3
+của tệp này (L2 thêm bản theo CẶP phòng + công ty: `pair_in_write_scope`). `tab_employee_department` CHỈ còn dòng phòng
+CHÍNH — đường ghi duy nhất là `set_primary_department`.
+
 ⚠️ **Gán phòng ban KHÔNG phải thao tác hành chính vô hại.** Phạm vi dữ liệu bậc
 *phòng ban* đọc thẳng từ bảng này (`core/auth.get_perm_profile` →
 `core/scoping`), nên thêm một phòng cho ai đó là **mở rộng tầm nhìn dữ liệu của
@@ -29,39 +33,10 @@ from .department_model import EmployeeDepartment
 from .model import Employee
 
 
-def extra_departments_of(db: Session, employee_id: int) -> list[int]:
-    """Phòng KIÊM NHIỆM — các phòng NGOÀI phòng chính.
-
-    Phòng chính không nằm trong danh sách này: nó là ô "Phòng ban" của hồ sơ,
-    một thứ khác hẳn. Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là
-    phòng chính" là dựng ra một luật ngầm mà người dùng không có cách nào biết.
-    """
-    from .model import Employee
-
-    emp = db.get(Employee, employee_id)
-    primary = emp.department_id if emp else 0
-    return [x for x in departments_of(db, employee_id) if x != primary]
-
-
-def set_extra_departments(db: Session, employee: Employee, extra_ids: list[int],
-                   actor: int) -> list[int]:
-    """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính giữ nguyên.
-
-    Phòng chính đổi ở ô "Phòng ban" của hồ sơ, không đổi qua đây — hai thao tác
-    khác nhau thì hai cửa khác nhau.
-    """
-    primary = employee.department_id or 0
-    cleaned = [x for x in dict.fromkeys(int(v) for v in extra_ids if v) if x != primary]
-    set_departments(db, employee, ([primary] if primary else []) + cleaned, actor,
-                  primary_department=primary or None)
-    return cleaned
-
-
 def departments_of(db: Session, employee_id: int) -> list[int]:
-    """Mọi phòng ban của một nhân sự, PHÒNG CHÍNH đứng đầu.
+    """Phòng CHÍNH của một nhân sự theo bảng `tab_employee_department` (danh sách tối đa một phần tử).
 
-    Thứ tự có nghĩa: nơi gọi nào chỉ lấy được một phòng (dựng bối cảnh phiếu,
-    chọn trưởng phòng để báo) thì lấy phần tử đầu là đúng phòng chính.
+    Phòng kiêm nhiệm không nằm ở đây từ duoc-CR-755 — xem `concurrent_service`.
     """
     if not employee_id:
         return []
@@ -71,34 +46,6 @@ def departments_of(db: Session, employee_id: int) -> list[int]:
                       EmployeeDepartment.department_id.asc())
             .all())
     return [row.department_id for row in rows if row.department_id]
-
-
-def departments_of_many(db: Session, employee_ids: list[int]) -> dict[int, list[int]]:
-    """Bản gọi MỘT LƯỢT cho danh sách — tránh N+1 ở màn danh sách nhân sự."""
-    if not employee_ids:
-        return {}
-    rows = (db.query(EmployeeDepartment)
-            .filter(EmployeeDepartment.employee_id.in_(set(employee_ids)))
-            .order_by(EmployeeDepartment.is_primary.desc(),
-                      EmployeeDepartment.department_id.asc())
-            .all())
-    result: dict[int, list[int]] = {}
-    for row in rows:
-        result.setdefault(row.employee_id, []).append(row.department_id)
-    return result
-
-
-def employees_of_department(db: Session, department_id: int) -> list[int]:
-    """Ai có chân ở phòng này — KỂ CẢ người chỉ kiêm nhiệm.
-
-    Dùng cho gửi thông báo và đếm quân số. Truy vấn cũ lọc
-    `Employee.department_id == X` nên bỏ sót đúng những người kiêm nhiệm.
-    """
-    if not department_id:
-        return []
-    return [row[0] for row in
-            db.query(EmployeeDepartment.employee_id)
-            .filter(EmployeeDepartment.department_id == department_id).all()]
 
 
 # ── Ghi ─────────────────────────────────────────────────────────────────────
@@ -127,68 +74,6 @@ def _check_departments_exist(db: Session, employee: Employee,
     return department
 
 
-def detach_other_company_departments(db: Session, employee: Employee, actor: int) -> list[str]:
-    """Gỡ nhân sự khỏi mọi phòng KHÔNG thuộc pháp nhân HIỆN TẠI của họ.
-
-    Gọi đúng một chỗ: `update_employee`, ngay sau khi `company_id` vừa đổi
-    (duoc-CR-342, lúc mở ô chọn Công ty ở màn hồ sơ).
-
-    ⚠️ **Không có hàm này thì việc đổi pháp nhân KHÔNG LÀM ĐƯỢC**, chứ không phải
-    chỉ bất tiện. Lý do là hai luật cũ ghép lại thành một cái bẫy:
-
-    1. `_sync_primary_department` đổi phòng chính thì **hạ phòng cũ xuống kiêm
-       nhiệm** chứ không xóa — kể cả khi phòng chính mới là "không có". Nên xóa
-       ô "Phòng ban" ở giao diện không hề gỡ người đó khỏi phòng cũ. (Từ
-       bao-CR-709 phòng cũ mặc định bị gỡ, chỉ giữ khi người thao tác chọn giữ;
-       các phòng kiêm nhiệm KHÁC của pháp nhân cũ vẫn cần hàm này.)
-    2. `_check_departments_exist` (L3) chặn mọi phòng khác pháp nhân.
-
-    Kết quả: đổi pháp nhân xong là ăn 400 *"Phòng ban thuộc pháp nhân khác"* trỏ
-    vào chính cái phòng vừa bỏ. Mà người dùng cũng không sửa được từ giao diện —
-    thẻ "Kiêm nhiệm" chỉ quản lý phòng PHỤ, còn phòng đang vướng lại là phòng
-    CHÍNH vừa bị hạ xuống.
-
-    Gỡ chứ không chặn: chuyển pháp nhân nghĩa là người đó **không còn ở** phòng
-    của pháp nhân cũ — giữ lại đúng là thứ L3 sinh ra để cấm. Trả về tên các
-    phòng đã gỡ để nơi gọi ghi vào dấu vết; gỡ âm thầm thì tháng sau không ai
-    tra ra vì sao mất phòng ban.
-
-    ⚠️ Phòng vừa được chọn trong CHÍNH lần lưu này (`employee.department_id`)
-    phải được giữ lại: `set_departments` ghi đè cột đó theo danh sách truyền vào,
-    nên bỏ quên nó là xóa trắng đúng lựa chọn người dùng vừa bấm.
-    """
-    if not employee.company_id:
-        return []
-
-    current = departments_of(db, employee.id)
-    wanted = employee.department_id or 0
-    if not current and not wanted:
-        return []
-
-    ids = set(current) | ({wanted} if wanted else set())
-    rows = {row.id: row for row in
-            db.query(Department).filter(Department.id.in_(ids)).all()}
-
-    def same_company(department_id: int) -> bool:
-        row = rows.get(department_id)
-        #  Không tìm thấy phòng, hoặc phòng chưa gắn pháp nhân → KHÔNG gỡ. Cùng
-        #  luật với L3: chỉ chặn khi cả hai bên đều khai.
-        return not row or not row.company_id or row.company_id == employee.company_id
-
-    dropped = [rows[x].name for x in current if not same_company(x)]
-    if not dropped:
-        return []
-
-    keep = [x for x in current if same_company(x)]
-    if wanted and wanted not in keep:
-        keep.insert(0, wanted)
-    primary = wanted if wanted in keep else (keep[0] if keep else 0)
-    #  `set_departments` chạy lại L3 trên danh sách còn lại — phòng mới chọn mà
-    #  vẫn sai pháp nhân thì người dùng nhận đúng câu chặn cũ, không lọt.
-    set_departments(db, employee, keep, actor, primary_department=primary)
-    return dropped
-
-
 def block_edit_own_department(db: Session, employee_id: int, actor) -> None:
     """L1 — xem đầu tệp. Gọi ở MỌI cửa ghi vào bảng này.
 
@@ -202,112 +87,138 @@ def block_edit_own_department(db: Session, employee_id: int, actor) -> None:
                  "phạm vi dữ liệu bạn nhìn thấy. Nhờ một quản trị khác thao tác.")
 
 
-#  Bậc phạm vi từ hẹp tới rộng — dùng để lấy bậc RỘNG NHẤT trong các vai trò.
-_SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 2, "dept_proc": 2, "dept": 3, "company": 4, "all": 5}
+def _write_grants(profile: dict) -> list[dict]:
+    """Các grant có `employee.write` — mỗi grant là một nguồn quyền ghi ĐỘC LẬP (hợp theo OR, như `scope_condition`)."""
+    return [grant for grant in profile.get("grants", [])
+            if (grant["perms"].get("employee") or {}).get("write")]
 
 
-def _widest_scope(profile: dict, entity: str, action: str) -> str | None:
-    """Bậc phạm vi rộng nhất mà người này có trên `(entity, action)`.
+def pair_in_write_scope(db: Session, profile: dict, department_id: int, company_id: int) -> bool:
+    """L2 theo CẶP (phòng, công ty) — người này có ghi được vào cặp đó không (duoc-CR-755).
 
-    `None` = không vai trò nào cấp hành động đó. Lấy bậc RỘNG NHẤT vì
-    `scope_condition` cũng HỢP các grant lại — hẹp hơn ở đây là chặn nhầm người
-    thật sự có quyền.
+    Dùng cho kiêm nhiệm (gán cặp đích) VÀ cho đổi phòng CHÍNH của hồ sơ (cặp = phòng mới + công ty của HỒ SƠ ĐÍCH).
+    Đo trên `employee.write`, xét TỪNG grant rồi hợp (OR) — KHÔNG lấy bậc rộng nhất, nếu không người có grant
+    `company` (A) + grant `dept` phủ cặp (X, B) bị chặn nhầm ở cặp (X, B):
+    - `all` → được; `company` → `company_id` trùng công ty chính của người thao tác (`company_id = 0` coi như
+      công ty của người thao tác, xem bên dưới);
+    - `dept` trở xuống → cặp nằm trong `concurrent_pairs`, hoặc phòng nằm trong `dept_ids` / ô "Phòng ban được xem"
+      CỦA CÔNG TY CHÍNH.
+
+    ⚠️ Ô "Phòng ban được xem" (`inc.department`) CHỈ phủ công ty chính — chặt hơn phạm vi ĐỌC,
+    cố ý: gán phòng là mở rộng tầm nhìn của người KHÁC, không được dựa vào một ô chọn
+    không mang công ty. `db` giữ trong chữ ký cho đồng dạng với các chốt L2 khác.
     """
-    widest = None
-    for grant in profile.get("grants", []):
-        perms = grant["perms"].get(entity)
-        if not perms or not perms.get(action):
-            continue
-        scope_name = perms.get("scope", "all")
-        if widest is None or _SCOPE_RANK.get(scope_name, 5) > _SCOPE_RANK.get(widest, 5):
-            widest = scope_name
-    return widest
-
-
-def assignable_departments(db: Session, profile: dict) -> set[int] | None:
-    """Những phòng người này được phép GÁN cho người khác. `None` = không giới hạn.
-
-    ⚠️ Đo bằng phạm vi trên entity **`employee`** (thứ đang bị ghi), KHÔNG phải
-    trên `department`. Hai cái khác nghĩa hẳn: `SCOPE_FIELDS["department"]` nói
-    về quyền quản lý DANH MỤC phòng ban (ai được sửa tên phòng, ai được xóa) và
-    nó không có chiều phòng ban, nên bậc `dept` ở đó rơi về "chỉ phòng do chính
-    tôi tạo" — dùng làm thước thì người quản lý nhân sự phòng Kế toán không gán
-    nổi chính phòng Kế toán.
-    """
-    widest = _widest_scope(profile, "employee", "write")
-    if widest is None:
-        return set()
-    if widest == "all":
-        return None
-    if widest == "company":
-        company_id = profile.get("company_id") or 0
-        if not company_id:
-            return set()
-        return {row[0] for row in
-                db.query(Department.id)
-                .filter(Department.company_id == company_id).all()}
-
-    #  Bậc `dept` (và hẹp hơn): đúng những phòng CHÍNH NGƯỜI ĐÓ có chân, cộng
-    #  các phòng được cấp thêm đích danh ở màn Phân quyền (`tab_user_scope`).
-    allowed_ids = {x for x in (profile.get("dept_ids") or []) if x}
+    grants = _write_grants(profile)
+    if not grants:
+        return False
+    own_company = profile.get("company_id") or 0
+    #  Dòng chép từ dữ liệu cũ của nhân sự CHƯA GẮN pháp nhân mang `company_id = 0` (phòng dùng chung, không có
+    #  công ty đích). Người sửa được hồ sơ đó (đã qua `employee_in_scope`) coi như cùng công ty với mình để đo tiếp
+    #  theo PHÒNG — nếu không, chỉ phạm vi `all` mới sửa / xóa / kết thúc được dòng này.
+    if not company_id:
+        company_id = own_company
+    pairs = {(int(d), int(c)) for d, c in (profile.get("concurrent_pairs") or [])}
+    same_company = bool(own_company) and company_id == own_company
+    base_ids = {x for x in (profile.get("dept_ids") or []) if x}
     if profile.get("dept_id"):
-        allowed_ids.add(profile["dept_id"])
-    for grant in profile.get("grants", []):
-        extra_grants = (grant.get("scope") or {}).get("inc", {}).get("department") or []
-        allowed_ids.update(x for x in extra_grants if x)
-    return allowed_ids
+        base_ids.add(profile["dept_id"])
+
+    for grant in grants:
+        scope_name = grant["perms"]["employee"].get("scope", "all")
+        if scope_name == "all":
+            return True
+        if scope_name == "company":
+            if same_company:
+                return True
+            continue
+        if (department_id, company_id) in pairs:
+            return True
+        if not same_company:
+            continue
+        extra_ids = {x for x in ((grant.get("scope") or {}).get("inc", {}).get("department") or []) if x}
+        if department_id in base_ids or department_id in extra_ids:
+            return True
+    return False
 
 
-def block_out_of_scope_departments(db: Session, department_ids: list[int], actor,
-                             profile: dict) -> None:
-    """L2 — chỉ gán được phòng nằm trong tầm của chính người thao tác.
+def _pair_label(db: Session, pairs: list[tuple[int, int]]) -> str:
+    """`"Phòng" (Công ty), ...` cho câu báo lỗi."""
+    from app.modules.company.model import Company
 
-    Không có chốt này thì người quản lý phạm vi *phòng ban* dựng ra được một
-    người có tầm nhìn rộng hơn mình, rồi nhờ người đó xem hộ.
+    dept_names = {row[0]: row[1] for row in db.query(Department.id, Department.name)
+                  .filter(Department.id.in_({d for d, _ in pairs})).all()}
+    company_names = {row[0]: row[1] for row in db.query(Company.id, Company.name)
+                     .filter(Company.id.in_({c for _, c in pairs})).all()}
+    return ", ".join(f'"{dept_names.get(d, d)}" ({company_names.get(c, c)})' for d, c in pairs)
+
+
+def block_out_of_scope_primary_department(db: Session, department_id: int, target_company_id: int,
+                                          profile: dict) -> None:
+    """L2 cho đổi phòng CHÍNH — phòng mới phải nằm trong tầm GHI của người thao tác TRÊN CÔNG TY CỦA HỒ SƠ ĐÍCH.
+
+    duoc-CR-755 (C1): đo bằng cặp (phòng mới, công ty ĐÍCH), không chỉ ID phòng. Từ khi kiêm nhiệm khác công ty mở
+    quyền ghi hồ sơ công ty B qua cặp (X, B), chỉ so ID phòng thì người có (SH dùng chung, A) đẩy được nhân sự công ty
+    B sang (SH, B) — cặp họ không phủ. `target_company_id` = công ty của hồ sơ SAU lần lưu (ô mới nếu có đổi pháp
+    nhân, không thì công ty hiện tại). Gọi ở MỌI đường đổi phòng chính: PATCH hồ sơ, nhập Excel, hoàn tác lô nhập,
+    Áp quá trình công tác.
     """
-    if not department_ids:
+    if not department_id:
         return
-
-    allowed_ids = assignable_departments(db, profile)
-    if allowed_ids is None:
-        return   # phạm vi *tất cả* — không siết
-
-    out_of_scope = sorted(set(department_ids) - allowed_ids)
-    if out_of_scope:
-        scope_name = {row[0]: row[1] for row in
-               db.query(Department.id, Department.name)
-               .filter(Department.id.in_(out_of_scope)).all()}
-        label = ", ".join(f"\"{scope_name.get(i, i)}\"" for i in out_of_scope)
+    company_id = target_company_id or profile.get("company_id") or 0
+    if not pair_in_write_scope(db, profile, department_id, target_company_id or 0):
         raise HTTPException(
-            403, f"Không gán được phòng ban mà chính bạn không có phạm vi trên đó: {label}. "
-                 "Nhờ người phụ trách phòng đó thao tác.")
+            403, "Không gán được phòng ban mà chính bạn không có phạm vi trên đó: "
+                 f"{_pair_label(db, [(department_id, company_id)])}. Nhờ người phụ trách phòng đó thao tác.")
+    #  Phòng RIÊNG của một công ty khác (không phải phòng dùng chung, `company_id = 0`): người thao tác cũng phải với
+    #  tới phòng đó ở chính công ty của nó — như L2 cũ (chỉ gán được phòng trong tầm mình). Phạm vi `all` qua được
+    #  và bị L3 (`_check_departments_exist`) chặn 400 vì phòng thuộc pháp nhân khác với hồ sơ.
+    owner = db.query(Department.company_id).filter(Department.id == department_id).scalar() or 0
+    if owner and owner != company_id and not pair_in_write_scope(db, profile, department_id, owner):
+        raise HTTPException(
+            403, "Không gán được phòng ban mà chính bạn không có phạm vi trên đó: "
+                 f"{_pair_label(db, [(department_id, owner)])}. Nhờ người phụ trách phòng đó thao tác.")
 
 
-def set_departments(db: Session, employee: Employee, department_ids: list[int],
-                  actor: int, *, primary_department: int | None = None) -> list[int]:
-    """Đặt LẠI toàn bộ danh sách phòng ban của một nhân sự.
+def block_out_of_scope_pair(db: Session, pairs: list[tuple[int, int]], profile: dict) -> None:
+    """L2 theo cặp — 403 nêu tên phòng + công ty nếu có cặp nằm ngoài tầm người thao tác."""
+    bad = [(d, c) for d, c in pairs if d and not pair_in_write_scope(db, profile, d, c)]
+    if not bad:
+        return
+    raise HTTPException(
+        403, "Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: "
+             f"{_pair_label(db, bad)}. Nhờ người phụ trách phòng đó thao tác.")
 
-    Đây là chỗ DUY NHẤT ghi vào `tab_employee_department`, và cũng là chỗ duy
-    nhất cập nhật `tab_employee.department_id` — hai thứ đó phải luôn khớp nhau,
-    tách ra hai nơi ghi là sớm muộn lệch.
 
-    `phong_chinh` bỏ trống thì lấy phần tử ĐẦU của danh sách. Danh sách rỗng =
-    gỡ khỏi mọi phòng (nhân sự chưa phân công), hợp lệ.
+def check_primary_belongs(db: Session, employee: Employee) -> None:
+    """L3 cho phòng chính HIỆN CÓ của hồ sơ — gọi khi pháp nhân vừa đổi mà ô phòng ban không đổi theo.
 
-    ⚠️ KHÔNG gọi thẳng từ controller — gọi ba hàm `chan_*` trước.
+    Đổi pháp nhân A -> B mà phòng chính vẫn là phòng riêng của A thì 400 (cùng câu với `set_primary_department`),
+    người dùng chọn phòng của B hoặc bỏ trống ô phòng ban rồi lưu lại.
     """
-    cleaned = list(dict.fromkeys(int(x) for x in department_ids if x))
-    _check_departments_exist(db, employee, cleaned)
+    #  Đọc phòng chính từ BẢNG (như `detach_other_company_departments` cũ), không từ cột: chạy thật hai nơi luôn
+    #  khớp; hồ sơ chưa có dòng nào trong bảng (dữ liệu nhập thẳng cột) thì không có gì để chặn.
+    current = departments_of(db, employee.id)
+    if current:
+        _check_departments_exist(db, employee, current)
 
-    primary = primary_department if primary_department in cleaned else (cleaned[0] if cleaned else 0)
+
+def set_primary_department(db: Session, employee: Employee, department_id: int, actor: int) -> int:
+    """Đặt phòng CHÍNH của một nhân sự (`0` = chưa phân công). Trả id phòng chính sau khi ghi.
+
+    Đây là chỗ DUY NHẤT ghi vào `tab_employee_department` (nay chỉ chứa một dòng phòng chính), và cũng là chỗ
+    duy nhất cập nhật `tab_employee.department_id` — hai thứ đó phải luôn khớp nhau, tách ra hai nơi ghi là
+    sớm muộn lệch.
+
+    ⚠️ KHÔNG gọi thẳng từ controller — gọi các hàm `block_*` trước.
+    """
+    primary = int(department_id or 0)
+    _check_departments_exist(db, employee, [primary] if primary else [])
 
     db.query(EmployeeDepartment).filter(
         EmployeeDepartment.employee_id == employee.id).delete(synchronize_session=False)
-    for department_id in cleaned:
-        db.add(EmployeeDepartment(
-            employee_id=employee.id, department_id=department_id,
-            is_primary=(department_id == primary),
-            created_by=actor, updated_by=actor))
+    if primary:
+        db.add(EmployeeDepartment(employee_id=employee.id, department_id=primary, is_primary=True,
+                                  created_by=actor, updated_by=actor))
 
     #  Giữ cột cũ khớp với phòng chính — 12 chỗ trong mã vẫn đọc nó.
     employee.department_id = primary
@@ -321,4 +232,4 @@ def set_departments(db: Session, employee: Employee, department_ids: list[int],
     for row in db.query(User.id).filter(User.employee_id == employee.id).all():
         perm_cache_clear(row[0])
 
-    return [primary] + [x for x in cleaned if x != primary] if primary else cleaned
+    return primary

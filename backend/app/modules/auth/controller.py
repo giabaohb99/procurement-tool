@@ -85,18 +85,14 @@ def _me_payload(db: Session, user) -> dict:
     from app.modules.vehicle_booking.model import Driver
     is_driver = db.query(Driver.id).filter(Driver.user_id == user.id).first() is not None
 
-    #  Kiêm nhiệm = các phòng PHỤ (is_primary=False) của nhân sự — tái dùng
-    #  tab_employee_department, hiển thị dưới Vị trí/Chức vụ ở Trang cá nhân.
-    kiem_nhiem: list[str] = []
+    #  Kiêm nhiệm (duoc-CR-755) = các dòng ĐANG HIỆU LỰC của `tab_employee_concurrent` (cùng hoặc khác công ty),
+    #  hiện dưới Vị trí / Chức vụ ở Trang cá nhân. `kiem_nhiem` là câu *Phòng X — Công ty B (Chức vụ)*;
+    #  `concurrents` có cấu trúc cho popup phạm vi (chỉ dòng `counts_scope` mới tính vào phạm vi quyền).
+    concurrents: list[dict] = []
     if emp:
-        from app.modules.department.model import Department
-        from app.modules.employee.department_model import EmployeeDepartment
-        extra_ids = [row[0] for row in db.query(EmployeeDepartment.department_id).filter(
-            EmployeeDepartment.employee_id == emp.id,
-            EmployeeDepartment.is_primary.is_(False)).all()]
-        if extra_ids:
-            kiem_nhiem = [r[0] for r in db.query(Department.name)
-                          .filter(Department.id.in_(extra_ids)).order_by(Department.name).all()]
+        from app.modules.employee.concurrent_members_service import effective_roles_of
+        concurrents = effective_roles_of(db, {emp.id}).get(emp.id, [])
+    kiem_nhiem = [c["text"] for c in concurrents]
 
     return {
         "id": user.id,
@@ -120,6 +116,7 @@ def _me_payload(db: Session, user) -> dict:
         "role_names": role_names,
         "position": emp.position if emp else "",
         "kiem_nhiem": kiem_nhiem,
+        "concurrents": [{k: v for k, v in c.items() if k != "text"} for c in concurrents],
         #  Có hồ sơ tài xế không — FE dùng để hiện mục "Chuyến của tôi" cho lái xe.
         "is_driver": is_driver,
         #  Vai trò ĐANG GIỮ, không phải quyền. Màn Phân quyền cần nó để khóa ma

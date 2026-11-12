@@ -22,6 +22,11 @@ interface AccountScopeSummaryPanelProps {
    * với "đọc được và thấy chưa gắn công ty", nên không được gộp một nhánh.
    */
   owner: ScopeOwnerProfile | null
+  /**
+   * Cặp (phòng, công ty) mà KIÊM NHIỆM đang mở thêm phạm vi (duoc-CR-755), dạng `Phòng X (Công ty B)` —
+   * chỉ dòng đang hiệu lực + bật công tắc (`listScopeConcurrentPairs`). Rỗng = không có gì để nói.
+   */
+  concurrentPairs?: string[]
   /** Ngoại lệ đang khai ở tầng 2, mỗi chiều một câu; rỗng = chưa khai gì. */
   exceptionLines: string[]
   isLoading: boolean
@@ -51,6 +56,7 @@ export function AccountScopeSummaryPanel({
   roleName,
   groups,
   owner,
+  concurrentPairs = [],
   exceptionLines,
   isLoading,
   canReadRole,
@@ -111,6 +117,21 @@ export function AccountScopeSummaryPanel({
             ? 'Chưa đọc được hồ sơ nhân sự của tài khoản nên chưa thay được tên công ty / phòng ban thật vào câu trên.'
             : 'Bạn không có quyền xem nhân sự nên chưa thay được tên công ty / phòng ban thật vào câu trên.'}
         </p>
+      )}
+
+      {concurrentPairs.length > 0 && (
+        //  Kiêm nhiệm mở thêm ĐÚNG từng cặp (phòng, công ty) chứ không mở cả phòng ở công ty chính hay cả công ty
+        //  kia — nói rõ để người khai không tưởng người này thấy toàn công ty B.
+        <div className="mt-2 border-t border-primary/20 pt-2">
+          <p className="text-xs font-medium text-navy">
+            Kiêm nhiệm đang mở thêm phạm vi (chỉ đúng từng phòng và công ty này):
+          </p>
+          <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-xs text-navy">
+            {concurrentPairs.map((pair) => (
+              <li key={pair}>{pair}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {exceptionLines.length > 0 && (

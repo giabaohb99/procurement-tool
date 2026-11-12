@@ -1,3 +1,4 @@
+import type { ConcurrentMember } from '../types/concurrent-member'
 import type { OrgChartPayload } from '../types/org-chart'
 import { resolveParents } from './org-chart-tree'
 
@@ -16,6 +17,15 @@ export interface OrgChartPerson {
   reportIds: number[]
 }
 
+/** Người kiêm nhiệm cùng MỘT (phòng, công ty) gom lại — vẽ thành một nhóm có tiêu đề riêng dưới cây quản lý. */
+export interface OrgChartConcurrentGroup {
+  /** `phòng|công ty` — khóa ổn định cho React. */
+  key: string
+  departmentName: string
+  companyName: string
+  members: ConcurrentMember[]
+}
+
 export interface OrgChartForest {
   /** Mọi người trong payload (không riêng người đang vẽ) — để khung thông tin tra được tên quản lý. */
   people: Map<number, OrgChartPerson>
@@ -23,6 +33,8 @@ export interface OrgChartForest {
   roots: number[]
   /** Những người đang vẽ (đã qua bộ lọc pháp nhân / phòng ban). */
   visibleIds: Set<number>
+  /** Người kiêm nhiệm qua cùng bộ lọc (theo công ty + phòng KIÊM NHIỆM), nhóm theo nơi kiêm nhiệm. */
+  concurrentGroups: OrgChartConcurrentGroup[]
 }
 
 export interface OrgChartForestFilter {
@@ -97,7 +109,44 @@ export function buildOrgChartForest(
   }
   roots.sort((a, b) => b.reportIds.length - a.reportIds.length || byName(a, b))
 
-  return { people, roots: roots.map((person) => person.id), visibleIds }
+  return {
+    people,
+    roots: roots.map((person) => person.id),
+    visibleIds,
+    concurrentGroups: groupConcurrents(payload.concurrents ?? [], filter, companyOf, departmentOf),
+  }
+}
+
+//  Người kiêm nhiệm đi qua CÙNG bộ lọc pháp nhân / phòng ban, nhưng đo theo nơi KIÊM NHIỆM (không phải phòng chính):
+//  lọc "Công ty B / Phòng Kế toán" là để thấy ai đang làm ở đó, kể cả người đến từ công ty khác.
+function groupConcurrents(
+  rows: ConcurrentMember[],
+  filter: OrgChartForestFilter,
+  companyOf: (companyId: number) => number,
+  departmentOf: (departmentId: number) => number,
+): OrgChartConcurrentGroup[] {
+  const groups = new Map<string, OrgChartConcurrentGroup>()
+  for (const row of rows) {
+    if (filter.companyId !== null && companyOf(row.company_id) !== filter.companyId) continue
+    if (filter.departmentIds !== null && !filter.departmentIds.has(departmentOf(row.department_id))) continue
+    const key = `${row.department_id}|${row.company_id}`
+    const group = groups.get(key) ?? {
+      key,
+      departmentName: row.department_name,
+      companyName: row.company_name,
+      members: [],
+    }
+    group.members.push(row)
+    groups.set(key, group)
+  }
+  const sorted = [...groups.values()].sort(
+    (a, b) =>
+      a.companyName.localeCompare(b.companyName, 'vi') || a.departmentName.localeCompare(b.departmentName, 'vi'),
+  )
+  for (const group of sorted) {
+    group.members.sort((a, b) => a.full_name.localeCompare(b.full_name, 'vi') || a.id - b.id)
+  }
+  return sorted
 }
 
 /** Chuỗi quản lý từ gốc xuống tới (không gồm) `id`, chỉ trong phần đang vẽ — để mở đường tới một thẻ. */

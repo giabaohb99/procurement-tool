@@ -176,32 +176,34 @@ class Actor:
         return self
 
     def add_department(self, dept_key: str):
-        """Kiêm nhiệm thêm một phòng (CR-167) — phạm vi bậc `dept` phải mở đủ cả.
+        """Kiêm nhiệm thêm một phòng CÙNG công ty chính (CR-167) — phạm vi bậc `dept` phải mở đủ cả.
 
-        ⚠️ Tự chèn **phòng CHÍNH** vào bảng kiêm nhiệm ở lần gọi đầu. Không phải
-        tiện tay: `departments_of` đọc THUẦN `tab_employee_department`, còn
-        `_role_scope_cond` chỉ lùi về `dept_id` của hồ sơ khi bảng đó RỖNG
-        (`scoping.py:278`). Ghi mỗi phòng kiêm nhiệm là nhân sự đó **mất phòng
-        chính** — một hình dạng dữ liệu không tồn tại ở chạy thật, vì
-        `set_departments` luôn ghi cả hai (`department_service.py:55`). Test
-        dựng sai hiện trạng thì bắt được lỗi không có thật, và bỏ sót lỗi có thật.
+        duoc-CR-755: kiêm nhiệm nằm ở `tab_employee_concurrent` (từ ngày/đến ngày trống = đang hiệu
+        lực, công tắc phạm vi bật), hồ sơ quyền đọc bảng đó chứ không đọc dòng phụ của
+        `tab_employee_department` nữa. Bảng cũ chỉ còn dòng phòng CHÍNH, nên lần gọi đầu vẫn tự
+        chèn dòng chính đó: `departments_of` đọc THUẦN bảng ấy và `_role_scope_cond` lùi về
+        `dept_id` của hồ sơ khi nó RỖNG — ghi mỗi phòng kiêm nhiệm là nhân sự **mất phòng chính**,
+        hình dạng dữ liệu không tồn tại ở chạy thật (`set_departments` luôn ghi cả hai).
         """
+        from app.modules.employee.concurrent_model import EmployeeConcurrent
         from app.modules.employee.department_model import EmployeeDepartment
 
         db = self.world.db
-        have = {r.department_id for r in db.query(EmployeeDepartment)
-                .filter(EmployeeDepartment.employee_id == self.employee.id).all()}
-        if not have and self.employee.department_id:
+        have_primary = db.query(EmployeeDepartment).filter(
+            EmployeeDepartment.employee_id == self.employee.id).first()
+        if not have_primary and self.employee.department_id:
             db.add(EmployeeDepartment(employee_id=self.employee.id,
                                       department_id=self.employee.department_id,
                                       is_primary=True))
-            have.add(self.employee.department_id)
-        #  Gọi lại cùng một phòng là không-làm-gì: `uq_employee_department` cấm
-        #  trùng, mà mọi phép đếm theo phòng cũng sẽ cộng dư nếu lách được.
-        if self.world.dept[dept_key] not in have:
-            db.add(EmployeeDepartment(employee_id=self.employee.id,
-                                      department_id=self.world.dept[dept_key],
-                                      is_primary=False))
+        #  Gọi lại cùng một phòng là không-làm-gì: mọi phép đếm theo phòng cũng sẽ cộng dư nếu lách được.
+        dept_id = self.world.dept[dept_key]
+        dup = db.query(EmployeeConcurrent).filter(
+            EmployeeConcurrent.employee_id == self.employee.id,
+            EmployeeConcurrent.department_id == dept_id).first()
+        if dept_id != self.employee.department_id and not dup:
+            db.add(EmployeeConcurrent(employee_id=self.employee.id,
+                                      company_id=self.employee.company_id or 0,
+                                      department_id=dept_id, counts_scope=True))
         db.flush()
         perm_cache_clear(self.user.id)
         return self

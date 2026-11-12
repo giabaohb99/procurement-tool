@@ -3,15 +3,15 @@ import { Paperclip } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
 import { FormLabel } from '@/shared/ui/form'
-import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import {
   WORK_HISTORY_FILE_ACCEPT,
   WORK_HISTORY_FILE_MAX_SIZE_MB,
 } from './employee-work-history-files-dialog'
 
 interface EmployeeWorkHistoryFileFieldProps {
-  /** Đang SỬA (`true`) hay tạo mới (`false`) — quyết định ô Tệp QĐ hiện dạng nào. */
-  editingRow: EmployeeWorkHistory | null
+  /** Đang SỬA (có dòng) hay tạo mới (`null`) — quyết định ô Tệp QĐ hiện dạng nào. Chỉ đọc `file_count`, nên hộp
+   *  kiêm nhiệm (duoc-CR-755) dùng lại được với dòng `EmployeeConcurrent`. */
+  editingRow: { file_count: number } | null
   /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút "Quản lý tệp" (M4). */
   canOpenFiles: boolean
   queuedFileCount: number

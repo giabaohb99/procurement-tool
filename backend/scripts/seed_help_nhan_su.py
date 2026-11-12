@@ -42,6 +42,14 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
   * duoc-CR-754 (12/11/2026): đổi đường menu theo menu mới (một danh sách không tiêu đề nhóm; cụm Master đổi tên
     Danh mục; Cài đặt nhân sự cùng các màn cấu hình của Nghỉ phép, Lịch làm việc, Đặt phòng họp gom vào mục Thiết lập —
     một dòng menu, vào trong là MỘT dải tab phẳng chín tab, không có tab con lồng bên trong).
+  * duoc-CR-755 (12/11/2026): bài mới CONCURRENT — tab Kiêm nhiệm riêng (kiêm nhiệm được ở công ty khác, ngày, QĐ, tệp QĐ,
+    công tắc Tính vào phạm vi quyền, tự hết hạn), hộp Kiêm nhiệm ở công ty cũ khi đổi pháp nhân, người kiêm nhiệm ở trang
+    phòng ban và sơ đồ tổ chức. Sửa bài EDIT_PROFILE (bảng tab có Kiêm nhiệm, dòng ô Công ty không còn nói gỡ hết phòng kiêm
+    nhiệm) và bài SO_DO (khối người kiêm nhiệm). Câu "Kiêm nhiệm gập / mở được" ở dòng duoc-CR-708 bên trên là lịch sử: thẻ
+    kiêm nhiệm ở tab Chung đã bỏ. Nhãn đối chiếu bằng đọc `hr/components/employee-tab-concurrent.tsx`,
+    `employee-concurrent-form-{dialog,fields}.tsx`, `employee-company-change-concurrent-dialog.tsx`,
+    `employee-keep-old-department-dialog.tsx`, `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`,
+    `config/employee-concurrent-columns.tsx`, `utils/employee-work-history-apply.ts` và ảnh `plans/reports/cr755-p04-*.png`.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -60,6 +68,7 @@ from help_seed_common import rebuild_tree, ref
 from seed_help_hop_dong_lao_dong import check_unique_titles
 
 EDIT_PROFILE = "Nhân sự — Sửa hồ sơ nhân sự ở màn chi tiết"
+CONCURRENT = "Nhân sự — Khai kiêm nhiệm (kể cả ở công ty khác)"
 IMPORT_EXCEL = "Nhân sự — Nhập hồ sơ hàng loạt bằng tệp Excel"
 POSITION_ROLES = "Nhân sự — Quyền mặc định theo chức vụ cho tài khoản mới"
 EXPORT_PERM = "Nhân sự — Quyền Xuất, Nhập và che cột nhạy cảm khi xuất tệp"
@@ -79,11 +88,12 @@ PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nh
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
     "icon": "users",
-    "summary": "Sửa hồ sơ, nhập Excel hàng loạt; in phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; chuyển việc duyệt treo khi khóa tài khoản; cài đặt nhân sự; quyền mặc định theo chức vụ; quyền xuất / nhập",
+    "summary": "Sửa hồ sơ, kiêm nhiệm, nhập Excel; in phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; việc duyệt treo khi khóa tài khoản; cài đặt nhân sự; quyền mặc định theo chức vụ; quyền xuất / nhập",
     "content": f"""<h2>Nhân sự — Hồ sơ và tổ chức</h2>
 <p>Phân hệ <strong>Nhân sự</strong> giữ hồ sơ nhân viên, phòng ban, chức vụ và (ở bộ hướng dẫn riêng) nghỉ phép, hợp đồng lao động. Bộ hướng dẫn này gom các tính năng về hồ sơ và tổ chức:</p>
 <ul>
 <li>Cần sửa thông tin trong hồ sơ một người (phòng ban, chức vụ, quản lý trực tiếp…): {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")}.</li>
+<li>Một người phụ trách thêm một phòng (ở công ty mình hay công ty khác trong tập đoàn) theo quyết định kiêm nhiệm: {ref(CONCURRENT, "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</li>
 <li>Cần tạo hoặc cập nhật nhiều hồ sơ một lượt: {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</li>
 <li>Cần in tờ khai thông tin của một người (hay của chính mình) để ký nộp: {ref(PRINT_INFO, "In Phiếu thông tin nhân viên")}.</li>
 <li>Bạn thấy hồ sơ của mình sai ngày sinh, đổi tài khoản ngân hàng, làm lại CCCD hay có thêm người trong hộ gia đình: {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}.</li>
@@ -145,6 +155,7 @@ TREE = {
 <tr><td><strong>Chung</strong></td><td>Thẻ <strong>Thông tin cá nhân</strong> và thẻ <strong>Công việc</strong> (Công ty, Phòng ban, Vị trí / Chức vụ, Người quản lý trực tiếp, Tình trạng làm việc, Trạng thái hồ sơ, nhóm Lương)</td></tr>
 <tr><td><strong>Quá trình công tác</strong></td><td>Lịch sử bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc</td></tr>
 <tr><td><strong>Quyết định bổ nhiệm</strong></td><td>Các quyết định liên quan người này</td></tr>
+<tr><td><strong>Kiêm nhiệm</strong></td><td>Các phòng người này kiêm nhiệm thêm, kể cả ở công ty khác, kèm ngày và quyết định (xem {ref(CONCURRENT, "Khai kiêm nhiệm (kể cả ở công ty khác)")})</td></tr>
 <tr><td><strong>Liên hệ &amp; Ngân hàng</strong></td><td>Số điện thoại, địa chỉ, tài khoản ngân hàng, người báo tin (xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")})</td></tr>
 <tr><td><strong>Giấy tờ &amp; BHXH</strong></td><td>CCCD, mã số thuế, BHXH, BHYT, hộ gia đình</td></tr>
 <tr><td><strong>Hợp đồng</strong></td><td>Hợp đồng lao động; chỉ hiện với người có quyền xem hợp đồng, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
@@ -158,7 +169,7 @@ TREE = {
 <p>Các ô chọn có danh sách dài trong phân hệ Nhân sự đều có ô tìm: bấm vào ô, gõ vài chữ vào dòng <em>Gõ để tìm…</em> (không dấu cũng được), rồi chọn. Không khớp mục nào thì ô báo <em>Không tìm thấy mục nào.</em></p>
 <ul>
 <li>Ở hồ sơ và hộp <strong>Thêm nhân sự</strong>: <strong>Công ty</strong> (hộp thêm ghi là <strong>Pháp nhân</strong>), <strong>Phòng ban</strong>, <strong>Vị trí / Chức vụ</strong>, <strong>Người quản lý trực tiếp</strong>.</li>
-<li>Ở hộp thêm dòng quá trình công tác: pháp nhân, phòng ban, chức vụ.</li>
+<li>Ở hộp thêm dòng quá trình công tác: pháp nhân, phòng ban, chức vụ. Ở hộp <strong>Thêm kiêm nhiệm</strong>: <strong>Công ty</strong>, <strong>Phòng ban</strong>, <strong>Chức vụ</strong>.</li>
 <li>Ở màn <strong>Phòng ban</strong> và <strong>Công ty</strong> (cụm Danh mục): các ô chọn pháp nhân, phòng ban, nhân sự, ví dụ <strong>Phòng ban cấp trên</strong>, <strong>Trưởng bộ phận</strong>, <strong>Người đại diện pháp lý</strong>.</li>
 <li>Ô <strong>Quan hệ</strong> ở bảng người thân, hộ gia đình.</li>
 </ul>
@@ -168,7 +179,8 @@ TREE = {
 <table>
 <thead><tr><th>Ô</th><th>Đổi xong thì sao</th></tr></thead>
 <tbody>
-<tr><td><strong>Công ty</strong></td><td>Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân sẽ <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả phòng kiêm nhiệm. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực</td></tr>
+<tr><td><strong>Công ty</strong></td><td>Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân thì lúc bấm <strong>Lưu</strong> hệ thống mở hộp <strong>Kiêm nhiệm ở công ty cũ</strong> để bạn chọn giữ dòng kiêm nhiệm nào ở pháp nhân cũ; dòng không giữ sẽ kết thúc vào hôm qua. Kiêm nhiệm ở công ty khác không đổi. Xem {ref(CONCURRENT, "Khai kiêm nhiệm (kể cả ở công ty khác)")}. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực</td></tr>
+<tr><td><strong>Phòng ban</strong></td><td>Đổi phòng chính thì lúc bấm <strong>Lưu</strong> hệ thống hỏi <strong>Giữ phòng cũ làm kiêm nhiệm?</strong>: chọn <strong>Giữ làm kiêm nhiệm</strong> thì phòng cũ thành một dòng ở tab <strong>Kiêm nhiệm</strong> (từ hôm nay) và người này vẫn thấy dữ liệu phòng cũ; chọn <strong>Không, gỡ phòng cũ</strong> thì thôi</td></tr>
 <tr><td><strong>Người quản lý trực tiếp</strong></td><td>Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước <em>Quản lý trực tiếp người nộp</em>; bỏ trống thì bước đó chuyển cho trưởng bộ phận. Sơ đồ tổ chức cũng vẽ theo ô này</td></tr>
 <tr><td><strong>Vị trí / Chức vụ</strong></td><td>Chức danh in trên phiếu. Nếu chức vụ đó đã khai gói quyền, tài khoản của người này được cấp lại vai trò theo chức vụ mới: xem {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ cho tài khoản mới")}</td></tr>
 <tr><td><strong>Tình trạng làm việc</strong> sang nghỉ việc</td><td>Hệ thống hỏi trước và khóa tài khoản đăng nhập: xem {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}</td></tr>
@@ -178,6 +190,107 @@ TREE = {
 
 <h2>Xem ai đã sửa gì</h2>
 <p>Cuối trang, dưới mọi tab, là khối <strong>Lịch sử thao tác</strong>: mỗi lần lưu là một dòng, ghi người sửa, lúc nào và sửa gì. Quản trị bấm vào liên kết ở từng dòng để mở lượt ghi tương ứng ở Nhật ký hệ thống. Riêng lương không bao giờ hiện số trong lịch sử.</p>""",
+        },
+        {
+            "title": CONCURRENT,
+            "icon": "users",
+            "summary": "Tab Kiêm nhiệm của hồ sơ: thêm kiêm nhiệm ở công ty mình hay công ty khác, ngày, QĐ, tệp QĐ, công tắc Tính vào phạm vi quyền, tự hết hạn; hộp Kiêm nhiệm ở công ty cũ khi đổi pháp nhân; xem ở trang phòng ban, sơ đồ tổ chức",
+            "content": f"""<h2>Dùng khi nào</h2>
+<p>Một người có quyết định kiêm nhiệm thêm một phòng, ở công ty của họ hay ở <strong>công ty khác</strong> trong tập đoàn: ví dụ kế toán công ty A kiêm kế toán phòng Kế toán của công ty B từ ngày 01/12 đến hết năm. Mỗi lần kiêm nhiệm là <strong>một dòng</strong> ở tab <strong>Kiêm nhiệm</strong> của hồ sơ, có ngày bắt đầu, ngày kết thúc, số quyết định và tệp quyết định. Vị trí chính (Công ty, Phòng ban, Vị trí / Chức vụ ở tab <strong>Chung</strong>) không đổi.</p>
+<p>Thẻ chọn nhiều phòng kiêm nhiệm ở tab <strong>Chung</strong> trước đây đã bỏ; các phòng kiêm nhiệm cũ đã được chuyển sẵn thành dòng ở tab này (ghi chú <em>Chuyển từ kiêm nhiệm cũ</em>, không có ngày).</p>
+
+<h2>Thêm một dòng kiêm nhiệm</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Nhân sự</strong>, mở hồ sơ người cần khai, chọn tab <strong>Kiêm nhiệm</strong> (giữa <strong>Quyết định bổ nhiệm</strong> và <strong>Liên hệ &amp; Ngân hàng</strong>).</li>
+<li>Bấm <strong>Thêm kiêm nhiệm</strong> ở góc phải bảng. Hộp <strong>Thêm kiêm nhiệm</strong> mở ra.</li>
+<li>Chọn <strong>Công ty</strong> nơi người này kiêm nhiệm (có thể khác công ty chính của họ).</li>
+<li>Chọn <strong>Phòng ban</strong>. Ô này chỉ mở sau khi đã chọn công ty (trước đó ghi <em>Chọn công ty trước</em>) và chỉ liệt kê phòng phục vụ công ty đó: phòng riêng của công ty, phòng dùng chung và phòng đã nối với công ty đó. Khi chọn đúng công ty chính của người này thì phòng chính của họ không có trong danh sách.</li>
+<li>Chọn <strong>Chức vụ</strong> kiêm nhiệm nếu quyết định có ghi (không bắt buộc).</li>
+<li>Chọn <strong>Từ ngày</strong> (bắt buộc). <strong>Đến ngày</strong> để trống nếu quyết định không ghi ngày kết thúc (ô hiện <em>Chưa kết thúc</em>).</li>
+<li>Điền <strong>Số QĐ</strong>, <strong>Ngày QĐ</strong>, <strong>Ghi chú</strong> nếu có.</li>
+<li>Để ý công tắc <strong>Tính vào phạm vi quyền</strong> (mặc định bật), xem mục dưới.</li>
+<li>Ở ô <strong>Tệp QĐ</strong>, kéo tệp quyết định vào hoặc bấm để chọn (tối đa 50MB mỗi tệp). Tệp được tải lên ngay sau khi dòng được tạo.</li>
+<li>Bấm <strong>Lưu</strong>. Dòng mới hiện trong bảng.</li>
+</ol>
+<p>Bảng có các cột <strong>Công ty</strong>, <strong>Phòng ban</strong>, <strong>Chức vụ</strong>, <strong>Từ ngày</strong>, <strong>Đến ngày</strong>, <strong>Trạng thái</strong>, <strong>Tính phạm vi</strong> (Có / Không), <strong>Quyết định</strong> (số và ngày), <strong>Tệp</strong>; cột <strong>Ghi chú</strong> ẩn sẵn, bật ở nút <strong>Cột</strong>. Trên điện thoại mỗi dòng là một thẻ.</p>
+
+<h2>Công tắc Tính vào phạm vi quyền nghĩa là gì</h2>
+<table>
+<thead><tr><th>Công tắc</th><th>Người kiêm nhiệm thấy gì</th></tr></thead>
+<tbody>
+<tr><td><strong>Bật</strong></td><td>Trong thời gian dòng còn hiệu lực, người này thấy và làm việc với dữ liệu của <strong>đúng phòng đó ở đúng công ty đó</strong> như một nhân viên của phòng, theo vai trò đang có của họ (xem phiếu, duyệt, sửa nếu vai trò cho phép ở mức phòng ban). Kiêm nhiệm một phòng ở công ty B <strong>không</strong> mở cả công ty B. Văn bản, thư mục, báo cáo, skill AI đã chia cho phòng đó cũng tới được họ</td></tr>
+<tr><td><strong>Tắt</strong></td><td>Chỉ ghi nhận kiêm nhiệm cho hồ sơ, <strong>không mở thêm dữ liệu</strong> nào</td></tr>
+</tbody>
+</table>
+<p>Chức vụ kiêm nhiệm <strong>không</strong> tự cấp thêm vai trò cho tài khoản; quyền mặc định theo chức vụ chỉ đi theo chức vụ chính. Thay đổi về phạm vi có tác dụng sau tối đa khoảng một phút.</p>
+
+<h2>Trạng thái tự đổi theo ngày</h2>
+<table>
+<thead><tr><th>Trạng thái</th><th>Khi nào</th><th>Có mở dữ liệu không</th></tr></thead>
+<tbody>
+<tr><td><strong>Sắp tới</strong></td><td>Từ ngày còn ở tương lai</td><td>Chưa</td></tr>
+<tr><td><strong>Đang hiệu lực</strong></td><td>Từ ngày đã tới và chưa qua đến ngày (đúng ngày đến ngày vẫn còn hiệu lực)</td><td>Có, nếu công tắc bật</td></tr>
+<tr><td><strong>Đã hết</strong></td><td>Đã qua đến ngày</td><td>Không</td></tr>
+</tbody>
+</table>
+<p>Không ai phải bấm gì khi tới ngày: hệ thống tự tính theo ngày Việt Nam, hết hạn là người đó thôi thấy dữ liệu phòng kiêm nhiệm. Muốn kết thúc sớm thì sửa dòng, điền <strong>Đến ngày</strong>. Bảng xếp dòng <strong>Đang hiệu lực</strong> lên trước, rồi <strong>Sắp tới</strong>, rồi <strong>Đã hết</strong>; dòng đã hết vẫn giữ để làm lịch sử.</p>
+
+<h2>Sửa, xóa, tệp quyết định</h2>
+<ul>
+<li>Bấm biểu tượng bút ở cột <strong>Thao tác</strong> để mở hộp <strong>Sửa kiêm nhiệm</strong>. Sửa xong bấm <strong>Lưu</strong>; tệp đã gắn giữ nguyên.</li>
+<li>Thêm hay bỏ tệp của dòng đã có: trong hộp sửa bấm <strong>Quản lý tệp (N)</strong>, hoặc bấm vào số tệp ở cột <strong>Tệp</strong>; hộp <strong>Tệp quyết định kiêm nhiệm</strong> mở ra.</li>
+<li>Bấm biểu tượng thùng rác để xóa, xác nhận <strong>Xóa</strong> trong hộp <strong>Xóa dòng kiêm nhiệm?</strong>. Tệp quyết định của dòng bị xóa theo. Dòng còn tác dụng thì hộp nói rõ người này sẽ thôi thấy dữ liệu của phòng đó. Kiêm nhiệm đã kết thúc thật thì nên điền <strong>Đến ngày</strong> thay vì xóa, để còn lịch sử.</li>
+<li>Tệp quyết định của người khác là thông tin nhạy cảm: cần quyền xem thông tin nhạy cảm của nhân sự mới mở được. Thiếu quyền thì ô tệp ghi số tệp kèm câu <em>Cần quyền xem thông tin nhạy cảm để mở tệp</em>. Chính người kiêm nhiệm luôn xem được tệp của mình.</li>
+</ul>
+
+<h2>Ai được khai</h2>
+<ul>
+<li>Người có quyền <strong>sửa hồ sơ nhân sự</strong> với hồ sơ này (theo vị trí chính của người kiêm nhiệm). Không có quyền thì tab chỉ để xem, không có nút <strong>Thêm kiêm nhiệm</strong>.</li>
+<li>Thêm, sửa hay bật lại công tắc đều là mở rộng tầm nhìn dữ liệu của người khác, nên <strong>phòng và công ty kiêm nhiệm phải nằm trong phạm vi sửa của chính bạn</strong>: bạn có phạm vi toàn hệ thống thì khai được mọi nơi; phạm vi cả công ty thì khai được mọi phòng của công ty bạn; phạm vi phòng thì chỉ khai được phòng của bạn. Muốn khai kiêm nhiệm ở công ty khác mà bạn không có phạm vi ở đó thì nhờ người phụ trách công ty đó, hoặc người có phạm vi toàn hệ thống.</li>
+<li><strong>Không ai tự khai kiêm nhiệm cho chính mình</strong>, kể cả quản trị. Mở hồ sơ của chính bạn thì tab hiện câu <em>Đây là hồ sơ của chính bạn nên chỉ xem được — kiêm nhiệm của bạn do người khác cập nhật.</em></li>
+</ul>
+
+<h2>Đổi phòng chính hoặc đổi pháp nhân</h2>
+<ul>
+<li>Ở tab <strong>Chung</strong>, đổi ô <strong>Phòng ban</strong> rồi bấm <strong>Lưu</strong>: hộp <strong>Giữ phòng cũ làm kiêm nhiệm?</strong> hiện ra. Chọn <strong>Giữ làm kiêm nhiệm</strong> thì phòng cũ thành một dòng ở tab <strong>Kiêm nhiệm</strong> từ hôm nay (ghi chú <em>Giữ phòng cũ khi đổi phòng chính</em>), người này vẫn thấy dữ liệu phòng cũ; chọn <strong>Không, gỡ phòng cũ</strong> thì thôi. Chỉ giữ khi họ thật sự còn phụ trách phòng đó.</li>
+<li>Đổi ô <strong>Công ty</strong> (pháp nhân chính) rồi bấm <strong>Lưu</strong>: nếu người này còn dòng kiêm nhiệm chưa hết ở công ty cũ, hộp <strong>Kiêm nhiệm ở công ty cũ</strong> hiện ra, liệt kê từng dòng kèm ô <strong>Giữ</strong>. Dòng không tick sẽ <strong>kết thúc vào hôm qua</strong>; dòng chưa bắt đầu mà không giữ sẽ <strong>bị xóa kèm tệp QĐ</strong> (hộp ghi đỏ <em>Chưa bắt đầu — sẽ bị xóa nếu không giữ.</em>). Bấm <strong>Lưu, kết thúc N dòng</strong>, hoặc <strong>Lưu, giữ tất cả</strong> khi đã tick hết; <strong>Hủy</strong> để không lưu gì.</li>
+<li>Kiêm nhiệm ở các công ty khác không bị đụng khi đổi pháp nhân.</li>
+</ul>
+
+<h2>Ghi kiêm nhiệm từ Quá trình công tác</h2>
+<p>Ở tab <strong>Quá trình công tác</strong>, lưu một dòng loại <strong>Kiêm nhiệm</strong> có ngày bắt đầu đã tới (hoặc bấm nút <strong>Áp vào hồ sơ</strong> ở dòng đó) thì hệ thống hỏi áp vào hồ sơ, câu hỏi ghi <em>Thêm dòng kiêm nhiệm: phòng "X" — công ty "B", từ … đến …</em>; đồng ý thì tạo một dòng ở tab <strong>Kiêm nhiệm</strong> (tệp QĐ đi theo). Sửa dòng quá trình công tác rồi Áp lại thì cập nhật đúng dòng đó (<em>Cập nhật dòng kiêm nhiệm: …</em>), điền ngày kết thúc rồi Áp thì dòng thành <strong>Đã hết</strong> (<em>Kết thúc dòng kiêm nhiệm: …</em>). Sửa ở tab <strong>Kiêm nhiệm</strong> không ghi ngược lại tab Quá trình công tác.</p>
+
+<h2>Phòng được kiêm nhiệm thấy người này ở đâu</h2>
+<ul>
+<li><strong>Trang chi tiết phòng ban</strong> (<strong>Nhân sự ▸ Danh mục ▸ Phòng ban</strong>, bấm vào phòng): dưới bảng <strong>Nhân sự thuộc phòng</strong> có khối <strong>Kiêm nhiệm tại phòng này (N)</strong>: mã NV, họ tên kèm nhãn <strong>Kiêm nhiệm</strong> (thêm nhãn <strong>Sắp tới</strong> nếu chưa bắt đầu), chức vụ kiêm nhiệm, công ty kiêm nhiệm, thời gian hiệu lực và phòng chính của họ. Phòng không có ai kiêm nhiệm thì không có khối này.</li>
+<li><strong>Sơ đồ tổ chức</strong>: người kiêm nhiệm đang hiệu lực hiện ở khối <strong>Kiêm nhiệm tại các phòng đang xem</strong> phía dưới cây, thẻ viền nét đứt kèm nhãn <strong>Kiêm nhiệm</strong>, không nối với ai. Bấm thẻ để xem họ thuộc phòng chính nào, thời gian hiệu lực, và nút <strong>Mở hồ sơ</strong>.</li>
+<li>Bấm tên mở được <strong>hồ sơ</strong> của người kiêm nhiệm khi dòng đang hiệu lực và bật công tắc phạm vi, giống người trong phòng (thông tin nhạy cảm vẫn theo quyền xem nhạy cảm, lương chỉ chính chủ xem). Dòng tắt công tắc thì chỉ thấy tên (trừ khi bạn vốn xem được hồ sơ đó theo phòng chính của họ), rê chuột thấy <em>Bạn chỉ xem được dòng kiêm nhiệm này, không mở được hồ sơ</em>.</li>
+<li><strong>Quân số và báo cáo vẫn tính ở phòng chính</strong> của người kiêm nhiệm: họ không được cộng vào số người của phòng kiêm nhiệm, không đếm hai lần.</li>
+<li>Trang cá nhân của người kiêm nhiệm ghi các kiêm nhiệm đang hiệu lực dưới dạng <em>Phòng X — Công ty B (Chức vụ)</em>.</li>
+</ul>
+
+<h2>Hạn chế cần biết</h2>
+<ul>
+<li>Người phụ trách phòng ở công ty B chỉ <strong>xem</strong> được hồ sơ người kiêm nhiệm; sửa hồ sơ vẫn do bên quản lý vị trí chính của họ làm. Tab <strong>Hợp đồng</strong> và <strong>Quỹ phép</strong> của người đó có thể trống với người xem ở công ty B, vì hai tab này đi theo vị trí chính.</li>
+<li>Danh sách <strong>Nhân sự ▸ Nhân sự</strong> lọc theo phòng chỉ ra người có phòng <strong>chính</strong> là phòng đó; người kiêm nhiệm xem ở trang chi tiết phòng ban. Trợ lý AI tra danh bạ cũng theo vị trí chính, nhưng trả kèm các kiêm nhiệm đang hiệu lực của người tìm được.</li>
+<li>Báo cáo <strong>Điều chuyển &amp; bổ nhiệm</strong> đếm kiêm nhiệm theo các dòng ở tab <strong>Quá trình công tác</strong>; dòng chỉ khai ở tab <strong>Kiêm nhiệm</strong> không vào chỉ số <em>Kiêm nhiệm đang hiệu lực</em> của báo cáo đó.</li>
+<li>Nhập Excel nhân sự không có cột kiêm nhiệm. Đổi pháp nhân qua tệp vẫn kết thúc kiêm nhiệm ở công ty cũ như trên; còn dòng chưa bắt đầu ở công ty cũ thì dòng đó trong tệp báo lỗi, sửa ở tab <strong>Kiêm nhiệm</strong> trước.</li>
+</ul>
+
+<h2>Gặp lỗi</h2>
+<table>
+<thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td><em>Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: …</em></td><td>Phòng / công ty kiêm nhiệm nằm ngoài phạm vi sửa của bạn</td><td>Nhờ người phụ trách phòng hay công ty đó khai</td></tr>
+<tr><td><em>Phòng ban "…" không phục vụ công ty đã chọn</em></td><td>Phòng đó thuộc riêng công ty khác</td><td>Chọn lại phòng, hoặc nhờ quản trị nối phòng với công ty ở màn Phòng ban</td></tr>
+<tr><td><em>Trùng phòng ban chính — phòng này đã là phòng chính của nhân sự</em></td><td>Phòng kiêm nhiệm trùng phòng chính ở cùng công ty</td><td>Không cần khai; người đó đã thuộc phòng này</td></tr>
+<tr><td><em>Giai đoạn kiêm nhiệm chồng với một dòng khác của cùng phòng ban và công ty …</em></td><td>Đã có dòng cùng phòng, cùng công ty trùng thời gian</td><td>Sửa ngày của dòng cũ (ví dụ điền Đến ngày) hoặc đổi ngày dòng mới</td></tr>
+<tr><td><em>Hồ sơ này đã có 30 dòng kiêm nhiệm — tối đa 30 dòng/người</em></td><td>Mỗi người tối đa 30 dòng, kể cả dòng đã hết</td><td>Xóa bớt dòng cũ không còn cần</td></tr>
+<tr><td><em>Đến ngày phải sau hoặc bằng từ ngày</em></td><td>Gõ ngày kết thúc trước ngày bắt đầu</td><td>Sửa lại ngày</td></tr>
+<tr><td>Không thấy nút <strong>Thêm kiêm nhiệm</strong></td><td>Thiếu quyền sửa hồ sơ này, hoặc đang xem hồ sơ của chính mình</td><td>Nhờ người phụ trách nhân sự</td></tr>
+</tbody>
+</table>
+<p>Liên quan: {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")} · {ref(SO_DO, "Xem Sơ đồ tổ chức")} · {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ")}.</p>""",
         },
         {
             "title": IMPORT_EXCEL,
@@ -508,7 +621,7 @@ TREE = {
         {
             "title": SO_DO,
             "icon": "building",
-            "summary": "Menu Nhân sự > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban; chỉ hiện người trong phạm vi bạn được xem",
+            "summary": "Menu Nhân sự > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban, khối người kiêm nhiệm; chỉ hiện người trong phạm vi bạn được xem",
             "content": f"""<h2>Sơ đồ tổ chức</h2>
 <p>Vào <strong>Nhân sự ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
 
@@ -541,6 +654,7 @@ TREE = {
 <li>Công ty có thể tắt <strong>Sơ đồ tổ chức cho mọi nhân viên</strong> ở {ref(HR_SETTINGS, "Cài đặt nhân sự")}. Khi đó chỉ người xem được toàn bộ hồ sơ nhân sự mới mở được sơ đồ; người khác thấy câu <em>Sơ đồ tổ chức chưa mở cho bạn</em> — liên hệ phòng Nhân sự nếu cần xem.</li>
 <li>⚠️ Sơ đồ <strong>chỉ hiện những người trong phạm vi dữ liệu của bạn</strong> (xem cùng một sơ đồ, người thấy nhiều người thấy ít là bình thường). Một trưởng phòng hay quản lý <em>nằm ngoài phạm vi</em> của bạn thì tên họ <strong>không hiện</strong>, kể cả khi họ là cấp trên của người bạn xem được. Khi đó người đó đứng ở hàng trên cùng như không có quản lý.</li>
 <li>Người đã <strong>nghỉ việc</strong> hoặc đã ngưng hoạt động thì không có trên sơ đồ.</li>
+<li>Người <strong>kiêm nhiệm</strong> ở các phòng đang xem (dòng kiêm nhiệm đang hiệu lực) hiện ở khối riêng <strong>Kiêm nhiệm tại các phòng đang xem</strong> phía dưới cây: thẻ viền nét đứt, nhãn <strong>Kiêm nhiệm</strong>, không nối với ai và không tính vào số người của phòng. Bấm thẻ để xem phòng chính của họ và thời gian hiệu lực. Ô pháp nhân / phòng ban lọc người kiêm nhiệm theo nơi họ kiêm nhiệm. Xem {ref(CONCURRENT, "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</li>
 <li>Con số trên nút mở nhóm cũng chỉ đếm cấp dưới bạn được thấy, nên đừng dùng nó làm quân số chính thức.</li>
 </ul>
 

@@ -77,6 +77,8 @@ from app.modules.labor_contract.variable_controller import router as labor_contr
 #  không có xung đột route thật (đường của router này luôn dài hơn một đoạn
 #  `/work-history`), nhưng giữ đúng thứ tự theo chỉ dẫn của phase cho dễ dò.
 from app.modules.employee.work_history_controller import router as employee_work_history_router
+from app.modules.employee.concurrent_controller import router as employee_concurrent_router  # duoc-CR-755
+from app.modules.employee.concurrent_members_controller import router as employee_concurrent_members_router  # duoc-CR-755 (G05)
 from app.modules.employee.report_controller import router as employee_report_router
 from app.modules.employee.profile_gaps_report_controller import router as profile_gaps_report_router  # duoc-CR-686
 from app.modules.labor_contract.report_controller import router as labor_contract_report_router  # duoc-CR-686
@@ -346,6 +348,8 @@ app.include_router(work_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_work_history_router)
+app.include_router(employee_concurrent_router)
+app.include_router(employee_concurrent_members_router)  # duoc-CR-755: /api/employee-concurrents (cố định, không đụng /{eid})
 #  HĐLĐ: chung tiền tố `/api/employees/{eid}/...` — PHẢI trước `employee_router` (nó có `/{eid}`).
 app.include_router(labor_contract_router)
 app.include_router(my_labor_contract_router)

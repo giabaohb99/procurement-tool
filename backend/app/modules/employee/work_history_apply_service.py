@@ -1,7 +1,7 @@
 """ÁP một dòng quá trình công tác VÀO HỒ SƠ (A4/A5/A8).
 
 ⚠️ Đường ghi DUY NHẤT vào hồ sơ: `service.update_employee` (loại 1,2,3,5,6) /
-`department_service.set_extra_departments` (loại 4). KHÔNG ghi thẳng
+`concurrent_transition_service.upsert_from_work_history` (loại 4, bảng `tab_employee_concurrent`). KHÔNG ghi thẳng
 `Employee.position/department_id/status` — cấm đường ghi thứ ba.
 
 ⚠️ MỘT GIAO DỊCH: hàm `apply()` KHÔNG tự `commit`. Loại 1,2,3,5,6 ủy commit
@@ -9,15 +9,15 @@ cho `service.update_employee` (đã gồm dòng lịch sử + `applied_at` + h�
 khóa TK trong CÙNG một `db.commit()` của hàm đó); loại 4 (kiêm nhiệm) và
 nhánh không-đổi-gì thì BÊN GỌI (controller) `commit`.
 """
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.hr_work_history_codes import POSITION_TRACK, WorkEventType
 from app.core.vn_time import vn_today
 
+from . import concurrent_transition_service as transition
 from . import department_service
 from . import service as employee_service
 from .field_limits import check_resign_after_hire
@@ -66,53 +66,20 @@ def _apply_position_track(db: Session, emp: Employee, row: EmployeeWorkHistory,
         #  L1 + L2 — Y HỆT `PATCH /employees/{id}` (CR-167): đổi phòng ban qua
         #  cửa này cũng đổi phạm vi dữ liệu, không được né hai chốt đó.
         department_service.block_edit_own_department(db, emp.id, actor)
-        department_service.block_out_of_scope_departments(db, [diff["department_id"]], actor, profile)
+        #  duoc-CR-755 (C1): cặp (phòng mới, công ty ĐÍCH sau lần áp) — xem `block_out_of_scope_primary_department`.
+        department_service.block_out_of_scope_primary_department(
+            db, diff["department_id"], diff.get("company_id") or emp.company_id or 0, profile)
 
     employee_service.update_employee(db, emp.id, EmployeeUpdate(**diff), actor.id)
     return changes
 
 
-def _other_concurrent_still_in_effect(db: Session, eid: int, dept: int,
-                                      exclude_id: int, today: date) -> bool:
-    """Low (review 03/10/2026) — còn DÒNG KIÊM NHIỆM KHÁC, cùng phòng, đang
-    hiệu lực không (loại trừ chính dòng đang xét). Dùng để KHÔNG gỡ phòng khi
-    một dòng khác vẫn còn hợp lệ — gỡ lúc đó là cắt nhầm quyền của dòng kia."""
-    return (db.query(EmployeeWorkHistory)
-            .filter(EmployeeWorkHistory.employee_id == eid,
-                    EmployeeWorkHistory.event_type == int(WorkEventType.CONCURRENT),
-                    EmployeeWorkHistory.department_id == dept,
-                    EmployeeWorkHistory.id != exclude_id,
-                    or_(EmployeeWorkHistory.to_date.is_(None),
-                        EmployeeWorkHistory.to_date >= today))
-            .first() is not None)
-
-
 def _apply_concurrent(db: Session, emp: Employee, row: EmployeeWorkHistory,
                       actor, profile: dict) -> list[str]:
-    """Loại 4 — đang hiệu lực thì THÊM phòng kiêm nhiệm; đã kết thúc thì GỠ."""
-    dept = row.department_id or 0
-    if not dept or dept == (emp.department_id or 0):
-        return []   # trùng phòng chính — không có gì để kiêm nhiệm thêm
+    """Loại 4 — ghi / cập nhật MỘT dòng kiêm nhiệm đầy đủ (công ty, phòng, chức vụ, ngày, QĐ) theo khóa dòng QTCT.
 
-    department_service.block_edit_own_department(db, emp.id, actor)
-    department_service.block_out_of_scope_departments(db, [dept], actor, profile)
-
-    existing = department_service.extra_departments_of(db, emp.id)
-    today = vn_today()
-    in_effect = row.to_date is None or row.to_date >= today
-    if in_effect:
-        if dept in existing:
-            return []
-        new_list, action = existing + [dept], "thêm"
-    else:
-        if dept not in existing:
-            return []
-        if _other_concurrent_still_in_effect(db, emp.id, dept, row.id, today):
-            return []   # còn dòng kiêm nhiệm KHÁC cùng phòng đang hiệu lực — không gỡ
-        new_list, action = [d for d in existing if d != dept], "gỡ"
-
-    department_service.set_extra_departments(db, emp, new_list, actor.id)
-    return [f"Kiêm nhiệm — {action} phòng \"{_department_label(db, dept)}\""]
+    Đã kết thúc: dòng sẵn có chỉ nhận `to_date` (thành "Đã hết"), không gỡ. Chi tiết ở `concurrent_transition_service`."""
+    return transition.upsert_from_work_history(db, emp, row, actor, profile)
 
 
 def _apply_resign(db: Session, emp: Employee, row: EmployeeWorkHistory, actor) -> list[str]:

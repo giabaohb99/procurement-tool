@@ -1,4 +1,6 @@
+import { formatDate } from '@/shared/utils/format-date'
 import type { Employee } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 
 /**
@@ -63,9 +65,26 @@ function describeFieldChange(fieldLabel: string, oldLabel: string | null | undef
   return `${fieldLabel}: ${oldText} → ${newText}`
 }
 
-/** `"Phòng Kế toán"` khi có nhãn, `này` khi không (giữ đúng câu cũ lúc chưa có nhãn). */
-function departmentPhrase(label: string | undefined): string {
-  return label && label.trim() ? `"${label}"` : 'này'
+/**
+ * `phòng "Kế toán" — công ty "DEGO B", từ 01/11/2026 đến 30/11/2026` — câu mô tả dòng kiêm nhiệm sẽ ghi.
+ * Thiếu nhãn thì bỏ phần đó; chưa có ngày kết thúc thì nói "chưa kết thúc".
+ */
+function describeConcurrentTarget(values: ApplyPromptValues, companyLabel: string | null | undefined): string {
+  const dept = values.department_label?.trim() ? `phòng "${values.department_label}"` : 'phòng này'
+  const company = companyLabel?.trim() ? ` — công ty "${companyLabel}"` : ''
+  const to = values.to_date && isValidDate(values.to_date) ? `đến ${formatDate(values.to_date)}` : 'chưa kết thúc'
+  return `${dept}${company}, từ ${formatDate(values.from_date)} ${to}`
+}
+
+/** Dòng kiêm nhiệm sẵn có khác gì giá trị sắp áp — so đúng các ô backend chép từ quá trình công tác. */
+function concurrentDiffers(row: EmployeeConcurrent, values: ApplyPromptValues, companyId: number): boolean {
+  return (
+    row.company_id !== companyId ||
+    row.department_id !== values.department_id ||
+    row.position_id !== values.position_id ||
+    (row.from_date ?? '') !== values.from_date ||
+    (row.to_date ?? '') !== values.to_date
+  )
 }
 
 /**
@@ -80,7 +99,8 @@ function hasLaterMainRow(rows: EmployeeWorkHistory[], excludeId: number, fromDat
 export function planApplyPrompt(
   values: ApplyPromptValues,
   employee: Employee,
-  extraDeptIds: number[],
+  /** Dòng kiêm nhiệm hiện có của hồ sơ — loại Kiêm nhiệm so theo `work_history_id` (duoc-CR-755). */
+  concurrents: readonly EmployeeConcurrent[],
   today: string,
   /** Toàn bộ dòng đã có của hồ sơ — để nhận biết NHẬP BÙ lịch sử cũ (M6). */
   existingRows: EmployeeWorkHistory[] = [],
@@ -127,17 +147,25 @@ export function planApplyPrompt(
     //  Cùng lý do với POSITION_TRACK — kiêm nhiệm nhập bù quá khứ không hỏi.
     if (hasLaterMainRow(existingRows, editingId, values.from_date)) return null
 
-    const hasDept = extraDeptIds.includes(values.department_id)
+    //  duoc-CR-755 — khớp `concurrent_transition_service.upsert_from_work_history`: công ty trống = công ty chính;
+    //  trùng đúng vị trí chính thì không có gì để kiêm nhiệm thêm. Dòng đích tìm theo `work_history_id` (một dòng quá
+    //  trình công tác ↔ tối đa một dòng kiêm nhiệm), không còn so danh sách phòng như trước.
+    const companyId = values.company_id > 0 ? values.company_id : employee.company_id
+    if (values.department_id === employee.department_id && companyId === employee.company_id) return null
+    const companyLabel = values.company_id > 0 ? values.company_label : employee.company_name
+    const linked = editingId > 0 ? concurrents.find((c) => c.work_history_id === editingId) : undefined
+    const target = describeConcurrentTarget(values, companyLabel)
+
     if (isEnded(values.to_date, today)) {
-      //  Đã kết thúc mà phòng kiêm nhiệm vẫn còn trong danh sách → hỏi GỠ.
-      return hasDept
-        ? { kind: 'profile', changes: [`Gỡ kiêm nhiệm phòng ban ${departmentPhrase(values.department_label)}`] }
+      //  Đã kết thúc: backend chỉ cập nhật dòng SẴN CÓ (thành Đã hết), không tạo dòng đã chết.
+      return linked && concurrentDiffers(linked, values, companyId)
+        ? { kind: 'profile', changes: [`Kết thúc dòng kiêm nhiệm: ${target}`] }
         : null
     }
-    //  Đang hiệu lực mà phòng chưa có trong danh sách kiêm nhiệm → hỏi THÊM.
-    return hasDept
-      ? null
-      : { kind: 'profile', changes: [`Thêm kiêm nhiệm phòng ban ${departmentPhrase(values.department_label)}`] }
+    if (!linked) return { kind: 'profile', changes: [`Thêm dòng kiêm nhiệm: ${target}`] }
+    return concurrentDiffers(linked, values, companyId)
+      ? { kind: 'profile', changes: [`Cập nhật dòng kiêm nhiệm: ${target}`] }
+      : null
   }
 
   //  Loại "Khác" (9) không nằm trong `APPLICABLE` của backend — không bao giờ hỏi.

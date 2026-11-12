@@ -7,6 +7,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { toWorkHistoryPayload, uploadWorkHistoryFiles } from '../api/employee-work-history-api'
 import type { EmployeeWorkHistoryFormValues } from '../schemas/employee-work-history-schema'
 import type { Employee } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { planApplyPrompt, type ApplyPromptValues } from '../utils/employee-work-history-apply'
 import { useSaveEmployeeWorkHistory } from './use-employee-work-history'
@@ -28,7 +29,8 @@ interface UseEmployeeWorkHistoryFormSubmitArgs {
   /** `null`/`undefined` = đang TẠO dòng mới. */
   row?: EmployeeWorkHistory | null
   allRows: EmployeeWorkHistory[]
-  extraDeptIds: number[]
+  /** Dòng kiêm nhiệm hiện có — câu hỏi Áp loại Kiêm nhiệm so theo `work_history_id` (duoc-CR-755). */
+  concurrents: readonly EmployeeConcurrent[]
   /** A9 (Q4) — `false` thì không tải tệp đã xếp hàng lên (M4, không có gì để tải vì vùng thả đã ẩn). */
   canOpenFiles: boolean
   today: string
@@ -53,7 +55,7 @@ export function useEmployeeWorkHistoryFormSubmit({
   employee,
   row,
   allRows,
-  extraDeptIds,
+  concurrents,
   canOpenFiles,
   today,
   openMainRow,
@@ -108,7 +110,7 @@ export function useEmployeeWorkHistoryFormSubmit({
       position_label: labelFor(positionOptions, values.position_id),
     }
     //  Thôi việc (Q2) đi hộp xác nhận RIÊNG — KHÔNG mở `confirm()` chung.
-    const prompt = planApplyPrompt(promptValues, employee, extraDeptIds, today, allRows, row?.id ?? 0)
+    const prompt = planApplyPrompt(promptValues, employee, concurrents, today, allRows, row?.id ?? 0)
     if (prompt?.kind === 'resign') {
       setPendingResign({ values, resignDate: prompt.resignDate })
       return

@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import (contact_service, department_service, pending_work_service, position_service,
-               self_contact_service, sensitive, service, sort_expressions)
+from . import (concurrent_service, contact_service, department_service, pending_work_service,
+               position_service, self_contact_service, sensitive, service, sort_expressions)
 from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
                      EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
                      EmployeeOut, EmployeeUpdate, SelfContactsIn, SelfContactUpdate)
@@ -356,7 +356,10 @@ def update_employee(
     if (data.department_id is not None
             and int(data.department_id or 0) != int(current.department_id or 0)):
         department_service.block_edit_own_department(db, eid, user)
-        department_service.block_out_of_scope_departments(db, [data.department_id], user, profile)
+        #  duoc-CR-755 (C1): đo bằng CẶP (phòng mới, công ty ĐÍCH của hồ sơ) — cặp kiêm nhiệm khác công ty đã mở
+        #  quyền ghi hồ sơ công ty kia, nên chỉ so ID phòng là để người ta dời nhân sự công ty B sang cặp họ không phủ.
+        department_service.block_out_of_scope_primary_department(
+            db, data.department_id, data.company_id or current.company_id or 0, profile)
 
     obj = service.update_employee(db, eid, data, user.id)
     return success(_masked(db, obj, user), "Đã cập nhật")
@@ -404,57 +407,29 @@ def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):
 
     from .model import Employee
 
-    obj = get_scoped(db, Employee, "employee", eid, user, profile, action)
+    #  duoc-CR-755 (Q1): ĐỌC hồ sơ thì mở thêm người kiêm nhiệm ở cặp (phòng, công ty) mình phủ. Cờ chỉ có
+    #  tác dụng với `read` (ghi / xóa luôn theo vị trí CHÍNH) — `scope_condition` cũng tự bỏ qua cờ khi
+    #  `action != "read"`, đây là lớp thứ hai.
+    obj = get_scoped(db, Employee, "employee", eid, user, profile, action,
+                     include_concurrent=(action == "read"))
     if obj is None:
         raise HTTPException(404, "Không tìm thấy nhân viên")
     return obj
-
-
-class ExtraDepartmentsIn(BaseModel):
-    """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính KHÔNG đi qua đây."""
-
-    extra_department_ids: list[int] = []
 
 
 @router.get("/{eid}/departments")
 def list_employee_departments(
     eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
 ):
-    """Phòng chính + phòng kiêm nhiệm, TÁCH BẠCH hai khóa.
+    """Phòng chính + phòng kiêm nhiệm CÙNG công ty còn hiệu lực (giữ cho nơi gọi cũ).
 
-    Không gộp thành một danh sách rồi quy ước "phần tử đầu là phòng chính": đó
-    là một luật ngầm mà người dùng không có cách nào biết, và nó làm ô "Phòng
-    ban" của hồ sơ thành thừa.
+    Hai khóa tách bạch, không gộp thành một danh sách. Kiêm nhiệm đầy đủ (khác công ty, ngày,
+    quyết định, tệp) đọc/ghi ở `/api/employees/{eid}/concurrents` (duoc-CR-755); đường `PUT` đặt
+    lại phòng phụ đã gỡ — ghi đi qua đường kia.
     """
     emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user))
     return success({"primary_department_id": emp.department_id or 0,
-                    "extra_department_ids": department_service.extra_departments_of(db, emp.id)})
-
-
-@router.put("/{eid}/departments")
-def set_employee_departments(
-    eid: int, data: ExtraDepartmentsIn, db: Session = Depends(get_db),
-    user=Depends(require("employee", "write")),
-):
-    """KIÊM NHIỆM — đặt lại các phòng phụ trách THÊM. Phòng chính giữ nguyên.
-
-    Phòng chính đổi ở ô "Phòng ban" của hồ sơ (`PATCH /employees/{id}`) — hai
-    thao tác khác nhau thì hai cửa khác nhau. Cả hai cửa đều qua đúng ba chốt
-    chống vượt quyền dưới đây, vì cả hai đều đổi phạm vi dữ liệu người đó nhìn
-    thấy. Lý lẽ đầy đủ ở `employee/department_service.py`.
-    """
-    profile = get_perm_profile(db, user)
-    emp = _employee_in_scope(db, eid, user, profile, "write")
-
-    department_service.block_edit_own_department(db, emp.id, user)
-    department_service.block_out_of_scope_departments(db, data.extra_department_ids, user, profile)
-    ids = department_service.set_extra_departments(db, emp, data.extra_department_ids, user.id)
-    db.commit()
-
-    audit_record(db, user.id, "employee", emp.id, "update",
-                 f"Đặt lại phòng kiêm nhiệm: {ids}")
-    return success({"primary_department_id": emp.department_id or 0,
-                    "extra_department_ids": ids}, "Đã cập nhật phòng kiêm nhiệm")
+                    "extra_department_ids": concurrent_service.same_company_department_ids(db, emp)})
 
 
 # ── Hai bảng con của hồ sơ ──────────────────────────────────────────────────

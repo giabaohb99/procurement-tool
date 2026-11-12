@@ -10,7 +10,6 @@ from datetime import date, datetime, time, timedelta
 
 from app.core import vn_time
 from app.core.hr_work_history_codes import WorkEventType
-from app.modules.employee import department_service as dept_svc
 from app.modules.employee import work_history_apply_service as applysvc
 from app.modules.employee.model import Employee
 from app.modules.employee.work_history_model import EmployeeWorkHistory
@@ -64,14 +63,20 @@ def test_kiem_nhiem_het_han_hom_qua_gio_vn_thi_go_du_utc_chua_qua_ngay(world, mo
     _mock_vn_clock(monkeypatch, datetime.combine(real_today, time(23, 30)))
 
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
-    emp = world.db.get(Employee, world.emp["a3"])
-    dept_svc.set_extra_departments(world.db, emp, [world.dept["A.kt"]], ACTOR)
+    #  Dòng kiêm nhiệm đang mở (Áp lần đầu) rồi QTCT đóng `to_date = real_today` (= hôm qua GIỜ VN).
+    row = _row(world.db, world.emp["a3"], WorkEventType.CONCURRENT, real_today,
+              department_id=world.dept["A.kt"])
+    applysvc.apply(world.db, row, a1.user, a1.profile())
+    world.db.commit()
+    row.to_date = real_today
     world.db.commit()
 
-    row = _row(world.db, world.emp["a3"], WorkEventType.CONCURRENT, real_today,
-              to_date=real_today, department_id=world.dept["A.kt"])
-
     changes = applysvc.apply(world.db, row, a1.user, a1.profile())
-    assert changes, "to_date = hôm qua GIỜ VN — phải coi là hết hạn, phải gỡ"
+    assert changes, "to_date = hôm qua GIỜ VN — phải coi là hết hạn (đóng dòng kiêm nhiệm)"
     assert vn_today_fake > row.to_date   # cho người đọc thấy rõ chiều lệch
-    assert world.dept["A.kt"] not in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    world.db.commit()
+    from app.modules.employee.concurrent_model import EmployeeConcurrent
+    from app.modules.employee.concurrent_service import active_concurrent_rows
+    assert active_concurrent_rows(world.db, world.emp["a3"], vn_today_fake) == []
+    assert world.db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == world.emp["a3"]).one().to_date == real_today

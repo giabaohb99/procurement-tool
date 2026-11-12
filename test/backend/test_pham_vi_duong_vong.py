@@ -676,18 +676,23 @@ def test_a3_tu_tao_tai_khoan_cho_nhan_su_ngoai_pham_vi_bi_chan(world):
 
 
 def test_a4_khuon_dung_nam_ngay_trong_cung_mot_tep(world):
-    """Đối chứng: `PUT /employees/{eid}/departments` CÓ `_employee_in_scope(..., "write")`.
+    """Đối chứng: `POST /employees/{eid}/concurrents` (kiêm nhiệm, thay `PUT .../departments` ở
+    duoc-CR-755) CÓ `employee_in_scope(..., "write")`.
 
     Cùng tệp, cùng khóa `employee.write`, cùng kiểu "gõ id vào URL" — nhưng cửa
     này trả 404. Nghĩa là bản vá cho A2/A3 không phải phát minh gì mới, chỉ là
     gọi thêm một dòng đã có sẵn ở `controller.py:207`.
     """
-    from app.modules.employee import controller as emp_ctl
+    from datetime import date
+
+    from app.modules.employee import concurrent_controller as cc
+    from app.modules.employee.concurrent_schema import ConcurrentIn
 
     a1 = world.grant("a1", "employee", scope="company", actions=("read", "write"))
     with pytest.raises(HTTPException) as e:
-        emp_ctl.set_employee_departments(
-            world.emp["b1"], emp_ctl.ExtraDepartmentsIn(extra_department_ids=[]),
+        cc.create_concurrent(
+            world.emp["b1"], ConcurrentIn(company_id=world.co["B"], department_id=world.dept["B.hc"],
+                                          from_date=date(2026, 1, 1)),
             world.db, a1.user)
     assert e.value.status_code == 404
 
@@ -770,7 +775,11 @@ CHOT_TRONG_ROUTE_GHI = {
     "approval/flow_controller.py::update_node": True,
     "approval/flow_controller.py::reorder_nodes": True,
     "approval/flow_controller.py::delete_node": True,
-    "employee/controller.py::set_employee_departments": True,
+    #  duoc-CR-755: kiêm nhiệm thành bảng riêng (thay `PUT /employees/{id}/departments`, đã gỡ) — ba cửa ghi
+    #  đều nạp hồ sơ qua `employee_in_scope(..., "write")` rồi L1/L2/L3 trong `concurrent_service`.
+    "employee/concurrent_controller.py::create_concurrent": True,
+    "employee/concurrent_controller.py::update_concurrent": True,
+    "employee/concurrent_controller.py::delete_concurrent": True,
     "leave/balance_controller.py::adjust_balance": True,
     "leave/request_controller.py::update_request": True,
     "leave/request_controller.py::delete_request": True,
@@ -828,7 +837,7 @@ def test_b1_anh_chup_cac_chot_pham_vi_trong_route_ghi():
     """
     lech = sorted(k for k, dung in CHOT_TRONG_ROUTE_GHI.items() if not dung)
     assert len(lech) == 9, f"số chốt lệch action vừa đổi: {lech}"
-    assert sum(CHOT_TRONG_ROUTE_GHI.values()) == 45
+    assert sum(CHOT_TRONG_ROUTE_GHI.values()) == 47
 
 
 def test_b2_xuat_excel_di_theo_pham_vi_read_khong_theo_export(world):

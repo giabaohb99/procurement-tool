@@ -72,7 +72,7 @@ class EmployeeWorkHistory(Base, AuditMixin):
     decision_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     note: Mapped[str] = mapped_column(String(500), default="")
 
-    #  Lần ÁP VÀO HỒ SƠ gần nhất (qua `update_employee`/`set_extra_departments`,
+    #  Lần ÁP VÀO HỒ SƠ gần nhất (qua `update_employee`/`upsert_from_work_history`,
     #  phase 02) — NULL = chưa áp. Idempotent (A5): áp lại chỉ cập nhật hai
     #  cột này, không mở đường ghi thứ ba vào hồ sơ.
     applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

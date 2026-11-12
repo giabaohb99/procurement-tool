@@ -75,9 +75,12 @@ Bảy tài khoản trên đều đi qua đúng bốn bước này; mục 4 và 5
    - **Tình trạng làm việc**: Chính thức. **Trạng thái hồ sơ**: Đang hoạt động.
 3. Bấm **Lưu**.
 
-Người phụ trách thu mua cho **nhiều phòng tự mua** thì mở hồ sơ vừa tạo, tab **Chung**, kéo
-xuống thẻ **Kiêm nhiệm**, chọn thêm phòng rồi bấm **Lưu kiêm nhiệm** (nút riêng, không phải
-nút Lưu ở đầu trang). Bậc `dept_proc` tính cả phòng kiêm nhiệm.
+Người phụ trách thu mua cho **nhiều phòng tự mua** thì mở hồ sơ vừa tạo, tab **Kiêm nhiệm**,
+bấm **Thêm kiêm nhiệm**, chọn **Công ty** và **Phòng ban** của phòng tự mua kia, **Từ ngày**, giữ
+công tắc **Tính vào phạm vi quyền** bật rồi bấm **Lưu** (mỗi phòng một dòng; sửa đổi từ
+duoc-CR-755, trước đây là thẻ Kiêm nhiệm ở tab Chung). Bậc `dept_proc` tính cả phòng kiêm nhiệm
+đang hiệu lực và bật công tắc, đúng cặp (phòng, công ty) — chi tiết ở
+`doc/erp/hrm/01-ho-so-nhan-su.md` §7.18.
 
 ### Bước 2 — Tạo tài khoản đăng nhập
 

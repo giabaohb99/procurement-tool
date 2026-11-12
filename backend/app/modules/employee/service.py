@@ -13,7 +13,8 @@ from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
-from . import phone_rules, position_role_service, position_service
+from . import concurrent_transition_service as transition
+from . import department_service, phone_rules, position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
@@ -267,44 +268,38 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
 
 
 def _sync_primary_department(db: Session, obj: Employee, user_id: int, *,
-                             old_primary: int = 0, keep_old: bool = False) -> str:
-    """Giữ `tab_employee_department` khớp với `tab_employee.department_id`.
+                             old_primary: int = 0, old_company: int = 0, keep_old: bool = False) -> str:
+    """Giữ `tab_employee_department` (nay CHỈ dòng phòng CHÍNH) khớp với `tab_employee.department_id`.
 
-    ⚠️ KIÊM NHIỆM (CR-167) có HAI nguồn ghi phòng ban: cửa riêng
-    `PUT /employees/{id}/departments`, và cột `department_id` mà màn hồ sơ, CSV
-    import và seed vẫn ghi thẳng. Không nối hai nguồn thì chúng trôi khỏi nhau —
-    hồ sơ hiện một phòng, phạm vi dữ liệu chạy theo phòng khác, mà không chỗ nào
-    báo.
+    ⚠️ Phòng chính có hai nguồn ghi: màn hồ sơ / CSV import / seed ghi thẳng cột `department_id`, còn bảng
+    `tab_employee_department` do `department_service.set_primary_department` giữ. Không nối hai nguồn thì chúng
+    trôi khỏi nhau — hồ sơ hiện một phòng, phạm vi dữ liệu chạy theo phòng khác.
 
-    Đổi phòng chính thì PHÒNG CŨ (`old_primary`) bị GỠ, trừ khi `keep_old` — người
-    thao tác chọn giữ nó làm kiêm nhiệm (bao-CR-709). Trước đây phòng cũ luôn bị hạ
-    xuống kiêm nhiệm một cách âm thầm, nên người vừa chuyển phòng vẫn thấy phiếu của
-    phòng cũ (NSU012 về nhà máy 31/10 vẫn thấy phiếu Sản xuất - Thu mua). Các phòng
-    kiêm nhiệm KHÁC giữ nguyên. Đổi cả danh sách thì dùng cửa riêng — nó có ba chốt
-    chống vượt quyền, cột này thì không.
+    Đổi phòng chính thì phòng CŨ (`old_primary`) bị GỠ khỏi nhân sự, trừ khi `keep_old` — người thao tác chọn giữ
+    nó làm kiêm nhiệm (bao-CR-709): khi đó tạo một dòng ở `tab_employee_concurrent` (phòng cũ, công ty TRƯỚC lần
+    lưu `old_company`, từ hôm nay). Trước đây phòng cũ luôn bị hạ xuống kiêm nhiệm một cách âm thầm, nên người vừa
+    chuyển phòng vẫn thấy phiếu của phòng cũ (NSU012 về nhà máy 31/10 vẫn thấy phiếu Sản xuất - Thu mua).
 
     Trả về một câu cho nhật ký thao tác (rỗng nếu phòng chính không đổi).
     """
-    from .department_service import set_departments, departments_of
-
-    existing = departments_of(db, obj.id)
     new = obj.department_id or 0
     moved = bool(old_primary) and old_primary != new
-    drop = old_primary if moved and not keep_old else 0
-    if existing and existing[0] == new and drop not in existing:
-        return ""                     # phòng chính không đổi, không có gì để gỡ
-
-    remaining = [x for x in existing if x != new and x != drop]
-    set_departments(db, obj, ([new] if new else []) + remaining, user_id,
-                  primary_department=new or None)
+    if department_service.departments_of(db, obj.id) == ([new] if new else []):
+        return ""                     # bảng đã khớp cột, không có gì để ghi
+    department_service.set_primary_department(db, obj, new, user_id)
     if not moved:
         return ""
     from app.modules.department.model import Department
     old = db.get(Department, old_primary)
     label = old.name if old else str(old_primary)
-    if drop:
-        return f'Đổi phòng chính — gỡ phòng cũ "{label}"'
-    return f'Đổi phòng chính — giữ phòng cũ "{label}" làm kiêm nhiệm'
+    #  Cố ý (điều phối chốt, duoc-CR-755 rà mã N4): đổi pháp nhân KÈM "giữ phòng cũ" vẫn tạo dòng kiêm nhiệm ở công
+    #  ty CŨ ngay sau khi `end_rows_at_company` vừa kết thúc các dòng cũ. Hai lựa chọn là hai câu hỏi khác nhau trên
+    #  hộp thoại: "kết thúc kiêm nhiệm ở công ty cũ" chỉ nói về dòng kiêm nhiệm ĐÃ CÓ; còn người thao tác tick "giữ
+    #  phòng cũ" thì phòng chính cũ chuyển thành kiêm nhiệm (từ hôm nay, ở công ty trước lần lưu). Đừng gộp / bỏ dòng này.
+    if keep_old and transition.create_from_kept_department(db, obj, old_primary, old_company or obj.company_id or 0,
+                                                           user_id):
+        return f'Đổi phòng chính — giữ phòng cũ "{label}" làm kiêm nhiệm'
+    return f'Đổi phòng chính — gỡ phòng cũ "{label}"'
 
 
 def clear_perm_cache_of(db: Session, employee_id: int) -> None:
@@ -315,7 +310,7 @@ def clear_perm_cache_of(db: Session, employee_id: int) -> None:
     của một người mà không xóa cache = thu hồi tầm nhìn chậm một phút, đủ để họ
     kịp mở lại danh sách của pháp nhân cũ.
 
-    `department_service.set_departments` đã làm đúng điều này từ CR-167; đây là
+    `department_service.set_primary_department` đã làm đúng điều này từ CR-167; đây là
     cùng một việc cho cửa còn lại (màn hồ sơ nhân sự). Nhân sự CHƯA CÓ tài khoản
     thì không có gì để xóa — vòng lặp rỗng, không nổ.
     """
@@ -402,15 +397,19 @@ class WriteOutcome:
     left_company: bool = False                         # lần ghi này vừa đưa hồ sơ sang NGHỈ VIỆC
     scope_changed: bool = False                        # (company_id, department_id) đổi → cần xóa cache quyền
     locked_users: list = field(default_factory=list)
+    #  duoc-CR-755: `(id dòng kiêm nhiệm, to_date cũ, to_date mới)` đã kết thúc vì đổi pháp nhân — bản chụp hoàn tác nhập Excel.
+    ended_concurrent: list = field(default_factory=list)
 
 
 def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_id: int, *,
-                         lock_users: bool = True) -> WriteOutcome:
+                         lock_users: bool = True, import_mode: bool = False) -> WriteOutcome:
     """Lõi sửa hồ sơ: kiểm + gán + `flush`. KHÔNG commit/refresh/record/xóa cache — xem
     `create_employee_core`. Lỗi thì ném ra, bên gọi lo rollback (hoặc savepoint).
 
     `lock_users=False`: vẫn báo `left_company` nhưng KHÔNG khóa tài khoản/đá phiên/gọi dịch vụ AI —
-    dành cho chạy thử (dry-run) và hoàn tác lô."""
+    dành cho chạy thử (dry-run) và hoàn tác lô.
+    `import_mode=True` (nhập Excel): đổi pháp nhân mà còn dòng kiêm nhiệm CHƯA BẮT ĐẦU ở công ty cũ thì lỗi 400
+    thay vì xóa (hoàn tác lô không dựng lại được dòng đã xóa)."""
     old_email = (obj.email or "").strip()
     #  bao-CR-400: chụp hai ô "còn làm không" để biết lần lưu này có phải là lúc
     #  người ta nghỉ việc — xem `has_left_company`.
@@ -437,6 +436,9 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
     #  bao-CR-709: cờ điều khiển, không phải cột hồ sơ — bóc ra trước vòng `setattr`.
     keep_old_department = bool(fields.pop("keep_old_department", False))
+    #  duoc-CR-755 (Q4): hai cờ điều khiển của hộp hỏi khi đổi pháp nhân, cũng bóc ra trước vòng `setattr`.
+    end_old_concurrent = fields.pop("end_old_company_concurrent", None) is not False
+    keep_concurrent_ids = frozenset(fields.pop("keep_concurrent_ids", None) or [])
     for key, value in fields.items():
         setattr(obj, key, value)
     if "phone" in fields or "extra_phones" in fields:
@@ -451,19 +453,23 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         #  Đường nhập Excel, áp quá trình công tác, lưu hồ sơ đều đi qua lõi này.
         position_role_service.sync_employee_roles(db, obj, user_id)
 
-    #  ĐỔI PHÁP NHÂN — gỡ khỏi phòng ban của pháp nhân cũ TRƯỚC khi đồng bộ phòng
-    #  chính. Không có nhịp này thì việc đổi pháp nhân bị chính chốt L3 chặn lại
-    #  bởi cái phòng người dùng vừa bỏ; lý lẽ đầy đủ ở
-    #  `department_service.detach_other_company_departments`.
-    dropped_departments: list[str] = []
-    if "company_id" in fields and (obj.company_id or 0) != old_scope[0]:
-        from .department_service import detach_other_company_departments
-        dropped_departments = detach_other_company_departments(db, obj, user_id)
+    #  ĐỔI PHÁP NHÂN (duoc-CR-342, duoc-CR-755): kiêm nhiệm ở công ty CŨ mặc định KẾT THÚC (đến ngày = hôm qua),
+    #  trừ dòng người thao tác chọn giữ; dòng ở công ty khác không đụng. Phòng CHÍNH không tự đổi theo: ô phòng
+    #  ban không đổi mà vẫn là phòng riêng của công ty cũ thì chốt L3 chặn 400 (chọn phòng của công ty mới).
+    #  Gỡ pháp nhân (về 0) không có "công ty mới" để so, nên giữ nguyên mọi dòng kiêm nhiệm.
+    company_changed = "company_id" in fields and bool(obj.company_id) and obj.company_id != old_scope[0]
+    company_change = None
+    if company_changed:
+        if end_old_concurrent:
+            company_change = transition.end_rows_at_company(
+                db, obj, old_scope[0], user_id, keep_ids=keep_concurrent_ids, import_mode=import_mode)
 
     department_note = ""
     if "department_id" in fields:
         department_note = _sync_primary_department(db, obj, user_id, old_primary=old_scope[1],
-                                                   keep_old=keep_old_department)
+                                                   old_company=old_scope[0], keep_old=keep_old_department)
+    if company_changed:
+        department_service.check_primary_belongs(db, obj)   # phòng chính còn là phòng riêng của công ty cũ -> 400
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Quyền thật của tài khoản
     # chỉ gán ở màn "Phân quyền tài khoản" (tab_user_role).
@@ -490,16 +496,16 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         notes.append("Cập nhật lương")      # KHÔNG kèm số — lương không vào nhật ký
     if department_note:
         notes.append(department_note)
-    if dropped_departments:
-        notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
-                     + ", ".join(dropped_departments))
+    if company_change is not None and company_change.note():
+        notes.append(company_change.note())
     if locked_users:
         notes.append(f"Nghỉ việc — khóa {len(locked_users)} tài khoản đăng nhập kèm theo "
                      f"và đăng xuất mọi thiết bị")
     return WriteOutcome(
         obj=obj, notes=notes, left_company=left,
         scope_changed=(obj.company_id or 0, obj.department_id or 0) != old_scope,
-        locked_users=locked_users)
+        locked_users=locked_users,
+        ended_concurrent=list(company_change.ended) if company_change is not None else [])
 
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
@@ -580,7 +586,7 @@ def delete_employee_core(db: Session, eid: int, user_id: int) -> int:
     """Lõi xóa hồ sơ + dọn bảng con. KHÔNG commit/record. Trả số tài khoản đã khóa."""
     from app.modules.labor_contract import service as labor_contract_service
 
-    from . import contact_service, work_history_service
+    from . import concurrent_service, contact_service, work_history_service
 
     obj = get_employee(db, eid)
     #  HĐLĐ đã ký / đã chấm dứt là chứng từ pháp lý → CHẶN 409 (trước `detach_users` để không
@@ -599,6 +605,8 @@ def delete_employee_core(db: Session, eid: int, user_id: int) -> int:
     #  Quá trình công tác (plan 261003-0837) — dọn mọi dòng + tệp QĐ đính kèm
     #  của người này, cùng lý lẽ với hai bảng con ngay trên.
     work_history_service.delete_all_of(db, eid)
+    #  Kiêm nhiệm (duoc-CR-755) — dòng + tệp quyết định, cùng lý lẽ.
+    concurrent_service.delete_all_of(db, eid)
     labor_contract_service.delete_all_of(db, eid)
     #  Kiêm nhiệm phòng ban là bảng con của chính hồ sơ (ai-CR-190: dọn kèm, không đếm làm tham chiếu).
     from .department_model import EmployeeDepartment

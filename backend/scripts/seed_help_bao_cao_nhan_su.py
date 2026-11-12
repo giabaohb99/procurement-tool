@@ -50,6 +50,9 @@ nghỉ bù, ô "Gồm phiếu chờ duyệt", "Loại ngày"; phải đăng nh�
 §15; bài Quỹ phép năm thêm cột "Nghỉ bù cộng thêm"; bài giao quyền thêm dòng khóa 30. Nhãn đối chiếu bằng đọc
 `report/pages/holiday-work-report-page.tsx`, `report/components/holiday-work-report-filters.tsx`,
 `report/config/report-catalog-hr.ts` và `leave/holiday_work_report_service.py` / `_data.py`.
+
+duoc-CR-755 (12/11/2026): bài Điều chuyển & bổ nhiệm ghi rõ chỉ số Kiêm nhiệm đang hiệu lực đếm theo dòng quá trình công
+tác, không theo tab Kiêm nhiệm mới của hồ sơ (`employee/work_move_report_data.concurrent_lines`).
 """
 from help_seed_common import SessionLocal, HelpArticle, _descendants, rebuild_tree, ref, slugify
 
@@ -700,7 +703,7 @@ TREE = {
 <tbody>
 <tr><td><strong>Điều chuyển</strong>, <strong>Bổ nhiệm</strong></td><td>Số lượt điều chuyển, bổ nhiệm trong kỳ</td></tr>
 <tr><td><strong>Số người có biến động</strong></td><td>Số người có ít nhất một dòng trong kỳ (một người chuyển hai lần vẫn đếm một)</td></tr>
-<tr><td><strong>Kiêm nhiệm đang hiệu lực</strong></td><td>Số kiêm nhiệm còn hiệu lực tại cuối kỳ (hoặc hôm nay nếu kỳ chưa hết). Chỉ có ở dòng Tổng</td></tr>
+<tr><td><strong>Kiêm nhiệm đang hiệu lực</strong></td><td>Số kiêm nhiệm còn hiệu lực tại cuối kỳ (hoặc hôm nay nếu kỳ chưa hết). Chỉ có ở dòng Tổng. Đếm theo các dòng loại Kiêm nhiệm ở tab <strong>Quá trình công tác</strong> của hồ sơ; kiêm nhiệm chỉ khai ở tab <strong>Kiêm nhiệm</strong> (không có dòng quá trình công tác) không vào số này</td></tr>
 <tr><td>Tuyển dụng, Kiêm nhiệm, Miễn nhiệm, Thôi việc, Sự kiện khác</td><td>Số lượt của các loại còn lại</td></tr>
 <tr><td>Kiêm nhiệm hết trong 30 ngày</td><td>Kiêm nhiệm sẽ hết hạn trong 30 ngày tới, để chuẩn bị quyết định gia hạn hay thôi. Chỉ có ở dòng Tổng</td></tr>
 <tr><td>Số tháng từ lúc vào làm tới lần bổ nhiệm</td><td>Trung bình một người vào làm bao lâu thì được bổ nhiệm. Bỏ qua người thiếu ngày vào làm</td></tr>

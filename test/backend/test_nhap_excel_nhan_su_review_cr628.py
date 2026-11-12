@@ -292,23 +292,27 @@ def test_ha_truy_van_do_lo_apply_la_doc_co_khoa_chia_se_tren_mysql(db):
     assert "SHARE MODE" in sql.upper() or "FOR SHARE" in sql.upper()
 
 
-def test_hb_hoan_tac_khoi_phuc_dung_tap_phong_kiem_nhiem(db, seed, hr):
+def test_hb_hoan_tac_khoi_phuc_phong_chinh_va_giu_nguyen_kiem_nhiem(db, seed, hr):
+    """duoc-CR-755: bảng phòng ban chỉ còn phòng chính; kiêm nhiệm (bảng riêng) không bị nhập / hoàn tác đụng tới."""
+    from app.modules.employee.concurrent_model import EmployeeConcurrent
     from app.modules.employee.department_model import EmployeeDepartment
     from app.modules.employee.department_service import departments_of
     d3, d4 = _mk_depts(db, seed)
     db.add_all([EmployeeDepartment(employee_id=seed.emp_nstm_id, department_id=seed.dept_id, is_primary=True),
-                EmployeeDepartment(employee_id=seed.emp_nstm_id, department_id=d4, is_primary=False)])
+                EmployeeConcurrent(employee_id=seed.emp_nstm_id, company_id=seed.company_id, department_id=d4)])
     db.commit()
     b = run_import(db, [{"Mã NV *": "DEMONV", "Phòng ban (mã)": "DEPT03"}], hr)
     assert b.error_count == 0
-    #  bao-CR-709: đổi phòng chính mặc định GỠ phòng cũ (trước đây hạ xuống kiêm nhiệm); kiêm nhiệm khác giữ nguyên.
-    assert set(departments_of(db, seed.emp_nstm_id)) == {d3, d4}
+    #  bao-CR-709: đổi phòng chính mặc định GỠ phòng cũ; dòng kiêm nhiệm giữ nguyên.
+    assert departments_of(db, seed.emp_nstm_id) == [d3]
     assert revert(db, b, hr)["ok"]
     db.expire_all()
     rows = {(r.department_id, bool(r.is_primary)) for r in
             db.query(EmployeeDepartment).filter(EmployeeDepartment.employee_id == seed.emp_nstm_id)}
-    assert rows == {(seed.dept_id, True), (d4, False)}
+    assert rows == {(seed.dept_id, True)}
     assert emp(db, "DEMONV").department_id == seed.dept_id
+    assert [(r.department_id, r.to_date) for r in db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == seed.emp_nstm_id)] == [(d4, None)]
 
 
 def test_hb_tap_phong_ban_da_doi_sau_import_thi_tu_choi(db, seed, hr):

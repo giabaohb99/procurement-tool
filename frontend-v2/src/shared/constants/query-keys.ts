@@ -213,6 +213,13 @@ export const queryKeys = {
     monthlyReminders: (month: string) => ['hr', 'monthly-reminders', month] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     /**
+     * Dòng KIÊM NHIỆM của MỘT hồ sơ (duoc-CR-755) — tab Kiêm nhiệm, hộp đổi pháp nhân, câu hỏi Áp quá trình
+     * công tác. Nằm DƯỚI khóa hồ sơ nên `hr.all` / `employee(id)` quét luôn.
+     */
+    employeeConcurrents: (id: number) => ['hr', 'employees', id, 'concurrents'] as const,
+    /** Tệp QĐ của MỘT dòng kiêm nhiệm (entity `employee_concurrent`) — tách khỏi `workHistoryFiles` vì id hai bảng trùng nhau. */
+    concurrentFiles: (concurrentId: number) => ['hr', 'concurrents', concurrentId, 'files'] as const,
+    /**
      * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab "Quá trình
      * công tác". Nằm DƯỚI khóa hồ sơ nên `invalidateQueries({ queryKey: hr.all })`
      * quét luôn.

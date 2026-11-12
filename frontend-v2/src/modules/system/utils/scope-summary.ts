@@ -1,3 +1,4 @@
+import { CONCURRENT_ACTIVE } from '@/modules/hr/types/employee-concurrent'
 import type { PermissionMeta, RolePermissionRow } from '@/modules/hr/types/role'
 import type { UserScope } from '@/modules/hr/types/user-account'
 
@@ -253,4 +254,32 @@ export function findSelfExcludedDepartments(
   const own = new Set(ownDepartments.map((name) => name.trim()).filter(Boolean))
   if (own.size === 0) return []
   return excluded.filter((name) => own.has(name.trim()))
+}
+
+/** Phần của một dòng kiêm nhiệm mà câu "kiêm nhiệm mở thêm phạm vi" cần (khớp `EmployeeConcurrent` của phân hệ HR). */
+export interface ScopeConcurrentInput {
+  /** Mã dẫn xuất `ConcurrentStatus`: 2 = Đang hiệu lực. */
+  status: number
+  counts_scope: boolean
+  department_name: string
+  company_name: string
+}
+
+/**
+ * Các cặp (phòng, công ty) mà kiêm nhiệm đang MỞ THÊM phạm vi cho chủ tài khoản (duoc-CR-755), dạng
+ * `Phòng X (Công ty B)`.
+ *
+ * Chỉ dòng ĐANG HIỆU LỰC **và** bật công tắc "Tính vào phạm vi quyền" mới có mặt: dòng tắt công tắc chỉ là ghi nhận,
+ * dòng sắp tới / đã hết thì chưa / không còn mở gì — liệt kê chúng là nói sai điều tài khoản thấy hôm nay.
+ * Bỏ trùng, sắp theo chữ; thiếu tên công ty thì chỉ in tên phòng.
+ */
+export function listScopeConcurrentPairs(rows: ScopeConcurrentInput[]): string[] {
+  const pairs = new Set<string>()
+  for (const row of rows) {
+    if (row.status !== CONCURRENT_ACTIVE || !row.counts_scope) continue
+    const department = row.department_name.trim() || 'Phòng không rõ'
+    const company = row.company_name.trim()
+    pairs.add(company ? `${department} (${company})` : department)
+  }
+  return [...pairs].sort((a, b) => a.localeCompare(b, 'vi'))
 }

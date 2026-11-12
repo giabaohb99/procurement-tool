@@ -14,6 +14,9 @@ paths:
   - "test/backend/*cr694*"
   - "backend/app/modules/labor_contract/payroll_report*"
   - "backend/app/modules/labor_contract/salary_sync.py"
+  - "backend/app/core/hr_concurrent_codes.py"
+  - "test/backend/*kiem_nhiem*"
+  - "test/backend/*cr755*"
 ---
 # Hồ sơ nhân sự mở rộng và danh mục Chức vụ
 
@@ -159,7 +162,8 @@ thì chỉ `hr_profile`. Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.7.
 Bảng `tab_employee_work_history` lưu lịch sử công tác ghi tay theo người (bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc).
 Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.11. Bốn bẫy, một quyết định, một lưu ý giờ VN:
 
-1. **Áp hồ sơ chỉ đi qua `update_employee` / `set_extra_departments` — cấm ghi thẳng cột.**
+1. **Áp hồ sơ chỉ đi qua `update_employee` (nhóm chính) / `concurrent_transition_service.upsert_from_work_history`
+   (loại Kiêm nhiệm, duoc-CR-755) — cấm ghi thẳng cột.**
    Thứ tự THẬT trong `update_employee`: gán ô (`status`/`resign_date`…) → `has_left_company`
    phát hiện lần lưu này vừa chuyển sang nghỉ việc → `lock_linked_users` khóa tài khoản + đá
    phiên — cả ba trong CÙNG một giao dịch với dòng lịch sử. Không gọi `lock_linked_users` tách
@@ -182,14 +186,14 @@ Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.11. Bốn bẫy, một quyết
 5. **API: SÁU loại sự kiện áp được.** NĂM loại nhóm chính — HIRE · TRANSFER · APPOINT · DISMISS ·
    RESIGN (mã 1/2/3/5/6) — đổi hồ sơ qua `update_employee` (RESIGN qua nhánh `has_left_company`,
    không đổi company/department/position). CỘNG loại CONCURRENT (mã 4, kiêm nhiệm) — áp qua
-   `set_extra_departments` vào `tab_employee_department` trực tiếp, KHÔNG đổi chức vụ chính (khác
-   hàm ghi, không phải "không áp"). Dòng tương lai (`from_date` > hôm nay) → nút Áp tắt. Chỉ loại
-   OTHER/**Khác** (mã 9) là không áp được vào đâu — ghi chú thuần.
+   `upsert_from_work_history` thành MỘT dòng `tab_employee_concurrent` (khóa `work_history_id`, Áp lại = cập nhật dòng đó),
+   KHÔNG đổi chức vụ chính. Một chiều: sửa ở tab Kiêm nhiệm không ghi ngược; xóa dòng QTCT chỉ đặt `work_history_id = 0`.
+   Dòng tương lai (`from_date` > hôm nay) → nút Áp tắt. Chỉ loại OTHER/**Khác** (mã 9) là không áp được vào đâu — ghi chú thuần.
 
 6. **"Hôm nay" dùng `app.core.vn_time.vn_today()`, KHÔNG `date.today()`.** Container chạy UTC;
    `date.today()` đọc ngày UTC, lệch với ngày Việt Nam từ 00:00-06:59 giờ VN (review backend
    03/10/2026, finding H2). Mọi chốt theo ngày của phân hệ này (`apply_gate`, `compute_can_apply`,
-   gỡ kiêm nhiệm hết hạn) phải qua `vn_today()` — thêm chốt ngày mới thì nhớ đi qua đây, đừng chép
+   hiệu lực kiêm nhiệm `concurrent_service.effective_filter`) phải qua `vn_today()` — thêm chốt ngày mới thì nhớ đi qua đây, đừng chép
    tay `datetime.utcnow() + timedelta(hours=7)` lần nữa.
 
 Test: `test/backend/*qua_trinh*` (7 tệp) + `test/backend/*ho_so_nhan_su_dot1.py`; `vitest` trên
@@ -226,9 +230,11 @@ Thiết kế: `plans/261019-0935-nhap-excel-nhan-su-cr628/`; khung hook: `doc/er
     tố) và GIỮ khóa tới commit cuối lô (≤ 2000 dòng) → người khác tạo nhân sự bằng tay bị chờ trong lúc lô chạy.
     Chạy thử KHÔNG khóa (mã xem trước chỉ để tham khảo, có thể khác mã thật). Muốn nhẹ hơn: điền sẵn Mã NV trong tệp.
 11. Ghi thật từ bản chạy thử chỉ MỘT lần (409 nếu đã có lô APPLY cùng tệp còn sống).
-12. **Lượt 3:** bản chụp của hồ sơ SỬA có thêm `_depts` = `[tập phòng ban trước, sau]` (`[[id, is_primary], …]`); hoàn tác
-    từ chối nếu tập hiện tại ≠ **sau** và khôi phục ĐÚNG tập cũ bằng `set_departments` (phòng bị hạ xuống kiêm nhiệm khi
-    đổi phòng chính / bị gỡ khi đổi pháp nhân sẽ không còn sót → không mở rộng phạm vi dữ liệu). Hồ sơ MỚI có `_stamp` =
+12. **Lượt 3 (sửa ở duoc-CR-755):** bản chụp của hồ sơ SỬA có `_depts` = `[tập phòng ban trước, sau]` nay CHỈ còn phòng
+    CHÍNH (kiêm nhiệm ở `tab_employee_concurrent`); khôi phục bằng `set_primary_department`. Đổi pháp nhân qua tệp kết thúc
+    kiêm nhiệm ở công ty cũ → bản chụp `_concurrent_ended` = `[[id, to_date cũ, to_date mới], …]`, hoàn tác bằng
+    `restore_ended` (L2 theo cặp + chồng giai đoạn; `to_date` hiện tại lệch bản chụp → từ chối cả lượt). Lô cũ còn phòng phụ
+    trong `_depts` bị từ chối hoàn tác. Còn dòng CHƯA BẮT ĐẦU ở công ty cũ → lỗi dòng (không xóa qua tệp). Hồ sơ MỚI có `_stamp` =
     `updated_at` lúc nhập; sau đó mà `updated_at` khác dấu này (không có độ trễ) thì không xóa. Hoàn tác đổi phòng/pháp
     nhân phải qua cùng chốt L1 (không tự đổi phòng mình) và L2 (phòng cũ phải trong tầm người hoàn tác). Hoàn tác khóa lại
     tài khoản nếu khôi phục về **nghỉ việc** (`lock_users=True`) và ghi nhật ký từng tài khoản.
@@ -328,3 +334,45 @@ không trùng số chính). Không thuộc nhóm nhạy cảm (như `phone`).
   `WARN_DAYS` / `DANGER_DAYS` — chúng chỉ còn là mặc định). Mốc kỷ niệm: `monthly_reminders_service.anniversary_years()`.
 - Sơ đồ tổ chức: khóa `org_chart_visible_to_all` TẮT → `/api/org-chart` 403 trừ người có `scope_condition(Employee,
   "employee", ...) is None` (không giới hạn công ty / phòng / người).
+
+
+### KIÊM NHIỆM — tab riêng, khác công ty được (duoc-CR-755, 12/11/2026)
+
+Bảng `tab_employee_concurrent` (migration `kn755a`); `tab_employee_department` từ nay CHỈ còn dòng phòng CHÍNH. Chi tiết +
+sáu quyết định Q1–Q6: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.18; bảng đường thấy / không thấy cặp:
+`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` §4c. Mã: `employee/concurrent_*.py`.
+
+1. **Đường ghi duy nhất: `concurrent_service` (tab) và `concurrent_transition_service` (đổi phòng chính giữ phòng cũ, đổi
+   pháp nhân, Áp QTCT loại 4, hoàn tác lô Excel).** Hai đường đều qua L1 (không tự sửa của mình, KỂ CẢ quản trị) · L2 theo
+   CẶP (`department_service.pair_in_write_scope` / `block_out_of_scope_pair`, sửa cặp thì đo cả cặp cũ) · L3
+   (`check_concurrent_target`: phòng phục vụ công ty). `set_departments`, `set_extra_departments`, `PUT /{eid}/departments`
+   ĐÃ BỎ — đừng dựng lại. Bảng phòng chính chỉ ghi qua `set_primary_department`.
+   ⚠️ **Đổi PHÒNG CHÍNH cũng đo theo CẶP** (phòng mới, công ty ĐÍCH của hồ sơ) qua
+   `block_out_of_scope_primary_department` — ở PATCH, Áp điều chuyển, nhập Excel, hoàn tác lô. Đo theo id phòng trần là
+   lỗ (rà mã C1): cặp kiêm nhiệm mở bậc `dept` sang công ty khác, nên người đó ghi được hồ sơ công ty B rồi dời họ vào
+   phòng dùng chung ở cặp mình không phủ. CR nào mở phạm vi theo chiều mới thì soát lại mọi chốt L2 cũ chưa biết chiều đó.
+2. **Sửa TẠI CHỖ, cấm xóa-chèn lại**: tệp QĐ (`FileLink` entity `employee_concurrent`) gắn theo id dòng. Kết thúc dòng = đặt
+   `to_date`; chỉ dòng CHƯA BẮT ĐẦU mới bị xóa (kèm tệp, cần `employee_sensitive.read` nếu có tệp).
+3. **Hồ sơ quyền**: chỉ dòng hiệu lực + `counts_scope`. Cùng công ty chính (hoặc công ty dòng = 0) → `dept_ids`; khác công ty
+   → `concurrent_pairs` (KHÔNG nhét vào `dept_ids`: mọi đường không ràng công ty sẽ lộ dữ liệu công ty khác). `company_id` vẫn
+   MỘT số. Nhánh mới đọc theo phòng phải ràng `AND công ty == c` qua `_pair_conds`; không ràng được (entity không có cột công
+   ty) thì để thiếu quyền, đừng lùi về chỉ so phòng. Đọc dòng bằng MỘT truy vấn (có bài đếm truy vấn).
+4. **`include_concurrent` (Q1) chỉ ĐỌC và mặc định TẮT.** Bật tường minh ở đường đọc hồ sơ MỘT người (`_employee_in_scope`,
+   `work_history_access.employee_in_scope`, `check_file_read_scope`). Cấm bật ở danh sách `/api/employees`, xuất tệp, báo cáo,
+   truy vấn gốc sơ đồ, đường ghi — bật mặc định là mọi màn quân số tự kéo người công ty khác vào phòng này.
+5. **Báo cáo không đếm trùng**: báo cáo nhân sự đọc `Employee.company_id` / `department_id`, đừng JOIN bảng kiêm nhiệm vào
+   quân số. Người kiêm nhiệm hiện ở phòng B chỉ qua `GET /api/employee-concurrents` (trang phòng ban) và khóa `concurrents`
+   của `/api/org-chart`, luôn kèm nhãn **Kiêm nhiệm**.
+6. **Hiệu lực = `concurrent_service.effective_filter(vn_today())`** — MỘT định nghĩa cho hồ sơ quyền, danh sách, `/me`, AI.
+   Trạng thái Sắp tới / Đang hiệu lực / Đã hết là mã DẪN XUẤT (`hr_concurrent_codes.ConcurrentStatus`), không lưu cột, không
+   tác vụ nền. Thêm / sửa / xóa dòng phải `clear_perm_cache_of(db, employee_id)` (cache 60 giây theo tiến trình).
+7. **Chức vụ kiêm nhiệm KHÔNG cấp vai trò** (Q2): `sync_employee_roles` chỉ đọc chức vụ CHÍNH. Chức vụ đang được dòng kiêm
+   nhiệm dùng thì chặn xóa (`position_controller` sổ tham chiếu).
+8. **Đổi pháp nhân** chỉ đụng dòng có `company_id == công ty cũ` (lọc cứng); PATCH hồ sơ nhận `end_old_company_concurrent` +
+   `keep_concurrent_ids` (trường điều khiển, không phải cột). Nhập Excel không xóa dòng chưa bắt đầu (lỗi dòng).
+9. Chưa làm / đã biết: `GET /api/employees/{eid}` vốn không xét phạm vi (c9 chờ quyết); loại trừ đích danh không áp cho
+   entity `employee`; báo cáo Điều chuyển & bổ nhiệm đếm kiêm nhiệm từ QUÁ TRÌNH CÔNG TÁC, không từ bảng này.
+
+Test: `test/backend/test_kiem_nhiem_*` (6 tệp, kể cả `test_kiem_nhiem_phong_ban.py`), `test_doi_phap_nhan_nhan_su.py`,
+`test_me_payload_vai_tro_kiem_nhiem.py`; đụng `scoping.py` thì chạy thêm `test_pham_vi_*` từng tệp
+(`test_pham_vi_cap_bac_ma_tran.py` chạy riêng). vitest `src/modules/hr`.

@@ -4,8 +4,9 @@ import { useAuth } from '@/core/auth/use-auth'
 import { useDeleteEmployeeWorkHistory, useEmployeeWorkHistory } from '../hooks/use-employee-work-history'
 import { useEmployeeWorkHistoryEditorDialog } from '../hooks/use-employee-work-history-editor-dialog'
 import { useBusyIds, useEmployeeWorkHistoryRowApply } from '../hooks/use-employee-work-history-row-apply'
-import { useEmployeeDepartments } from '../hooks/use-employees'
+import { useEmployeeConcurrents } from '../hooks/use-employee-concurrents'
 import type { EmployeeDetail } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { EmployeeWorkHistoryFilesDialog } from './employee-work-history-files-dialog'
 import { EmployeeWorkHistoryFormDialog } from './employee-work-history-form-dialog'
@@ -15,6 +16,9 @@ import { EmployeeWorkHistoryResignConfirmDialog } from './employee-work-history-
 interface EmployeeTabWorkHistoryProps {
   employee: EmployeeDetail
 }
+
+/** Mảng rỗng CỐ ĐỊNH — tránh mảng mới mỗi lượt vẽ khi chưa tải xong danh sách kiêm nhiệm. */
+const EMPTY_CONCURRENTS: EmployeeConcurrent[] = []
 
 /** Khớp `WorkEventType.HIRE` — loại điền sẵn của nút "Tạo dòng đầu từ hồ sơ". */
 const HIRE_TYPE = 1
@@ -38,7 +42,7 @@ const HIRE_TYPE = 1
 export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps) {
   const { user } = useAuth()
   const { data, isLoading, isError } = useEmployeeWorkHistory(employee.id)
-  const { data: departments } = useEmployeeDepartments(employee.id)
+  const { data: concurrentData } = useEmployeeConcurrents(employee.id)
   const deleteMutation = useDeleteEmployeeWorkHistory(employee.id)
   const deleting = useBusyIds()
 
@@ -51,13 +55,13 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
   const items = data?.items ?? []
   const canEdit = data?.can_edit ?? false
   const canOpenFiles = data?.can_open_files ?? false
-  const extraDeptIds = departments?.extra_department_ids ?? []
+  const concurrents = concurrentData?.items ?? EMPTY_CONCURRENTS
   //  Chỉ đúng "hồ sơ của chính bạn" khi id người đang đăng nhập khớp hồ sơ
   //  đang xem — `canEdit=false` còn xảy ra khi người xem chỉ thiếu quyền sửa
   //  hồ sơ CỦA NGƯỜI KHÁC, lúc đó câu "của chính bạn" là sai (Low FE).
   const isOwnProfile = Boolean(user?.employee_id) && user?.employee_id === employee.id
 
-  const rowApply = useEmployeeWorkHistoryRowApply(employee.id, employee, extraDeptIds, items)
+  const rowApply = useEmployeeWorkHistoryRowApply(employee.id, employee, concurrents, items)
 
   const actions = canEdit
     ? {
@@ -110,7 +114,7 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
         employee={employee}
         row={editor.editRow}
         allRows={items}
-        extraDeptIds={extraDeptIds}
+        concurrents={concurrents}
         canOpenFiles={canOpenFiles}
         seed={editor.seed}
         requireDecisionNo={editor.requireDecisionNo}

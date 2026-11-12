@@ -7,6 +7,7 @@ import {
   findSelfExcludedDepartments,
   groupEntitiesByScope,
   joinLabels,
+  listScopeConcurrentPairs,
   summarizeScopeLimits,
 } from './scope-summary'
 
@@ -216,5 +217,37 @@ describe('findSelfExcludedDepartments', () => {
 
   it('tolerates stray whitespace on either side', () => {
     expect(findSelfExcludedDepartments([' Nhà máy '], ['Nhà máy'])).toEqual([' Nhà máy '])
+  })
+})
+
+describe('listScopeConcurrentPairs', () => {
+  const row = (over: Partial<Parameters<typeof listScopeConcurrentPairs>[0][number]> = {}) => ({
+    status: 2,
+    counts_scope: true,
+    department_name: 'Phòng Kế toán',
+    company_name: 'Công ty B',
+    ...over,
+  })
+
+  it('lists only rows in effect AND counting toward scope, as "Phòng X (Công ty B)"', () => {
+    expect(
+      listScopeConcurrentPairs([
+        row(),
+        row({ department_name: 'Phòng Nhân sự', company_name: 'Công ty C' }),
+        row({ department_name: 'Tắt công tắc', counts_scope: false }),
+        row({ department_name: 'Sắp tới', status: 1 }),
+        row({ department_name: 'Đã hết', status: 3 }),
+      ]),
+    ).toEqual(['Phòng Kế toán (Công ty B)', 'Phòng Nhân sự (Công ty C)'])
+  })
+
+  it('drops duplicates and survives empty names without printing "undefined" or empty brackets', () => {
+    expect(listScopeConcurrentPairs([row(), row()])).toEqual(['Phòng Kế toán (Công ty B)'])
+    expect(listScopeConcurrentPairs([row({ company_name: '  ' })])).toEqual(['Phòng Kế toán'])
+    expect(listScopeConcurrentPairs([row({ department_name: '', company_name: '' })])).toEqual(['Phòng không rõ'])
+  })
+
+  it('returns an empty list for no rows', () => {
+    expect(listScopeConcurrentPairs([])).toEqual([])
   })
 })

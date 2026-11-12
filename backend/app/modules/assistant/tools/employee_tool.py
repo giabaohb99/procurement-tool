@@ -11,7 +11,7 @@ nhà và số tài khoản ngân hàng. Ba lớp chặn, cả ba đều cần:
 2. **`apply_scope`** — người chỉ được khai phạm vi phòng ban thì chỉ thấy phòng
    mình, đúng như màn Nhân sự.
 3. **Danh sách trường TRẮNG** — chỉ trả đúng 13 trường danh bạ liệt kê ở
-   `_OUT_FIELDS` (+ `extra_phones`, dựng riêng), và vẫn chạy qua
+   `_OUT_FIELDS` (+ `extra_phones`, `concurrent_roles`, dựng riêng), và vẫn chạy qua
    `sensitive.mask_many` một lượt nữa. Bộ 15 trường nhạy cảm khai ở
    `modules/employee/sensitive.py` **không** nằm trong danh sách trắng, nên lượt
    che đó hôm nay là vô hiệu — giữ nó làm chốt cho ngày ai đó thêm một trường
@@ -86,7 +86,8 @@ _DESC = (
     "Tra DANH BẠ NHÂN SỰ: họ tên, mã nhân viên, chức vụ, cấp bậc, phòng ban, công ty, email "
     "và điện thoại công việc (phone = số chính, phone_label = nhãn của nó; extra_phones = các "
     "số khác, mỗi số kèm nhãn như Công việc / Zalo), người quản lý trực tiếp, tình trạng làm "
-    "việc. Gọi khi người "
+    "việc, concurrent_roles = các phòng đang KIÊM NHIỆM (dạng 'Phòng X — Công ty B (Chức vụ)', có thể ở "
+    "công ty khác; rỗng = không kiêm nhiệm). Gọi khi người "
     "dùng hỏi 'anh/chị X làm ở phòng nào', 'ai là quản lý trực tiếp của tôi', 'cho xin email "
     "của ...', 'phòng Kế toán có những ai'. CHỈ trả thông tin liên hệ công việc — KHÔNG có "
     "ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng hay lương; ai hỏi những thứ đó thì "
@@ -164,6 +165,13 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     rows = q.order_by(Employee.full_name).limit(limit).all()
 
     items = [_dump(r) for r in rows]
+    #  duoc-CR-755: kiêm nhiệm ĐANG HIỆU LỰC của đúng những người đã nằm trong kết quả (đã qua `apply_scope`) — một
+    #  truy vấn cho cả lô. Không đổi bộ lọc: người kiêm nhiệm ở công ty khác vẫn chỉ tra được khi hồ sơ của họ
+    #  nằm trong phạm vi xem như trước.
+    from app.modules.employee.concurrent_members_service import effective_roles_of
+    roles = effective_roles_of(ctx.db, {r.id for r in rows})
+    for item in items:
+        item["concurrent_roles"] = [x["text"] for x in roles.get(item["id"], [])]
     #  Chốt dự phòng — xem chú thích đầu tệp. Hôm nay không che gì vì danh sách
     #  trắng đã loại hết trường nhạy cảm.
     mask_many(items, ctx.profile)

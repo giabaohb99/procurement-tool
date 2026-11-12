@@ -2,8 +2,9 @@ import { useState } from 'react'
 
 import { useEmployeeWorkHistory } from '../hooks/use-employee-work-history'
 import { useEmployeeWorkHistoryEditorDialog } from '../hooks/use-employee-work-history-editor-dialog'
-import { useEmployeeDepartments } from '../hooks/use-employees'
+import { useEmployeeConcurrents } from '../hooks/use-employee-concurrents'
 import type { EmployeeDetail } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { APPOINT_TYPE } from '../utils/employee-work-history-apply'
 import { EmployeeWorkHistoryDecisionSection } from './employee-work-history-decision-section'
@@ -13,6 +14,9 @@ import { EmployeeWorkHistoryFormDialog } from './employee-work-history-form-dial
 interface EmployeeTabWorkDecisionsProps {
   employee: EmployeeDetail
 }
+
+/** Mảng rỗng CỐ ĐỊNH — tránh mảng mới mỗi lượt vẽ khi chưa tải xong danh sách kiêm nhiệm. */
+const EMPTY_CONCURRENTS: EmployeeConcurrent[] = []
 
 /**
  * Tab "Quyết định bổ nhiệm" ở hồ sơ nhân sự — TÁCH từ tab gộp cũ "Quá trình
@@ -35,14 +39,14 @@ interface EmployeeTabWorkDecisionsProps {
  */
 export function EmployeeTabWorkDecisions({ employee }: EmployeeTabWorkDecisionsProps) {
   const { data, isLoading, isError } = useEmployeeWorkHistory(employee.id)
-  const { data: departments } = useEmployeeDepartments(employee.id)
+  const { data: concurrentData } = useEmployeeConcurrents(employee.id)
   const [filesRow, setFilesRow] = useState<EmployeeWorkHistory | null>(null)
   const editor = useEmployeeWorkHistoryEditorDialog()
 
   const items = data?.items ?? []
   const canEdit = data?.can_edit ?? false
   const canOpenFiles = data?.can_open_files ?? false
-  const extraDeptIds = departments?.extra_department_ids ?? []
+  const concurrents = concurrentData?.items ?? EMPTY_CONCURRENTS
 
   function openAddDecision() {
     editor.openCreate({ event_type: APPOINT_TYPE }, { requireDecisionNo: true, createTitle: 'Thêm quyết định bổ nhiệm' })
@@ -67,7 +71,7 @@ export function EmployeeTabWorkDecisions({ employee }: EmployeeTabWorkDecisionsP
         employee={employee}
         row={editor.editRow}
         allRows={items}
-        extraDeptIds={extraDeptIds}
+        concurrents={concurrents}
         canOpenFiles={canOpenFiles}
         seed={editor.seed}
         requireDecisionNo={editor.requireDecisionNo}

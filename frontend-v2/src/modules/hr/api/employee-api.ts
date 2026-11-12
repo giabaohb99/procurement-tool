@@ -92,22 +92,13 @@ export const employeeApi = {
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
   /**
-   * KIÊM NHIỆM — những phòng người này phụ trách THÊM, ngoài phòng chính.
-   *
-   * Cửa RIÊNG chứ không nhét vào `update`: đổi phòng ban là đổi PHẠM VI DỮ LIỆU
-   * của người đó, nên backend gác nó bằng ba chốt chống vượt quyền mà cột
-   * `department_id` thường không có (xem `employee/department_service.py`).
+   * Phòng chính + phòng kiêm nhiệm CÙNG công ty chính còn hiệu lực — CHỈ ĐỌC (hộp Phạm vi của màn Phân quyền dùng).
+   * Ghi kiêm nhiệm đi `employee-concurrent-api.ts` (duoc-CR-755); `PUT /departments` đã gỡ ở backend.
    */
   getDepartments: (id: number) =>
     apiGet<{ primary_department_id: number; extra_department_ids: number[] }>(
       `${BASE_URL}/${id}/departments`,
     ),
-
-  /** Chỉ đặt phòng KIÊM NHIỆM. Phòng chính đổi ở ô "Phòng ban" của hồ sơ. */
-  setDepartments: (id: number, extraDepartmentIds: number[]) =>
-    httpClient.put(`${BASE_URL}/${id}/departments`, {
-      extra_department_ids: extraDepartmentIds,
-    }),
 
   /**
    * Ảnh lưu vào TÀI KHOẢN đăng nhập của nhân sự (`tab_user.avatar`), cùng chỗ

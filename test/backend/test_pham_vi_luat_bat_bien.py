@@ -277,6 +277,15 @@ BB4_CONTROLLER_MIEN_TRU = {
                                            "`work_history_access.employee_in_scope` → `get_scoped(Employee, "
                                            "'employee', …)` (404 khi ngoài phạm vi); `/me/work-history` "
                                            "chỉ đọc hồ sơ của chính người gọi qua `user.employee_id`",
+    "employee/concurrent_controller.py": "duoc-CR-755: mọi đường `/{eid}/concurrents*` gọi "
+                                         "`work_history_access.employee_in_scope` → `get_scoped(Employee, "
+                                         "'employee', …)` (404 khi ngoài phạm vi), rồi ba chốt L1/L2/L3 "
+                                         "ở `concurrent_service` (L2 đo theo cặp phòng + công ty)",
+    "employee/concurrent_members_controller.py": "duoc-CR-755 (giai đoạn 05): bảng \"Kiêm nhiệm tại phòng này\" gác "
+                                                 "require('employee', 'read'); phạm vi áp ở `concurrent_members_service."
+                                                 "list_visible_members` bằng `concurrent_row_scope_condition` (phạm vi "
+                                                 "`employee.read` của người xem áp lên cặp phòng + công ty của từng dòng) "
+                                                 "và `apply_scope(..., include_concurrent=True)` cho cờ `can_open`",
     "employee/position_role_controller.py": "duoc-CR-653 (thêm 21/10/2026, bao-CR-651): vai trò mặc định theo "
                                             "chức vụ — cấu hình chung của hệ trên `job_position` (PUBLIC), "
                                             "không có dữ liệu thuộc công ty / phòng / người nào để lọc; cổng là "

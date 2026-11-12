@@ -9,6 +9,7 @@ import {
   Hash,
   History,
   IdCard,
+  Layers,
   Loader2,
   Phone,
   Printer,
@@ -16,7 +17,7 @@ import {
   UserCheck,
   UserCog,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -45,9 +46,10 @@ import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { EmployeeAccountCard } from '../components/employee-account-card'
 import { EmployeePendingChangeRequestBanner } from '../components/employee-pending-change-request-banner'
 import { EmployeePendingWorkConfirmDialog } from '../components/employee-pending-work-confirm-dialog'
-import { EmployeeDepartmentCard } from '../components/employee-department-card'
+import { EmployeeCompanyChangeConcurrentDialog } from '../components/employee-company-change-concurrent-dialog'
 import { EmployeeKeepOldDepartmentDialog } from '../components/employee-keep-old-department-dialog'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
+import { EmployeeTabConcurrent } from '../components/employee-tab-concurrent'
 import { EmployeeTabContact } from '../components/employee-tab-contact'
 import { EmployeeTabDocuments } from '../components/employee-tab-documents'
 import { EmployeeTabGeneral } from '../components/employee-tab-general'
@@ -57,29 +59,23 @@ import { EmployeeWorkScheduleCard } from '../components/employee-work-schedule-c
 import { EmployeeTabWorkDecisions } from '../components/employee-tab-work-decisions'
 import { EmployeeTabWorkHistory } from '../components/employee-tab-work-history'
 import { useCanReadSensitive } from '../hooks/use-employee-profile'
+import { useEmployeeProfileSaveFlow } from '../hooks/use-employee-profile-save-flow'
+import { useCompanies } from '../hooks/use-companies'
 import { useDepartments } from '../hooks/use-departments'
 import {
   useDeleteEmployee,
   useEmployee,
   useEmployees,
-  useSaveEmployee,
   useUploadEmployeeAvatar,
 } from '../hooks/use-employees'
 import {
   EMPTY_EMPLOYEE_PROFILE_FORM,
   employeeProfileFormValues,
   employeeProfileSchema,
-  pickWritableProfile,
   type EmployeeProfileFormValues,
 } from '../schemas/employee-schema'
 import { employeeInitials, employeeStatusLabel, type EmployeeDetail } from '../types/employee'
 import { firstInvalidTab } from '../utils/profile-field-tab'
-
-/** Lần lưu đang chờ xác nhận nghỉ việc — kèm câu trả lời giữ phòng cũ (bao-CR-709) nếu đã hỏi. */
-interface PendingSave {
-  values: EmployeeProfileFormValues
-  keepOldDepartment?: boolean
-}
 
 /**
  * Chi tiết hồ sơ nhân sự — 5 TAB (duoc-CR-314 Đợt 2).
@@ -116,26 +112,22 @@ export function EmployeeDetailPage() {
   const backTarget = useBackTarget(appRoutes.hr.employees)
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
-  const saveEmployee = useSaveEmployee()
   const deleteEmployee = useDeleteEmployee()
   const uploadAvatar = useUploadEmployeeAvatar(employeeId)
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   //  Danh bạ để chọn NGƯỜI QUẢN LÝ TRỰC TIẾP. Lấy đủ một lượt — công ty cỡ này
   //  vài trăm người, không cần ô tìm động.
   const { data: colleagues } = useEmployees({ page_size: 500, is_active: true })
+  //  Cùng tham số với ô Pháp nhân ở tab Chung nên dùng chung bộ đệm — chỉ để gọi TÊN công ty mới trong hộp đổi pháp nhân.
+  const { data: companies } = useCompanies({ page_size: 200, is_active: true }, { enabled: can('company', 'read') })
 
   const form = useForm<EmployeeProfileFormValues>({
     resolver: zodResolver(employeeProfileSchema),
     defaultValues: EMPTY_EMPLOYEE_PROFILE_FORM,
   })
-
-  //  Cờ "đang gửi" đổi NGAY trong tick — xem `onSubmit`.
-  const submittingRef = useRef(false)
-  //  duoc-CR-665 (V0-4): lần lưu đưa hồ sơ sang NGHỈ VIỆC / ngừng hoạt động sẽ khóa tài khoản,
-  //  nên dừng lại ở hộp "kiểm việc duyệt đang treo" trước. Giữ giá trị form để lưu tiếp khi xác nhận.
-  const [pendingLeave, setPendingLeave] = useState<PendingSave | null>(null)
-  //  bao-CR-709: đổi phòng chính thì hỏi giữ phòng cũ làm kiêm nhiệm hay gỡ, TRƯỚC hộp nghỉ việc.
-  const [pendingDepartment, setPendingDepartment] = useState<EmployeeProfileFormValues | null>(null)
+  //  Ba hộp hỏi trước khi lưu (giữ phòng cũ · kiêm nhiệm ở công ty cũ · nghỉ việc) + chặn bấm đúp — xem hook.
+  const saveFlow = useEmployeeProfileSaveFlow({ employeeId, employee, form, canReadSensitive })
+  const { saveEmployee } = saveFlow
 
   //  ⚠️ `keepDirtyValues` — `employee` đổi không chỉ lúc mở trang: tải ảnh CCCD /
   //  ảnh đại diện / chữ ký hay "Áp" một dòng quá trình công tác đều làm hồ sơ
@@ -173,67 +165,8 @@ export function EmployeeDetailPage() {
     return departments?.items.find((d) => d.id === id)?.name ?? fallback ?? `Phòng #${id}`
   }
 
-  async function onSubmit(values: EmployeeProfileFormValues) {
-    //  Chỉ hỏi khi đổi từ một phòng THẬT sang một phòng THẬT khác. Bỏ trống phòng thì không có gì để
-    //  giữ: phòng cũ mà giữ làm kiêm nhiệm sẽ bị đẩy lên lại làm phòng chính (backend lấy phần tử đầu).
-    const oldDepartment = employee?.department_id ?? 0
-    if (oldDepartment && values.department_id && values.department_id !== oldDepartment) {
-      setPendingDepartment(values)
-      return
-    }
-    await continueSave(values)
-  }
-
-  async function continueSave(values: EmployeeProfileFormValues, keepOldDepartment?: boolean) {
-    const leaving =
-      (values.status === 'resigned' && employee?.status !== 'resigned') ||
-      (!values.is_active && employee?.is_active === true)
-    if (leaving) {
-      setPendingLeave({ values, keepOldDepartment })
-      return
-    }
-    await saveProfile(values, keepOldDepartment)
-  }
-
-  async function saveProfile(values: EmployeeProfileFormValues, keepOldDepartment?: boolean) {
-    //  ⚠️ Chặn GỬI HAI LẦN bằng ref, không dựa vào `disabled={isPending}`.
-    //
-    //  `isPending` là state React nên chỉ đúng ở lần render SAU. Bấm đúp — hay
-    //  bấm liên tiếp trong cùng một tick — thì cả hai lần bấm đều thấy nút còn
-    //  bật. Bấm 5 lần liền tay ra **5 `PATCH`** (dựng lại được trên trình duyệt
-    //  thật 08/09/2026), tức 5 dòng "Cập nhật" trong lịch sử thao tác cho một
-    //  lần lưu — làm nhiễu đúng cái nhật ký vừa được đầu tư ở bao-CR-311.
-    //
-    //  Ref đổi NGAY trong cùng tick nên nó chặn được, còn `disabled` giữ vai
-    //  trò báo hiệu cho người dùng.
-    //
-    //  ⚠️ Lỗ này là của KHUÔN CHUNG (`disabled={mutation.isPending}` dùng khắp
-    //  các màn chi tiết), không riêng màn này. Ở đây vá khu trú; sửa cả khuôn
-    //  là việc riêng, cần rà từng màn.
-    if (submittingRef.current) return
-    submittingRef.current = true
-    try {
-      //  Bỏ các ô NHẠY CẢM khi người lưu không được xem chúng — backend đã che
-      //  nên form đang cầm chuỗi RỖNG, gửi lên là ghi đè rỗng đè lên số tài
-      //  khoản ngân hàng thật. Lý lẽ đầy đủ ở `pickWritableProfile`.
-      await saveEmployee.mutateAsync({
-        id: employeeId,
-        values: {
-          ...pickWritableProfile(values, canReadSensitive, employee?.extra_phones),
-          //  Chỉ gửi khi người dùng vừa trả lời câu hỏi giữ phòng cũ; vắng = backend gỡ phòng cũ.
-          ...(keepOldDepartment !== undefined && { keep_old_department: keepOldDepartment }),
-        },
-      })
-      //  Lưu xong thì coi giá trị vừa gửi là mốc sạch. `keepDirtyValues` ở effect
-      //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi
-      //  là "đang sửa" tới khi rời trang — rồi "Áp" quá trình công tác đổi phòng
-      //  ban xong, lần Lưu sau đè ngược giá trị cũ lên (duoc-CR-627, review).
-      //  Hai ô lương về lại "không đụng" (null): người lưu không được xem số, để nguyên số vừa gõ
-      //  thì lần Lưu sau gửi lại số cũ đè lên số mà HĐLĐ ký sau đó vừa cập nhật (duoc-CR-693).
-      form.reset({ ...values, salary_monthly: null, allowance_monthly: null })
-    } finally {
-      submittingRef.current = false
-    }
+  function companyName(id: number, fallback?: string | null) {
+    return companies?.items.find((c) => c.id === id)?.name ?? fallback ?? `Công ty #${id}`
   }
 
   /**
@@ -261,11 +194,11 @@ export function EmployeeDetailPage() {
   return (
     <PageContainer>
       <Form {...form}>
-        {/*  Dựng handler NGAY TRONG sự kiện, không dựng lúc render: `onSubmit`
-             đóng trên `submittingRef`, mà truyền một hàm-đọc-ref vào lúc render là
+        {/*  Dựng handler NGAY TRONG sự kiện, không dựng lúc render: `saveFlow.onSubmit`
+             đóng trên ref chặn bấm đúp, mà truyền một hàm-đọc-ref vào lúc render là
              thứ `react-hooks/refs` cảnh báo. Ở đây `handleSubmit` chỉ được gọi
              khi người dùng bấm, nên không có gì đọc ref trong lúc vẽ. */}
-        <form onSubmit={(event) => void form.handleSubmit(onSubmit, onInvalid)(event)}>
+        <form onSubmit={(event) => void form.handleSubmit(saveFlow.onSubmit, onInvalid)(event)}>
           {/*  ⚠️ `onInvalid` là BẮT BUỘC với biểu mẫu chia tab, không phải tiện ích.
 
                Radix hủy mount nội dung tab ẩn, nên câu lỗi của một ô ở tab khác
@@ -353,6 +286,10 @@ export function EmployeeDetailPage() {
                 <FileCheck2 className="size-4" />
                 Quyết định bổ nhiệm
               </TabsTrigger>
+              <TabsTrigger value="concurrent" className={TAB_TRIGGER_UNDERLINE}>
+                <Layers className="size-4" />
+                Kiêm nhiệm
+              </TabsTrigger>
               <TabsTrigger value="contact" className={TAB_TRIGGER_UNDERLINE}>
                 <Phone className="size-4" />
                 Liên hệ &amp; Ngân hàng
@@ -390,25 +327,6 @@ export function EmployeeDetailPage() {
                   .filter((e) => e.id !== employeeId)
                   .map((e) => ({ id: e.id, label: `${e.full_name} (${e.code})` }))}
               />
-
-              {/*  Kiêm nhiệm dời từ tab "Tài khoản" sang đây (khách chốt
-                   10/09/2026): nó là thông tin CÔNG VIỆC — người này phụ trách
-                   thêm phòng nào — nên đứng cạnh Phòng ban · Chức vụ · Quản lý
-                   trực tiếp thì người khai tìm được mà không phải đoán.
-
-                   ⚠️ Lý do cũ để nó cạnh thẻ tài khoản KHÔNG sai và đừng quên:
-                   phòng kiêm nhiệm mở rộng **phạm vi dữ liệu** người này đọc
-                   được, tức nó cũng là một nửa của câu "người này thấy được
-                   gì". Đổi chỗ là chọn cách đọc thứ nhất; ai đổi lại thì đọc
-                   dòng này trước. */}
-              <EmployeeDepartmentCard
-                employeeId={employee.id}
-                companyId={employee.company_id}
-                primaryDepartmentId={employee.department_id}
-                canWrite={canWrite}
-                isSelf={currentUser?.employee_id === employee.id}
-                className="mt-5"
-              />
             </TabsContent>
 
             <TabsContent value="work-history" className="mt-5 max-md:mt-2">
@@ -417,6 +335,13 @@ export function EmployeeDetailPage() {
 
             <TabsContent value="decisions" className="mt-5 max-md:mt-2">
               <EmployeeTabWorkDecisions employee={employee} />
+            </TabsContent>
+
+            <TabsContent value="concurrent" className="mt-5 max-md:mt-2">
+              {/*  duoc-CR-755: kiêm nhiệm thành TAB RIÊNG (thay thẻ chọn nhiều phòng ở tab Chung) vì mỗi dòng nay có
+                   công ty, chức vụ, ngày, quyết định và công tắc phạm vi quyền. Nó vẫn là một nửa của câu "người này
+                   thấy được gì" — công tắc nằm ngay trên từng dòng. */}
+              <EmployeeTabConcurrent employee={employee} />
             </TabsContent>
 
             <TabsContent value="contact" className="mt-5 max-md:mt-2">
@@ -485,10 +410,10 @@ export function EmployeeDetailPage() {
           </Card>
         </form>
       </Form>
-      {pendingLeave && (
+      {saveFlow.pendingLeave && (
         <EmployeePendingWorkConfirmDialog
           open
-          onOpenChange={(next) => !next && setPendingLeave(null)}
+          onOpenChange={(next) => !next && saveFlow.cancelLeave()}
           employeeId={employeeId}
           title="Lưu hồ sơ nghỉ việc?"
           description={
@@ -502,25 +427,28 @@ export function EmployeeDetailPage() {
           }
           confirmLabel="Lưu và chuyển nghỉ việc"
           pending={saveEmployee.isPending}
-          onConfirm={() => {
-            const { values, keepOldDepartment } = pendingLeave
-            setPendingLeave(null)
-            void saveProfile(values, keepOldDepartment)
-          }}
+          onConfirm={saveFlow.confirmLeave}
         />
       )}
-      {pendingDepartment && (
+      {saveFlow.pendingDepartment && (
         <EmployeeKeepOldDepartmentDialog
           open
-          onOpenChange={(next) => !next && setPendingDepartment(null)}
+          onOpenChange={(next) => !next && saveFlow.cancelDepartment()}
           oldDepartmentName={departmentName(employee.department_id, employee.department_name)}
-          newDepartmentName={departmentName(pendingDepartment.department_id)}
+          newDepartmentName={departmentName(saveFlow.pendingDepartment.department_id)}
           pending={saveEmployee.isPending}
-          onChoose={(keepOld) => {
-            const values = pendingDepartment
-            setPendingDepartment(null)
-            void continueSave(values, keepOld)
-          }}
+          onChoose={saveFlow.answerKeepOldDepartment}
+        />
+      )}
+      {saveFlow.pendingCompany && (
+        <EmployeeCompanyChangeConcurrentDialog
+          open
+          onOpenChange={(next) => !next && saveFlow.cancelCompany()}
+          oldCompanyName={companyName(employee.company_id, employee.company_name)}
+          newCompanyName={companyName(saveFlow.pendingCompany.values.company_id)}
+          rows={saveFlow.pendingCompany.rows}
+          pending={saveEmployee.isPending}
+          onConfirm={saveFlow.answerCompanyChange}
         />
       )}
     </PageContainer>

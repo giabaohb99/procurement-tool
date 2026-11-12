@@ -57,7 +57,8 @@ Tìm được theo tên, mã nhân viên, email, số điện thoại hoặc ch�
 Nó trả **đúng phần danh bạ**: mã NV · họ tên · chức vụ · cấp bậc · phòng ban ·
 công ty · email · điện thoại (`phone` là **số chính**, nhãn của nó ở `phone_label`;
 `extra_phones` là các **số khác**, mỗi số kèm nhãn như **Công việc**, **Zalo**) · quản lý
-trực tiếp · tình trạng làm việc.
+trực tiếp · tình trạng làm việc · `concurrent_roles` = các **kiêm nhiệm đang hiệu lực**, mỗi mục một câu
+**Phòng X — Công ty B (Chức vụ)** (có thể ở công ty khác; rỗng = không kiêm nhiệm).
 Tìm theo số điện thoại thì khớp cả số chính lẫn số khác. Đọc ra số chính trước; người
 hỏi cần số Zalo / số khác thì đọc số có nhãn tương ứng.
 **Không** có ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng, BHXH, lương —
@@ -71,6 +72,39 @@ Hai điều phải nói đúng khi đọc kết quả:
   hai khả năng, đừng khẳng định một.
 - Mặc định chỉ ra **người đang làm việc**. Ai hỏi về người đã nghỉ thì nói rõ là
   cần tra riêng, đừng kết luận "không có người tên đó".
+
+## Kiêm nhiệm — tab riêng, kiêm nhiệm được ở công ty khác (từ 12/11/2026)
+
+Kiêm nhiệm khai ở tab ***Kiêm nhiệm*** của hồ sơ (**Nhân sự ▸ Nhân sự** ▸ mở hồ sơ), nút ***Thêm kiêm nhiệm***. Thẻ chọn nhiều
+phòng kiêm nhiệm ở tab *Chung* **đã bỏ** — đừng chỉ đường tới đó. Mỗi dòng: **Công ty** (khác công ty chính được), **Phòng ban**
+(phải phục vụ công ty đó), **Chức vụ**, **Từ ngày** (bắt buộc), **Đến ngày** (trống = chưa kết thúc), **Số QĐ**, **Ngày QĐ**,
+**Ghi chú**, tệp QĐ, và công tắc ***Tính vào phạm vi quyền***.
+
+Câu hay bị hỏi: **kiêm nhiệm ở công ty khác có thấy dữ liệu công ty đó không?** Trả lời đúng ba ý, đừng nói chung chung:
+
+- **Chỉ thấy đúng PHÒNG đó ở đúng CÔNG TY đó**, không thấy cả công ty B. Thấy như một nhân viên của phòng, theo vai trò họ đang
+  có (xem, duyệt, sửa nếu vai trò cho phép ở mức phòng ban). Văn bản, thư mục, báo cáo, skill AI chia cho phòng đó cũng tới họ.
+- **Chỉ khi công tắc *Tính vào phạm vi quyền* đang BẬT** — tắt thì dòng chỉ là ghi nhận, không mở dữ liệu gì.
+- **Chỉ trong thời gian dòng còn hiệu lực.** Trạng thái tự đổi theo ngày (giờ Việt Nam): ***Sắp tới*** → ***Đang hiệu lực***
+  → ***Đã hết***; tới ngày là tự hết, không ai phải bấm. Thay đổi có tác dụng sau tối đa khoảng một phút.
+
+Các luật khác phải nói đúng:
+
+- **Chức vụ kiêm nhiệm không tự cấp thêm vai trò** — quyền mặc định theo chức vụ chỉ theo chức vụ CHÍNH.
+- **Ai khai được:** người có quyền sửa hồ sơ đó, VÀ phòng + công ty kiêm nhiệm nằm trong phạm vi sửa của chính họ (phạm vi phòng
+  chỉ khai được phòng mình; phạm vi công ty chỉ trong công ty mình; toàn hệ thống thì mọi nơi). **Không ai tự khai kiêm nhiệm cho
+  chính mình, kể cả quản trị.**
+- **Đổi pháp nhân chính**: kiêm nhiệm ở công ty CŨ mặc định **kết thúc vào hôm qua**; lúc Lưu có hộp ***Kiêm nhiệm ở công ty cũ***
+  để tick dòng muốn giữ; dòng chưa bắt đầu mà không giữ thì **bị xóa** kèm tệp. Kiêm nhiệm ở công ty khác không bị đụng.
+  Đổi phòng chính thì có hộp ***Giữ phòng cũ làm kiêm nhiệm?***.
+- **Phía phòng được kiêm nhiệm** thấy người đó ở **trang chi tiết phòng ban** (khối ***Kiêm nhiệm tại phòng này***) và **sơ đồ
+  tổ chức** (khối riêng, nhãn ***Kiêm nhiệm***); mở được hồ sơ của họ (chỉ xem) khi dòng đang hiệu lực + bật công tắc.
+  **Quân số và báo cáo vẫn tính ở phòng chính** — không đếm hai lần. Danh sách *Nhân sự* lọc theo phòng KHÔNG ra người kiêm nhiệm.
+- Tệp QĐ kiêm nhiệm của người khác cần quyền xem thông tin nhạy cảm (`employee_sensitive`).
+- Trợ lý **không** thêm / sửa / xóa kiêm nhiệm hộ; chỉ chỉ đường. `employee_lookup` vẫn lọc người theo phạm vi hồ sơ CHÍNH: người
+  chỉ kiêm nhiệm ở phòng của người hỏi mà hồ sơ chính ở công ty khác có thể không ra — khi đó gợi ý xem trang chi tiết phòng ban.
+- Báo cáo ***Điều chuyển & bổ nhiệm*** đếm kiêm nhiệm theo dòng ở tab *Quá trình công tác*, nên số ở đó có thể thấp hơn số dòng
+  ở tab *Kiêm nhiệm*.
 
 ## Lương trên hồ sơ — chỉ chính chủ xem (từ 29/10/2026)
 

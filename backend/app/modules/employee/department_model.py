@@ -1,4 +1,10 @@
-"""KIÊM NHIỆM — một nhân sự thuộc NHIỀU phòng ban (CR-167).
+"""PHÒNG BAN CỦA NHÂN SỰ — dòng phòng CHÍNH (CR-167; kiêm nhiệm đã tách sang bảng riêng ở duoc-CR-755).
+
+⚠️ duoc-CR-755: kiêm nhiệm (dòng phụ `is_primary = 0`) đã CHUYỂN sang `tab_employee_concurrent`
+(`employee/concurrent_model.py`) — có công ty, chức vụ, ngày, quyết định, và cho khác công ty. Migration
+`kn755a` chép dữ liệu cũ sang rồi xóa dòng phụ ở đây; hồ sơ quyền (`core/auth.get_perm_profile`) không
+còn đọc dòng phụ của bảng này. Phần mô tả bên dưới là lịch sử CR-167.
+
 
 Trước đây `tab_employee.department_id` là một số duy nhất, nên người kiêm nhiệm
 hai bộ phận chỉ khai được một. Hệ quả không nằm ở màn hồ sơ mà ở **phạm vi dữ

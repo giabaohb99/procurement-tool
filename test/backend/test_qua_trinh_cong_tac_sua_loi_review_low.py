@@ -11,7 +11,6 @@ from fastapi import HTTPException
 from app.core.hr_work_history_codes import WorkEventType
 from app.modules.audit.model import AuditLog
 from app.modules.department.model import Department
-from app.modules.employee import department_service as dept_svc
 from app.modules.employee import work_history_apply_service as applysvc
 from app.modules.employee import work_history_controller as whc
 from app.modules.employee import work_history_service as whs
@@ -71,10 +70,11 @@ def test_close_open_main_voi_kiem_nhiem_thi_422(db, emp, dept):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Gỡ kiêm nhiệm hết hạn: còn dòng KHÁC cùng phòng đang hiệu lực thì KHÔNG gỡ
+#  Kiêm nhiệm hết hạn: dòng QTCT đã chết không tạo dòng chết, và KHÔNG đụng dòng kiêm nhiệm khác
+#  (duoc-CR-755: mỗi dòng QTCT một dòng kiêm nhiệm riêng, không còn "gỡ phòng" theo tập)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def test_kiem_nhiem_het_han_nhung_con_dong_khac_cung_phong_dang_hieu_luc_thi_khong_go(world):
+def test_kiem_nhiem_het_han_chua_co_dong_thi_khong_tao_va_khong_dung_dong_dang_hieu_luc(world):
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
     dept_id = world.dept["A.kt"]
 
@@ -82,15 +82,21 @@ def test_kiem_nhiem_het_han_nhung_con_dong_khac_cung_phong_dang_hieu_luc_thi_kho
                         date.today() - timedelta(days=10), department_id=dept_id)
     applysvc.apply(world.db, still_active, a1.user, a1.profile())
     world.db.commit()
-    assert dept_id in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    from app.modules.employee.concurrent_model import EmployeeConcurrent
+    active_rows = world.db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == world.emp["a3"]).all()
+    assert [r.work_history_id for r in active_rows] == [still_active.id]
 
     expired = _row(world.db, world.emp["a3"], WorkEventType.CONCURRENT,
                    date.today() - timedelta(days=30),
                    to_date=date.today() - timedelta(days=1), department_id=dept_id)
     changes = applysvc.apply(world.db, expired, a1.user, a1.profile())
 
-    assert changes == [], "còn dòng kiêm nhiệm KHÁC cùng phòng đang hiệu lực — không được gỡ"
-    assert dept_id in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    assert changes == [], "dòng QTCT đã hết hạn mà chưa có dòng kiêm nhiệm — không tạo dòng chết"
+    world.db.expire_all()
+    (conc,) = world.db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == world.emp["a3"]).all()
+    assert conc.work_history_id == still_active.id and conc.to_date is None
 
 
 # ══════════════════════════════════════════════════════════════════════════════

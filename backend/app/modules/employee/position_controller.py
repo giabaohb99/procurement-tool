@@ -20,6 +20,7 @@ from app.core.reference_guard import Reference, register
 
 from . import position_service
 from .position_model import JobPosition
+from .concurrent_model import EmployeeConcurrent
 from .work_history_model import EmployeeWorkHistory
 from .position_schema import (JobPositionCreate, JobPositionResponse,
                               JobPositionUpdate)
@@ -48,6 +49,8 @@ def _propagate_rename(db: Session, obj: JobPosition, values: dict) -> None:
 #  bản in quá trình công tác đọc tên theo id. Sổ chung tự chạy sau `before_delete`.
 register("job_position", "Chức vụ", [
     Reference(EmployeeWorkHistory, "position_id", "dòng quá trình công tác"),
+    #  duoc-CR-755: dòng kiêm nhiệm cũng ghi `position_id` (nhãn chụp, in theo id ở tab Kiêm nhiệm).
+    Reference(EmployeeConcurrent, "position_id", "dòng kiêm nhiệm"),
 ])
 
 

@@ -1,7 +1,6 @@
 # Nền bài kiểm tài liệu (bao-CR-712 P5, 03/11/2026): lỗi đã có lúc bật chế độ chặn.
 # CHỈ ĐƯỢC BỚT: sửa xong thì chạy `python backend/scripts/kiem_tai_lieu.py --cap-nhat-nen`. Không thêm dòng tay.
 # Mỗi dòng: <nhóm>\t<lỗi>.
-bat-buoc	doc/erp/hrm/: thiếu chuc-nang/01-yeu-cau-chuc-nang.md, chuc-nang/02-yeu-cau-phi-chuc-nang.md, tai-lieu-ky-thuat/api.md
 duong-dan	.claude/rules/document-folders-search.md → `frontend-v2/plans/260923-1000-van-ban-thu-muc-nguoi-duyet/`
 duong-dan	.claude/rules/frontend-v2-migration-status.md → `doc/erp/12-`
 duong-dan	.claude/skills/them-cong-cu-mcp/SKILL.md → `doc/erp/21-kho-skill-ai-mcp.md`

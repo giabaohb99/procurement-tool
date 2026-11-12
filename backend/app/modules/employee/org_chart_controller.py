@@ -3,8 +3,8 @@
 KHÔNG lưu bản vẽ: mỗi lần mở là đọc thẳng `tab_employee` / `tab_department` /
 `tab_company`, nên đổi phòng hay đổi quản lý xong sơ đồ tự đúng.
 
-Trả DỮ LIỆU PHẲNG (pháp nhân · phòng ban có `parent` · nhân sự có `manager_id`);
-giao diện dựng cây. Phẳng thì số truy vấn CỐ ĐỊNH (5), không phụ thuộc số người,
+Trả DỮ LIỆU PHẲNG (pháp nhân · phòng ban có `parent` · nhân sự có `manager_id` · kiêm nhiệm);
+giao diện dựng cây. Phẳng thì số truy vấn CỐ ĐỊNH (không phụ thuộc số người hay số dòng kiêm nhiệm — có bài canh),
 và vòng `manager_id` / `parent` không thể làm treo phía backend.
 
 PHẠM VI NGƯỜI XEM (không lộ người ngoài phạm vi):
@@ -13,7 +13,11 @@ PHẠM VI NGƯỜI XEM (không lộ người ngoài phạm vi):
     không để tên hay id lọt ra qua con trỏ;
   - phòng ban: phòng nằm trong phạm vi `department` HOẶC có người xem được ở đó,
     kèm chuỗi phòng cha để cây liền mạch (chỉ lộ TÊN phòng, không lộ người);
-  - nhân sự đã `resigned` hoặc ngưng hoạt động không vẽ.
+  - nhân sự đã `resigned` hoặc ngưng hoạt động không vẽ;
+  - NGƯỜI KIÊM NHIỆM (duoc-CR-755): khóa `concurrents` = dòng kiêm nhiệm đang hiệu lực mà phạm vi `employee.read`
+    của người xem phủ cặp (phòng, công ty) của dòng — vẽ ở phòng kiêm nhiệm, nhãn Kiêm nhiệm. Truy vấn gốc
+    `employees` KHÔNG đổi (không bật `include_concurrent`): người đó không thành thêm một nhân sự ở công ty
+    khác, quân số không đếm trùng; phòng của dòng được thêm vào tập phòng cần vẽ.
 Chỉ lấy cột công việc (mã, họ tên, chức vụ, phòng, quản lý) — không đụng nhóm
 nhạy cảm của `employee.sensitive`.
 """
@@ -28,6 +32,7 @@ from app.core.scoping import apply_scope, exclude_deleted, scope_condition
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 
+from . import concurrent_members_service
 from .model import Employee
 
 router = APIRouter(prefix="/api/org-chart", tags=["employee"])
@@ -84,7 +89,15 @@ def get_org_chart(db: Session = Depends(get_db), user=Depends(require("employee"
     all_depts = exclude_deleted(db.query(Department), Department).all()
     dept_by_id = {d.id: d for d in all_depts}
     parent_of = {d.id: (d.parent or 0) for d in all_depts}
-    wanted = scoped_dept_ids | {r.department_id for r in emp_rows if r.department_id in dept_by_id}
+    #  duoc-CR-755: người kiêm nhiệm hiện ở PHÒNG KIÊM NHIỆM — một truy vấn, số dòng không làm đổi số truy vấn.
+    #  Lấy dư MỘT dòng để biết có bị cắt ở trần hay không (G2): cắt im lặng là người xem tin sơ đồ đã đủ.
+    max_rows = concurrent_members_service.ORG_CHART_MAX_ROWS
+    concurrents = concurrent_members_service.list_visible_members(
+        db, user, prof, effective_only=True, limit=max_rows + 1)
+    concurrents_truncated = len(concurrents) > max_rows
+    concurrents = concurrents[:max_rows]
+    wanted = (scoped_dept_ids | {r.department_id for r in emp_rows if r.department_id in dept_by_id}
+              | {c["department_id"] for c in concurrents if c["department_id"] in dept_by_id})
     dept_ids = _visible_ancestors({i for i in wanted if i in dept_by_id}, parent_of)
 
     departments = [
@@ -98,9 +111,9 @@ def get_org_chart(db: Session = Depends(get_db), user=Depends(require("employee"
     ]
 
     # 4) Pháp nhân của các nút sẽ vẽ (chỉ mã + tên).
-    company_ids = {r.company_id for r in emp_rows if r.company_id} | {
-        d["company_id"] for d in departments if d["company_id"]
-    }
+    company_ids = ({r.company_id for r in emp_rows if r.company_id}
+                   | {d["company_id"] for d in departments if d["company_id"]}
+                   | {c["company_id"] for c in concurrents if c["company_id"]})
     company_rows = (
         exclude_deleted(db.query(Company.id, Company.code, Company.name), Company)
         .filter(Company.id.in_(company_ids))
@@ -121,4 +134,6 @@ def get_org_chart(db: Session = Depends(get_db), user=Depends(require("employee"
         "companies": [{"id": c.id, "code": c.code, "name": c.name} for c in company_rows],
         "departments": departments,
         "employees": employees,
+        "concurrents": concurrents,
+        "concurrents_truncated": concurrents_truncated,
     })

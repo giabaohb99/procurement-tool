@@ -76,7 +76,7 @@ export function EmployeeTabGeneral({
   //  mới, chứ không phải sau khi bấm Lưu rồi tải lại trang.
   //
   //  Phòng `company_id = 0` là phòng DÙNG CHUNG, luôn chọn được — cùng luật với
-  //  `EmployeeDepartmentCard` (tab Kiêm nhiệm) ở ngay màn này.
+  //  ô Phòng ban của hộp kiêm nhiệm (`concurrent-department-options.ts`).
   const companyId = form.watch('company_id')
   const selectableDepartments = departments.filter(
     (d) => !companyId || !d.company_id || d.company_id === companyId,
@@ -253,9 +253,9 @@ export function EmployeeTabGeneral({
                   items={(companies?.items ?? []).map((c) => ({ id: c.id, label: c.name }))}
                 />
                 <FormDescription>
-                  Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân
-                  sẽ <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả
-                  phòng kiêm nhiệm. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực.
+                  Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân thì
+                  các dòng <strong>kiêm nhiệm ở pháp nhân cũ</strong> sẽ kết thúc — lúc Lưu
+                  hệ thống hỏi giữ lại dòng nào. Kiêm nhiệm ở công ty khác không đổi.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

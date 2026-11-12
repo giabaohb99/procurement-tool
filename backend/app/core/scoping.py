@@ -14,6 +14,7 @@ nào cố ý không lọc thì khai thẳng là `PUBLIC`, kèm lý do — và en
 import logging
 
 from sqlalchemy import and_, exists, false, func, or_, select
+from sqlalchemy.sql.elements import False_
 
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
 
@@ -397,6 +398,47 @@ def _handler_match(model, f, dept_ids):
     return or_(handler.in_(ids), and_(handler == 0, _central_dept_expr().in_(ids)))
 
 
+def _company_cond_for(model, f, company_id: int):
+    """Điều kiện "phiếu thuộc công ty này" của một entity — khuôn dùng chung của bậc `dept` và các cặp kiêm nhiệm.
+
+    Cột chính `company` + (nếu có) cột thứ hai `company_alt` (duoc-CR-681: phòng của phiếu đặt xe là phòng NGƯỜI
+    TẠO, thuộc công ty người tạo — phiếu chọn công ty khác vẫn phải hiện với người cùng phòng). None = entity
+    không có cột công ty. Tách cơ học từ nhánh `dept`, hành vi cũ không đổi.
+    """
+    if not f.get("company"):
+        return None
+    cond = getattr(model, f["company"]) == company_id
+    if f.get("company_alt"):
+        cond = or_(cond, getattr(model, f["company_alt"]) == company_id)
+    return cond
+
+
+def _concurrent_pairs_of(profile: dict) -> list[tuple[int, int]]:
+    """`[(phòng, công ty), ...]` kiêm nhiệm KHÁC công ty chính (duoc-CR-755) — rỗng nếu hồ sơ quyền cũ chưa có khóa."""
+    return [(int(d), int(c)) for d, c in (profile.get("concurrent_pairs") or []) if d and c]
+
+
+def _pair_conds(model, f, pairs, builder) -> list:
+    """Nhánh cộng THÊM cho cặp kiêm nhiệm khác công ty: `OR(AND(công ty == c, builder(các phòng của c)), ...)`.
+
+    duoc-CR-755: `dept_ids` của hồ sơ quyền KHÔNG mang công ty nên cặp khác công ty không được nhét vào đó (nhét vào
+    là mở phòng ở công ty CHÍNH). Cặp chỉ vào qua đây, nơi MỌI nhánh đều ràng `AND <cột công ty> == c`. Entity không
+    có cột công ty thì không ràng được → KHÔNG cộng gì (thiếu quyền, không lộ). `builder(ids)` trả điều kiện theo
+    phòng (hoặc None). Gom theo công ty nên số mệnh đề bằng số công ty, không bằng số dòng.
+    """
+    if not pairs or not f.get("company"):
+        return []
+    by_company: dict[int, list[int]] = {}
+    for dept_id, company_id in pairs:
+        by_company.setdefault(company_id, []).append(dept_id)
+    out = []
+    for company_id in sorted(by_company):
+        inner = builder(sorted(set(by_company[company_id])))
+        if inner is not None:
+            out.append(and_(_company_cond_for(model, f, company_id), inner))
+    return out
+
+
 def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
     """Người này duyệt/điều phối `entity` CHỈ bằng bậc `dept_proc` (phòng tự mua) — bao-CR-414.
 
@@ -428,6 +470,9 @@ def holds_handling_dept(profile: dict, entity: str, ticket, central_id: int = 0)
     """
     from app.modules.category_assignee.service import handling_dept_of
     dept_ids = set(int(x) for x in (profile.get("dept_ids") or []) if x)
+    #  duoc-CR-755: cặp kiêm nhiệm khác công ty chỉ tính khi phiếu thuộc ĐÚNG công ty của cặp.
+    pairs = set(_concurrent_pairs_of(profile))
+    ticket_company = int(getattr(ticket, "company_id", 0) or 0)
     current = int(handling_dept_of(ticket, central_id) or 0)
     for grant in profile.get("grants", []):
         perms = grant["perms"].get(entity)
@@ -436,7 +481,8 @@ def holds_handling_dept(profile: dict, entity: str, ticket, central_id: int = 0)
         scope = perms.get("scope", "all")
         if scope in ("proc", "all"):
             return True
-        if scope == "dept_proc" and current and current in dept_ids:
+        if scope == "dept_proc" and current and (
+                current in dept_ids or (current, ticket_company) in pairs):
             return True
     return False
 
@@ -513,6 +559,9 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         or ([profile["dept_id"]] if profile.get("dept_id") else [])
     dept_names = [x for x in (profile.get("dept_names") or []) if x] \
         or ([profile["dept_name"]] if profile.get("dept_name") else [])
+    #  KIÊM NHIỆM KHÁC CÔNG TY (duoc-CR-755) — cặp (phòng, công ty) ngoài `dept_ids`. Chỉ cộng ở ba nhánh có
+    #  chỗ ràng công ty (`dept`, `dept_proc`, PO handler); bậc `company` / `own` / `all` KHÔNG đổi.
+    pairs = _concurrent_pairs_of(profile)
 
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     # bao-CR-414 — "dept_proc" = đúng nhánh `proc` NHƯNG AND thêm "phiếu thuộc phòng mình"
@@ -526,9 +575,13 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             if not in_dept_proc:
                 return cond
             dm = _dept_match(model, f, dept_ids, dept_names, central_handler=True)
-            if dm is None:
+            #  duoc-CR-755: cặp kiêm nhiệm khác công ty — phiếu phải ĐÚNG công ty của cặp VÀ thuộc phòng của cặp.
+            extra = _pair_conds(model, f, pairs,
+                                lambda ids: _dept_match(model, f, ids, [], central_handler=True))
+            parts = [c for c in (dm, *extra) if c is not None]
+            if not parts:
                 return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
-            return and_(cond, dm)
+            return and_(cond, or_(*parts))
 
         if entity == "purchase_request":
             from app.modules.purchase_request.model import (STATUS_AFTER_APPROVE,
@@ -587,8 +640,13 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
                 # đơn hoặc là NSPT. Trước đây nhánh này AND với `_dept_match` nên vế "phòng lập phiếu"
                 # lọt cả đơn của thu mua chung. Người yêu cầu xem tiến độ ở YCMH của mình (không đổi).
                 hm = _handler_match(model, f, dept_ids)
-                if hm is None:
+                #  duoc-CR-755: phòng XỬ LÝ của cặp kiêm nhiệm khác công ty, ràng công ty của đơn.
+                hm_parts = [c for c in (hm, *_pair_conds(model, f, pairs,
+                                                         lambda ids: _handler_match(model, f, ids)))
+                            if c is not None]
+                if not hm_parts:
                     return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
+                hm = or_(*hm_parts)
                 from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
                 ec = _emp_match(model, "nspt_id", "nspt",
                                 profile.get("employee_id") or 0, profile.get("emp_name") or "")
@@ -622,9 +680,12 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # bao-CR-414: entity không phải chứng từ thu mua → `dept_proc` rơi về bậc `dept`
             # (thấy trong phòng mình), không rơi về `own` như `assigned`/`proc`.
             dm = _dept_match(model, f, dept_ids, dept_names)
-            if dm is None:
+            dm_parts = [c for c in (dm, *_pair_conds(model, f, pairs,
+                                                     lambda ids: _dept_match(model, f, ids, [])))
+                        if c is not None]
+            if not dm_parts:
                 return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
-            return dm
+            return or_(*dm_parts)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
     if scope == "own":
@@ -661,12 +722,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
     if scope == "dept":
         cs = []
         if f.get("company") and company_id:
-            company_cond = getattr(model, f["company"]) == company_id
-            if f.get("company_alt"):
-                #  duoc-CR-681: phòng của phiếu đặt xe là phòng NGƯỜI TẠO, thuộc công ty người tạo — phiếu chọn
-                #  công ty khác vẫn phải hiện với người cùng phòng (review lượt 2).
-                company_cond = or_(company_cond, getattr(model, f["company_alt"]) == company_id)
-            cs.append(company_cond)
+            cs.append(_company_cond_for(model, f, company_id))
         if f.get("dept_id") or f.get("dept_name"):
             dc = _dept_match(model, f, dept_ids, dept_names)
             # Người dùng chưa gắn phòng nào → không có gì để so → không thấy gì. (Luật cũ so
@@ -676,7 +732,10 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             cs.append(getattr(model, f["owner"]) == user.id)
         if not cs:
             return _chan(entity, scope, user, "entity khong co chieu phong ban lan chu so huu")
-        return and_(*cs)
+        base = and_(*cs)
+        #  duoc-CR-755: cộng thêm từng cặp (phòng, công ty) kiêm nhiệm KHÁC công ty chính.
+        extra = _pair_conds(model, f, pairs, lambda ids: _dept_match(model, f, ids, []))
+        return or_(base, *extra) if extra else base
 
     if scope == "company":
         #  DUYỆT DẤU — Văn thư / Giám đốc: MỘT phiếu gắn NHIỀU công ty (bảng nối
@@ -850,21 +909,85 @@ def has_global_scope(profile: dict, entity: str, action: str) -> bool:
     return False
 
 
-def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
+def scope_condition(model, entity: str, user, profile: dict, action: str = "read", *,
+                    include_concurrent: bool = False):
     """ĐIỀU KIỆN phạm vi (chưa gắn vào query nào) = HỢP các grant có `action` + chốt riêng của từng entity.
 
     Chốt riêng hiện có một: YCTT thanh toán nghỉ phép (duoc-CR-719, D1a) — số tiền ÷ số ngày = lương ngày nên
     phiếu đó chỉ thấy khi người xem CÒN có `leave_encashment.read` phủ phiếu nguồn. Gắn ở ĐÂY (một chỗ) vì
     `apply_scope`, `get_scoped` và danh sách người duyệt đều đi qua hàm này; chốt được AND vào kể cả khi phạm vi
     YCTT là "thấy tất cả" (`None`).
+
+    `include_concurrent` (duoc-CR-755, Q1) — MẶC ĐỊNH TẮT, và chỉ có tác dụng khi `entity == "employee"` VÀ
+    `action == "read"`: mở thêm HỒ SƠ của người có dòng kiêm nhiệm còn hiệu lực + bật công tắc nằm ở cặp (phòng,
+    công ty) mà người xem phủ. Chỉ bật ở các đường ĐỌC hồ sơ một người; báo cáo, sơ đồ, xuất tệp, ghi giữ TẮT —
+    bật mặc định là mọi báo cáo quân số tự kéo người công ty khác vào màn của phòng này (sai luật không đếm trùng).
     """
     cond = _grant_scope_condition(model, entity, user, profile, action)
+    if include_concurrent and entity == "employee" and action == "read":
+        cond = _or_concurrent_exists(model, cond, user, profile)
     if entity == "payment_request":
         from app.modules.payment_request.hr_payout_guard import payout_visibility_cond  # nhập trong hàm: tránh vòng nhập
         guard = payout_visibility_cond(model, user, profile)
         if guard is not None:
             return guard if cond is None else and_(cond, guard)
     return cond
+
+
+_CONCURRENT_AS_EMPLOYEE = None
+
+
+def _concurrent_row_as_employee():
+    """Lớp chuyển tiếp: một dòng `tab_employee_concurrent` "ngồi" như hồ sơ nhân sự ở (phòng, công ty) của dòng.
+
+    Chỉ khai đúng ba thuộc tính cột mà `SCOPE_FIELDS["employee"]` đọc (`company_id`, `department_id`, `id` — `id`
+    ở đây là NHÂN SỰ, nên trỏ `employee_id`). Nhờ đó MỌI luật bậc (dept / dept_proc / company / all, ô "Phòng ban
+    được xem", loại trừ công ty) của phạm vi `employee` áp lên dòng kiêm nhiệm mà không chép một dòng luật nào.
+    Dựng lười để `core/` không nhập module nhân sự lúc nạp.
+    """
+    global _CONCURRENT_AS_EMPLOYEE
+    if _CONCURRENT_AS_EMPLOYEE is None:
+        from app.modules.employee.concurrent_model import EmployeeConcurrent
+
+        class _ConcurrentRowAsEmployee:
+            company_id = EmployeeConcurrent.company_id
+            department_id = EmployeeConcurrent.department_id
+            id = EmployeeConcurrent.employee_id
+
+        _CONCURRENT_AS_EMPLOYEE = _ConcurrentRowAsEmployee
+    return _CONCURRENT_AS_EMPLOYEE
+
+
+def concurrent_row_scope_condition(user, profile: dict, action: str = "read"):
+    """Điều kiện SQL TRÊN `EmployeeConcurrent`: người xem có phủ cặp (phòng, công ty) của dòng không.
+
+    = phạm vi `employee` của người xem áp lên dòng như thể nhân sự ngồi tại (phòng, công ty) của dòng. `None` = thấy
+    tất cả; `false()` = không phủ gì. KHÔNG xét hiệu lực / công tắc của dòng — bên gọi tự AND `effective_filter` +
+    `counts_scope` khi cần (giai đoạn 05 dùng cho danh sách "ai kiêm nhiệm ở phòng này").
+
+    Gọi `_grant_scope_condition` chứ không `scope_condition` để không đệ quy vào nhánh `include_concurrent`.
+    """
+    return _grant_scope_condition(_concurrent_row_as_employee(), "employee", user, profile, action)
+
+
+def _or_concurrent_exists(model, cond, user, profile: dict):
+    """`cond OR EXISTS(dòng kiêm nhiệm hiệu lực + bật công tắc của hồ sơ này, ở cặp người xem phủ)` — Q1, chỉ ĐỌC.
+
+    Một subquery tương quan nằm trong cùng câu SQL: không N+1, không thêm truy vấn lúc dựng. `cond is None` (thấy
+    tất) giữ nguyên; cặp không phủ gì (`false()`) thì bỏ nhánh.
+    """
+    if cond is None:
+        return None
+    from app.modules.employee import concurrent_service as cs
+    from app.modules.employee.concurrent_model import EmployeeConcurrent as EC
+
+    pair_cond = concurrent_row_scope_condition(user, profile, "read")
+    if pair_cond is None or isinstance(pair_cond, False_):
+        return cond   # không phủ cặp nào (hoặc không xảy ra: thấy tất mà cond lại hẹp) → không mở thêm gì
+    row_exists = exists().where(
+        EC.employee_id == model.id, cs.effective_filter(cs.vn_today()),
+        EC.counts_scope.is_(True), pair_cond)
+    return or_(cond, row_exists)
 
 
 def _grant_scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
@@ -926,7 +1049,8 @@ def exclude_deleted(query, model):
     return query if cond is None else query.filter(cond)
 
 
-def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
+def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read", *,
+                include_concurrent: bool = False):
     """Lọc query theo HỢP các grant có quyền `action` trên entity.
 
     ai-CR-170: model có cột `is_deleted` thì TỰ loại phiếu đã xóa mềm — kể cả khi phạm vi là
@@ -934,11 +1058,12 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
     (vd dọn dữ liệu, giữ mã không tái dùng).
     """
     query = exclude_deleted(query, model)
-    cond = scope_condition(model, entity, user, profile, action)
+    cond = scope_condition(model, entity, user, profile, action, include_concurrent=include_concurrent)
     return query if cond is None else query.filter(cond)
 
 
-def get_scoped(db, model, entity: str, oid: int, user, profile: dict, action: str = "read"):
+def get_scoped(db, model, entity: str, oid: int, user, profile: dict, action: str = "read", *,
+               include_concurrent: bool = False):
     """Lấy MỘT bản ghi, chỉ khi nó nằm trong phạm vi — trả `None` nếu không.
 
     Sinh ra cho các endpoint lấy/sửa/xóa một dòng: `db.get(Model, oid)` đi thẳng vào khóa
@@ -949,7 +1074,7 @@ def get_scoped(db, model, entity: str, oid: int, user, profile: dict, action: st
     ai-CR-170: bản ghi đã xóa mềm (`is_deleted`) cũng trả `None` — cùng một cửa với
     `apply_scope`, để màn chi tiết không mở được thứ danh sách đã giấu.
     """
-    cond = scope_condition(model, entity, user, profile, action)
+    cond = scope_condition(model, entity, user, profile, action, include_concurrent=include_concurrent)
     deleted = not_deleted_cond(model)
     if cond is None and deleted is None:
         return db.get(model, oid)

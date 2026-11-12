@@ -95,7 +95,7 @@ function renderDialog(
         employee={employee}
         row={options.row ?? null}
         allRows={options.allRows ?? []}
-        extraDeptIds={[]}
+        concurrents={[]}
         canOpenFiles={options.canOpenFiles ?? true}
         seed={seed as never}
         requireDecisionNo={options.requireDecisionNo}

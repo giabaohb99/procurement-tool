@@ -30,7 +30,7 @@ export function useMyWorkHistory() {
  * Luôn dọn `employeeWorkHistory(id)`. Khi dòng đã ÁP vào hồ sơ
  * (`applied_changes` không rỗng) thì dọn thêm đúng bốn nhánh mà hồ sơ có thể
  * vừa đổi: `employee(id)` (chip chức vụ/tình trạng ở thẻ tiêu đề),
- * `employeeDepartments(id)` (kiêm nhiệm), `employees()` (danh sách — tên/trạng
+ * `employeeDepartments(id)` + `employeeConcurrents(id)` (kiêm nhiệm), `employees()` (danh sách — tên/trạng
  * thái hiện ở đó), `myEmployee()` (Trang cá nhân nếu tự xem được hồ sơ mình,
  * vd quản trị hệ thống).
  */
@@ -65,6 +65,8 @@ function invalidateAfterChange(
   if (!appliedToProfile) return
   void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employee(employeeId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employeeDepartments(employeeId) })
+  //  duoc-CR-755: Áp loại Kiêm nhiệm ghi vào bảng kiêm nhiệm — tab Kiêm nhiệm phải thấy dòng mới.
+  void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employeeConcurrents(employeeId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees() })
   void queryClient.invalidateQueries({ queryKey: queryKeys.hr.myEmployee() })
   void refreshOwnProfileIfSelf(queryClient, employeeId)

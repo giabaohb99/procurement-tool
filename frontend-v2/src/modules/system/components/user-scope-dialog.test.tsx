@@ -117,6 +117,20 @@ interface RouteData {
   owner?: Record<string, unknown> | null
   /** Phòng KIÊM NHIỆM của chủ tài khoản (id), cửa `/api/employees/{id}/departments`. */
   extraDepartmentIds?: number[]
+  /** Dòng kiêm nhiệm của chủ tài khoản, cửa `/api/employees/{id}/concurrents` (duoc-CR-755). */
+  concurrents?: Record<string, unknown>[]
+}
+
+/** Một dòng kiêm nhiệm ĐANG HIỆU LỰC, bật công tắc, ở công ty khác (đủ trường mà hộp thoại đọc). */
+function concurrentRow(over: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    status: 2,
+    counts_scope: true,
+    department_name: 'Phòng Kế toán',
+    company_name: 'Công ty CP DEGO Food',
+    ...over,
+  }
 }
 
 /**
@@ -146,6 +160,11 @@ function mockRoutes(data: RouteData = {}) {
     }
     if (url === '/api/employees') {
       return Promise.resolve({ total: 0, items: data.employees ?? EMPLOYEES })
+    }
+    //  Kiêm nhiệm có cấu trúc (duoc-CR-755) — cũng phải đứng TRƯỚC nhánh hồ sơ.
+    if (url.startsWith('/api/employees/') && url.endsWith('/concurrents')) {
+      if (data.owner === null) return Promise.reject(new Error('403'))
+      return Promise.resolve({ items: data.concurrents ?? [], can_edit: false, can_open_files: false })
     }
     //  Phòng chính + kiêm nhiệm của chủ tài khoản (bao-CR-430) — phải đứng TRƯỚC
     //  nhánh hồ sơ bên dưới, vì nhánh đó bắt mọi đường con của `/api/employees/`.
@@ -864,5 +883,41 @@ describe('A10 — chưa mở vai trò nào', () => {
     expect(baseElement.querySelectorAll('[role="dialog"]')).toHaveLength(0)
     await user.click(document.body)
     expect(httpPut).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('duoc-CR-755 — kiêm nhiệm khác công ty hiện trong khối "thấy gì"', () => {
+  it('lists the (department, company) pairs a concurrent row opens, and only rows in effect with the switch on', async () => {
+    mockRoutes({
+      concurrents: [
+        concurrentRow(),
+        concurrentRow({ id: 2, department_name: 'Tắt công tắc', counts_scope: false }),
+        concurrentRow({ id: 3, department_name: 'Sắp tới', status: 1 }),
+        concurrentRow({ id: 4, department_name: 'Đã hết', status: 3 }),
+      ],
+    })
+    build()
+
+    expect(await screen.findByText('Phòng Kế toán (Công ty CP DEGO Food)')).toBeInTheDocument()
+    expect(screen.getByText(/chỉ đúng từng phòng và công ty này/)).toBeInTheDocument()
+    expect(screen.queryByText(/Tắt công tắc/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Sắp tới/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Đã hết/)).not.toBeInTheDocument()
+  })
+
+  it('says nothing about concurrent roles when there are none, and does not fetch them without employee.read', async () => {
+    permissions = { company: { read: true }, department: { read: true } }
+    build()
+    await screen.findByText(/Tài khoản này thấy gì/)
+    expect(screen.queryByText(/Kiêm nhiệm đang mở thêm phạm vi/)).not.toBeInTheDocument()
+    expect(apiGet.mock.calls.some(([url]) => String(url).endsWith('/concurrents'))).toBe(false)
+  })
+
+  it('keeps working when the concurrents door answers 403 (profile outside the viewer scope)', async () => {
+    mockRoutes({ owner: null })
+    build()
+    await screen.findByText(/Tài khoản này thấy gì/)
+    expect(screen.queryByText(/Kiêm nhiệm đang mở thêm phạm vi/)).not.toBeInTheDocument()
   })
 })

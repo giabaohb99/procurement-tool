@@ -41,6 +41,13 @@ export const AI_PLAN_STATUS: readonly StatusOption[] = [
   {"value": "5", "label": "Tạo thẳng (chưa qua duyệt)", "sort_order": 5, "is_terminal": true, "is_exception": false},
 ]
 
+/** Trạng thái kiêm nhiệm */
+export const CONCURRENT_STATUS: readonly StatusOption[] = [
+  {"value": "1", "label": "Sắp tới", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đang hiệu lực", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Đã hết", "sort_order": 3, "is_terminal": false, "is_exception": false},
+]
+
 /** Tình trạng hạn hợp đồng */
 export const CONTRACT_EXPIRY: readonly StatusOption[] = [
   {"value": "valid", "label": "Còn hạn", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -529,6 +536,7 @@ export const STATUS_SETS = {
   ai_channel: AI_CHANNEL,
   ai_client: AI_CLIENT,
   ai_plan_status: AI_PLAN_STATUS,
+  concurrent_status: CONCURRENT_STATUS,
   contract_expiry: CONTRACT_EXPIRY,
   contract_party_type: CONTRACT_PARTY_TYPE,
   contract_status: CONTRACT_STATUS,

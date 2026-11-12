@@ -19,6 +19,7 @@ import {
   type EmployeeWorkHistoryFormValues,
 } from '../schemas/employee-work-history-schema'
 import type { Employee } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { MAIN_TRACK } from '../utils/employee-work-history-apply'
 import { buildEmployeeWorkHistoryDefaultValues } from '../utils/employee-work-history-form-defaults'
@@ -40,8 +41,8 @@ interface EmployeeWorkHistoryFormDialogProps {
   /** Toàn bộ dòng đã có của hồ sơ — tìm dòng chính đang mở cho tick "Đóng dòng"
    *  VÀ cho `planApplyPrompt` nhận biết nhập bù lịch sử cũ (M6). */
   allRows: EmployeeWorkHistory[]
-  /** Phòng kiêm nhiệm hiện tại — cho `planApplyPrompt` xét loại Kiêm nhiệm. */
-  extraDeptIds: number[]
+  /** Dòng kiêm nhiệm hiện có — cho `planApplyPrompt` xét loại Kiêm nhiệm (theo `work_history_id`). */
+  concurrents: readonly EmployeeConcurrent[]
   /** A9 (Q4) — `false` thì ẨN vùng thả tệp (tạo mới) VÀ nút "Quản lý tệp" (sửa),
    *  không gọi API đính kèm (M4). */
   canOpenFiles: boolean
@@ -69,7 +70,7 @@ export function EmployeeWorkHistoryFormDialog({
   employee,
   row,
   allRows,
-  extraDeptIds,
+  concurrents,
   canOpenFiles,
   seed,
   requireDecisionNo = false,
@@ -133,7 +134,7 @@ export function EmployeeWorkHistoryFormDialog({
       employee,
       row,
       allRows,
-      extraDeptIds,
+      concurrents,
       canOpenFiles,
       today,
       openMainRow,

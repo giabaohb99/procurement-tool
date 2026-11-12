@@ -153,6 +153,13 @@ def parent_records(db: Session, entity: str, entity_id: int):
         from app.modules.employee.work_history_model import EmployeeWorkHistory
         return _fk(EmployeeWorkHistory.employee_id, Employee, EmployeeWorkHistory.id)
 
+    if entity == "employee_concurrent":
+        #  Tệp QĐ kiêm nhiệm (duoc-CR-755): cùng khuôn — phạm vi xét trên HỒ SƠ CHA; chốt riêng
+        #  (chính chủ / `employee_sensitive` / L2 theo cặp) ở `employee/concurrent_access.check_file`.
+        from app.modules.employee.concurrent_model import EmployeeConcurrent
+        from app.modules.employee.model import Employee
+        return _fk(EmployeeConcurrent.employee_id, Employee, EmployeeConcurrent.id)
+
     #  Các loại dưới đây chưa có mặt trong `SCOPE_FIELDS` nên `apply_scope` không
     #  sinh mệnh đề nào — vẫn khai ở đây để ngày B-07 khai thêm là đính kèm siết
     #  theo, không phải mở lại tệp này.

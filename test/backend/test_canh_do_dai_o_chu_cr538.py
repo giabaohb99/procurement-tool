@@ -148,6 +148,7 @@ TARGETS.update({
     **_same("user", "User", "NotifyEmailUpdate", "UserProvision"),
     **_same("user", "UserScope", "ScopeUpdate"),
     **_same("employee", "EmployeeWorkHistory", "WorkHistoryIn", "WorkHistoryUpdate"),   # duoc-CR-585
+    **_same("employee", "EmployeeConcurrent", "ConcurrentIn", "ConcurrentPatch"),         # duoc-CR-755
     "purchase_request.PROptionDetailsIn": ["PurchaseRequestItemOption"],                 # bao-CR-583
     **_same("work_schedule", "WorkSchedule", "ScheduleCreate", "ScheduleUpdate"),       # duoc-CR-589
     **_same("work_schedule", "WorkScheduleDay", "DayIn"),
@@ -198,7 +199,7 @@ NO_TARGET = {
     "work.SectionMove", "work.TaskMove", "work.AssigneesIn", "work.MemberIn", "work.TransferIn",
     "approval.ReorderIn", "coffee_point.ResetExecuteIn", "coffee_point.SyncRunIn",
     "document.PreviewApprovalIn", "attachment.ReorderIn", "forum.ReactionIn", "assistant.ConfirmUpdateIn",
-    "role.RoleOrder", "employee.ExtraDepartmentsIn", "employee.EmployeeContactsIn",
+    "role.RoleOrder", "employee.EmployeeContactsIn",
     "employee.EmployeeFamiliesIn", "employee.SelfContactsIn", "user.ActiveUpdate", "user.RoleAssign",
     #  mật khẩu: không lưu nguyên văn (băm) — độ dài kiểm riêng ở luật mật khẩu
     "employee.SetPasswordIn", "user.PasswordReset",

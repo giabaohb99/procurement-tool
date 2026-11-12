@@ -29,6 +29,7 @@ import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identi
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
 import { DepartmentCompanyCard } from '../components/department-company-card'
+import { DepartmentConcurrentMembersTable } from '../components/department-concurrent-members-table'
 import { DepartmentMembersTable } from '../components/department-members-table'
 import { LookupSelect } from '../components/lookup-select'
 import { useCompanies } from '../hooks/use-companies'
@@ -48,8 +49,8 @@ import type { Department } from '../types/department'
 import { DEPARTMENT_KIND_LABELS } from '../types/department'
 
 /**
- * Chi tiết phòng ban — form sửa trực tiếp, bên dưới là bảng nhân sự thuộc phòng
- * và nhật ký thao tác. Không chia 2 cột: bảng nhân sự cần trọn chiều ngang.
+ * Chi tiết phòng ban — form sửa trực tiếp, bên dưới là bảng nhân sự thuộc phòng,
+ * bảng người kiêm nhiệm (nếu có) và nhật ký thao tác. Không chia 2 cột: bảng nhân sự cần trọn chiều ngang.
  */
 export function DepartmentDetailPage() {
   const { id } = useParams()
@@ -359,6 +360,8 @@ export function DepartmentDetailPage() {
           canWrite={canWrite}
         />
         <DepartmentMembersTable departmentId={department.id} managerId={department.manager_id} />
+        {/*  duoc-CR-755: người công ty khác kiêm nhiệm ở phòng này — bảng riêng, tự ẩn khi không có ai. */}
+        <DepartmentConcurrentMembersTable departmentId={department.id} />
         <AuditTimeline entity="department" entityId={departmentId} />
       </div>
     </PageContainer>

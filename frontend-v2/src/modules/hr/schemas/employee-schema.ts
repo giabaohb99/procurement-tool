@@ -179,6 +179,10 @@ export type EmployeeProfileFormValues = z.infer<typeof employeeProfileSchema>
  */
 export type EmployeeProfileUpdate = Partial<EmployeeProfileFormValues> & {
   keep_old_department?: boolean
+  /** duoc-CR-755 (Q4): đổi pháp nhân chính — `true`/vắng = kết thúc dòng kiêm nhiệm ở công ty cũ, `false` = giữ hết. */
+  end_old_company_concurrent?: boolean
+  /** Id dòng kiêm nhiệm ở công ty cũ được GIỮ khi đang kết thúc (≤ 30). */
+  keep_concurrent_ids?: number[]
 }
 
 export const EMPTY_EMPLOYEE_PROFILE_FORM: EmployeeProfileFormValues = {

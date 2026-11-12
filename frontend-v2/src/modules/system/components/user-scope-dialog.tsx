@@ -22,6 +22,7 @@ import {
   useEmployeeDepartments,
   useEmployees,
 } from '@/modules/hr/hooks/use-employees'
+import { useEmployeeConcurrents } from '@/modules/hr/hooks/use-employee-concurrents'
 import { usePermissionMeta, useRolePermissions } from '@/modules/hr/hooks/use-roles'
 import { useSaveUserScope, useUserScope } from '@/modules/hr/hooks/use-user-accounts'
 import { EMPTY_USER_SCOPE, type UserScope } from '@/modules/hr/types/user-account'
@@ -30,6 +31,7 @@ import {
   findContradictingDepartments,
   findSelfExcludedDepartments,
   groupEntitiesByScope,
+  listScopeConcurrentPairs,
   summarizeScopeLimits,
   type ScopeOwnerProfile,
 } from '../utils/scope-summary'
@@ -141,6 +143,11 @@ export function UserScopeDialog({
     enabled: canReadEmployee,
   })
 
+  //  duoc-CR-755: kiêm nhiệm có thể ở CÔNG TY KHÁC, nên `extra_department_ids` ở trên (cùng công ty) không đủ để nói
+  //  tài khoản này thấy gì. Cùng cửa quyền `employee.read` với hồ sơ; thiếu quyền thì không gọi.
+  const { data: ownerConcurrents } = useEmployeeConcurrents(employeeId, { enabled: canReadEmployee })
+  const concurrentPairs = listScopeConcurrentPairs(ownerConcurrents?.items ?? [])
+
   const companyItems = companies?.items ?? []
   const departmentItems = departments?.items ?? []
   const employeeItems = employees?.items ?? []
@@ -251,6 +258,7 @@ export function UserScopeDialog({
               roleName={roleName}
               groups={tierGroups}
               owner={ownerProfile}
+              concurrentPairs={concurrentPairs}
               exceptionLines={limitLines}
               isLoading={canReadRole && (tierLoading || !meta)}
               canReadRole={canReadRole}

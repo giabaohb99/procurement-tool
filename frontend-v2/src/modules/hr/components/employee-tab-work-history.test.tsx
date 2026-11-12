@@ -24,8 +24,9 @@ vi.mock('../hooks/use-employee-work-history', () => ({
   useDeleteEmployeeWorkHistory: () => ({ mutate: vi.fn() }),
 }))
 
-vi.mock('../hooks/use-employees', () => ({
-  useEmployeeDepartments: () => ({ data: { primary_department_id: 0, extra_department_ids: [] } }),
+//  duoc-CR-755: câu hỏi Áp loại Kiêm nhiệm đọc dòng kiêm nhiệm (không còn đọc danh sách phòng của `use-employees`).
+vi.mock('../hooks/use-employee-concurrents', () => ({
+  useEmployeeConcurrents: () => ({ data: { items: [], can_edit: true, can_open_files: true } }),
 }))
 
 vi.mock('@/core/auth/use-auth', () => ({

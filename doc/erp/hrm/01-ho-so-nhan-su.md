@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.9 — 03/11/2026 (**Cài đặt nhân sự tab Nhân viên** — tiền tố mã, sơ đồ tổ chức cho mọi nhân viên, mốc kỷ niệm — duoc-CR-713; §7.17 mới, §7.12 thêm công tắc) · 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 2.0 — 12/11/2026 (**Kiêm nhiệm thành tab riêng, kiêm nhiệm được ở công ty khác** — duoc-CR-755; §7.18 mới, §4 + §7.10 + §7.11 sửa cho khớp mã) · 1.9 — 03/11/2026 (**Cài đặt nhân sự tab Nhân viên** — tiền tố mã, sơ đồ tổ chức cho mọi nhân viên, mốc kỷ niệm — duoc-CR-713; §7.17 mới, §7.12 thêm công tắc) · 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -150,7 +150,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 | Cụm hộ chiếu (5 trường) | Ít người có; đi vào `extra_fields` khi cần |
 | Mã chấm công, mã phân ca, 6 cờ phân quyền chấm công (GPS/wifi/máy/chấm hộ...) | Chờ quyết định C2 về chấm công; thêm bây giờ là trường chết |
 | Loại HĐLĐ, ngày chấm dứt HĐLĐ | Thuộc module Hợp đồng lao động (bước sau); hồ sơ đọc ké qua quan hệ, không lưu 2 chỗ |
-| ~~Đơn vị/phòng ban/chức danh kiêm nhiệm~~ | **ĐÃ CÓ từ CR-167 (25/08/2026)** — một nhân sự thuộc nhiều phòng ban (`employee/department_model.py`, thẻ kiêm nhiệm trên tab Chung). **Phiếu Quyết định bản gọn (V1-8 rút gọn, duoc-CR-585):** dòng lịch sử công tác ghi tay theo người, một dòng một sự kiện (bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc); ngày hiệu lực = `from_date` của dòng; tệp QĐ đính kèm với dòng; chủ yếu cho quản lý kiêm nhiệm từng người. **Phiếu Quyết định đầy đủ (V1-8)** chưa làm: một phiếu nhiều người (1 loại = 1 dòng), tờ trình, duyệt, thay thế cho — để sau. |
+| ~~Đơn vị/phòng ban/chức danh kiêm nhiệm~~ | **ĐÃ CÓ** — CR-167 (25/08/2026) làm bản đầu (thẻ chọn nhiều phòng trên tab Chung, chỉ trong công ty chính); **duoc-CR-755 (12/11/2026) thay hẳn** bằng tab riêng **Kiêm nhiệm** trên bảng `tab_employee_concurrent`: mỗi dòng có công ty (khác công ty chính được), phòng ban, chức vụ, từ ngày / đến ngày, số + ngày QĐ, tệp QĐ, ghi chú, công tắc **Tính vào phạm vi quyền** — xem §7.18. **Phiếu Quyết định bản gọn (V1-8 rút gọn, duoc-CR-585):** dòng lịch sử công tác ghi tay theo người, một dòng một sự kiện (bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc); ngày hiệu lực = `from_date` của dòng; tệp QĐ đính kèm với dòng; chủ yếu cho quản lý kiêm nhiệm từng người. **Phiếu Quyết định đầy đủ (V1-8)** chưa làm: một phiếu nhiều người (1 loại = 1 dòng), tờ trình, duyệt, thay thế cho — để sau. |
 | Nguyên quán, tên thường gọi, quốc tịch, Skype, Facebook, tình trạng tiêm vắc xin | Không có nhu cầu nghiệp vụ; `extra_fields` nếu cần |
 | Tách địa chỉ thành tỉnh/phường/địa chỉ (3 trường × 3 loại) | 1 trường chữ gộp là đủ; phiếu công ty cũng ghi 1 dòng |
 
@@ -636,7 +636,7 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 | U3 | Chuyển **Đã nghỉ việc** hoặc tắt **Đang làm việc** thì tự khóa tài khoản, đá phiên, thu quyền bot | `employee/service.py` `has_left_company`, `lock_linked_users` (bao-CR-400) |
 | U4, U5 | Đồng bộ email đăng nhập; mỗi nhân viên một tài khoản (chặn ở tầng ứng dụng) | `_sync_user_email_from_employee`; `user/service.py` |
 | C7 | Xuất CSV/XLSX chỉ có cột thường, lọc theo phạm vi | `employee/controller.py` `/export/csv`, `/export/xlsx` |
-| Kiêm nhiệm | Một nhân sự nhiều phòng ban (§4 đã sửa) | `employee/department_model.py` (CR-167) |
+| Kiêm nhiệm | Tab **Kiêm nhiệm** riêng, kiêm nhiệm được ở công ty khác, có ngày + QĐ + công tắc phạm vi (§7.18, duoc-CR-755; bản đầu CR-167 đã thay) | `employee/concurrent_*.py` · bảng `tab_employee_concurrent` · `hr/components/employee-tab-concurrent.tsx` |
 | Báo cáo | **Biến động nhân sự**, **Tình hình nghỉ phép**, **Quỹ phép năm** ở phân hệ Báo cáo | `employee/report_*.py`, `leave/report_*.py` (duoc-CR-548) |
 
 **Còn treo:**
@@ -660,7 +660,7 @@ trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xu
 
 ### 7.11. Quá trình công tác nhân sự — bản gọn của V1-8 (duoc-CR-585, 03/10/2026)
 
-**Mục đích:** Lịch sử công tác từng người — dùng để quản lý kiêm nhiệm, theo dõi quá trình thăng tiến, lưu tệp quyết định. **Không phải phiếu duyệt** — ghi tay không duyệt, có thể sửa/xóa, hỏi một lần rồi áp hồ sơ.
+**Mục đích:** Lịch sử công tác từng người — dùng để ghi quyết định kiêm nhiệm (nơi giữ kiêm nhiệm đang có tác dụng là tab **Kiêm nhiệm**, §7.18), theo dõi quá trình thăng tiến, lưu tệp quyết định. **Không phải phiếu duyệt** — ghi tay không duyệt, có thể sửa/xóa, hỏi một lần rồi áp hồ sơ.
 
 **Bảng `tab_employee_work_history`** (18 cột: 14 nghiệp vụ + 4 audit):
 
@@ -679,13 +679,13 @@ trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xu
 
 **Bảy loại sự kiện và cách áp hồ sơ:**
 
-| Loại | Tên (Việt) | Mã | Cột được đổi | Cách áp | Lưu ý |
+| Nhãn trên màn | Mã enum (`WorkEventType`) | Số | Cột được đổi | Cách áp | Lưu ý |
 |---|---|---|---|---|---|
 | Tuyển dụng | HIRE | 1 | company / dept / position | `update_employee` (chính) | Hướng tới cột `hire_date` nếu chưa có |
-| Điều chuyển | TRANSFER | 2 | company / dept | `update_employee` (chính) | Đổi pháp nhân hoặc phòng (cả hai không thay đổi → lỗi) |
+| Điều chuyển | TRANSFER | 2 | company / dept | `update_employee` (chính) | Đổi pháp nhân hoặc phòng (cả hai không thay đổi → lỗi). Đổi pháp nhân kéo theo kết thúc kiêm nhiệm ở công ty cũ (§7.18.6) |
 | Bổ nhiệm | APPOINT | 3 | position | `update_employee` (chính) | Đổi chức vụ; nếu công ty/phòng khác cấp công ty/phòng trước |
-| Kiêm nhiệm | CONCURRENT | 4 | thêm dept/position | `set_extra_departments` | Thêm vào `tab_employee_department` (bảng con kiêm nhiệm) dòng `from_date`–`to_date` này; `to_date` rỗng → vẫn đang kiêm. Dòng kiêm này CHỈ sống ở lịch sử (không có form kiêm thường) |
-| Loại bỏ từ danh sách | DISMISS | 5 | company / dept / position → 0 | `update_employee` (chính) | Gỡ khỏi công ty / phòng ban / chức vụ; cần rõ ràng **không phải đã thôi việc** — vẫn còn làm |
+| Kiêm nhiệm | CONCURRENT | 4 | không đổi vị trí chính; ghi MỘT dòng `tab_employee_concurrent` | `concurrent_transition_service.upsert_from_work_history` (duoc-CR-755) | Một dòng quá trình công tác ↔ tối đa một dòng kiêm nhiệm (khóa `work_history_id`); Áp lại thì cập nhật dòng đó, không đẻ dòng mới. Dòng đã kết thúc → dòng kiêm nhiệm nhận `to_date` (thành **Đã hết**); chưa có dòng mà đã hết hạn thì không tạo. Tệp QĐ chép liên kết sang dòng kiêm nhiệm. Một chiều: sửa ở tab **Kiêm nhiệm** không ghi ngược lại; xóa dòng quá trình công tác thì dòng kiêm nhiệm GIỮ, chỉ đặt `work_history_id = 0`. Câu xác nhận / kết quả: *Thêm / Cập nhật / Kết thúc dòng kiêm nhiệm: phòng "X" — công ty "B", …*. Xem §7.18 |
+| Miễn nhiệm | DISMISS | 5 | company / dept / position → 0 | `update_employee` (chính) | Gỡ khỏi công ty / phòng ban / chức vụ; cần rõ ràng **không phải đã thôi việc** — vẫn còn làm |
 | **Thôi việc** | **RESIGN** | **6** | `has_left_company = True`, `resign_date = from_date` | `update_employee` (chính) + `lock_linked_users` | **Hộp xác nhận riêng** — lịch sử không thể phục hồi từ bước này. Nói rõ: **Chuyển hồ sơ sang đã nghỉ việc? Tài khoản sẽ bị khóa + thu hồi phiên + huỷ tất cả share docs.** |
 | Khác | OTHER | 9 | (không đổi hồ sơ) | Ghi chú hoàn toàn | |
 
@@ -727,6 +727,10 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 - **Phạm vi người xem:** chỉ vẽ nhân sự trong `employee` scope; quản lý / trưởng phòng ngoài phạm vi bị ẩn danh (id `0`, không lộ tên); phòng ban hiện nếu trong phạm vi hoặc có người xem được ở đó, kèm chuỗi phòng cha. Người đã nghỉ việc / ngưng hoạt động không vẽ. Chỉ lấy cột công việc, không đụng nhóm nhạy cảm.
 - Quyền: `employee.read` (cả route lẫn API). Bài kiểm `test_so_do_to_chuc_cr669.py`.
 - **Công tắc "Sơ đồ tổ chức cho mọi nhân viên"** (Cài đặt nhân sự, duoc-CR-713, §7.17): khóa `org_chart_visible_to_all` mặc định BẬT. TẮT thì `/api/org-chart` trả 403 trừ người có `scope_condition(Employee, "employee", ...) is None` (không giới hạn công ty / phòng / người); giao diện hiện *Sơ đồ tổ chức chưa mở cho bạn*.
+- **Người kiêm nhiệm** (duoc-CR-755, §7.18.7): `GET /api/org-chart` có thêm khóa `concurrents` (dòng kiêm nhiệm đang hiệu
+  lực mà phạm vi người xem phủ cặp phòng + công ty của dòng). Giao diện vẽ thành khối riêng **Kiêm nhiệm tại các phòng đang
+  xem** dưới cây quản lý, thẻ viền nét đứt + nhãn **Kiêm nhiệm**, không có cạnh quản lý, không vào ô tìm người, không cộng
+  vào số người của phòng. Truy vấn gốc của sơ đồ vẫn chỉ đọc vị trí chính.
 
 ### 7.13. Kiểm việc duyệt đang treo trước khi khóa tài khoản (V0-4 / U3, duoc-CR-665, 22/10/2026)
 
@@ -802,6 +806,152 @@ chức, nghỉ phép, hợp đồng* (`backend/scripts/seed_help_nhan_su.py`) �
 | `employee_anniversary_years` | Mốc kỷ niệm vào làm (năm) | `1, 3, 5, 10` | Số cách nhau bằng dấu phẩy, mỗi số 1–60, tối đa 10 mốc. Ô *Lịch nhắc trong tháng* ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc | `employee/monthly_reminders_service.anniversary_years()` |
 
 Bài kiểm: `test/backend/test_cai_dat_nhan_su_cr713.py`; vitest `hr/components/hr-settings-form.test.tsx`.
+
+### 7.18. Kiêm nhiệm thành tab riêng, kiêm nhiệm được ở công ty khác (duoc-CR-755, 12/11/2026)
+
+Kế hoạch: [`plans/261112-kiem-nhiem-khac-cong-ty-duoc-cr-755/`](plans/261112-kiem-nhiem-khac-cong-ty-duoc-cr-755/plan.md).
+Thay hẳn thẻ chọn nhiều phòng của CR-167 (tab Chung, chỉ trong công ty chính, không ngày, không QĐ). Phạm vi quyền theo cặp
+chi tiết ở [`thiet-ke-phan-quyen.md` §4c](../../tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md); luật cho người viết mã
+ở `.claude/rules/hr-employee-profile.md` mục **KIÊM NHIỆM**. Bài HDSD: *Nhân sự — Khai kiêm nhiệm (kể cả ở công ty khác)*
+(`backend/scripts/seed_help_nhan_su.py`) — nội dung ở đây và ở seed phải khớp nhau.
+
+#### 7.18.1. Dữ liệu — bảng `tab_employee_concurrent`
+
+Bảng MỚI, không mở rộng `tab_employee_department` (bảng đó từ nay CHỈ còn dòng phòng CHÍNH, giữ cho 12 chỗ đọc
+`Employee.department_id` và chốt xóa phòng). Bỏ phương án mở rộng bảng cũ vì: lưu kiểu xóa hết chèn lại làm id dòng đổi mỗi
+lần (tệp QĐ gắn theo id sẽ mồ côi); UNIQUE(nhân sự, phòng) chặn **phòng dùng chung** (`company_id = 0`) vừa là phòng chính ở
+công ty A vừa là phòng kiêm nhiệm ở công ty B; một bảng hai nghĩa bắt mọi chỗ đọc phải nhớ lọc ngày + công tắc.
+
+| Cột | Kiểu | Ý nghĩa |
+|---|---|---|
+| `employee_id` · `company_id` · `department_id` | BIGINT (FK mềm) | Người kiêm nhiệm và CẶP (phòng, công ty) kiêm nhiệm. Phòng phải phục vụ công ty đó: phòng riêng của công ty, phòng dùng chung, hoặc phòng nối qua `tab_department_company` |
+| `position_id` · `position_label` | BIGINT · VARCHAR(100) | Chức vụ kiêm nhiệm (tùy chọn); nhãn CHỤP lúc ghi, không đi theo đổi tên danh mục. Chức vụ đang được dòng kiêm nhiệm dùng thì không xóa được khỏi danh mục |
+| `from_date` · `to_date` | DATE | Từ ngày bắt buộc khi tạo (chỉ dòng chép từ dữ liệu cũ mới trống); đến ngày trống = chưa kết thúc. Dải 1900-2100, `to_date >= from_date` |
+| `decision_no` · `decision_date` | VARCHAR(50) · DATE | Số + ngày quyết định |
+| `note` | VARCHAR(500) | Ghi chú |
+| `counts_scope` | BOOLEAN, mặc định bật | Công tắc **Tính vào phạm vi quyền** |
+| `work_history_id` | BIGINT, 0 = nhập tay | Dòng quá trình công tác đã Áp ra dòng này (§7.11) |
+| + AuditMixin | | |
+
+- Tệp QĐ: entity `employee_concurrent` của kho tệp chung (riêng tư), gắn theo id dòng. Dòng được sửa TẠI CHỖ nên id bền.
+- Trần **30 dòng / người** (kể cả dòng đã hết). Không cho hai giai đoạn của cùng (phòng, công ty) chồng nhau (409). Không trùng
+  phòng chính (400).
+- **Trạng thái là mã DẪN XUẤT, không lưu cột** (`ConcurrentStatus` ở `core/hr_concurrent_codes.py`, bộ mã `concurrent_status`):
+  1 **Sắp tới** (từ ngày > hôm nay) · 2 **Đang hiệu lực** · 3 **Đã hết** (đến ngày < hôm nay). Hai đầu bao gồm: đúng ngày đến
+  ngày vẫn còn hiệu lực. "Hôm nay" là giờ Việt Nam (`vn_today()`).
+- Migration `kn755a` (viết tay, `down_revision = stix723`): chép mọi dòng phụ cũ (`is_primary = 0`) sang bảng mới với công ty =
+  công ty chính, ngày trống, công tắc bật, ghi chú *Chuyển từ kiêm nhiệm cũ*, rồi xóa khỏi bảng cũ. Hạ (`downgrade`) chép lại
+  dòng đang hiệu lực cùng công ty chính; dòng khác công ty, ngày, QĐ mất — sao lưu bảng trước khi hạ.
+
+#### 7.18.2. Sáu quyết định đã chốt (người chủ, 12/11/2026)
+
+| # | Câu hỏi | Chốt |
+|---|---|---|
+| Q1 | Người có phạm vi `dept` / `company` phủ cặp (phòng, công ty) của dòng kiêm nhiệm có mở được HỒ SƠ người kiêm nhiệm không? | **CÓ**, hồ sơ đầy đủ như người phòng mình, chỉ khi dòng **đang hiệu lực + bật công tắc**. Chỉ ĐỌC (sửa vẫn theo vị trí chính); nhạy cảm vẫn che theo `employee_sensitive`, lương chỉ chính chủ |
+| Q2 | Chức vụ kiêm nhiệm có tự cấp vai trò hệ thống không? | **KHÔNG** — quyền mặc định theo chức vụ (duoc-CR-653) chỉ theo chức vụ CHÍNH |
+| Q3 | ACL theo phòng (văn bản, thư mục, báo cáo, skill AI) có tính phòng kiêm nhiệm khác công ty không? | **CÓ**, theo phòng (ACL không mang công ty). Rủi ro chấp nhận: phòng dùng chung nhiều công ty → ACL cấp cho phòng X (ý cho công ty C) cũng khớp người kiêm nhiệm (X, B) |
+| Q4 | Đổi pháp nhân chính thì kiêm nhiệm ở công ty cũ ra sao? | Mặc định **kết thúc** (đến ngày = hôm qua), có hộp hỏi để giữ từng dòng; dòng ở công ty khác không đụng (§7.18.6) |
+| Q5 | Người kiêm nhiệm hiện ở đâu phía phòng B? | Chỉ **trang chi tiết phòng ban** + **sơ đồ tổ chức**, có nhãn **Kiêm nhiệm**; danh sách `/hr/employees` lọc theo phòng KHÔNG đổi |
+| Q6 | Bật công tắc có mở cả hành động bậc phòng (duyệt, sửa) không? | **CÓ**, trên đúng cặp, theo mọi hành động vai trò sẵn có của người đó ở bậc phòng |
+
+#### 7.18.3. Phạm vi quyền theo CẶP (phòng, công ty)
+
+- Chỉ dòng **đang hiệu lực + bật công tắc** vào hồ sơ quyền. Cùng công ty chính → vào `dept_ids` (y như CR-167); khác công ty
+  → khóa mới `concurrent_pairs` = `[[phòng, công ty], ...]`. `company_id` của hồ sơ quyền vẫn MỘT số: kiêm nhiệm ở công ty B
+  **không** mở cả công ty B.
+- Cặp khác công ty chỉ được thấy ở nhánh có ràng `AND công ty == c` (bậc `dept`, `dept_proc`, phòng xử lý ĐMH, nút Chuyển phòng
+  xử lý); mọi đường dùng `dept_ids` không ràng công ty tự nhiên không thấy (quên một đường = thiếu quyền, không lộ). Bảng đầy đủ
+  ở §4c của tài liệu phân quyền.
+- **Tự hết hạn, không tác vụ nền**: hồ sơ quyền lọc theo ngày mỗi lần dựng. Hồ sơ quyền cache 60 giây theo tiến trình nên dòng
+  hết hạn lúc 0h còn tác dụng tối đa 60 giây. Thêm / sửa / xóa dòng xóa cache của người đó ngay.
+- Q1 bật TƯỜNG MINH (`include_concurrent=True`) ở các đường ĐỌC hồ sơ một người: `GET /api/employees/{eid}/pending-work`,
+  `/departments`, `/contacts`, `/families`, `/concurrents`, `/work-history`, tệp QĐ quá trình công tác và tệp QĐ kiêm nhiệm (chế
+  độ đọc). Giữ TẮT: danh sách `/api/employees`, xuất tệp, báo cáo, truy vấn gốc sơ đồ, mọi đường ghi. `scope_condition` tự bỏ
+  qua cờ khi hành động khác `read`.
+
+#### 7.18.4. Ai được gán (L1 / L2 / L3)
+
+| Chốt | Luật | Lỗi |
+|---|---|---|
+| Quyền | `employee.write` và hồ sơ nằm trong phạm vi ghi (theo vị trí CHÍNH) | 404 ngoài phạm vi |
+| L1 | Không ai tự sửa kiêm nhiệm của chính mình, **kể cả quản trị** (khác quá trình công tác) — cả tệp QĐ | 403 |
+| L2 | Cặp (phòng, công ty) đích phải nằm trong phạm vi GHI của người thao tác, đo trên bậc rộng nhất của `employee.write`: `all` → mọi cặp; `company` → công ty chính của người thao tác; `dept` trở xuống → phòng của mình trong công ty chính, phòng chọn ở ô *Phòng ban được xem* (chỉ công ty chính), hoặc cặp kiêm nhiệm của chính mình. Sửa cặp thì đo cả cặp cũ lẫn mới; bật lại công tắc, nới ngày cũng là mở rộng nên luôn qua L2. Dòng cũ `company_id = 0` coi như công ty của người thao tác | 403 *Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: …* |
+| L3 | Công ty + phòng có thật, phòng phục vụ công ty đó | 400 *Phòng ban "X" không phục vụ công ty đã chọn* |
+| Tệp QĐ | Mở / gắn / gỡ tệp của người khác cần thêm `employee_sensitive.read`; xóa dòng có tệp cũng cần (xóa dòng kéo theo xóa tệp). Chính chủ luôn xem được tệp của mình | 403 |
+
+Giao diện không tự ghép `can()`: nút chỉ theo cờ `can_edit` / `can_open_files` backend trả kèm danh sách.
+
+#### 7.18.5. Màn tab Kiêm nhiệm (`/hr/employees/:id?tab=concurrent`)
+
+- Tab **Kiêm nhiệm** nằm giữa **Quyết định bổ nhiệm** và **Liên hệ & Ngân hàng**. Bảng: Công ty · Phòng ban · Chức vụ · Từ ngày ·
+  Đến ngày · Trạng thái (huy hiệu) · Tính phạm vi (Có / Không) · Quyết định (số + ngày) · Tệp · Ghi chú (ẩn sẵn) · Thao tác.
+  Mặc định xếp Đang hiệu lực → Sắp tới → Đã hết, cùng nhóm thì từ ngày giảm. Khổ điện thoại: thẻ.
+- Nút **Thêm kiêm nhiệm** → hộp **Thêm kiêm nhiệm** / **Sửa kiêm nhiệm**: Công ty → Phòng ban (khóa tới khi chọn công ty, lọc
+  đúng luật L3, bỏ phòng chính) → Chức vụ → Từ ngày (bắt buộc) → Đến ngày → Số QĐ → Ngày QĐ → Ghi chú → công tắc **Tính vào
+  phạm vi quyền** → Tệp QĐ (thêm mới: chọn trước, tải lên sau khi tạo dòng; sửa: nút **Quản lý tệp (N)**, hộp **Tệp quyết định
+  kiêm nhiệm**). Tối đa 50MB một tệp.
+- Xóa: hộp **Xóa dòng kiêm nhiệm?**; dòng còn tác dụng thì nói rõ người này thôi thấy dữ liệu phòng đó ở công ty đó.
+- Hồ sơ của chính mình: băng *Đây là hồ sơ của chính bạn nên chỉ xem được — kiêm nhiệm của bạn do người khác cập nhật.*
+- Tab Chung: bỏ thẻ chọn nhiều phòng; câu gợi ý dưới ô Công ty nói rõ đổi pháp nhân sẽ kết thúc kiêm nhiệm ở pháp nhân cũ.
+- Trang cá nhân (`/api/auth/me`): `kiem_nhiem` = câu *Phòng X — Công ty B (Chức vụ)* của mọi dòng ĐANG HIỆU LỰC (kể cả tắt
+  công tắc), thêm `concurrents` có cấu trúc; popup phạm vi tài khoản chỉ liệt kê cặp đang hiệu lực + bật công tắc.
+
+#### 7.18.6. Đổi phòng chính, đổi pháp nhân, Áp quá trình công tác, Nhập Excel
+
+- **Đổi phòng chính** (hộp **Giữ phòng cũ làm kiêm nhiệm?**, bao-CR-709): chọn **Giữ làm kiêm nhiệm** tạo dòng (phòng cũ, công
+  ty TRƯỚC lần lưu, từ hôm nay, ghi chú *Giữ phòng cũ khi đổi phòng chính*, công tắc bật); đã có dòng cùng cặp còn hiệu lực /
+  sắp tới thì không tạo thêm.
+- **Đổi pháp nhân chính** (Q4): `PATCH /api/employees/{id}` nhận thêm `end_old_company_concurrent` (`null` / `true` = kết thúc,
+  `false` = giữ hết) và `keep_concurrent_ids` (id dòng GIỮ, tối đa 30). Dòng ở công ty cũ đang hiệu lực → `to_date` = hôm qua;
+  đã hết → nguyên; **chưa bắt đầu** → XÓA kèm tệp (có tệp mà thiếu `employee_sensitive.read` thì 403 và lùi cả lượt); dòng ở
+  công ty khác không đụng. Đổi về công ty 0 (gỡ pháp nhân) không kết thúc gì. Giao diện: hộp **Kiêm nhiệm ở công ty cũ** sau
+  hộp giữ phòng cũ, mặc định không tick dòng nào (kết thúc hết), nút **Lưu, kết thúc N dòng** / **Lưu, giữ tất cả**; dòng chưa
+  bắt đầu báo đỏ *Chưa bắt đầu — sẽ bị xóa nếu không giữ.* Tải danh sách lỗi thì báo lỗi, không lưu.
+- **Áp quá trình công tác loại Kiêm nhiệm**: §7.11. Lỗi riêng: 409 chồng giai đoạn, 403 L1 / L2, 400 L3.
+- **Nhập Excel**: không có cột kiêm nhiệm. Đổi pháp nhân qua tệp kết thúc dòng công ty cũ như trên; còn dòng chưa bắt đầu ở công
+  ty cũ thì là lỗi dòng *Còn kiêm nhiệm chưa bắt đầu ở công ty cũ — sửa ở tab Kiêm nhiệm trước* (không xóa qua tệp vì hoàn tác
+  không khôi phục được). Bản chụp hoàn tác có `_concurrent_ended` (`[id, to_date cũ, to_date mới]`); hoàn tác trả lại `to_date`
+  cũ, qua L2 + chồng giai đoạn, lệch `to_date` hiện tại thì từ chối cả lượt. `_depts` chỉ còn phòng chính; lô cũ còn phòng phụ
+  trong `_depts` bị từ chối hoàn tác. Xóa hồ sơ mới của lô bị chặn nếu đã có dòng kiêm nhiệm.
+- Xóa hồ sơ nhân sự: dọn dòng kiêm nhiệm + tệp.
+
+#### 7.18.7. Hiển thị ở phòng / công ty kiêm nhiệm (Q5) — không đếm trùng
+
+- Trang chi tiết phòng ban: khối **Kiêm nhiệm tại phòng này (N)** dưới bảng thành viên (ẩn khi không có ai): Mã NV · Họ tên +
+  nhãn **Kiêm nhiệm** (thêm **Sắp tới** nếu chưa bắt đầu) · Chức vụ kiêm nhiệm · Công ty kiêm nhiệm · Hiệu lực · Thuộc phòng
+  chính. Tên là liên kết khi `can_open`; dòng tắt công tắc vẫn hiện tên nhưng không mở được hồ sơ. Câu dưới tiêu đề: *Quân số
+  và báo cáo vẫn tính ở phòng chính của họ.* API `GET /api/employee-concurrents?department_id=` (bản tóm tắt, không điện
+  thoại / email / ngày sinh, trần 200 + `truncated`).
+- Sơ đồ tổ chức: §7.12 (chỉ dòng đang hiệu lực).
+- **Báo cáo nhân sự đọc `Employee.company_id` / `department_id`**: người kiêm nhiệm chỉ đếm ở công ty + phòng CHÍNH, không đếm
+  trùng ở phòng B.
+- Trợ lý AI: `employee_lookup` trả thêm `concurrent_roles` (danh sách câu *Phòng X — Công ty B (Chức vụ)*, dòng đang hiệu lực);
+  bộ lọc người không đổi (vẫn theo phạm vi hồ sơ chính).
+
+#### 7.18.8. Giới hạn đã biết
+
+- Q1 chỉ ĐỌC: trưởng phòng ở công ty B mở được hồ sơ người kiêm nhiệm nhưng không sửa được hồ sơ, không thêm / sửa kiêm nhiệm của
+  họ trừ khi phạm vi ghi phủ cả hồ sơ chính.
+- Tab **Hợp đồng** và **Quỹ phép** của hồ sơ người kiêm nhiệm trống với trưởng phòng công ty B: hai tab đi khóa quyền riêng
+  (`labor_contract`, `leave_balance`) theo vị trí chính, Q1 không mở.
+- `GET /api/employees/{eid}` (chi tiết hồ sơ) vốn KHÔNG xét phạm vi (`service.get_employee` đọc thẳng, ghim ở
+  `test_pham_vi_nhan_su_hanh_chinh::c9`, quyết định còn chờ) nên không có gì để bật Q1 ở đó; phạm vi thật nằm ở các đường con.
+- Loại trừ đích danh nhân sự (ô loại trừ người ở `tab_user_scope`) **không áp cho hồ sơ nhân sự** vì `SCOPE_FIELDS["employee"]`
+  không khai `owner`; dòng kiêm nhiệm đi cùng luật đó.
+- Danh bạ trợ lý AI và danh sách `/hr/employees` không lọc thêm theo kiêm nhiệm: người chỉ kiêm nhiệm ở phòng mình (hồ sơ chính
+  ở công ty khác) có thể không tra ra — xem ở trang chi tiết phòng ban.
+- Báo cáo **Điều chuyển & bổ nhiệm** (chỉ số *Kiêm nhiệm đang hiệu lực*, *Kiêm nhiệm hết trong 30 ngày*) đếm theo dòng QUÁ TRÌNH
+  CÔNG TÁC loại Kiêm nhiệm (`work_move_report_data.concurrent_lines`), không đọc `tab_employee_concurrent`: dòng thêm thẳng ở
+  tab **Kiêm nhiệm** không vào hai chỉ số đó.
+- Dòng chép từ dữ liệu cũ của nhân sự chưa gắn pháp nhân mang `company_id = 0`: ở nhánh Q1 chỉ phạm vi không ràng công ty mới phủ.
+- Xóa dòng quá trình công tác loại Kiêm nhiệm không gỡ dòng kiêm nhiệm (chỉ đặt `work_history_id = 0`).
+
+Bài kiểm: `test/backend/test_kiem_nhiem_khac_cong_ty_du_lieu_cr755.py`, `test_kiem_nhiem_migration_cr755.py`,
+`test_kiem_nhiem_pham_vi_cap_cr755.py`, `test_kiem_nhiem_luong_ghi_cr755.py`, `test_kiem_nhiem_hien_thi_cr755.py`,
+`test_kiem_nhiem_phong_ban.py`, `test_doi_phap_nhan_nhan_su.py`, `test_me_payload_vai_tro_kiem_nhiem.py`; vitest
+`hr/components/employee-tab-concurrent.test.tsx`, `employee-concurrent-form-dialog.test.tsx`,
+`employee-company-change-concurrent-dialog.test.tsx`, `department-concurrent-members-table.test.tsx`,
+`org-chart-concurrent-section.test.tsx`, `hr/utils/employee-work-history-apply.test.ts`.
 
 ## Hợp đồng lao động
 

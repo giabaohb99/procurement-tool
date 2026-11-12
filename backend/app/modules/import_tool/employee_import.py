@@ -177,8 +177,8 @@ def snapshot_diff(before: dict, emp: Employee) -> dict:
 
 
 def dept_pairs(db: Session, eid: int) -> list[list]:
-    """Tập phòng ban của hồ sơ `[[id, is_primary], …]` (đã sắp xếp) — để hoàn tác khôi phục ĐÚNG, kể cả phòng
-    kiêm nhiệm bị hạ/gỡ khi đổi phòng chính hoặc pháp nhân (mở rộng phạm vi dữ liệu nếu để sót)."""
+    """Tập phòng ban của hồ sơ `[[id, is_primary], …]` (đã sắp xếp). Từ duoc-CR-755 bảng chỉ còn dòng phòng CHÍNH
+    (kiêm nhiệm nằm ở `tab_employee_concurrent`, bản chụp `_concurrent_ended`); lô cũ còn phòng phụ -> hoàn tác từ chối."""
     rows = db.query(EmployeeDepartment).filter(EmployeeDepartment.employee_id == eid).all()
     return sorted([r.department_id, bool(r.is_primary)] for r in rows)
 
@@ -264,7 +264,9 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
         try:
             if existing:
                 department_service.block_edit_own_department(db, existing.id, ctx.user)
-            department_service.block_out_of_scope_departments(db, [new_dept], ctx.user, ctx.profile)
+            #  duoc-CR-755 (C1): cặp (phòng mới, công ty ĐÍCH của dòng) — ô công ty trong tệp thắng, không thì hồ sơ hiện có.
+            department_service.block_out_of_scope_primary_department(
+                db, new_dept, fields.get("company_id") or (existing.company_id if existing else 0) or 0, ctx.profile)
         except HTTPException as e:
             return fail("department_denied", str(e.detail))
 
@@ -290,7 +292,7 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
         with db.begin_nested():
             if existing:
                 out = service.update_employee_core(db, existing, payload, ctx.user.id,
-                                                   lock_users=ctx.apply)
+                                                   lock_users=ctx.apply, import_mode=True)
                 obj = existing
             else:
                 obj = service.create_employee_core(db, payload, ctx.user.id)
@@ -334,6 +336,10 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
         after_depts = dept_pairs(db, obj.id)
         if after_depts != before_depts:
             snap["_depts"] = [before_depts, after_depts]
+        if out is not None and out.ended_concurrent:
+            #  duoc-CR-755: dòng kiêm nhiệm ở công ty cũ đã kết thúc vì đổi pháp nhân — hoàn tác trả lại `to_date` cũ.
+            snap["_concurrent_ended"] = [[cid, old.isoformat() if old else None, new.isoformat()]
+                                         for cid, old, new in out.ended_concurrent]
     else:
         snap = {"_stamp": obj.updated_at.isoformat() if obj.updated_at else ""}
     return {"outcome": "updated" if existing else "created", "target_id": obj.id,

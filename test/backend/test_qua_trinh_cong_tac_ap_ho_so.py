@@ -10,7 +10,9 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.hr_work_history_codes import WorkEventType
+from app.core.vn_time import vn_today
 from app.modules.employee import department_service as dept_svc
+from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee import work_history_apply_service as applysvc
 from app.modules.employee import work_history_controller as whc
 from app.modules.employee.model import Employee
@@ -152,23 +154,39 @@ def test_loai_khac_khong_ap_duoc_thi_400(world):
 #  Kiêm nhiệm
 # ══════════════════════════════════════════════════════════════════════════════
 
-def test_kiem_nhiem_dang_hieu_luc_roi_sua_to_date_ve_hom_qua_thi_go(world):
+def _concurrents(world, eid):
+    world.db.expire_all()
+    return world.db.query(EmployeeConcurrent).filter(EmployeeConcurrent.employee_id == eid).all()
+
+
+def test_kiem_nhiem_dang_hieu_luc_roi_sua_to_date_ve_hom_qua_thi_thanh_da_het(world):
+    """duoc-CR-755: Áp loại Kiêm nhiệm ghi một dòng ĐỦ TRƯỜNG; sửa `to_date` về hôm qua rồi Áp lại thì dòng đó
+    thành "Đã hết" (đặt `to_date`), KHÔNG xóa và không đẻ dòng thứ hai."""
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
+    pos = _position(world.db, "Phó phòng kiêm nhiệm")
     row = _row(world.db, world.emp["a3"], WorkEventType.CONCURRENT,
-              date.today() - timedelta(days=10), department_id=world.dept["A.kt"])
+              date.today() - timedelta(days=10), department_id=world.dept["A.kt"],
+              position_id=pos.id, position_label="Phó phòng kiêm nhiệm",
+              decision_no="QD-77", note="Ghi chú QĐ")
     primary_before = world.db.get(Employee, world.emp["a3"]).department_id
+    company_before = world.db.get(Employee, world.emp["a3"]).company_id
 
     applysvc.apply(world.db, row, a1.user, a1.profile())
     world.db.commit()
-    assert world.dept["A.kt"] in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    (conc,) = _concurrents(world, world.emp["a3"])
+    assert (conc.department_id, conc.company_id) == (world.dept["A.kt"], company_before)
+    assert (conc.position_id, conc.position_label) == (pos.id, "Phó phòng kiêm nhiệm")
+    assert (conc.decision_no, conc.note, conc.work_history_id) == ("QD-77", "Ghi chú QĐ", row.id)
+    assert conc.from_date == row.from_date and conc.to_date is None and conc.counts_scope is True
 
     row.to_date = date.today() - timedelta(days=1)
     world.db.commit()
     changes = applysvc.apply(world.db, row, a1.user, a1.profile())
     world.db.commit()
 
-    assert changes, "đã kết thúc — phải gỡ, phải có thay đổi"
-    assert world.dept["A.kt"] not in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    assert changes, "đã kết thúc — phải có thay đổi"
+    (conc,) = _concurrents(world, world.emp["a3"])
+    assert conc.to_date == date.today() - timedelta(days=1)
     assert world.db.get(Employee, world.emp["a3"]).department_id == primary_before
 
 
@@ -180,7 +198,7 @@ def test_kiem_nhiem_trung_phong_chinh_khong_nhan_doi(world):
 
     changes = applysvc.apply(world.db, row, a1.user, a1.profile())
     assert changes == []
-    assert emp.department_id not in dept_svc.extra_departments_of(world.db, world.emp["a3"])
+    assert _concurrents(world, world.emp["a3"]) == []
 
 
 # ══════════════════════════════════════════════════════════════════════════════

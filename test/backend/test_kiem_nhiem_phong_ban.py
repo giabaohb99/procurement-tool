@@ -19,6 +19,7 @@ from fastapi import HTTPException
 from app.core.auth import get_perm_profile, perm_cache_clear
 from app.modules.department.model import Department
 from app.modules.employee import department_service as dv
+from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.department_model import EmployeeDepartment
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
@@ -54,16 +55,27 @@ def san(db, seed):
     return {"phong": department, "nguoi": person, "tai_khoan": tai_khoan}
 
 
+def _kiem_nhiem(db, san, key, **kw):
+    """Một dòng kiêm nhiệm CÙNG công ty (duoc-CR-755: kiêm nhiệm ở `tab_employee_concurrent`,
+    không còn là dòng phụ của `tab_employee_department`). Mặc định đang hiệu lực + bật công tắc."""
+    person = san["nguoi"]
+    row = EmployeeConcurrent(employee_id=person.id, company_id=person.company_id,
+                             department_id=san["phong"][key], **kw)
+    db.add(row)
+    db.commit()
+    perm_cache_clear(san["tai_khoan"].id)
+    return row
+
+
 # ── Đọc / ghi ───────────────────────────────────────────────────────────────
 
-def test_phong_chinh_luon_dung_dau_danh_sach(db, san):
-    """Thứ tự có nghĩa: nơi nào chỉ dùng được MỘT phòng thì lấy phần tử đầu."""
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_IT"], san["phong"]["P_KT"], san["phong"]["P_NS"]],
-                     ACTOR, primary_department=san["phong"]["P_NS"])
+def test_bang_phong_ban_chi_con_phong_chinh(db, san):
+    """duoc-CR-755: `tab_employee_department` chỉ còn MỘT dòng phòng chính; kiêm nhiệm ở bảng riêng."""
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_NS"], ACTOR)
+    _kiem_nhiem(db, san, "P_IT")
     db.commit()
 
-    assert dv.departments_of(db, san["nguoi"].id)[0] == san["phong"]["P_NS"]
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_NS"]]
 
 
 def test_cot_cu_department_id_luon_khop_phong_chinh(db, san):
@@ -72,24 +84,24 @@ def test_cot_cu_department_id_luon_khop_phong_chinh(db, san):
     Hai nguồn lệch nhau là bối cảnh phiếu, thông báo cho trưởng phòng và dấu vết
     cùng chỉ sai một lúc — mà không chỗ nào báo.
     """
-    dv.set_departments(db, san["nguoi"], [san["phong"]["P_IT"], san["phong"]["P_KT"]], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_IT"], ACTOR)
     db.commit()
 
     assert san["nguoi"].department_id == san["phong"]["P_IT"]
 
 
 def test_dat_lai_thi_THAY_THE_chu_khong_cong_don(db, san):
-    dv.set_departments(db, san["nguoi"], [san["phong"]["P_IT"], san["phong"]["P_NS"]], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_IT"], ACTOR)
     db.commit()
-    dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"]], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_KT"], ACTOR)
     db.commit()
 
     assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
 
 
-def test_khai_trung_mot_phong_hai_lan_chi_luu_mot(db, san):
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_KT"], san["phong"]["P_KT"]], ACTOR)
+def test_dat_cung_phong_chinh_hai_lan_chi_luu_mot_dong(db, san):
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_KT"], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_KT"], ACTOR)
     db.commit()
 
     assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
@@ -97,23 +109,11 @@ def test_khai_trung_mot_phong_hai_lan_chi_luu_mot(db, san):
 
 def test_go_khoi_moi_phong_van_hop_le(db, san):
     """Nhân sự chưa phân công là trạng thái có thật, không phải lỗi."""
-    dv.set_departments(db, san["nguoi"], [], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], 0, ACTOR)
     db.commit()
 
     assert dv.departments_of(db, san["nguoi"].id) == []
     assert san["nguoi"].department_id == 0
-
-
-def test_nhan_su_cua_phong_tinh_ca_nguoi_KIEM_NHIEM(db, san):
-    """Truy vấn cũ lọc `Employee.department_id == X` nên bỏ sót người kiêm nhiệm.
-
-    Hệ quả: thông báo gửi cho "trưởng phòng CNTT" không tới người kiêm nhiệm
-    phòng đó, và quân số phòng đếm thiếu.
-    """
-    dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
-    db.commit()
-
-    assert san["nguoi"].id in dv.employees_of_department(db, san["phong"]["P_IT"])
 
 
 # ── L3: phòng phải có thật, cùng pháp nhân ──────────────────────────────────
@@ -121,15 +121,14 @@ def test_nhan_su_cua_phong_tinh_ca_nguoi_KIEM_NHIEM(db, san):
 def test_phong_khong_ton_tai_bi_chan(db, san):
     """`tab_employee_department` không có khóa ngoại — id rác ghi vào được."""
     with pytest.raises(HTTPException) as error:
-        dv.set_departments(db, san["nguoi"], [999999], ACTOR)
+        dv.set_primary_department(db, san["nguoi"], 999999, ACTOR)
     assert error.value.status_code == 400
 
 
 def test_phong_cua_PHAP_NHAN_KHAC_bi_chan(db, san):
     """Gán chéo pháp nhân là mở dữ liệu xuyên pháp nhân bằng một dòng."""
     with pytest.raises(HTTPException) as error:
-        dv.set_departments(db, san["nguoi"],
-                         [san["phong"]["P_KT"], san["phong"]["P_LA"]], ACTOR)
+        dv.set_primary_department(db, san["nguoi"], san["phong"]["P_LA"], ACTOR)
     assert error.value.status_code == 400
     assert "pháp nhân khác" in str(error.value.detail)
 
@@ -204,57 +203,56 @@ def _profile_gia(bac: str, dept_ids=None, company_id=0, extra_grants=None):
     }
 
 
-def test_pham_vi_TAT_CA_thi_gan_duoc_moi_phong(db, san):
-    dv.block_out_of_scope_departments(db, list(san["phong"].values()), None,
-                                _profile_gia("all"))
+def test_pham_vi_TAT_CA_thi_gan_duoc_moi_phong(db, san, seed):
+    for phong in san["phong"].values():
+        dv.block_out_of_scope_primary_department(db, phong, seed.company_id, _profile_gia("all"))
 
 
-def test_pham_vi_PHONG_BAN_chi_gan_duoc_phong_cua_chinh_minh(db, san):
+def test_pham_vi_PHONG_BAN_chi_gan_duoc_phong_cua_chinh_minh(db, san, seed):
     """Không có chốt này thì người quản lý phạm vi *phòng ban* dựng ra được một
     người có tầm nhìn rộng hơn mình, rồi nhờ người đó xem hộ."""
-    profile = _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]])
+    profile = _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]], company_id=seed.company_id)
 
     with pytest.raises(HTTPException) as error:
-        dv.block_out_of_scope_departments(db, [san["phong"]["P_NS"]], None, profile)
+        dv.block_out_of_scope_primary_department(db, san["phong"]["P_NS"], seed.company_id, profile)
     assert error.value.status_code == 403
 
 
-def test_pham_vi_PHONG_BAN_VAN_gan_duoc_phong_cua_minh(db, san):
+def test_pham_vi_PHONG_BAN_VAN_gan_duoc_phong_cua_minh(db, san, seed):
     """CẶP ĐỐI CHỨNG — chặn nhầm ca này là người quản lý nhân sự phòng Kế toán
     không gán nổi chính phòng Kế toán, và họ sẽ đòi gỡ chốt."""
-    dv.block_out_of_scope_departments(db, [san["phong"]["P_KT"]], None,
-                                _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]]))
+    dv.block_out_of_scope_primary_department(
+        db, san["phong"]["P_KT"], seed.company_id,
+        _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]], company_id=seed.company_id))
 
 
-def test_phong_duoc_CAP_THEM_dich_danh_cung_gan_duoc(db, san):
+def test_phong_duoc_CAP_THEM_dich_danh_cung_gan_duoc(db, san, seed):
     """Màn Phân quyền cấp thêm phòng cho một tài khoản — phải tính vào tầm."""
-    profile = _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]],
+    profile = _profile_gia("dept", dept_ids=[san["phong"]["P_KT"]], company_id=seed.company_id,
                            extra_grants=[san["phong"]["P_NS"]])
-    dv.block_out_of_scope_departments(db, [san["phong"]["P_NS"]], None, profile)
+    dv.block_out_of_scope_primary_department(db, san["phong"]["P_NS"], seed.company_id, profile)
 
 
 def test_pham_vi_CONG_TY_gan_duoc_moi_phong_trong_phap_nhan(db, san, seed):
     profile = _profile_gia("company", company_id=seed.company_id)
-    dv.block_out_of_scope_departments(db, [san["phong"]["P_NS"], san["phong"]["P_IT"]],
-                                None, profile)
+    for ma in ("P_NS", "P_IT"):
+        dv.block_out_of_scope_primary_department(db, san["phong"][ma], seed.company_id, profile)
 
+    #  Hồ sơ đích thuộc pháp nhân KHÁC thì bậc công ty không phủ (cặp, không chỉ ID phòng).
     with pytest.raises(HTTPException):
-        dv.block_out_of_scope_departments(db, [san["phong"]["P_LA"]], None, profile)
+        dv.block_out_of_scope_primary_department(db, san["phong"]["P_LA"], seed.company_id + 99, profile)
 
 
-def test_khong_co_quyen_ghi_thi_khong_gan_duoc_gi(db, san):
+def test_khong_co_quyen_ghi_thi_khong_gan_duoc_gi(db, san, seed):
     profile = {"grants": [], "company_id": 0, "dept_ids": [], "dept_id": 0}
     with pytest.raises(HTTPException):
-        dv.block_out_of_scope_departments(db, [san["phong"]["P_KT"]], None, profile)
+        dv.block_out_of_scope_primary_department(db, san["phong"]["P_KT"], seed.company_id, profile)
 
 
 # ── Hồ sơ quyền: kiêm nhiệm mở đúng phạm vi ─────────────────────────────────
 
 def test_ho_so_quyen_liet_ke_DU_cac_phong(db, san):
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
-    db.commit()
-    perm_cache_clear(san["tai_khoan"].id)
+    _kiem_nhiem(db, san, "P_IT")
 
     profile = get_perm_profile(db, san["tai_khoan"])
     assert set(profile["dept_ids"]) == {san["phong"]["P_KT"], san["phong"]["P_IT"]}
@@ -278,17 +276,16 @@ def test_chua_co_dong_kiem_nhiem_thi_LUI_ve_phong_chinh(db, san):
 
 
 def test_doi_phong_ban_thi_XOA_CACHE_quyen(db, san):
-    """Hồ sơ quyền nhớ 60 giây. Không xóa là người vừa được thêm phòng vẫn nhìn
-    bằng tầm cũ suốt một phút, còn người vừa bị gỡ thì vẫn đọc được."""
+    """Hồ sơ quyền nhớ 60 giây. Không xóa là người vừa đổi phòng vẫn nhìn bằng tầm cũ
+    suốt một phút, còn người vừa bị gỡ thì vẫn đọc được."""
     perm_cache_clear()
     get_perm_profile(db, san["tai_khoan"])          # nạp vào cache
 
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
+    dv.set_primary_department(db, san["nguoi"], san["phong"]["P_IT"], ACTOR)
     db.commit()
 
     profile = get_perm_profile(db, san["tai_khoan"])
-    assert set(profile["dept_ids"]) == {san["phong"]["P_KT"], san["phong"]["P_IT"]}
+    assert profile["dept_ids"] == [san["phong"]["P_IT"]]
 
 
 def test_chia_van_ban_theo_phong_tinh_ca_phong_kiem_nhiem(db, san):
@@ -297,10 +294,7 @@ def test_chia_van_ban_theo_phong_tinh_ca_phong_kiem_nhiem(db, san):
     from app.modules.document.access_model import SUBJECT_DEPARTMENT
     from app.modules.document.access_service import subject_pairs
 
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_IT"], san["phong"]["P_KT"]], ACTOR)
-    db.commit()
-    perm_cache_clear(san["tai_khoan"].id)
+    _kiem_nhiem(db, san, "P_IT")
 
     pairs = subject_pairs(get_perm_profile(db, san["tai_khoan"]))
     theo_phong = {sid for kind, sid in pairs if kind == SUBJECT_DEPARTMENT}
@@ -331,18 +325,16 @@ def test_doi_phong_chinh_KHONG_lam_mat_phong_kiem_nhiem(db, san):
     from app.modules.employee import service as emp_service
     from app.modules.employee.schema import EmployeeUpdate
 
-    dv.set_departments(db, san["nguoi"],
-                     [san["phong"]["P_KT"], san["phong"]["P_NS"]], ACTOR)
-    db.commit()
+    _kiem_nhiem(db, san, "P_NS")
 
     emp_service.update_employee(
         db, san["nguoi"].id,
         EmployeeUpdate(department_id=san["phong"]["P_IT"]), ACTOR)
 
-    remaining = dv.departments_of(db, san["nguoi"].id)
-    assert remaining[0] == san["phong"]["P_IT"], "phòng chính đổi theo"
-    assert san["phong"]["P_NS"] in remaining, "phòng kiêm nhiệm phải còn"
-    assert san["phong"]["P_KT"] not in remaining, "phòng chính CŨ bị gỡ (bao-CR-709)"
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"]], "phòng chính đổi theo"
+    kiem = {r.department_id for r in db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == san["nguoi"].id)}
+    assert kiem == {san["phong"]["P_NS"]}, "dòng kiêm nhiệm phải còn, phòng chính CŨ bị gỡ (bao-CR-709)"
 
 
 # ── bao-CR-709: đổi phòng chính thì phòng cũ gỡ hay giữ ──────────────────────
@@ -372,8 +364,10 @@ def test_doi_phong_chinh_mac_dinh_GO_phong_cu(db, san):
 def test_doi_phong_chinh_chon_GIU_thi_phong_cu_thanh_kiem_nhiem(db, san):
     out = _move_to_it(db, san, keep_old_department=True)
 
-    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"], san["phong"]["P_KT"]]
-    assert dv.extra_departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"]]
+    rows = db.query(EmployeeConcurrent).filter(EmployeeConcurrent.employee_id == san["nguoi"].id).all()
+    assert [(r.department_id, r.company_id) for r in rows] == [(san["phong"]["P_KT"], san["nguoi"].company_id)]
+    assert rows[0].from_date is not None and rows[0].to_date is None and rows[0].counts_scope is True
     assert 'Đổi phòng chính — giữ phòng cũ "Phòng Kế toán" làm kiêm nhiệm' in out.notes
 
 
@@ -388,14 +382,14 @@ def test_luu_lai_cung_phong_KHONG_go_kiem_nhiem(db, san):
     from app.modules.employee import service as emp_service
     from app.modules.employee.schema import EmployeeUpdate
 
-    dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"], san["phong"]["P_NS"]], ACTOR)
-    db.commit()
+    _kiem_nhiem(db, san, "P_NS")
     obj = db.get(Employee, san["nguoi"].id)
     out = emp_service.update_employee_core(
         db, obj, EmployeeUpdate(department_id=san["phong"]["P_KT"]), ACTOR)
     db.commit()
 
-    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"], san["phong"]["P_NS"]]
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
+    assert db.query(EmployeeConcurrent).filter(EmployeeConcurrent.employee_id == san["nguoi"].id).count() == 1
     assert not any("phòng chính" in n for n in out.notes)
 
 
@@ -414,41 +408,50 @@ def test_tao_moi_nhan_su_co_luon_dong_kiem_nhiem(db, seed, san):
 # ── Kiêm nhiệm là thứ RIÊNG, không gộp với phòng chính ───────────────────────
 
 def test_kiem_nhiem_KHONG_gom_phong_chinh(db, san):
-    """Phòng chính là ô "Phòng ban" của hồ sơ, kiêm nhiệm là các phòng phụ trách
-    THÊM. Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là phòng chính"
-    là dựng ra một luật ngầm mà người dùng không có cách nào biết."""
-    dv.set_extra_departments(db, san["nguoi"],
-                      [san["phong"]["P_IT"], san["phong"]["P_NS"]], ACTOR)
-    db.commit()
+    """Phòng chính là ô "Phòng ban" của hồ sơ, kiêm nhiệm là các dòng phụ trách THÊM ở bảng riêng.
+    Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là phòng chính" là dựng ra một luật ngầm."""
+    _kiem_nhiem(db, san, "P_IT")
+    _kiem_nhiem(db, san, "P_NS")
 
-    kiem = dv.extra_departments_of(db, san["nguoi"].id)
-    assert set(kiem) == {san["phong"]["P_IT"], san["phong"]["P_NS"]}
-    assert san["phong"]["P_KT"] not in kiem, "phòng chính không phải kiêm nhiệm"
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
+    from app.modules.employee import concurrent_service
+    assert {r.department_id for r in concurrent_service.active_concurrent_rows(db, san["nguoi"].id)} == {
+        san["phong"]["P_IT"], san["phong"]["P_NS"]}
 
 
-def test_dat_kiem_nhiem_KHONG_dong_toi_phong_chinh(db, san):
-    dv.set_extra_departments(db, san["nguoi"], [san["phong"]["P_IT"]], ACTOR)
-    db.commit()
+def test_them_kiem_nhiem_KHONG_dong_toi_phong_chinh(db, san):
+    _kiem_nhiem(db, san, "P_IT")
 
     assert san["nguoi"].department_id == san["phong"]["P_KT"]
 
 
-def test_chon_nham_chinh_phong_chinh_lam_kiem_nhiem_thi_bi_loc(db, san):
-    """Người dùng chọn trùng thì lọc đi, đừng đẻ ra dòng trùng nghĩa."""
-    dv.set_extra_departments(db, san["nguoi"],
-                      [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
-    db.commit()
-
-    assert dv.extra_departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"]]
-    assert set(dv.departments_of(db, san["nguoi"].id)) == {
-        san["phong"]["P_KT"], san["phong"]["P_IT"]}
-
-
 def test_kiem_nhiem_VAN_mo_dung_pham_vi_du_lieu(db, san):
     """Cái đích của cả tính năng: phụ trách thêm phòng thì thấy được phiếu phòng đó."""
-    dv.set_extra_departments(db, san["nguoi"], [san["phong"]["P_IT"]], ACTOR)
-    db.commit()
-    perm_cache_clear(san["tai_khoan"].id)
+    _kiem_nhiem(db, san, "P_IT")
 
     profile = get_perm_profile(db, san["tai_khoan"])
     assert set(profile["dept_ids"]) == {san["phong"]["P_KT"], san["phong"]["P_IT"]}
+    assert profile["dept_ids"][0] == san["phong"]["P_KT"], "phòng chính đứng đầu"
+
+
+def test_kiem_nhiem_het_han_hoac_tat_cong_tac_KHONG_mo_pham_vi(db, san):
+    """CẶP ĐỐI CHỨNG — dòng đã hết hạn, chưa tới ngày, hoặc tắt công tắc chỉ là ghi nhận."""
+    from datetime import timedelta
+
+    from app.core.vn_time import vn_today
+
+    today = vn_today()
+    _kiem_nhiem(db, san, "P_IT", to_date=today - timedelta(days=1))
+    _kiem_nhiem(db, san, "P_NS", from_date=today + timedelta(days=1))
+    assert get_perm_profile(db, san["tai_khoan"])["dept_ids"] == [san["phong"]["P_KT"]]
+
+    _kiem_nhiem(db, san, "P_IT", counts_scope=False)
+    assert get_perm_profile(db, san["tai_khoan"])["dept_ids"] == [san["phong"]["P_KT"]]
+
+
+def test_kiem_nhiem_ngay_cuoi_van_con_hieu_luc(db, san):
+    """Biên bao gồm hai đầu: đúng ngày `to_date` vẫn còn hiệu lực."""
+    from app.core.vn_time import vn_today
+
+    _kiem_nhiem(db, san, "P_IT", from_date=vn_today(), to_date=vn_today())
+    assert san["phong"]["P_IT"] in get_perm_profile(db, san["tai_khoan"])["dept_ids"]

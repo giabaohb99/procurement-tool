@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ConcurrentMember } from '../types/concurrent-member'
 import type { OrgChartDepartmentRow, OrgChartEmployeeRow, OrgChartPayload } from '../types/org-chart'
 import {
   buildOrgChartForest,
@@ -24,7 +25,7 @@ function emp(id: number, over: Partial<OrgChartEmployeeRow> = {}): OrgChartEmplo
 }
 
 function payload(over: Partial<OrgChartPayload>): OrgChartPayload {
-  return { companies, departments: [dept(1), dept(2), dept(3, { parent: 2 })], employees: [], ...over }
+  return { companies, departments: [dept(1), dept(2), dept(3, { parent: 2 })], employees: [], concurrents: [], ...over }
 }
 
 //  Mọi người trên cây (đi từ gốc xuống) — để chốt không ai bị mất hay vẽ hai lần.
@@ -110,7 +111,7 @@ describe('buildOrgChartForest', () => {
   })
 
   it('empty payload gives an empty forest', () => {
-    const forest = buildOrgChartForest({ companies: [], departments: [], employees: [] }, ALL)
+    const forest = buildOrgChartForest({ companies: [], departments: [], employees: [], concurrents: [] }, ALL)
     expect(forest.roots).toEqual([])
     expect(forest.visibleIds.size).toBe(0)
   })
@@ -149,6 +150,90 @@ describe('collectOrgDepartmentIds / listOrgChartManagers', () => {
   it('lists only visible people who have reports', () => {
     const forest = buildOrgChartForest(payload({ employees: [emp(1), emp(2, { manager_id: 1 }), emp(3)] }), ALL)
     expect(listOrgChartManagers(forest)).toEqual([1])
+  })
+})
+
+function member(id: number, over: Partial<ConcurrentMember> = {}): ConcurrentMember {
+  return {
+    id,
+    employee_id: 100 + id,
+    code: `K${id}`,
+    full_name: `Kiêm nhiệm ${id}`,
+    position_label: '',
+    company_id: 2,
+    company_name: 'Công ty B',
+    department_id: 2,
+    department_name: 'Phòng 2',
+    from_date: '2026-09-01',
+    to_date: null,
+    status: 2,
+    status_label: 'Đang hiệu lực',
+    counts_scope: true,
+    primary_company_id: 1,
+    primary_company_name: 'Công ty A',
+    primary_department_id: 1,
+    primary_department_name: 'Phòng 1',
+    can_open: true,
+    ...over,
+  }
+}
+
+describe('buildOrgChartForest — người kiêm nhiệm (duoc-CR-755)', () => {
+  it('keeps concurrent people out of the manager tree: not roots, not people, so headcount is not doubled', () => {
+    const forest = buildOrgChartForest(payload({ employees: [emp(1)], concurrents: [member(1)] }), ALL)
+    expect(forest.roots).toEqual([1])
+    expect(forest.people.has(101)).toBe(false)
+    expect(forest.visibleIds.has(101)).toBe(false)
+    expect(forest.concurrentGroups.map((g) => g.members.map((m) => m.id))).toEqual([[1]])
+  })
+
+  it('groups by concurrent place (department + company) and sorts people by name', () => {
+    const forest = buildOrgChartForest(
+      payload({
+        concurrents: [
+          member(1, { full_name: 'Zeta' }),
+          member(2, { full_name: 'An' }),
+          member(3, { department_id: 3, department_name: 'Phòng 3' }),
+        ],
+      }),
+      ALL,
+    )
+    expect(forest.concurrentGroups.map((g) => [g.departmentName, g.members.map((m) => m.full_name)])).toEqual([
+      ['Phòng 2', ['An', 'Zeta']],
+      ['Phòng 3', ['Kiêm nhiệm 3']],
+    ])
+  })
+
+  it('filters by the CONCURRENT company and department, not the primary ones', () => {
+    const data = payload({
+      concurrents: [member(1), member(2, { company_id: 1, company_name: 'Công ty A', department_id: 1 })],
+    })
+    const inB = buildOrgChartForest(data, { companyId: 2, departmentIds: null })
+    expect(inB.concurrentGroups.flatMap((g) => g.members.map((m) => m.id))).toEqual([1])
+    const dept1 = buildOrgChartForest(data, { companyId: null, departmentIds: new Set([1]) })
+    expect(dept1.concurrentGroups.flatMap((g) => g.members.map((m) => m.id))).toEqual([2])
+    const none = buildOrgChartForest(data, { companyId: 2, departmentIds: new Set([1]) })
+    expect(none.concurrentGroups).toEqual([])
+  })
+
+  it('a department filter that includes child departments also shows people concurrent in a child', () => {
+    const data = payload({ concurrents: [member(1, { department_id: 3, department_name: 'Phòng 3' })] })
+    const forest = buildOrgChartForest(data, {
+      companyId: null,
+      departmentIds: collectOrgDepartmentIds(data.departments, 2),
+    })
+    expect(forest.concurrentGroups).toHaveLength(1)
+  })
+
+  it('an old payload without the concurrents key does not crash (stale cache / older backend)', () => {
+    const legacy = { companies, departments: [dept(1)], employees: [emp(1)] } as unknown as OrgChartPayload
+    expect(buildOrgChartForest(legacy, ALL).concurrentGroups).toEqual([])
+  })
+
+  it('empty list and a person listed twice at the same place (two rows) both stay safe', () => {
+    expect(buildOrgChartForest(payload({ concurrents: [] }), ALL).concurrentGroups).toEqual([])
+    const twice = buildOrgChartForest(payload({ concurrents: [member(1), member(2, { employee_id: 101 })] }), ALL)
+    expect(twice.concurrentGroups[0].members.map((m) => m.id)).toEqual([1, 2])
   })
 })
 

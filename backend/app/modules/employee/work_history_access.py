@@ -16,10 +16,25 @@ def employee_in_scope(db: Session, eid: int, user, profile: dict, action: str = 
     """Hồ sơ nằm trong phạm vi — khuôn `employee.controller._employee_in_scope`,
     tách riêng ở đây vì phase này không sửa `employee/controller.py` (ngoài
     phạm vi "File Ownership")."""
-    obj = get_scoped(db, Employee, "employee", eid, user, profile, action)
+    #  duoc-CR-755 (Q1): đường ĐỌC (quá trình công tác, danh sách kiêm nhiệm) mở thêm người kiêm nhiệm ở cặp
+    #  (phòng, công ty) mình phủ; ghi luôn theo vị trí chính.
+    obj = get_scoped(db, Employee, "employee", eid, user, profile, action,
+                     include_concurrent=(action == "read"))
     if obj is None:
         raise HTTPException(404, "Không tìm thấy nhân viên")
     return obj
+
+
+def check_file_read_scope(db: Session, user, profile: dict, employee_id: int) -> None:
+    """ĐỌC tệp quyết định của người khác: hồ sơ phải nằm trong phạm vi ĐỌC, kể cả nhánh kiêm nhiệm (Q1).
+
+    Dùng chung cho tệp quá trình công tác và tệp kiêm nhiệm (`concurrent_access.check_file`). Trả `True`
+    từ `check_file` mà không qua đây thì rơi về `attachment_scope.ensure_in_scope` — bản đó KHÔNG bật cờ
+    `include_concurrent` nên trưởng phòng B mở được hồ sơ mà tải không được tệp quyết định.
+    """
+    if get_scoped(db, Employee, "employee", employee_id, user, profile, "read",
+                  include_concurrent=True) is None:
+        raise HTTPException(403, "Chứng từ của tệp nằm ngoài phạm vi được phép xem")
 
 
 def is_own_profile(user, eid: int) -> bool:
@@ -119,4 +134,7 @@ def check_file(db: Session, user, entity: str, entity_id: int | None, mode: str)
                 403, "Cần quyền sửa hồ sơ nhân sự (employee.write, đúng phạm vi) để gắn/gỡ "
                      "tệp quyết định của người khác")
         return True   # đã đủ sensitive + write — khỏi rơi về nhánh chung (vốn chấp nhận cả create)
-    return False   # đọc — rơi về luồng thường (employee.read + phạm vi)
+    #  Đọc: đã qua `employee_sensitive.read`; còn lại là phạm vi hồ sơ — tự xét (có nhánh kiêm nhiệm, Q1)
+    #  thay vì rơi về luồng thường vốn không biết nhánh đó. `get_scoped` đã gồm quyền vai trò `employee.read`.
+    check_file_read_scope(db, user, profile, row.employee_id)
+    return True

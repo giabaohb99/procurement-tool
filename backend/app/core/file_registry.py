@@ -85,6 +85,11 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # `employee_sensitive.read`, Q4) nằm ở `employee/work_history_access.check_file`,
     # gọi ở ĐẦU `attachment/controller._check`.
     "employee_work_history":  ("employee", _DOC, 50),
+    # Tệp QĐ của một DÒNG kiêm nhiệm (duoc-CR-755) — `entity_id` = id dòng
+    # (`tab_employee_concurrent`). Cùng khuôn `employee_work_history`: lớp riêng của tệp
+    # (chính chủ đọc; người khác cần `employee_sensitive.read`; gắn/gỡ cần `employee.write`
+    # + phạm vi ghi phủ cặp phòng/công ty) ở `employee/concurrent_access.check_file`.
+    "employee_concurrent":    ("employee", _DOC, 50),
 }
 
 #  CỬA NHẬN TỆP KHÔNG ĐI QUA `FileLink` — ảnh đại diện, ảnh chữ ký, ảnh chèn bài HDSD.
@@ -141,8 +146,9 @@ def direct_policy(kind: str) -> tuple[set[str], int]:
 #  thẳng bucket bị chuyền tay là lộ bệnh án của một người cụ thể.
 #  `employee_work_history` (plan 261003-0837): tệp QĐ bổ nhiệm/điều chuyển/thôi
 #  việc — cùng nhóm nhạy cảm với CCCD/ngân hàng của hồ sơ nhân sự.
+#  `employee_concurrent` (duoc-CR-755): tệp QĐ kiêm nhiệm — cùng nhóm với QĐ quá trình công tác.
 PRIVATE_ENTITIES: set[str] = {"document_version", "dossier", "leave_request",
-                             "employee_work_history"}
+                             "employee_work_history", "employee_concurrent"}
 
 
 def is_private(entity: str) -> bool:

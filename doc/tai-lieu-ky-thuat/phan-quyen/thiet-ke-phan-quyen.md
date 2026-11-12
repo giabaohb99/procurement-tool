@@ -123,6 +123,64 @@ Gác riêng 13 báo cáo của phân hệ Báo cáo (Thu mua 5 · Nhân sự 3 �
 
 ---
 
+## 4c. Kiêm nhiệm khác công ty — phạm vi theo CẶP (phòng, công ty) (duoc-CR-755, 12/11/2026)
+
+Kế hoạch: `doc/erp/hrm/plans/261112-kiem-nhiem-khac-cong-ty-duoc-cr-755/` (giai đoạn 01 dữ liệu, 02 phạm vi). Bảng nguồn:
+`tab_employee_concurrent`. Mã: `core/auth.py` (hồ sơ quyền), `core/scoping.py`, `core/subject_match.py`.
+
+**Hồ sơ quyền.** Dòng kiêm nhiệm **còn hiệu lực hôm nay (giờ VN, `vn_today()`)** và **bật công tắc "Tính vào phạm vi quyền"**
+được tách làm hai nhóm, trong CÙNG một truy vấn (số truy vấn không đổi theo số dòng):
+
+| Dòng kiêm nhiệm | Vào đâu | Hệ quả |
+|---|---|---|
+| Cùng công ty chính (hoặc công ty dòng = 0: phòng dùng chung / nhân sự chưa gắn pháp nhân) | `dept_ids` (như CR-167) | Mọi đường theo phòng thấy phòng đó ở công ty chính |
+| Khác công ty chính | khóa mới `concurrent_pairs` = `[[phòng, công ty], ...]` (xếp theo công ty rồi phòng, bỏ trùng) | Chỉ những nhánh tự ràng `AND công ty == c` mới thấy |
+
+`company_id` của hồ sơ quyền **vẫn là MỘT số** — bậc `company` không phình, kiêm nhiệm ở công ty B không mở cả công ty B.
+Hết hạn / sắp tới / tắt công tắc: dòng không có trong hồ sơ quyền; vì hồ sơ quyền cache 60 giây theo tiến trình nên dòng hết
+hạn lúc 0h còn tác dụng tối đa 60 giây (cùng giới hạn mọi thay đổi phân quyền).
+
+**Đường nào thấy cặp khác công ty, đường nào không** (hàng rào mặc định là `dept_ids` chỉ cùng công ty: quên một đường = thiếu
+quyền, không phải lộ dữ liệu):
+
+| Đường | Thấy cặp khác công ty? | Cách |
+|---|---|---|
+| Bậc `dept` (`_role_scope_cond`) | CÓ, đúng cặp | `OR(nhánh cũ, AND(công ty == c, khớp phòng của c))`, gom theo công ty (`_pair_conds`) |
+| Bậc `dept_proc` — entity không phải chứng từ thu mua (rơi về bậc phòng) | CÓ, đúng cặp | như trên |
+| Bậc `dept_proc` — YCMH, YCBG, đặt xe (`_narrow_to_dept`) | CÓ, đúng cặp | `AND(cond, OR(khớp phòng cũ, AND(công ty == c, khớp phòng của c)))` |
+| Bậc `dept_proc` — ĐMH (`_handler_match`, phòng XỬ LÝ) | CÓ, đúng cặp | `hm` thành `OR(hm cũ, AND(công ty == c, handler khớp phòng của c))` |
+| `holds_handling_dept` (nút Chuyển phòng xử lý / Trả về thu mua) | CÓ, đúng cặp | `(phòng đang xử lý, công ty phiếu) ∈ concurrent_pairs` |
+| Bậc `company`, `own`, `all`, Duyệt dấu | KHÔNG đổi | |
+| Ô "Phòng ban được xem" (`_dept_include_cond`) | KHÔNG | đọc `tab_user_scope` do quản trị chọn, không đọc kiêm nhiệm |
+| Entity có phòng mà không có cột công ty | KHÔNG | không ràng được; bài canh bắt entity mới thiếu |
+| Mọi đường khác dùng `dept_ids` (không ràng công ty) | KHÔNG | cặp không nằm trong `dept_ids` |
+| ACL theo chủ thể (`subject_match`: văn bản, thư mục, báo cáo, skill AI) — chốt Q3 | CÓ, **chỉ theo phòng** | `subject_pairs` cộng phòng của `concurrent_pairs`; KHÔNG cộng công ty thành chủ thể công ty |
+
+**Q6 — công tắc mở cả hành động bậc phòng.** Bật công tắc = làm được như nhân viên phòng đó, theo MỌI hành động vai trò sẵn có
+của người đó có phạm vi `dept` (duyệt, sửa…) trên đúng cặp. Người gán phải sửa được hồ sơ (công ty chính) và có phạm vi ghi phủ
+cặp đích (L1/L2/L3 của `concurrent_service`).
+
+**Q3 — rủi ro chấp nhận.** Dòng ACL loại PHÒNG không mang công ty, nên phòng DÙNG CHUNG ở nhiều công ty: ACL cấp cho phòng X
+(ý định cho công ty C) cũng khớp người kiêm nhiệm (X, B). Chốt tự cấp quyền báo cáo (`block_self_allow_grant`) cũng tính phòng
+kiêm nhiệm khác công ty (chặt hơn); tập phòng cha của skill AI rộng hơn (đúng ý Q3).
+
+**Q1 — đọc HỒ SƠ người kiêm nhiệm (chỉ ĐỌC, mặc định TẮT).** `scope_condition` / `apply_scope` / `get_scoped` nhận
+`include_concurrent: bool = False`; chỉ có tác dụng khi `entity == "employee"` và `action == "read"` (sửa / xóa / xuất / in
+vẫn theo vị trí chính). Khi bật: `cond_cũ OR EXISTS(dòng kiêm nhiệm của hồ sơ này, hiệu lực + bật công tắc, ở cặp người xem
+phủ)` — một subquery tương quan trong cùng câu SQL, không N+1. "Cùng luật bậc" nhờ `concurrent_row_scope_condition(user,
+profile, action)`: áp phạm vi `employee` của người xem lên dòng kiêm nhiệm như thể nhân sự ngồi ở (phòng, công ty) của dòng
+(bậc `dept` → cặp thuộc `dept_ids` + công ty chính hoặc `concurrent_pairs`; bậc `company` → công ty của dòng là công ty chính
+của người xem; ô chọn / loại trừ công ty ăn theo cột công ty của dòng). Chỉ bật cờ ở đường đọc hồ sơ MỘT người; báo cáo, sơ đồ,
+xuất tệp, ghi giữ TẮT — bật mặc định là mọi báo cáo quân số tự kéo người công ty khác vào màn của phòng này (sai luật không đếm
+trùng). Nhạy cảm vẫn che theo `employee_sensitive`, lương chỉ chính chủ.
+
+Giới hạn đã biết: (1) loại trừ đích danh nhân sự (`tab_user_scope`, chiều `employee`) không có tác dụng ở entity `employee`
+vì `SCOPE_FIELDS["employee"]` không khai `owner` — dòng kiêm nhiệm đi cùng luật của hồ sơ chính, không thêm không bớt;
+(2) dòng chép từ dữ liệu cũ của nhân sự chưa gắn pháp nhân mang `company_id = 0` — ở nhánh Q1 coi là công ty 0 (chỉ phạm vi
+không ràng công ty mới phủ).
+
+---
+
 ## 5. Giao diện — một màn "Phân quyền" riêng (3 tab)
 
 ### Tab 1 — Vai trò

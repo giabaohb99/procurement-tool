@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { toDateInputValue } from '@/shared/utils/format-date'
 import type { Employee } from '../types/employee'
+import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { planApplyPrompt, workHistoryRowToApplyValues } from '../utils/employee-work-history-apply'
 import { useApplyEmployeeWorkHistory } from './use-employee-work-history'
@@ -34,7 +35,7 @@ export function useBusyIds() {
 export function useEmployeeWorkHistoryRowApply(
   employeeId: number,
   employee: Employee,
-  extraDeptIds: number[],
+  concurrents: readonly EmployeeConcurrent[],
   items: EmployeeWorkHistory[],
 ) {
   const applyMutation = useApplyEmployeeWorkHistory(employeeId)
@@ -47,7 +48,7 @@ export function useEmployeeWorkHistoryRowApply(
 
   function onApply(row: EmployeeWorkHistory) {
     const today = toDateInputValue(new Date())
-    const prompt = planApplyPrompt(workHistoryRowToApplyValues(row), employee, extraDeptIds, today, items, row.id)
+    const prompt = planApplyPrompt(workHistoryRowToApplyValues(row), employee, concurrents, today, items, row.id)
 
     if (prompt?.kind === 'resign') {
       setResignApply({ row, resignDate: prompt.resignDate })

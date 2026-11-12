@@ -933,19 +933,16 @@ def test_c4b_hai_o_phong_ban_cam_han_tren_chinh_danh_muc_phong_ban(world):
 
 
 def test_c5_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_phong_ban_bi_chan(world):
-    """Cửa `PUT /employees/{id}/departments` đi qua `_employee_in_scope` trước.
+    """Cửa `POST /employees/{id}/concurrents` (kiêm nhiệm, duoc-CR-755; thay `PUT .../departments`)
+    đi qua `employee_in_scope` trước.
 
     Đây là vế ĐÚNG, dựng để ca C6 bên dưới có chỗ đối chiếu: cùng một màn hình,
     một cửa xét phạm vi và một cửa không.
     """
-    from app.modules.employee import controller as employee_controller
-
     a1 = world.grant("a1", "employee", scope="own", actions=("read", "write"))
 
     with pytest.raises(HTTPException) as err:
-        employee_controller.set_employee_departments(
-            world.emp["b1"], employee_controller.ExtraDepartmentsIn(extra_department_ids=[]),
-            world.db, a1.user)
+        set_extra_departments_via_api(world, a1, world.emp["b1"], ["B.hc"])
     assert err.value.status_code == 404
 
 
@@ -967,7 +964,7 @@ def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_bi_chan(world):
     được họ tên, email, trạng thái và `is_active` của bất kỳ ai trong hệ, kể cả
     pháp nhân khác.
 
-    Đối chiếu: cửa kiêm nhiệm ngay bên cạnh (`set_employee_departments`, ca C5)
+    Đối chiếu: cửa kiêm nhiệm ngay bên cạnh (`create_concurrent`, ca C5)
     gọi `_employee_in_scope` trước. Hai cửa cùng một màn hình, hai luật khác nhau.
 
     Ca này từng ghim hành vi lỗ để bản vá làm nó đỏ lên có chủ đích, kèm câu hỏi chờ:
@@ -1146,7 +1143,7 @@ def test_c9_xem_ho_so_nhan_su_theo_id_bo_qua_pham_vi(world):
 
 
 def test_c10_doi_phong_ban_thi_pham_vi_doi_theo_NGAY_khong_doi_60_giay(world, leave_ids):
-    """`set_departments` gọi `perm_cache_clear` cho mọi tài khoản của nhân sự đó.
+    """`set_primary_department` gọi `perm_cache_clear` cho mọi tài khoản của nhân sự đó.
 
     Thiếu dòng đó thì Nhân sự chuyển người sang phòng khác, người đó F5 vẫn
     nhìn bằng tầm cũ suốt một phút — và cách "sửa" tự nhiên nhất lúc ấy là đi
@@ -1155,7 +1152,7 @@ def test_c10_doi_phong_ban_thi_pham_vi_doi_theo_NGAY_khong_doi_60_giay(world, le
     Ca này hâm nóng cache TRƯỚC khi đổi, nếu không thì cache rỗng và bài kiểm
     xanh dù có xóa hay không.
     """
-    from app.modules.employee.department_service import set_departments
+    from app.modules.employee.department_service import set_primary_department
     from app.modules.employee.model import Employee
     from app.modules.leave.request_model import LeaveRequest
 
@@ -1163,8 +1160,8 @@ def test_c10_doi_phong_ban_thi_pham_vi_doi_theo_NGAY_khong_doi_60_giay(world, le
     assert a1.sees(LeaveRequest, "leave_request") == pick(
         leave_ids, "a1_nghi", "a1_lap_ho", "a2_tu_nop")   # hâm nóng cache
 
-    set_departments(world.db, world.db.get(Employee, world.emp["a1"]),
-                    [world.dept["A.mua"]], actor=1)
+    set_primary_department(world.db, world.db.get(Employee, world.emp["a1"]),
+                           world.dept["A.mua"], actor=1)
     world.db.commit()
 
     assert a1.sees(LeaveRequest, "leave_request") == pick(leave_ids, "khuyet_nhan_su")
@@ -1195,12 +1192,35 @@ def test_c11_kiem_nhiem_mo_pham_vi_du_ca_hai_phong(world, leave_ids):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def set_extra_departments_via_api(world, actor, employee_id: int, dept_keys):
-    from app.modules.employee import controller as employee_controller
+    """Gán kiêm nhiệm CÙNG công ty chính của nhân sự qua `POST /employees/{id}/concurrents` (duoc-CR-755).
 
-    ids = [world.dept[k] if isinstance(k, str) else k for k in dept_keys]
-    return employee_controller.set_employee_departments(
-        employee_id, employee_controller.ExtraDepartmentsIn(extra_department_ids=ids),
-        world.db, actor.user)
+    Cửa cũ `PUT /departments` (đặt cả danh sách) đã gỡ; mỗi phòng nay là một dòng kiêm nhiệm.
+    Công ty = công ty chính của nhân sự đó. Trả phản hồi của dòng cuối.
+    """
+    from datetime import date
+
+    from app.modules.employee import concurrent_controller as cc
+    from app.modules.employee.concurrent_schema import ConcurrentIn
+    from app.modules.employee.model import Employee
+
+    company_id = world.db.get(Employee, employee_id).company_id
+    out = None
+    for key in dept_keys:
+        out = cc.create_concurrent(
+            employee_id, ConcurrentIn(company_id=company_id,
+                                      department_id=world.dept[key] if isinstance(key, str) else key,
+                                      from_date=date(2026, 1, 1)),
+            world.db, actor.user)
+    return out
+
+
+def concurrent_dept_ids(world, employee_id: int) -> set[int]:
+    """Phòng của nhân sự = phòng chính + phòng kiêm nhiệm đang hiệu lực (bảng `tab_employee_concurrent`)."""
+    from app.modules.employee.concurrent_service import active_concurrent_rows
+    from app.modules.employee.model import Employee
+
+    primary = world.db.get(Employee, employee_id).department_id
+    return {primary} | {r.department_id for r in active_concurrent_rows(world.db, employee_id)}
 
 
 def test_d1_L1_khong_tu_them_phong_cho_chinh_minh(world):
@@ -1224,13 +1244,10 @@ def test_d1_L1_khong_tu_them_phong_cho_chinh_minh(world):
 def test_d1b_L1_chi_chan_dung_chieu_tu_minh(world):
     """CẶP ĐỐI CHỨNG. Chặn cả chiều gán cho người khác là hỏng nghiệp vụ hằng
     ngày của phòng Nhân sự — và người ta sẽ đi cấp phạm vi *tất cả* để gỡ."""
-    from app.modules.employee.department_service import departments_of
-
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
     set_extra_departments_via_api(world, a1, world.emp["a2"], ["A.mua"])
 
-    assert set(departments_of(world.db, world.emp["a2"])) == {world.dept["A.kt"],
-                                                              world.dept["A.mua"]}
+    assert concurrent_dept_ids(world, world.emp["a2"]) == {world.dept["A.kt"], world.dept["A.mua"]}
 
 
 def test_d2_L2_khong_gan_duoc_phong_minh_khong_nhin_thay(world):
@@ -1252,14 +1269,11 @@ def test_d2_L2_khong_gan_duoc_phong_minh_khong_nhin_thay(world):
 
 def test_d2b_L2_van_gan_duoc_dung_phong_cua_chinh_minh(world):
     """CẶP ĐỐI CHỨNG của L2 — chặn nhầm ca này là chốt vô dụng ngay ngày đầu."""
-    from app.modules.employee.department_service import departments_of
-
     a1 = world.grant("a1", "employee", scope="dept", actions=("read", "write"))
     a1.add_department("A.mua")   # nay a1 có chân ở cả hai phòng
 
     set_extra_departments_via_api(world, a1, world.emp["a2"], ["A.mua"])
-    assert set(departments_of(world.db, world.emp["a2"])) == {world.dept["A.kt"],
-                                                              world.dept["A.mua"]}
+    assert concurrent_dept_ids(world, world.emp["a2"]) == {world.dept["A.kt"], world.dept["A.mua"]}
 
 
 def test_d2c_L2_tinh_ca_phong_duoc_cap_them_dich_danh_o_man_phan_quyen(world):
@@ -1268,13 +1282,11 @@ def test_d2c_L2_tinh_ca_phong_duoc_cap_them_dich_danh_o_man_phan_quyen(world):
     Bỏ sót thì quản trị cấp thêm phòng cho một người, người đó vẫn không gán
     được ai vào phòng ấy, và không có câu lỗi nào giải thích vì sao.
     """
-    from app.modules.employee.department_service import departments_of
-
     a1 = world.grant("a1", "employee", scope="dept", actions=("read", "write"),
                      inc_dept=["A.mua"])
 
     set_extra_departments_via_api(world, a1, world.emp["a2"], ["A.mua"])
-    assert world.dept["A.mua"] in departments_of(world.db, world.emp["a2"])
+    assert world.dept["A.mua"] in concurrent_dept_ids(world, world.emp["a2"])
 
 
 def test_d3_L3_phong_khong_ton_tai_va_phong_khac_phap_nhan_deu_bi_chan(world):
@@ -1294,28 +1306,25 @@ def test_d3_L3_phong_khong_ton_tai_va_phong_khac_phap_nhan_deu_bi_chan(world):
     with pytest.raises(HTTPException) as err:
         set_extra_departments_via_api(world, a1, world.emp["a2"], ["B.hc"])
     assert err.value.status_code == 400
-    assert "pháp nhân khác" in err.value.detail
+    assert "không phục vụ công ty" in err.value.detail
 
 
 def test_d3b_L3_chan_TRUOC_khi_ghi_khong_de_lai_nua_vien(world):
-    """`set_departments` XÓA SẠCH rồi ghi lại — kiểm sau khi xóa là mất dữ liệu.
+    """Một lần bấm hỏng không được làm mất dòng kiêm nhiệm đã có, cũng không để lại nửa viên.
 
-    `_check_departments_exist` chạy ở đầu hàm, trước câu `DELETE`. Đảo thứ tự
-    đó thì một lần bấm hỏng là nhân sự đó rơi khỏi mọi phòng, mất luôn phạm vi
-    dữ liệu, và không có gì nói cho ai biết.
+    Cửa cũ XÓA SẠCH rồi ghi lại nên phải kiểm trước khi xóa. Cửa kiêm nhiệm nay (duoc-CR-755)
+    sửa TỪNG DÒNG tại chỗ, nên chốt L3 chạy trước khi ghi và dòng cũ đứng yên.
     """
-    from app.modules.employee.department_service import departments_of
-
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
     set_extra_departments_via_api(world, a1, world.emp["a2"], ["A.mua"])
-    truoc = set(departments_of(world.db, world.emp["a2"]))
+    truoc = concurrent_dept_ids(world, world.emp["a2"])
     assert truoc == {world.dept["A.kt"], world.dept["A.mua"]}
 
     with pytest.raises(HTTPException):
-        set_extra_departments_via_api(world, a1, world.emp["a2"], ["A.mua", 999999])
+        set_extra_departments_via_api(world, a1, world.emp["a2"], [999999])
 
     world.db.rollback()
-    assert set(departments_of(world.db, world.emp["a2"])) == truoc
+    assert concurrent_dept_ids(world, world.emp["a2"]) == truoc
 
 
 def test_d4_khong_tu_noi_pham_vi_du_lieu_cua_chinh_minh(world, leave_ids):

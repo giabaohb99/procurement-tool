@@ -5,7 +5,7 @@ tên + số tệp cho danh sách tách sang `work_history_serializer.py` — c�
 vì lý do MODULARIZATION (tệp này đã gần 200 dòng), không phải khác nghiệp vụ.
 
 Áp vào hồ sơ KHÔNG nằm ở đây — xem `work_history_apply_service.py` (A4: chỉ
-qua `service.update_employee` / `department_service.set_extra_departments`).
+qua `service.update_employee` / `concurrent_transition_service.upsert_from_work_history`).
 """
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -163,10 +163,19 @@ def update(db: Session, eid: int, hid: int, data: WorkHistoryUpdate, actor
 
 def delete(db: Session, eid: int, hid: int, actor) -> None:
     """Xóa dòng + tệp đính kèm — `delete_attachments_for` tự commit nếu có tệp,
-    rồi `db.commit()` ở đây chốt lại việc xóa dòng."""
+    rồi `db.commit()` ở đây chốt lại việc xóa dòng.
+
+    duoc-CR-755: dòng loại Kiêm nhiệm (mã 4) đã Áp ra `tab_employee_concurrent` thì dòng kiêm nhiệm ĐƯỢC GIỮ
+    (đó là sự thật đang tác động tới phạm vi quyền + tệp quyết định riêng của nó), chỉ bỏ liên kết
+    `work_history_id = 0` để không còn con trỏ treo vào id đã xóa — xóa nhật ký không được âm thầm thu hồi quyền.
+    """
     row = get_row_in_employee(db, eid, hid)
     from app.modules.attachment.service import delete_attachments_for
+    from .concurrent_model import EmployeeConcurrent
     delete_attachments_for(db, [("employee_work_history", row.id)])
+    db.query(EmployeeConcurrent).filter(
+        EmployeeConcurrent.employee_id == eid, EmployeeConcurrent.work_history_id == row.id,
+    ).update({EmployeeConcurrent.work_history_id: 0}, synchronize_session=False)
     db.delete(row)
     db.commit()
 

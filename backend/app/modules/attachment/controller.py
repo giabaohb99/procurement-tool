@@ -89,6 +89,10 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
     from app.modules.employee.work_history_access import check_file as _work_history_check_file
     if _work_history_check_file(db, user, entity, entity_id, mode):
         return exts, max_mb
+    #  duoc-CR-755: tệp QĐ kiêm nhiệm — cùng luật, thêm L2 theo cặp (phòng, công ty) khi gắn/gỡ.
+    from app.modules.employee.concurrent_access import check_file as _concurrent_check_file
+    if _concurrent_check_file(db, user, entity, entity_id, mode):
+        return exts, max_mb
     if parent == "__self__":
         #  `comment` / `forum_post` cố ý không có entity cha để hỏi quyền: chốt thật
         #  của chúng là `_check_comment` / `_check_forum` ở cửa GẮN tệp. Nhưng cửa TẢI
