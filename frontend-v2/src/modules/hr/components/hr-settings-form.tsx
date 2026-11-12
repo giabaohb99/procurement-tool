@@ -2,12 +2,10 @@ import { Save } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-import { useIsBreadcrumbDuplicate } from '@/shared/ui/breadcrumb-page-label'
 import { Button } from '@/shared/ui/button'
-import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
-import { TAB_LIST_UNDERLINE_ALWAYS, TAB_TRIGGER_UNDERLINE_ALWAYS } from '@/shared/ui/tab-underline'
-import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
-import { cn } from '@/shared/utils/cn'
+import { Card } from '@/shared/ui/card'
+import { PageHeader } from '@/shared/ui/page-header'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useSaveHrSettings } from '../hooks/use-hr-settings'
 import { useRoles } from '../hooks/use-roles'
 import type { HrSettingField, HrSettingValues } from '../types/hr-setting'
@@ -20,6 +18,13 @@ import {
 import { HrSettingRow } from './hr-setting-row'
 import { HrSettingsLeaveShortcuts } from './hr-settings-leave-shortcuts'
 
+/**
+ * Tab con kiểu gạch chân, cùng nét với `SubTabLink` (dải tab Thiết lập Nhân sự) để cả cụm
+ * Thiết lập trông một kiểu — đè các lớp nền / bóng / bo góc mặc định của `TabsTrigger` shadcn.
+ */
+const SUB_TAB_TRIGGER =
+  '-mb-px h-auto flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pt-0 pb-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent'
+
 interface HrSettingsFormProps {
   fields: HrSettingField[]
   /** Có `setting.write` — không có thì mọi ô chỉ xem. */
@@ -29,7 +34,7 @@ interface HrSettingsFormProps {
 }
 
 /**
- * Thân trang Cài đặt nhân sự (duoc-CR-713), bố cục HR Settings của ERPNext: hàng tiêu đề + nút Lưu, dải tab gạch chân,
+ * Thân trang Cài đặt nhân sự (duoc-CR-713), bố cục HR Settings của ERPNext: dải tab gạch chân + nút Lưu cùng một hàng,
  * mỗi tab một khung các dòng cài đặt. Tab dựng theo `tab` backend khai (`HR_SETTING_TABS`); tab không có ô nào thì
  * không dựng. Nút Lưu nằm ở hàng tiêu đề và lưu MỌI tab một lần, nên state của form ở đây chứ không ở từng tab.
  *
@@ -42,8 +47,6 @@ export function HrSettingsForm({ fields, canWrite, canReadRoles }: HrSettingsFor
   //  `disabled={isPending}` chỉ đúng ở lượt render sau — bấm đúp liền tay vẫn ra hai lần lưu. Chặn bằng ref.
   const savingRef = useRef(false)
   const { data: roles } = useRoles({ enabled: canReadRoles })
-  //  Breadcrumb đã ghi "Cài đặt nhân sự" thì không lặp lại ở hàng tiêu đề (duoc-CR-714).
-  const titleHidden = useIsBreadcrumbDuplicate('Cài đặt nhân sự')
 
   const dirty = JSON.stringify(values) !== JSON.stringify(saved)
   const tabs = HR_SETTING_TABS.filter((tab) => fields.some((field) => field.tab === tab.value))
@@ -65,45 +68,38 @@ export function HrSettingsForm({ fields, canWrite, canReadRoles }: HrSettingsFor
   if (tabs.length === 0) return null
 
   return (
-    <Tabs defaultValue={tabs[0].value} className="flex-1 gap-0">
-      {/*  Tiêu đề trùng breadcrumb thì chỉ còn cho trình đọc màn hình (duoc-CR-714); khác thì hiện thành một hàng. */}
-      {titleHidden ? (
-        <h1 className="sr-only">Cài đặt nhân sự</h1>
-      ) : (
-        <div className="border-b px-4 py-3 md:px-6">
-          <h1 className="text-lg font-semibold">Cài đặt nhân sự</h1>
-        </div>
-      )}
-      {/*  Nút Lưu ở đầu PHẢI của dải tab (lưu mọi tab một lần). Khối nút giãn hết chiều cao hàng + có viền dưới riêng
-           để đường kẻ chân chạy liền với đường kẻ của khung cuộn tab. */}
-      <div className="flex">
-        <ScrollableTabsList
-          value={tabs[0].value}
-          scroll="always"
-          className="min-w-0 flex-1 max-md:mx-0"
-          listClassName={cn(TAB_LIST_UNDERLINE_ALWAYS, 'gap-5 border-b-0 px-0')}
-        >
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className={TAB_TRIGGER_UNDERLINE_ALWAYS}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </ScrollableTabsList>
-        {canWrite && (
-          <div className="flex shrink-0 items-center border-b pr-4 md:pr-6">
-            <Button type="button" size="sm" onClick={submit} disabled={!dirty || save.isPending}>
+    <Tabs defaultValue={tabs[0].value} className="flex min-h-0 flex-1 flex-col gap-0">
+      {/*  duoc-CR-753: cùng khuôn với các màn khác của cụm Thiết lập — tab con đứng hàng tiêu đề (kiểu gạch chân như
+           `SubTabLink`), nút Lưu bên phải, tiêu đề chỉ còn cho trình đọc màn hình (`hideTitle`). Nút Lưu vẫn lưu MỌI
+           tab một lần. */}
+      <PageHeader
+        title="Cài đặt nhân sự"
+        hideTitle
+        description={
+          <TabsList className="h-auto gap-4 rounded-none bg-transparent p-0">
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value} className={SUB_TAB_TRIGGER}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        }
+        actions={
+          canWrite ? (
+            <Button type="button" onClick={submit} disabled={!dirty || save.isPending}>
               <Save />
               Lưu
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
       {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-0 space-y-6 p-4 md:p-6">
+        <TabsContent key={tab.value} value={tab.value} className="mt-0 space-y-6">
           {!canWrite && (
             <p className="text-sm text-muted-foreground">Bạn chỉ xem được — sửa cần quyền Cấu hình hệ thống.</p>
           )}
-          <div className="divide-y rounded-lg border">
+          {/*  Khung thẻ trắng như khung bảng của các màn danh sách cùng cụm. */}
+          <Card className="gap-0 divide-y py-0">
             {fields
               .filter((field) => field.tab === tab.value)
               .map((field) => {
@@ -121,7 +117,7 @@ export function HrSettingsForm({ fields, canWrite, canReadRoles }: HrSettingsFor
                   />
                 )
               })}
-          </div>
+          </Card>
           {tab.value === 'leave' && <HrSettingsLeaveShortcuts />}
         </TabsContent>
       ))}

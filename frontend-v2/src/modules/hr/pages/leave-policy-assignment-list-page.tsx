@@ -33,6 +33,10 @@ import { ASSIGNMENT_ACTIVE_TODAY, ASSIGNMENT_FILTER_ALL as ALL } from '../utils/
 import { todayInVietnamISO } from '../utils/work-roster-range'
 
 interface LeavePolicyAssignmentListPageProps {
+  /** Dải tab Thiết lập nhân sự — đặt TRÊN tiêu đề, cùng khe `topContent` của `CrudListPage` (duoc-CR-753). */
+  topContent?: ReactNode
+  /** Hàng tiêu đề gọn trong cụm tab Thiết lập — cùng nghĩa `compactHeader` của `CrudListPage` (duoc-CR-753). */
+  compactHeader?: boolean
   /** Thanh tab của màn Chính sách nghỉ phép — chèn giữa tiêu đề và bảng (cùng khe của `CrudListPage`). */
   beforeContent?: ReactNode
   /** Class ghim thanh công cụ ở khổ điện thoại, mốc `top` theo dải nằm trên (`list-sticky.ts`). */
@@ -51,7 +55,12 @@ interface LeavePolicyAssignmentListPageProps {
  * bổ CÒN HIỆU LỰC HÔM NAY (`active_on`, giờ VN), cột Trạng thái đọc `state` của backend. Dòng của chính người đang
  * đăng nhập không có nút Kết thúc / Xóa (D5).
  */
+const ASSIGNMENT_PAGE_DESCRIPTION =
+  'Gán chính sách cho từng nhân sự theo khoảng ngày. Người không có phân bổ nhận hạn mức của loại nghỉ.'
+
 export function LeavePolicyAssignmentListPage({
+  topContent,
+  compactHeader,
   beforeContent,
   toolbarClassName,
 }: LeavePolicyAssignmentListPageProps = {}) {
@@ -119,12 +128,19 @@ export function LeavePolicyAssignmentListPage({
 
   return (
     <PageContainer fill className="max-md:h-auto">
+      {topContent}
       <PageHeader
         title={LEAVE_POLICY_HUB_TITLE}
+        hideTitle={compactHeader}
         description={
-          <span className="max-md:hidden">
-            Gán chính sách cho từng nhân sự theo khoảng ngày. Người không có phân bổ nhận hạn mức của loại nghỉ.
-          </span>
+          compactHeader ? (
+            //  Tiêu đề đã ẩn: mô tả MỘT dòng (cắt "…", rê chuột xem đủ) — cùng khuôn `compactHeader` của `CrudListPage`.
+            <span className="block max-w-[60rem] truncate max-md:hidden" title={ASSIGNMENT_PAGE_DESCRIPTION}>
+              {ASSIGNMENT_PAGE_DESCRIPTION}
+            </span>
+          ) : (
+            <span className="max-md:hidden">{ASSIGNMENT_PAGE_DESCRIPTION}</span>
+          )
         }
         actions={
           canWrite ? (

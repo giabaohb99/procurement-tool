@@ -40,6 +40,18 @@ interface CrudListPageProps<T> {
    * Không nhét vào `renderToolbarExtra`: khe đó nằm trong nhóm NÚT bên phải
    * tiêu đề, còn thanh tab phải chạy hết bề ngang và đứng thành một dải riêng.
    */
+  /**
+   * Thứ đặt TRÊN tiêu đề trang, ở đúng mép trên khung — dùng cho dải tab chuyển giữa các màn anh em (vd dải tab
+   * Thiết lập của Nhân sự, duoc-CR-753). Đặt ở đây chứ không ở `beforeContent` để dải đứng YÊN một chỗ khi chuyển
+   * màn: tiêu đề / mô tả / cụm nút mỗi màn cao khác nhau, đặt dưới chúng là dải nhảy lên xuống mỗi lần bấm tab.
+   */
+  topContent?: ReactNode
+  /**
+   * Hàng tiêu đề GỌN cho màn nằm trong một cụm tab (vd Thiết lập Nhân sự, `topContent` là dải tab): tiêu đề ẩn khỏi
+   * mắt (tab đang sáng đã nói tên màn) và câu mô tả gói MỘT dòng (cắt "…") — mọi màn trong cụm có hàng tiêu đề CÙNG
+   * chiều cao, bảng bắt đầu đúng một chỗ khi chuyển tab (duoc-CR-753).
+   */
+  compactHeader?: boolean
   beforeContent?: ReactNode
   /**
    * Class thêm cho DẢI thanh công cụ — dùng để GHIM nó lên đầu khung cuộn ở khổ
@@ -54,6 +66,8 @@ interface CrudListPageProps<T> {
 
 export function CrudListPage<T extends CrudRecord>({
   config,
+  topContent,
+  compactHeader,
   beforeContent,
   toolbarClassName,
 }: CrudListPageProps<T>) {
@@ -80,6 +94,8 @@ export function CrudListPage<T extends CrudRecord>({
       <FilterProvider config={filterConfig}>
         <CrudListContent
           config={config}
+          topContent={topContent}
+          compactHeader={compactHeader}
           beforeContent={beforeContent}
           toolbarClassName={toolbarClassName}
         />
@@ -90,6 +106,8 @@ export function CrudListPage<T extends CrudRecord>({
   return (
     <CrudListContent
       config={config}
+      topContent={topContent}
+      compactHeader={compactHeader}
       beforeContent={beforeContent}
       toolbarClassName={toolbarClassName}
     />
@@ -98,6 +116,8 @@ export function CrudListPage<T extends CrudRecord>({
 
 function CrudListContent<T extends CrudRecord>({
   config,
+  topContent,
+  compactHeader,
   beforeContent,
   toolbarClassName,
 }: CrudListPageProps<T>) {
@@ -230,8 +250,10 @@ function CrudListContent<T extends CrudRecord>({
     //  danh sách thẻ dài, mà `fill` nhét nó vào một khe vài trăm pixel và biến
     //  thành cuộn LỒNG — vuốt trúng mép ngoài khe thì trang không nhúc nhích.
     <PageContainer fill className="max-md:h-auto">
+      {topContent}
       <PageHeader
         title={config.title}
+        hideTitle={compactHeader}
         //  ⚠️ Dòng mô tả ẨN ở khổ hẹp. Nó là câu GIỚI THIỆU màn — đọc một lần
         //  rồi thôi — nhưng ngốn hai dòng (~60px) ở đầu MỌI lần mở màn, ngay
         //  phía trên thứ người ta thật sự vào đây để xem. Trên màn rộng 60px đó
@@ -244,7 +266,12 @@ function CrudListContent<T extends CrudRecord>({
         //  RỖNG kèm `mt-1`, tức mọi màn đó ăn thêm một khe thừa vì một câu
         //  không tồn tại.
         description={
-          config.description ? (
+          compactHeader && config.description ? (
+            //  Tiêu đề đã ẩn: mô tả MỘT dòng (cắt "…", rê chuột xem đủ) cao ~24px, thấp hơn nút nên không đẩy bảng xuống.
+            <span className="block max-w-[60rem] truncate max-md:hidden" title={config.description}>
+              {config.description}
+            </span>
+          ) : config.description ? (
             <span className="max-md:hidden">{config.description}</span>
           ) : undefined
         }

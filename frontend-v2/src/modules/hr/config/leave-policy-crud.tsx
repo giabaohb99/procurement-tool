@@ -37,7 +37,7 @@ export const LEAVE_POLICY_CRUD_CONFIG: CrudConfig<LeavePolicy> = {
   entity: 'leave_type',
   auditEntity: 'leave_policy',
   title: LEAVE_POLICY_HUB_TITLE,
-  description: 'Gói số ngày phép mỗi năm theo loại nghỉ, gán cho từng nhân sự ở tab Phân bổ.',
+  description: 'Gói số ngày phép mỗi năm theo loại nghỉ, gán cho từng nhân sự ở tab Phân bổ chính sách.',
   unitLabel: 'chính sách',
   apiPath: '/api/leave-policies',
   storageKey: 'hr.leave-policies',

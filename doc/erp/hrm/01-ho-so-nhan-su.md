@@ -788,7 +788,7 @@ Anh Được chốt: lương nhập bằng **một chỗ trên hồ sơ** thay v
 
 ### 7.17. Cài đặt nhân sự — tab Nhân viên (duoc-CR-713, 02/11/2026)
 
-Trang **Cài đặt nhân sự** (`/hr/settings`, menu *Nhân sự ▸ Master ▸ Cài đặt nhân sự*) chép bố cục HR Settings của
+Trang **Cài đặt nhân sự** (`/hr/settings`, menu *Nhân sự ▸ Thiết lập ▸ Cài đặt nhân sự*) chép bố cục HR Settings của
 ERPNext: dải tab *Nhân viên · Nghỉ phép · Hợp đồng lao động*, nút *Lưu* ở đầu phải dải tab lưu cả ba tab. Gác
 `setting.read` / `setting.write`, lưu qua `PUT /api/settings` (nhóm khóa `hr`, chung nhật ký *Lịch sử thay đổi* của Cấu
 hình hệ thống), bộ đệm 30 giây. Tab *Nghỉ phép*: [02-nghi-phep.md §14](02-nghi-phep.md); tab *Hợp đồng lao động*:

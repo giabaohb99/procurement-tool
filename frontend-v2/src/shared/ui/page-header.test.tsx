@@ -28,4 +28,10 @@ describe('PageHeader + breadcrumb', () => {
     renderWith('Chức vụ', <PageHeader title={<span>Chức vụ</span>} />)
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveClass('sr-only')
   })
+
+  it('hides a non-duplicate title when the header row carries sub-tabs (duoc-CR-753), still keeping the h1', () => {
+    renderWith('Loại nghỉ và ngày lễ', <PageHeader title="Loại nghỉ" hideTitle description="Tab con" />)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveClass('sr-only')
+    expect(screen.getByText('Tab con')).toBeVisible()
+  })
 })

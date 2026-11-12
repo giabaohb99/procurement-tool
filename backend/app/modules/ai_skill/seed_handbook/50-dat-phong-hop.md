@@ -1,7 +1,8 @@
 # Đặt phòng họp (phân hệ Nhân sự)
 
 Phân hệ để **giữ chỗ phòng họp**: xem phòng nào trống, lập phiếu đặt, gửi duyệt,
-mời người tham dự. Vào bằng menu **Nhân sự ▸ Đặt phòng họp**.
+mời người tham dự. Vào bằng menu **Nhân sự ▸ Đặt phòng họp** (sổ xuống hai mục *Lịch phòng họp* ·
+*Phiếu đặt phòng*); danh mục phòng ở **Nhân sự ▸ Thiết lập**, tab **Danh mục phòng họp** (từ 12/11/2026).
 
 ## Điều CẤM nói
 
@@ -14,16 +15,16 @@ mời người tham dự. Vào bằng menu **Nhân sự ▸ Đặt phòng họp*
   hỏi về một phiếu không đọc được thì **đừng nói là phiếu đó không tồn tại** —
   chỉ nói là không truy cập được.
 
-## Ba màn, một mục menu
+## Ba màn và đường vào
 
-| Màn | Đường dẫn | Dùng để |
-|---|---|---|
-| **Lịch đặt phòng** | `/hr/room-calendar` | xem cả ngày, bấm ô trống để đặt, kéo thả đổi lịch |
-| **Phiếu đặt phòng** | `/hr/room-bookings` | danh sách phiếu trong phạm vi của mình |
-| **Danh mục phòng** | `/hr/meeting-rooms` | quản trị khai phòng, sức chứa, thiết bị |
+| Màn | Vào bằng menu | Đường dẫn | Dùng để |
+|---|---|---|---|
+| **Lịch đặt phòng** | *Đặt phòng họp ▸ Lịch phòng họp* | `/hr/room-calendar` | xem cả ngày, bấm ô trống để đặt, kéo thả đổi lịch |
+| **Phiếu đặt phòng họp** | *Đặt phòng họp ▸ Phiếu đặt phòng* | `/hr/room-bookings` | danh sách phiếu trong phạm vi của mình |
+| **Danh mục phòng họp** | *Thiết lập*, tab *Danh mục phòng họp* | `/hr/meeting-rooms` | quản trị khai phòng, sức chứa, thiết bị |
 
 Lưới lịch xếp **mỗi phòng một hàng, giờ chạy ngang**, chỉ xem **một ngày**. Muốn
-nhìn xa hơn một ngày thì sang tab *Phiếu đặt phòng* rồi lọc theo phòng và khoảng
+nhìn xa hơn một ngày thì sang *Đặt phòng họp ▸ Phiếu đặt phòng* rồi lọc theo phòng và khoảng
 thời gian — lưới không có chế độ tuần.
 
 ## Luật quan trọng nhất — GIỮ PHÒNG TỪ LÚC GỬI DUYỆT

@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   Network,
   ScrollText,
-  Settings2,
   UserCheck,
   Users,
   Wallet,
@@ -27,6 +26,7 @@ import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { ProfileChangeRequestNavBadge } from './components/profile-change-request-nav-badge'
 import { LegacyUserPermissionRedirect } from './pages/legacy-permission-redirect'
+import { hrSetupNavItem } from './config/hr-setup-nav-item'
 import { workScheduleNavItem, workScheduleRoutes } from './config/work-schedule-module-entries'
 
 /** Phân hệ NHÂN SỰ — nhân viên, phòng ban, pháp nhân, phân quyền tài khoản. */
@@ -40,6 +40,9 @@ export const hrModule: ErpModule = {
   enabled: true,
   entity: 'employee',
 
+  //  duoc-CR-753: menu Nhân sự là MỘT danh sách xếp từ trên xuống, KHÔNG khai `group` (không tiêu đề nhóm) — anh Được
+  //  chốt 12/11/2026. Mọi mục cùng đứng trong rổ không tiêu đề nên không còn cảnh vài mục lửng dưới "Tổng quan" như
+  //  lần khách nêu 14/09/2026 (lỗi đó chỉ xảy ra khi rổ không tiêu đề và rổ có tiêu đề đứng chung).
   nav: [
     {
       label: 'Tổng quan',
@@ -55,7 +58,6 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.employees,
       icon: IdCard,
       entity: 'employee',
-      group: 'Danh mục',
     },
     {
       //  duoc-CR-676: duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai ở Trang cá nhân. ⚠️ `entity` +
@@ -67,7 +69,6 @@ export const hrModule: ErpModule = {
       entity: 'employee',
       action: 'write',
       badge: ProfileChangeRequestNavBadge,
-      group: 'Danh mục',
     },
     {
       //  duoc-CR-669: Sơ đồ tổ chức. ⚠️ `entity` ở đây LÀ hàng rào của route (gác
@@ -76,25 +77,138 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.orgChart,
       icon: Network,
       entity: 'employee',
-      group: 'Danh mục',
     },
-    //  ── Master (duoc-CR-712) ──────────────────────────────────────────────
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Submenu chỉ còn các màn NGHIỆP VỤ: đơn nghỉ, nghỉ bù, thanh toán nghỉ phép, lịch nghỉ, quỹ phép năm.
+    //  Chính sách nghỉ phép và Loại nghỉ / ngày lễ / ngày cấm nghỉ dời sang cụm Thiết lập (duoc-CR-753).
+    {
+      label: 'Nghỉ phép',
+      path: appRoutes.hr.leaveRequests,
+      icon: CalendarOff,
+      entities: [
+        'leave_request',
+        'leave_comp_request',
+        'leave_encashment',
+        'leave_balance',
+      ],
+      matchPaths: [
+        appRoutes.hr.leaveCompRequests,
+        appRoutes.hr.leaveEncashments,
+        appRoutes.hr.leaveCalendar,
+        appRoutes.hr.leaveBalances,
+      ],
+      children: [
+        {
+          label: 'Đơn nghỉ phép',
+          path: appRoutes.hr.leaveRequests,
+          icon: CalendarOff,
+          entity: 'leave_request',
+        },
+        {
+          //  duoc-CR-715 phase C. Khóa `leave_comp_request` gác luôn cả `/new` và `/:id` (nằm dưới đường
+          //  dẫn danh sách) — route thiếu mục menu gác là ai đăng nhập cũng vào.
+          label: 'Nghỉ bù',
+          path: appRoutes.hr.leaveCompRequests,
+          icon: CalendarPlus,
+          entity: 'leave_comp_request',
+        },
+        {
+          //  duoc-CR-719. ⚠️ `entity` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) — gác luôn `/new`
+          //  và `/:id` vì cả hai nằm dưới đường dẫn danh sách.
+          label: 'Thanh toán nghỉ phép',
+          path: appRoutes.hr.leaveEncashments,
+          icon: Banknote,
+          entity: 'leave_encashment',
+        },
+        {
+          label: 'Lịch nghỉ',
+          path: appRoutes.hr.leaveCalendar,
+          icon: CalendarRange,
+          entity: 'leave_request',
+        },
+        {
+          label: 'Quỹ phép năm',
+          path: appRoutes.hr.leaveBalances,
+          icon: Wallet,
+          entity: 'leave_balance',
+        },
+      ],
+    },
+    {
+      label: 'Lịch ngày lễ',
+      path: appRoutes.hr.holidays,
+      icon: CalendarDays,
+      entity: 'holiday',
+      manage: true,
+      hidden: true,
+    },
+    //  duoc-CR-715: mục ẩn để ĐƯỜNG DẪN có gác quyền (route thiếu mục menu gác = ai đăng nhập cũng vào).
+    //  Khóa `leave_type` — cùng mục "Loại nghỉ và ngày lễ" của cụm Thiết lập.
+    {
+      label: 'Ngày cấm nghỉ',
+      path: appRoutes.hr.leaveBlocks,
+      icon: CalendarOff,
+      entity: 'leave_type',
+      manage: true,
+      hidden: true,
+    },
+    //  duoc-CR-717: hai mục ẩn làm hàng rào route. `/hr/leave-policies/*` (thêm gói, chi tiết gói, và đường cũ của
+    //  danh sách — nay chuyển hướng về tab Chính sách, duoc-CR-750) gác quản lý `leave_type`; trang Phân bổ hàng loạt
+    //  nằm DƯỚI `/hr/leave-policy-assignments` nhưng chỉ dành cho người GHI quỹ phép — mục ẩn dài hơn thắng (gác khớp
+    //  đường dài nhất), nên người chỉ có `leave_type.write` (vào được màn gộp) không mở được trang đó.
+    {
+      label: 'Chi tiết chính sách nghỉ phép',
+      path: appRoutes.hr.leavePolicies,
+      icon: ScrollText,
+      entity: 'leave_type',
+      manage: true,
+      hidden: true,
+    },
+    {
+      label: 'Phân bổ hàng loạt',
+      path: appRoutes.hr.leavePolicyBulkAssign,
+      icon: UserCheck,
+      entity: 'leave_balance',
+      action: 'write',
+      hidden: true,
+    },
+    //  ── Lịch làm việc: chỉ còn Xem lịch; Mẫu lịch tuần + Gán lịch ở cụm Thiết lập — xem `work-schedule-module-entries.tsx`.
+    workScheduleNavItem,
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  Submenu: Lịch phòng họp + Phiếu đặt phòng. Danh mục phòng họp (chỉ quản trị viên) ở cụm Thiết lập (duoc-CR-753).
+    {
+      label: 'Đặt phòng họp',
+      path: appRoutes.hr.roomCalendar,
+      icon: DoorOpen,
+      entity: 'room_booking',
+      matchPaths: [appRoutes.hr.roomBookings],
+      children: [
+        {
+          label: 'Lịch phòng họp',
+          path: appRoutes.hr.roomCalendar,
+          icon: CalendarRange,
+          entity: 'room_booking',
+        },
+        {
+          label: 'Phiếu đặt phòng',
+          path: appRoutes.hr.roomBookings,
+          icon: DoorOpen,
+          entity: 'room_booking',
+        },
+      ],
+    },
+    //  ── Danh mục (duoc-CR-712, đổi tên từ "Master" ở duoc-CR-753) ─────────────
     //  Gom các danh mục nền (phòng ban, công ty, chức vụ, mẫu HĐLĐ) vào một cụm sổ xuống cho menu gọn.
     //  ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `manage` của mình: bộ gác route (`canAccessRoute`) duyệt cả
     //  mục con và khớp theo đường dẫn dài nhất, mục con xét trước mục cha — nên dời vào cụm không đổi
-    //  quyền của màn nào. Mục cha hiện khi có ít nhất một mục con được phép.
+    //  quyền của màn nào. Mục cha hiện khi có ít nhất một mục con được phép. Cài đặt nhân sự đã dời sang
+    //  cụm Thiết lập (`config/hr-setup-nav-item.tsx`).
     {
-      label: 'Master',
+      label: 'Danh mục',
       path: appRoutes.hr.departments,
       icon: Database,
-      entities: ['department', 'company', 'job_position', 'labor_contract_template', 'setting'],
-      group: 'Danh mục',
-      matchPaths: [
-        appRoutes.hr.companies,
-        appRoutes.hr.jobPositions,
-        appRoutes.hr.laborContractTemplates,
-        appRoutes.hr.settings,
-      ],
+      entities: ['department', 'company', 'job_position', 'labor_contract_template'],
+      matchPaths: [appRoutes.hr.companies, appRoutes.hr.jobPositions, appRoutes.hr.laborContractTemplates],
       children: [
         {
           label: 'Phòng ban',
@@ -132,188 +246,10 @@ export const hrModule: ErpModule = {
           icon: FileSignature,
           entity: 'labor_contract_template',
         },
-        {
-          //  duoc-CR-713: Cài đặt nhân sự (kiểu HR Settings của ERPNext). ⚠️ `entity` ở đây LÀ hàng rào của route
-          //  (gác điều hướng mặc định MỞ); backend `/api/settings` gác `setting.read` / `setting.write`.
-          label: 'Cài đặt nhân sự',
-          path: appRoutes.hr.settings,
-          icon: Settings2,
-          entity: 'setting',
-        },
       ],
     },
-    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
-    //  Submenu gồm 4 mục con trên sidebar bên trái:
-    //   1. Đơn nghỉ phép (leaveRequests)
-    //   2. Lịch nghỉ (leaveCalendar)
-    //   3. Quỹ phép năm (leaveBalances)
-    //   4. Chính sách nghỉ phép (tab Phân bổ + tab Chính sách, duoc-CR-750)
-    //   5. Thiết lập (leaveTypes + holidays + leaveBlocks)
-    {
-      label: 'Nghỉ phép',
-      path: appRoutes.hr.leaveRequests,
-      icon: CalendarOff,
-      entities: [
-        'leave_request',
-        'leave_comp_request',
-        'leave_encashment',
-        'leave_balance',
-        'leave_type',
-        'holiday',
-      ],
-      //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
-      //  cùng, không tiêu đề, và vốn chỉ dành cho "Tổng quan". Hai mục nghỉ phép
-      //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
-      //  mục riêng (khách nêu 14/09/2026).
-      group: 'Danh mục',
-      matchPaths: [
-        appRoutes.hr.leaveCompRequests,
-        appRoutes.hr.leaveEncashments,
-        appRoutes.hr.leaveCalendar,
-        appRoutes.hr.leaveBalances,
-        appRoutes.hr.leaveTypes,
-        appRoutes.hr.holidays,
-        appRoutes.hr.leaveBlocks,
-        appRoutes.hr.leavePolicies,
-        appRoutes.hr.leavePolicyAssignments,
-      ],
-      children: [
-        {
-          label: 'Đơn nghỉ phép',
-          path: appRoutes.hr.leaveRequests,
-          icon: CalendarOff,
-          entity: 'leave_request',
-        },
-        {
-          //  duoc-CR-715 phase C. Khóa `leave_comp_request` gác luôn cả `/new` và `/:id` (nằm dưới đường
-          //  dẫn danh sách) — route thiếu mục menu gác là ai đăng nhập cũng vào.
-          label: 'Nghỉ bù',
-          path: appRoutes.hr.leaveCompRequests,
-          icon: CalendarPlus,
-          entity: 'leave_comp_request',
-        },
-        {
-          //  duoc-CR-719. ⚠️ `entity` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) — gác luôn `/new`
-          //  và `/:id` vì cả hai nằm dưới đường dẫn danh sách.
-          label: 'Thanh toán nghỉ phép',
-          path: appRoutes.hr.leaveEncashments,
-          icon: Banknote,
-          entity: 'leave_encashment',
-        },
-        {
-          label: 'Lịch nghỉ',
-          path: appRoutes.hr.leaveCalendar,
-          icon: CalendarRange,
-          entity: 'leave_request',
-        },
-        {
-          label: 'Quỹ phép năm',
-          path: appRoutes.hr.leaveBalances,
-          icon: Wallet,
-          entity: 'leave_balance',
-        },
-        {
-          //  duoc-CR-750: màn gộp HAI TAB — Phân bổ (`leave_balance.write`) · Chính sách (`leave_type.write`) — thay
-          //  mục "Phân bổ chính sách" (duoc-CR-717) và tab thứ tư của Thiết lập. ⚠️ Mục này LÀ hàng rào của route
-          //  (gác điều hướng mặc định MỞ), nên phải hiện khi có ÍT NHẤT một trong hai quyền và tắt khi thiếu cả hai:
-          //  `entities` = "bất kỳ khóa nào", `action: 'write'` áp cho TỪNG khóa (`module-visibility.entityAllowed`) —
-          //  ra đúng `leave_balance.write || leave_type.write`, cùng luật hiện tab ở `utils/leave-policy-hub-tabs.ts`
-          //  (bài kiểm canh hai luật bằng nhau). KHÔNG gác `read`: seed cấp `leave_balance.read` phạm vi "của tôi" cho
-          //  MỌI nhân viên (đại ca chốt 03/11/2026). Không dùng `manage` vì nó mở cả người chỉ có `create`/`delete`
-          //  trên quỹ phép, rộng hơn màn phân bổ cũ. Trang hàng loạt có mục ẩn riêng gác `leave_balance.write`;
-          //  chi tiết / thêm gói (`/hr/leave-policies/*`) có mục ẩn riêng gác quản lý `leave_type`.
-          label: 'Chính sách nghỉ phép',
-          path: appRoutes.hr.leavePolicyAssignments,
-          icon: ScrollText,
-          entities: ['leave_balance', 'leave_type'],
-          action: 'write',
-          matchPaths: [appRoutes.hr.leavePolicyBulkAssign, appRoutes.hr.leavePolicies],
-        },
-        {
-          label: 'Thiết lập',
-          path: appRoutes.hr.leaveTypes,
-          icon: CalendarDays,
-          entities: ['leave_type', 'holiday'],
-          manage: true,
-          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks],
-        },
-      ],
-    },
-    {
-      label: 'Lịch ngày lễ',
-      path: appRoutes.hr.holidays,
-      icon: CalendarDays,
-      entity: 'holiday',
-      manage: true,
-      hidden: true,
-    },
-    //  duoc-CR-715: mục ẩn để ĐƯỜNG DẪN có gác quyền (route thiếu mục menu gác = ai đăng nhập cũng vào).
-    //  Khóa `leave_type` — cùng "Thiết lập" nghỉ phép.
-    {
-      label: 'Ngày cấm nghỉ',
-      path: appRoutes.hr.leaveBlocks,
-      icon: CalendarOff,
-      entity: 'leave_type',
-      manage: true,
-      hidden: true,
-    },
-    //  duoc-CR-717: hai mục ẩn làm hàng rào route. `/hr/leave-policies/*` (thêm gói, chi tiết gói, và đường cũ của
-    //  danh sách — nay chuyển hướng về tab Chính sách, duoc-CR-750) gác quản lý `leave_type`; trang Phân bổ hàng loạt
-    //  nằm DƯỚI `/hr/leave-policy-assignments` nhưng chỉ dành cho người GHI quỹ phép — mục ẩn dài hơn thắng (gác khớp
-    //  đường dài nhất), nên người chỉ có `leave_type.write` (vào được màn gộp) không mở được trang đó.
-    {
-      label: 'Chi tiết chính sách nghỉ phép',
-      path: appRoutes.hr.leavePolicies,
-      icon: ScrollText,
-      entity: 'leave_type',
-      manage: true,
-      hidden: true,
-    },
-    {
-      label: 'Phân bổ hàng loạt',
-      path: appRoutes.hr.leavePolicyBulkAssign,
-      icon: UserCheck,
-      entity: 'leave_balance',
-      action: 'write',
-      hidden: true,
-    },
-    //  ── Lịch làm việc (mẫu lịch tuần + gán lịch) — xem `work-schedule-module-entries.tsx`.
-    workScheduleNavItem,
-    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
-    //  Submenu gồm 3 mục con trên sidebar bên trái:
-    //   1. Lịch phòng họp (roomCalendar)
-    //   2. Phiếu đặt phòng (roomBookings)
-    //   3. Danh mục phòng họp (meetingRooms — chỉ quản trị viên)
-    {
-      label: 'Đặt phòng họp',
-      path: appRoutes.hr.roomCalendar,
-      icon: DoorOpen,
-      entities: ['room_booking', 'meeting_room'],
-      //  Cùng lý do với "Nghỉ phép" ngay trên — xem ghi chú ở đó.
-      group: 'Danh mục',
-      matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
-      children: [
-        {
-          label: 'Lịch phòng họp',
-          path: appRoutes.hr.roomCalendar,
-          icon: CalendarRange,
-          entity: 'room_booking',
-        },
-        {
-          label: 'Phiếu đặt phòng',
-          path: appRoutes.hr.roomBookings,
-          icon: DoorOpen,
-          entity: 'room_booking',
-        },
-        {
-          label: 'Danh mục phòng',
-          path: appRoutes.hr.meetingRooms,
-          icon: Building,
-          entity: 'meeting_room',
-          manage: true,
-        },
-      ],
-    },
+    //  ── Thiết lập (duoc-CR-753): mọi màn cấu hình nền gom một mục sổ xuống — xem `config/hr-setup-nav-item.tsx`.
+    hrSetupNavItem,
     //  "Phân quyền tài khoản" đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
     //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.
     //  Vì vậy menu Nhân sự không còn nhóm "Quản trị" nào.

@@ -145,3 +145,46 @@ describe('ModuleSidebar with submenu', () => {
     expect(screen.getByTestId('current-path')).toHaveTextContent('/test/leave-calendar')
   })
 })
+
+//  duoc-CR-753: mục `childrenAsTabs` vẽ thành MỘT dòng — mục con là dải tab trên trang, không phải submenu.
+describe('ModuleSidebar with childrenAsTabs', () => {
+  const tabsModule: ErpModule = {
+    ...testModule,
+    nav: [
+      {
+        label: 'Thiết lập',
+        path: '/test/settings',
+        icon: Users,
+        childrenAsTabs: true,
+        children: [
+          { label: 'Cài đặt', path: '/test/settings' },
+          { label: 'Loại nghỉ', path: '/test/leave-types', matchPaths: ['/test/holidays'] },
+        ],
+      },
+    ],
+  }
+
+  function renderAt(path: string) {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <SidebarProvider>
+          <ModuleSidebar module={tabsModule} onResizeWidth={vi.fn()} />
+        </SidebarProvider>
+      </MemoryRouter>,
+    )
+  }
+
+  it('shows one link to the first child and never lists the children in the menu', () => {
+    renderAt('/test/other')
+    const link = screen.getByRole('link', { name: /thiết lập/i })
+    expect(link).toHaveAttribute('href', '/test/settings')
+    expect(screen.queryByText('Cài đặt')).not.toBeInTheDocument()
+    expect(screen.queryByText('Loại nghỉ')).not.toBeInTheDocument()
+  })
+
+  it('stays highlighted on any child screen, including a child matchPath', () => {
+    renderAt('/test/holidays/3')
+    const button = screen.getByText('Thiết lập').closest('[data-active]')
+    expect(button).toHaveAttribute('data-active', 'true')
+  })
+})

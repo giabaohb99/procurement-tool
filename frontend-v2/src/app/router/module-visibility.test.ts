@@ -534,10 +534,12 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
     })
 
-    it('người quản lý quỹ phép (leave_balance.write): thấy Quỹ phép năm + Chính sách nghỉ phép (duoc-CR-750)', () => {
+    it('người quản lý quỹ phép (leave_balance.write): Quỹ phép năm ở Nghỉ phép, Chính sách nghỉ phép ở cụm Thiết lập (duoc-CR-750/753)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read', 'write'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
-      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Chính sách nghỉ phép'])
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
+      const setupMenu = items.find((i) => i.label === 'Thiết lập')
+      expect(setupMenu?.children?.map((c) => c.label)).toEqual(['Chính sách nghỉ phép'])
     })
 
     it('chỉ có leave_encashment.read (duoc-CR-719): thấy đúng mục Thanh toán nghỉ phép', () => {
@@ -565,14 +567,14 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       ])
     })
 
-    it('người quản lý danh mục (leave_type:write): thấy Chính sách nghỉ phép (tab Chính sách) + Thiết lập (duoc-CR-750)', () => {
+    it('người quản lý danh mục (leave_type:write): hai màn của họ nằm ở cụm Thiết lập, Nghỉ phép ẩn vì không có màn nghiệp vụ nào (duoc-CR-753)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_type: ['write'], employee: ['read'] }))
-      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
-      expect(leaveMenu).toBeDefined()
-      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Chính sách nghỉ phép', 'Thiết lập'])
+      expect(items.find((i) => i.label === 'Nghỉ phép')).toBeUndefined()
+      const setupMenu = items.find((i) => i.label === 'Thiết lập')
+      expect(setupMenu?.children?.map((c) => c.label)).toEqual(['Chính sách nghỉ phép', 'Loại nghỉ và ngày lễ'])
     })
 
-    it('quản trị viên nhân sự có đủ mọi quyền: thấy trọn vẹn 4 mục', () => {
+    it('quản trị viên nhân sự có đủ mọi quyền: Nghỉ phép giữ ba màn nghiệp vụ, hai màn thiết lập sang cụm Thiết lập', () => {
       const items = visibleNavItems(
         hr,
         makeCan({
@@ -585,13 +587,9 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       )
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu).toBeDefined()
-      expect(leaveMenu?.children?.map((c) => c.label)).toEqual([
-        'Đơn nghỉ phép',
-        'Lịch nghỉ',
-        'Quỹ phép năm',
-        'Chính sách nghỉ phép',
-        'Thiết lập',
-      ])
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Lịch nghỉ', 'Quỹ phép năm'])
+      const setupMenu = items.find((i) => i.label === 'Thiết lập')
+      expect(setupMenu?.children?.map((c) => c.label)).toEqual(['Chính sách nghỉ phép', 'Loại nghỉ và ngày lễ'])
     })
 
     it('tài khoản không có quyền nào thuộc cụm nghỉ phép: menu Nghỉ phép ẩn hoàn toàn', () => {
@@ -830,10 +828,12 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write', 'create', 'delete'] }))).toBe(false)
   })
 
-  it('người chỉ có employee.read thấy nhóm "Lịch làm việc" nhưng CHỈ với con "Xem lịch"', () => {
+  it('người chỉ có employee.read thấy "Lịch làm việc" là một mục thẳng, không thấy cụm Thiết lập (duoc-CR-753)', () => {
     const viewer = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['read'] }))
     const item = viewer.find((i) => i.label === 'Lịch làm việc')
-    expect(item?.children?.map((c) => c.label)).toEqual(['Xem lịch'])
+    expect(item?.path).toBe('/hr/work-roster')
+    expect(item?.children).toBeUndefined()
+    expect(viewer.some((i) => i.label === 'Thiết lập')).toBe(false)
   })
 
   it('không có employee.read thì không thấy nhóm "Lịch làm việc" (dù đọc được work_schedule)', () => {
@@ -841,16 +841,17 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     expect(nav.some((i) => i.label === 'Lịch làm việc')).toBe(false)
   })
 
-  it('người sửa được work_schedule thấy hai mục quản lý; có thêm employee.read thì thấy cả ba, Xem lịch đứng đầu', () => {
+  it('người sửa được work_schedule thấy hai mục quản lý trong cụm Thiết lập; Xem lịch vẫn cần employee.read (duoc-CR-753)', () => {
     const editor = visibleNavItems(hr, makeCan({ work_schedule: ['write'] }))
-    expect(editor.find((i) => i.label === 'Lịch làm việc')?.children?.map((c) => c.label)).toEqual([
+    expect(editor.some((i) => i.label === 'Lịch làm việc')).toBe(false)
+    expect(editor.find((i) => i.label === 'Thiết lập')?.children?.map((c) => c.label)).toEqual([
       'Mẫu lịch tuần',
       'Gán lịch',
     ])
 
     const both = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['write'] }))
-    expect(both.find((i) => i.label === 'Lịch làm việc')?.children?.map((c) => c.label)).toEqual([
-      'Xem lịch',
+    expect(both.some((i) => i.label === 'Lịch làm việc')).toBe(true)
+    expect(both.find((i) => i.label === 'Thiết lập')?.children?.map((c) => c.label)).toEqual([
       'Mẫu lịch tuần',
       'Gán lịch',
     ])

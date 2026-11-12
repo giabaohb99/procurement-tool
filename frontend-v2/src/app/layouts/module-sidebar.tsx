@@ -240,6 +240,17 @@ function NavItemRenderer({
   onNavigate: () => void
 }) {
   if (item.children && item.children.length > 0) {
+    if (item.childrenAsTabs) {
+      //  Một dòng thay cho submenu: trỏ vào mục con ĐẦU TIÊN còn lại sau khi lọc quyền (`visibleNavItems` đã lọc),
+      //  sáng khi đang ở bất kỳ mục con nào. Mục con hiện thành dải tab trên trang — xem `ModuleNavItem.childrenAsTabs`.
+      const flat: ModuleNavItem = {
+        ...item,
+        path: item.children[0].path,
+        matchPaths: item.children.flatMap((c) => [c.path, ...(c.matchPaths ?? [])]),
+        children: undefined,
+      }
+      return <NavMenuItem item={flat} onNavigate={onNavigate} />
+    }
     return <NavMenuItemWithSub item={item} onNavigate={onNavigate} />
   }
   return <NavMenuItem item={item} onNavigate={onNavigate} />

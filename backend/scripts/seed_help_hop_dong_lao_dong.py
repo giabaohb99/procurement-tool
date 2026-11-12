@@ -19,6 +19,7 @@ Nhãn đối chiếu bằng đọc mã ngày 12/11/2026: `hr/components/employee
 `hr/pages/labor-contract-variables-page.tsx`, `labor-contract-variable-*.tsx`, `expiring-labor-contracts-card.tsx`,
 `app/components/profile/profile-labor-contracts-tab.tsx`, `hr/routes.tsx` (cụm Master); câu lỗi lấy từ
 `backend/app/modules/labor_contract/` (`service.py`, `rules.py`, `contract_custom_values.py`, `expiry_service.py`).
+duoc-CR-753: đổi đường menu theo menu mới (cụm Master đổi tên Danh mục; Cài đặt nhân sự là một tab của mục Thiết lập).
 
 Chạy trong container api (KHÔNG chạy lên prod; prod đồng bộ Help Center theo đợt riêng):
     docker compose exec -T api python scripts/seed_help_hop_dong_lao_dong.py
@@ -222,13 +223,13 @@ TREE = {
         {
             "title": MAU,
             "icon": "book-open",
-            "summary": "Nhân sự ▸ Master ▸ Mẫu hợp đồng: Tải lên mẫu .docx gắn một pháp nhân + một loại hợp đồng, menu ... (Soạn nội dung, Tải tệp mẫu, Sửa thông tin, Thay tệp mẫu, Ngừng dùng, Xóa mẫu), soạn trên web với khung Chèn biến, sửa lỗi biến lạ",
+            "summary": "Nhân sự ▸ Danh mục ▸ Mẫu hợp đồng: Tải lên mẫu .docx gắn một pháp nhân + một loại hợp đồng, menu ... (Soạn nội dung, Tải tệp mẫu, Sửa thông tin, Thay tệp mẫu, Ngừng dùng, Xóa mẫu), soạn trên web với khung Chèn biến, sửa lỗi biến lạ",
             "content": f"""<h2>Mẫu hợp đồng là gì</h2>
 <p>Mỗi mẫu là một tệp Word (.docx) trong đó những chỗ cần điền được gõ thành <strong>biến</strong> dạng <code>{VAR_SAMPLE}</code>. Lúc sinh tệp, hệ thống thay từng biến bằng thông tin của người lao động và của hợp đồng. Mỗi mẫu gắn với <strong>một pháp nhân</strong> và <strong>một loại hợp đồng</strong>, nên mỗi công ty dùng đúng mẫu của mình.</p>
 
 <h2>Mở màn Mẫu hợp đồng</h2>
 <ul>
-<li>Vào <strong>Nhân sự ▸ Master ▸ Mẫu hợp đồng</strong>. Trang mở ngay trong phân hệ Nhân sự (thanh đường dẫn <em>Nhân sự › Master › Mẫu hợp đồng</em>), không nhảy sang phân hệ khác.</li>
+<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Mẫu hợp đồng</strong>. Trang mở ngay trong phân hệ Nhân sự (thanh đường dẫn <em>Nhân sự › Danh mục › Mẫu hợp đồng</em>), không nhảy sang phân hệ khác.</li>
 <li>Văn thư cũng mở được cùng bảng này ở <strong>Văn bản ▸ Thiết lập văn bản</strong> ▸ tab <strong>Thư viện văn bản mẫu</strong> ▸ mục <strong>Mẫu hợp đồng lao động</strong>. Hai chỗ là một dữ liệu.</li>
 <li>Bảng có ô <em>Tìm theo tên mẫu…</em> và ba ô lọc: pháp nhân (<em>Tất cả pháp nhân</em>), loại (<em>Tất cả loại HĐ</em>), trạng thái (<em>Đang dùng</em> / <em>Ngừng</em>). Các cột: <strong>ID · Tên mẫu · Pháp nhân · Loại HĐ · Tệp gốc · Số HĐ đã dùng · Trạng thái · Ngày tạo · Thao tác</strong>.</li>
 </ul>
@@ -281,7 +282,7 @@ TREE = {
             "icon": "tags",
             "summary": "Mẫu hợp đồng ▸ nút Danh sách biến: biến hệ thống lấy từ hồ sơ, biến tùy chỉnh (Chữ, Chữ nhiều dòng, Số, Ngày, Tiền) nhập tay ở khối Thông tin bổ sung cho mẫu; Bắt buộc, Giá trị mặc định, Ngừng dùng khác Xóa",
             "content": f"""<h2>Hai loại biến</h2>
-<p>Mở <strong>Nhân sự ▸ Master ▸ Mẫu hợp đồng</strong> ▸ nút <strong>Danh sách biến</strong> ở góc phải. Trang <strong>Danh sách biến mẫu hợp đồng</strong> liệt kê mọi biến gõ được vào tệp Word, dùng chung cho mọi pháp nhân.</p>
+<p>Mở <strong>Nhân sự ▸ Danh mục ▸ Mẫu hợp đồng</strong> ▸ nút <strong>Danh sách biến</strong> ở góc phải. Trang <strong>Danh sách biến mẫu hợp đồng</strong> liệt kê mọi biến gõ được vào tệp Word, dùng chung cho mọi pháp nhân.</p>
 <table>
 <thead><tr><th></th><th>Biến hệ thống</th><th>Biến tùy chỉnh</th></tr></thead>
 <tbody>
@@ -355,7 +356,7 @@ TREE = {
 <ul>
 <li>Hợp đồng <strong>Đã ký</strong>, có ngày kết thúc, nằm trong phạm vi hồ sơ bạn được xem, và hết hạn trong <strong>30 ngày tới</strong> hoặc <strong>đã quá hạn</strong>. Người vẫn đi làm mà hợp đồng đã hết là đang không có hợp đồng, nên hệ thống báo tới khi xử lý xong.</li>
 <li><strong>Đỏ</strong> khi còn từ <strong>15 ngày</strong> trở xuống hoặc đã quá hạn (luật buộc báo trước cho người lao động ít nhất 15 ngày); còn lại là vàng. Một dòng vàng bạn đã tắt ở Việc cần làm sẽ hiện lại khi chuyển sang đỏ.</li>
-<li>Hai con số 30 và 15 đổi được ở <strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong>, tab <strong>Hợp đồng lao động</strong>: xem {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
+<li>Hai con số 30 và 15 đổi được ở <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Cài đặt nhân sự</strong>, rồi tab <strong>Hợp đồng lao động</strong> trong màn: xem {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
 </ul>
 
 <h2>Khi nào hết bị báo</h2>
@@ -410,7 +411,7 @@ TREE = {
 <tr><td>Sửa</td><td>Sửa hợp đồng nháp, sinh tệp, tải bản ký, đánh dấu đã ký, hủy, chấm dứt</td></tr>
 <tr><td>Xóa</td><td>Xóa hợp đồng nháp hoặc đã hủy</td></tr>
 <tr><td>In</td><td>Tải tệp Word đã sinh (<strong>Tải hợp đồng (.docx)</strong>)</td></tr>
-<tr><td rowspan="3"><strong>Mẫu hợp đồng lao động</strong></td><td>Xem</td><td>Mở <strong>Master ▸ Mẫu hợp đồng</strong> và <strong>Danh sách biến</strong>, tải tệp mẫu</td></tr>
+<tr><td rowspan="3"><strong>Mẫu hợp đồng lao động</strong></td><td>Xem</td><td>Mở <strong>Danh mục ▸ Mẫu hợp đồng</strong> và <strong>Danh sách biến</strong>, tải tệp mẫu</td></tr>
 <tr><td>Tạo / Sửa</td><td>Tải lên mẫu, soạn nội dung, sửa thông tin, thay tệp, ngừng dùng</td></tr>
 <tr><td>Xóa</td><td>Xóa mẫu chưa dùng</td></tr>
 </tbody>

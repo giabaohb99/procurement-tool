@@ -9,6 +9,10 @@ Bản 2 (04/09/2026) viết dày hơn hẳn bản đầu: đi theo TỪNG BƯỚ
 và nhãn ô trên màn hình, thêm ba bài mới — *theo dõi/sửa/hủy phiếu*, *xử lý câu
 báo lỗi*, và tách phần quản trị thành *danh mục phòng* + *phân quyền & luồng*.
 
+duoc-CR-753 (12/11/2026): đổi đường menu theo menu mới. Menu Đặt phòng họp sổ xuống hai mục Lịch phòng họp, Phiếu
+đặt phòng; Danh mục phòng họp dời vào mục Thiết lập của menu Nhân sự (một tab của dải tab Thiết lập). Thanh tab
+Lịch · Phiếu · Danh mục trong màn đã bỏ từ trước (chuyển sang mục con ở menu), bài sửa theo.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_dat_phong_hop.py
 
@@ -79,15 +83,15 @@ TREE = {
     "icon": "building",
     "summary": "Xem phòng nào trống, đặt phòng, kéo thả đổi lịch, duyệt phiếu",
     "content": f"""<h2>Đặt phòng họp là gì?</h2>
-<p>Phân hệ để <strong>giữ chỗ phòng họp</strong>: xem phòng nào đang trống, lập phiếu đặt, gửi duyệt và mời người tham dự. Vào bằng menu <strong>Nhân sự ▸ Đặt phòng họp</strong>.</p>
+<p>Phân hệ để <strong>giữ chỗ phòng họp</strong>: xem phòng nào đang trống, lập phiếu đặt, gửi duyệt và mời người tham dự. Vào bằng menu <strong>Nhân sự ▸ Đặt phòng họp</strong>: bấm để sổ xuống hai mục <strong>Lịch phòng họp</strong> và <strong>Phiếu đặt phòng</strong>.</p>
 
-<h2>Ba khu vực, chuyển bằng thanh tab</h2>
+<h2>Ba màn, ở đâu trong menu</h2>
 <table>
-<thead><tr><th>Tab</th><th>Dùng để</th><th>Ai dùng</th></tr></thead>
+<thead><tr><th>Màn</th><th>Vào bằng</th><th>Dùng để</th><th>Ai dùng</th></tr></thead>
 <tbody>
-<tr><td><strong>Lịch đặt phòng</strong></td><td>Xem cả ngày một lượt, bấm ô trống để đặt, kéo thả đổi lịch.</td><td>Mọi người</td></tr>
-<tr><td><strong>Phiếu đặt phòng</strong></td><td>Danh sách phiếu: phiếu của bạn, phiếu chờ bạn duyệt, phiếu bạn đã duyệt.</td><td>Mọi người</td></tr>
-<tr><td><strong>Danh mục phòng</strong></td><td>Khai phòng, sức chứa, thiết bị.</td><td>Quản trị / hành chính</td></tr>
+<tr><td><strong>Lịch đặt phòng</strong></td><td><strong>Đặt phòng họp ▸ Lịch phòng họp</strong></td><td>Xem cả ngày một lượt, bấm ô trống để đặt, kéo thả đổi lịch.</td><td>Mọi người</td></tr>
+<tr><td><strong>Phiếu đặt phòng họp</strong></td><td><strong>Đặt phòng họp ▸ Phiếu đặt phòng</strong></td><td>Danh sách phiếu: phiếu của bạn, phiếu chờ bạn duyệt, phiếu bạn đã duyệt.</td><td>Mọi người</td></tr>
+<tr><td><strong>Danh mục phòng họp</strong></td><td><strong>Thiết lập</strong>, tab <strong>Danh mục phòng họp</strong></td><td>Khai phòng, sức chứa, thiết bị.</td><td>Quản trị / hành chính</td></tr>
 </tbody>
 </table>
 
@@ -121,7 +125,7 @@ Nháp  ───────────────────►  Chờ duy�
             "icon": "calendar",
             "summary": "Đọc lưới lịch, đổi ngày, lọc phòng, bấm ô trống để đặt ngay",
             "content": f"""<h2>Xem lịch phòng và đặt nhanh</h2>
-<p>Tab <strong>Lịch đặt phòng</strong> trả lời đúng một câu: <em>bây giờ phòng nào còn trống</em>.</p>
+<p>Màn <strong>Lịch đặt phòng</strong> (menu <strong>Đặt phòng họp ▸ Lịch phòng họp</strong>) trả lời đúng một câu: <em>bây giờ phòng nào còn trống</em>.</p>
 
 <h2>Đọc lưới</h2>
 <ul>
@@ -150,7 +154,7 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Lịch chỉ xem MỘT ngày</h2>
 <p>Không có chế độ tuần. Một ngày làm việc đã chiếm gần trọn bề ngang màn hình; nhân bảy lần thì mỗi cuộc họp còn vài pixel, không đọc nổi.</p>
-<p>Muốn nhìn xa hơn một ngày thì sang tab <strong>Phiếu đặt phòng</strong> rồi lọc theo phòng và trạng thái — {ref(THEO_DOI, "xem bài Theo dõi phiếu")}.</p>
+<p>Muốn nhìn xa hơn một ngày thì sang <strong>Đặt phòng họp ▸ Phiếu đặt phòng</strong> rồi lọc theo phòng và trạng thái — {ref(THEO_DOI, "xem bài Theo dõi phiếu")}.</p>
 
 <h2>Đừng tin lưới đã cũ</h2>
 <p>⚠️ Phòng có thể vừa bị người khác giữ mất <strong>trong lúc bạn đang nhìn</strong>. Lưới không tự làm mới liên tục, và chốt chặn thật nằm ở bước <strong>gửi duyệt</strong>. Thấy trống mà gửi lên bị chặn thì không phải hệ thống sai — là ai đó nhanh tay hơn. Tải lại trang rồi chọn lại.</p>""",
@@ -163,7 +167,7 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Năm bước</h2>
 <ol>
-<li>Bấm <strong>Đặt phòng</strong> ở góc trên bên phải — nút này có ở cả tab <em>Lịch</em> lẫn tab <em>Phiếu</em>. Hoặc {ref(XEM_LICH, "bấm thẳng vào ô trống trên lịch")} để form tự điền sẵn phòng và giờ.</li>
+<li>Bấm <strong>Đặt phòng</strong> ở góc trên bên phải — nút này có ở cả màn <em>Lịch đặt phòng</em> lẫn màn <em>Phiếu đặt phòng họp</em>. Hoặc {ref(XEM_LICH, "bấm thẳng vào ô trống trên lịch")} để form tự điền sẵn phòng và giờ.</li>
 <li>Điền <strong>Nội dung cuộc họp</strong>, <strong>Bắt đầu</strong>, <strong>Kết thúc</strong>.</li>
 <li>Bấm nút chọn <strong>Phòng họp</strong> — hộp thoại chỉ bày phòng đang trống trong khung giờ đó.</li>
 <li>Ghi <strong>Số người dự</strong> và chọn <strong>Người được mời</strong>.</li>
@@ -417,7 +421,7 @@ Nháp  ───────────────────►  Chờ duy�
 <tr><td><em>Chưa xác định được người đặt — tài khoản này chưa gắn hồ sơ nhân sự.</em></td><td>Tài khoản chưa nối với hồ sơ nhân sự nào.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
 <tr><td>Không thấy menu <strong>Đặt phòng họp</strong></td><td>Phân quyền — hai khóa của phân hệ này là khóa mới, vai trò cũ không tự có.</td><td>Xin quản trị tick thêm, xem {ref(QUYEN, "bài Phân quyền")}.</td></tr>
 <tr><td>Thấy lịch nhưng <strong>không kéo thả được</strong></td><td>Chỉ có quyền đọc.</td><td>Xin thêm quyền ghi trên khóa <code>room_booking</code>.</td></tr>
-<tr><td>Vào được lịch nhưng <strong>không thấy tab Danh mục phòng</strong></td><td>Thiếu khóa <code>meeting_room</code> — đó là khóa riêng.</td><td>Bình thường: khai phòng là việc của quản trị, không phải của người đặt.</td></tr>
+<tr><td>Vào được lịch nhưng <strong>không thấy tab Danh mục phòng họp</strong> ở <strong>Thiết lập</strong></td><td>Thiếu khóa <code>meeting_room</code> — đó là khóa riêng.</td><td>Bình thường: khai phòng là việc của quản trị, không phải của người đặt.</td></tr>
 <tr><td>Hệ báo <em>Không tìm thấy</em> khi mở một phiếu</td><td><strong>Phạm vi dữ liệu</strong>, không phải phiếu bị xóa.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
 </tbody>
 </table>
@@ -426,7 +430,7 @@ Nháp  ───────────────────►  Chờ duy�
 <ul>
 <li><strong>Người được mời chưa nhận thông báo</strong> — thư chỉ gửi <strong>sau khi phiếu được duyệt</strong>.</li>
 <li><strong>Phiếu nháp không hiện trên lịch</strong> — đúng như vậy, nháp không giữ phòng.</li>
-<li><strong>Lịch không có chế độ tuần</strong> — cố ý; nhìn xa hơn một ngày thì dùng tab <em>Phiếu đặt phòng</em>.</li>
+<li><strong>Lịch không có chế độ tuần</strong> — cố ý; nhìn xa hơn một ngày thì dùng màn <em>Phiếu đặt phòng họp</em>.</li>
 <li><strong>Kéo khối sang ngày khác không được</strong> — lưới chỉ vẽ một ngày.</li>
 </ul>""",
         },
@@ -435,7 +439,7 @@ Nháp  ───────────────────►  Chờ duy�
             "icon": "settings",
             "summary": "Khai phòng, sức chứa, thiết bị, phòng dùng chung, và cách dẹp một phòng",
             "content": f"""<h2>Dành cho quản trị — Danh mục phòng</h2>
-<p>Tab <strong>Danh mục phòng</strong> (khóa quyền <code>meeting_room</code>). Mỗi dòng là một phòng họp có thật trong toà nhà.</p>
+<p>Vào <strong>Nhân sự ▸ Thiết lập</strong>, chọn tab <strong>Danh mục phòng họp</strong> (khóa quyền <code>meeting_room</code>, cần quyền sửa; thiếu quyền thì không thấy tab này). Mỗi dòng là một phòng họp có thật trong toà nhà.</p>
 
 <h2>Các ô cần khai</h2>
 <table>

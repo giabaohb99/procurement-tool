@@ -68,6 +68,14 @@ export function visibleNavItems(module: ErpModule, can: CanFn, ctx: NavContext =
     })
 }
 
+/**
+ * Các mục con người này được phép thấy của MỘT mục menu, giữ thứ tự khai báo — cùng luật với `visibleNavItems`.
+ * Dùng cho dải tab của mục `childrenAsTabs`: trang dựng tab từ đây để không chép luật quyền lần thứ hai.
+ */
+export function visibleNavChildren(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): ModuleNavItem[] {
+  return (item.children ?? []).filter((child) => !child.hidden && itemAllowed(child, can, ctx))
+}
+
 export function canOpenModule(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
   //  ⚠️ Phân hệ LINK RA NGOÀI luôn mở. Nó không có mục menu nào theo đúng bản
   //  chất (`nav: []` — màn hình nằm ở app khác), nên đo bằng "còn mục nào hiện

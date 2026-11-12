@@ -147,6 +147,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-753 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** menu trái phân hệ Nhân sự để mọi mục dưới một tiêu đề nhóm, cụm danh mục mang chữ tiếng Anh **Master**, còn sáu màn cấu hình rải ở bốn cụm khác nhau nên menu dài và khó tìm.
+
+**Đã làm**
+- Menu Nhân sự thành một danh sách xếp từ trên xuống, không còn tiêu đề nhóm; cụm **Master** đổi tên thành **Danh mục** gồm Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng.
+- Mục **Thiết lập** là một dòng menu không sổ xuống, bấm vào mở màn đầu tiên người đó có quyền; đầu mỗi màn có một dải tab phẳng chín màn: Cài đặt nhân sự, Phân bổ chính sách, Gói chính sách, Loại nghỉ, Lịch ngày lễ, Ngày cấm nghỉ, Mẫu lịch tuần, Gán lịch, Danh mục phòng họp. Không còn tab lồng trong tab, theo cách Frappe HRMS bày mỗi danh mục một trang phẳng.
+- Dải tab đọc luật quyền từ chính mục menu nên người thiếu quyền không thấy tab đó; đường dẫn và quyền của từng màn giữ nguyên, link cũ vẫn mở được.
+- Để chuyển tab không bị giật, dải tab đặt ở đầu trang, mọi màn trong cụm dùng chung hàng tiêu đề gọn (mô tả một dòng cạnh cụm nút); trang Cài đặt nhân sự dựng lại theo cùng khuôn. Đo trên trình duyệt thì cả chín màn có dải tab và khung bảng ở cùng tọa độ; trên điện thoại dải tab là một hàng vuốt ngang.
+- Bài hướng dẫn sử dụng và cẩm nang trợ lý của Nhân sự, Nghỉ phép, Hợp đồng lao động, Đặt phòng họp cùng ba tài liệu nhân sự đã đổi đường đi theo menu mới; cẩm nang đã xuất bản lại ở máy local.
+- Kho tìm kiếm của trợ lý ở máy local chưa nạp lại được 46 bài vì hạn mức nhúng Gemini trong ngày đã hết, cần chạy lại lệnh nạp chỉ mục khi hạn mức mở lại; dev và prod nạp ở lần deploy tới.
+
+Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.tsx`, `utils/hr-setup-tab-list.ts`, `components/hr-setup-tabs.tsx`, `components/sub-tab-link.tsx`, `shared/crud/crud-list-page.tsx`, `shared/ui/page-header.tsx`, `app/layouts/module-sidebar.tsx`, `backend/scripts/seed_help_*.py`, `backend/app/modules/ai_skill/seed_handbook/*.md`
+
 ## duoc-CR-752 | Viết hướng dẫn sử dụng cho các đợt Nhân sự, Hợp đồng lao động, Đặt xe, Tra cứu thị trường chưa có bài để Trợ lý AI trích được
 - status: xong
 - date: 2026-11-12
