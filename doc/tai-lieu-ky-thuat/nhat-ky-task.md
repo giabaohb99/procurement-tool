@@ -213,7 +213,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 **Còn lại:** giao diện cũ (frontend) chưa làm vì màn cũ không có hộp đính tệp tương ứng gọn để mở thẳng.
 
 Mã nguồn: `backend/app/modules/assistant/tools/attach_link.py` (`build_attach_url`) · `po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/shared/hooks/use-attach-param.ts` · `procurement/components/purchase-order-delivery-attach-dialog.tsx` · `procurement/helpers/delivery-attach-target.ts` · `document-attachments-card.tsx` · `purchase-order-detail-page.tsx` · `survey-detail-page.tsx` · `survey-request-detail-page.tsx` · `finance/pages/payment-request-detail-page.tsx` · `test/backend/test_mcp_link_mo_hop_dinh_tep_cr240.py`
-Commit: (erp-v2)
+Commit: 5405d917, gộp ada7a00e (erp-v2)
 Deploy: chưa
 
 ## ai-CR-239 | Trợ lý đối chiếu hóa đơn nhà cung cấp với đơn mua hàng và công nợ khi ghi số hóa đơn
@@ -234,7 +234,7 @@ Deploy: chưa
 **Kết quả:** 8 bài kiểm máy chủ mới xanh, gồm đúng ca PHL (gộp bộ, VAT 8%, khớp tổng 13.095.000), ca lệch đơn giá và ca lệch VAT; bài cũ của ai-CR-237 và bao-CR-740 xanh. Không có migration. Đã đẩy lên nhánh erp-v2, chưa dựng dev.
 
 Mã nguồn: `backend/app/modules/assistant/tools/po_invoice_check.py` (`reconcile`) · `po_receipt_tool.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_doi_chieu_hoa_don_cr239.py`
-Commit: (erp-v2)
+Commit: 5405d917, gộp ada7a00e (erp-v2)
 Deploy: chưa
 
 ## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
