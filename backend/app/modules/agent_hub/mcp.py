@@ -90,7 +90,9 @@ CONFIRM_DRAFT_DEF = {
                     "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù, payment = đề nghị thanh toán công nợ (draft của "
                     "draft_payment_request; LUÔN chỉ lưu Nháp, người lập tự vào web bấm Gửi duyệt), po_receipt = ghi lần nhận "
                     "hàng vào ĐMH theo phiếu "
-                    "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); skill / "
+                    "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); "
+                    "supplier_quote = nhập báo giá NCC vào phiếu khảo sát đang mở (draft của draft_supplier_quote; sửa / "
+                    "thêm dòng giá, hoặc lập phiếu khảo sát Nháp gắn YCBG); skill / "
                     "skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
                     "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về; approval = "
@@ -100,7 +102,8 @@ CONFIRM_DRAFT_DEF = {
                     "vehicle_booking/leave_comp)."),
     "inputSchema": {"type": "object", "properties": {
         "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
-                                            "leave_comp", "payment", "po_receipt", "update", "delete", "approval",
+                                            "leave_comp", "payment", "po_receipt", "supplier_quote", "update", "delete",
+                                            "approval",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -282,7 +285,8 @@ def _offset(args: dict) -> int:
 #  kind của confirm_draft → tool soạn nháp của nó; nhóm G7 chứa tool đó đang tắt thì không cho tạo qua cổng.
 _GROUP_GATED_KINDS = {"vehicle_booking": "draft_vehicle_booking", "seal_request": "draft_seal_request",
                       "leave_comp": "draft_leave_comp_request", "po_receipt": "draft_po_receipt",
-                      "payment": "draft_payment_request"}       # ai-CR-236: nhóm "Công nợ và thanh toán"
+                      "payment": "draft_payment_request",       # ai-CR-236: nhóm "Công nợ và thanh toán"
+                      "supplier_quote": "draft_supplier_quote"}  # ai-CR-238: nhóm "Nhập báo giá NCC"
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -328,9 +332,26 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
                         + po_receipt_tool.ATTACH_NOTE)}
         _absolutize(out, telegram.absolute_url)
         return out
+    if kind == "supplier_quote":
+        return _supplier_quote_written(db, code, oid, draft)
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
             "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
+
+
+def _supplier_quote_written(db: Session, code: str, oid: int, draft: dict) -> dict:
+    """ai-CR-238: kết quả nhập báo giá — link TUYỆT ĐỐI tới phiếu khảo sát + link mở phiếu để người dùng tự đính tệp báo
+    giá (ai-CR-240 sẽ thay bằng link mở thẳng hộp đính tệp)."""
+    from app.modules.assistant.tools import supplier_quote_tool
+    from . import erp, telegram
+
+    link = telegram.absolute_url(draft_create.DETAIL_PATHS["supplier_quote"].format(id=oid))
+    created = bool(draft.get("new_survey"))
+    return {"ok": True, "code": code, "id": oid, "submitted": False, "created": created,
+            "details": erp.created_details(db, "supplier_quote", oid), "link": link, "attach_url": link,
+            "note": (("Đã lập phiếu khảo sát Nháp gắn YCBG và ghi giá. " if created else "Đã ghi giá vào phiếu khảo sát. ")
+                     + "Báo người dùng mã phiếu + link, các dòng đã ghi; phiếu vẫn ở Nháp / Bị trả lại, người phụ trách "
+                     "vào web rà rồi tự Gửi duyệt. " + supplier_quote_tool.ATTACH_NOTE)}
 
 
 def _payment_created(code: str, oid: int, asked_submit: bool) -> dict:
