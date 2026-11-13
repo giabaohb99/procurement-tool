@@ -27,7 +27,7 @@ khớp theo `key` ở đầu tiêu đề).
 - Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
 
 Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
-Commit: (điền sau khi đẩy)
+Commit: 057b70ac (erp-v2)
 
 ## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
 - status: xong
