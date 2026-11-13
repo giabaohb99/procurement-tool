@@ -25,6 +25,7 @@ import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
+import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
@@ -161,6 +162,8 @@ export function SurveyDetailPage() {
   const surveyId = isNew ? 0 : Number(id)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  //  ai-CR-240: link trợ lý AI `?attach=1` mở thẳng hộp Upload chứng từ (báo giá) của phiếu.
+  const attachRequested = useAttachParam()
   const { user } = useAuth()
   const { can } = usePermission()
 
@@ -818,6 +821,7 @@ export function SurveyDetailPage() {
               entityId={surveyId}
               canManage={editable}
               v1Wording
+              autoOpenUpload={attachRequested}
             />
             <DocumentComments entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} />
             <AuditTimeline entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} showMessage dense />

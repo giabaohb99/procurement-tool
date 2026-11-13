@@ -38,6 +38,7 @@ import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { formatMoney } from '@/shared/utils/format-money'
 import { Badge } from '@/shared/ui/badge'
@@ -65,6 +66,7 @@ import { StatusBadge } from '../components/document-status-badge'
 import { PurchaseOrderImportCostsCard } from '../components/purchase-order-import-costs-card'
 import { PurchaseOrderInfoCard } from '../components/purchase-order-info-card'
 import { PurchaseOrderItemsTable } from '../components/purchase-order-items-table'
+import { PurchaseOrderDeliveryAttachDialog } from '../components/purchase-order-delivery-attach-dialog'
 import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialog'
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
@@ -91,6 +93,7 @@ import {
   shiftPendingAfterLineRemove,
   type PendingDeliveryFiles,
 } from '../helpers/pending-delivery-files'
+import { findDeliveryAttachTarget } from '../helpers/delivery-attach-target'
 import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
@@ -121,6 +124,7 @@ import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
   isImportOrder,
+  isLineLocked,
   isPurchaseOrderApproved,
   isPurchaseOrderLocked,
   PO_FIELDS_EDITABLE_AFTER_APPROVE,
@@ -271,19 +275,39 @@ export function PurchaseOrderDetailPage() {
 
   //  ai-CR-237: link trợ lý AI gửi (`?delivery=<id lần giao>` hoặc `?line=<id dòng>`) mở sẵn hộp dòng hàng chứa lần
   //  giao đó — chỗ người dùng tự đính tệp hóa đơn. Chỉ mở MỘT lần khi dữ liệu đơn về.
+  //  ai-CR-240: kèm `attach=1` thì mở THẲNG hộp đính tệp của lần giao (`delivery`, hoặc `line` + `delivery_no` cho lần
+  //  giao trợ lý vừa thêm); không chỉ lần giao nào thì mở hộp Upload chứng từ của đơn. Chỉ khi được ghi đơn (đơn chưa
+  //  hủy, dòng chưa khóa — cùng điều kiện nút Tải ở bảng lần giao); không thì lùi về mở hộp dòng hàng như cũ.
   const [searchParams] = useSearchParams()
+  const attachRequested = useAttachParam()
   const focusDeliveryId = Number(searchParams.get('delivery')) || 0
   const focusLineId = Number(searchParams.get('line')) || 0
+  const focusDeliveryNo = Number(searchParams.get('delivery_no')) || 0
   const [focusHandled, setFocusHandled] = useState(false)
+  const [attachTarget, setAttachTarget] = useState<{ lineIndex: number; deliveryId: number } | null>(null)
   if (!focusHandled && serverData && (focusDeliveryId || focusLineId)) {
     setFocusHandled(true)
-    const focusIndex = serverData.items.findIndex(
-      (item) =>
-        (focusLineId > 0 && item.id === focusLineId) ||
-        (focusDeliveryId > 0 && item.deliveries.some((delivery) => delivery.id === focusDeliveryId)),
-    )
-    if (focusIndex >= 0) setLineIndex(focusIndex)
+    const target = findDeliveryAttachTarget(serverData.items, {
+      deliveryId: focusDeliveryId,
+      lineId: focusLineId,
+      deliveryNo: focusDeliveryNo,
+    })
+    const canAttach =
+      attachRequested &&
+      serverData.status !== 'cancelled' &&
+      can('purchase_order', 'write') &&
+      target.lineIndex >= 0 &&
+      !isLineLocked(serverData.items[target.lineIndex])
+    if (canAttach && target.delivery) {
+      setAttachTarget({ lineIndex: target.lineIndex, deliveryId: target.delivery.id })
+    } else if (target.lineIndex >= 0) {
+      setLineIndex(target.lineIndex)
+    }
   }
+  const attachItem = attachTarget ? serverData?.items[attachTarget.lineIndex] : undefined
+  const attachDelivery = attachItem?.deliveries.find(
+    (delivery) => delivery.id === attachTarget?.deliveryId,
+  )
 
   /**
    * Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. bao-CR-364: tiền tệ
@@ -1060,6 +1084,7 @@ export function PurchaseOrderDetailPage() {
           entity="purchase_order"
           entityId={purchaseOrderId}
           canManage={!locked && can('purchase_order', 'write')}
+          autoOpenUpload={attachRequested && !focusDeliveryId && !focusLineId}
           documentStatus={isNew ? '' : data.document_status || 'none'}
           //  duoc-CR-741: đổi tình trạng hồ sơ bằng menu ở tiêu đề thẻ này như bản v1. Sửa được
           //  cả khi đơn đã Hoàn thành (chứng từ thường về sau) — endpoint riêng, không qua Lưu.
@@ -1092,6 +1117,21 @@ export function PurchaseOrderDetailPage() {
       </div>
 
       <PurchaseOrderPaymentDialog open={paymentOpen} order={data} onOpenChange={setPaymentOpen} />
+
+      {attachTarget && attachItem && attachDelivery && (
+        <PurchaseOrderDeliveryAttachDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setAttachTarget(null)
+          }}
+          purchaseOrderId={purchaseOrderId}
+          deliveryId={attachTarget.deliveryId}
+          deliveryNo={attachDelivery.delivery_no}
+          lineNumber={attachTarget.lineIndex + 1}
+          productCode={attachItem.product_code}
+          productName={attachItem.product_name}
+        />
+      )}
 
       <PurchaseOrderLineDialog
         item={lineIndex === null ? null : (data.items[lineIndex] ?? null)}

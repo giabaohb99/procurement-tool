@@ -237,4 +237,4 @@ def test_cong_mcp_xac_nhan_tra_link_tuyet_doi(kho, db, mcp_all_groups):
     ok = mcp.call_tool(db, kho.staff, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "supplier_quote", "draft": out["draft"]})
     assert ok["ok"] and ok["code"] == "KS90001"
     assert ok["link"].startswith("http") and ok["link"].endswith(f"/procurement/surveys/{kho.chai.id}")
-    assert ok["attach_url"] == ok["link"] and any("CPT0234" in x for x in ok["details"])
+    assert ok["attach_url"].startswith(ok["link"]) and "attach=1" in ok["attach_url"] and any("CPT0234" in x for x in ok["details"])

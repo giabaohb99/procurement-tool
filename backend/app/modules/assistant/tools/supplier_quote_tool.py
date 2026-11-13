@@ -50,8 +50,8 @@ MAX_PRICE = 1e13
 MIN_NAME_OVERLAP = 6
 SURVEY_URL = "/procurement/surveys/{id}"
 REQUEST_URL = "/procurement/survey-requests/{id}"
-ATTACH_NOTE = ("Tệp báo giá không gửi được qua AI: đưa người dùng `attach_url` — bấm để mở phiếu khảo sát trên web và tự "
-               "đính tệp báo giá.")
+ATTACH_NOTE = ("Tệp báo giá không gửi được qua AI: đưa người dùng `attach_url` — bấm (đăng nhập web như thường) là mở "
+               "thẳng hộp đính tệp của phiếu khảo sát để tự tải tệp báo giá lên.")
 DEBT_OPTIONS = ("Tiền mặt", "Công nợ 30 ngày", "Công nợ 60 ngày", "Công nợ 90 ngày", "Trả trước")   # ô chọn trên web
 _SURVEY_STATUS = {"draft": "Nháp", "rejected": "Bị trả lại", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
                   "cancelled": "Đã hủy"}

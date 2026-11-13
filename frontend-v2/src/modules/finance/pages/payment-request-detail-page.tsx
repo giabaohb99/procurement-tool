@@ -26,6 +26,7 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import {
   AlertDialog,
@@ -700,6 +701,8 @@ function PaymentRequestCreate() {
 function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) {
   const navigate = useNavigate()
   const { can } = usePermission()
+  //  ai-CR-240: link trợ lý AI `?attach=1` mở thẳng hộp Upload chứng từ (hóa đơn) của phiếu.
+  const attachRequested = useAttachParam()
 
   const { data: req, isLoading, isError } = usePaymentRequest(paymentRequestId)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
@@ -1281,6 +1284,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           entityId={paymentRequestId}
           canManage={can('payment_request', 'write')}
           documentStatus={req.status}
+          autoOpenUpload={attachRequested}
         />
 
         {/* CR-149 (main, ticket #14): 3 câu chữ trên bản in, điền sẵn câu tự động. */}

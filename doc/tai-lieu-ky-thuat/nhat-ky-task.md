@@ -27,7 +27,7 @@ khớp theo `key` ở đầu tiêu đề).
 - Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
 
 Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
-Commit: (điền sau khi đẩy)
+Commit: 057b70ac (erp-v2)
 
 ## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
 - status: xong
@@ -47,7 +47,7 @@ Commit: (điền sau khi đẩy)
 - Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
 
 Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
-Commit: (điền sau khi đẩy)
+Commit: 3e898b75 (erp-v2)
 Deploy: dev
 
 ## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
@@ -69,14 +69,14 @@ Deploy: dev
 - Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
-Commit: (điền sau khi đẩy)
+Commit: 8836760a (erp-v2)
 Deploy: dev
 
 ## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
 - status: xong
 - date: 2026-11-11
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Bảo
 **Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
 
@@ -193,6 +193,187 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-240 | Link trợ lý AI mở thẳng hộp đính tệp của lần giao, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** tệp hóa đơn không gửi được qua ứng dụng AI. Link của ai-CR-237 chỉ mở trang đơn mua hàng và hộp dòng hàng, người dùng còn phải dò đúng lần giao trong bảng 27 cột mới thấy nút Tải. Đã chốt ngày 13/11: link phải mở thẳng hộp tải tệp, người dùng vẫn đăng nhập web như thường, không làm đường tải ẩn danh.
+
+**Đã làm**
+- Thêm một hàm dựng link dùng chung cho mọi công cụ ghi phiếu qua AI: link tới màn chi tiết kèm tham số **attach=1**, chọn đúng chỗ theo lần giao, dòng hàng hoặc số thứ tự lần giao. Hàm này dùng được cho đơn mua hàng, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá (YCBG); việc nhập báo giá ai-CR-238 nối vào đây.
+- Nháp ghi hóa đơn và nháp nhận hàng trả link mở thẳng hộp đính tệp của lần giao có sẵn. Lần giao mới lúc soạn chưa có chỗ đính nên link chỉ mở đúng dòng hàng; sau khi xác nhận, link mở hộp đính tệp của đúng lần giao vừa thêm theo số thứ tự.
+- Tạo đề nghị thanh toán Nháp và tạo YCBG qua cổng MCP trả thêm link mở thẳng hộp tải chứng từ của phiếu. Mô tả công cụ xác nhận nháp và câu dặn trong kết quả nhắc AI đưa link cho người dùng.
+- Giao diện mới: màn đơn mua hàng có hộp mới **Đính tệp vào lần giao số N** (tải lên ngay, không cần bấm Lưu đơn); link không chỉ lần giao nào thì mở hộp **Upload chứng từ** của đơn. Màn đề nghị thanh toán và phiếu khảo sát mở sẵn hộp **Upload chứng từ**. Màn YCBG mở sẵn hộp chi tiết dòng có ô đính tệp báo giá.
+- Quyền kiểm như cũ: không có quyền ghi, đơn đã hủy hay dòng đã khóa thì màn hiện như bình thường, không bật hộp.
+
+**Kết quả:** 6 bài kiểm máy chủ mới và các bài cũ của ai-CR-236, ai-CR-237, bao-CR-740 xanh; 4 tệp bài kiểm giao diện mới (hàm dò lần giao, hook tham số, hộp đính tệp, thẻ chứng từ mở sẵn hộp, trang phiếu khảo sát) xanh; kiểm kiểu và kiểm mã giao diện không lỗi. Không có migration. Đã đẩy lên nhánh erp-v2, chưa dựng dev.
+
+**Còn lại:** giao diện cũ (frontend) chưa làm vì màn cũ không có hộp đính tệp tương ứng gọn để mở thẳng.
+
+Mã nguồn: `backend/app/modules/assistant/tools/attach_link.py` (`build_attach_url`) · `po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/shared/hooks/use-attach-param.ts` · `procurement/components/purchase-order-delivery-attach-dialog.tsx` · `procurement/helpers/delivery-attach-target.ts` · `document-attachments-card.tsx` · `purchase-order-detail-page.tsx` · `survey-detail-page.tsx` · `survey-request-detail-page.tsx` · `finance/pages/payment-request-detail-page.tsx` · `test/backend/test_mcp_link_mo_hop_dinh_tep_cr240.py`
+Commit: 5405d917, gộp ada7a00e (erp-v2)
+Deploy: chưa
+
+## ai-CR-239 | Trợ lý đối chiếu hóa đơn nhà cung cấp với đơn mua hàng và công nợ khi ghi số hóa đơn
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** ngày 12/11 hóa đơn số 6265 của NCC (nhà cung cấp) PHL ghi gộp 5.000 Bộ đơn giá 2.425, VAT 8%, tổng 13.095.000 cho đơn PO01017 gồm hai dòng chai CHT0238 và nắp NAP0161. Claude phải tự cộng tay mới thấy khớp. Đã chốt ngày 13/11: máy tự đối chiếu, chỉ cảnh báo, người dùng vẫn quyết.
+
+**Đã làm**
+- Công cụ soạn nháp nhận hàng / ghi hóa đơn nhận thêm các số trên hóa đơn: tiền trước thuế, % VAT hoặc tiền VAT, tổng tiền, và tùy chọn từng dòng hàng (tên, đơn vị tính, số lượng, đơn giá). Số gửi dạng số hoặc chuỗi kiểu Việt như 12.125.000.
+- Máy tự cộng các lần giao trong nháp theo đơn giá và % VAT của dòng đơn mua hàng, đúng công thức sinh công nợ hàng, rồi báo **khớp** hay **lệch** bao nhiêu ở số lượng, đơn giá, % VAT, tiền VAT, tiền trước thuế và tổng. Ngưỡng làm tròn: tiền 1.000 đồng, đơn giá 0,5%, % VAT phải bằng.
+- Nhận ra hóa đơn ghi **gộp bộ**: một dòng hóa đơn ứng với nhiều dòng đơn mua hàng (chai cộng nắp), so số lượng bộ với từng dòng và đơn giá bộ với tổng đơn giá các dòng.
+- Kèm các khoản công nợ hàng của lần giao (mã khoản, đã trả, còn phải trả) khi người hỏi được xem công nợ, để AI gợi ý bước kế là soạn đề nghị thanh toán đúng các khoản đó.
+- Chỉ cảnh báo: chỗ lệch thành câu **HÓA ĐƠN LỆCH** trong danh sách cảnh báo; nháp vẫn soạn, xác nhận vẫn ghi đúng như ai-CR-237, không đổi dữ liệu nào khác. Số đọc sai dạng chỉ ghi chú, không chặn.
+
+**Kết quả:** 8 bài kiểm máy chủ mới xanh, gồm đúng ca PHL (gộp bộ, VAT 8%, khớp tổng 13.095.000), ca lệch đơn giá và ca lệch VAT; bài cũ của ai-CR-237 và bao-CR-740 xanh. Không có migration. Đã đẩy lên nhánh erp-v2, chưa dựng dev.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_invoice_check.py` (`reconcile`) · `po_receipt_tool.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_doi_chieu_hoa_don_cr239.py`
+Commit: 5405d917, gộp ada7a00e (erp-v2)
+Deploy: chưa
+
+## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** duoc-CR-752 đã viết bài hướng dẫn sử dụng nhưng cẩm nang của trợ lý AI chưa dạy kỹ các phần hợp đồng lao động, nhập Excel nhân sự, quyền theo chức vụ và luật duyệt đặt xe mới.
+
+**Đã làm**
+- Cẩm nang hồ sơ nhân sự thêm phần hợp đồng lao động, nhập hồ sơ bằng Excel, quyền mặc định theo chức vụ, quyền xuất và nhập kèm che cột nhạy cảm, viết theo kiểu câu hỏi thường gặp, cách trả lời và đường vào màn.
+- Ghi rõ trợ lý không đọc lương và giá trị biến tùy chỉnh trên hợp đồng; số đếm hợp đồng lao động lấy qua báo cáo, vì hai công cụ tra hợp đồng hiện có là hợp đồng nhà cung cấp.
+- Cẩm nang đặt xe thêm luật người khác cùng quyền duyệt đặt xe mà phạm vi phủ phiếu cũng duyệt được, chuông và thư chỉ tới người được chọn.
+- Đã xuất bản cẩm nang ở máy local; dev và prod xuất bản ở lần deploy tới.
+
+Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `70-dat-xe.md`
+
+## duoc-CR-755 | Kiêm nhiệm thành tab riêng trên hồ sơ nhân sự và cho phép kiêm nhiệm ở công ty khác
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** kiêm nhiệm trước đây chỉ là danh sách phòng phụ nằm trong tab Chung của hồ sơ, không có công ty, chức vụ, thời hạn hay quyết định, và bị chặn cứng ở pháp nhân khác. ERPNext cũng không có sẵn chức năng này nên phải tự thiết kế.
+
+**Đã làm**
+- Tạo bảng kiêm nhiệm riêng: mỗi dòng có công ty, phòng ban, chức vụ, từ ngày, đến ngày, số và ngày quyết định, tệp quyết định, ghi chú và công tắc tính vào phạm vi quyền; dòng tự hết hiệu lực khi qua đến ngày. Dữ liệu kiêm nhiệm cũ đã chuyển sang bảng mới.
+- Phạm vi quyền tính theo cặp phòng và công ty: người kiêm nhiệm ở công ty B làm được như nhân viên phòng đó ở công ty B nhưng không thấy cả công ty B; văn bản, thư mục, báo cáo và skill AI chia theo phòng cũng tính phòng kiêm nhiệm; trưởng phòng ở công ty B đọc được hồ sơ người kiêm nhiệm.
+- Người gán kiêm nhiệm phải có quyền trên cả hồ sơ lẫn phòng đích ở công ty kia, và không ai tự sửa kiêm nhiệm của chính mình.
+- Đổi pháp nhân chính thì các dòng ở công ty cũ kết thúc vào hôm qua, có hộp hỏi để giữ lại; áp quá trình công tác loại kiêm nhiệm, nhập Excel và hoàn tác đều ghi theo bảng mới.
+- Hồ sơ nhân sự có tab Kiêm nhiệm riêng; trang phòng ban và sơ đồ tổ chức hiện người kiêm nhiệm có nhãn, báo cáo quân số và quỹ lương không đếm trùng; trang cá nhân, popup phạm vi và trợ lý AI cũng hiện kiêm nhiệm.
+- Rà mã độc lập phát hiện chốt đổi phòng chính chưa xét công ty, có thể dời người ở công ty khác vào phòng ngoài tầm của người thao tác; đã sửa cùng ba lỗi nhỏ hơn và thêm bài kiểm canh.
+- Viết tài liệu nhân sự, tài liệu API, mục phân quyền, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý; đã nạp lại kho tìm kiếm của trợ lý ở máy local.
+
+Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn755a_bang_kiem_nhiem.py`, `frontend-v2/src/modules/hr/components/employee-tab-concurrent.tsx`, `employee-concurrent-form-dialog.tsx`, `employee-company-change-concurrent-dialog.tsx`, `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`
+
+## duoc-CR-754 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** (mục này từng mang mã duoc-CR-753 ở commit `aa51621b`; đổi sang 754 vì số 753 đã được bao-CR-753 đặt trước.) Menu trái phân hệ Nhân sự để mọi mục dưới một tiêu đề nhóm, cụm danh mục mang chữ tiếng Anh **Master**, còn sáu màn cấu hình rải ở bốn cụm khác nhau nên menu dài và khó tìm.
+
+**Đã làm**
+- Menu Nhân sự thành một danh sách xếp từ trên xuống, không còn tiêu đề nhóm; cụm **Master** đổi tên thành **Danh mục** gồm Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng.
+- Mục **Thiết lập** là một dòng menu không sổ xuống, bấm vào mở màn đầu tiên người đó có quyền; đầu mỗi màn có một dải tab phẳng chín màn: Cài đặt nhân sự, Phân bổ chính sách, Gói chính sách, Loại nghỉ, Lịch ngày lễ, Ngày cấm nghỉ, Mẫu lịch tuần, Gán lịch, Danh mục phòng họp. Không còn tab lồng trong tab, theo cách Frappe HRMS bày mỗi danh mục một trang phẳng.
+- Dải tab đọc luật quyền từ chính mục menu nên người thiếu quyền không thấy tab đó; đường dẫn và quyền của từng màn giữ nguyên, link cũ vẫn mở được.
+- Để chuyển tab không bị giật, dải tab đặt ở đầu trang, mọi màn trong cụm dùng chung hàng tiêu đề gọn (mô tả một dòng cạnh cụm nút); trang Cài đặt nhân sự dựng lại theo cùng khuôn. Đo trên trình duyệt thì cả chín màn có dải tab và khung bảng ở cùng tọa độ; trên điện thoại dải tab là một hàng vuốt ngang.
+- Bài hướng dẫn sử dụng và cẩm nang trợ lý của Nhân sự, Nghỉ phép, Hợp đồng lao động, Đặt phòng họp cùng ba tài liệu nhân sự đã đổi đường đi theo menu mới; cẩm nang đã xuất bản lại ở máy local.
+- Kho tìm kiếm của trợ lý ở máy local chưa nạp lại được 46 bài vì hạn mức nhúng Gemini trong ngày đã hết, cần chạy lại lệnh nạp chỉ mục khi hạn mức mở lại; dev và prod nạp ở lần deploy tới.
+
+Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.tsx`, `utils/hr-setup-tab-list.ts`, `components/hr-setup-tabs.tsx`, `components/sub-tab-link.tsx`, `shared/crud/crud-list-page.tsx`, `shared/ui/page-header.tsx`, `app/layouts/module-sidebar.tsx`, `backend/scripts/seed_help_*.py`, `backend/app/modules/ai_skill/seed_handbook/*.md`
+
+## duoc-CR-752 | Viết hướng dẫn sử dụng cho các đợt Nhân sự, Hợp đồng lao động, Đặt xe, Tra cứu thị trường chưa có bài để Trợ lý AI trích được
+- status: xong
+- date: 2026-11-12
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** kho tìm kiếm của Trợ lý AI chỉ nạp bài hướng dẫn sử dụng và câu hỏi thường gặp, nên tính năng nào chưa có bài thì trợ lý không trả lời được. Rà các đợt từ đầu tháng 10 thì thấy cụm Hợp đồng lao động, Nhập Excel nhân sự, quyền theo chức vụ, cấu hình Tra cứu thị trường và cách dùng trên điện thoại chưa có bài nào.
+
+**Đã làm**
+- Dựng bộ bài mới **Hướng dẫn sử dụng Hợp đồng lao động** gồm bảy bài: lập hợp đồng theo mẫu của từng pháp nhân, menu Thao tác, mẫu Word và danh sách biến, cảnh báo sắp hết hạn, xem lại hợp đồng của tôi ở Trang cá nhân, và phân quyền.
+- Thêm bốn bài vào bộ Nhân sự: sửa hồ sơ ở màn chi tiết, nhập hồ sơ hàng loạt bằng Excel, quyền mặc định theo chức vụ, quyền Xuất / Nhập và che cột nhạy cảm; sửa bài Lương cho đúng chỗ của nhóm Lương trên màn hiện tại và chuyển câu ô chọn gõ tìm được về đúng bài.
+- Sửa bài Đặt xe và bài Phê duyệt theo quyền: người khác cùng quyền mà phạm vi phủ phiếu cũng duyệt được, chuông và thư chỉ tới người được chọn.
+- Thêm bài cấu hình từ khóa, từ đồng nghĩa và mã dạng chế phẩm của Tra cứu thị trường, sửa bảng thẻ cũ đã sai; script Tra cứu thị trường chuyển sang ghi đè đúng bài thay vì xóa rồi chèn lại để không sinh đoạn mồ côi trong kho tìm kiếm.
+- Thêm bài **Dùng ERP trên điện thoại**: bảng chuyển thành thẻ ở Thu mua, Nhân sự, Đặt xe, và cách bản mới tự tải lại.
+- Cố ý không viết bài cho Hồ sơ cách làm việc, Bộ chỉ số và Năng lực theo loại việc vì kho tìm kiếm chưa lọc theo quyền, ai hỏi cũng sẽ được trích.
+- Khối Hoạt động trên hồ sơ không viết vì bao-CR-724 đã gỡ khỏi màn.
+- Trên máy local đã chạy seed hai lần và nạp lại chỉ mục kèm dọn đoạn mồ côi, kho đủ 159 bài và 11 câu hỏi thường gặp; hỏi thử sáu câu đều trích đúng bài mới. Dev và prod nạp ở lần deploy tới theo mục B.6 của quy trình deploy.
+
+Mã nguồn: `backend/scripts/seed_help_hop_dong_lao_dong.py`, `seed_help_nhan_su.py`, `seed_help_dat_xe_chon_nguoi_duyet.py`, `seed_help_phe_duyet_theo_quyen.py`, `seed_help_customs_prices.py`, `seed_help_he_thong_cap_nhat.py`
+
+## ai-CR-235 | Cẩm nang trợ lý cho bốn phân hệ văn phòng: đặt xe, duyệt dấu, diễn đàn, kho
+- status: xong
+- date: 2026-11-11
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** công cụ đọc phiếu văn phòng của trợ lý đã có từ trước, nhưng bộ **Cẩm nang hệ thống** chưa có bài nào dạy trợ lý khi nào gọi công cụ đó cho đặt xe, duyệt dấu, diễn đàn và tồn kho (kế hoạch 00, việc AI2-3, phương án A).
+
+**Đã làm**
+- Viết bốn cẩm nang mới, mỗi bài chỉ dạy câu hỏi nào thì gọi công cụ nào, những điều trợ lý không được nói, trạng thái phiếu đọc thế nào và đường dẫn màn trên web.
+- Cẩm nang đặt xe và duyệt dấu dạy cách soạn phiếu nháp; phiếu duyệt dấu chỉ lưu ở **Nháp** vì gửi duyệt cần tệp đính kèm nên người dùng tự gửi trên web.
+- Script phát hành cẩm nang nay thêm được skill mới khi bộ chưa có; skill đã có, kể cả đã xóa mềm, thì bỏ qua, không ghi đè và không xóa.
+- Bài kiểm canh cẩm nang chỉ nhắc tên công cụ có thật, không emoji, không ngoặc kép góc, và kiểm hai nhánh của script: chưa có thì tạo, có rồi thì bỏ qua.
+- Hai nhóm công cụ văn phòng trên cổng MCP vẫn tắt mặc định. Việc chạy script trên prod chờ người chủ quyết; Agent 2 đã rà đạt.
+
+Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/70-dat-xe.md`, `80-duyet-dau.md`, `90-dien-dan.md`, `95-kho.md`, `handbook_seed.py`, `backend/scripts/publish_handbook_update.py`, `test/backend/test_cam_nang_van_phong_cr235.py`
+Commit: a1a9cdf9, dd88fbac, 9b7bfb8d, d11d0c44, 83f17c27
+
+## duoc-CR-751 | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý cho quỹ phép, chính sách nghỉ phép và hồ sơ nhân sự
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau các thay đổi trong ngày về quỹ phép, chính sách nghỉ phép, sắp xếp cột và ô chọn ở hồ sơ nhân sự, bài hướng dẫn sử dụng và trợ lý AI cần nói đúng màn hiện tại và giải thích rõ ba thao tác hay nhầm.
+
+**Đã làm**
+- Bài hướng dẫn quỹ phép có bảng phân biệt Cấp quỹ, Phân bổ chính sách và Điều chỉnh tay, giải thích vì sao quỹ chỉ có dòng cho loại nghỉ có trừ quỹ, và câu báo khi hai người cùng bấm cấp quỹ.
+- Bài hướng dẫn sắp xếp ghi rõ thứ tự trạng thái của các loại phiếu nghỉ, bài hồ sơ nhân sự ghi các ô chọn đã gõ tìm được.
+- Cẩm nang trợ lý nghỉ phép đổi sang tên màn mới và thêm phần phân biệt ba thao tác; công cụ MCP và trợ lý web không cần sửa vì đã trả đủ thông tin chính sách.
+- Đã chạy seed, xuất bản cẩm nang và nạp lại chỉ mục trợ lý trên máy local và trên dev.
+
+Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `seed_help_sap_xep_cot_cr744.py`, `seed_help_nhan_su.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`
+
+## duoc-CR-750 | Gộp thiết lập chính sách và phân bổ chính sách nghỉ phép vào một màn
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** chính sách nghỉ phép khai ở Thiết lập còn phân bổ nằm ở một mục menu khác, người dùng phải nhảy qua lại nên thấy lan man.
+
+**Đã làm**
+- Gộp thành một màn Chính sách nghỉ phép có hai tab Phân bổ và Chính sách, nút trên đầu trang đổi theo tab, thay cho mục menu Phân bổ chính sách.
+- Bỏ thẻ Chính sách khỏi Thiết lập; đường dẫn cũ vẫn mở được và tự chuyển về đúng tab, trang chi tiết chính sách và trang phân bổ hàng loạt quay lại đúng tab.
+- Quyền giữ như cũ: tab Phân bổ cho người được sửa quỹ phép, tab Chính sách cho người được sửa loại nghỉ, mục menu hiện khi có một trong hai.
+- Cập nhật bài hướng dẫn sử dụng Nghỉ phép, cẩm nang trợ lý và tài liệu kỹ thuật; bài kiểm giao diện thư mục Nhân sự qua.
+
+Mã nguồn: `frontend-v2/src/modules/hr/pages/leave-policy-hub-page.tsx`, `components/leave-policy-hub-tabs.tsx`, `utils/leave-policy-hub-tabs.ts`, `pages/leave-policies-legacy-redirect.tsx`, `routes.tsx`, `components/leave-section-tabs.tsx`
+
+## duoc-CR-749 | Kiểm lại Quỹ phép năm với Chính sách nghỉ phép và sửa lỗi cấp quỹ song song
+- status: xong
+- date: 2026-11-11
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** cần chắc rằng Quỹ phép năm và Phân bổ chính sách nghỉ phép không bị trùng hay chồng chéo nhau.
+
+**Đã làm**
+- Chạy thật mười sáu kịch bản trên dữ liệu thử ở máy local: chồng phân bổ, trùng dòng quỹ, điều chỉnh tay so với phân bổ, đổi chính sách giữa năm, kết thúc, xóa, bỏ tính lại, sửa số trong chính sách, phân bổ từ ngày vào làm, cấp quỹ năm sau và ba màn hiện cùng một con số; tất cả đều đúng.
+- Tìm ra một lỗi: hai người bấm Cấp quỹ cùng lúc thì một người nhận lỗi hệ thống dù dữ liệu không sai; đã sửa để lượt đó tự chạy lại, vẫn vướng thì báo bằng lời.
+- Thêm bài kiểm cho lỗi trên và ghi báo cáo kiểm thử.
+
+Mã nguồn: `backend/app/modules/leave/balance_controller.py`, `test/backend/test_cap_quy_dong_thoi_cr749.py`
+
 ## duoc-CR-747 | Ô chọn ở hồ sơ nhân sự gõ tìm được
 - status: xong
 - date: 2026-11-11
@@ -265,7 +446,7 @@ Mã nguồn: `backend/scripts/seed_help_sap_xep_cot_cr744.py`, `backend/scripts/
 - status: xong
 - date: 2026-11-10
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Được
 **Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy Hợp đồng không xếp được 4 cột, Đặt xe không xếp được 2 cột.
 
@@ -280,7 +461,7 @@ Mã nguồn: `backend/app/modules/contract/sort_expressions.py`, `backend/app/mo
 - status: xong
 - date: 2026-11-10
 - list: Thu mua
-- pic: A1
+- pic: NSU209
 - tag: Được
 **Bối cảnh:** soát duoc-CR-744 trên dev (A3, 10/11) thấy hai cột xếp lệch với số / chữ đang hiện trên màn.
 
