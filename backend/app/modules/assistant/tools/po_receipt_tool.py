@@ -22,10 +22,14 @@ của màn web nên công nợ hàng lấy lại số HĐ. Ngày hóa đơn do n
 số mà thiếu ngày (hay ngược lại) là lỗi. Lần giao đã có số HĐ khác thì nháp cảnh báo GHI ĐÈ; xác nhận chặn khi hóa đơn
 của lần giao đổi sau lúc soạn. Tệp hóa đơn không gửi qua AI: kết quả trả `attach_links` mở đúng lần giao để tự đính.
 
+Đối chiếu hóa đơn (ai-CR-239, `po_invoice_check`): có số tiền trên hóa đơn thì kết quả kèm `invoice_check` — máy tự cộng
+lần giao theo đơn giá / VAT của dòng ĐMH, báo khớp / lệch, hóa đơn gộp bộ, công nợ còn phải trả. Chỉ cảnh báo.
+
 Quyền: đọc cần `purchase_order.read` + `supplier.read` (phiếu nêu tên NCC — cùng luật ẩn NCC của các tool thu mua), chỉ
 ĐMH trong phạm vi đọc. Soạn nháp cần thêm `purchase_order.write`, chỉ chia vào ĐMH trong phạm vi GHI. Lúc xác nhận kiểm
 lại quyền + phạm vi `write` (đúng action của `PATCH /api/purchase-orders/{id}`) cho TỪNG ĐMH, và chặn khi dòng / lần giao
-đã đổi sau lúc soạn (xác nhận hai lần không ghi đôi). Không trả giá.
+đã đổi sau lúc soạn (xác nhận hai lần không ghi đôi). Không trả giá — trừ `invoice_check` (ai-CR-239) khi người dùng
+đưa số hóa đơn để đối chiếu (người soạn có quyền ghi ĐMH nên vốn xem được giá của đơn).
 """
 from __future__ import annotations
 
@@ -52,12 +56,11 @@ MAX_QTY = 1e9
 PAGE_MAX = 200
 PAGE_DEFAULT = 50
 PO_URL = "/procurement/purchase-orders/{id}"
-#  ai-CR-237: màn chi tiết ĐMH (v2) mở sẵn hộp dòng hàng chứa lần giao (`?delivery=`) hoặc đúng dòng (`?line=`, lần giao
-#  mới chưa có id lúc soạn) — chỗ đính tệp của từng lần giao nằm trong hộp đó.
-ATTACH_DELIVERY_URL = PO_URL + "?delivery={delivery_id}"
-ATTACH_LINE_URL = PO_URL + "?line={po_item_id}"
-ATTACH_NOTE = ("Tệp hóa đơn / phiếu giao không gửi được qua AI: đưa người dùng `attach_links` — bấm link để mở đúng lần "
-               "giao trên web và tự đính tệp hóa đơn.")
+#  ai-CR-237 / ai-CR-240: link mở màn chi tiết ĐMH (v2) ở đúng lần giao (`?delivery=`) kèm `attach=1` để bật THẲNG hộp đính
+#  tệp của lần giao đó. Lần giao mới chưa có id lúc soạn: nháp chỉ mở đúng dòng (`?line=`); sau khi ghi thì mở hộp đính
+#  tệp của lần giao số `delivery_no` vừa thêm (`?line=&delivery_no=&attach=1`). Dựng bằng `attach_link.build_attach_url`.
+ATTACH_NOTE = ("Tệp hóa đơn / phiếu giao không gửi được qua AI: đưa người dùng `attach_links` — bấm link (đăng nhập web như "
+               "thường) là mở thẳng hộp đính tệp của đúng lần giao để tự tải tệp hóa đơn lên.")
 _STATUS_LABELS = {"approved": "Đã duyệt", "partial": "Đã nhận một phần", "received": "Đã nhận đủ",
                   "processing": "Đang xử lý", "completed": "Hoàn thành"}
 _LEGAL = re.compile(r"\b(cong ty|cty|ctcp|tnhh|co phan|mot thanh vien|mtv|trach nhiem huu han|chi nhanh|cn)\b")
@@ -323,24 +326,34 @@ def _set_invoice(r: dict, inv: tuple[str, str] | None, d: dict | None, warnings:
         warnings.append(_overwrite_warning(r, d))
 
 
-def attach_links(rows: list[dict]) -> list[dict]:
-    """Link (tương đối — cổng MCP nối gốc) mở đúng chỗ đính tệp: lần giao có sẵn theo id, lần giao mới theo dòng hàng."""
+def attach_links(rows: list[dict], confirmed: bool = False) -> list[dict]:
+    """Link (tương đối — cổng MCP nối gốc) mở thẳng hộp đính tệp của từng lần giao trong nháp (ai-CR-240). Lần giao có
+    sẵn: theo id. Lần giao mới: lúc soạn (`confirmed=False`) chưa có chỗ đính → chỉ mở đúng dòng; sau khi ghi → hộp đính
+    tệp của lần giao số `planned_delivery_no` của dòng đó."""
+    from .attach_link import build_attach_url
+
     out, seen = [], set()
     for r in rows or []:
         if not isinstance(r, dict):
             continue
         try:
             po_id, item_id, did = int(r.get("po_id") or 0), int(r.get("po_item_id") or 0), int(r.get("delivery_id") or 0)
+            dno = int(r.get("planned_delivery_no") or 0)
         except (TypeError, ValueError):
             continue
-        key = ("d", did) if did else ("l", item_id)
+        key = ("d", did) if did else ("l", item_id, dno)
         if po_id <= 0 or key in seen:
             continue
         seen.add(key)
-        url = (ATTACH_DELIVERY_URL.format(id=po_id, delivery_id=did) if did
-               else ATTACH_LINE_URL.format(id=po_id, po_item_id=item_id))
+        if did:
+            url = build_attach_url("purchase_order", po_id, delivery=did)
+        elif confirmed and dno:
+            url = build_attach_url("purchase_order", po_id, line=item_id, delivery_no=dno)
+        else:
+            url = build_attach_url("purchase_order", po_id, open_upload=False, line=item_id)
         out.append({"po_code": r.get("po_code") or "", "product_code": r.get("product_code") or "",
-                    "delivery_id": did, "url": url})
+                    "delivery_id": did, **({"delivery_no": dno} if not did and dno else {}),
+                    "opens_upload": "attach=1" in url, "url": url})
     return out
 
 
@@ -482,6 +495,14 @@ def _rows(plan: _Plan, slip_date: str, default_wh: str) -> list[dict]:
         r["line_received_after"] = after[r["po_item_id"]]
         r["over"] = round(max(0.0, after[r["po_item_id"]] - r["qty_order"]), 3)
     out.sort(key=lambda r: (r["po_code"], r["product_code"], r["po_item_id"]))
+    #  ai-CR-240: số thứ tự lần giao MỚI sẽ nhận khi ghi — cùng cách `_payload` đánh số (lớn nhất hiện có + 1, theo thứ tự
+    #  dòng nháp) — để link sau khi ghi mở đúng lần giao đó.
+    nxt: dict[int, int] = {}
+    for r in out:
+        if r["op"] == "add":
+            item_id = r["po_item_id"]
+            base = nxt.get(item_id) or max((d["delivery_no"] for d in plan.lines[item_id]["deliveries"]), default=0)
+            nxt[item_id] = r["planned_delivery_no"] = base + 1
     return out
 
 
@@ -566,10 +587,24 @@ def _draft_invoice_only(ctx: ToolContext, args: dict) -> dict:
     draft = {"mode": "invoice", "supplier_code": sup[0], "supplier_name": sup[1], "slip_no": "", "slip_date": "",
              "rows": rows}
     draft["draft_ref"] = _draft_ref(draft)
-    return {"draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
-            "note": ("Đã soạn nháp ghi HÓA ĐƠN, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã hàng, lần giao số "
-                     "mấy, SL đã nhận, số + ngày hóa đơn sẽ ghi) và đọc rõ từng cảnh báo, nhất là GHI ĐÈ. Họ đồng ý rõ thì "
-                     "gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. " + ATTACH_NOTE)}
+    return _with_invoice_check(ctx, args, rows, {
+        "draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
+        "note": ("Đã soạn nháp ghi HÓA ĐƠN, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã hàng, lần giao số "
+                 "mấy, SL đã nhận, số + ngày hóa đơn sẽ ghi) và đọc rõ từng cảnh báo, nhất là GHI ĐÈ. Họ đồng ý rõ thì "
+                 "gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. " + ATTACH_NOTE)})
+
+
+def _with_invoice_check(ctx: ToolContext, args: dict, rows: list[dict], out: dict) -> dict:
+    """ai-CR-239: có số tiền trên hóa đơn thì kèm `invoice_check` (khớp / lệch, gộp bộ, công nợ) — chỉ cảnh báo."""
+    from . import po_invoice_check
+
+    check = po_invoice_check.reconcile(ctx, rows, args)
+    if check is None:
+        return out
+    out["invoice_check"] = check
+    out["warnings"] = list(dict.fromkeys(out["warnings"] + po_invoice_check.warnings_of(check)))
+    out["note"] += " " + po_invoice_check.NOTE
+    return out
 
 
 def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
@@ -628,12 +663,13 @@ def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
     draft = {"supplier_code": sup[0], "supplier_name": sup[1], "slip_no": _text(args.get("slip_no"), 50),
              "slip_date": slip_date, "rows": rows}
     draft["draft_ref"] = _draft_ref(draft)
-    return {"draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
-            "note": ("Đã soạn nháp, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã MISA, mã hàng, SL ghi, thêm lần "
-                     "giao mới hay điền lần giao số mấy, đã nhận sau khi ghi / đặt) và đọc rõ từng cảnh báo, nhất là GIAO "
-                     "DƯ. Người dùng muốn chia khác thì gọi lại tool này với `assign` / SL mới (đừng tự sửa `draft`). Họ "
-                     "đồng ý rõ thì gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. Đừng tự "
-                     "báo là đã ghi. " + ATTACH_NOTE)}
+    return _with_invoice_check(ctx, args, rows, {
+        "draft": draft, "kind": KIND, "warnings": list(dict.fromkeys(warnings)), "attach_links": attach_links(rows),
+        "note": ("Đã soạn nháp, CHƯA ghi gì. Trình người dùng bảng `draft.rows` (ĐMH, mã MISA, mã hàng, SL ghi, thêm lần "
+                 "giao mới hay điền lần giao số mấy, đã nhận sau khi ghi / đặt) và đọc rõ từng cảnh báo, nhất là GIAO "
+                 "DƯ. Người dùng muốn chia khác thì gọi lại tool này với `assign` / SL mới (đừng tự sửa `draft`). Họ "
+                 "đồng ý rõ thì gọi confirm_draft với kind=po_receipt và draft = đúng đối tượng `draft` này. Đừng tự "
+                 "báo là đã ghi. " + ATTACH_NOTE)})
 
 
 # ── xác nhận (chạy phía ERP: agent_hub.draft_create.create → kind po_receipt) ───────────────
@@ -904,7 +940,12 @@ DRAFT_PO_RECEIPT_SPEC = ToolSpec(
                  "hoặc từng dòng) để ghi cùng lần nhận; hóa đơn về SAU khi đã nhận hàng thì tìm lần giao bằng po_open_lines "
                  "(NCC, mã hàng, SL, tên trên hóa đơn) rồi gọi tool này với invoice_deliveries = [id lần giao] + "
                  "invoice_no + invoice_date (khỏi lines / slip_date). Ngày hóa đơn lấy trên hóa đơn hoặc hỏi người dùng, "
-                 "KHÔNG đoán. Tệp hóa đơn không gửi qua AI: đưa người dùng `attach_links` để tự đính trên web."),
+                 "KHÔNG đoán. ĐỐI CHIẾU HÓA ĐƠN (ai-CR-239): có ảnh hóa đơn thì truyền thêm các số trên hóa đơn "
+                 "(invoice_amount trước thuế, invoice_vat_rate hoặc invoice_vat_amount, invoice_total, tùy chọn "
+                 "invoice_lines) — tool tự so với lần giao + đơn giá / VAT của dòng ĐMH và công nợ, trả `invoice_check` "
+                 "(khớp / lệch bao nhiêu, hóa đơn ghi gộp bộ ứng với nhiều dòng ĐMH, công nợ còn phải trả); đừng tự cộng "
+                 "tay. Lệch chỉ cảnh báo, không chặn. Tệp hóa đơn không gửi qua AI: đưa người dùng `attach_links` để tự "
+                 "đính trên web."),
     parameters={"type": "object", "properties": {
         "supplier": _SUPPLIER,
         "slip_date": {"type": "string", "description": "Ngày trên phiếu YYYY-MM-DD — ghi làm ngày nhận hàng."},
@@ -912,6 +953,20 @@ DRAFT_PO_RECEIPT_SPEC = ToolSpec(
         "warehouse_code": {"type": "string", "description": "Kho nhận (tùy chọn; trống = kho mặc định của dòng ĐMH)."},
         "invoice_no": {"type": "string", "description": "Số hóa đơn NCC (tùy chọn) — ghi vào các lần giao của nháp."},
         "invoice_date": {"type": "string", "description": "Ngày hóa đơn YYYY-MM-DD, bắt buộc khi có số hóa đơn."},
+        "invoice_amount": {"type": "number", "description": (
+            "Tiền hàng TRƯỚC thuế trên hóa đơn (đồng; 12.125.000 trên hóa đơn = 12125000) — để đối chiếu, tùy chọn.")},
+        "invoice_vat_rate": {"type": "number", "description": "% VAT trên hóa đơn (8 = 8%), tùy chọn."},
+        "invoice_vat_amount": {"type": "number", "description": "Tiền thuế VAT trên hóa đơn (đồng), tùy chọn."},
+        "invoice_total": {"type": "number", "description": "Tổng tiền thanh toán trên hóa đơn (đồng), tùy chọn."},
+        "invoice_lines": {"type": "array", "maxItems": MAX_LINES, "description": (
+            "Tùy chọn — các dòng hàng trên hóa đơn, chép ĐÚNG như hóa đơn ghi (kể cả khi hóa đơn ghi gộp một dòng "
+            "Bộ cho chai + nắp; tool tự nhận ra)."),
+            "items": {"type": "object", "properties": {
+                "name": {"type": "string", "description": "Tên hàng trên hóa đơn."},
+                "unit": {"type": "string", "description": "ĐVT trên hóa đơn (Bộ, Cái…)."},
+                "qty": {"type": "number"}, "unit_price": {"type": "number", "description": "Đơn giá trước thuế."},
+                "amount": {"type": "number", "description": "Thành tiền trước thuế (nếu có)."}},
+                "required": ["qty"]}},
         "invoice_deliveries": {"type": "array", "maxItems": MAX_LINES, "description": (
             "Chế độ CHỈ ghi hóa đơn vào lần giao CÓ SẴN: mỗi phần tử {delivery_id (từ po_open_lines), invoice_no, "
             "invoice_date} — bỏ trống số / ngày thì lấy invoice_no / invoice_date của tool. Không đổi số lượng."),

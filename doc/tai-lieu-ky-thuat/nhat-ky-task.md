@@ -9,6 +9,26 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
+
+**Đã làm**
+- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
+- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
+- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
+- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
+- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
+- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
+- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
+Commit: 057b70ac (erp-v2)
+
 ## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
 - status: xong
 - date: 2026-11-12
@@ -190,6 +210,50 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Cập nhật tài liệu nhân sự, phân quyền, tài liệu API, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý.
 
 Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `department_service.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn756a_kiem_nhiem_loai_phong_cong_ty.py`, `frontend-v2/src/modules/hr/components/employee-concurrent-form-fields.tsx`, `company-concurrent-members-table.tsx`, `employee-concurrent-roles.tsx`
+
+## ai-CR-240 | Link trợ lý AI mở thẳng hộp đính tệp của lần giao, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** tệp hóa đơn không gửi được qua ứng dụng AI. Link của ai-CR-237 chỉ mở trang đơn mua hàng và hộp dòng hàng, người dùng còn phải dò đúng lần giao trong bảng 27 cột mới thấy nút Tải. Đã chốt ngày 13/11: link phải mở thẳng hộp tải tệp, người dùng vẫn đăng nhập web như thường, không làm đường tải ẩn danh.
+
+**Đã làm**
+- Thêm một hàm dựng link dùng chung cho mọi công cụ ghi phiếu qua AI: link tới màn chi tiết kèm tham số **attach=1**, chọn đúng chỗ theo lần giao, dòng hàng hoặc số thứ tự lần giao. Hàm này dùng được cho đơn mua hàng, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá (YCBG); việc nhập báo giá ai-CR-238 nối vào đây.
+- Nháp ghi hóa đơn và nháp nhận hàng trả link mở thẳng hộp đính tệp của lần giao có sẵn. Lần giao mới lúc soạn chưa có chỗ đính nên link chỉ mở đúng dòng hàng; sau khi xác nhận, link mở hộp đính tệp của đúng lần giao vừa thêm theo số thứ tự.
+- Tạo đề nghị thanh toán Nháp và tạo YCBG qua cổng MCP trả thêm link mở thẳng hộp tải chứng từ của phiếu. Mô tả công cụ xác nhận nháp và câu dặn trong kết quả nhắc AI đưa link cho người dùng.
+- Giao diện mới: màn đơn mua hàng có hộp mới **Đính tệp vào lần giao số N** (tải lên ngay, không cần bấm Lưu đơn); link không chỉ lần giao nào thì mở hộp **Upload chứng từ** của đơn. Màn đề nghị thanh toán và phiếu khảo sát mở sẵn hộp **Upload chứng từ**. Màn YCBG mở sẵn hộp chi tiết dòng có ô đính tệp báo giá.
+- Quyền kiểm như cũ: không có quyền ghi, đơn đã hủy hay dòng đã khóa thì màn hiện như bình thường, không bật hộp.
+
+**Kết quả:** 6 bài kiểm máy chủ mới và các bài cũ của ai-CR-236, ai-CR-237, bao-CR-740 xanh; 4 tệp bài kiểm giao diện mới (hàm dò lần giao, hook tham số, hộp đính tệp, thẻ chứng từ mở sẵn hộp, trang phiếu khảo sát) xanh; kiểm kiểu và kiểm mã giao diện không lỗi. Không có migration. Đã đẩy lên nhánh erp-v2, chưa dựng dev.
+
+**Còn lại:** giao diện cũ (frontend) chưa làm vì màn cũ không có hộp đính tệp tương ứng gọn để mở thẳng.
+
+Mã nguồn: `backend/app/modules/assistant/tools/attach_link.py` (`build_attach_url`) · `po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/shared/hooks/use-attach-param.ts` · `procurement/components/purchase-order-delivery-attach-dialog.tsx` · `procurement/helpers/delivery-attach-target.ts` · `document-attachments-card.tsx` · `purchase-order-detail-page.tsx` · `survey-detail-page.tsx` · `survey-request-detail-page.tsx` · `finance/pages/payment-request-detail-page.tsx` · `test/backend/test_mcp_link_mo_hop_dinh_tep_cr240.py`
+Commit: 5405d917, gộp ada7a00e (erp-v2)
+Deploy: chưa
+
+## ai-CR-239 | Trợ lý đối chiếu hóa đơn nhà cung cấp với đơn mua hàng và công nợ khi ghi số hóa đơn
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** ngày 12/11 hóa đơn số 6265 của NCC (nhà cung cấp) PHL ghi gộp 5.000 Bộ đơn giá 2.425, VAT 8%, tổng 13.095.000 cho đơn PO01017 gồm hai dòng chai CHT0238 và nắp NAP0161. Claude phải tự cộng tay mới thấy khớp. Đã chốt ngày 13/11: máy tự đối chiếu, chỉ cảnh báo, người dùng vẫn quyết.
+
+**Đã làm**
+- Công cụ soạn nháp nhận hàng / ghi hóa đơn nhận thêm các số trên hóa đơn: tiền trước thuế, % VAT hoặc tiền VAT, tổng tiền, và tùy chọn từng dòng hàng (tên, đơn vị tính, số lượng, đơn giá). Số gửi dạng số hoặc chuỗi kiểu Việt như 12.125.000.
+- Máy tự cộng các lần giao trong nháp theo đơn giá và % VAT của dòng đơn mua hàng, đúng công thức sinh công nợ hàng, rồi báo **khớp** hay **lệch** bao nhiêu ở số lượng, đơn giá, % VAT, tiền VAT, tiền trước thuế và tổng. Ngưỡng làm tròn: tiền 1.000 đồng, đơn giá 0,5%, % VAT phải bằng.
+- Nhận ra hóa đơn ghi **gộp bộ**: một dòng hóa đơn ứng với nhiều dòng đơn mua hàng (chai cộng nắp), so số lượng bộ với từng dòng và đơn giá bộ với tổng đơn giá các dòng.
+- Kèm các khoản công nợ hàng của lần giao (mã khoản, đã trả, còn phải trả) khi người hỏi được xem công nợ, để AI gợi ý bước kế là soạn đề nghị thanh toán đúng các khoản đó.
+- Chỉ cảnh báo: chỗ lệch thành câu **HÓA ĐƠN LỆCH** trong danh sách cảnh báo; nháp vẫn soạn, xác nhận vẫn ghi đúng như ai-CR-237, không đổi dữ liệu nào khác. Số đọc sai dạng chỉ ghi chú, không chặn.
+
+**Kết quả:** 8 bài kiểm máy chủ mới xanh, gồm đúng ca PHL (gộp bộ, VAT 8%, khớp tổng 13.095.000), ca lệch đơn giá và ca lệch VAT; bài cũ của ai-CR-237 và bao-CR-740 xanh. Không có migration. Đã đẩy lên nhánh erp-v2, chưa dựng dev.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_invoice_check.py` (`reconcile`) · `po_receipt_tool.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_doi_chieu_hoa_don_cr239.py`
+Commit: 5405d917, gộp ada7a00e (erp-v2)
+Deploy: chưa
 
 ## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
 - status: xong

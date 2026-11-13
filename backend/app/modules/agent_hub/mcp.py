@@ -90,17 +90,22 @@ CONFIRM_DRAFT_DEF = {
                     "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù, payment = đề nghị thanh toán công nợ (draft của "
                     "draft_payment_request; LUÔN chỉ lưu Nháp, người lập tự vào web bấm Gửi duyệt), po_receipt = ghi lần nhận "
                     "hàng vào ĐMH theo phiếu "
-                    "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); skill / "
+                    "xuất kho NCC (draft của draft_po_receipt; thêm / điền lần giao, có thể nhiều ĐMH một lượt); "
+                    "supplier_quote = nhập báo giá NCC vào phiếu khảo sát đang mở (draft của draft_supplier_quote; sửa / "
+                    "thêm dòng giá, hoặc lập phiếu khảo sát Nháp gắn YCBG); skill / "
                     "skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
                     "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về; approval = "
                     "duyệt / từ chối MỘT phiếu, `draft` là `proposal` của propose_approval). "
                     "CHỈ gọi sau khi người "
                     "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase/"
-                    "vehicle_booking/leave_comp)."),
+                    "vehicle_booking/leave_comp). Kết quả po_receipt / payment / survey có `attach_links` / `attach_url`: "
+                    "đưa người dùng link đó để mở thẳng hộp đính tệp (hóa đơn, báo giá) trên web — họ vẫn đăng nhập như "
+                    "thường, tệp không gửi qua AI."),
     "inputSchema": {"type": "object", "properties": {
         "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
-                                            "leave_comp", "payment", "po_receipt", "update", "delete", "approval",
+                                            "leave_comp", "payment", "po_receipt", "supplier_quote", "update", "delete",
+                                            "approval",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -282,7 +287,8 @@ def _offset(args: dict) -> int:
 #  kind của confirm_draft → tool soạn nháp của nó; nhóm G7 chứa tool đó đang tắt thì không cho tạo qua cổng.
 _GROUP_GATED_KINDS = {"vehicle_booking": "draft_vehicle_booking", "seal_request": "draft_seal_request",
                       "leave_comp": "draft_leave_comp_request", "po_receipt": "draft_po_receipt",
-                      "payment": "draft_payment_request"}       # ai-CR-236: nhóm "Công nợ và thanh toán"
+                      "payment": "draft_payment_request",       # ai-CR-236: nhóm "Công nợ và thanh toán"
+                      "supplier_quote": "draft_supplier_quote"}  # ai-CR-238: nhóm "Nhập báo giá NCC"
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -322,15 +328,49 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
         out = {"ok": True, "code": code, "id": oid, "submitted": False,
                "details": [x for pid in po_ids for x in erp.created_details(db, kind, pid)],
                "links": [telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=pid)) for pid in po_ids],
-               #  ai-CR-237: link mở đúng lần giao / dòng hàng để người dùng tự đính tệp hóa đơn trên web.
-               "attach_links": po_receipt_tool.attach_links(draft.get("rows") or []),
+               #  ai-CR-237 / ai-CR-240: link mở thẳng hộp đính tệp của đúng lần giao (cả lần giao vừa thêm, theo số thứ tự).
+               "attach_links": po_receipt_tool.attach_links(draft.get("rows") or [], confirmed=True),
                "note": ("Đã ghi vào ĐMH. Báo người dùng từng ĐMH đã ghi, số + ngày hóa đơn đã ghi và phần dư (nếu có). "
                         + po_receipt_tool.ATTACH_NOTE)}
         _absolutize(out, telegram.absolute_url)
         return out
-    return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
-            "details": erp.created_details(db, kind, oid),
-            "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
+    if kind == "supplier_quote":
+        return _supplier_quote_written(db, code, oid, draft)
+    out = {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
+           "details": erp.created_details(db, kind, oid),
+           "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
+    if kind in ATTACH_KINDS:            # ai-CR-240: link mở thẳng hộp đính tệp (báo giá…) của phiếu vừa tạo
+        from app.modules.assistant.tools.attach_link import build_attach_url
+        from . import telegram
+
+        if url := build_attach_url(ATTACH_KINDS[kind], oid):
+            out["attach_url"] = telegram.absolute_url(url)
+            out["note"] = ATTACH_URL_NOTE
+    return out
+
+
+#  ai-CR-240: kind của confirm_draft → loại chứng từ của `attach_link.build_attach_url` (màn có chỗ đính tệp).
+ATTACH_KINDS = {"survey": "survey_request"}
+ATTACH_URL_NOTE = ("Tệp (báo giá, hóa đơn, chứng từ) không gửi được qua AI: đưa người dùng `attach_url` — bấm link (đăng "
+                   "nhập web như thường) là mở thẳng hộp đính tệp của phiếu để tự tải tệp lên.")
+
+
+def _supplier_quote_written(db: Session, code: str, oid: int, draft: dict) -> dict:
+    """ai-CR-238: kết quả nhập báo giá — link TUYỆT ĐỐI tới phiếu khảo sát + link mở phiếu để người dùng tự đính tệp báo
+    giá; ai-CR-240: `attach_url` mở thẳng hộp đính tệp của phiếu khảo sát."""
+    from app.modules.assistant.tools import supplier_quote_tool
+    from app.modules.assistant.tools.attach_link import build_attach_url
+    from . import erp, telegram
+
+    link = telegram.absolute_url(draft_create.DETAIL_PATHS["supplier_quote"].format(id=oid))
+    attach = build_attach_url("survey", oid)
+    created = bool(draft.get("new_survey"))
+    return {"ok": True, "code": code, "id": oid, "submitted": False, "created": created,
+            "details": erp.created_details(db, "supplier_quote", oid), "link": link,
+            "attach_url": telegram.absolute_url(attach) if attach else link,
+            "note": (("Đã lập phiếu khảo sát Nháp gắn YCBG và ghi giá. " if created else "Đã ghi giá vào phiếu khảo sát. ")
+                     + "Báo người dùng mã phiếu + link, các dòng đã ghi; phiếu vẫn ở Nháp / Bị trả lại, người phụ trách "
+                     "vào web rà rồi tự Gửi duyệt. " + supplier_quote_tool.ATTACH_NOTE)}
 
 
 def _payment_created(code: str, oid: int, asked_submit: bool) -> dict:
@@ -338,12 +378,15 @@ def _payment_created(code: str, oid: int, asked_submit: bool) -> dict:
     ty một phiếu); cổng B chỉ chở các mã nối dấu phẩy + id phiếu đầu, còn id từng phiếu suy từ mã (`YCTT{id:05d}`,
     `payment_request.service.create_requests`)."""
     path = draft_create.DETAIL_PATHS["payment"]
+    from app.modules.assistant.tools.attach_link import build_attach_url
+
     items = []
     for c in [x.strip() for x in str(code or "").split(",") if x.strip()]:
         rid = int(c[4:]) if c.startswith("YCTT") and c[4:].isdigit() else (oid if not items else 0)
-        items.append({"code": c, "id": rid, "link": path.format(id=rid) if rid else ""})
+        items.append({"code": c, "id": rid, "link": path.format(id=rid) if rid else "",
+                      "attach_url": build_attach_url("payment_request", rid)})     # ai-CR-240
     note = ("Phiếu đang ở trạng thái Nháp, CHƯA gửi duyệt. Gửi người dùng mã phiếu + link, nhắc họ vào web xem lại số "
-            "tiền, số hóa đơn, phần cấn trừ rồi tự bấm Gửi duyệt.")
+            "tiền, số hóa đơn, phần cấn trừ rồi tự bấm Gửi duyệt. " + ATTACH_URL_NOTE)
     if asked_submit:
         note = ("Đề nghị thanh toán không gửi duyệt qua AI nên đã bỏ qua submit — phiếu nằm ở Nháp. " + note)
     if len(items) > 1:
@@ -351,7 +394,8 @@ def _payment_created(code: str, oid: int, asked_submit: bool) -> dict:
     from . import telegram
 
     out = {"ok": True, "code": code, "id": oid, "submitted": False, "status": "draft",
-           "link": path.format(id=oid), "items": items, "note": note}
+           "link": path.format(id=oid), "attach_url": build_attach_url("payment_request", oid), "items": items,
+           "note": note}
     _absolutize(out, telegram.absolute_url)          # link tuyệt đối — ứng dụng AI ngoài không tự nối gốc ERP
     return out
 

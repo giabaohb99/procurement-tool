@@ -145,7 +145,7 @@ TAO_KHOA_CONTENT = f"""<h2>Cách 2 (nâng cao): sửa tệp cấu hình bằng k
 <thead><tr><th>Mức</th><th>AI làm được</th><th>Dùng khi</th></tr></thead>
 <tbody>
 <tr><td><strong>Chỉ đọc</strong> (mặc định)</td><td>Tra cứu: phiếu của bạn, nghỉ phép, danh bạ, báo cáo được giao, đọc skill, báo lỗi.</td><td>Lần đầu nối; máy dùng chung; chỉ cần hỏi đáp.</td></tr>
-<tr><td><strong>Được ghi</strong></td><td>Thêm: soạn nháp phiếu (yêu cầu báo giá, mua hàng, nghỉ phép, việc dự án…), lập phiếu hỗ trợ, ghi chú. Tạo phiếu luôn <strong>hai bước</strong>: AI soạn nháp đưa bạn xem, bạn gật thì AI mới gửi lệnh tạo. Đề nghị thanh toán AI chỉ lưu <strong>Nháp</strong>: bạn vào web xem lại rồi tự bấm <strong>Gửi duyệt</strong> (quản trị phải bật nhóm Công nợ và thanh toán).</td><td>Bạn muốn nhờ AI lập phiếu thay vì gõ trên web.</td></tr>
+<tr><td><strong>Được ghi</strong></td><td>Thêm: soạn nháp phiếu (yêu cầu báo giá, mua hàng, nghỉ phép, việc dự án…), lập phiếu hỗ trợ, ghi chú. Tạo phiếu luôn <strong>hai bước</strong>: AI soạn nháp đưa bạn xem, bạn gật thì AI mới gửi lệnh tạo. Đề nghị thanh toán AI chỉ lưu <strong>Nháp</strong>: bạn vào web xem lại rồi tự bấm <strong>Gửi duyệt</strong> (quản trị phải bật nhóm Công nợ và thanh toán). Gửi AI tệp <strong>báo giá NCC</strong> (PDF / ảnh) thì AI điền giá vào phiếu khảo sát đang mở hoặc YCBG đang khảo sát: nháp nêu dòng khớp, dòng không khớp, dòng ghi đè giá cũ, ĐVT lệch; bạn gật mới ghi, rồi tự đính tệp báo giá trên web (quản trị phải bật nhóm Nhập báo giá NCC).</td><td>Bạn muốn nhờ AI lập phiếu thay vì gõ trên web.</td></tr>
 </tbody>
 </table>
 <ul>

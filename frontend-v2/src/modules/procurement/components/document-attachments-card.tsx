@@ -109,6 +109,11 @@ interface DocumentAttachmentsCardProps {
    * kèm ô chọn mục ngay tại chỗ nên không cần thêm hộp thoại (vd. Duyệt dấu).
    */
   hideUploadButton?: boolean
+  /**
+   * ai-CR-240 — mở sẵn hộp "Upload chứng từ" MỘT lần khi thẻ hiện ra (link trợ lý AI có `?attach=1`). Chỉ có tác dụng
+   * khi người xem được quản lý tệp (`canManage`) của chứng từ đã lưu; không có quyền thì thẻ hiện như thường.
+   */
+  autoOpenUpload?: boolean
 }
 
 /** Giá trị của chip "Tất cả": xem hết, không lọc theo mục nào. */
@@ -151,6 +156,7 @@ export function DocumentAttachmentsCard({
   defaultDocType = OTHER_DOC_TYPE,
   hideUploadButton = false,
   v1Wording = false,
+  autoOpenUpload = false,
 }: DocumentAttachmentsCardProps) {
   const wording = v1Wording ? CARD_WORDING.v1 : CARD_WORDING.v2
   const [openType, setOpenType] = useState(ALL)
@@ -165,6 +171,12 @@ export function DocumentAttachmentsCard({
   const upload = useUploadPurchaseRequestAttachments(entity, entityId)
   const remove = useDeletePurchaseRequestAttachment(entity, entityId)
   const isNew = entityId <= 0
+  //  ai-CR-240: mở hộp tải đúng một lần (đóng rồi không tự bật lại khi thẻ render lại).
+  const [autoOpened, setAutoOpened] = useState(false)
+  if (autoOpenUpload && !autoOpened && canManage && !isNew && !hideUploadButton) {
+    setAutoOpened(true)
+    setUploadDialog({ open: true, docType: defaultDocType })
+  }
 
   const options = useMemo(() => withOtherType(documentTypes ?? []), [documentTypes])
   const groups = useMemo(() => groupAttachmentsByType(files ?? [], options), [files, options])

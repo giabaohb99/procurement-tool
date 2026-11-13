@@ -55,7 +55,14 @@ vi.mock('@/core/authorization/use-permission', () => ({
 }))
 
 //  Bốn khối chân trang tự gọi API riêng, không phải thứ bài này soi.
-vi.mock('../components/document-attachments-card', () => ({ DocumentAttachmentsCard: () => null }))
+//  ai-CR-240: giữ lại prop của thẻ chứng từ để soi `autoOpenUpload` (link `?attach=1`).
+const cardProps: { autoOpenUpload?: boolean }[] = []
+vi.mock('../components/document-attachments-card', () => ({
+  DocumentAttachmentsCard: (props: { autoOpenUpload?: boolean }) => {
+    cardProps.push(props)
+    return null
+  },
+}))
 vi.mock('../components/document-comments', () => ({ DocumentComments: () => null }))
 vi.mock('@/shared/audit', () => ({ AuditTimeline: () => null }))
 vi.mock('@/modules/dossier/components/required-dossiers-card', () => ({
@@ -99,12 +106,12 @@ function makeSurvey(changes: Partial<SurveyDetail> = {}): SurveyDetail {
   }
 }
 
-function build(survey: SurveyDetail) {
+function build(survey: SurveyDetail, url = '/procurement/surveys/5') {
   currentSurvey = survey
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/procurement/surveys/5']}>
+      <MemoryRouter initialEntries={[url]}>
         <Routes>
           <Route path="/procurement/surveys/:id" element={<SurveyDetailPage />} />
           <Route path="/procurement/surveys" element={<p>Danh sách phiếu khảo sát</p>} />
@@ -292,5 +299,20 @@ describe('SurveyDetailPage — bảng dòng hỏi lại như bản v1', () => {
     await user.click(screen.getByRole('button', { name: 'Xóa dòng đã chọn (1)' }))
     await user.click(await screen.findByRole('button', { name: 'Đồng ý' }))
     expect(supplierRowCount()).toBe('1 dòng')
+  })
+})
+
+/** ai-CR-240 — link trợ lý AI `?attach=1` mở thẳng hộp Upload chứng từ (báo giá) của phiếu. */
+describe('SurveyDetailPage — link mở hộp đính tệp', () => {
+  it('?attach=1 bật mở sẵn hộp tải của thẻ chứng từ', () => {
+    cardProps.length = 0
+    build(makeSurvey(), '/procurement/surveys/5?attach=1')
+    expect(cardProps.at(-1)?.autoOpenUpload).toBe(true)
+  })
+
+  it('không có tham số thì không mở', () => {
+    cardProps.length = 0
+    build(makeSurvey())
+    expect(cardProps.at(-1)?.autoOpenUpload).toBe(false)
   })
 })

@@ -16,7 +16,7 @@ import {
   Undo2,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -33,6 +33,7 @@ import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { DetailPageHeader, type HeaderActionList } from '@/shared/ui/detail-page-header'
 import {
@@ -244,6 +245,22 @@ export function SurveyRequestDetailPage() {
   const [pendingFiles, setPendingFiles] = useState<PendingLineFiles>({})
   /** Ô còn thiếu sau lần Gửi duyệt bị chặn gần nhất — khoanh đỏ đúng chỗ (QA 29/08). */
   const [invalid, setInvalid] = useState<Set<string>>(new Set())
+
+  //  ai-CR-240: link trợ lý AI `?line=<id dòng>` (kèm / không kèm `attach=1`) mở sẵn hộp chi tiết dòng — chỗ đính tệp
+  //  báo giá của dòng; chỉ `?attach=1` thì mở dòng đầu. Quyền sửa tệp vẫn theo hộp dòng như thường. Chỉ mở một lần.
+  const [searchParams] = useSearchParams()
+  const attachRequested = useAttachParam()
+  const focusLineId = Number(searchParams.get('line')) || 0
+  const [focusHandled, setFocusHandled] = useState(false)
+  if (!focusHandled && serverData && (focusLineId || attachRequested)) {
+    setFocusHandled(true)
+    const focusIndex = focusLineId
+      ? serverData.lines.findIndex((line) => line.id === focusLineId)
+      : serverData.lines.length > 0
+        ? 0
+        : -1
+    if (focusIndex >= 0) setLineIndex(focusIndex)
+  }
 
 
   /**

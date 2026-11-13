@@ -64,6 +64,10 @@ GROUPS: tuple[ToolGroup, ...] = (
     #  bao-CR-740: ghi lần nhận hàng vào ĐMH theo phiếu xuất kho NCC — đụng kho + công nợ nên tắt mặc định, quản trị bật.
     ToolGroup("po_receipt", "Ghi nhận hàng vào đơn mua hàng theo phiếu xuất kho NCC (khóa được ghi, có xác nhận)", False,
               frozenset({"po_open_lines", "draft_po_receipt"})),
+    #  ai-CR-238: nhập báo giá NCC (AI đọc tệp) vào phiếu khảo sát / YCBG đang mở — ghi giá chứng từ thu mua nên tắt mặc
+    #  định như po_receipt; nhóm RIÊNG để bật nhóm đọc "purchase" không mở luôn quyền ghi giá.
+    ToolGroup("supplier_quote", "Nhập báo giá NCC vào phiếu khảo sát / YCBG đang mở (khóa được ghi, có xác nhận)", False,
+              frozenset({"draft_supplier_quote"})),
     ToolGroup("customs", "Tra cứu thị trường (tờ khai hải quan)", False, frozenset({
         "customs_price_stats", "customs_buy_timing", "customs_market", "customs_legal_check"})),
     ToolGroup("google", "Lịch và Drive Google cá nhân", False, frozenset({
