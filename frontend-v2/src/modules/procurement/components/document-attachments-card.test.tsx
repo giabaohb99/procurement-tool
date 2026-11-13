@@ -173,3 +173,35 @@ describe('DocumentAttachmentsCard — màn ngoài Thu mua giữ chữ v2', () =>
     expect(screen.getByRole('link', { name: 'Xem cả chuỗi chứng từ' })).toBeInTheDocument()
   })
 })
+
+/** ai-CR-240 — link trợ lý AI `?attach=1`: mở thẳng hộp Upload chứng từ, chỉ khi người xem được quản lý tệp. */
+describe('DocumentAttachmentsCard — mở sẵn hộp tải (autoOpenUpload)', () => {
+  beforeEach(() => {
+    files = []
+  })
+
+  it('opens the upload dialog right away for a writer', () => {
+    renderBaseCard({ entity: 'payment_request', autoOpenUpload: true })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByTitle('Xóa mục này')).toBeInTheDocument()
+  })
+
+  it('stays closed once the user closes it', async () => {
+    renderBaseCard({ entity: 'payment_request', autoOpenUpload: true })
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('does nothing without manage rights or before the document is saved', () => {
+    const { unmount } = renderBaseCard({ entity: 'payment_request', autoOpenUpload: true, canManage: false })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    unmount()
+    renderBaseCard({ entity: 'payment_request', autoOpenUpload: true, entityId: 0 })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('does not open without the flag', () => {
+    renderBaseCard({ entity: 'payment_request' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})

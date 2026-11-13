@@ -107,7 +107,7 @@ def test_mcp_tra_link_tuyet_doi_mo_dung_lan_giao_de_dinh_tep(kho, db, mcp_all_gr
                         {"supplier": SUP, "invoice_deliveries": [d.id], **INV})
     (link,) = out["attach_links"]
     assert link["url"].startswith("http") and link["url"].endswith(f"/procurement/purchase-orders/{kho.po712.id}"
-                                                                   f"?delivery={d.id}")
+                                                                   f"?delivery={d.id}&attach=1")   # ai-CR-240
     assert "đính tệp" in out["note"]
     ok = mcp.call_tool(db, kho.staff, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "po_receipt", "draft": out["draft"]})
     assert ok["ok"] and ok["attach_links"][0]["url"] == link["url"] and "đính tệp" in ok["note"]
