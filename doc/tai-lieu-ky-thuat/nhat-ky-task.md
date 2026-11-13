@@ -210,6 +210,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Cập nhật tài liệu nhân sự, phân quyền, tài liệu API, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý.
 
 Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `department_service.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn756a_kiem_nhiem_loai_phong_cong_ty.py`, `frontend-v2/src/modules/hr/components/employee-concurrent-form-fields.tsx`, `company-concurrent-members-table.tsx`, `employee-concurrent-roles.tsx`
+Deploy: dev 13/11/2026, commit 1fad738b (migration kn755a + kn756a, seed hướng dẫn sử dụng nhân sự, xuất bản cẩm nang nhan-su-ho-so); prod chưa
 
 ## ai-CR-240 | Link trợ lý AI mở thẳng hộp đính tệp của lần giao, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá
 - status: xong
@@ -270,6 +271,7 @@ Deploy: chưa
 - Đã xuất bản cẩm nang ở máy local; dev và prod xuất bản ở lần deploy tới.
 
 Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `70-dat-xe.md`
+Deploy: dev 13/11/2026, xuất bản cẩm nang nhan-su-ho-so và dat-xe; prod chưa
 
 ## duoc-CR-755 | Kiêm nhiệm thành tab riêng trên hồ sơ nhân sự và cho phép kiêm nhiệm ở công ty khác
 - status: xong
@@ -289,6 +291,7 @@ Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `
 - Viết tài liệu nhân sự, tài liệu API, mục phân quyền, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý; đã nạp lại kho tìm kiếm của trợ lý ở máy local.
 
 Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn755a_bang_kiem_nhiem.py`, `frontend-v2/src/modules/hr/components/employee-tab-concurrent.tsx`, `employee-concurrent-form-dialog.tsx`, `employee-company-change-concurrent-dialog.tsx`, `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`
+Deploy: dev 13/11/2026 cùng đợt duoc-CR-756, commit 1fad738b; prod chưa
 
 ## duoc-CR-754 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
 - status: xong
@@ -307,6 +310,7 @@ Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, 
 - Kho tìm kiếm của trợ lý ở máy local chưa nạp lại được 46 bài vì hạn mức nhúng Gemini trong ngày đã hết, cần chạy lại lệnh nạp chỉ mục khi hạn mức mở lại; dev và prod nạp ở lần deploy tới.
 
 Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.tsx`, `utils/hr-setup-tab-list.ts`, `components/hr-setup-tabs.tsx`, `components/sub-tab-link.tsx`, `shared/crud/crud-list-page.tsx`, `shared/ui/page-header.tsx`, `app/layouts/module-sidebar.tsx`, `backend/scripts/seed_help_*.py`, `backend/app/modules/ai_skill/seed_handbook/*.md`
+Deploy: dev 13/11/2026, commit 1fad738b (seed hướng dẫn sử dụng nghỉ phép, đặt phòng họp, nhân sự; xuất bản cẩm nang nghi-phep, dat-phong-hop); prod chưa
 
 ## duoc-CR-752 | Viết hướng dẫn sử dụng cho các đợt Nhân sự, Hợp đồng lao động, Đặt xe, Tra cứu thị trường chưa có bài để Trợ lý AI trích được
 - status: xong
@@ -327,6 +331,7 @@ Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.
 - Trên máy local đã chạy seed hai lần và nạp lại chỉ mục kèm dọn đoạn mồ côi, kho đủ 159 bài và 11 câu hỏi thường gặp; hỏi thử sáu câu đều trích đúng bài mới. Dev và prod nạp ở lần deploy tới theo mục B.6 của quy trình deploy.
 
 Mã nguồn: `backend/scripts/seed_help_hop_dong_lao_dong.py`, `seed_help_nhan_su.py`, `seed_help_dat_xe_chon_nguoi_duyet.py`, `seed_help_phe_duyet_theo_quyen.py`, `seed_help_customs_prices.py`, `seed_help_he_thong_cap_nhat.py`
+Deploy: dev 13/11/2026, commit 1fad738b (seed các bài hướng dẫn sử dụng, kho tìm kiếm trợ lý 178/182 bài, 4 bài Báo cáo Nhân sự chờ nạp lại khi hạn mức nhúng mở); prod chưa
 
 ## ai-CR-235 | Cẩm nang trợ lý cho bốn phân hệ văn phòng: đặt xe, duyệt dấu, diễn đàn, kho
 - status: xong
