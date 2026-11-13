@@ -41,6 +41,21 @@ Cẩm nang này chỉ dạy **khi nào gọi công cụ nào** cho câu hỏi v�
   `submit=true`; không thì phiếu nằm ở *Nháp*.
 - Người không có quyền lập phiếu đặt xe thì công cụ trả *không có quyền* — báo lại đúng như vậy.
 
+## Ai duyệt được, ai nhận chuông (từ đầu tháng 11/2026)
+
+Chọn ***Người phê duyệt*** là chọn người được **báo** trước, không khóa phiếu vào riêng một người:
+
+- **Chuông và thư** (*YCĐX … chờ bạn duyệt*) chỉ tới **người được chọn** (họ đang ủy quyền thì người nhận ủy quyền cũng nhận thư).
+- **Người khác cùng quyền Duyệt đặt xe** cũng duyệt được, miễn **phạm vi của họ phủ phiếu**: phạm vi *Phòng ban* = phiếu của phòng
+  họ; *Công ty* = phiếu của công ty họ, tính cả công ty người tạo lẫn công ty chọn trên phiếu; *Tất cả* = mọi phiếu. Họ **không
+  nhận chuông**, thấy phiếu ở **Đặt xe ▸ Yêu cầu đặt xe** (lọc *Chờ duyệt*) hoặc khối ***Chờ tôi duyệt*** ở **Đặt xe ▸ Tổng quan**
+  (khối ẩn sẵn, bật ở nút ***Hiển thị***).
+- Ai bấm trước thì phiếu đi theo người đó. Người được chọn chưa duyệt mà phiếu đã qua bước = một người cùng quyền đã duyệt trước;
+  xem ở khối *Tiến trình xử lý* của phiếu.
+- Hỏi "tôi có quyền duyệt đặt xe mà phiếu không có nút Duyệt" → phạm vi không phủ phiếu, hoặc luồng nhiều chặng chưa tới chặng
+  của họ. Hỏi "sao tôi không nhận chuông" → họ không phải người được chọn; đó là đúng thiết kế, không phải lỗi.
+- Người được chọn vẫn duyệt được dù phạm vi của họ không phủ phiếu (ví dụ phiếu thuộc công ty khác).
+
 ## Trạng thái phiếu — đọc nhãn, đừng đoán
 
 `Nháp → Chờ duyệt → Đã duyệt → Đã điều phối → Hoàn thành`, cộng ba ngã rẽ *Từ chối*, *Đã hủy*,

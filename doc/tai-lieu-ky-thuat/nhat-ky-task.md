@@ -173,6 +173,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** duoc-CR-752 đã viết bài hướng dẫn sử dụng nhưng cẩm nang của trợ lý AI chưa dạy kỹ các phần hợp đồng lao động, nhập Excel nhân sự, quyền theo chức vụ và luật duyệt đặt xe mới.
+
+**Đã làm**
+- Cẩm nang hồ sơ nhân sự thêm phần hợp đồng lao động, nhập hồ sơ bằng Excel, quyền mặc định theo chức vụ, quyền xuất và nhập kèm che cột nhạy cảm, viết theo kiểu câu hỏi thường gặp, cách trả lời và đường vào màn.
+- Ghi rõ trợ lý không đọc lương và giá trị biến tùy chỉnh trên hợp đồng; số đếm hợp đồng lao động lấy qua báo cáo, vì hai công cụ tra hợp đồng hiện có là hợp đồng nhà cung cấp.
+- Cẩm nang đặt xe thêm luật người khác cùng quyền duyệt đặt xe mà phạm vi phủ phiếu cũng duyệt được, chuông và thư chỉ tới người được chọn.
+- Đã xuất bản cẩm nang ở máy local; dev và prod xuất bản ở lần deploy tới.
+
+Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `70-dat-xe.md`
+
 ## duoc-CR-755 | Kiêm nhiệm thành tab riêng trên hồ sơ nhân sự và cho phép kiêm nhiệm ở công ty khác
 - status: xong
 - date: 2026-11-12
