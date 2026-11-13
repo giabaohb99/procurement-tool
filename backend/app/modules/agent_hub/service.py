@@ -4136,6 +4136,8 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
         actions = [("tạo", "tạo bảng kế hoạch trong Dự án rồi nhắn hỏi từng người nhận việc"), ("thôi", "bỏ bản nháp")]
     elif kind == "po_receipt":   # bao-CR-740
         actions = [("tạo", "ghi các lần nhận hàng này vào đơn mua hàng"), ("thôi", "bỏ bản nháp")]
+    elif kind == "supplier_quote":   # ai-CR-238
+        actions = [("tạo", "ghi báo giá này vào phiếu khảo sát"), ("thôi", "bỏ bản nháp")]
     else:
         actions = [("tạo", "gửi phiếu cho nhóm hỗ trợ"), ("thôi", "bỏ bản nháp")]
     if reuse:

@@ -231,6 +231,8 @@ def url_of(entity: str, entity_id: int) -> str:
             return f"/ai-skill/sets/{entity_id}?tab=access"
         if entity == "purchase_order":
             return f"/procurement/purchase-orders/{entity_id}"
+        if entity == "survey":            # ai-CR-238: phiếu khảo sát nhập báo giá NCC qua AI
+            return f"/procurement/surveys/{entity_id}"
         if entity in DOC_ENTITIES or entity == "work_task":
             from .tools.update_tool import _url_of
             return _url_of(entity, entity_id)

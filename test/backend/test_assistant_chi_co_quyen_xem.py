@@ -204,6 +204,9 @@ TOOL_GHI = {
     #  bao-CR-740 — chỉ soạn nháp; ghi thật qua draft_create → update_po (kiểm lại write + phạm vi từng ĐMH).
     "draft_po_receipt": ("purchase_order", "write", {"supplier": "NCC A", "slip_date": "2026-11-06",
                                                      "lines": [{"product_code": "SP1", "qty": 1}]}),
+    #  ai-CR-238 — chỉ soạn nháp; ghi thật qua draft_create → update_survey / create_survey (kiểm lại write + phạm vi).
+    "draft_supplier_quote": ("survey", "write", {"supplier": "NCC A",
+                                                 "lines": [{"product_code": "SP1", "unit_price": 1000}]}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua
