@@ -185,7 +185,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4); 82 = + `plan_context` (kh-AI1-3); 83 = + `office_read` (kh-AI2-3); 85 = + `draft_vehicle_booking` / `draft_seal_request` (kh-AI2-6); 86 = + `propose_approval` (kh-AI2-7); 87 = + `background_jobs` (bao-CR-703).
     #  88 = + `draft_leave_comp_request` (duoc-CR-715 C — soạn nháp phiếu xin nghỉ bù).
     #  90 = + `po_open_lines` / `draft_po_receipt` (bao-CR-740 — ghi lần nhận hàng ĐMH từ phiếu xuất kho NCC).
-    assert len(thuc_te) == 90, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  91 = + `draft_supplier_quote` (ai-CR-238 — nhập báo giá NCC vào phiếu khảo sát / YCBG đang mở).
+    assert len(thuc_te) == 91, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

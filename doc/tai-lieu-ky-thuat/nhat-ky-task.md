@@ -9,6 +9,26 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
+
+**Đã làm**
+- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
+- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
+- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
+- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
+- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
+- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
+- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
+Commit: (điền sau khi đẩy)
+
 ## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
 - status: xong
 - date: 2026-11-12

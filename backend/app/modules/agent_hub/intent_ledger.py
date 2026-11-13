@@ -198,6 +198,7 @@ TOOL_SUB: dict[str, Sub] = {
     "draft_vehicle_booking": Sub.WRITE_OTHER, "draft_seal_request": Sub.WRITE_OTHER,   # kh-AI2-6
     "propose_approval": Sub.WRITE_OTHER,   # kh-AI2-7
     "po_open_lines": Sub.LOOKUP_PURCHASE, "draft_po_receipt": Sub.WRITE_OTHER,   # bao-CR-740
+    "draft_supplier_quote": Sub.WRITE_OTHER,   # ai-CR-238: nhập báo giá NCC vào phiếu khảo sát
     "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,
     "draft_payment_request": Sub.MAKE_PAYMENT_REQUEST, "draft_leave_request": Sub.MAKE_LEAVE,

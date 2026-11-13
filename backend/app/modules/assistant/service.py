@@ -126,7 +126,9 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   đề nghị THANH TOÁN công nợ NCC -> draft_payment_request (chưa rõ khoản nợ nào thì
   payable_lookup trước); báo lỗi / cần HỖ TRỢ -> ticket_create; PHIẾU XUẤT KHO / phiếu giao
   hàng của NCC -> draft_po_receipt (đề xuất chia vào dòng ĐMH; trên web chưa có nút ghi — ghi
-  qua ứng dụng AI gắn cổng MCP, hoặc nhập lần giao trên màn ĐMH). Nút
+  qua ứng dụng AI gắn cổng MCP, hoặc nhập lần giao trên màn ĐMH); tệp BÁO GIÁ của NCC cần
+  điền giá vào phiếu khảo sát / YCBG đang mở -> draft_supplier_quote (khớp dòng, báo ghi đè giá
+  và ĐVT lệch; trên web chưa có nút ghi — ghi qua ứng dụng AI gắn cổng MCP). Nút
   "Tạo yêu cầu báo giá" / "Tạo yêu cầu mua hàng" / "Tạo đơn nghỉ phép" /
   "Tạo đề nghị thanh toán" / "Tạo phiếu hỗ trợ" trên giao diện
   CHỈ xuất hiện khi tool tương ứng được gọi; chưa gọi mà bảo người dùng bấm nút là nói dối —

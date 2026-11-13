@@ -67,6 +67,9 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("po_receipt", frozenset({"po_open_lines", "draft_po_receipt"}),
      r"xuat kho|phieu (xuat|giao|nhap)|nhan hang|da nhan|lan giao|giao hang|ghi nhan|nhap lan|hang ve|con thieu"
      r"|chua nhan|giao du|giao thieu"),
+    #  ai-CR-238: tệp báo giá của NCC → nhập giá vào phiếu khảo sát / YCBG đang mở.
+    ("supplier_quote", frozenset({"draft_supplier_quote"}),
+     r"bao gia|bang gia|chao gia|phieu khao sat|\bks\d+|ycbg|nhap gia|dien gia|gia ncc|gia nha cung cap|cap nhat gia"),
     #  bao-CR-703: sổ việc chạy ngầm — chỉ quản trị dùng được (tool tự gác).
     ("jobs", frozenset({"background_jobs"}),
      r"viec (nen|chay ngam)|chay ngam|tac vu nen|\bcelery\b|\bbeat\b|sao luu|backup|dong bo .{0,20}(loi|chay)"

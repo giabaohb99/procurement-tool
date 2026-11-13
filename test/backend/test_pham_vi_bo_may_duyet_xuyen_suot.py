@@ -1250,6 +1250,9 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
                      "NCC chỉ khớp trong các đơn người hỏi thấy (bao-CR-740)",
     "draft_po_receipt": "ctx.can(purchase_order, write) + apply_scope(write) khi chia; xác nhận kiểm lại apply_scope(write) "
                         "từng ĐMH rồi mới gọi update_po của web (bao-CR-740)",
+    "draft_supplier_quote": "ctx.can(survey, write) + ctx.can(supplier) + apply_scope(Survey, 'survey', write) khi tìm "
+                            "phiếu, YCBG qua apply_scope(survey_request, read); xác nhận kiểm lại apply_scope(write) + "
+                            "trạng thái rồi gọi update_survey / create_survey của web (ai-CR-238)",
     "propose_approval": "pending_task_of (luồng nhiều bước) hoặc quyền approve + get_scoped(approve) (duyệt thẳng); "
                         "chỉ đề xuất, ghi qua route duyệt của web khi xác nhận token (kh-AI2-7)",
     #  ai-CR-220 (K7): Kho skill — quyền đọc theo chủ thể ở `ai_skill.access_service.visible_skills` (cấm thắng, phòng con).
