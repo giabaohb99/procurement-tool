@@ -357,14 +357,17 @@ ATTACH_URL_NOTE = ("Tệp (báo giá, hóa đơn, chứng từ) không gửi đ�
 
 def _supplier_quote_written(db: Session, code: str, oid: int, draft: dict) -> dict:
     """ai-CR-238: kết quả nhập báo giá — link TUYỆT ĐỐI tới phiếu khảo sát + link mở phiếu để người dùng tự đính tệp báo
-    giá (ai-CR-240 sẽ thay bằng link mở thẳng hộp đính tệp)."""
+    giá; ai-CR-240: `attach_url` mở thẳng hộp đính tệp của phiếu khảo sát."""
     from app.modules.assistant.tools import supplier_quote_tool
+    from app.modules.assistant.tools.attach_link import build_attach_url
     from . import erp, telegram
 
     link = telegram.absolute_url(draft_create.DETAIL_PATHS["supplier_quote"].format(id=oid))
+    attach = build_attach_url("survey", oid)
     created = bool(draft.get("new_survey"))
     return {"ok": True, "code": code, "id": oid, "submitted": False, "created": created,
-            "details": erp.created_details(db, "supplier_quote", oid), "link": link, "attach_url": link,
+            "details": erp.created_details(db, "supplier_quote", oid), "link": link,
+            "attach_url": telegram.absolute_url(attach) if attach else link,
             "note": (("Đã lập phiếu khảo sát Nháp gắn YCBG và ghi giá. " if created else "Đã ghi giá vào phiếu khảo sát. ")
                      + "Báo người dùng mã phiếu + link, các dòng đã ghi; phiếu vẫn ở Nháp / Bị trả lại, người phụ trách "
                      "vào web rà rồi tự Gửi duyệt. " + supplier_quote_tool.ATTACH_NOTE)}
