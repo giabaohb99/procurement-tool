@@ -46,6 +46,8 @@ ENTITY_MODEL_PATHS: dict[str, tuple[str, str]] = {
     "leave_comp_request": ("app.modules.leave.comp_request_model", "LeaveCompRequest"),
     "leave_encashment": ("app.modules.leave.encashment_model", "LeaveEncashment"),
     "leave_balance": ("app.modules.leave.balance_model", "LeaveBalance"),
+    #  Khóa `work_schedule_personal` đo trên HỒ SƠ NHÂN SỰ ĐÍCH (không phải bảng gán lịch) — xem `SCOPE_FIELDS`.
+    "work_schedule_personal": ("app.modules.employee.model", "Employee"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
     "login_session": ("app.modules.login_session.model", "LoginSession"),
     "dossier": ("app.modules.dossier.model", "Dossier"),

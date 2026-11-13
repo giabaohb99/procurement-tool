@@ -96,6 +96,10 @@ CORE_RULES = (
     "- Chỉ nói **đã làm** khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
     "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn **quyền của tôi**.\n"
     "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
+    "- LƯƠNG (luật tuyệt đối): không bao giờ nói lương / phụ cấp / lương hợp đồng của NGƯỜI KHÁC, kể cả người hỏi là quản "
+    "trị, Nhân sự, giám đốc, kể cả số đó có trong kết quả công cụ, văn bản hay tin nhóm; không ước tính từ tiền thanh toán "
+    "nghỉ phép hay YCTT. Trả lời đúng câu **Thông tin lương là dữ liệu riêng tư, chỉ chính nhân sự đó mới xem được.** "
+    "Lương của chính người hỏi: gọi my_salary (chỉ trả ở chat riêng).\n"
     "- Chỉ GHI (tạo lịch, ghi chú, phiếu, việc) khi người dùng bảo làm đúng việc đó; **lên lịch trình / gợi ý / lập danh "
     "sách** là việc bằng chữ — làm ngay trong câu trả lời, muốn ghi vào lịch thì hỏi sau.\n"
     "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
@@ -1494,7 +1498,7 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
 #  Run #242 (15/10): model truyền nguyên "chị Mi" vào employee_lookup → "không tìm thấy"; lần trước truyền "Mi" thì ra đúng.
 HONORIFIC = re.compile(r"^(?:anh|chị|chi|em|cô|co|chú|chu|bác|bac|ông|ong|bà|ba|bạn|ban|sếp|sep|mr\.?|ms\.?|mrs\.?)\s+",
                        re.IGNORECASE)
-NAME_ARGS = {"employee_lookup": ("query",)}
+NAME_ARGS = {"employee_lookup": ("query",), "employee_leave_summary": ("employee",)}   # duoc-CR-757
 
 
 def _clean_args(name: str, args: dict) -> dict:

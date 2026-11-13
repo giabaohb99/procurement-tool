@@ -18,7 +18,8 @@ from app.modules.employee.model import Employee
 
 from .assignment_schema import (AssignmentCreate, AssignmentUpdate, check_period,
                                 check_target)
-from .assignment_heal import clear_links, heal_before_delete
+from .assignment_heal import (clear_links, closed_link_ids, find_replaced_and_resume,
+                              heal_before_delete, move_resume)
 from .model import WorkSchedule, WorkScheduleAssignment
 
 ENTITY = "work_schedule"
@@ -55,6 +56,7 @@ def serialize_many(db: Session, rows: list[WorkScheduleAssignment]) -> list[dict
     scheds = ({s.id: s.name for s in db.query(WorkSchedule).filter(WorkSchedule.id.in_(sids)).all()}
               if sids else {})
     today = vn_today()   # giờ VN — container chạy UTC
+    replacing = closed_link_ids(db, [a.id for a in rows])   # một truy vấn cho cả trang
     out = []
     for a in rows:
         level = WorkScheduleLevel(a.target_level)
@@ -65,6 +67,8 @@ def serialize_many(db: Session, rows: list[WorkScheduleAssignment]) -> list[dict
             "schedule_id": a.schedule_id, "schedule_name": scheds.get(a.schedule_id, ""),
             "effective_from": a.effective_from, "effective_to": a.effective_to,
             "note": a.note or "",
+            "replaces_previous": a.id in replacing,   # dòng này đã tự đóng một dòng khác: không đổi đích / ngày bắt đầu
+            "created_by": a.created_by,   # id TÀI KHOẢN người gán: giao diện ẩn Sửa / Xóa với dòng Trưởng phòng không tự gán
             "is_current": a.effective_from <= today and (a.effective_to is None or a.effective_to >= today),
         })
     return out
@@ -89,7 +93,7 @@ def _check_schedule(db: Session, schedule_id: int, must_be_active: bool) -> None
 
 
 def _overlaps(db: Session, level: int, target_id: int, start: date, end: date | None,
-              exclude_id: int = 0) -> list[WorkScheduleAssignment]:
+              exclude_id: int = 0, exclude_ids: frozenset[int] = frozenset()) -> list[WorkScheduleAssignment]:
     """Dòng cùng đối tượng giao khoảng `[start, end]` (end None = vô hạn). Trùng mép 1 ngày cũng là chồng."""
     #  `with_for_update()` khóa các dòng của đối tượng: hai lệnh tạo sát nhau phải xếp hàng, người
     #  sau mới thấy dòng người trước vừa chèn (bug M2). SQLite bỏ qua. Chốt cuối là UNIQUE ở DB.
@@ -100,8 +104,9 @@ def _overlaps(db: Session, level: int, target_id: int, start: date, end: date | 
             WorkScheduleAssignment.effective_to >= start))
     if end is not None:
         q = q.filter(WorkScheduleAssignment.effective_from <= end)
-    if exclude_id:
-        q = q.filter(WorkScheduleAssignment.id != exclude_id)
+    skip = set(exclude_ids) | ({exclude_id} if exclude_id else set())
+    if skip:
+        q = q.filter(WorkScheduleAssignment.id.notin_(skip))
     return q.order_by(WorkScheduleAssignment.effective_from).all()
 
 
@@ -135,7 +140,7 @@ def create_assignment(db: Session, data: AssignmentCreate, user) -> WorkSchedule
             resumes.append(WorkScheduleAssignment(
                 target_level=a.target_level, target_id=a.target_id, schedule_id=a.schedule_id,
                 effective_from=data.effective_to + timedelta(days=1), effective_to=None,
-                note=a.note or "", created_by=user.id, updated_by=user.id))
+                note=a.note or "", created_by=a.created_by, updated_by=user.id))   # giữ NGƯỜI GÁN gốc (duoc-CR-757 N4a)
     obj = WorkScheduleAssignment(**data.model_dump(), created_by=user.id, updated_by=user.id)
     db.add(obj)
     try:
@@ -178,12 +183,29 @@ def update_assignment(db: Session, obj: WorkScheduleAssignment, data: Assignment
         _check_target_exists(db, level, target_id)
     if "schedule_id" in values and values["schedule_id"] != obj.schedule_id:
         _check_schedule(db, values["schedule_id"], must_be_active=True)
+    #  Chỉ đổi NGÀY KẾT THÚC của dòng đã tự đóng một dòng khác (dòng thay lịch tạm): dòng bị đóng phải nối lại liền
+    #  mạch từ ngày kết thúc mới — tạo / dời / xóa bản nối lại cho khớp (duoc-CR-757), không gỡ liên kết như đổi ngày bắt đầu.
+    end_only = (level, target_id, start) == (obj.target_level, obj.target_id, obj.effective_from) \
+        and end != obj.effective_to
+    prev, resume = find_replaced_and_resume(db, obj) if end_only else (None, None)
+    follow = prev is not None and (obj.effective_to is None or resume is not None)
+    skip = frozenset({obj.id} | ({resume.id} if follow and resume is not None else set()))
     #  PATCH KHÔNG BAO GIỜ tự đóng dòng khác — chỉ POST mới có đặc cách đó.
-    for other in _overlaps(db, level, target_id, start, end, exclude_id=obj.id):
+    for other in _overlaps(db, level, target_id, start, end, exclude_ids=skip):
         _raise_overlap(db, other)
+    audits: list[tuple[int, str]] = []
+    if follow:
+        if end is not None:
+            if resume is not None and resume.effective_to is not None and end >= resume.effective_to:
+                raise HTTPException(400, "Ngày kết thúc mới chồng hết khoảng lịch cũ được nối lại; "
+                                         "hãy xóa dòng nối lại hoặc chọn ngày sớm hơn")
+            for other in _overlaps(db, level, target_id, end + timedelta(days=1),
+                                   resume.effective_to if resume is not None else None, exclude_ids=skip):
+                _raise_overlap(db, other)
+        audits = move_resume(db, obj, prev, resume, end, user.id)
     #  Đổi ngày/đích của dòng gốc → mở lại khi xóa không còn an toàn: gỡ liên kết (M4).
-    if (level, target_id, start, end) != (obj.target_level, obj.target_id,
-                                          obj.effective_from, obj.effective_to):
+    elif (level, target_id, start, end) != (obj.target_level, obj.target_id,
+                                            obj.effective_from, obj.effective_to):
         clear_links(db, obj.id)
     for k, v in values.items():
         setattr(obj, k, v)
@@ -191,6 +213,8 @@ def update_assignment(db: Session, obj: WorkScheduleAssignment, data: Assignment
     commit_or_conflict(db, CONFLICT_MESSAGE)
     db.refresh(obj)
     record(db, user.id, ENTITY, obj.id, "update", "Sửa gán lịch làm việc")
+    for rid, text in audits:
+        record(db, user.id, ENTITY, rid, "update", text)
     return obj
 
 

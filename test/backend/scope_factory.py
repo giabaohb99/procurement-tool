@@ -93,6 +93,7 @@ ENTITY_MODEL_PATHS = {
     "dossier": ("app.modules.dossier.model", "Dossier"),
     "ai_skill": ("app.modules.ai_skill.model", "AiSkillSet"),
     "ai_mcp_key_admin": ("app.modules.employee.model", "Employee"),
+    "work_schedule_personal": ("app.modules.employee.model", "Employee"),   # duoc-CR-757: đo trên hồ sơ nhân sự đích
     "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
     "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
 }

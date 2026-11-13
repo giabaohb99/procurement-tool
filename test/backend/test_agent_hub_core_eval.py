@@ -119,8 +119,9 @@ def test_luat_cung():
     assert not check_turn(Turn("x", "y"), TurnLog(text="x", replies=["• dòng một"]), date(2026, 10, 15))
 
 
-def test_bo_mau_du_20_ma_khong_trung():
+def test_bo_mau_du_22_ma_khong_trung():
     ids = [s.id for s in SAMPLES]
-    assert len(ids) == 20 and len(set(ids)) == 20
+    #  22 = 20 + hai mẫu luật lương (duoc-CR-757): hỏi lương người khác · lương nằm trong văn bản / tin nhóm.
+    assert len(ids) == 22 and len(set(ids)) == 22
     tools = core_eval.WRITE_TOOLS
     assert "ticket_create" in tools and "deep_research" in tools

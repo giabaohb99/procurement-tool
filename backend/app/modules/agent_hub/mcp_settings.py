@@ -39,8 +39,9 @@ GROUPS: tuple[ToolGroup, ...] = (
     ToolGroup("mine", "Tra cứu phiếu và việc của chính mình", True, frozenset({
         "my_approval_tasks", "my_requests_status", "my_procurement_requests", "my_documents", "my_tickets",
         "my_work_tasks", "pending_procurement_approvals", "search_chat_history"})),
+    #  duoc-CR-715 C: phiếu nghỉ bù; duoc-CR-757: tra phép nhân sự khác (tool tự gác leave_balance.read + phạm vi).
     ToolGroup("leave", "Nghỉ phép", True, frozenset({"my_leave_summary", "draft_leave_request",
-                                                    "draft_leave_comp_request"})),   # duoc-CR-715 C: phiếu nghỉ bù
+                                                    "draft_leave_comp_request", "employee_leave_summary"})),
     ToolGroup("directory", "Danh bạ, thuật ngữ, hướng dẫn sử dụng", True, frozenset({
         "employee_lookup", "glossary_lookup", "search_docs"})),
     ToolGroup("reports", "Báo cáo gom sẵn và bảng số tổng hợp", True, frozenset({"report_summary", "dataset_query"})),

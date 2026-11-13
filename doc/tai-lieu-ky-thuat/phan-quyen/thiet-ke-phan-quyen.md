@@ -200,6 +200,38 @@ vì `SCOPE_FIELDS["employee"]` không khai `owner` — dòng kiêm nhiệm đi c
 
 ---
 
+## 4d. Bậc Phòng ban cho bảng không có cột phòng, và khóa lịch riêng (duoc-CR-757, 13/11/2026)
+
+**`dept_via_employee` — phòng đi qua hồ sơ nhân sự.** Một số bảng gắn với MỘT nhân sự nhưng không có cột phòng (quỹ phép
+`tab_leave_balance` chỉ có `employee_id`, `company_id`). Trước CR-757, bậc `dept` của chúng chỉ ràng được công ty, tức thực
+chất là **cả công ty**. Nay khai thêm khóa `dept_via_employee: "<cột trỏ tab_employee.id>"` trong `SCOPE_FIELDS` (hiện chỉ
+`leave_balance`):
+
+- Bậc `dept` (và `dept_proc`, và ô **Phòng ban được xem**) → `<cột> IN (SELECT e.id FROM tab_employee e WHERE e.department_id
+  IN dept_ids AND e.company_id IN công_ty_của_người_xem)`. `dept_ids` = phòng chính + phòng kiêm nhiệm của NGƯỜI XEM;
+  phía người được xem chỉ so **phòng chính** (`tab_employee.department_id`) — người phòng khác kiêm nhiệm vào phòng mình không
+  hiện, cùng luật với `employee` khi không bật `include_concurrent`.
+- Công ty ràng theo **công ty hiện tại của nhân sự** (`tab_employee.company_id` ∈ `_own_companies(profile)` = công ty chính +
+  công ty kiêm nhiệm loại Công ty), KHÔNG theo cột công ty của dòng: cột đó của quỹ phép là ảnh chụp lúc cấp, hay bằng 0 / lệch.
+  Ràng công ty còn cần vì id phòng dùng chung nhiều công ty (`tab_department.company_id = 0`) — chỉ so phòng là lọt người cùng
+  phòng ở công ty khác. Người xem chưa gắn pháp nhân thì không ràng công ty (như nhánh `dept` thường).
+- Truy vấn con dùng BÍ DANH của `Employee` (`_dept_via_employee_cond`): truy vấn ngoài cũng có thể đọc `tab_employee` (công cụ
+  trợ lý, danh sách ứng viên phân bổ), không có bí danh thì SQLAlchemy tự tương quan mất bảng. Một câu SQL, không thêm truy vấn.
+- Giới hạn đã biết (G3): bậc `company` và ô **Chỉ trong / Loại trừ công ty** vẫn so cột `company_id` của dòng.
+- Ô loại trừ phòng chỉ thu hẹp (`NOT IN`), không ràng công ty — an toàn.
+
+**`INCLUDE_DEPT_SAME_COMPANY`** (hằng ở `core/scoping.py`, để ngoài `SCOPE_FIELDS` vì bài canh BB-2 đòi mọi giá trị ở đó là tên
+cột): entity mà ô **Phòng ban được xem** phải AND thêm công ty hiện tại của người xem. Hiện có `work_schedule_personal`. Lý do
+như trên: id phòng dùng chung nhiều công ty, ô "cộng thêm phòng" không được thành cửa sang công ty khác. Entity khai
+`dept_via_employee` tự ràng công ty trong truy vấn con nên không cần khai ở đây.
+
+**Khóa mới `work_schedule_personal`** (ENTITIES 80 → 81, bài canh B-07 đếm theo). Trưởng phòng gán lịch làm việc RIÊNG (cấp
+Nhân sự) cho nhân viên trong phạm vi, không cho chính mình. Khóa đo trên **hồ sơ nhân sự đích** của dòng gán
+(`ENTITY_MODEL_PATHS` → `Employee`; `SCOPE_FIELDS` = `company_id`, `department_id`, `self: id`, cùng khuôn khóa `employee`),
+nên mọi chốt gọi `get_scoped(db, Employee, "work_schedule_personal", target_id, ...)`, không áp lên bảng gán lịch. Nằm trong
+`_SYS_ENTITIES` của `seed.py` (Quản lý thu mua không tự có); seed cấp `dept_head` bậc `dept`. Chi tiết luật:
+`doc/erp/hrm/03-lich-lam-viec.md` §20; sổ việc tick tay trên hệ đang chạy: §21 cùng tệp.
+
 ## 5. Giao diện — một màn "Phân quyền" riêng (3 tab)
 
 ### Tab 1 — Vai trò

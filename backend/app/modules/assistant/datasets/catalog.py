@@ -142,12 +142,16 @@ def _payable() -> Dataset:
 # ── Yêu cầu thanh toán — tab_payment_request ──────────────────────────────────────────────────────────────────────
 #  apply_scope(PaymentRequest, "payment_request") — mixin xóa mềm nên phiếu đã xóa tự bị loại.
 def _payment_request() -> Dataset:
+    from app.modules.assistant.tools.salary_privacy import exclude_salary_payments
     from app.modules.payment_request.model import PaymentRequest as R
     from app.modules.payment_request.service import STATUS_LABELS
 
     return Dataset(
         key="payment_request", label="Yêu cầu thanh toán", model=R, entity="payment_request",
         scope_entity="payment_request", link="/finance/payment-requests",
+        #  duoc-CR-757: bỏ YCTT thanh toán nghỉ phép (tiền = lương ngày × số ngày) — gom theo phòng / tháng là cô lập được
+        #  một người; trợ lý không bao giờ đọc ra lương của người khác.
+        base=lambda q: q.filter(exclude_salary_payments(R)),
         description="Phiếu đề nghị chi trả NCC theo ngày đề nghị: số phiếu, số tiền đề nghị theo NCC / pháp nhân / phòng / "
                     "trạng thái / tháng / hình thức.",
         measures=(
@@ -172,7 +176,9 @@ def _payment_request() -> Dataset:
             Filter("company_id", "Pháp nhân (id)", _eq(R.company_id), "int"),
             Filter("prepay", "Chỉ phiếu trả trước", lambda q, v: q.filter(R.prepay == (1 if v else 0)), "bool"),
         ),
-        notes=("Số tiền đề nghị = tổng số tiền các dòng hóa đơn / công nợ trên phiếu (cùng số in trên phiếu).",),
+        notes=("Số tiền đề nghị = tổng số tiền các dòng hóa đơn / công nợ trên phiếu (cùng số in trên phiếu).",
+               "KHÔNG gồm YCTT thanh toán nghỉ phép (gắn với lương từng người) — số có thể thấp hơn màn Yêu cầu thanh "
+               "toán của người có quyền xem các phiếu đó."),
     )
 
 

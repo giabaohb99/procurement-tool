@@ -3,7 +3,8 @@
 Khóa quyền `work_schedule` (PUBLIC ở `SCOPE_FIELDS`: danh mục cấu hình, ai đọc được
 thì thấy hết). Riêng `/tools/effective` gác theo `employee.read` + `get_scoped` — thẻ
 trên hồ sơ không được lộ lịch của người ngoài phạm vi, và cũng không đòi thêm khóa
-mới cho vai trò cũ.
+mới cho vai trò cũ. `/tools/effective-department` (duoc-CR-757) cùng lý lẽ: gác `department.read` +
+`get_scoped` phòng ban.
 """
 from datetime import date
 
@@ -16,6 +17,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.vn_time import vn_today
 from app.core.scoping import apply_scope, get_perm_profile, get_scoped
+from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from . import resolver, roster_service, template_service
@@ -59,6 +61,26 @@ def effective_schedule(employee_id: int, on_date: date | None = None,
     if not (YEAR_MIN <= day.year <= YEAR_MAX):
         raise HTTPException(422, f"Ngày phải nằm trong năm {YEAR_MIN}–{YEAR_MAX}")
     return success(resolver.effective_for_employee(db, emp, day))
+
+
+@router.get("/tools/effective-department")
+def effective_department_schedule(department_id: int = Query(..., ge=1), on_date: date | None = None,
+                                  db: Session = Depends(get_db),
+                                  user=Depends(require("department", "read"))):
+    """Lịch làm việc hiệu lực của một phòng ban vào `on_date` (mặc định hôm nay theo giờ VN) — duoc-CR-757.
+
+    Quyền: `department.read` + phạm vi phòng ban (`get_scoped`); ngoài phạm vi hay không tồn tại đều 404.
+    Trả các khóa của `/tools/effective` cộng `department_id`, `department_name`, `company_id`, `assignments`
+    (dòng gán cấp phòng ban của phòng này, mới nhất trước). `level`: 3 Phòng ban · 2 Pháp nhân · 1 Toàn hệ thống ·
+    0 mặc định (`is_fallback`). Năm của ngày ngoài dải cho phép → 422.
+    """
+    dept = get_scoped(db, Department, "department", department_id, user, get_perm_profile(db, user))
+    if dept is None:
+        raise HTTPException(404, "Không tìm thấy")
+    day = on_date or vn_today()
+    if not (YEAR_MIN <= day.year <= YEAR_MAX):
+        raise HTTPException(422, f"Ngày phải nằm trong năm {YEAR_MIN}–{YEAR_MAX}")
+    return success(resolver.effective_for_department(db, dept, day))
 
 
 @router.get("/tools/roster")

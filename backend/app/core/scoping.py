@@ -200,7 +200,16 @@ SCOPE_FIELDS = {
     #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
     #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
     #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".
-    "leave_balance":    {"company": "company_id", "self": "employee_id"},
+    #  duoc-CR-757 (Q2): bảng quỹ phép không có cột phòng ban, nên bậc `dept` từng chỉ ràng công ty = cả công ty.
+    #  `dept_via_employee` nối qua nhân sự: bậc `dept` (và ô "Phòng ban được xem" / loại trừ phòng) chỉ trúng người
+    #  giữ quỹ có PHÒNG CHÍNH (`tab_employee.department_id`) nằm trong `dept_ids` của NGƯỜI XEM — danh sách đó đã gồm cả
+    #  phòng kiêm nhiệm CỦA NGƯỜI XEM. Người phòng khác kiêm nhiệm vào phòng của mình thì KHÔNG hiện (cùng luật với
+    #  `employee` khi không bật `include_concurrent`). Công ty ràng theo công ty hiện tại của nhân sự — xem
+    #  `_dept_via_employee_cond`.
+    #  ⚠️ Giới hạn đã biết (G3): bậc `company` vẫn ràng cột `company_id` của DÒNG quỹ (ảnh chụp lúc cấp), nên dòng quỹ
+    #  cũ `company_id = 0` / lệch công ty hiện tại không hiện ở bậc công ty. Ngoài phạm vi CR-757; bậc `dept` đã tránh
+    #  bằng cách ràng công ty hiện tại của nhân sự.
+    "leave_balance":    {"company": "company_id", "self": "employee_id", "dept_via_employee": "employee_id"},
     #  Loại nghỉ: danh mục luật dùng chung MỌI pháp nhân, bảng không có cột nào
     #  để lọc. Ai được SỬA thì gác bằng quyền `leave_type.write`, không phải
     #  bằng phạm vi.
@@ -215,6 +224,12 @@ SCOPE_FIELDS = {
     #  (cấp + id) nên khuôn một-cột của apply_scope không diễn đạt được; ai SỬA gác
     #  bằng work_schedule.write.
     "work_schedule":    PUBLIC,
+    #  Lịch làm việc RIÊNG của nhân sự (duoc-CR-757 lượt 2): khóa này được kiểm trên HỒ SƠ NHÂN SỰ ĐÍCH của dòng gán, vì
+    #  bảng gán lịch có đích đa hình (cấp + id) không lọc được bằng khuôn một-cột. ⚠️ Nên điều kiện phạm vi áp lên
+    #  truy vấn `Employee` (`get_scoped(db, Employee, "work_schedule_personal", target_id, ...)`), KHÔNG áp lên bảng
+    #  `tab_work_schedule_assignment` — ba cột dưới là cột của `tab_employee`, giống hệt khuôn khóa `employee`.
+    #  Ô "Phòng ban được xem" của khóa này không mở xuyên công ty: xem `INCLUDE_DEPT_SAME_COMPANY`.
+    "work_schedule_personal": {"company": "company_id", "dept_id": "department_id", "self": "id"},
 
     #  HỢP ĐỒNG LAO ĐỘNG (05/10/2026). `company_id` / `department_id` là SNAPSHOT lúc lập
     #  (HĐ thuộc phòng lúc ký); `self` = chính chủ HĐ (`employee_id`).
@@ -338,6 +353,11 @@ SCOPE_FIELDS = {
     "ai_mcp_key_admin": {"company": "company_id", "dept_id": "department_id", "self": "id"},
 }
 
+#  duoc-CR-757 (N1): entity mà ô "Phòng ban được xem" phải AND thêm công ty HIỆN TẠI của người xem, vì id phòng có thể dùng
+#  chung nhiều công ty (`tab_department.company_id = 0`). Để ngoài `SCOPE_FIELDS` vì bài canh BB-2 đòi mọi giá trị ở đó là
+#  TÊN CỘT. (Entity khai `dept_via_employee` tự ràng công ty trong truy vấn con, không cần khai ở đây.)
+INCLUDE_DEPT_SAME_COMPANY = frozenset({"work_schedule_personal"})
+
 
 def _central_dept_expr():
     """Id phòng thu mua mặc định (bao-CR-524) dạng biểu thức SQL; danh mục chưa có mã đã cấu hình
@@ -347,7 +367,7 @@ def _central_dept_expr():
     return func.coalesce(central_dept_id_subquery(), -1)
 
 
-def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
+def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False, employee_company_ids=None):
     """Điều kiện "phiếu thuộc một trong các phòng này" — CR-086.
 
     Khớp bằng ID. Chỉ những phiếu KHÔNG điền lùi được id (`department_id = 0`, phòng đã đổi
@@ -382,9 +402,40 @@ def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
             cs.append(and_(handler == 0, central.in_(ids)))   # "0" cũ = phòng thu mua mặc định
         else:
             cs.append(and_(handler.in_(ids), handler != central))
+    via_employee = _dept_via_employee_cond(model, f, dept_ids, employee_company_ids)
+    if via_employee is not None:
+        cs.append(via_employee)
     if not cs:
         return None
     return or_(*cs) if len(cs) > 1 else cs[0]
+
+
+def _dept_via_employee_cond(model, f, dept_ids, company_ids=None):
+    """Điều kiện "dòng thuộc nhân sự có phòng ban nằm trong các phòng này" cho entity KHÔNG có cột phòng (duoc-CR-757).
+
+    `f["dept_via_employee"]` = tên cột trỏ `tab_employee.id` (vd `employee_id` của quỹ phép). Phòng của nhân sự lấy từ
+    HỒ SƠ HIỆN TẠI (`tab_employee.department_id`, chưa có lịch sử điều chuyển) — đúng cách báo cáo Quỹ phép nhóm theo phòng.
+    Truy vấn con dùng BÍ DANH của `Employee`: truy vấn ngoài cũng có thể đang đọc `tab_employee` (công cụ trợ lý, danh
+    sách ứng viên phân bổ) và SQLAlchemy sẽ tự "tương quan" mất bảng trong truy vấn con. Một câu SQL, không thêm truy vấn.
+
+    `company_ids` (chỉ bậc `dept` truyền): thêm `tab_employee.company_id IN company_ids` NGAY TRONG truy vấn con — ràng
+    công ty HIỆN TẠI của nhân sự chứ không phải cột công ty của dòng. Cột đó của quỹ phép chỉ là ảnh chụp lúc cấp quỹ
+    (local: phần lớn dòng `company_id = 0` hoặc lệch công ty hiện tại), nên ràng nó làm mất quỹ của chính người phòng mình.
+    Ràng ở đây còn cần vì id phòng có thể dùng chung nhiều công ty (`tab_department.company_id = 0`): chỉ so phòng là
+    lọt người phòng cùng id ở công ty khác.
+    None = entity không khai chiều này hoặc không có phòng nào để so (nơi gọi tự coi là chặn ở bậc `dept`).
+    """
+    col = f.get("dept_via_employee")
+    if not col or not dept_ids:
+        return None
+    from sqlalchemy.orm import aliased
+
+    from app.modules.employee.model import Employee
+    emp = aliased(Employee)
+    sub = select(emp.id).where(emp.department_id.in_(list(dept_ids)))
+    if company_ids:
+        sub = sub.where(emp.company_id.in_(list(company_ids)))
+    return getattr(model, col).in_(sub)
 
 
 def _handler_match(model, f, dept_ids):
@@ -659,7 +710,9 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         if in_dept_proc:
             # bao-CR-414: entity không phải chứng từ thu mua → `dept_proc` rơi về bậc `dept`
             # (thấy trong phòng mình), không rơi về `own` như `assigned`/`proc`.
-            dm = _dept_match(model, f, dept_ids, dept_names)
+            #  duoc-CR-757 (G1): entity `dept_via_employee` ràng thêm công ty HIỆN TẠI của nhân sự, như bậc `dept`.
+            dm = _dept_match(model, f, dept_ids, dept_names,
+                             employee_company_ids=_own_companies(profile) if company_id else None)
             if dm is None:
                 return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
             return dm
@@ -701,10 +754,14 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         cs = []
         #  duoc-CR-756: công ty IN (chính, *kiêm nhiệm) AND phòng IN dept_ids. Chưa gắn pháp nhân chính thì không
         #  ràng công ty (như cũ) — công ty kiêm nhiệm không tự ràng thay.
-        if f.get("company") and company_id:
+        #  Entity khai `dept_via_employee` (quỹ phép): công ty KHÔNG ràng trên cột của dòng (ảnh chụp lúc cấp, hay lệch / bằng 0)
+        #  mà ràng trên công ty hiện tại của nhân sự, trong `_dept_via_employee_cond`.
+        via_employee = bool(f.get("dept_via_employee"))
+        if f.get("company") and company_id and not via_employee:
             cs.append(_company_in_cond(model, f, _own_companies(profile)))
-        if f.get("dept_id") or f.get("dept_name"):
-            dc = _dept_match(model, f, dept_ids, dept_names)
+        if f.get("dept_id") or f.get("dept_name") or via_employee:
+            dc = _dept_match(model, f, dept_ids, dept_names,
+                             employee_company_ids=_own_companies(profile) if company_id else None)
             # Người dùng chưa gắn phòng nào → không có gì để so → không thấy gì. (Luật cũ so
             # `department == ""` nên cũng gần như không ra phiếu nào; ở đây nói thẳng ra.)
             cs.append(dc if dc is not None else false())
@@ -857,15 +914,27 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
     return and_(*cs) if cs else None
 
 
-def _dept_include_cond(model, entity, scopeconf):
+def _dept_include_cond(model, entity, scopeconf, profile=None):
     """'Phòng ban được xem' → điều kiện CỘNG THÊM (OR với phạm vi vai trò). None = không chọn phòng nào.
 
     `department` = danh sách ID, `department_name` = tên tương ứng (chỉ để lùi cho phiếu cũ).
     Hai khóa này do `core/auth.py` dựng sẵn khi đọc `tab_user_scope`.
+
+    duoc-CR-757 (N1): id phòng có thể dùng chung nhiều công ty (`tab_department.company_id = 0`), nên với hai loại entity
+    ô này KHÔNG được mở xuyên công ty — ràng thêm công ty HIỆN TẠI của người xem (`_own_companies`):
+      * entity khai `dept_via_employee` (quỹ phép): ràng `tab_employee.company_id` trong truy vấn con;
+      * entity trong `INCLUDE_DEPT_SAME_COMPANY` (`work_schedule_personal`, đo trên hồ sơ nhân sự): AND cột công ty của
+        chính entity đó.
+    Người chưa gắn pháp nhân thì không có công ty nào để ràng (như nhánh `dept`). Entity khác giữ nguyên.
     """
+    f = SCOPE_FIELDS.get(entity) or {}
     inc = (scopeconf.get("inc") or {})
-    return _dept_match(model, SCOPE_FIELDS.get(entity) or {},
-                       inc.get("department") or [], inc.get("department_name") or [])
+    companies = _own_companies(profile) if profile and profile.get("company_id") else None
+    cond = _dept_match(model, f, inc.get("department") or [], inc.get("department_name") or [],
+                       employee_company_ids=companies)
+    if cond is not None and companies and entity in INCLUDE_DEPT_SAME_COMPANY:
+        cond = and_(cond, _company_in_cond(model, f, companies))
+    return cond
 
 
 def has_global_scope(profile: dict, entity: str, action: str) -> bool:
@@ -1015,7 +1084,7 @@ def _grant_scope_condition(model, entity: str, user, profile: dict, action: str 
         rc = _role_scope_cond(model, entity, p.get("scope", "all"), user, profile, perms=p)
         # 'Phòng ban được xem' = CỘNG THÊM vào phạm vi vai trò.
         # rc None (scope=all) → đã thấy hết, bỏ qua để không thu hẹp nhầm.
-        dept_add = _dept_include_cond(model, entity, scopeconf)
+        dept_add = _dept_include_cond(model, entity, scopeconf, profile)
         base = or_(rc, dept_add) if (rc is not None and dept_add is not None) else rc
         ec = _explicit_cond(model, entity, scopeconf, profile)   # thu hẹp: company include + mọi loại trừ
         parts = [c for c in (base, ec) if c is not None]

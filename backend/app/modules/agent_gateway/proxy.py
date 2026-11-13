@@ -24,7 +24,9 @@ log = logging.getLogger("app.agent_proxy")
 router = APIRouter(tags=["agent-proxy"])
 TIMEOUT = 120
 #  Header không được chép sang (do lớp vận chuyển tự đặt) và không được chép về.
-_SKIP_REQ = {"host", "content-length", "connection", "authorization", "cookie", "transfer-encoding"}
+_SKIP_REQ = {"host", "content-length", "connection", "authorization", "cookie", "transfer-encoding",
+             #  duoc-CR-757: header ngữ cảnh nằm trong chuỗi ký — trình duyệt không được tự đặt (ERP ký lại với giá trị rỗng).
+             "x-agent-ai-channel", "x-agent-private-chat"}
 _SKIP_RESP = {"content-length", "transfer-encoding", "connection", "content-encoding", "server", "date"}
 
 

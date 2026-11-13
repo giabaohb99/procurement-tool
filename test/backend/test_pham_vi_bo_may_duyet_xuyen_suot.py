@@ -1324,7 +1324,12 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",
+    "my_salary": "chỉ hồ sơ của chính người hỏi (user.employee_id ≠ 0) qua employee.sensitive.mask + chỉ kênh riêng "
+                 "(duoc-CR-757)",
     "my_leave_summary": "ctx.can(leave_request) + khóa cứng employee_id của chính người hỏi",
+    "employee_leave_summary": "ctx.can(leave_balance) + apply_scope(employee) ∩ phạm vi leave_balance trên hồ sơ "
+                              "+ apply_scope(LeaveBalance) cho dòng quỹ + ctx.can(leave_request) và "
+                              "scope_condition(leave_request) cho ngày đã nghỉ (duoc-CR-757)",
     # (b') danh bạ nội bộ: apply_scope trên `employee`, và 15 trường nhạy cảm
     #      (CCCD · ngân hàng · BHXH…) đi qua đúng `employee_sensitive` như API
     "employee_lookup": "ctx.can(employee) + apply_scope; trường nhạy cảm gác employee_sensitive",

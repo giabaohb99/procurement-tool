@@ -250,6 +250,38 @@ tool, tham số hay bộ lọc người: vẫn `apply_scope` theo phạm vi hồ
 người hỏi (hồ sơ chính ở nơi khác) có thể không ra. Một truy vấn cho cả lô (`concurrent_members_service.effective_roles_of`).
 Luật kiêm nhiệm: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.18.
 
+### 3.7 Nghỉ phép: lịch làm việc, ngày đã nghỉ, phép của người khác (duoc-CR-757, 13/11/2026)
+
+Nhóm `leave` (bật mặc định).
+
+- `my_leave_summary` (không đổi tên / tham số) trả thêm `work_schedule` (lịch đang áp hôm nay của chính chủ khóa: tên mẫu,
+  cấp nguồn Nhân sự / Phòng ban / Pháp nhân / Toàn hệ thống hoặc mặc định, bảy ngày có giờ, số ngày công/tuần) và
+  `taken_by_type` + `taken_total_days` + `upcoming_total_days` + `pending_total_days` (ngày nghỉ trong năm theo từng loại, gồm
+  cả loại không trừ quỹ; `approved_days` = đã / đang nghỉ, `approved_upcoming_days` = đã duyệt cho ngày sắp tới, `pending_days`
+  = chờ duyệt; cả đơn tính vào năm của ngày bắt đầu nghỉ). Năm mặc định theo giờ VN.
+- Tool MỚI `employee_leave_summary(employee?, department?, year?, limit?)` — chỉ đọc, đã khai vào `READ_TOOLS` nên khóa mức
+  **Chỉ đọc** cũng gọi được. Tra quỹ phép (`remaining_days`), ngày đã nghỉ theo loại và tên lịch đang áp của nhân sự KHÁC
+  theo mã / tên hoặc theo phòng; mặc định 20 người, trần 50. Gác `leave_balance.read`; người trả về = phạm vi `employee.read`
+  GIAO phạm vi `leave_balance` của chủ khóa (đúng màn Quỹ phép năm); số ngày đã nghỉ của họ chỉ có khi chủ khóa còn xem được
+  đơn nghỉ của họ (`leave_request.read` đúng phạm vi), không thì rỗng. Không lương, không trường nhạy cảm. Rỗng = không có ai
+  khớp trong phạm vi, không có nghĩa người đó không tồn tại.
+- Luật và hợp đồng dữ liệu đủ: `doc/erp/hrm/03-lich-lam-viec.md` §19.3, mục 2 của `doc/erp/hrm/tai-lieu-ky-thuat/api.md`.
+
+### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)
+
+Cổng MCP **không bao giờ** là cuộc trò chuyện riêng (hội thoại nằm ở máy chủ của ứng dụng AI bên ngoài và có thể được chia
+sẻ), nên qua cổng này **không ai xem được lương, kể cả lương của chính mình**:
+
+- `my_salary` (lương của chính người hỏi, chỉ chạy ở chat riêng của Trợ lý web / bot) nằm trong `HIDDEN` — không có trong
+  `tools/list` của MCP.
+- `INSTRUCTIONS` của cổng thêm câu luật tuyệt đối: không nói lương, phụ cấp, thu nhập của bất kỳ ai — kể cả khi con số nằm
+  trong văn bản, tệp, tin nhắn hay kết quả công cụ — và không ước tính từ tiền thanh toán nghỉ phép; trả lời *Thông tin lương
+  là dữ liệu riêng tư, chỉ chính nhân sự đó mới xem được.*, lương của chính mình xem ở Trang cá nhân hoặc chat riêng với
+  Trợ lý ERP.
+- Tiền YCTT thanh toán nghỉ phép bị giấu (`money_hidden`), `dataset_query` loại các phiếu này khỏi số tổng hợp;
+  `search_chat_history` bỏ lượt và tin có chữ lương (kênh MCP không riêng). Bảng đủ:
+  `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/04-bao-mat-va-van-hanh.md` mục *Luật lương và cờ cuộc trò chuyện riêng*.
+
 ## 4. Nhóm tool và cấu hình (G7, ai-CR-216)
 
 Quản trị (quyền `agent_group.write`) bật / tắt **nhóm** tool qua MCP, chỉnh trần và câu dặn thêm cho AI. Mỗi tool thuộc đúng
@@ -258,7 +290,7 @@ gọi thẳng thì `denied` kèm tên nhóm. `report_issue`, `confirm_draft` lu�
 
 | Mặc định | Nhóm |
 |---|---|
-| **Bật** (Q4 + Agent 1 17/10) | `mine` tra cứu phiếu / việc của chính mình · `leave` nghỉ phép · `directory` danh bạ, thuật ngữ, HDSD · `reports` báo cáo gom sẵn + bảng số · `skills` Kho skill |
+| **Bật** (Q4 + Agent 1 17/10) | `mine` tra cứu phiếu / việc của chính mình · `leave` nghỉ phép (gồm `employee_leave_summary` tra phép người khác theo quyền, duoc-CR-757) · `directory` danh bạ, thuật ngữ, HDSD · `reports` báo cáo gom sẵn + bảng số · `skills` Kho skill |
 | **Tắt** | `purchase` thu mua (gồm `erp_read`) · `finance` công nợ và thanh toán (kéo theo bộ `payable` / `payment_request` của `dataset_query`) · `document` văn thư · `work` soạn việc / kế hoạch · `customs` tra cứu thị trường · `google` lịch / Drive · `personal` sổ nhớ, ghi chú, nhóm chat, biên bản · `ticket` tạo phiếu hỗ trợ · `research` nghiên cứu sâu (tốn phí) · `export` xuất tệp |
 
 Cấu hình lưu MỘT dòng JSON ở `tab_setting.agent_mcp_settings` của ERP (đi qua cổng B `/settings/raw` ở chế độ tách dịch

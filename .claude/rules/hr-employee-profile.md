@@ -294,8 +294,21 @@ thống tự cấp gói. Mã: `employee/position_role_service.py` (+ `position_r
 - ⚠️ **Một chốt che duy nhất: `sensitive.mask` / `mask_many` (`SALARY_FIELDS`).** Khác nhóm nhạy cảm: KHÔNG mở bằng khóa quyền, chỉ
   nhánh `self` (`is_self`, chặn `employee_id = 0`). `mask(data, allowed, profile)` **mặc định CHE** nếu không truyền `profile` —
   đường mới quên truyền thì lương về 0 chứ không lộ. Mọi cửa trả hồ sơ (`/`, `/me`, `/{id}`, PATCH, CSV/XLSX qua `export_mask`)
-  đi qua đây; trợ lý AI dùng danh sách trắng nên không có lương; nhật ký (`change_tracker` denylist + `logging_policy` theo đường
-  dẫn) không giữ số; audit chỉ ghi **Cập nhật lương**.
+  đi qua đây; nhật ký (`change_tracker` denylist + `logging_policy` theo đường dẫn) không giữ số; audit chỉ ghi **Cập nhật lương**.
+- ⚠️ **Trợ lý AI / bot / cổng MCP (duoc-CR-757, luật tuyệt đối): không bao giờ nói lương của NGƯỜI KHÁC**, kể cả với admin / Nhân
+  sự / giám đốc; câu từ chối cố định: **Thông tin lương là dữ liệu riêng tư, chỉ chính nhân sự đó mới xem được.** Luật gom ở
+  `assistant/tools/salary_privacy.py` (không đặt luật chính chủ thứ hai — vẫn `sensitive.is_self` / `mask`):
+  - Lương của CHÍNH người hỏi chỉ qua công cụ `my_salary` (không tham số chọn người, đi `mask`), CHỈ ở chat riêng: Trợ lý web, hoặc
+    chat riêng bot Telegram / Zalo ĐÃ liên kết tài khoản (cờ `assistant/private_chat.py` máy gắn ở `agent_hub.service.handle_message`,
+    qua cổng B bằng header `x-agent-private-chat` đã ký). Nhóm chat, cổng MCP, kênh lạ → từ chối. `my_salary` ẩn khỏi MCP, chỉ ô lương
+    trên hồ sơ (không lương HĐLĐ).
+  - `employee_lookup` / `employee_leave_summary` không bao giờ có trường lương (danh sách trắng).
+  - Tiền YCTT thanh toán nghỉ phép (= lương ngày × số ngày) bị giấu với trợ lý trừ người nhận ở chat riêng: `payment_request_read`
+    chỉ trả trạng thái + link, `pending_procurement_approvals` để trống `total`, `dataset_query` bỏ hẳn các phiếu đó, đề xuất sửa YCTT
+    không với tới chúng; `my_leave_summary` chỉ số ngày (không `decision_note`).
+  - Lịch sử chat / ghi chú (`search_chat_history`, `search_notes`) ở kênh không riêng bỏ lượt đã gọi `my_salary` và tin có chữ lương;
+    sổ nhớ không tự rút câu có lương (`personal_memory._SECRET_RE`). Chữ tự do (văn bản, Drive, tin / tệp nhóm) chỉ chặn bằng lời dặn.
+  - Thêm đường AI mới đọc hồ sơ / HĐLĐ / YCTT thì đi qua `salary_privacy`; test `test_tro_ly_khong_lo_luong_cr757.py`.
 - ⚠️ **Che bằng 0 nên màn sửa hồ sơ PHẢI không gửi hai ô này khi người xem không phải chính chủ** (cùng bẫy `pickWritableProfile`):
   gửi 0 đè lương thật. Backend không phân biệt **bị che** với **muốn xóa**. Gửi `null`/vắng = giữ nguyên; xóa = gửi 0.
 - Ghi: `employee.write` trong phạm vi; **không ai tự đổi lương của mình** (403 khi giá trị đổi thật — gửi lại nguyên giá trị cũ thì

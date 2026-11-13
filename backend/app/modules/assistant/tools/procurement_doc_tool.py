@@ -450,6 +450,15 @@ def _pend_pttt(r: PaymentRequest, see_supplier: bool) -> dict:
     return item
 
 
+def _hide_salary_money(ctx: ToolContext, row, item: dict) -> dict:
+    """duoc-CR-757: YCTT thanh toán nghỉ phép không phải của chính người hỏi → bỏ số tiền (lộ lương ngày)."""
+    from .salary_privacy import POLICY_SENTENCE, hides_payment_money
+
+    if isinstance(row, PaymentRequest) and hides_payment_money(ctx, row):
+        item.update(total=None, money_hidden=True, note=POLICY_SENTENCE)
+    return item
+
+
 #  Thứ tự liệt kê = thứ tự luồng nghiệp vụ: báo giá -> khảo sát -> mua -> đơn -> thanh toán.
 _PENDING = [
     ("survey_request", SurveyRequest, _pend_sr),
@@ -487,8 +496,8 @@ def _run_pending(ctx: ToolContext, args: dict) -> dict:
             "entity": entity,
             "entity_label": _ENTITY_LABELS[entity],
             "pending": pending,
-            "items": [{**builder(r, see_supplier),
-                       "url": _detail_url(entity, r.id)} for r in rows],
+            "items": [_hide_salary_money(ctx, r, {**builder(r, see_supplier), "url": _detail_url(entity, r.id)})
+                      for r in rows],
         }
         if pending > limit:
             group["note"] = f"Chỉ liệt kê {limit}/{pending} phiếu trình sớm nhất."

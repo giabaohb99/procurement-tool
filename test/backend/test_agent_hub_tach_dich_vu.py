@@ -70,6 +70,37 @@ def test_chu_ky_may_noi_may(monkeypatch):
         agent_signature.sign_headers("GET", "/x")
 
 
+def test_chu_ky_gom_header_ngu_canh(monkeypatch):
+    """duoc-CR-757: kênh AI + cờ chat riêng nằm trong chuỗi ký — chép yêu cầu đã ký rồi thêm / đổi header là chữ ký sai."""
+    monkeypatch.setattr(settings, "AGENT_SERVICE_SECRET", SECRET)
+    path, body = "/api/agent-gw/tools/run", b'{"a":1}'
+    plain = agent_signature.sign_headers("POST", path, body, user_id=7)
+    assert agent_signature.verify("POST", path, body, plain)[0]
+    assert agent_signature.verify("POST", path, body, {**plain, agent_signature.HEADER_PRIVATE_CHAT: ""})[0]   # rỗng = vắng
+    for forged in ({agent_signature.HEADER_PRIVATE_CHAT: "1"}, {agent_signature.HEADER_AI_CHANNEL: "1"},
+                   {"X-Agent-Private-Chat": "1"}):
+        assert agent_signature.verify("POST", path, body, {**plain, **forged})[1] == "chữ ký sai", forged
+    ctx = {agent_signature.HEADER_AI_CHANNEL: "2", agent_signature.HEADER_PRIVATE_CHAT: "1"}
+    signed = agent_signature.sign_headers("POST", path, body, user_id=7, context=ctx)
+    assert signed[agent_signature.HEADER_PRIVATE_CHAT] == "1" and agent_signature.verify("POST", path, body, signed)[0]
+    assert not agent_signature.verify("POST", path, body, {**signed, agent_signature.HEADER_AI_CHANNEL: "3"})[0]
+    assert not agent_signature.verify("POST", path, body, {k: v for k, v in signed.items()
+                                                           if k != agent_signature.HEADER_PRIVATE_CHAT})[0]
+
+
+def test_cong_b_tu_choi_header_ngu_canh_gia(db, seed, gateway):
+    from app.modules.agent_hub import erp
+
+    url = "http://erp.test/api/agent-gw/ping"
+    old = agent_signature.sign_headers("GET", "/api/agent-gw/ping", b"", seed.u_req_id)
+    assert erp.requests.request("GET", url, headers=old).status_code == 200
+    forged = {**old, agent_signature.HEADER_PRIVATE_CHAT: "1"}
+    assert erp.requests.request("GET", url, headers=forged).status_code == 401
+    good = agent_signature.sign_headers("GET", "/api/agent-gw/ping", b"", seed.u_req_id,
+                                        context={agent_signature.HEADER_PRIVATE_CHAT: "1"})
+    assert erp.requests.request("GET", url, headers=good).status_code == 200
+
+
 def test_dich_vu_ai_hoi_erp_dung_nguoi_dung_quyen(db, seed, gateway):
     from app.modules.agent_hub import erp
     from app.modules.user.model import User

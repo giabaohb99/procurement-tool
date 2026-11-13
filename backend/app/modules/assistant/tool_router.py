@@ -49,9 +49,14 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
                             "pending_procurement_approvals"}),
      r"duyet|phe duyet|trinh ky|luong duyet|cho ky"),
     #  duoc-CR-715 C: "nghỉ bù / đi làm ngày lễ, Chủ nhật / làm bù" kéo theo phiếu xin nghỉ bù; "ứng phép" về quỹ phép.
-    ("leave", frozenset({"my_leave_summary", "draft_leave_request", "draft_leave_comp_request"}),
+    #  duoc-CR-757: "lịch làm việc / giờ làm / đã nghỉ mấy ngày" về my_leave_summary (work_schedule, taken_by_type);
+    #  phép của người khác về employee_leave_summary.
+    ("leave", frozenset({"my_leave_summary", "draft_leave_request", "draft_leave_comp_request",
+                         "employee_leave_summary"}),
      r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|\bnb\d+|quy phep|ngay nghi|nghi bu"
-     r"|lam bu|(di )?lam (ngay )?(le|chu nhat|cn|thu bay|t7)\b|truc (le|tet|chu nhat)|ung phep|ngay cam nghi"),
+     r"|lam bu|(di )?lam (ngay )?(le|chu nhat|cn|thu bay|t7)\b|truc (le|tet|chu nhat)|ung phep|ngay cam nghi"
+     r"|lich lam viec|gio (lam|vao lam|tan lam)|ca lam|da nghi (bao nhieu|may|duoc|het|\d)|nghi (bao nhieu|may) ngay"
+     r"|nghi bao nhieu|ngay da nghi|so ngay nghi|nghi (it|nhieu) nhat"),
     ("work", frozenset({"my_work_tasks", "draft_work_task", "draft_work_plan"}),
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào "work" (lõi bot coi nhóm thiếu công cụ là
@@ -74,6 +79,9 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("jobs", frozenset({"background_jobs"}),
      r"viec (nen|chay ngam)|chay ngam|tac vu nen|\bcelery\b|\bbeat\b|sao luu|backup|dong bo .{0,20}(loi|chay)"
      r"|don (du lieu|nhat ky)|job"),
+    #  duoc-CR-757: lương của CHÍNH người hỏi (tool tự từ chối ở kênh chung; lương người khác không có công cụ nào). Mẫu
+    #  này KHÔNG dùng: gập dấu thì "luồng" = "lương" — nhóm khớp bằng `RAW_MATCHERS` trên chữ còn dấu.
+    ("salary", frozenset({"my_salary"}), r"(?!)"),
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),
@@ -113,9 +121,20 @@ _COMPILED = tuple((name, tools, re.compile(pattern)) for name, tools, pattern in
 ALL_GROUPED = frozenset().union(CORE, *(tools for _n, tools, _p in GROUPS))
 
 
+def _mentions_salary(text: str) -> bool:
+    from app.modules.assistant.tools.salary_privacy import mentions_salary
+
+    return mentions_salary(text)
+
+
+#  Nhóm phải so trên chữ CÒN DẤU (gập dấu làm hai từ khác nghĩa trùng nhau).
+RAW_MATCHERS = {"salary": _mentions_salary}
+
+
 def groups_for(text: str) -> list[str]:
     t = " " + fold(text or "") + " "
-    return [name for name, _tools, rx in _COMPILED if rx.search(t)]
+    return [name for name, _tools, rx in _COMPILED
+            if (RAW_MATCHERS[name](text or "") if name in RAW_MATCHERS else rx.search(t))]
 
 
 def groups_of_tools(names) -> list[str]:

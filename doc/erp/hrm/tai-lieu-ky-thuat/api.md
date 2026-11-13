@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 0.2 (13/11/2026: phần Kiêm nhiệm sửa theo hai loại dòng — duoc-CR-756) · 0.1 |
+| Bản | 0.4 (13/11/2026: đường Trưởng phòng gán lịch riêng + ô chọn người, bậc Phòng ban của quỹ phép — duoc-CR-757 lượt 2) · 0.3 (13/11/2026: lịch làm việc của phòng ban + hai công cụ AI tra phép — duoc-CR-757) · 0.2 (13/11/2026: phần Kiêm nhiệm sửa theo hai loại dòng — duoc-CR-756) · 0.1 |
 | Ngày | 13/11/2026 |
 | Người phụ trách | tai-lieu-kiem-thu (Agent 2) |
-| Trạng thái | Nháp — mục 1 dựng bằng máy cho cả phân hệ; mục 2–5 mới viết phần Kiêm nhiệm, các phần khác chưa viết |
-| CR liên quan | duoc-CR-755, duoc-CR-756 |
+| Trạng thái | Nháp — mục 1 dựng bằng máy cho cả phân hệ; mục 2–5 mới viết phần Kiêm nhiệm và Lịch làm việc của phòng ban, các phần khác chưa viết |
+| CR liên quan | duoc-CR-755, duoc-CR-756, duoc-CR-757 |
 
 **Tra tham số đầy đủ:** trang `/api/docs` (Swagger do FastAPI sinh từ mã — chỉ mở ở dev `https://deverp.degoholding.vn/api/docs` và local `http://localhost:8000/api/docs`; prod tắt), nhóm (tag) `employee`, `employee-work-history`, `employee-change-request`, `job-position-roles`, `leave`, `work_schedule`, `labor-contract`, `labor-contract-template`, `labor-contract-variable`, `labor_contract`, `labor_register`, `labor_usage_report`, `meeting-room`, `report`. Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, luật nghiệp vụ, ai gọi**.
 
@@ -255,13 +255,15 @@ Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_regi
 | GET | `/api/work-moves/summary/export` | work moves export | `báo cáo 24`, `employee.export` |  | tự dò: v2 `report` |
 | GET | `/api/work-moves/summary/rows` | work moves rows | `báo cáo 24`, `employee.read` |  | tự dò: v2 `report` |
 | GET | `/api/work-schedule-assignments` | list assignments | `work_schedule.read` | `apply_scope`, `scope_condition` | tự dò: v2 `hr` |
-| POST | `/api/work-schedule-assignments` | create assignment | `work_schedule.create` |  | tự dò: v2 `hr` |
+| POST | `/api/work-schedule-assignments` | Gán một mẫu lịch cho hệ thống / pháp nhân / phòng ban / nhân sự. | đăng nhập | cổng `require_assignment_action` (máy chưa dò được): `work_schedule.create` HOẶC `work_schedule_personal.create`; đường Trưởng phòng chỉ cấp Nhân sự, người trong phạm vi khóa, không phải mình, từ hôm nay — `03-lich-lam-viec.md` §20.2 | tự dò: v2 `hr` |
+| GET | `/api/work-schedule-assignments/tools/assignable-employees` | Danh sách nhân sự ĐANG LÀM mà người gọi gán được lịch riêng cho — nguồn của ô chọn đối tượng ở màn gán lịch. | đăng nhập | kiểm trong hàm: `work_schedule.create` → phạm vi `employee.read`; chỉ `work_schedule_personal.create` → phạm vi khóa đó trừ chính mình; thiếu cả hai 403 | tự dò: v2 `hr` |
 | GET | `/api/work-schedule-assignments/{oid}` | get assignment | `work_schedule.read` |  |  |
-| PATCH | `/api/work-schedule-assignments/{oid}` | update assignment | `work_schedule.write` |  |  |
-| DELETE | `/api/work-schedule-assignments/{oid}` | delete assignment | `work_schedule.delete` |  |  |
+| PATCH | `/api/work-schedule-assignments/{oid}` | Sửa một dòng gán lịch (mẫu lịch, khoảng ngày, ghi chú, đích). | đăng nhập | `work_schedule.write` (`get_scoped` write) HOẶC `work_schedule_personal.write`: chỉ dòng tự gán, dòng đã bắt đầu chỉ đổi Đến ngày — §20.2 |  |
+| DELETE | `/api/work-schedule-assignments/{oid}` | Xóa một dòng gán lịch (và tự mở lại lịch cũ nếu dòng này từng đóng nó). | đăng nhập | `work_schedule.delete` HOẶC `work_schedule_personal.delete`: chỉ dòng tự gán, CHƯA bắt đầu — §20.2 |  |
 | GET | `/api/work-schedules` | list schedules | `work_schedule.read` | `apply_scope` | tự dò: v2 `hr`, v2 dùng chung |
 | POST | `/api/work-schedules` | create schedule | `work_schedule.create` |  | tự dò: v2 `hr`, v2 dùng chung |
 | GET | `/api/work-schedules/tools/effective` | Lịch làm việc hiệu lực của một nhân sự vào `on_date` (mặc định hôm nay). | `employee.read` | `get_scoped` | tự dò: v2 `hr` |
+| GET | `/api/work-schedules/tools/effective-department` | Lịch làm việc hiệu lực của một phòng ban vào `on_date` (mặc định hôm nay theo giờ VN) — duoc-CR-757. | `department.read` | `get_scoped` phòng ban; ngoài phạm vi và không tồn tại cùng trả 404 | v2 `hr`: tab Lịch làm việc của trang phòng ban |
 | GET | `/api/work-schedules/tools/roster` | "Ai làm / ai nghỉ" từng ngày — lưới nhân sự × ngày (tối đa 42 ngày, phân trang theo người). | `employee.read` |  | tự dò: v2 `hr` |
 | GET | `/api/work-schedules/{oid}` | get schedule | `work_schedule.read` |  |  |
 | PATCH | `/api/work-schedules/{oid}` | update schedule | `work_schedule.write` |  |  |
@@ -269,7 +271,7 @@ Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_regi
 
 ## 2. Dữ liệu vào / ra chính
 
-Mới viết phần **Kiêm nhiệm** (duoc-CR-755, hai loại dòng ở duoc-CR-756). Luật nghiệp vụ đầy đủ: [`../01-ho-so-nhan-su.md` §7.18](../01-ho-so-nhan-su.md).
+Mới viết phần **Kiêm nhiệm** (duoc-CR-755, hai loại dòng ở duoc-CR-756) và **Lịch làm việc của phòng ban + công cụ AI tra phép** (duoc-CR-757). Luật nghiệp vụ đầy đủ: [`../01-ho-so-nhan-su.md` §7.18](../01-ho-so-nhan-su.md), [`../03-lich-lam-viec.md` §19](../03-lich-lam-viec.md).
 
 | Đường | Trường | Ý nghĩa / luật |
 |---|---|---|
@@ -287,10 +289,16 @@ Mới viết phần **Kiêm nhiệm** (duoc-CR-755, hai loại dòng ở duoc-CR
 | `GET /api/auth/me` | `kiem_nhiem[]` · `concurrents[]` | `kiem_nhiem` = câu *Phòng X (Chức vụ)* / *Công ty B (Chức vụ)* của mọi dòng đang hiệu lực (kể cả tắt công tắc); `concurrents` có cấu trúc (`kind`, `kind_label`, `department_id`, `company_id`, tên, `position_label`, `counts_scope`) cho popup phạm vi |
 | `GET /api/employees/{eid}/departments` | `extra_department_ids` | Giữ cho tương thích: = phòng của dòng loại 1 đang hiệu lực. Đường `PUT` cùng tên ĐÃ BỎ |
 | MCP `employee_lookup` | `concurrent_roles[]` | Câu *Phòng X (Chức vụ)* / *Công ty B (Chức vụ)* của các dòng đang hiệu lực; rỗng = không kiêm nhiệm. Bộ lọc người không đổi |
+| `GET /api/work-schedules/tools/effective-department` | `department_id` (bắt buộc, ≥ 1) · `on_date` (tùy chọn, mặc định hôm nay theo giờ VN) | Lịch đang áp cho CẢ PHÒNG (không tính lịch riêng của từng nhân sự). Trả đúng các khóa của `/tools/effective` (`schedule_id`, `schedule_name`, `is_fallback`, `days[7]`, `weekly_workdays`, `level`, `level_label`, `target_name`, `assignment_id`, `effective_from`, `effective_to`) cộng `department_id`, `department_name`, `company_id`, `assignments[]`. `level` là mã `WorkScheduleLevel`: 3 Phòng ban · 2 Pháp nhân · 1 Toàn hệ thống; `0` khi `is_fallback = true` (chưa ai gán, dùng lịch mặc định T2–T7). Phòng dùng chung (`company_id = 0`) không có cấp pháp nhân để kế thừa. `assignments[]` = mọi dòng gán CẤP PHÒNG BAN của phòng này, mới nhất trước, cùng khuôn dòng của `/api/work-schedule-assignments` (có `is_current`). Gác `department.read`, KHÔNG đòi `work_schedule.read` |
+| `POST / PATCH /api/work-schedule-assignments` (đường Trưởng phòng) | thân như đường Nhân sự | (duoc-CR-757 lượt 2) Khi người gọi THIẾU khóa `work_schedule.<hành động>` mà có `work_schedule_personal.<hành động>`: `target_level` phải là 4 (Nhân sự); `target_id` trong phạm vi khóa (đo trên hồ sơ nhân sự), khác chính mình; `effective_from` ≥ hôm nay (giờ VN) khi tạo / khi đổi; chỉ sửa dòng `created_by` = mình; dòng đã bắt đầu chỉ nhận `effective_to` (≥ hôm qua hoặc null) + `note`; dòng có `replaces_previous` không đổi được đích / ngày bắt đầu. Đổi CHỈ `effective_to` của dòng đã thay lịch (cả hai đường): dòng nối lại lịch cũ tự tạo / dời / xóa cho liền mạch, giữ `created_by` của dòng gốc |
+| `GET /api/work-schedule-assignments` (+ chi tiết, + kết quả POST / PATCH) | `replaces_previous` · `created_by` | (lượt 2) `replaces_previous` = dòng này lúc tạo đã tự đóng một dòng khác (khóa đích + ngày bắt đầu ở đường Trưởng phòng); `created_by` = id TÀI KHOẢN người gán (giao diện ẩn Sửa / Xóa với dòng Trưởng phòng không tự gán). Một truy vấn cho cả trang |
+| `GET /api/work-schedule-assignments/tools/assignable-employees` | `q` · `page` · `page_size` → `{total, items: [{id, code, full_name, department_name}]}` | (lượt 2) Chỉ người đang làm, xếp họ tên, `q` tìm mã / họ tên không dấu (gập dấu trong bộ nhớ), hai truy vấn cố định |
+| MCP / Trợ lý `my_leave_summary` | `work_schedule` · `taken_by_type[]` · `taken_total_days` · `upcoming_total_days` · `pending_total_days` | (duoc-CR-757) `work_schedule` = lịch đang áp hôm nay của chính người hỏi: `schedule_name`, `is_fallback`, `level_label`, `target_name`, `effective_from`, `effective_to`, `weekly_workdays`, `days[]` (nhãn thứ, loại ngày, giờ). `taken_by_type[]` = mỗi loại nghỉ một dòng `leave_type`, `counts_balance`, `approved_days` (đơn đã duyệt có ngày bắt đầu từ hôm nay trở về trước — đã / đang nghỉ, tính cả đơn), `approved_upcoming_days` (đã duyệt, ngày bắt đầu sau hôm nay), `pending_days` (đơn chờ duyệt), GỒM CẢ loại không trừ quỹ. `taken_total_days` = tổng `approved_days` (con số trả lời *đã nghỉ mấy ngày*), `upcoming_total_days`, `pending_total_days` tương ứng. Cả đơn tính vào năm của ngày bắt đầu nghỉ, như sổ quỹ — đơn vắt hai năm có thể lệch báo cáo Tình hình nghỉ phép (chia theo ngày thật). Năm mặc định = năm hiện tại theo giờ VN |
+| MCP / Trợ lý `employee_leave_summary` | tham số `employee` (mã / một phần họ tên) hoặc `department` (ID / một phần tên) · `year` · `limit` (mặc định 20, trần 50) | (duoc-CR-757) Công cụ CHỈ ĐỌC cho Nhân sự / quản lý. Gác `leave_balance.read`; người trả về = phạm vi `employee.read` GIAO phạm vi `leave_balance` áp lên hồ sơ (đúng như màn Quỹ phép năm, không rộng hơn); tra theo phòng chỉ lấy người đang làm. Mỗi người: `code`, `full_name`, `department_name`, `is_active`, `work_schedule` (tên lịch + cấp nguồn), `balances[]` (`remaining_days` từ `available_days_map`; rỗng = chưa cấp quỹ năm đó hoặc dòng quỹ ngoài phạm vi), `taken_by_type[]` + `taken_total_days` + `upcoming_total_days` + `pending_total_days` (cùng nghĩa với `my_leave_summary`). **Ngày đã nghỉ đi theo phạm vi `leave_request`** của người hỏi, không theo phạm vi quỹ phép: thiếu `leave_request.read` thì `taken_by_type` rỗng, có thì lọc bằng `scope_condition(LeaveRequest, ...)` trong cùng câu GROUP BY. Tham số `department` nhận ID hoặc một phần tên, bỏ được chữ đầu *phòng / phòng ban / ban / bộ phận / P.* (gõ *phòng Kế toán* vẫn khớp). Không lương, không trường nhạy cảm. Rỗng = không có ai khớp trong phạm vi người hỏi. Có `has_more` + `note` khi vượt `limit`. Số truy vấn cố định bất kể số người |
 
 ## 3. Lỗi riêng của phân hệ
 
-Mới viết phần **Kiêm nhiệm**.
+Mới viết phần **Kiêm nhiệm** và **Lịch làm việc của phòng ban**.
 
 | Mã HTTP | Khi nào | Câu báo |
 |---|---|---|
@@ -311,6 +319,12 @@ Mới viết phần **Kiêm nhiệm**.
 | 409 | Hai giai đoạn cùng phòng (loại 1) / cùng công ty (loại 2) chồng nhau | *Giai đoạn kiêm nhiệm chồng với một dòng khác của cùng phòng ban — …* / *… cùng công ty — sửa dòng cũ hoặc đổi ngày.* |
 | 422 | `kind` lạ hoặc gửi sai ô theo loại; PATCH gửi `kind`; `to_date` < `from_date`; gửi `null` cho ô không được null; khóa lạ | *Dòng loại Phòng ban phải chọn phòng ban* · *Dòng loại Công ty phải chọn công ty* · *Đến ngày phải sau hoặc bằng từ ngày* |
 | 422 | `GET /api/employee-concurrents` thiếu cả `department_id` lẫn `company_id` | *Cần truyền phòng ban (department_id) hoặc công ty (company_id) cần xem* |
+| 403 | Đường Trưởng phòng: cấp khác Nhân sự · chính mình · dòng người khác gán · sửa trường khác Đến ngày / Ghi chú ở dòng đã bắt đầu · xóa dòng đã bắt đầu | *Bạn chỉ được gán lịch làm việc riêng (cấp Nhân sự) cho nhân sự trong phạm vi của mình* · *Bạn không được tự gán, sửa hay xóa lịch làm việc riêng của chính mình* · *Lịch này do Nhân sự hoặc người khác gán, bạn chỉ sửa được lịch do chính mình gán* · *Lịch đã bắt đầu, chỉ đặt được ngày kết thúc* · *Lịch đã bắt đầu, không xóa được — hãy đặt ngày kết thúc* |
+| 400 | Đường Trưởng phòng: người ngoài phạm vi khi tạo / đổi đích · đổi đích / ngày bắt đầu của dòng đã thay lịch trước đó | *Đối tượng được gán lịch không tồn tại* · *Lịch này đã thay lịch trước đó, muốn đổi hãy xóa rồi tạo lại* |
+| 422 | Đường Trưởng phòng: ngày hiệu lực trước hôm nay · Đến ngày của dòng đã bắt đầu trước hôm qua | *Ngày hiệu lực phải từ hôm nay trở đi* · *Ngày kết thúc của lịch đã bắt đầu phải từ hôm qua trở đi* |
+| 400 | Cả hai đường: đổi Đến ngày của dòng đã thay lịch mà chồng hết khoảng lịch cũ được nối lại | *Ngày kết thúc mới chồng hết khoảng lịch cũ được nối lại; hãy xóa dòng nối lại hoặc chọn ngày sớm hơn* |
+| 404 | `GET /api/work-schedules/tools/effective-department`: phòng ngoài phạm vi `department.read` hoặc không tồn tại | *Không tìm thấy* |
+| 422 | `GET /api/work-schedules/tools/effective-department`: thiếu `department_id` / `department_id` < 1, hoặc năm của `on_date` ngoài dải cho phép | *Ngày phải nằm trong năm …* |
 
 ## 4. Bộ lọc danh sách
 
@@ -325,5 +339,7 @@ Mới viết phần **Kiêm nhiệm**.
 
 | Ngày | CR | Đổi gì (thêm / sửa / bỏ đường) |
 |---|---|---|
+| 13/11/2026 | duoc-CR-757 lượt 2 | Ba đường ghi `/api/work-schedule-assignments` nhận thêm khóa `work_schedule_personal` (đường Trưởng phòng); thêm `GET /api/work-schedule-assignments/tools/assignable-employees`; dòng gán trả thêm `replaces_previous`, `created_by`. Bậc `dept` của `leave_balance` lọc qua hồ sơ nhân sự (`dept_via_employee`) — mọi đường quỹ phép hẹp theo. Công cụ AI `my_salary` mới (ẩn ở MCP) |
+| 13/11/2026 | duoc-CR-757 | Thêm `GET /api/work-schedules/tools/effective-department` (tab **Lịch làm việc** của trang phòng ban). Công cụ AI: `my_leave_summary` thêm `work_schedule`, `taken_by_type`, `taken_total_days`, `pending_total_days`; công cụ mới `employee_leave_summary` (chỉ đọc, `leave_balance.read`, có ở cổng MCP) |
 | 13/11/2026 | duoc-CR-756 | Kiêm nhiệm hai loại dòng: `ConcurrentIn` thêm `kind` bắt buộc (ô theo loại), `ConcurrentPatch` không đổi loại; `ConcurrentOut`, `/api/org-chart`, `/api/auth/me` thêm `kind`, `kind_label`; `GET /api/employee-concurrents` thêm `company_id` (ngang hàng `department_id`, cần ít nhất một) và `kind`; `GET /api/employees` thêm `concurrent_roles: [{kind, text}]`; `PATCH /api/employees/{id}` bỏ `keep_concurrent_ids`, thêm `keep_old_company_concurrent`. Hồ sơ quyền bỏ `concurrent_pairs`, thêm `concurrent_companies` |
 | 12/11/2026 | duoc-CR-755 | Thêm `GET/POST /api/employees/{eid}/concurrents`, `PATCH/DELETE /api/employees/{eid}/concurrents/{cid}`, `GET /api/employee-concurrents`; `PATCH /api/employees/{id}` thêm `end_old_company_concurrent`, `keep_concurrent_ids`; `/api/org-chart` và `/api/auth/me` thêm `concurrents`; MCP `employee_lookup` thêm `concurrent_roles`. Bỏ `PUT /api/employees/{eid}/departments` |

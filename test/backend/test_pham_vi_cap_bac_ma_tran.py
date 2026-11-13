@@ -109,6 +109,8 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
             dept_cols.append(f["dept_name"])
         if f.get("handler_dept") and dept_ids:
             dept_cols.append(f["handler_dept"])
+        if f.get("dept_via_employee") and dept_ids:
+            dept_cols.append(f["dept_via_employee"])   # duoc-CR-757: phòng qua hồ sơ nhân sự (quỹ phép)
         #  Đặt xe từng `return` TRƯỚC `_narrow_to_dept` nên `dept_proc` == `assigned`;
         #  bao-CR-446 đưa nó qua cùng cửa với ba chứng từ thu mua — không còn nhánh riêng.
         if not dept_cols:
@@ -132,20 +134,22 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
     if scope == "dept":
         #  `scoping.py:365-378` AND ba mảnh, theo đúng thứ tự này.
         cols = []
-        if f.get("company") and company_id:
+        #  duoc-CR-757: entity `dept_via_employee` ràng công ty HIỆN TẠI của nhân sự trong truy vấn con, không ràng cột
+        #  công ty (ảnh chụp) của dòng — nên cột `company_id` không xuất hiện ở bậc `dept`.
+        if f.get("company") and company_id and not f.get("dept_via_employee"):
             cols.append(f["company"])
-        if f.get("dept_id") or f.get("dept_name"):
+        if f.get("dept_id") or f.get("dept_name") or f.get("dept_via_employee"):
             if not has_dept:
                 #  `scoping.py:373` — chặn, nhưng KHÔNG qua `_chan` nên KHÔNG có
                 #  dòng log nào. Xem `test_dept_chan_nguoi_chua_gan_phong_ma_khong_ghi_log`.
                 return BLOCK, (), False
-            cols.append(f["dept_id"] if f.get("dept_id") else f["dept_name"])
+            cols.append(f.get("dept_id") or f.get("dept_name") or f["dept_via_employee"])
         elif f.get("owner"):
             cols.append(f["owner"])
         if not cols:
             return BLOCK, (), True           # `_chan` — `scoping.py:377`
-        #  Entity chỉ có chiều pháp nhân (vd. `inventory`, `leave_balance`,
-        #  `company`) thì bậc `dept` sinh ra ĐÚNG điều kiện của bậc `company` —
+        #  Entity chỉ có chiều pháp nhân (vd. `inventory`, `company`) thì bậc `dept`
+        #  sinh ra ĐÚNG điều kiện của bậc `company` (`leave_balance` đã tách từ duoc-CR-757) —
         #  xem `test_dept_bang_company_voi_entity_khong_co_chieu_phong_ban`.
         return COND, tuple(cols), False
 
@@ -271,9 +275,11 @@ def test_dept_chan_nguoi_chua_gan_phong_ma_khong_ghi_log(db, world, caplog):
 
 
 def test_dept_bang_company_voi_entity_khong_co_chieu_phong_ban(db, world):
-    """Ba entity mà bậc "Phòng ban" rộng ĐÚNG BẰNG bậc "Công ty" — ghim lại.
+    """Hai entity mà bậc "Phòng ban" rộng ĐÚNG BẰNG bậc "Công ty" — ghim lại.
 
-    `inventory` · `leave_balance` · `company` chỉ khai chiều pháp nhân. Nhánh
+    `inventory` · `company` chỉ khai chiều pháp nhân. (`leave_balance` ĐÃ TÁCH khỏi nhóm này ở duoc-CR-757:
+    khai `dept_via_employee` nên bậc phòng chỉ trúng người của phòng mình — xem
+    các bài `test_quy_phep_bac_phong_*` ở `test_truong_phong_gan_lich_rieng_cr757.py`.) Nhánh
     `dept` (`scoping.py:365-378`) gom được mỗi điều kiện pháp nhân rồi trả về —
     không chặn, không log. Người khai quyền đặt "Phòng ban" tưởng đã thu hẹp,
     thực tế cấp đúng bằng "Công ty": toàn bộ tồn kho, toàn bộ quỹ phép của pháp
@@ -286,7 +292,7 @@ def test_dept_bang_company_voi_entity_khong_co_chieu_phong_ban(db, world):
 
     a1 = world.actor("a1")
     profile = a1.profile()
-    for entity in ("inventory", "leave_balance", "company"):
+    for entity in ("inventory", "company"):
         model = model_of(entity)
         theo_phong = _role_scope_cond(model, entity, "dept", a1.user, profile)
         theo_cty = _role_scope_cond(model, entity, "company", a1.user, profile)

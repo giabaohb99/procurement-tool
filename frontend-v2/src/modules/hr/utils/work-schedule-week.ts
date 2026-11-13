@@ -139,6 +139,15 @@ export function sumWeeklyWorkdays(days: unknown): number {
   return fillWeek(days).reduce((total, day) => total + dayCredit(day.day_kind), 0)
 }
 
+/**
+ * Số ngày công/tuần của một lịch ĐANG ÁP: có ngày hợp lệ thì tự cộng từ các ngày, không có ngày
+ * nào (dữ liệu hỏng) thì tin số `weekly_workdays` backend gửi kèm, vắng nốt thì 0.
+ */
+export function resolveWeeklyWorkdays(schedule: { days: unknown; weekly_workdays?: number }): number {
+  if (presentWeekdays(schedule.days).size > 0) return sumWeeklyWorkdays(schedule.days)
+  return schedule.weekly_workdays ?? 0
+}
+
 /** 5.5 -> "5,5" (kiểu Việt, không phụ thuộc ICU của môi trường chạy). */
 export function formatWorkdays(value: number): string {
   return String(value).replace('.', ',')

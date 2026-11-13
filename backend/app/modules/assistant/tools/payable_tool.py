@@ -537,6 +537,16 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
     if req is None:
         return {"error": f"Không tìm thấy phiếu {code} trong phạm vi dữ liệu người hỏi "
                          "được xem — nói thẳng, đừng bịa."}
+    #  duoc-CR-757: YCTT thanh toán nghỉ phép — tiền = lương ngày × số ngày. Trợ lý chỉ đọc số cho chính người nhận ở
+    #  chat riêng; người khác (kể cả kế toán có quyền xem phiếu) chỉ được trạng thái + link, số xem trên màn ERP.
+    from .salary_privacy import POLICY_SENTENCE, hides_payment_money
+
+    if hides_payment_money(ctx, req):
+        return {"code": req.code, "status": req.status, "status_label": _label("payment_request", req.status),
+                "source_type": "Thanh toán nghỉ phép", "request_date": req.request_date,
+                "url": f"/finance/payment-requests/{req.id}", "money_hidden": True,
+                "note": f"Phiếu thanh toán nghỉ phép gắn với lương của một người — trợ lý không đọc số tiền. "
+                        f"{POLICY_SENTENCE} Số tiền xem trên màn ERP nếu bạn có quyền."}
 
     lines = (ctx.db.query(PaymentRequestLine)
              .filter(PaymentRequestLine.request_id == req.id)

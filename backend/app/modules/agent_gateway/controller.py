@@ -49,6 +49,10 @@ def _take_ai_channel(request: Request) -> None:
     raw = (request.headers.get(AI_CHANNEL_HEADER) or "").strip()
     if raw.isdigit() and int(raw) in AI_CHANNEL_LABELS:
         set_ai_channel(int(raw))
+    #  duoc-CR-757: cờ "chat riêng đã liên kết" (luật lương) — cũng chỉ tin sau khi chữ ký đúng; vắng = không riêng.
+    from app.modules.assistant.private_chat import PRIVATE_CHAT_HEADER, set_private_chat
+
+    set_private_chat((request.headers.get(PRIVATE_CHAT_HEADER) or "").strip() == "1")
 
 
 async def gateway_user(request: Request, db: Session = Depends(get_db)):

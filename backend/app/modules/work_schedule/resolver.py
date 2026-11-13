@@ -116,10 +116,16 @@ def schedule_name_on(db: Session, employee, on_date: date) -> str:
     return sched.name if sched else FALLBACK_NAME
 
 
-def _winner(db: Session, employee, on_date: date):
-    pairs = _candidate_pairs(int(employee.id or 0), int(employee.department_id or 0),
-                             int(employee.company_id or 0))
+def _winner_for(db: Session, employee_id: int, department_id: int, company_id: int, on_date: date):
+    """Dòng gán thắng cho một bộ (nhân sự, phòng, pháp nhân) — `employee_id = 0` là hỏi cho cả PHÒNG
+    (duoc-CR-757): chỉ còn phòng > pháp nhân > hệ thống, cùng luật `_pick`."""
+    pairs = _candidate_pairs(employee_id, department_id, company_id)
     return _pick(_group(_load_rows(db, pairs, on_date, on_date)), on_date)
+
+
+def _winner(db: Session, employee, on_date: date):
+    return _winner_for(db, int(employee.id or 0), int(employee.department_id or 0),
+                       int(employee.company_id or 0), on_date)
 
 
 def _hhmm(v: time | None) -> str | None:
@@ -133,9 +139,8 @@ def spec_to_day_out(weekday: int, spec: DaySpec) -> dict:
             "lunch_start": _hhmm(spec.lunch_start), "lunch_end": _hhmm(spec.lunch_end)}
 
 
-def effective_for_employee(db: Session, employee, on_date: date) -> dict:
-    """Lịch hiệu lực của một nhân sự vào `on_date` — cho thẻ "Lịch làm việc" ở hồ sơ."""
-    hit = _winner(db, employee, on_date)
+def _effective_payload(db: Session, hit) -> dict:
+    """Khuôn trả về của "lịch hiệu lực" — MỘT chỗ dựng cho cả nhân sự lẫn phòng ban (kể cả nhánh mặc định)."""
     sched = db.get(WorkSchedule, hit.schedule_id) if hit else None
     if hit is None or sched is None:
         specs = list(FALLBACK_WEEK)
@@ -156,3 +161,28 @@ def effective_for_employee(db: Session, employee, on_date: date) -> dict:
             "target_name": names.get((hit.target_level, hit.target_id), ""),
             "assignment_id": hit.id, "effective_from": hit.effective_from,
             "effective_to": hit.effective_to}
+
+
+def effective_for_employee(db: Session, employee, on_date: date) -> dict:
+    """Lịch hiệu lực của một nhân sự vào `on_date` — cho thẻ "Lịch làm việc" ở hồ sơ."""
+    return _effective_payload(db, _winner(db, employee, on_date))
+
+
+def effective_for_department(db: Session, department, on_date: date) -> dict:
+    """Lịch hiệu lực của cả PHÒNG vào `on_date` (duoc-CR-757) — tab "Lịch làm việc" ở trang phòng ban.
+
+    Cùng khóa `effective_for_employee` + `department_id / department_name / company_id / assignments`.
+    `level` cho biết lịch lấy từ đâu (3 Phòng ban · 2 Pháp nhân · 1 Toàn hệ thống · 0 mặc định). Phòng dùng chung
+    (`company_id = 0`) không có cấp pháp nhân để kế thừa — nhân sự của nó vẫn có thể theo lịch pháp nhân riêng của họ.
+    `assignments` = mọi dòng gán CẤP PHÒNG BAN của phòng này (mới nhất trước), khuôn `serialize_many`.
+    """
+    company_id = int(department.company_id or 0)
+    data = _effective_payload(db, _winner_for(db, 0, int(department.id), company_id, on_date))
+    rows = (db.query(WorkScheduleAssignment)
+            .filter(WorkScheduleAssignment.target_level == int(WorkScheduleLevel.DEPARTMENT),
+                    WorkScheduleAssignment.target_id == int(department.id))
+            .order_by(WorkScheduleAssignment.effective_from.desc(), WorkScheduleAssignment.id.desc())
+            .all())
+    from .assignment_service import serialize_many
+    return {**data, "department_id": int(department.id), "department_name": department.name or "",
+            "company_id": company_id, "assignments": serialize_many(db, rows)}

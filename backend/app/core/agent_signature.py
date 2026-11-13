@@ -3,7 +3,11 @@
 Cùng khuôn với `core/sync_signature.py` (HMAC-SHA256, lệch giờ quá 5 phút thì từ chối, so bằng `compare_digest`) nhưng
 khóa riêng `AGENT_SERVICE_SECRET` ở `.env` hai đầu, và ký THÊM danh tính người dùng:
 
-    HMAC(secret, "<ts>.<method>.<path>.<user_id>.<sha256(body)>")
+    HMAC(secret, "<ts>.<method>.<path>.<user_id>.<sha256(body)>.<kênh AI>|<chat riêng>")
+
+duoc-CR-757: hai header ngữ cảnh `X-Agent-Ai-Channel` (ai-CR-230) và `X-Agent-Private-Chat` (luật lương) nằm TRONG chuỗi
+ký — chép lại một yêu cầu đã ký rồi thêm / đổi hai header đó là chữ ký sai. Vắng header = ký chuỗi rỗng. Hai đầu phải
+lên cùng một đợt (chuỗi ký đổi khuôn).
 
 `X-Agent-User` = id tài khoản ERP mà lượt gọi chạy DƯỚI QUYỀN. Chiều AI → ERP: ERP tra tài khoản đó, kiểm quyền và lọc
 phạm vi như mọi API khác — dịch vụ AI không có "khóa thần". Chiều ERP → AI (chuyển tiếp web): ERP đã xác thực JWT rồi mới
@@ -20,6 +24,9 @@ from app.core.config import settings
 HEADER_TS = "X-Agent-Ts"
 HEADER_SIGN = "X-Agent-Sign"
 HEADER_USER = "X-Agent-User"
+HEADER_AI_CHANNEL = "x-agent-ai-channel"      # cùng giá trị `core.request_context.AI_CHANNEL_HEADER`
+HEADER_PRIVATE_CHAT = "x-agent-private-chat"  # cờ chat riêng đã liên kết (`assistant.private_chat`)
+SIGNED_CONTEXT_HEADERS = (HEADER_AI_CHANNEL, HEADER_PRIVATE_CHAT)
 MAX_SKEW_SEC = 300
 
 
@@ -28,18 +35,38 @@ def body_digest(body: bytes | str) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def build(secret: str, ts: str, method: str, path: str, user_id: int | str, body: bytes | str) -> str:
-    payload = f"{ts}.{method.upper()}.{path}.{int(user_id or 0)}.{body_digest(body)}".encode("utf-8")
+def _header(headers, name: str) -> str:
+    """Đọc header không phân biệt hoa thường — `headers` có thể là `Headers` của Starlette hoặc dict thường."""
+    if not headers:
+        return ""
+    value = headers.get(name)
+    if value is None and isinstance(headers, dict):
+        value = next((v for k, v in headers.items() if str(k).lower() == name.lower()), None)
+    return str(value or "").strip()
+
+
+def context_material(headers) -> str:
+    """Phần ngữ cảnh của chuỗi ký: giá trị hai header ngữ cảnh, nối bằng `|` (vắng = rỗng)."""
+    return "|".join(_header(headers, h) for h in SIGNED_CONTEXT_HEADERS)
+
+
+def build(secret: str, ts: str, method: str, path: str, user_id: int | str, body: bytes | str,
+          context: str = "|") -> str:
+    payload = f"{ts}.{method.upper()}.{path}.{int(user_id or 0)}.{body_digest(body)}.{context}".encode("utf-8")
     return hmac.new((secret or "").encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
 
-def sign_headers(method: str, path: str, body: bytes | str = b"", user_id: int = 0) -> dict[str, str]:
-    """Bộ header để GỬI ĐI. Chưa khai khóa thì ném lỗi ngay thay vì ký bằng chuỗi rỗng."""
+def sign_headers(method: str, path: str, body: bytes | str = b"", user_id: int = 0,
+                 context: dict[str, str] | None = None) -> dict[str, str]:
+    """Bộ header để GỬI ĐI (kèm luôn các header ngữ cảnh khác rỗng trong `context`, đã ký). Chưa khai khóa thì ném lỗi
+    ngay thay vì ký bằng chuỗi rỗng."""
     secret = settings.AGENT_SERVICE_SECRET
     if not secret:
         raise ValueError("Chưa khai AGENT_SERVICE_SECRET — hai đầu ERP và dịch vụ AI phải cùng một khóa")
+    extra = {h: str(_header(context, h)) for h in SIGNED_CONTEXT_HEADERS if _header(context, h)}
     ts = str(int(time.time()))
-    return {HEADER_TS: ts, HEADER_SIGN: build(secret, ts, method, path, user_id, body), HEADER_USER: str(int(user_id or 0))}
+    return {HEADER_TS: ts, HEADER_SIGN: build(secret, ts, method, path, user_id, body, context_material(extra)),
+            HEADER_USER: str(int(user_id or 0)), **extra}
 
 
 def verify(method: str, path: str, body: bytes, headers, *, now: float | None = None) -> tuple[bool, str, int]:
@@ -56,7 +83,7 @@ def verify(method: str, path: str, body: bytes, headers, *, now: float | None = 
         return False, "chữ ký quá hạn (lệch giờ hơn 5 phút)", 0
     if not user.lstrip("-").isdigit():
         return False, "danh tính không hợp lệ", 0
-    expected = build(secret, ts, method, path, int(user), body)
+    expected = build(secret, ts, method, path, int(user), body, context_material(headers))
     if not hmac.compare_digest(expected, sign):
         return False, "chữ ký sai", 0
     return True, "", int(user)

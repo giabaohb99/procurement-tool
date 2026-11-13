@@ -193,6 +193,52 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-757b | Trưởng phòng gán lịch làm việc riêng cho nhân viên, quỹ phép bậc phòng ban đúng phòng, trợ lý không bao giờ nói lương người khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** thử trên máy local sau lượt đầu của duoc-CR-757 thấy hai chỗ thiếu: Trưởng phòng không đổi được lịch cho nhân viên (chỉ phòng Nhân sự có quyền, mà cấp quyền đó thì họ sửa được cả mẫu lịch và lịch của cả công ty), và Trưởng phòng hỏi trợ lý phép của nhân viên thì ra rỗng, còn mức phạm vi Phòng ban của quỹ phép thực chất là cả công ty. Đã chốt: Trưởng phòng được gán lịch riêng cho nhân viên phòng mình trong giới hạn chặt; quỹ phép mức Phòng ban chỉ gồm người phòng mình. Cùng đợt chốt thêm luật tuyệt đối: trợ lý AI, bot và cổng MCP không bao giờ nói lương của người khác, chỉ chính người đó hỏi lương của mình trong cuộc trò chuyện riêng.
+
+**Đã làm**
+- Thêm khóa quyền **Lịch làm việc riêng (Trưởng phòng gán)**. Người có khóa này chỉ gán được lịch cấp Nhân sự cho nhân viên trong phạm vi, không cho chính mình, chỉ chọn mẫu đang dùng, ngày hiệu lực từ hôm nay; chỉ sửa hoặc xóa dòng do chính mình gán; dòng đã bắt đầu chỉ đặt được ngày kết thúc và không xóa được. Vai trò Trưởng phòng mẫu được cấp khóa này ở mức Phòng ban.
+- Đặt ngày kết thúc cho một lịch tạm thì lịch cũ tự nối lại liền mạch từ ngày hôm sau, áp cho cả phòng Nhân sự lẫn Trưởng phòng; dòng nối lại giữ người gán gốc để Trưởng phòng không xóa được lịch do Nhân sự gán.
+- Thêm đường API trả danh sách nhân viên mà người gọi gán được lịch riêng, dùng cho ô chọn người; hồ sơ nhân sự có nút **Đổi lịch riêng** mở sẵn hộp gán lịch cho đúng người đó.
+- Mức phạm vi Phòng ban của quỹ phép nay lọc qua hồ sơ nhân sự: chỉ người có phòng chính thuộc phòng của người xem và đang ở công ty hiện tại của người xem; ô **Phòng ban được xem** cũng không mở sang công ty khác. Áp cho mọi màn và báo cáo quỹ phép cùng công cụ trợ lý.
+- Trợ lý có công cụ mới trả lương và phụ cấp của chính người hỏi, chỉ trong khung Trợ lý trên web hoặc chat riêng đã liên kết với bot; cổng MCP không có công cụ này và lời dặn của cổng cấm nói lương của bất kỳ ai. Tiền của phiếu thanh toán nghỉ phép bị giấu với người khác người nhận và bị loại khỏi số tổng hợp; tìm lịch sử chat ở kênh chung bỏ các lượt hỏi lương.
+- Viết tài liệu: mục 20 (Trưởng phòng gán lịch riêng, chín luật, ma trận quyền) và mục 21 (sổ việc trước và sau khi deploy) của tài liệu Lịch làm việc, mục 4d của tài liệu thiết kế phân quyền, phần quỹ phép mức Phòng ban ở tài liệu Nghỉ phép và luật nghỉ phép cho người viết mã, bảng API Nhân sự dựng lại bằng máy cùng các lỗi mới, chức năng CN-HRM-04 và hai yêu cầu phi chức năng mới về lương và phân quyền, tài liệu công cụ và bảo mật của Trợ lý AI, tài liệu cổng MCP, sổ việc deploy trong kế hoạch.
+- Bài hướng dẫn **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** thêm mục Trưởng phòng đổi lịch riêng cho nhân viên; cẩm nang Nghỉ phép của trợ lý thêm cách trả lời Trưởng phòng hỏi phép và đổi lịch của nhân viên.
+
+**Kết quả:** mã, tài liệu, bài hướng dẫn và cẩm nang xong ở máy local; bài hướng dẫn và cẩm nang đã nạp vào cơ sở dữ liệu local. Kho tìm kiếm của trợ lý ở local đang tắt nên chưa nạp lại.
+
+**Còn lại:** trên dev và prod phải làm đủ năm bước ở mục 21 của tài liệu Lịch làm việc: đếm trước các vai trò có quỹ phép mức Phòng ban (sẽ hẹp lại), cấp khóa mới cho vai trò quản trị trước, tick quyền cho vai trò Trưởng phòng, khởi động lại API, chạy lại bài hướng dẫn, cẩm nang và chỉ mục tìm kiếm.
+
+Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py` · `assignment_picker.py` · `assignment_heal.py` · `assignment_controller.py` · `assignment_service.py` · `core/scoping.py` · `core/permissions.py` · `seed.py` · `assistant/tools/salary_privacy.py` · `my_salary_tool.py` · `assistant/private_chat.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/hr/components/employee-work-schedule-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `test/backend/test_truong_phong_gan_lich_rieng_cr757.py` · `test_tro_ly_khong_lo_luong_cr757.py`
+
+## duoc-CR-757 | Lịch làm việc theo phòng ban trên trang phòng ban và trợ lý AI tra lịch làm việc, ngày đã nghỉ, phép của nhân sự khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** yêu cầu cấu hình lịch làm việc riêng cho từng phòng ban, tính ngày nghỉ phép theo lịch đó, và hỏi trợ lý AI (chat hoặc MCP) được số ngày phép còn lại và số ngày đã nghỉ. Lịch theo bốn cấp và cách đếm ngày nghỉ theo lịch của người nghỉ đã có từ duoc-CR-589; đợt này bổ sung phần còn thiếu. Đã chốt: trợ lý tra được cả người khác theo quyền, và trang phòng ban có thêm tab Lịch làm việc.
+
+**Đã làm**
+- Trang chi tiết phòng ban chia hai tab *Pháp nhân & nhân sự* và *Lịch làm việc*. Tab mới cho biết phòng đang theo mẫu lịch nào, lịch lấy từ đâu (gán riêng cho phòng, theo pháp nhân, theo toàn hệ thống hay lịch mặc định), lưới bảy ngày, số ngày công mỗi tuần và danh sách các lần gán lịch riêng cho phòng.
+- Nút *Gán lịch cho phòng* mở màn Gán lịch với hộp *Thêm dòng gán lịch* đã chọn sẵn cấp Phòng ban và đúng phòng đang xem; nút *Xem gán lịch* mở màn đó lọc sẵn cấp Phòng ban.
+- Thêm đường API trả lịch làm việc đang áp cho cả một phòng kèm cấp nguồn và các lần gán lịch của phòng, gác bằng quyền xem phòng ban và phạm vi phòng ban.
+- Trợ lý AI và cổng MCP trả thêm lịch làm việc đang áp của người hỏi và số ngày đã nghỉ trong năm theo từng loại nghỉ, kể cả loại không trừ quỹ phép như nghỉ không lương hay nghỉ ốm; đơn đã duyệt cho ngày sắp tới và đơn chờ duyệt được tách riêng, không cộng vào số đã nghỉ.
+- Thêm công cụ chỉ đọc cho phòng Nhân sự và quản lý tra quỹ phép, ngày đã nghỉ và lịch làm việc của nhân sự khác theo mã, tên hoặc phòng. Công cụ gác bằng quyền xem quỹ phép, chỉ trả người nằm trong cả phạm vi xem hồ sơ lẫn phạm vi xem quỹ phép; số ngày đã nghỉ của người khác chỉ hiện khi người hỏi còn được xem đơn nghỉ của họ. Không trả lương hay thông tin nhạy cảm.
+- Viết tài liệu: mục 19 mới của tài liệu Lịch làm việc (kèm sửa mã cấp gán cho khớp bộ mã thật, nhãn ô của hộp gán lịch, vị trí khung lịch trên hồ sơ và tên các bài kiểm), mục 17 của tài liệu Nghỉ phép, bảng API Nhân sự dựng lại bằng máy cùng phần dữ liệu vào ra, hai chức năng mới CN-HRM-02 và CN-HRM-03, ba yêu cầu phi chức năng mới, tài liệu cổng MCP và bảng bảo mật công cụ của Trợ lý AI.
+- Thêm bài hướng dẫn sử dụng **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** (xem và gán lịch cho phòng, thứ tự áp lịch, cách đếm ngày nghỉ theo lịch, cách hỏi trợ lý AI) và dạy cẩm nang Nghỉ phép của trợ lý trả lời ba loại câu hỏi mới.
+
+**Kết quả:** mã và tài liệu xong ở máy local, bài hướng dẫn và cẩm nang đã nạp vào cơ sở dữ liệu local. Lượt 2 ghi ở mục duoc-CR-757b.
+
+**Còn lại:** lên dev thì làm theo sổ việc deploy ở mục 21 của tài liệu Lịch làm việc.
+
+Mã nguồn: `backend/app/modules/work_schedule/resolver.py` · `template_controller.py` · `assistant/tools/leave_tool.py` · `leave_taken_schedule.py` · `employee_leave_tool.py` · `agent_hub/mcp.py` · `mcp_settings.py` · `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `hr/pages/department-detail-page.tsx` · `hr/pages/work-schedule-assignment-list-page.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `ai_skill/seed_handbook/40-nghi-phep.md` · `test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py`
+
 ## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
 - status: xong
 - date: 2026-11-13

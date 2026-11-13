@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useController, type Control } from 'react-hook-form'
 
 import { WORK_SCHEDULE_LEVEL } from '@/shared/constants/statuses'
@@ -16,6 +17,14 @@ interface WorkScheduleLevelFieldProps {
   /** Tên ô đối tượng đi kèm (`target_id`) — bị xóa mỗi khi cấp đổi. */
   idName: string
   disabled?: boolean
+  /** Câu dưới ô, thay câu mặc định "Hẹp thắng rộng…" (vd hộp gán lịch riêng của Trưởng phòng). */
+  hint?: ReactNode
+  /**
+   * Ô chỉ xem nhận được tiêu điểm bằng Tab. Hộp thoại tự đặt tiêu điểm vào ô đầu tiên nhận được tiêu điểm: thiếu cờ
+   * này thì hộp gán lịch riêng rơi tiêu điểm vào ô Đối tượng, danh sách nhân sự bung ra che cả biểu mẫu (và bàn phím
+   * điện thoại bật lên) ngay khi vừa mở.
+   */
+  focusableWhenReadOnly?: boolean
 }
 
 /**
@@ -29,6 +38,8 @@ export function WorkScheduleLevelField({
   name,
   idName,
   disabled = false,
+  hint,
+  focusableWhenReadOnly = false,
 }: WorkScheduleLevelFieldProps) {
   const { field: level, fieldState } = useController({
     control,
@@ -46,7 +57,12 @@ export function WorkScheduleLevelField({
         <RequiredMark />
       </Label>
       {disabled ? (
-        <ReadOnlyValue>{selected?.label ?? ''}</ReadOnlyValue>
+        <div
+          tabIndex={focusableWhenReadOnly ? 0 : undefined}
+          className="rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <ReadOnlyValue>{selected?.label ?? ''}</ReadOnlyValue>
+        </div>
       ) : (
         <Select
           value={selected ? current : ''}
@@ -75,8 +91,12 @@ export function WorkScheduleLevelField({
         </p>
       )}
       <p className="text-xs text-muted-foreground">
-        Hẹp thắng rộng: Nhân sự &gt; Phòng ban &gt; Pháp nhân &gt; {SYSTEM_LEVEL_LABEL}. Chưa gán gì thì
-        dùng T2–T7, 08:00–17:00.
+        {hint ?? (
+          <>
+            Hẹp thắng rộng: Nhân sự &gt; Phòng ban &gt; Pháp nhân &gt; {SYSTEM_LEVEL_LABEL}. Chưa gán gì
+            thì dùng T2–T7, 08:00–17:00.
+          </>
+        )}
       </p>
     </div>
   )

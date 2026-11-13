@@ -2,10 +2,14 @@
 
 | | |
 |---|---|
-| Bản | 1.0 — 05/10/2026 (duoc-CR-589) |
-| CR | **duoc-CR-589** |
+| Bản | 1.2 — 13/11/2026 (duoc-CR-757 lượt 2: **Trưởng phòng gán lịch riêng** cho nhân viên — khóa `work_schedule_personal`, §20 mới; sổ việc trước khi deploy §21 mới; §3 · §10 · §11 sửa) · 1.1 — 13/11/2026 (duoc-CR-757: tab **Lịch làm việc** ở trang phòng ban, đường `/tools/effective-department`, trợ lý AI đọc lịch làm việc và ngày đã nghỉ — §19 mới; §3 · §5 · §11 · §13 · §15 sửa, §5 sửa mã cấp cho khớp `WorkScheduleLevel`) · 1.0 — 05/10/2026 (duoc-CR-589) |
+| Ngày | 13/11/2026 |
+| Người phụ trách | Anh Được |
+| Trạng thái | Hiệu lực |
+| CR | **duoc-CR-589** · **duoc-CR-757** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Lịch làm việc* |
-| Kế hoạch gốc | `plans/261005-0925-hr-lich-lam-viec/plan.md` |
+| Kế hoạch gốc | `plans/261005-0925-hr-lich-lam-viec/plan.md` · CR-757: [`plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md`](plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md) |
+| Bài Help Center | `backend/scripts/seed_help_nhan_su.py` — bài **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** (duoc-CR-757) |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/01-nhan-su.md` · [`02-nghi-phep.md`](02-nghi-phep.md) |
 
 ---
@@ -34,16 +38,20 @@ Quản lý lịch làm việc hàng tuần: một mẫu lịch 7 ngày với lo�
 
 ---
 
-## 3. Bốn màn hình
+## 3. Màn hình
 
 | Màn | Đường dẫn | Khóa quyền | Vai trò |
 |---|---|---|---|
 | Mẫu lịch (danh sách + chi tiết + thêm) | `/hr/work-schedules` | `work_schedule.read` / `.create` / `.write` / `.delete` | HR + sửa lịch |
 | Gán lịch (danh sách + chi tiết + thêm) | `/hr/work-schedule-assignments` | `work_schedule.read` / `.create` / `.write` / `.delete` | HR + sửa lịch |
 | Xem lịch (tuần / tháng, nhân sự × ngày) | `/hr/work-roster` | `employee.read` (hàng), `leave_request.read` (lớp nghỉ phép) | mọi người, xem riêng |
-| Thẻ lịch trên hồ sơ | Tab trên `/hr/employees/:id` | `employee.read` | xem cùng nhân sự |
+| Thẻ lịch trên hồ sơ | Khung **Lịch làm việc** trong tab **Quỹ phép** của `/hr/employees/:id` (`?tab=leave`) | `employee.read` | xem cùng nhân sự |
+| Gán lịch RIÊNG cho nhân viên phòng mình (duoc-CR-757 lượt 2) | Nút **Đổi lịch riêng** ở khung Lịch làm việc của hồ sơ → `/hr/work-schedule-assignments` (hộp Thêm điền sẵn) | `work_schedule_personal.create` / `.write` / `.delete` (Trưởng phòng, bậc Phòng ban) | Trưởng phòng — xem §20 |
+| Tab **Lịch làm việc** của phòng ban (duoc-CR-757) | `/hr/departments/:id?tab=work-schedule` | `department.read` (xem); nút **Gán lịch cho phòng** cần `work_schedule.create`, nút **Xem gán lịch** cần `work_schedule.read` | ai xem được phòng ban — xem §19 |
 
-**Quyền sửa** (`work_schedule.write` / `.create` / `.delete`): chỉ **`admin` · `hr_leave` · `hr_profile`**. Mọi vai trò khác chỉ `read` (cho form nghỉ phép đọc lịch tính số ngày). Trên hệ **đang chạy** (prod/dev-UAT), vai trò cũ **không tự có** khóa `work_schedule` — seed không ghi đè — phải thêm ở màn Phân quyền tài khoản, hoặc `SEED_FORCE_SYNC=true` một lần rồi khởi động lại API.
+Đường menu (duoc-CR-754): **Mẫu lịch tuần** và **Gán lịch** là hai tab của *Nhân sự ▸ Thiết lập*; *Nhân sự ▸ Lịch làm việc* mở màn Xem lịch; trang phòng ban mở từ *Nhân sự ▸ Danh mục ▸ Phòng ban*.
+
+**Quyền sửa** (`work_schedule.write` / `.create` / `.delete`): chỉ **`admin` · `hr_leave` · `hr_profile`**. Riêng việc gán lịch RIÊNG cấp Nhân sự có khóa thứ hai `work_schedule_personal` cho Trưởng phòng (`dept_head`), giới hạn ở §20. Mọi vai trò khác chỉ `read` (cho form nghỉ phép đọc lịch tính số ngày). Trên hệ **đang chạy** (prod/dev-UAT), vai trò cũ **không tự có** khóa `work_schedule` — seed không ghi đè — phải thêm ở màn Phân quyền tài khoản, hoặc `SEED_FORCE_SYNC=true` một lần rồi khởi động lại API.
 
 Dựng bằng **khung CRUD khai báo** (`shared/crud/CrudListPage` + `CrudDetailPage`) kèm `FieldDescriptor` mục đích chung — chỉ máy tính + phút + giây trong các ô giờ, thay cho **datetime picker đầy đủ**.
 
@@ -74,10 +82,10 @@ Hàng M–C–T mặc định 08:00–17:00. Hàng T–S bất kỳ (thường 0
 
 | Ô | Cột | Kiểu | Mặc định | Bắt buộc | Ghi chú |
 |---|---|---|---|---|---|
-| **Chọn mẫu** | `schedule_id` | chọn (nạp từ API) | — | Có | Danh sách mẫu đang dùng (`is_active = true`) |
-| **Cấp độ gán** | `target_level` | chọn | — | Có | SYSTEM (0) / COMPANY / DEPARTMENT / EMPLOYEE (3) — dùng `WorkScheduleLevel` |
-| **Gán cho** | `target_id` | chọn (thay đổi theo cấp độ) | — | Có (ngoại trừ SYSTEM) | Danh sách pháp nhân / phòng ban / nhân sự tùy cấp độ; cấp SYSTEM để mặc định 0 |
-| Từ ngày | `effective_from` | chọn ngày | — | Có | Ngày gán có hiệu lực |
+| **Cấp áp dụng** | `target_level` | chọn | — | Có | Mã `WorkScheduleLevel`: **1** Toàn hệ thống · **2** Pháp nhân · **3** Phòng ban · **4** Nhân sự. Số `0` không hợp lệ (quy ước *chưa khai*); `level = 0` chỉ xuất hiện ở kết quả *lịch hiệu lực* khi `is_fallback = true`. Thứ tự hẹp thắng rộng là `LEVEL_PRECEDENCE`, KHÔNG suy từ độ lớn của số |
+| **Đối tượng áp dụng** | `target_id` | chọn (thay đổi theo cấp) | — | Có (trừ Toàn hệ thống) | Danh sách pháp nhân / phòng ban / nhân sự tùy cấp; cấp Toàn hệ thống để `0` |
+| **Mẫu lịch** | `schedule_id` | chọn (nạp từ API) | — | Có | Danh sách mẫu đang dùng (`is_active = true`) |
+| **Hiệu lực từ ngày** | `effective_from` | chọn ngày | — | Có | Ngày gán có hiệu lực |
 | Đến ngày | `effective_to` | chọn ngày | — | Không | NULL = không thời hạn (cứ dùng tới khi thay bằng gán khác) |
 | **Ghi chú** | `note` | nhiều dòng | rỗng | Không | Lý do thay đổi lịch (dùng nội bộ) |
 
@@ -216,11 +224,12 @@ Chuyển tuần/tháng bằng nút trên thanh công cụ; ở khổ hẹp chế
 
 ## 10. Thẻ lịch trên hồ sơ nhân sự
 
-Tab **Lịch làm việc** ở `/hr/employees/:id` — **chỉ xem**, hiện **mẫu và ngày hiệu lực** của người đó.
+Khung **Lịch làm việc** trong tab **Quỹ phép** ở `/hr/employees/:id` (đối chiếu màn 13/11/2026: không phải tab riêng) — **chỉ xem**, hiện **mẫu và ngày hiệu lực** của người đó.
 
 Gác `employee.read` (xem nhân sự) — **không đòi** `work_schedule.read` (xem cấu hình lịch). Luật:
-- Sửa hồ sơ (quyền `hr_profile` / `hr_leave`) → mở `CrudDetailPage` của hồ sơ → tab **Lịch làm việc** có nút **[Sửa lịch]** dẫn tới `/hr/work-schedule-assignments?employee_id=X`, đơn giản hóa tìm kiếm (lọc sẵn người).
-- Chỉ xem (quyền `employee.read` không quản lý lịch) → tab chỉ thấy dòng hiện tại.
+- Người có `work_schedule.write` thấy nút **Gán lịch** dẫn tới `/hr/work-schedule-assignments` (KHÔNG lọc sẵn người, không điền sẵn hộp Thêm).
+- Người gán được lịch riêng cho người này (`work_schedule.create` hoặc `work_schedule_personal.create`) thấy thêm nút **Đổi lịch riêng** (duoc-CR-757 lượt 2): mở màn Gán lịch với hộp Thêm điền sẵn cấp Nhân sự + người này. Không hiện trên hồ sơ của chính mình. Luật của Trưởng phòng ở §20.
+- Chỉ xem (quyền `employee.read` không quản lý lịch) → khung chỉ thấy lịch hiện tại, không có nút.
 
 ---
 
@@ -240,6 +249,11 @@ Gác `employee.read` (xem nhân sự) — **không đòi** `work_schedule.read` 
 | `/api/work-schedule-assignments/:id` | DELETE | `work_schedule.delete` | Xóa gán (mở lại dòng cũ nếu bị tự đóng) |
 | `/api/work-schedules/tools/effective` | GET | `employee.read` | **Công cụ**: lấy mẫu hiệu lực của người ngày hôm nay |
 | `/api/work-schedules/tools/roster` | GET | `employee.read` | **Công cụ**: dựng lưới lịch (42 ngày, phân trang) |
+| `/api/work-schedule-assignments` (POST / PATCH / DELETE) | — | `work_schedule.<hành động>` **hoặc** `work_schedule_personal.<hành động>` (duoc-CR-757 lượt 2) | Đường Trưởng phòng chịu thêm các chốt §20.2; đọc (GET) vẫn `work_schedule.read` |
+| `/api/work-schedule-assignments/tools/assignable-employees` | GET | `work_schedule.create` hoặc `work_schedule_personal.create` | **Công cụ** (lượt 2): nhân sự ĐANG LÀM gán được lịch riêng — nguồn ô **Đối tượng áp dụng** ở cấp Nhân sự; `q` tìm mã / họ tên không dấu |
+| `/api/work-schedules/tools/effective-department` | GET | `department.read` + `get_scoped` phòng ban | **Công cụ** (duoc-CR-757): lịch hiệu lực của cả phòng + cấp nguồn + các dòng gán cấp phòng ban — xem §19.2 |
+
+Bảng đủ mọi đường của phân hệ (dựng bằng máy) và hợp đồng dữ liệu: [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
 
 ---
 
@@ -293,6 +307,9 @@ Khi **cùng một ngày** (xảy ra ca `Sáng → Chiều`): tra cả hai ô cù
 | Ngày lễ của người | `backend/app/modules/leave/holiday_calendar.py` |
 | Màn mẫu + gán (danh sách + chi tiết) | `frontend-v2/src/modules/hr/pages/work-schedule-*.tsx` · `config/work-schedule-*.tsx` |
 | Thẻ lịch trên hồ sơ | `frontend-v2/src/modules/hr/components/employee-work-schedule-card.tsx` |
+| Tab Lịch làm việc của phòng ban (CR-757) | `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `work-schedule-week-grid.tsx` · `utils/describe-department-schedule-source.ts` · `utils/work-schedule-assignment-prefill.ts` |
+| Lịch hiệu lực của phòng (CR-757) | `backend/app/modules/work_schedule/resolver.py` → `effective_for_department` |
+| Trợ lý AI đọc lịch + ngày đã nghỉ (CR-757) | `backend/app/modules/assistant/tools/leave_taken_schedule.py` · `leave_tool.py` (`my_leave_summary`) · `employee_leave_tool.py` (`employee_leave_summary`) |
 | Màn xem lịch (tuần/tháng) | `frontend-v2/src/modules/hr/pages/work-roster-page.tsx` · `components/work-roster-*.tsx` |
 | Bài kiểm backend | `test/backend/test_lich_lam_viec_*.py` |
 | Bài kiểm frontend | `frontend-v2/src/modules/hr/**/*.test.ts*` (các tệp liên quan lịch làm việc) |
@@ -312,18 +329,23 @@ Khi **cùng một ngày** (xảy ra ca `Sáng → Chiều`): tra cả hai ô cù
 
 ## 15. Lệnh kiểm tra (backend)
 
+Chạy từng tệp, không quét cả thư mục (sửa 13/11/2026: bản 1.0 ghi bốn tên tệp không có thật).
+
 ```bash
-# Kiểm luật ngày công (tương đương với bản cũ khi chưa gán)
-docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_ngay_cong.py -v
+# Bộ mã, quyền, luật ngày công, phân giải lịch (một người / gom nhiều người)
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_bo_ma_va_quyen.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_luat_ngay.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_phan_giai.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_phan_giai_gom.py -q --timeout=120
 
-# Kiểm luật gán + auto-close/reopen
-docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_gan.py -v
+# Đường API, tính ngày nghỉ theo lịch, lưới Xem lịch, bài rà soát
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_api.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_tinh_ngay_nghi.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_roster.py -q --timeout=120
+docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_roster_ra_soat.py test/backend/test_lich_lam_viec_ra_soat_be.py -q --timeout=120
 
-# Kiểm lịch xem (roster) — phạm vi + nửa buổi + số truy vấn
-docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_roster.py -v
-
-# Kiểm tính tương đương bản cũ
-docker compose exec -T api python -m pytest test/backend/test_lich_lam_viec_tuong_duong_cu.py -v
+# duoc-CR-757: lịch của phòng ban + trợ lý tra phép / ngày đã nghỉ (phạm vi, số truy vấn cố định)
+docker compose exec -T api python -m pytest test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py -q --timeout=120
 ```
 
 ---
@@ -364,3 +386,203 @@ docker compose exec -T erp npx vitest run src/shared/crud
 
 ---
 
+---
+
+## 19. Lịch làm việc của phòng ban và trợ lý AI (duoc-CR-757, 13/11/2026)
+
+Gán lịch theo phòng ban và đếm ngày nghỉ theo lịch của người nghỉ đã có từ duoc-CR-589 (§5, §7, §12). CR này thêm ba
+thứ: trang phòng ban cho thấy phòng đang theo lịch nào, một đường API cho việc đó, và trợ lý AI / cổng MCP đọc được lịch
+làm việc cùng số ngày đã nghỉ.
+
+### 19.1. Tab Lịch làm việc ở trang phòng ban
+
+Trang `/hr/departments/:id` (*Nhân sự ▸ Danh mục ▸ Phòng ban* ▸ bấm một phòng) có hai tab dưới biểu mẫu, nhớ ở `?tab=`:
+**Pháp nhân & nhân sự** (nội dung cũ: pháp nhân áp dụng, bảng nhân sự, bảng kiêm nhiệm) và **Lịch làm việc** (mới).
+Giá trị lạ trên URL rơi về tab đầu.
+
+Tab **Lịch làm việc** gồm:
+
+| Phần | Nội dung |
+|---|---|
+| Dòng nguồn | Tên mẫu lịch + câu nói lịch lấy từ đâu: *Gán riêng cho phòng này từ dd/mm/yyyy [đến dd/mm/yyyy]* · *Theo lịch của pháp nhân X* · *Theo lịch toàn hệ thống* · *Chưa gán — dùng lịch mặc định*. Rẽ nhánh theo mã cấp (`WORK_SCHEDULE_LEVEL_CODE`), không theo số trần |
+| Lưới bảy ngày | Loại ngày + giờ từng thứ (`WorkScheduleWeekGrid`, dùng chung với thẻ lịch trên hồ sơ) |
+| Hai dòng chú thích | *N ngày công/tuần* và *Nhân sự nào được gán lịch riêng thì theo lịch riêng đó, không theo lịch của phòng.* |
+| **Gán lịch riêng cho phòng** | Mọi dòng gán CẤP PHÒNG BAN của phòng này, mới nhất trước: tên mẫu, *Từ … · đến …* hoặc *Không thời hạn*, nhãn **Đang áp** ở dòng đang hiệu lực. Không có dòng nào: *Phòng này chưa có dòng gán lịch riêng.* |
+| Nút **Gán lịch cho phòng** | Chỉ hiện khi có `work_schedule.create`. Mở màn Gán lịch (`/hr/work-schedule-assignments?target_level=3&prefill_target_id=<id>&prefill_target_name=<tên>`) với hộp **Thêm dòng gán lịch** mở sẵn, ô **Cấp áp dụng** = Phòng ban, ô **Đối tượng áp dụng** = phòng này (vẫn đổi được). Đóng hộp (Hủy hoặc lưu xong) thì gỡ hai tham số `prefill_*` khỏi URL, giữ `target_level` vì đó cũng là bộ lọc **Cấp áp dụng** của bảng |
+| Nút **Xem gán lịch** | Chỉ hiện khi có `work_schedule.read`. Mở màn Gán lịch lọc sẵn cấp Phòng ban |
+
+Xem tab gác bằng quyền mở trang (`department.read`), **không** đòi `work_schedule.read` — cùng lý lẽ với thẻ lịch trên hồ sơ
+(§10). Lỗi 403 / 404 chỉ hiện một câu *Không xem được lịch làm việc của phòng ban này.*, không chặn phần còn lại của trang.
+
+### 19.2. Đường `GET /api/work-schedules/tools/effective-department`
+
+Tham số `department_id` (bắt buộc) và `on_date` (mặc định hôm nay theo giờ VN, năm 2000–2100). Gác `department.read` +
+`get_scoped` phòng ban: ngoài phạm vi và không tồn tại cùng trả 404.
+
+Phân giải bằng chính luật hẹp thắng rộng (`resolver._pick`) với bộ (nhân sự = 0, phòng, pháp nhân của phòng): chỉ còn **phòng ban > pháp nhân >
+toàn hệ thống**. Kết quả có đủ khóa của `/tools/effective` cộng `department_id`, `department_name`, `company_id`,
+`assignments[]`. `level`: **3** Phòng ban · **2** Pháp nhân · **1** Toàn hệ thống · **0** khi `is_fallback = true`. Phòng
+dùng chung (`company_id = 0`) không có cấp pháp nhân để kế thừa; nhân sự của phòng đó vẫn có thể theo lịch pháp nhân riêng
+của họ. Lịch của phòng KHÔNG tính lịch gán riêng cho từng nhân sự — muốn biết một người theo lịch nào thì xem thẻ lịch trên
+hồ sơ của người đó (`/tools/effective`).
+
+### 19.3. Trợ lý AI và cổng MCP
+
+| Công cụ | Thêm gì | Gác |
+|---|---|---|
+| `my_leave_summary` (chính người hỏi) | `work_schedule` = lịch đang áp hôm nay (tên, cấp nguồn, bảy ngày có nhãn thứ và giờ, số ngày công/tuần); `taken_by_type` = số ngày nghỉ trong năm theo TỪNG loại, gồm cả loại không trừ quỹ (không lương, ốm…), tách `approved_days` (đã duyệt, ngày bắt đầu ≤ hôm nay: đã / đang nghỉ), `approved_upcoming_days` (đã duyệt, sắp tới), `pending_days` (chờ duyệt); `taken_total_days` (= tổng `approved_days`, con số *đã nghỉ*), `upcoming_total_days`, `pending_total_days`. Năm mặc định đổi sang `vn_today()` | Như cũ (dữ liệu của chính mình) |
+| `employee_leave_summary` (MỚI, chỉ đọc) | Quỹ phép (`remaining_days` qua `available_days_map`), ngày đã nghỉ theo loại (cùng khóa như trên) và tên lịch đang áp của nhân sự khác — tra theo mã / tên (`employee`) hoặc theo phòng (`department`, gõ kèm chữ *phòng* vẫn khớp); trần 20 người mặc định, tối đa 50 | `leave_balance.read`; người trả về = `employee.read` GIAO phạm vi `leave_balance` áp lên hồ sơ, đúng như màn Quỹ phép năm. **Ngày đã nghỉ** thêm một lớp: chỉ đơn trong phạm vi `leave_request.read` của người hỏi; thiếu khóa đó thì `taken_by_type` rỗng (quỹ vẫn trả) — số ngày nghỉ ốm, không lương gần dữ liệu sức khỏe, trước nay chỉ thấy ở màn Đơn nghỉ phép |
+
+Luật giữ nguyên:
+
+- **Một nơi tính.** Ngày đã nghỉ và bản gọn của lịch dựng ở `leave_taken_schedule.py`, hai công cụ dùng chung nên không thể
+  nói hai con số khác nhau cho cùng một người. Số còn lại chỉ qua `balance_service.available_days(_map)`; công cụ không gọi
+  `ensure_balance` (không tự cấp dòng quỹ).
+- **Năm của một đơn = năm của `from_date`**, đúng luật sổ quỹ (`reserve_lines` / `consume_lines`); đổi cách chia là *đã nghỉ*
+  lệch với `used_days`. Hệ quả đã chấp nhận: đơn vắt qua hai năm nằm trọn ở năm bắt đầu, nên có thể lệch báo cáo **Tình hình
+  nghỉ phép** (báo cáo đó chia ngày theo ngày thật).
+- **Đã nghỉ khác đã duyệt**: đơn đã duyệt mà ngày bắt đầu sau hôm nay (giờ VN) nằm ở `approved_upcoming_days`, không cộng vào
+  `taken_total_days`.
+- **Số truy vấn cố định** bất kể số người (bài đếm trong `test_tro_ly_tra_phep_lich_lam_viec_cr757.py`). Lịch của nhiều người
+  đi qua `resolver_many.load_day_plans_many` (+ `DayPlansMany.winner` để biết cấp nguồn).
+- `employee_leave_summary` có ở cổng MCP (`READ_TOOLS`), nhóm cấu hình **Nghỉ phép** (`mcp_settings.GROUPS`), nhãn ý định
+  `LOOKUP_LEAVE`, bộ lọc công cụ nhóm `leave` của Trợ lý (từ khóa *lịch làm việc*, *giờ làm*, *đã nghỉ mấy ngày*…). Lõi
+  bot bỏ tiền tố xưng hô (*anh / chị …*) khỏi tham số `employee` như `employee_lookup`.
+- Cẩm nang trợ lý: `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md` (mục *Lịch làm việc và ngày đã nghỉ*).
+
+---
+
+## 20. Trưởng phòng gán lịch riêng cho nhân viên (duoc-CR-757 lượt 2, 13/11/2026)
+
+Thử trên local: Trưởng phòng không đổi được lịch cho nhân viên (403 — quyền sửa lịch chỉ Nhân sự có), mà tick
+`work_schedule.create` cho họ thì họ sửa được cả mẫu lịch và gán cấp phòng / pháp nhân / toàn hệ thống cho bất kỳ ai. Đã chốt
+(Q1): Trưởng phòng **được** gán lịch RIÊNG cho nhân viên phòng mình, chỉ chọn mẫu Nhân sự tạo sẵn, không sửa mẫu, không gán cấp
+khác. Mã: `work_schedule/assignment_access.py` (cửa quyền), `assignment_picker.py` (ô chọn người), `assignment_heal.py`
+(nối lại lịch cũ), `assignment_controller.py`.
+
+### 20.1. Khóa `work_schedule_personal`
+
+| | |
+|---|---|
+| Nhãn ở màn Phân quyền | **Nhân sự › Lịch làm việc riêng (Trưởng phòng gán)** |
+| Đo phạm vi trên | HỒ SƠ NHÂN SỰ ĐÍCH của dòng gán (`ENTITY_MODEL_PATHS` → `Employee`; `SCOPE_FIELDS` = `company_id`, `department_id`, `self: id`) — bảng gán lịch có đích đa hình nên không lọc thẳng được |
+| Hành động có tác dụng | `create` · `write` · `delete` (`read` có trên ma trận nhưng không kiểm ở đâu: đọc dòng gán vẫn là `work_schedule.read`, vai trò nào cũng có) |
+| Seed | `dept_head`: `read` / `create` / `write` / `delete`, bậc **Phòng ban**. Nằm trong `_SYS_ENTITIES` nên Quản lý thu mua KHÔNG tự có. Admin nhận qua vòng bù `ENTITIES` của `seed.py` (hệ đang chạy thì không — §21) |
+| Ô **Phòng ban được xem** | Có tác dụng (cộng thêm phòng) nhưng KHÔNG mở xuyên công ty: khóa nằm trong `scoping.INCLUDE_DEPT_SAME_COMPANY`, ô đó AND thêm công ty hiện tại của người xem |
+
+Có khóa Nhân sự (`work_schedule.<hành động>`) thì luôn đi đường Nhân sự, luật cũ giữ nguyên từng chữ; chỉ khi THIẾU khóa
+Nhân sự ở hành động đó mới xét khóa Trưởng phòng (`require_assignment_action`).
+
+### 20.2. Chín luật của đường Trưởng phòng
+
+| # | Luật | Vi phạm |
+|---|---|---|
+| 1 | Chỉ cấp **Nhân sự** (`WorkScheduleLevel.EMPLOYEE` = 4) — cả dòng đang có lẫn giá trị mới | 403 *Bạn chỉ được gán lịch làm việc riêng (cấp Nhân sự) cho nhân sự trong phạm vi của mình* |
+| 2 | Nhân sự đích trong phạm vi khóa (bậc Phòng ban = phòng chính + phòng kiêm nhiệm của người gán, cùng công ty hiện tại) | 400 *Đối tượng được gán lịch không tồn tại* khi tạo / đổi đích (không lộ người đó có thật không); 404 khi sửa / xóa dòng của người ngoài phạm vi |
+| 3 | Không gán / sửa / xóa lịch riêng của **chính mình** (so `profile.employee_id`, tài khoản chưa gắn hồ sơ không bao giờ trùng) | 403 *Bạn không được tự gán, sửa hay xóa lịch làm việc riêng của chính mình* |
+| 4 | Chỉ chọn mẫu lịch **đang dùng** — `assignment_service._check_schedule`, áp cả hai đường | 400 *Mẫu lịch "…" đã tắt, không gán thêm được* |
+| 5 | Không đụng mẫu lịch — `template_controller` vẫn chỉ nhận `work_schedule` | 403 |
+| 6 | Chỉ sửa / xóa dòng do **chính mình** gán (`created_by`, kiểm SAU phạm vi). Dòng của Nhân sự hay người khác: không sửa / xóa được, nhưng TẠO dòng mới vẫn được và vẫn tự đóng / cắt đôi dòng "không thời hạn" của Nhân sự (cách đổi lịch từ một ngày trở đi, §5.1) | 403 *Lịch này do Nhân sự hoặc người khác gán, bạn chỉ sửa được lịch do chính mình gán* |
+| 7 | **Hiệu lực từ ngày ≥ hôm nay** (giờ VN, `vn_today()`) khi tạo và khi sửa mà đổi ngày bắt đầu — không lùi ngày làm đổi cách đếm ngày nghỉ đã qua | 422 *Ngày hiệu lực phải từ hôm nay trở đi* |
+| 8 | Dòng **đã bắt đầu** (`effective_from` < hôm nay): chỉ đổi **Đến ngày** (≥ hôm qua, hoặc bỏ trống) và **Ghi chú**; không đổi mẫu / người / cấp / ngày bắt đầu; **không xóa** | 403 *Lịch đã bắt đầu, chỉ đặt được ngày kết thúc* · 422 *Ngày kết thúc của lịch đã bắt đầu phải từ hôm qua trở đi* · 403 *Lịch đã bắt đầu, không xóa được — hãy đặt ngày kết thúc* |
+| 9 | Dòng **đã thay lịch trước đó** (lúc tạo đã tự đóng một dòng khác — cờ `replaces_previous` ở API): khóa người + ngày bắt đầu (đổi sẽ gỡ liên kết, xóa sau đó không mở lại lịch cũ). Ngày kết thúc vẫn đổi được | 400 *Lịch này đã thay lịch trước đó, muốn đổi hãy xóa rồi tạo lại* |
+
+Lý do luật 6–8: Trưởng phòng thường cũng là người duyệt đơn nghỉ và phiếu nghỉ bù của nhân viên đó; lùi lịch quá khứ (ví dụ
+biến thứ Bảy đã đi làm thành ngày nghỉ) là mở đường xin nghỉ bù cho những ngày ấy (`comp_request_service` nhận ngày làm vào
+ngày nghỉ bằng `count_leave_days == 0`).
+
+### 20.3. Đổi ngày kết thúc của dòng đã thay lịch — lịch cũ tự nối lại
+
+Áp cho CẢ đường Nhân sự lẫn Trưởng phòng (`assignment_service.update_assignment` + `assignment_heal.find_replaced_and_resume`,
+`move_resume`). Dòng C được tạo đè lên dòng không thời hạn P (P bị đóng ở `C.from − 1`, có thể có dòng nối lại R từ `C.to + 1`).
+Sửa CHỈ ngày kết thúc của C:
+
+- đặt ngày kết thúc khi C đang không thời hạn → tạo R là bản sao lịch của P từ ngày hôm sau;
+- đổi ngày kết thúc khi đã có R → dời ngày bắt đầu của R về ngày hôm sau (kéo dài hay rút ngắn đều liền mạch);
+- bỏ trống ngày kết thúc → xóa R;
+- ngày kết thúc mới chồng hết khoảng của R (R có hạn) → 400 *Ngày kết thúc mới chồng hết khoảng lịch cũ được nối lại; …*.
+
+R luôn **giữ người gán gốc của P** (`created_by = P.created_by`, `updated_by` = người thao tác) — cả ở lúc tạo dòng (POST) — để
+Trưởng phòng không thành "chủ" của dòng nối lại lịch Nhân sự rồi xóa nó (rà mã N4). Mỗi lần tạo / dời / xóa R ghi một dòng
+nhật ký riêng. Đổi người hay ngày bắt đầu của C vẫn gỡ liên kết như cũ (§5.1).
+
+### 20.4. Ô chọn người — `GET /api/work-schedule-assignments/tools/assignable-employees`
+
+Nguồn ô **Đối tượng áp dụng** ở cấp Nhân sự. Có `work_schedule.create` → nhân sự trong phạm vi `employee.read`; chỉ có
+`work_schedule_personal.create` → nhân sự trong phạm vi khóa đó (kể cả ô Phòng ban được xem, cùng công ty), **trừ chính
+mình**; thiếu cả hai → 403. Chỉ người đang làm, xếp họ tên, `q` tìm mã / họ tên không dấu, phân trang; hai truy vấn cố định.
+Trả `{total, items: [{id, code, full_name, department_name}]}`.
+
+### 20.5. Giao diện
+
+- Khung **Lịch làm việc** trên hồ sơ (tab **Quỹ phép**) có nút **Đổi lịch riêng** (người gán được, không phải hồ sơ của mình).
+- Màn **Gán lịch** (*Nhân sự ▸ Thiết lập* ▸ tab **Gán lịch**) hiện cho cả người chỉ có `work_schedule_personal`; nút **Thêm
+  dòng gán lịch** theo khóa của đường người dùng. Hộp Thêm / Sửa của Trưởng phòng: **Cấp áp dụng** khóa ở Nhân sự (chữ chỉ
+  xem), câu nhắc *Bạn chỉ gán được lịch riêng cho nhân viên thuộc phòng mình. Mẫu lịch và lịch của cả phòng do Nhân sự cấu
+  hình.*, **Hiệu lực từ ngày** không nhận ngày trước hôm nay; dòng đã bắt đầu chỉ còn **Đến ngày** + **Ghi chú** và ẩn nút
+  Xóa; dòng đã thay lịch trước đó khóa người + ngày bắt đầu. API trả `created_by` để giao diện ẩn Sửa / Xóa với dòng không do
+  chính Trưởng phòng gán.
+- Mọi luật vẫn chốt ở backend; câu lỗi hiện ở toast của khung CRUD.
+
+### 20.6. Ma trận quyền (sau duoc-CR-757)
+
+| Việc | `work_schedule` (Nhân sự) | `work_schedule_personal` (Trưởng phòng) | Chỉ có `read` |
+|---|---|---|---|
+| Xem mẫu lịch, danh sách gán lịch | có | có (qua `work_schedule.read` mọi vai trò có) | có |
+| Thêm / sửa / xóa mẫu lịch tuần | có | **không** | không |
+| Gán cấp Toàn hệ thống / Pháp nhân / Phòng ban | có | **không** | không |
+| Gán lịch riêng cấp Nhân sự | mọi nhân sự trong phạm vi `employee.read`, kể cả mình | nhân viên trong phạm vi khóa, **trừ mình**, từ hôm nay | không |
+| Sửa / xóa dòng lịch riêng | mọi dòng | chỉ dòng tự gán; dòng đã bắt đầu chỉ đặt Đến ngày, không xóa | không |
+| Xem lịch của phòng (tab ở trang phòng ban) | `department.read` | `department.read` | `department.read` |
+
+Bài kiểm: `test/backend/test_truong_phong_gan_lich_rieng_cr757.py`.
+
+---
+
+## 21. Sổ việc trước và sau khi deploy duoc-CR-757 (dev / prod, D-018)
+
+Seed prod (`seed_prod.py`) không ghi đè phân quyền đã sửa tay, nên khóa mới và bậc mới KHÔNG tự tới vai trò cũ. Làm đủ, theo thứ
+tự:
+
+1. **Trước deploy — đếm vai trò sẽ HẸP lại.** Bậc `dept` của `leave_balance` đổi nghĩa từ *cả công ty* sang *người thuộc phòng
+   của tôi* (§19, `02-nghi-phep.md` §17). Đếm và báo người chủ danh sách:
+
+   ```sql
+   SELECT r.code, r.name FROM tab_permission p JOIN tab_role r ON r.id = p.role_id
+   WHERE p.entity = 'leave_balance' AND p.scope = 'dept' AND p.can_read = 1;
+   ```
+
+   Kèm số người đang giữ ô **Phòng ban được xem** (`tab_user_scope`, chiều `department`, không loại trừ) trên vai trò có
+   `leave_balance.read` — ô đó trước không có tác dụng với quỹ phép, nay MỞ thêm quỹ phép của người phòng đó (trong công ty
+   hiện tại của người xem):
+
+   ```sql
+   SELECT r.code, r.name, COUNT(DISTINCT s.user_id) AS so_nguoi
+   FROM tab_user_scope s
+   JOIN tab_permission p ON p.role_id = s.role_id AND p.entity = 'leave_balance' AND p.can_read = 1
+   JOIN tab_role r ON r.id = s.role_id
+   WHERE s.dim = 'department' AND s.is_exclude = 0
+   GROUP BY r.code, r.name;
+   ```
+
+   Vai trò có `leave_balance.write` / `create` bậc `dept` cũng hẹp ở màn **Phân bổ chính sách** (`writable_employee_query`).
+2. **Deploy, rồi khởi động lại api** (cache quyền 60 giây theo tiến trình; người đang đăng nhập phải đăng xuất / đăng nhập lại
+   mới nhận khóa mới). ⚠️ Chuỗi ký HMAC của cổng B nay gồm hai header kênh AI + chat riêng (`core/agent_signature.py`): ERP
+   và dịch vụ AI (chế độ `service`) phải dựng lại CÙNG một đợt, lệch nhau là mọi lượt gọi qua cổng B bị 401.
+3. **Cấp khóa mới cho vai trò admin TRƯỚC** — luật chống tự nâng quyền chặn admin tick một khóa mà chính vai trò của họ chưa có.
+   Hai cách: đặt `SEED_FORCE_SYNC=true` trong `.env`, khởi động lại api một lần rồi trả về `false` (⚠️ cách này áp lại TOÀN BỘ
+   `STD_ROLES` lên vai trò chuẩn, kể cả `dept_head` bên dưới); hoặc chạy một script nhỏ thêm dòng `tab_permission` cho vai trò
+   admin, entity `work_schedule_personal`, đủ hành động, bậc Tất cả.
+4. **Tick cho vai trò Trưởng phòng (`dept_head`)** ở *Quản trị ▸ Phân quyền tài khoản* ▸ tab Vai trò & quyền:
+   - **Nhân sự › Lịch làm việc riêng (Trưởng phòng gán)**: Xem, Tạo, Sửa, Xóa — phạm vi **Phòng ban**;
+   - **Nghỉ phép › Quỹ phép năm** (`leave_balance`): Xem — phạm vi **Phòng ban**;
+   - **Nghỉ phép › Đơn nghỉ phép** (`leave_request`): Xem — phạm vi **Phòng ban** (để trợ lý trả được số ngày đã nghỉ của nhân viên).
+   Kiểm vai trò Trưởng phòng của từng người có mang ô **Phòng ban được xem** không: ô đó cộng thêm phòng cho cả lịch riêng lẫn
+   quỹ phép (cùng công ty).
+5. **Tài liệu và trợ lý trên đúng môi trường đích:**
+
+   ```bash
+   docker compose exec -T api python scripts/seed_help_nhan_su.py
+   docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep,nhan-su-ho-so --note "duoc-CR-757"
+   docker compose exec -T api python scripts/reindex_help_rag.py
+   ```

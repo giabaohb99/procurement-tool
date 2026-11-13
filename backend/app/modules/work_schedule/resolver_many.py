@@ -24,13 +24,17 @@ class DayPlansMany:
 
     def at(self, employee_id: int, day: date) -> tuple[DaySpec, int]:
         """`(DaySpec, schedule_id)` của nhân sự vào `day`; fallback → `schedule_id = 0`."""
-        hit = _pick(self._by_emp.get(employee_id, {}), day)
+        hit = self.winner(employee_id, day)
         if hit is None:
             return FALLBACK_WEEK[day.weekday()], 0
         spec = self._weeks.get(hit.schedule_id, {}).get(day.weekday())
         if spec is None:
             return FALLBACK_WEEK[day.weekday()], 0
         return spec, hit.schedule_id
+
+    def winner(self, employee_id: int, day: date):
+        """Dòng gán thắng của nhân sự vào `day` (None = mặc định) — để biết lịch đến từ CẤP nào (duoc-CR-757)."""
+        return _pick(self._by_emp.get(employee_id, {}), day)
 
     def name_of(self, schedule_id: int) -> str:
         return self.names.get(schedule_id, FALLBACK_NAME) if schedule_id else FALLBACK_NAME

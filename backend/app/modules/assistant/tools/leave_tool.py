@@ -15,6 +15,8 @@ Ba ràng buộc của phân hệ Nghỉ phép mà tool này phải tuân, không
 * **Read-only tuyệt đối.** `balance_service.ensure_balance()` vừa đọc vừa CẤP
   PHÁT một dòng quỹ mới — tool không được gọi nó (luật 4 ở `base.py`). Loại nghỉ
   chưa ai cấp quỹ thì trả về với cờ `allocated=False` chứ không tự đẻ dòng.
+* **Ngày đã nghỉ + lịch làm việc** (duoc-CR-757): `taken_by_type` (mọi loại, kể cả loại không trừ quỹ) và
+  `work_schedule` (lịch đang áp hôm nay) dựng ở `leave_taken_schedule` — dùng chung với `employee_leave_summary`.
 * **Chính sách nghỉ phép** (duoc-CR-717): `policy` + `policy_name` / `policy_annual_days` từng loại đọc qua
   `policy_allocation.load_assignments` / `load_lines` (không khóa, không ghi) — để trả lời "vì sao hạn mức của tôi
   khác người khác". Con số hạn mức vẫn là `allocated_days` của dòng quỹ.
@@ -34,6 +36,7 @@ vào màn Nghỉ phép.
 from datetime import date
 
 from app.core.vn_time import vn_today
+from app.modules.employee.model import Employee
 from app.modules.leave import balance_service, policy_allocation
 from app.modules.leave.policy_model import LeavePolicy
 from app.modules.leave.balance_model import LeaveBalance
@@ -43,10 +46,12 @@ from app.modules.leave.constants import (LEAVE_ACCRUAL_MODE_LABELS, LEAVE_REQUES
                                          LR_REJECTED, LR_RETURNED, label)
 from app.modules.leave.period_spans import header_period, period_text, periods_by_request
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
+from app.modules.work_schedule import resolver
 
 from .base import ToolContext, ToolSpec, denied
 from .leave_comp_tool import my_comp_requests
 from .leave_encashment_tool import my_encashments
+from .leave_taken_schedule import SCHEDULE_GLOSSARY, TAKEN_GLOSSARY, build_schedule_brief, taken_by_type_many
 
 MAX_ROWS = 30
 
@@ -78,7 +83,11 @@ _DESC = (
     "năm (tổng quỹ, đã dùng, đang giữ chỗ chờ duyệt, còn lại) kèm danh sách đơn nghỉ phép "
     "của họ và trạng thái duyệt. Gọi khi người dùng hỏi 'tôi còn bao nhiêu ngày phép', "
     "'phép năm còn mấy ngày', 'đơn nghỉ phép của tôi duyệt chưa', 'tôi đã nghỉ mấy ngày "
-    "rồi'... Chỉ trả dữ liệu của người hỏi — KHÔNG tra được phép của người khác. Khi trả "
+    "rồi', 'lịch làm việc của tôi thế nào'... Chỉ trả dữ liệu của người hỏi — tra phép của NGƯỜI KHÁC thì dùng "
+    "employee_leave_summary. Hỏi 'đã nghỉ mấy ngày' thì đọc `taken_total_days` / `approved_days` của "
+    "`taken_by_type` (đủ mọi loại nghỉ, kể cả không lương, ốm; chỉ ngày đã / đang nghỉ — ngày đã duyệt chưa tới nằm ở "
+    "`approved_upcoming_days`, nói riêng); hỏi 'lịch làm việc của tôi' / 'thứ Bảy có phải đi làm không' thì đọc `work_schedule` "
+    "(lịch đang áp hôm nay, ngày nghỉ phép được đếm theo lịch này). Khi trả "
     "lời, nói rõ 'đang giữ chỗ' là ngày của đơn đã gửi nhưng chưa duyệt xong (đã bị trừ "
     "khỏi số còn lại), và kèm `url` dạng link để người dùng bấm mở đơn. Số còn nghỉ được là "
     "`remaining_days` (đã trừ phần chưa tới tháng của loại cộng dần) — đừng tự cộng trừ; "
@@ -247,9 +256,9 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     try:
         year = int(year)
     except (TypeError, ValueError):
-        year = date.today().year
+        year = vn_today().year   # giờ VN — container chạy UTC, 00:00–06:59 sáng 01/01 sẽ lệch năm
     if year < 2000 or year > 2100:
-        year = date.today().year
+        year = vn_today().year
     limit = _clamp(args.get("limit"), 10)
 
     types = _type_names(ctx.db)
@@ -298,15 +307,28 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     encashments = my_encashments(ctx.db, emp_id, year, limit) if ctx.can("leave_encashment") else None
 
     policy = _active_policy(ctx.db, emp_id, year)
+    today = vn_today()
+    #  Đơn của CHÍNH người hỏi (đã gác `leave_request.read` ở đầu) — không cần lọc phạm vi.
+    taken = taken_by_type_many(ctx.db, [emp_id], year, types, today=today)[emp_id]
+    employee = ctx.db.get(Employee, emp_id)   # hồ sơ của CHÍNH người hỏi — không phải đọc hồ sơ người khác
+    work_schedule = (build_schedule_brief(resolver.effective_for_employee(ctx.db, employee, today))
+                     if employee is not None else None)
     return {
         "year": year,
         "balances": _balances(ctx.db, emp_id, year, types, policy),
+        "taken_by_type": taken["taken_by_type"],
+        "taken_total_days": taken["taken_total_days"],
+        "upcoming_total_days": taken["upcoming_total_days"],
+        "pending_total_days": taken["pending_total_days"],
+        "work_schedule": work_schedule,
         "policy": None if policy is None else {k: v for k, v in policy.items() if k != "lines"},
         "requests": requests,
         "comp_requests": comp if comp is not None else [],
         "encashments": encashments if encashments is not None else [],
         "total": len(requests),
         "glossary": {
+            "taken_by_type": TAKEN_GLOSSARY,
+            "work_schedule": SCHEDULE_GLOSSARY,
             "total_days": "Tổng quỹ được hưởng trong năm (đã gồm thâm niên và ngày chuyển "
                           "sang từ năm trước).",
             "pending_days": "Ngày đang GIỮ CHỖ cho đơn đã gửi nhưng chưa duyệt xong — đã "

@@ -65,6 +65,10 @@ ENTITIES = [
     # phòng ban / nhân sự; `workday_service` đọc lịch này để tính ngày nghỉ phép.
     # Khóa riêng: sửa lịch đổi cách tính ngày phép của cả công ty.
     "work_schedule",
+    #  Lịch làm việc RIÊNG của nhân sự (duoc-CR-757 lượt 2) — Trưởng phòng gán lịch cấp Nhân sự cho người trong phạm vi.
+    #  Tách khỏi `work_schedule` vì tick `work_schedule.create` là cho cả sửa mẫu lịch + gán cấp phòng / pháp nhân / toàn
+    #  hệ thống; khóa này chỉ mở ĐÚNG việc chọn một mẫu có sẵn rồi gán cho một nhân sự (không cho chính mình).
+    "work_schedule_personal",
     # HỢP ĐỒNG LAO ĐỘNG (05/10/2026) — bản ghi HĐ của nhân sự, CÓ LƯƠNG.
     # Khóa RIÊNG, tách khỏi `employee`: `employee.read` gần như vai trò nào cũng có (đổ ô chọn
     # người), gộp vào đó là cả công ty đọc được lương của nhau. Cùng lý lẽ `employee_sensitive`.
@@ -256,6 +260,7 @@ ENTITY_LABELS = {
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
     "work_schedule": "Nhân sự › Lịch làm việc",
+    "work_schedule_personal": "Nhân sự › Lịch làm việc riêng (Trưởng phòng gán)",
     "labor_contract": "Hợp đồng lao động (có lương)",
     "labor_contract_template": "Mẫu hợp đồng lao động",
     "room_booking": "Phiếu đặt phòng họp",

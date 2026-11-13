@@ -177,6 +177,8 @@ TOOL_SUB: dict[str, Sub] = {
     "document_read": Sub.LOOKUP_DOCUMENT, "document_search": Sub.LOOKUP_DOCUMENT, "my_documents": Sub.LOOKUP_DOCUMENT,
     "drive_read": Sub.LOOKUP_DRIVE, "drive_search": Sub.LOOKUP_DRIVE,
     "employee_lookup": Sub.LOOKUP_EMPLOYEE, "my_leave_summary": Sub.LOOKUP_LEAVE,
+    "employee_leave_summary": Sub.LOOKUP_LEAVE,   # duoc-CR-757
+    "my_salary": Sub.LOOKUP_EMPLOYEE,             # duoc-CR-757: lương của chính người hỏi
     "my_calendar_events": Sub.LOOKUP_CALENDAR,
     "list_my_groups": Sub.LOOKUP_GROUP, "read_group_messages": Sub.LOOKUP_GROUP, "read_group_file": Sub.LOOKUP_GROUP,
     "latest_meeting_report": Sub.LOOKUP_MEETING, "list_my_meetings": Sub.LOOKUP_MEETING,

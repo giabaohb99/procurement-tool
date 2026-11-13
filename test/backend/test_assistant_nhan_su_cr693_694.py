@@ -112,7 +112,9 @@ def test_cam_nang_nhan_su_khop_chu_truong():
     from app.modules.ai_skill.handbook_seed import seed_files
 
     body = next(b for slug, _t, _s, b in seed_files() if slug == "nhan-su-ho-so")
-    assert "kể cả của chính người hỏi" in body
+    #  duoc-CR-757: lương người khác — câu chính sách; lương của chính mình — `my_salary`, chỉ ở chat riêng.
+    assert "chỉ chính nhân sự đó mới xem được" in body and "kể cả quản trị" in body
+    assert "`my_salary`" in body and "chat riêng" in body
     assert "chỉ chính nhân sự đó xem được" in body
     assert "Nhiều số điện thoại" in body and "extra_phones" in body
     assert "Kế hoạch nhân sự — ĐÃ BỎ" in body

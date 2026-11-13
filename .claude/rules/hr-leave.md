@@ -215,3 +215,22 @@ Phiếu `tab_leave_encashment` (`TTP…`, khóa `leave_encashment`) chỉ ghi S�
   loại nghỉ có phiếu (mọi trạng thái) không xóa được. Bật `allow_encashment` khi `counts_balance` tắt → 422.
 - Trợ lý AI chỉ đọc (D8): `my_leave_summary` trả ngày + trạng thái, **không bao giờ trả số tiền**; không có công cụ soạn nháp.
 - Khóa `leave_encashment` mới: hệ đang chạy phải tick tay (D-018), kể cả `read` phạm vi công ty cho vai trò Kế toán.
+
+#### Quỹ phép bậc phòng ban + trợ lý tra phép (duoc-CR-757, 13/11/2026)
+
+Chi tiết: `doc/erp/hrm/02-nghi-phep.md` §17, `doc/erp/hrm/03-lich-lam-viec.md` §19–§21.
+
+- ⚠️ **Bậc `dept` của `leave_balance` nay là "người thuộc phòng của tôi", không còn là cả công ty.** Bảng quỹ không có cột
+  phòng nên `SCOPE_FIELDS["leave_balance"]` khai `dept_via_employee: "employee_id"`: điều kiện là truy vấn con trên
+  `tab_employee` (bí danh) — phòng CHÍNH của người giữ quỹ ∈ `dept_ids` của người xem (gồm kiêm nhiệm của NGƯỜI XEM) VÀ
+  `tab_employee.company_id` ∈ công ty hiện tại của người xem (chính + kiêm nhiệm loại Công ty). Ô **Phòng ban được xem** và
+  bậc `dept_proc` của quỹ phép đi cùng đường đó (không mở xuyên công ty). Mọi chỗ đọc quỹ qua `apply_scope` / `get_scoped` /
+  `scope_condition` tự hưởng — đừng tự lọc lại theo phòng.
+- ⚠️ **`tab_leave_balance.company_id` là ẢNH CHỤP lúc cấp quỹ** (local: nhiều dòng `= 0` hoặc lệch công ty hiện tại). Bậc
+  `dept` đã tránh bằng cách ràng công ty HIỆN TẠI của nhân sự; bậc `company` và ô **Chỉ trong / Loại trừ công ty** vẫn so cột
+  của dòng nên dòng cũ lệch công ty không hiện ở đó (giới hạn G3, ngoài CR này — chờ điền lùi `company_id`).
+- Hệ đang chạy: vai trò nào đặt `leave_balance` bậc `dept` sẽ HẸP lại sau deploy (trước là cả công ty) — đếm trước khi
+  deploy, câu SQL ở `03-lich-lam-viec.md` §21. Màn phân bổ chính sách (`writable_employee_query`) hẹp theo cùng luật.
+- Trợ lý: `employee_leave_summary` (người khác) gác `leave_balance.read`; số ngày đã nghỉ của người khác còn qua phạm vi
+  `leave_request` (thiếu thì rỗng). Năm của đơn = năm `from_date` (khớp sổ quỹ, lệch báo cáo Tình hình nghỉ phép ở đơn vắt
+  hai năm).

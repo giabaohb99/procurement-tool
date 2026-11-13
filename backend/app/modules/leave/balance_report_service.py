@@ -16,7 +16,8 @@ của `compare_to`.
 
 Phòng ban của quỹ phép không có cột riêng (`SCOPE_FIELDS["leave_balance"]`
 không khai `dept_id`) — chiều "Phòng ban" join `Employee.department_id` HIỆN
-TẠI của người giữ quỹ (không có lịch sử điều chuyển, xem `notes`).
+TẠI của người giữ quỹ (không có lịch sử điều chuyển, xem `notes`). Phạm vi bậc
+`dept` của người xem cũng đi qua hồ sơ nhân sự (`dept_via_employee`, duoc-CR-757).
 
 duoc-CR-686: `employee_status` (mặc định chỉ người đang làm) + `department_id` lọc qua truy vấn
 con trên `Employee` ngay trong câu quỹ phép; `people_missing_balance` (snapshot, chỉ ở Tổng) ở

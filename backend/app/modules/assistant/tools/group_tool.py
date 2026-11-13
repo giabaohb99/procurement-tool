@@ -8,6 +8,7 @@ from __future__ import annotations
 from app.modules.agent_hub import doc_text, groups
 
 from .base import ToolContext, ToolSpec
+from .salary_privacy import FREE_TEXT_RULE
 
 FILE_MAX_BYTES = 20 * 1024 * 1024
 
@@ -84,7 +85,7 @@ READ_GROUP_MESSAGES_SPEC = ToolSpec(
     description=("ĐỌC tin nhắn của một nhóm Telegram bot đang ở để TÓM TẮT / tổng hợp / viết báo cáo cho người hỏi. `group` = "
                  "tên nhóm (khớp một phần) hoặc số thứ tự từ list_my_groups; `hours` = bao nhiêu giờ gần nhất (mặc định 24, "
                  "**hôm nay** ≈ số giờ từ 0h, **tuần này** = 168). Tóm tắt xong: liệt kê các tệp trong nhóm kèm số thứ tự và gợi ý "
-                 "**tóm tắt tệp số n**; giữ `file_ref` của từng tệp để gọi read_group_file."),
+                 "**tóm tắt tệp số n**; giữ `file_ref` của từng tệp để gọi read_group_file. " + FREE_TEXT_RULE),
     parameters={"type": "object", "properties": {"group": {"type": "string"},
                                                  "hours": {"type": "integer", "minimum": 1, "maximum": 720}},
                 "required": ["group"]},
@@ -93,7 +94,7 @@ READ_GROUP_MESSAGES_SPEC = ToolSpec(
 READ_GROUP_FILE_SPEC = ToolSpec(
     name="read_group_file",
     description=("ĐỌC một tệp gửi trong nhóm (pdf, Word, Excel, văn bản) để tóm tắt; ghi âm / video thì tự chuyển sang làm "
-                 "biên bản họp và gửi riêng. `file_ref` lấy từ danh sách tệp của read_group_messages."),
+                 "biên bản họp và gửi riêng. `file_ref` lấy từ danh sách tệp của read_group_messages. " + FREE_TEXT_RULE),
     parameters={"type": "object", "properties": {"group": {"type": "string"}, "file_ref": {"type": "integer"}},
                 "required": ["group", "file_ref"]},
     handler=_read_group_file,

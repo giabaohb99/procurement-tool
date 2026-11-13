@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 2.2 — 11/11/2026 (**gộp Chính sách + Phân bổ thành một màn hai tab** — duoc-CR-750: bảng màn hình §2) · 2.1 — 11/11/2026 (**nối Phân bổ chính sách với Quỹ phép năm** — duoc-CR-745: §15.6a mới) · 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** |
+| Bản | 2.3 — 13/11/2026 (**trợ lý AI trả ngày đã nghỉ theo loại + lịch làm việc, công cụ tra phép của nhân sự khác; bậc Phòng ban của Quỹ phép năm siết về đúng phòng** — duoc-CR-757: §17 mới) · 2.2 — 11/11/2026 (**gộp Chính sách + Phân bổ thành một màn hai tab** — duoc-CR-750: bảng màn hình §2) · 2.1 — 11/11/2026 (**nối Phân bổ chính sách với Quỹ phép năm** — duoc-CR-745: §15.6a mới) · 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** · duoc-CR-757 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` · CR-719: `doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` |
 | Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (15 bài: thẻ + 14 bài con) · bài YCTT nghỉ phép cho kế toán ở `backend/scripts/seed_help_yctt_thanh_toan_nghi_phep.py` · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py` · báo cáo khóa 30 ở `backend/scripts/seed_help_bao_cao_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
@@ -1280,3 +1280,38 @@ Xóa hồ sơ nhân sự bị chặn khi còn phiếu thanh toán nghỉ phép h
 `test_nghi_phep_thanh_toan_cr719.py` (35 — toán, vòng đời qua bộ máy thật, `HookVeto`, ma trận hủy, tự duyệt, chuông,
 `my_leave_summary` không tiền); `test_pham_vi_khai_du_b07.py` 80/80; vitest `hr/types/leave-encashment.test.ts`,
 `hr/components/leave-encashment-{form,payment-card}.test.tsx`, `finance/components/payment-request-leave-encashment-view.test.tsx`.
+
+---
+
+## 17. Trợ lý AI: ngày đã nghỉ, lịch làm việc, phép của người khác (duoc-CR-757, 13/11/2026)
+
+Ghi gọn ở đây; bản đủ (hợp đồng dữ liệu, gác quyền, luật một nơi tính) ở [`03-lich-lam-viec.md` §19.3](03-lich-lam-viec.md)
+và mục 2 của [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
+
+- `my_leave_summary` trả thêm `taken_by_type` (mỗi loại nghỉ: `approved_days` đơn đã duyệt có ngày bắt đầu từ hôm nay trở
+  về trước, `approved_upcoming_days` đơn đã duyệt cho ngày sắp tới, `pending_days` đơn chờ duyệt, `counts_balance`),
+  `taken_total_days` (chỉ phần đã / đang nghỉ), `upcoming_total_days`, `pending_total_days` và `work_schedule` (lịch đang áp
+  hôm nay). Khác `used_days` của quỹ: `taken_by_type` gồm CẢ loại không trừ quỹ (không lương, ốm, thai sản…), nên *tôi đã
+  nghỉ mấy ngày* trả lời đủ mọi loại. Cả đơn tính vào năm của `from_date`, đúng như sổ quỹ (§5) — đơn vắt hai năm có thể lệch
+  báo cáo Tình hình nghỉ phép (chia theo ngày thật). Năm mặc định = năm hiện tại theo giờ VN (`vn_today()`).
+- Công cụ mới `employee_leave_summary` (chỉ đọc, có ở cổng MCP) cho Nhân sự / quản lý: tra theo mã / tên hoặc theo phòng;
+  gác `leave_balance.read`, người trả về nằm trong cả phạm vi `employee.read` lẫn phạm vi `leave_balance` — đúng như màn
+  Quỹ phép năm (§9), không rộng hơn. **Ngày đã nghỉ** của người khác thêm một lớp: chỉ đơn trong phạm vi `leave_request.read`
+  của người hỏi (thiếu khóa đó thì `taken_by_type` rỗng, quỹ vẫn trả). Không lương, không trường nhạy cảm.
+- **Bậc Phòng ban của `leave_balance` nay đúng nghĩa phòng** (lượt 2, chốt Q2). Bảng quỹ không có cột phòng nên trước đây
+  bậc `dept` chỉ ràng công ty, tức **cả công ty**. Nay `SCOPE_FIELDS["leave_balance"]` khai `dept_via_employee`: bậc `dept`
+  chỉ trúng quỹ của người có **phòng chính** thuộc phòng của người xem (phòng chính + phòng kiêm nhiệm của NGƯỜI XEM) và
+  đang ở công ty hiện tại của người xem (ràng `tab_employee.company_id`, không ràng cột công ty của dòng quỹ). Ô **Phòng ban
+  được xem** và bậc `dept_proc` cũng đi đường đó, không mở xuyên công ty. Người phòng khác kiêm nhiệm vào phòng mình KHÔNG
+  hiện (cùng luật `employee`). Áp cho mọi chỗ đọc quỹ: màn Quỹ phép năm (hai thẻ), chi tiết, điều chỉnh, báo cáo Quỹ phép,
+  đối chiếu kết sổ, phân bổ chính sách (`writable_employee_query`), công cụ trợ lý. Seed cấp `dept_head`: `leave_balance`
+  Xem bậc Phòng ban — Trưởng phòng hỏi trợ lý **phép của nhân viên** là thấy đúng người phòng mình. Chi tiết phạm vi:
+  `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` §4d.
+- ⚠️ **Giới hạn đã biết (G3)**: `tab_leave_balance.company_id` là ảnh chụp lúc cấp quỹ (nhiều dòng cũ `= 0` hoặc lệch công ty
+  hiện tại). Bậc `dept` đã tránh; bậc **Công ty** và ô **Chỉ trong / Loại trừ công ty** vẫn so cột đó nên dòng lệch không
+  hiện ở đó. Chờ việc điền lùi `company_id`, ngoài CR này.
+- ⚠️ **Hệ đang chạy**: vai trò nào đặt `leave_balance` bậc `dept` sẽ HẸP lại sau deploy; vai trò cũ không tự có quyền mới
+  (D-018). Sổ việc + câu SQL đếm: [`03-lich-lam-viec.md` §21](03-lich-lam-viec.md).
+- Cẩm nang trợ lý `ai_skill/seed_handbook/40-nghi-phep.md` có mục *Lịch làm việc và ngày đã nghỉ*; bài HDSD *Nhân sự — Lịch làm
+  việc của phòng ban và cách đếm ngày nghỉ* (`seed_help_nhan_su.py`) có mục hỏi trợ lý.
+- Bài kiểm: `test_tro_ly_tra_phep_lich_lam_viec_cr757.py`.

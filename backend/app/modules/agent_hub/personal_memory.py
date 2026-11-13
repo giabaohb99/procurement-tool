@@ -20,7 +20,7 @@ import time
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -53,9 +53,12 @@ _LABEL_BY_KEY = dict(SECTIONS)
 _KEY_BY_FOLD = {fold(label): key for key, label in SECTIONS}
 
 #  Không bao giờ ghi bí mật vào sổ — dù người dùng tự nhắn "nhớ: mật khẩu wifi là …".
+#  duoc-CR-757: lương / phụ cấp / thu nhập cũng không tự rút vào sổ (sổ nạp vào lời nhắc mọi lượt). "luong" không dấu
+#  chỉ bắt khi không đứng trước "duyet" (luồng duyệt).
 _SECRET_RE = re.compile(
     r"(mật khẩu|mat khau|password|passwd|token|api[\s_-]?key|secret|private key|số thẻ|so the|cvv|\botp\b|"
-    r"số tài khoản|so tai khoan|\d{12,})", re.IGNORECASE)
+    r"số tài khoản|so tai khoan|\d{12,}|lương|phụ cấp|thu nhập|\bluong\b(?!\s+duyet)|\bphu cap\b|\bthu nhap\b)",
+    re.IGNORECASE)
 
 _CACHE: dict[int, tuple[float, str]] = {}
 
@@ -467,8 +470,52 @@ def chat_ids_of(db: Session, user_id: int) -> list[str]:
     return sorted({str(c) for c in rows if c})
 
 
-def search_history(db: Session, user_id: int, query: str, days: int = 30) -> list[dict]:
-    """Tin hỏi / trả lời / tra cứu cũ khớp `query` trong các chat của người đó; mới trước, khớp nhiều chữ trước."""
+SALARY_TOOL = "my_salary"
+SALARY_TURNS_MAX = 50
+_SALARY_WORDS = ("lương", "luong", "phụ cấp", "phu cap", "thu nhập", "thu nhap")
+
+
+def salary_turn_spans(db: Session, user_id: int, chats: list[str], since) -> list[tuple[str, int, int | None]]:
+    """duoc-CR-757: các lượt LƯƠNG — `(chat, id tin hỏi, id tin hỏi KẾ TIẾP hoặc None)`; tin bot nằm giữa hai mốc là câu
+    trả lời của lượt đó. Lượt lương = tin hỏi có nhãn `my_salary` ở sổ ý định (`tab_agent_intent.tools`, `message_id` =
+    tin hỏi — không thêm cột) HOẶC tin hỏi có chữ lương. Lượt lương hiếm nên tra từng lượt (trần `SALARY_TURNS_MAX`)."""
+    from .constants import DIR_IN
+    from .model import AgentIntent, AgentMessage
+
+    from sqlalchemy import or_
+
+    from app.modules.assistant.tools.salary_privacy import mentions_salary
+
+    rows = db.execute(select(AgentIntent.message_id, AgentIntent.tools).where(
+        AgentIntent.user_id == int(user_id or 0), AgentIntent.message_id > 0, AgentIntent.created_at >= since,
+    ).order_by(AgentIntent.id.desc())).all()
+    qids = {int(m) for m, tools in rows if SALARY_TOOL in (tools or [])}
+    #  Lưới thứ hai: câu HỎI có chữ lương — câu trả lời ngay sau nó thường chỉ có con số, không có chữ lương.
+    asked = db.execute(select(AgentMessage.id, AgentMessage.body).where(
+        AgentMessage.chat_id.in_(chats), AgentMessage.direction == DIR_IN, AgentMessage.created_at >= since,
+        or_(*[AgentMessage.body.ilike(f"%{w}%") for w in _SALARY_WORDS]),
+    ).order_by(AgentMessage.id.desc()).limit(SALARY_TURNS_MAX * 4)).all()
+    qids |= {int(i) for i, body in asked if mentions_salary(body)}
+    spans = []
+    for qid in sorted(qids, reverse=True)[:SALARY_TURNS_MAX]:
+        q = db.get(AgentMessage, qid)
+        if q is None or q.chat_id not in chats:
+            continue
+        nxt = db.scalar(select(func.min(AgentMessage.id)).where(
+            AgentMessage.chat_id == q.chat_id, AgentMessage.direction == DIR_IN, AgentMessage.id > qid))
+        spans.append((q.chat_id, qid, int(nxt) if nxt else None))
+    return spans
+
+
+def _in_salary_turn(row, spans) -> bool:
+    return any(row.chat_id == chat and lo <= row.id and (hi is None or row.id < hi) for chat, lo, hi in spans)
+
+
+def search_history(db: Session, user_id: int, query: str, days: int = 30, *, hide_salary: bool = False) -> list[dict]:
+    """Tin hỏi / trả lời / tra cứu cũ khớp `query` trong các chat của người đó; mới trước, khớp nhiều chữ trước.
+
+    `hide_salary` (duoc-CR-757, kênh KHÔNG riêng — MCP, nhóm, kênh lạ): bỏ mọi tin của lượt đã gọi `my_salary` (nhãn ở
+    sổ ý định) và, làm lưới dự phòng, mọi tin có chữ lương / phụ cấp / thu nhập."""
     from datetime import timedelta
 
     from sqlalchemy import or_
@@ -489,6 +536,11 @@ def search_history(db: Session, user_id: int, query: str, days: int = 30) -> lis
         AgentMessage.created_at >= now_utc() - timedelta(days=days),
         or_(*[AgentMessage.body.ilike(f"%{w}%") for w in raw_words + words]),
     ).order_by(AgentMessage.id.desc()).limit(200)))
+    if hide_salary:
+        from app.modules.assistant.tools.salary_privacy import mentions_salary
+
+        spans = salary_turn_spans(db, uid, chats, now_utc() - timedelta(days=days))
+        rows = [r for r in rows if not mentions_salary(r.body) and not _in_salary_turn(r, spans)]
     scored = []
     for r in rows:
         body = fold(r.body)

@@ -369,7 +369,10 @@ export function EmployeeDetailPage() {
             <TabsContent value="leave" className="mt-5 max-md:mt-2">
               <div className="space-y-5">
                 <EmployeeTabLeave employee={employee} />
-                <EmployeeWorkScheduleCard employeeId={employee.id} />
+                <EmployeeWorkScheduleCard
+                  employeeId={employee.id}
+                  employeeName={[employee.code, employee.full_name].filter(Boolean).join(' — ')}
+                />
               </div>
             </TabsContent>
 

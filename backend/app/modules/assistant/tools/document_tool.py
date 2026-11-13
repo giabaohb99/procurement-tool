@@ -32,6 +32,7 @@ from app.modules.document.version_model import DocumentVersion
 from app.modules.employee.model import Employee
 
 from .base import ToolContext, ToolSpec, denied
+from .salary_privacy import FREE_TEXT_RULE
 
 MAX_FLOWS = 10
 MAX_DOCS = 30
@@ -487,7 +488,8 @@ DOCUMENT_READ_SPEC = ToolSpec(
         "'điều kiện/mức chi trong văn bản Z'. Truyền document_id (ưu tiên, lấy từ "
         "document_search hoặc my_documents) hoặc số hiệu. Văn bản dài chia thành nhiều "
         "phần — truyền part để đọc tiếp. Khi trả lời phải bám nội dung tool trả về, nêu "
-        "số hiệu văn bản, và lưu ý người dùng nếu văn bản không ở trạng thái Có hiệu lực."
+        "số hiệu văn bản, và lưu ý người dùng nếu văn bản không ở trạng thái Có hiệu lực. "
+        + FREE_TEXT_RULE
     ),
     parameters={
         "type": "object",

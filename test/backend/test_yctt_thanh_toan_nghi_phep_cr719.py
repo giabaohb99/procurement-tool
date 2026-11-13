@@ -411,12 +411,13 @@ def test_pur_staff_khong_thay_qua_tap_du_lieu_ai(db, world):
                                                        "measures": ["total", "count"]})
     assert out["totals"]["count"] == 1
     assert out["totals"]["total"] == 5_000_000
-    #  người có cả hai khóa thấy cả hai phiếu
+    #  duoc-CR-757 (luật lương tuyệt đối): bảng số của trợ lý bỏ HẲN YCTT thanh toán nghỉ phép — kể cả người có cả hai
+    #  khóa (gom theo phòng / tháng là cô lập được lương ngày của một người). Họ xem phiếu đó trên màn ERP.
     acc = world.grant("a3", "payment_request", "company", actions=("read", "approve"))
     acc.grant("leave_encashment", "company")
     out2 = T.run_tool(db, acc.user, "dataset_query", {"dataset": "payment_request",
                                                       "measures": ["total", "count"]})
-    assert out2["totals"]["count"] == 2
+    assert out2["totals"]["count"] == 1 and out2["totals"]["total"] == 5_000_000
 
 
 def test_pur_staff_khong_thay_trong_viec_cho_duyet_cua_tro_ly(db, world):

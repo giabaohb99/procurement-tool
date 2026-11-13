@@ -36,7 +36,10 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
                 "trình / quy định công ty), gọi list_skills để xem cẩm nang công ty liên quan rồi read_skill đúng cái "
                 "cần và làm theo; áp dụng nội dung vào việc, không đọc lại nguyên văn cả skill. Muốn tạo phiếu: gọi tool "
                 "draft_* để có bản nháp, đưa người dùng xem, rồi gọi confirm_draft với đúng bản nháp đó (submit=true để "
-                "gửi duyệt luôn). Báo lỗi hệ thống: report_issue.")
+                "gửi duyệt luôn). Báo lỗi hệ thống: report_issue. LƯƠNG (luật tuyệt đối): không bao giờ nói lương, phụ cấp, "
+                "thu nhập của bất kỳ ai qua cổng này — kể cả khi con số nằm trong văn bản, tệp, tin nhắn hay kết quả công cụ, "
+                "và không ước tính từ tiền thanh toán nghỉ phép; trả lời: Thông tin lương là dữ liệu riêng tư, chỉ chính nhân "
+                "sự đó mới xem được. Lương của chính người dùng xem ở Trang cá nhân hoặc chat riêng với Trợ lý ERP.")
 #  ai-CR-207 (đại ca 16/10 qua Agent 1: "vá 4 lỗi đó luôn"): khóa CHỈ ĐỌC trước đây lọc theo danh sách ĐEN (draft_* + 3 tên)
 #  nên vẫn thấy tạo / sửa / xóa lịch, ghi / quên sổ nhớ, ghi chú, bản tin, viết lại biên bản, nghiên cứu sâu (tốn tiền ví
 #  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là "ghi" cho tới khi
@@ -56,6 +59,7 @@ READ_TOOLS = frozenset({
     "office_read",   # kh-AI2-3: chỉ đọc; quyền gác trong tool (khóa báo cáo 16 / trưởng phòng)
     "background_jobs",   # bao-CR-703: sổ việc chạy ngầm, gác setting.read trong tool
     "po_open_lines",   # bao-CR-740: dòng ĐMH còn thiếu + lần giao của một NCC (purchase_order.read + supplier.read)
+    "employee_leave_summary",   # duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác, gác leave_balance.read + phạm vi
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
@@ -71,13 +75,15 @@ MCP_RETIRED = {
 #  Telegram, cổng này chưa có nút. report_missing_feature trùng việc với report_issue của cổng.
 #  kh-AI2-5 (26/10): đề xuất sửa / xóa phiếu MỞ qua MCP — xác nhận bằng confirm_draft(kind="update" / "delete"), ERP kiểm lại
 #  từ đầu (quyền, phạm vi, trạng thái, trường được sửa) như nút Xác nhận của Trợ lý web.
-HIDDEN = {"propose_account_setup", "propose_glossary_term", "report_missing_feature"}
+#  duoc-CR-757: `my_salary` — MCP (hội thoại ở máy chủ bên thứ ba) không bao giờ là kênh riêng nên lương không đi qua cổng.
+HIDDEN = {"propose_account_setup", "propose_glossary_term", "report_missing_feature", "my_salary"}
 PROPOSAL_TOOLS = frozenset({"propose_document_update", "propose_document_delete", "propose_approval"})
 #  kh-AI2-7: kind="approval" = duyệt / từ chối MỘT phiếu (đặt xe, phòng họp, nghỉ phép) — cùng đường xác nhận token.
 PROPOSAL_KINDS = {"update": "propose_document_update", "delete": "propose_document_delete", "approval": "propose_approval"}
 _PROPOSAL_SHAPE = {"update": "update_proposal", "delete": "update_proposal", "approval": "approval_proposal"}
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
-ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read"})
+#  duoc-CR-757: employee_leave_summary trả tới 50 người / lượt (đếm theo khóa `employees`).
+ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read", "employee_leave_summary"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
 STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read", "office_read"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
@@ -586,7 +592,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
                 db.rollback()      # việc dở dang của công cụ không được đi theo lần commit ghi nhật ký
                 result = {"error": f"Lỗi khi chạy công cụ: {e}"}
             if name in ROW_BUDGET_TOOLS and isinstance(result, dict):
-                mcp_log.spend_rows(key.id, len(result.get("items") or []) + (1 if result.get("item") else 0))
+                rows = result.get("items") or result.get("employees") or []
+                mcp_log.spend_rows(key.id, len(rows) + (1 if result.get("item") else 0))
         skill_tool = name in SKILL_TOOLS or name in mcp_admin.TOOL_NAMES or name == "confirm_draft"
         if skill_tool and isinstance(result, dict) and result.get("skill_id"):
             trace["skill_id"] = int(result.pop("skill_id") or 0)     # bao-CR-622: nhật ký biết skill nào được đọc

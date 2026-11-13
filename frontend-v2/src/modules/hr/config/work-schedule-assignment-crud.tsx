@@ -5,20 +5,12 @@ import { WORK_SCHEDULE_LEVEL } from '@/shared/constants/statuses'
 import { CrudRecordCard, type CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { formatDate } from '@/shared/utils/format-date'
+import { WorkScheduleAssignmentFormDialog } from '../components/work-schedule-assignment-form-dialog'
 import { WorkScheduleLevelField } from '../components/work-schedule-level-field'
 import { WorkScheduleSelectField } from '../components/work-schedule-select-field'
 import { WorkScheduleTargetField } from '../components/work-schedule-target-field'
-import {
-  SYSTEM_LEVEL_LABEL,
-  WORK_SCHEDULE_LEVEL_CODE,
-  type WorkScheduleAssignment,
-} from '../types/work-schedule'
-
-/** "Toàn hệ thống" cho cấp hệ thống (đối tượng `0` không có tên), còn lại lấy tên backend trả kèm. */
-function targetLabel(row: WorkScheduleAssignment): string {
-  if (row.target_level === WORK_SCHEDULE_LEVEL_CODE.SYSTEM) return SYSTEM_LEVEL_LABEL
-  return row.target_name || `#${row.target_id}`
-}
+import type { WorkScheduleAssignment } from '../types/work-schedule'
+import { describeAssignmentTarget as targetLabel } from '../utils/describe-assignment-target'
 
 /**
  * GÁN LỊCH LÀM VIỆC — mẫu lịch nào áp cho ai, từ ngày nào.
@@ -43,6 +35,9 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
   storageKey: 'hr.work-schedule-assignments',
   listRoute: appRoutes.hr.workScheduleAssignments,
   openFormOnRowClick: true,
+  //  duoc-CR-757 lượt 2: hộp riêng chọn đường gán (Nhân sự / Trưởng phòng gán lịch riêng / chỉ xem) theo quyền và
+  //  theo TỪNG dòng — khung chung chỉ biết một khóa `entity`.
+  FormDialog: WorkScheduleAssignmentFormDialog,
   //  Không có trang chi tiết → xóa ngay trong popup. Xóa dòng vừa gán thì backend tự mở lại
   //  lịch cũ mà dòng đó đã tự đóng (chốt 05/10/2026).
   deleteInForm: true,

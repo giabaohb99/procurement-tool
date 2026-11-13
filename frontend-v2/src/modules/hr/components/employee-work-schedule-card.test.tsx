@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuthStore } from '@/core/auth/auth-store'
+import type { AuthUser } from '@/core/auth/auth-types'
 import type { EffectiveWorkSchedule, WorkScheduleDay } from '../types/work-schedule'
 import { WORK_DAY_KIND_CODE } from '../types/work-schedule'
 import { buildDefaultWeek } from '../utils/work-schedule-week'
@@ -40,12 +42,12 @@ function effective(patch: Partial<EffectiveWorkSchedule> = {}): EffectiveWorkSch
   }
 }
 
-function renderCard(employeeId = 7) {
+function renderCard(employeeId = 7, employeeName?: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <EmployeeWorkScheduleCard employeeId={employeeId} />
+        <EmployeeWorkScheduleCard employeeId={employeeId} employeeName={employeeName} />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -55,6 +57,7 @@ describe('EmployeeWorkScheduleCard', () => {
   beforeEach(() => {
     apiGet.mockReset()
     permissions = {}
+    useAuthStore.setState({ user: null })
   })
 
   it('shows "Mặc định hệ thống" and NO validity dates for the built-in fallback', async () => {
@@ -152,5 +155,66 @@ describe('EmployeeWorkScheduleCard', () => {
       unmount()
     }
     expect(apiGet).not.toHaveBeenCalled()
+  })
+
+  describe('"Đổi lịch riêng" (duoc-CR-757 lượt 2)', () => {
+    const signInAs = (employeeId: number) =>
+      useAuthStore.setState({ user: { id: 1, email: '', full_name: 'TP', employee_id: employeeId } as AuthUser })
+
+    it('a head of department with only the personal key gets a link that prefills employee level + this person', async () => {
+      permissions = { work_schedule: ['read'], work_schedule_personal: ['create', 'write'] }
+      signInAs(99)
+      apiGet.mockResolvedValue(effective())
+      renderCard(7, 'NSU007 — Lê Văn A')
+      const link = await screen.findByRole('link', { name: 'Đổi lịch riêng' })
+      const url = new URL(link.getAttribute('href') ?? '', 'http://x')
+      expect(url.pathname).toBe('/hr/work-schedule-assignments')
+      expect(url.searchParams.get('target_level')).toBe('4')
+      expect(url.searchParams.get('prefill_target_id')).toBe('7')
+      expect(url.searchParams.get('prefill_target_name')).toBe('NSU007 — Lê Văn A')
+      //  Không có work_schedule.write thì không có lối tắt sang cả màn quản lý.
+      expect(screen.queryByRole('link', { name: 'Gán lịch' })).not.toBeInTheDocument()
+    })
+
+    it('never offers it on the viewer own profile, even to HR (backend refuses self-assignment)', async () => {
+      permissions = { work_schedule: ['create', 'write'], work_schedule_personal: ['create'] }
+      signInAs(7)
+      apiGet.mockResolvedValue(effective())
+      renderCard(7)
+      await screen.findByText('Theo phòng ban: Kế toán')
+      expect(screen.queryByRole('link', { name: 'Đổi lịch riêng' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Gán lịch' })).toBeInTheDocument()
+    })
+
+    it('needs a create right: write-only or read-only keys show no button', async () => {
+      apiGet.mockResolvedValue(effective())
+      const grants: Record<string, string[]>[] = [
+        { work_schedule_personal: ['write', 'delete'] },
+        { work_schedule: ['read'], work_schedule_personal: ['read'] },
+      ]
+      for (const grant of grants) {
+        permissions = grant
+        const { unmount } = renderCard(7)
+        await screen.findByText('Theo phòng ban: Kế toán')
+        expect(screen.queryByRole('link', { name: 'Đổi lịch riêng' })).not.toBeInTheDocument()
+        unmount()
+      }
+    })
+
+    it('HR also gets it next to the plain "Gán lịch" link', async () => {
+      permissions = { work_schedule: ['create', 'write'] }
+      signInAs(99)
+      apiGet.mockResolvedValue(effective())
+      renderCard(7)
+      expect(await screen.findByRole('link', { name: 'Đổi lịch riêng' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Gán lịch' })).toBeInTheDocument()
+    })
+
+    it('a user without a linked employee record still sees it for others', async () => {
+      permissions = { work_schedule_personal: ['create'] }
+      apiGet.mockResolvedValue(effective())
+      renderCard(7)
+      expect(await screen.findByRole('link', { name: 'Đổi lịch riêng' })).toBeInTheDocument()
+    })
   })
 })

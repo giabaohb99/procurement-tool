@@ -539,16 +539,18 @@ class _Remote:
             raise ErpError("Chưa khai AGENT_GATEWAY_URL — dịch vụ AI không biết ERP ở đâu")
         full = f"/api/agent-gw{path}"
         data = json.dumps(body, ensure_ascii=False, default=str).encode("utf-8") if body is not None else b""
+        from app.core.request_context import AI_CHANNEL_HEADER, current_ai_channel
+        from app.modules.assistant.private_chat import PRIVATE_CHAT_HEADER, current_private_chat
+
+        #  ai-CR-230: ERP đóng dấu kênh AI lên nhật ký thao tác; duoc-CR-757: chat riêng đã liên kết — công cụ lương mới trả
+        #  của chính chủ. Cả hai nằm TRONG chữ ký (đổi / thêm sau khi ký là 401).
+        context = {AI_CHANNEL_HEADER: str(current_ai_channel() or ""), PRIVATE_CHAT_HEADER: "1" if current_private_chat() else ""}
         try:
-            headers = agent_signature.sign_headers(method, full, data, user_id)
+            headers = agent_signature.sign_headers(method, full, data, user_id, context=context)
         except ValueError as e:
             raise ErpError(str(e)) from None
         if data:
             headers["content-type"] = "application/json"
-        from app.core.request_context import AI_CHANNEL_HEADER, current_ai_channel
-
-        if current_ai_channel():
-            headers[AI_CHANNEL_HEADER] = str(current_ai_channel())   # ai-CR-230: ERP đóng dấu kênh AI lên nhật ký thao tác
         resp = None
         for wait in (*CONNECT_RETRY_WAITS, None):
             try:

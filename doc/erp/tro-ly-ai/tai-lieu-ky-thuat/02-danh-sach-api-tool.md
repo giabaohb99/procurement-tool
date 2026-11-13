@@ -717,6 +717,48 @@ không có tool nào - tức bot **giải thích được quy trình mà không 
 
 ---
 
+## Nhóm 16b - Nghỉ phép, lịch làm việc và lương của chính mình (duoc-CR-757, 13/11/2026)
+
+Ghi bổ sung sau khi tài liệu này dừng cập nhật số tool; bản đủ hợp đồng dữ liệu ở `doc/erp/hrm/tai-lieu-ky-thuat/api.md`
+mục 2, luật ở `doc/erp/hrm/03-lich-lam-viec.md` §19.3.
+
+### T35 (bổ sung). my_leave_summary — thêm lịch làm việc và ngày đã nghỉ
+- Trả thêm `work_schedule` (lịch đang áp hôm nay: tên, cấp nguồn, bảy ngày có giờ) và `taken_by_type` (mỗi loại nghỉ:
+  `approved_days` đã / đang nghỉ, `approved_upcoming_days` đã duyệt cho ngày sắp tới, `pending_days` chờ duyệt — gồm cả loại
+  không trừ quỹ) + `taken_total_days` / `upcoming_total_days` / `pending_total_days`. Năm theo giờ VN; cả đơn tính vào năm
+  của ngày bắt đầu nghỉ.
+
+### employee_leave_summary — phép của nhân sự khác [ĐÃ CODE 13/11/2026]
+- Mục đích: "anh X còn mấy ngày phép", "phòng Y năm nay ai nghỉ bao nhiêu", "chị Z theo lịch nào".
+- Tham số: `employee` (mã / một phần họ tên) hoặc `department` (ID / một phần tên, nhận cả chữ đầu *phòng*), `year`,
+  `limit` (mặc định 20, trần 50).
+- Quyền: `leave_balance.read`; người trả về = phạm vi `employee.read` ∩ phạm vi `leave_balance` (bậc Phòng ban = người thuộc
+  phòng mình, từ duoc-CR-757 lượt 2); ngày đã nghỉ thêm lớp `leave_request.read` (thiếu thì rỗng). Có ở cổng MCP
+  (`READ_TOOLS`, tính ngân sách dòng theo `employees`).
+- Không lương, không trường nhạy cảm. Số truy vấn cố định.
+
+### my_salary — lương của CHÍNH người hỏi [ĐÃ CODE 13/11/2026]
+- Mục đích: "lương của tôi bao nhiêu", "phụ cấp của em". Không có tham số chọn người: luôn là hồ sơ gắn tài khoản đang hỏi.
+- Trả `salary_monthly`, `allowance_monthly`, `salary_set`, `url` = `/me`. Số đi qua `employee.sensitive.mask` (về 0 nếu
+  không phải chính chủ).
+- Chỉ trả ở kênh RIÊNG (`salary_privacy.is_private_conversation`): Trợ lý web luôn riêng; bot Telegram / Zalo riêng khi chat
+  không phải nhóm và đã liên kết tài khoản; kênh chung / lạ → từ chối kèm câu dặn hỏi ở chat riêng. **Ẩn ở cổng MCP**
+  (`mcp.HIDDEN`).
+- Nhóm lọc công cụ `salary` khớp chữ CÒN DẤU (`RAW_MATCHERS`) vì gập dấu thì *luồng* trùng *lương*.
+
+### Luật lương của mọi công cụ (người chủ chốt 13/11/2026, tuyệt đối)
+- Không công cụ nào trả lương / phụ cấp của NGƯỜI KHÁC, bất kể quyền. Hỏi lương người khác: không gọi công cụ nào, trả lời
+  *Thông tin lương là dữ liệu riêng tư, chỉ chính nhân sự đó mới xem được.*
+- Tiền YCTT thanh toán nghỉ phép (= lương ngày × số ngày): `payment_request_read` và
+  `pending_procurement_approvals` giấu số (`money_hidden`) trừ khi người hỏi là người nhận và đang ở kênh riêng;
+  `dataset_query` (bộ YCTT) loại hẳn các phiếu này khỏi số tổng hợp; công cụ sửa / xóa phiếu không nhận chúng.
+- `leave_encashment` không còn trả `decision_note` (chữ tự do có thể ghi đơn giá).
+- Công cụ trả chữ tự do (văn bản, Drive, tin nhóm, tệp nhóm, ghi chú, lịch sử chat) mang câu dặn `FREE_TEXT_RULE`;
+  `search_chat_history` và tìm ghi chú ở kênh không riêng bỏ lượt / tin có chữ lương; sổ nhớ không tự rút chữ lương.
+- Bài kiểm: `test/backend/test_tro_ly_khong_lo_luong_cr757.py`, `test_tro_ly_tra_phep_lich_lam_viec_cr757.py`.
+
+---
+
 ## Nhóm 17 - Diễn đàn (`forum_tool.py`, CHƯA CODE)
 
 ### T46. forum_search · T47. forum_post_read

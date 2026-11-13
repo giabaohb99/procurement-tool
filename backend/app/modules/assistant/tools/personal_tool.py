@@ -14,6 +14,7 @@ from __future__ import annotations
 from app.modules.agent_hub import personal_memory as pm
 
 from .base import ToolContext, ToolSpec
+from .salary_privacy import FREE_TEXT_RULE
 
 
 def _uid(ctx: ToolContext) -> int:
@@ -47,12 +48,20 @@ def _save_note(ctx: ToolContext, args: dict) -> dict:
 
 
 def _search_chat_history(ctx: ToolContext, args: dict) -> dict:
-    hits = pm.search_history(ctx.db, _uid(ctx), str(args.get("query") or ""), int(args.get("days") or 30))
+    #  duoc-CR-757: kênh không riêng (cổng MCP, nhóm, kênh lạ) — không trả tin của lượt lương / tin có chữ lương.
+    from .salary_privacy import is_private_conversation
+
+    hits = pm.search_history(ctx.db, _uid(ctx), str(args.get("query") or ""), int(args.get("days") or 30),
+                             hide_salary=not is_private_conversation(ctx))
     return {"count": len(hits), "messages": hits}
 
 
 def _search_notes(ctx: ToolContext, args: dict) -> dict:
+    from .salary_privacy import is_private_conversation, mentions_salary
+
     hits = pm.search_notes(ctx.db, _uid(ctx), str(args.get("query") or ""))
+    if not is_private_conversation(ctx):   # duoc-CR-757: ghi chú có chữ lương không ra kênh chung
+        hits = [h for h in hits if not mentions_salary(f"{h.get('title', '')} {h.get('text', '')}")]
     return {"count": len(hits), "notes": hits}
 
 
@@ -100,7 +109,7 @@ SEARCH_CHAT_HISTORY_SPEC = ToolSpec(
     name="search_chat_history",
     description=("TÌM LẠI HỘI THOẠI CŨ của chính người đang hỏi với bot (**hôm trước anh hỏi gì về NCC X**, **tuần trước mình "
                  "bàn giá thép thế nào**). Trả các tin cũ khớp từ khóa kèm ngày giờ. Dùng cùng search_notes (kho có bản tóm "
-                 "tắt từng buổi). `days` mặc định 30, tối đa 180."),
+                 "tắt từng buổi). `days` mặc định 30, tối đa 180. " + FREE_TEXT_RULE),
     parameters={"type": "object", "properties": {"query": {"type": "string"},
                                                  "days": {"type": "integer", "minimum": 1, "maximum": 180}},
                 "required": ["query"]},

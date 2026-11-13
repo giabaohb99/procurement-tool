@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 0.2 (13/11/2026: phần Kiêm nhiệm sửa theo hai loại dòng — duoc-CR-756) · 0.1 |
+| Bản | 0.4 (13/11/2026: thêm PCN-HRM-16 trợ lý không lộ lương, PCN-HRM-17 phạm vi khóa lịch riêng + bậc Phòng ban của quỹ phép — duoc-CR-757 lượt 2) · 0.3 (13/11/2026: thêm PCN-HRM-13…15 cho lịch làm việc của phòng ban và công cụ AI tra phép — duoc-CR-757) · 0.2 (13/11/2026: phần Kiêm nhiệm sửa theo hai loại dòng — duoc-CR-756) · 0.1 |
 | Ngày | 13/11/2026 |
 | Người phụ trách | tai-lieu-kiem-thu (Agent 2) |
-| Trạng thái | Nháp — mới viết phần Kiêm nhiệm (duoc-CR-755, duoc-CR-756); các mục cho hồ sơ, nghỉ phép, hợp đồng, báo cáo chưa viết |
-| CR liên quan | duoc-CR-755, duoc-CR-756 |
+| Trạng thái | Nháp — mới viết phần Kiêm nhiệm (duoc-CR-755, duoc-CR-756) và phần duoc-CR-757; các mục cho hồ sơ, nghỉ phép, hợp đồng, báo cáo chưa viết |
+| CR liên quan | duoc-CR-755, duoc-CR-756, duoc-CR-757 (hai lượt) |
 
 Mỗi yêu cầu một mã `PCN-HRM-NN`, ghi **mức đo được** và **cách kiểm**. Mục nào không áp dụng thì ghi *Không áp dụng* kèm lý do.
 
@@ -24,3 +24,8 @@ Mỗi yêu cầu một mã `PCN-HRM-NN`, ghi **mức đo được** và **cách 
 | PCN-HRM-10 | Khả dụng và thiết bị | Tab Kiêm nhiệm và hộp Thêm / Sửa có bố cục khổ điện thoại; cột **Kiêm nhiệm** ở danh sách có dòng thẻ điện thoại; đã soát 1440 và 390 | Ảnh `plans/reports/cr756-p03-*.png` | Đạt (local); Trang cá nhân `/me` chưa soát bằng mắt |
 | PCN-HRM-11 | Pháp lý | Không áp dụng riêng cho kiêm nhiệm | | |
 | PCN-HRM-12 | Vận hành | Không có việc chạy ngầm: trạng thái và phạm vi tính theo ngày lúc đọc; hết hạn lúc 0h còn tác dụng tối đa 60 giây (cache hồ sơ quyền) | | Đạt (thiết kế) |
+| PCN-HRM-13 | Hiệu năng (duoc-CR-757) | `employee_leave_summary` số truy vấn CỐ ĐỊNH bất kể số người trả về (quỹ, ngày đã nghỉ GROUP BY một câu, lịch gom bằng `load_day_plans_many`); trần 50 người / lần, mặc định 20; `effective-department` một phòng một lượt | Bài đếm truy vấn `test_so_truy_van_co_dinh` trong `test_tro_ly_tra_phep_lich_lam_viec_cr757.py` | Đạt (local) |
+| PCN-HRM-14 | Phân quyền và dữ liệu nhạy cảm (duoc-CR-757) | Không entity mới. Tra phép người khác gác `leave_balance.read`, người trả về = phạm vi `employee.read` GIAO phạm vi `leave_balance` (không rộng hơn màn Quỹ phép năm); ngoài phạm vi và không tồn tại cùng một câu. Ngày đã nghỉ của người khác thêm lớp `leave_request.read` + `scope_condition(LeaveRequest)` (thiếu thì rỗng). Danh sách trường trắng: không lương, không trường nhạy cảm. Tab lịch của phòng gác `department.read` + `get_scoped` (404 ngoài phạm vi) | `test_tra_phep_nguoi_khac_*`, `test_pham_vi_quy_phep_hep_hon_ho_so_thi_theo_quy_phep`, `test_truong_phong_pham_vi_phong_chi_thay_phong_minh`, `test_thieu_quyen_phong_ban_bi_chan` (cùng tệp CR-757), `test_assistant_pham_vi_doc.py` | Đạt (local) |
+| PCN-HRM-15 | Tích hợp (duoc-CR-757) | Công cụ mới `employee_leave_summary` khai đủ: sổ công cụ Trợ lý, `READ_TOOLS` cổng MCP, nhóm **Nghỉ phép** của cấu hình MCP, nhãn ý định `LOOKUP_LEAVE`, bộ lọc nhóm `leave`; `my_leave_summary` chỉ THÊM khóa (không đổi tên / tham số) | Bài canh sổ công cụ + `test_pham_vi_bo_may_duyet_xuyen_suot.py` | Đạt (local) |
+| PCN-HRM-16 | Dữ liệu nhạy cảm — lương qua trợ lý AI / bot / MCP (duoc-CR-757, luật tuyệt đối người chủ chốt) | Trợ lý KHÔNG BAO GIỜ nói lương / phụ cấp của NGƯỜI KHÁC, bất kể quyền (kể cả quản trị, Nhân sự, giám đốc). Chỉ chính nhân sự hỏi lương của mình mới được trả, qua công cụ DUY NHẤT `my_salary` (không có tham số chọn người, đi `employee.sensitive.mask` + `is_self`), và chỉ ở kênh RIÊNG: Trợ lý web luôn riêng; bot Telegram / Zalo riêng khi chat không phải nhóm VÀ đã liên kết tài khoản (cờ máy gắn ở `agent_hub.service`, chế độ tách qua header đã ký `x-agent-private-chat`, không lấy từ lời model); cổng MCP KHÔNG BAO GIỜ riêng (`my_salary` ẩn ở MCP, luật lương nằm trong `INSTRUCTIONS`). Tiền YCTT thanh toán nghỉ phép (= lương ngày × số ngày) chỉ đọc cho chính người nhận ở kênh riêng, bị loại khỏi số tổng hợp; `decision_note` của phiếu thanh toán nghỉ phép bỏ khỏi công cụ; tìm lịch sử chat / ghi chú ở kênh không riêng bỏ lượt và chữ nhắc lương; sổ nhớ không tự rút chữ lương | `test_tro_ly_khong_lo_luong_cr757.py` | Đạt (local) |
+| PCN-HRM-17 | Phân quyền (duoc-CR-757 lượt 2) | Khóa mới `work_schedule_personal` (ENTITIES 81) đo trên hồ sơ nhân sự đích, chín luật đường Trưởng phòng chốt ở backend (`assignment_access`); ô Phòng ban được xem không mở xuyên công ty (`INCLUDE_DEPT_SAME_COMPANY`). Bậc `dept` của `leave_balance` lọc qua hồ sơ nhân sự (`dept_via_employee`, ràng công ty hiện tại của nhân sự) — một truy vấn con, không thêm truy vấn | `test_truong_phong_gan_lich_rieng_cr757.py`, `test_pham_vi_cap_bac_ma_tran.py`, `test_pham_vi_khai_du_b07.py` (81/81) | Đạt (local) |

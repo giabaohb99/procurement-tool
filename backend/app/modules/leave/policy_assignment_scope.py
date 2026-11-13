@@ -4,8 +4,8 @@ Chọn ứng viên theo phạm vi XEM hồ sơ (`employee.read`, cùng luật "C
 GHI quỹ phép (`leave_balance.write`) — thứ thực sự bị đổi. Nếu không, vai trò giữ `employee.read = all` ở chỗ khác
 phân bổ được cho công ty không thuộc phần của mình rồi chính họ không thấy / sửa / xóa được lượt vừa tạo.
 
-Điều kiện phạm vi ghi quỹ được dựng THẲNG trên cột hồ sơ (không tạo dòng nào): `SCOPE_FIELDS["leave_balance"]` chỉ khai
-`company` → `company_id` và `self` → `employee_id`, nên "bảng giả" có hai cột đó là đủ — và đúng bằng điều kiện
+Điều kiện phạm vi ghi quỹ được dựng THẲNG trên cột hồ sơ (không tạo dòng nào): `SCOPE_FIELDS["leave_balance"]` chỉ đọc
+`company_id` và `employee_id` (`self` + `dept_via_employee`, duoc-CR-757), nên "bảng giả" có hai cột đó là đủ — và đúng bằng điều kiện
 `get_scoped(LeavePolicyAssignment, "leave_balance", …, "write")` sẽ áp lên phân bổ sau này (`company_id` của phân bổ
 chép từ hồ sơ lúc tạo). Xem `test_phan_bo_pham_vi_ghi_khop_get_scoped`.
 """

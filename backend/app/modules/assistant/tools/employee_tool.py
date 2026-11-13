@@ -19,8 +19,8 @@ nhà và số tài khoản ngân hàng. Ba lớp chặn, cả ba đều cần:
    ở đầu `sensitive.py`).
 
 ⚠️ **LƯƠNG (`salary_monthly`, `allowance_monthly`, duoc-CR-693) KHÔNG BAO GIỜ ra
-khỏi tool này — kể cả khi người hỏi là chính chủ.** Chủ trương: trợ lý AI không
-đọc lương; chính chủ xem ở Trang cá nhân. Cũng không có tham số lọc / sắp xếp nào
+khỏi tool này — kể cả khi người hỏi là chính chủ.** Lương của chính người hỏi chỉ đi
+qua `my_salary` (duoc-CR-757: chính chủ, chat riêng); lương người khác không có đường nào. Cũng không có tham số lọc / sắp xếp nào
 chạm tới lương (thứ tự cũng là thông tin). Bài kiểm `test_assistant_nhan_su_cr693_694.py`
 đỏ nếu hai trường đó lọt vào `_OUT_FIELDS`.
 
@@ -91,8 +91,9 @@ _DESC = (
     "dùng hỏi 'anh/chị X làm ở phòng nào', 'ai là quản lý trực tiếp của tôi', 'cho xin email "
     "của ...', 'phòng Kế toán có những ai'. CHỈ trả thông tin liên hệ công việc — KHÔNG có "
     "ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng hay lương; ai hỏi những thứ đó thì "
-    "trả lời là phải vào màn Hồ sơ nhân sự và cần quyền riêng. Lương thì kể cả của chính "
-    "người hỏi trợ lý cũng không đọc — chính chủ xem ở Trang cá nhân. Kết quả đã lọc theo phạm vi "
+    "trả lời là phải vào màn Hồ sơ nhân sự và cần quyền riêng. LƯƠNG không bao giờ có ở đây, kể cả của chính "
+    "người hỏi: lương của NGƯỜI KHÁC thì từ chối bằng câu 'Thông tin lương là dữ liệu riêng tư, chỉ chính nhân sự đó "
+    "mới xem được.' (bất kể người hỏi là ai); lương của chính mình thì dùng my_salary. Kết quả đã lọc theo phạm vi "
     "dữ liệu của người hỏi, nên rỗng có thể nghĩa là ngoài phạm vi chứ không phải không tồn "
     "tại — nói rõ điều đó thay vì khẳng định công ty không có người này."
 )

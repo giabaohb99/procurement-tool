@@ -8,6 +8,7 @@ import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -26,11 +27,15 @@ import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { ActiveStatusSelect } from '../components/active-status-select'
 import { DepartmentCompanyCard } from '../components/department-company-card'
 import { DepartmentConcurrentMembersTable } from '../components/department-concurrent-members-table'
 import { DepartmentMembersTable } from '../components/department-members-table'
+import { DepartmentWorkScheduleTab } from '../components/department-work-schedule-tab'
 import { LookupSelect } from '../components/lookup-select'
 import { useCompanies } from '../hooks/use-companies'
 import {
@@ -49,8 +54,9 @@ import type { Department } from '../types/department'
 import { DEPARTMENT_KIND_LABELS } from '../types/department'
 
 /**
- * Chi tiết phòng ban — form sửa trực tiếp, bên dưới là bảng nhân sự thuộc phòng,
- * bảng người kiêm nhiệm (nếu có) và nhật ký thao tác. Không chia 2 cột: bảng nhân sự cần trọn chiều ngang.
+ * Chi tiết phòng ban — form sửa trực tiếp, bên dưới hai tab: *Pháp nhân & nhân sự* (pháp nhân
+ * áp dụng, bảng nhân sự thuộc phòng, bảng người kiêm nhiệm nếu có) và *Lịch làm việc*
+ * (duoc-CR-757); cuối trang là nhật ký thao tác. Không chia 2 cột: bảng nhân sự cần trọn chiều ngang.
  */
 export function DepartmentDetailPage() {
   const { id } = useParams()
@@ -59,6 +65,10 @@ export function DepartmentDetailPage() {
 
   const { can } = usePermission()
   const canWrite = can('department', 'write')
+  //  duoc-CR-757: hai tab dưới biểu mẫu, nhớ ở `?tab=`. Giá trị lạ trên URL rơi về tab đầu,
+  //  không để khung trống.
+  const [urlTab, setTab] = useUrlParamState('tab', 'members')
+  const tab = urlTab === 'work-schedule' ? 'work-schedule' : 'members'
 
   const { data: department, isLoading, isError } = useDepartment(departmentId)
   const saveDepartment = useSaveDepartment()
@@ -353,15 +363,30 @@ export function DepartmentDetailPage() {
         </form>
       </Form>
 
-      <div className="mt-5 space-y-5">
-        <DepartmentCompanyCard
-          departmentId={department.id}
-          primaryCompanyId={department.company_id}
-          canWrite={canWrite}
-        />
-        <DepartmentMembersTable departmentId={department.id} managerId={department.manager_id} />
-        {/*  duoc-CR-755: người công ty khác kiêm nhiệm ở phòng này — bảng riêng, tự ẩn khi không có ai. */}
-        <DepartmentConcurrentMembersTable departmentId={department.id} />
+      <Tabs value={tab} onValueChange={setTab} className="mt-5">
+        <ScrollableTabsList value={tab}>
+          <TabsTrigger value="members" className={TAB_TRIGGER_UNDERLINE}>
+            Pháp nhân & nhân sự
+          </TabsTrigger>
+          <TabsTrigger value="work-schedule" className={TAB_TRIGGER_UNDERLINE}>
+            Lịch làm việc
+          </TabsTrigger>
+        </ScrollableTabsList>
+        <TabsContent value="members" className="space-y-5">
+          <DepartmentCompanyCard
+            departmentId={department.id}
+            primaryCompanyId={department.company_id}
+            canWrite={canWrite}
+          />
+          <DepartmentMembersTable departmentId={department.id} managerId={department.manager_id} />
+          {/*  duoc-CR-755: người công ty khác kiêm nhiệm ở phòng này — bảng riêng, tự ẩn khi không có ai. */}
+          <DepartmentConcurrentMembersTable departmentId={department.id} />
+        </TabsContent>
+        <TabsContent value="work-schedule">
+          <DepartmentWorkScheduleTab departmentId={department.id} departmentName={department.name} />
+        </TabsContent>
+      </Tabs>
+      <div className="mt-5">
         <AuditTimeline entity="department" entityId={departmentId} />
       </div>
     </PageContainer>

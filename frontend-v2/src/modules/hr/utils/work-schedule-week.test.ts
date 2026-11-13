@@ -14,6 +14,7 @@ import {
   fillWeek,
   formatWorkdays,
   normalizeDayOnKindChange,
+  resolveWeeklyWorkdays,
   sumWeeklyWorkdays,
   toTimeInput,
 } from './work-schedule-week'
@@ -87,6 +88,18 @@ describe('sumWeeklyWorkdays / dayCredit', () => {
   it('thứ trùng không bị đếm đôi và thứ ngoài 0..6 bị bỏ', () => {
     const week = [day(0, FULL), day(0, FULL), day(9, FULL), day(-1, FULL)]
     expect(sumWeeklyWorkdays(week)).toBe(1)
+  })
+})
+
+describe('resolveWeeklyWorkdays', () => {
+  it('có ngày hợp lệ thì tự cộng, KHÔNG tin số backend gửi kèm', () => {
+    expect(resolveWeeklyWorkdays({ days: buildDefaultWeek(), weekly_workdays: 99 })).toBe(6)
+  })
+
+  it('không có ngày nào hợp lệ thì dùng weekly_workdays, vắng nốt thì 0', () => {
+    expect(resolveWeeklyWorkdays({ days: [], weekly_workdays: 5.5 })).toBe(5.5)
+    expect(resolveWeeklyWorkdays({ days: null, weekly_workdays: 5 })).toBe(5)
+    expect(resolveWeeklyWorkdays({ days: 'x' })).toBe(0)
   })
 })
 

@@ -200,9 +200,11 @@ def test_du_55_entity():
     78 → 79 ngày 02/11/2026 (duoc-CR-715 C): phiếu xin nghỉ bù (`leave_comp_request`) — owner + self như `leave_request`.
     79 → 80 ngày 03/11/2026 (duoc-CR-719): phiếu thanh toán nghỉ phép (`leave_encashment`) — owner + self như
     `leave_comp_request`; nằm trong `_SYS_ENTITIES`.
+    80 → 81 ngày 13/11/2026 (duoc-CR-757 lượt 2): lịch làm việc riêng của nhân sự (`work_schedule_personal`) — đo trên
+    HỒ SƠ NHÂN SỰ đích (company / dept_id / self như `employee`); nằm trong `_SYS_ENTITIES`, chỉ `dept_head` khai tay.
     """
-    assert len(ENTITIES) == 80
-    assert len(SCOPE_FIELDS) == 80
+    assert len(ENTITIES) == 81
+    assert len(SCOPE_FIELDS) == 81
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

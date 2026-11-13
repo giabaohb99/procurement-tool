@@ -11,6 +11,7 @@ from app.modules.agent_hub import google_link as gl
 from app.modules.agent_hub.timeutil import LOCAL_OFFSET, now_local
 
 from .base import ToolContext, ToolSpec
+from .salary_privacy import FREE_TEXT_RULE
 
 TZ = "Asia/Ho_Chi_Minh"
 MAX_EVENTS = 30
@@ -252,7 +253,7 @@ DRIVE_SEARCH_SPEC = ToolSpec(
 DRIVE_READ_SPEC = ToolSpec(
     name="drive_read",
     description=("ĐỌC nội dung chữ của một tệp trên Drive của người hỏi (Google Docs/Sheets, hoặc tệp chữ) để tóm tắt hay "
-                 "trả lời câu hỏi về tệp đó. Lấy file_id từ drive_search."),
+                 "trả lời câu hỏi về tệp đó. Lấy file_id từ drive_search. " + FREE_TEXT_RULE),
     parameters={"type": "object", "properties": {"file_id": {"type": "string"}}, "required": ["file_id"]},
     handler=_drive_read,
 )

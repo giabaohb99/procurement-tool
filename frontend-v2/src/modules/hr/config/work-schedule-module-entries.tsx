@@ -39,7 +39,9 @@ export const workScheduleSetupNavItems: ModuleNavItem[] = [
     label: 'Gán lịch',
     path: appRoutes.hr.workScheduleAssignments,
     icon: UserRoundCog,
-    entity: 'work_schedule',
+    //  duoc-CR-757 lượt 2: Trưởng phòng chỉ có `work_schedule_personal` (gán lịch riêng cho nhân viên phòng mình) cũng
+    //  phải vào được màn này — nút Đổi lịch riêng ở hồ sơ nhân sự dẫn sang đây. Quản lý MỘT trong hai khóa là đủ.
+    entities: ['work_schedule', 'work_schedule_personal'],
     manage: true,
   },
 ]

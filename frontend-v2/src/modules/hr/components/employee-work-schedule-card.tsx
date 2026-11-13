@@ -1,6 +1,7 @@
 import { CalendarClock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { useAuthStore } from '@/core/auth/auth-store'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
@@ -14,19 +15,16 @@ import {
   SYSTEM_LEVEL_LABEL,
   WORK_SCHEDULE_LEVEL_CODE,
   type EffectiveWorkSchedule,
-  type WorkScheduleDay,
 } from '../types/work-schedule'
-import {
-  WEEKDAY_LABELS,
-  fillWeek,
-  formatWorkdays,
-  presentWeekdays,
-  sumWeeklyWorkdays,
-} from '../utils/work-schedule-week'
-import { describeDay, describeLunch } from '../utils/work-schedule-week-summary'
+import { resolveAssignmentMode } from '../utils/work-schedule-assignment-mode'
+import { buildAssignmentCreateUrl } from '../utils/work-schedule-assignment-prefill'
+import { formatWorkdays, resolveWeeklyWorkdays } from '../utils/work-schedule-week'
+import { WorkScheduleWeekGrid } from './work-schedule-week-grid'
 
 interface EmployeeWorkScheduleCardProps {
   employeeId: number
+  /** "Mã — Họ tên", hiện tạm trong ô Đối tượng khi hộp gán lịch mở trước lúc danh sách nhân sự tải xong. */
+  employeeName?: string
 }
 
 /** Nguồn của lịch: "Gán riêng" / "Theo phòng ban: …" / "Theo pháp nhân: …" / "Toàn hệ thống" / "Mặc định hệ thống". */
@@ -54,12 +52,6 @@ function describeValidity(schedule: EffectiveWorkSchedule): string {
   return `Từ ${formatDate(schedule.effective_from)} · ${to}`
 }
 
-/** Thứ nào backend không trả thì không có trong Map -> chip hiện "—", không bịa thành "Nghỉ". */
-function indexByWeekday(days: unknown): Map<number, WorkScheduleDay> {
-  const present = presentWeekdays(days)
-  return new Map(fillWeek(days).filter((d) => present.has(d.weekday)).map((d) => [d.weekday, d]))
-}
-
 /**
  * Thẻ "Lịch làm việc" trên hồ sơ nhân sự: nhân sự này đang theo mẫu nào, lấy từ
  * cấp nào, và bảy ngày trong tuần ra sao. Là thẻ PHỤ — lỗi (404 ngoài phạm vi,
@@ -68,10 +60,21 @@ function indexByWeekday(days: unknown): Map<number, WorkScheduleDay> {
  * Gác bằng chính quyền đọc hồ sơ (backend `employee.read` + phạm vi), KHÔNG đòi
  * `work_schedule.read`: prod không tự cấp khóa mới cho vai trò cũ.
  */
-export function EmployeeWorkScheduleCard({ employeeId }: EmployeeWorkScheduleCardProps) {
+export function EmployeeWorkScheduleCard({ employeeId, employeeName = '' }: EmployeeWorkScheduleCardProps) {
   const { can } = usePermission()
+  const selfEmployeeId = useAuthStore((s) => s.user?.employee_id)
   const { data, isLoading, isError } = useEffectiveWorkSchedule(employeeId)
   const canAssign = can('work_schedule', 'write')
+  //  duoc-CR-757 lượt 2: Nhân sự hoặc Trưởng phòng (khóa `work_schedule_personal`) đổi lịch riêng cho người này —
+  //  không phải cho chính mình (backend 403). Người ngoài phòng thì backend trả 400, câu đó hiện ở hộp gán.
+  const personalAssignUrl =
+    resolveAssignmentMode(can, 'create') !== 'none' && employeeId !== selfEmployeeId
+      ? buildAssignmentCreateUrl({
+          level: WORK_SCHEDULE_LEVEL_CODE.EMPLOYEE,
+          targetId: employeeId,
+          targetName: employeeName,
+        })
+      : null
 
   return (
     <Card className="gap-4 p-3 sm:p-5">
@@ -90,7 +93,9 @@ export function EmployeeWorkScheduleCard({ employeeId }: EmployeeWorkScheduleCar
         </p>
       )}
 
-      {data && <ScheduleBody schedule={data} canAssign={canAssign} />}
+      {data && (
+        <ScheduleBody schedule={data} canAssign={canAssign} personalAssignUrl={personalAssignUrl} />
+      )}
     </Card>
   )
 }
@@ -98,13 +103,14 @@ export function EmployeeWorkScheduleCard({ employeeId }: EmployeeWorkScheduleCar
 function ScheduleBody({
   schedule,
   canAssign,
+  personalAssignUrl,
 }: {
   schedule: EffectiveWorkSchedule
   canAssign: boolean
+  /** Đường mở sẵn hộp gán lịch riêng cho người này; `null` = không hiện nút. */
+  personalAssignUrl: string | null
 }) {
-  const byWeekday = indexByWeekday(schedule.days)
-  const hasDays = byWeekday.size > 0
-  const total = hasDays ? sumWeeklyWorkdays(schedule.days) : (schedule.weekly_workdays ?? 0)
+  const total = resolveWeeklyWorkdays(schedule)
   const validity = describeValidity(schedule)
 
   return (
@@ -116,27 +122,23 @@ function ScheduleBody({
         {validity && <span className="text-muted-foreground">{validity}</span>}
       </div>
 
-      <ul className="grid grid-cols-4 gap-2 text-center text-sm sm:grid-cols-7">
-        {WEEKDAY_LABELS.map((label, weekday) => {
-          const day = byWeekday.get(weekday)
-          return (
-            <li key={label} className="rounded-md border px-1 py-2">
-              <div className="text-xs font-semibold text-muted-foreground">{label}</div>
-              <div className="font-medium">{day ? describeDay(day) : '—'}</div>
-              {day && describeLunch(day) && (
-                <div className="text-xs text-muted-foreground">{describeLunch(day)}</div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      <WorkScheduleWeekGrid days={schedule.days} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{formatWorkdays(total)} ngày công/tuần</p>
-        {canAssign && (
-          <Button variant="outline" size="sm" asChild>
-            <Link to={appRoutes.hr.workScheduleAssignments}>Gán lịch</Link>
-          </Button>
+        {(canAssign || personalAssignUrl) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {canAssign && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={appRoutes.hr.workScheduleAssignments}>Gán lịch</Link>
+              </Button>
+            )}
+            {personalAssignUrl && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to={personalAssignUrl}>Đổi lịch riêng</Link>
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </>

@@ -238,6 +238,12 @@ def _fetch_by_code(db, entity: str, code: str, user, profile, action: str = "wri
     q = db.query(model).filter(model.code == code)
     if entity in _SOFT_DELETE_ENTITIES:
         q = q.filter(model.is_deleted.is_(False))
+    if entity == "payment_request":
+        #  duoc-CR-757: YCTT thanh toán nghỉ phép (câu chữ bản in có thể ghi số tiền = lương ngày × số ngày) không
+        #  đi qua trợ lý — sửa / xóa trên màn ERP.
+        from .salary_privacy import exclude_salary_payments
+
+        q = q.filter(exclude_salary_payments(model))
     q = apply_scope(q, model, entity, user, profile, action=action)
     return q.first()
 

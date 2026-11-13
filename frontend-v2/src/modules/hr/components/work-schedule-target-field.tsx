@@ -8,6 +8,7 @@ import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect, type SearchSelectOption } from '@/shared/ui/search-select'
+import { useAssignableEmployees } from '../hooks/use-assignable-employees'
 import { SYSTEM_LEVEL_LABEL, WORK_SCHEDULE_LEVEL_CODE } from '../types/work-schedule'
 import { isChosenId } from '../utils/work-schedule-validation'
 
@@ -23,6 +24,17 @@ interface WorkScheduleTargetFieldProps {
    */
   nameFieldName?: string
   disabled?: boolean
+  /**
+   * Bỏ hồ sơ này khỏi danh sách ở cấp Nhân sự — hộp gán lịch riêng của Trưởng phòng không cho chọn chính mình
+   * (duoc-CR-757 lượt 2). Chỉ là luật hiển thị; backend vẫn trả 403 nếu ai gửi thẳng.
+   */
+  excludeEmployeeId?: number
+  /**
+   * Ở cấp Nhân sự, lấy danh sách từ `/tools/assignable-employees` (đúng người được gán, backend lọc phạm vi + bỏ chính
+   * mình) thay cho danh sách nhân sự theo quyền ĐỌC — hộp gán lịch riêng của Trưởng phòng. Chọn người backend sẽ từ
+   * chối thì người dùng mới biết sau khi bấm Lưu.
+   */
+  assignableOnly?: boolean
 }
 
 type Row = Record<string, unknown>
@@ -59,6 +71,8 @@ export function WorkScheduleTargetField({
   levelName,
   nameFieldName = 'target_name',
   disabled = false,
+  excludeEmployeeId,
+  assignableOnly = false,
 }: WorkScheduleTargetFieldProps) {
   const level = Number(useWatch({ control, name: levelName }))
   const savedName = String(useWatch({ control, name: nameFieldName }) ?? '').trim()
@@ -74,8 +88,9 @@ export function WorkScheduleTargetField({
     },
   })
   const source = SOURCES[level]
+  const fromAssignable = assignableOnly && level === WORK_SCHEDULE_LEVEL_CODE.EMPLOYEE
 
-  const { data, isLoading, isError } = useQuery({
+  const generic = useQuery({
     queryKey: queryKeys.hr.workScheduleTargets(level),
     queryFn: async () => {
       const rows = extractRows(await apiGet<unknown>(source.url, { params: { page_size: 1000 } }))
@@ -84,10 +99,22 @@ export function WorkScheduleTargetField({
         label: source.label(row) || `#${String(row.id ?? '')}`,
       }))
     },
-    enabled: Boolean(source),
+    enabled: Boolean(source) && !fromAssignable,
     //  Ngắn: nhân sự / phòng ban mới tạo ở màn khác phải có mặt khi HR quay lại gán lịch.
     staleTime: 30 * 1000,
   })
+  const assignable = useAssignableEmployees(fromAssignable && !disabled)
+  const { data, isLoading, isError } = fromAssignable
+    ? {
+        data: assignable.data?.items.map<SearchSelectOption>((row) => ({
+          value: String(row.id),
+          label: [row.code, row.full_name].filter(Boolean).join(' — ') || `#${row.id}`,
+          hint: row.department_name || undefined,
+        })),
+        isLoading: assignable.isLoading,
+        isError: assignable.isError,
+      }
+    : generic
 
   if (level === WORK_SCHEDULE_LEVEL_CODE.SYSTEM) {
     return (
@@ -100,7 +127,9 @@ export function WorkScheduleTargetField({
   if (!source) return null
 
   const value = Number(field.value) > 0 ? String(field.value) : ''
-  const options = data ?? []
+  const excluded =
+    level === WORK_SCHEDULE_LEVEL_CODE.EMPLOYEE && excludeEmployeeId ? String(excludeEmployeeId) : ''
+  const options = (data ?? []).filter((o) => o.value !== excluded)
   //  Đối tượng đang lưu mà không còn trong danh sách (nhân sự đã nghỉ…) vẫn phải
   //  hiện ra, kẻo ô trống và người sửa tưởng chưa chọn.
   const withCurrent =

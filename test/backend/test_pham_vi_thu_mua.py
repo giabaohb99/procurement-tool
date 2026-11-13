@@ -847,11 +847,11 @@ def test_k2_khong_vai_tro_seed_nao_dat_pham_vi_ma_entity_khong_dung_noi(world):
     Hôm nay mọi vai trò seed đặt `survey` ở `all` nên vế CHẶN xanh — đó chính là điều
     cần ghim lại.
 
-    Vế thứ hai bắt được một dòng thật, nhưng nó **NỞ RA** chứ không chặn: bậc `dept` trên
-    entity không có chiều phòng ban KHÔNG rơi vào `_chan` — `scoping.py:365-378` chỉ chặn
-    khi `cs` rỗng, mà `cs` đã có sẵn điều kiện pháp nhân. Kết quả: `dept` im lặng chạy
-    thành `company`. Danh sách dưới đây là ẢNH CHỤP hiện trạng, thêm dòng mới là đỏ.
-    (`leave_balance` thuộc phân hệ Nghỉ phép — cụm 05, chỉ ghi nhận chứ không sửa ở đây.)
+    Vế thứ hai bắt dòng **NỞ RA** chứ không chặn: bậc `dept` trên entity không có chiều phòng
+    ban KHÔNG rơi vào `_chan` — `scoping.py` chỉ chặn khi `cs` rỗng, mà `cs` đã có sẵn điều
+    kiện pháp nhân. Kết quả: `dept` im lặng chạy thành `company`. Dòng duy nhất từng dính là
+    `dept_head.leave_balance`; duoc-CR-757 đã vá bằng `dept_via_employee` nên danh sách nay RỖNG,
+    thêm dòng mới là đỏ.
     """
     from app.core.scoping import PUBLIC, SCOPE_FIELDS
     from app.seed import STD_ROLES
@@ -862,7 +862,7 @@ def test_k2_khong_vai_tro_seed_nao_dat_pham_vi_ma_entity_khong_dung_noi(world):
             f = SCOPE_FIELDS.get(entity)
             if f is None or isinstance(f, type(PUBLIC)):
                 continue
-            co_phong = bool(f.get("dept_id") or f.get("dept_name"))
+            co_phong = bool(f.get("dept_id") or f.get("dept_name") or f.get("dept_via_employee"))
             if scope == "company" and not f.get("company"):
                 chan_sach.append(f"{ten_vai_tro}.{entity}")
             if (scope == "dept" and not co_phong and not f.get("owner")
@@ -871,7 +871,7 @@ def test_k2_khong_vai_tro_seed_nao_dat_pham_vi_ma_entity_khong_dung_noi(world):
             if scope == "dept" and not co_phong and f.get("company"):
                 no_ra.append(f"{ten_vai_tro}.{entity}")
     assert chan_sach == [], "bậc vai trò này sẽ bị `_chan` chặn sạch, người dùng thấy trắng"
-    assert no_ra == ["dept_head.leave_balance"], "bậc `dept` âm thầm rộng bằng `company`"
+    assert no_ra == [], "bậc `dept` âm thầm rộng bằng `company`"
 
 
 def test_k3_pham_vi_own_cua_phieu_khao_sat_khong_co_chieu_phap_nhan(world, docs):

@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.request_context import ai_channel_scope
+from app.modules.assistant.private_chat import private_chat_scope
 from app.modules.assistant.provider.base import ChatResult
 
 from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, coder, draft_create, grants, manager, memory, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
@@ -401,8 +402,21 @@ def handle_message(db: Session, msg: dict) -> None:
     """Mọi tin vào đi qua đây. ai-CR-053: mở ngữ cảnh KHÓA GEMINI của chat (khóa cá nhân của tài khoản đã
     liên kết; chat đại ca chưa có khóa cá nhân thì khóa `.env`) cho toàn bộ lượt xử lý bên trong."""
     chat_id = str((msg.get("chat") or {}).get("id") or "")
-    with user_keys.for_chat(db, chat_id), ai_channel_scope(ai_channel_of_chat(chat_id)):
+    with user_keys.for_chat(db, chat_id), ai_channel_scope(ai_channel_of_chat(chat_id)), \
+            private_chat_scope(is_private_linked_chat(db, msg, chat_id)):
         _handle_message(db, msg, chat_id)
+
+
+def is_private_linked_chat(db: Session, msg: dict, chat_id: str) -> bool:
+    """duoc-CR-757 (luật lương): chat RIÊNG (không phải nhóm Telegram / Zalo) VÀ đã liên kết tài khoản ERP của chính
+    người nhắn. Chat chưa liên kết chạy dưới tài khoản lùi `AGENT_ASSISTANT_USER` (`_assistant_user`) — không bao giờ coi
+    là "của chính người hỏi", nên công cụ lương từ chối ở đó."""
+    from . import groups
+    from .intent_ledger import is_group_chat
+
+    if groups.is_group(msg) or is_group_chat(chat_id):
+        return False
+    return chat_link.get_active_link(db, chat_id) is not None
 
 
 def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool:

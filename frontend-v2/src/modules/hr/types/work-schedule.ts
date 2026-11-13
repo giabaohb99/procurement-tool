@@ -57,6 +57,31 @@ export type WorkScheduleAssignment = {
   effective_to: string | null
   note: string
   is_current: boolean
+  /**
+   * Tài khoản (id `tab_user`, KHÔNG phải id nhân sự) đã gán dòng này; `0` = dòng seed / máy tạo. Trưởng phòng chỉ sửa /
+   * xóa được dòng do chính mình gán (duoc-CR-757 lượt 2). Bản backend cũ chưa trả trường này thì coi như không phải của
+   * mình (chỉ xem).
+   */
+  created_by?: number
+  /**
+   * Dòng này lúc tạo đã tự đóng / nối một dòng khác của cùng đối tượng. Trưởng phòng không đổi được đối tượng / ngày bắt
+   * đầu của nó (backend 400 "Lịch này đã thay lịch trước đó, muốn đổi hãy xóa rồi tạo lại"). Vắng = backend cũ, coi
+   * như không.
+   */
+  replaces_previous?: boolean
+}
+
+/** Một nhân sự trong ô chọn đối tượng của hộp gán lịch riêng (`/tools/assignable-employees`). */
+export interface AssignableEmployee {
+  id: number
+  code: string
+  full_name: string
+  department_name: string
+}
+
+export interface AssignableEmployeePage {
+  total: number
+  items: AssignableEmployee[]
 }
 
 /** Lịch đang áp cho một nhân sự (`/api/work-schedules/tools/effective`). */
@@ -74,4 +99,17 @@ export interface EffectiveWorkSchedule {
   assignment_id?: number
   effective_from?: string | null
   effective_to?: string | null
+}
+
+/**
+ * Lịch đang áp cho một PHÒNG BAN (`/api/work-schedules/tools/effective-department`, duoc-CR-757).
+ * Cùng khóa với bản của nhân sự, `level` chỉ có thể là Phòng ban / Pháp nhân / Toàn hệ thống
+ * (hoặc `0` khi `is_fallback`), cộng thêm các dòng gán CẤP PHÒNG BAN của chính phòng này
+ * (mới nhất trước).
+ */
+export interface EffectiveDepartmentWorkSchedule extends EffectiveWorkSchedule {
+  department_id: number
+  department_name: string
+  company_id: number
+  assignments: WorkScheduleAssignment[]
 }

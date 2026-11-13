@@ -60,6 +60,20 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`, `employee-concurrent-roles.tsx`,
     `config/employee-{columns,concurrent-columns}.tsx`, `hooks/use-employee-profile-save-flow.ts`, `core/scoping.py` và ảnh
     `plans/reports/cr756-p03-*.png`.
+  * duoc-CR-757 (13/11/2026): bài mới WORK_SCHEDULE — lịch làm việc của một phòng ban (tab Lịch làm việc ở trang phòng ban,
+    nút Gán lịch cho phòng mở sẵn hộp Thêm dòng gán lịch; cách khác qua Thiết lập ▸ Gán lịch), thứ tự áp lịch hẹp thắng rộng,
+    ngày nghỉ phép đếm theo lịch của người nghỉ, hỏi Trợ lý AI lịch làm việc / số ngày đã nghỉ / phép của nhân sự khác. Thẻ gốc
+    thêm một dòng trỏ tới bài. Nhãn đối chiếu bằng đọc `hr/components/department-work-schedule-tab.tsx`,
+    `hr/utils/describe-department-schedule-source.ts`, `hr/pages/department-detail-page.tsx`,
+    `hr/pages/work-schedule-assignment-list-page.tsx`, `hr/config/work-schedule-assignment-crud.tsx`,
+    `shared/crud/crud-{list-page,form-dialog}.tsx` (nút Thêm dòng gán lịch, Tạo mới, Hủy) và câu trả về của
+    `assistant/tools/employee_leave_tool.py`.
+  * duoc-CR-757 lượt 2 (13/11/2026): bài WORK_SCHEDULE thêm mục *Trưởng phòng đổi lịch riêng cho nhân viên* (nút Đổi lịch
+    riêng ở khung Lịch làm việc của hồ sơ, hộp Thêm dòng gán lịch của Trưởng phòng, các luật: chỉ cấp Nhân sự, người phòng
+    mình, không cho chính mình, từ hôm nay, chỉ sửa dòng tự gán, dòng đã bắt đầu chỉ đặt Đến ngày) và câu Trưởng phòng hỏi
+    trợ lý phép của nhân viên phòng mình. Nhãn đối chiếu bằng đọc `hr/components/employee-work-schedule-card.tsx`,
+    `hr/config/work-schedule-assignment-personal-config.tsx`, `hr/utils/work-schedule-assignment-mode.ts` và câu lỗi ở
+    `work_schedule/assignment_access.py`.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -94,6 +108,7 @@ PHONES = "Nhân sự — Khai nhiều số điện thoại và địa chỉ liê
 HR_SETTINGS = "Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ tổ chức, nghỉ phép, hợp đồng"
 #  Bài thuộc cây Báo cáo Nhân sự (`seed_help_bao_cao_nhan_su.py`) — chỉ để nối liên kết.
 PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nhân"
+WORK_SCHEDULE = "Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ"
 
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
@@ -111,6 +126,7 @@ TREE = {
 <li>Bạn ở phòng Nhân sự cần nhập lương cho một người, hoặc muốn xem lương của chính mình: {ref(SALARY, "Nhập lương ở hồ sơ và xem lương của mình")}.</li>
 <li>Một người dùng nhiều số điện thoại (số cá nhân, số công việc, Zalo…) hay cần sửa địa chỉ liên hệ: {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")}.</li>
 <li>Muốn xem ai thuộc phòng nào, ai quản lý ai: {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</li>
+<li>Một phòng làm theo giờ riêng (ví dụ thứ Bảy nghỉ), cần gán lịch làm việc cho phòng đó, hay muốn biết ngày nghỉ phép được đếm theo lịch nào: {ref(WORK_SCHEDULE, "Lịch làm việc của phòng ban và cách đếm ngày nghỉ")}.</li>
 <li>Sắp khóa tài khoản hay cho một người nghỉ việc mà người đó còn phiếu cần duyệt: {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}.</li>
 <li>Muốn đổi tiền tố mã nhân sự, giới hạn ai xem sơ đồ tổ chức, chặn đơn nghỉ lùi ngày / tự duyệt, hay đổi số ngày báo HĐLĐ hết hạn: {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
 <li>Bạn là quản trị, muốn người mới có tài khoản là có đủ quyền theo chức vụ: {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ cho tài khoản mới")}.</li>
@@ -667,6 +683,101 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <tr><td>Không thấy nút <strong>Sửa</strong> ở thẻ Liên hệ trên Trang cá nhân</td><td>Tài khoản của bạn chưa gắn với hồ sơ nhân sự</td><td>Liên hệ phòng Nhân sự để gắn tài khoản vào hồ sơ</td></tr>
 </tbody>
 </table>""",
+        },
+        {
+            "title": WORK_SCHEDULE,
+            "icon": "calendar-clock",
+            "summary": "Tab Lịch làm việc ở trang phòng ban, nút Gán lịch cho phòng; Trưởng phòng đổi lịch riêng cho nhân viên phòng mình; thứ tự áp lịch nhân sự > phòng ban > pháp nhân > toàn hệ thống; ngày nghỉ đếm theo lịch; hỏi Trợ lý AI",
+            "content": f"""<h2>Dùng để làm gì</h2>
+<p>Mỗi phòng có thể làm theo một lịch tuần riêng: phòng văn phòng nghỉ thứ Bảy, kho làm cả thứ Bảy, nhà máy làm thứ Bảy buổi sáng… Hệ thống dùng lịch đó để <strong>đếm số ngày của đơn nghỉ phép</strong>: ngày nghỉ của lịch không bị trừ phép, ngày chỉ làm một buổi tính tối đa nửa ngày. Bài này chỉ cách xem và gán lịch cho một phòng, cách hệ thống chọn lịch cho từng người, và cách hỏi Trợ lý AI.</p>
+
+<h2>Xem phòng đang theo lịch nào</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Phòng ban</strong>, bấm vào phòng cần xem.</li>
+<li>Dưới phần thông tin phòng có hai tab: <strong>Pháp nhân &amp; nhân sự</strong> và <strong>Lịch làm việc</strong>. Bấm tab <strong>Lịch làm việc</strong>.</li>
+</ol>
+<p>Khung <strong>Lịch làm việc của phòng</strong> cho thấy:</p>
+<ul>
+<li><strong>Tên mẫu lịch</strong> và một câu nói lịch lấy từ đâu:
+<ul>
+<li><em>Gán riêng cho phòng này từ …</em> (có thể kèm <em>đến …</em>): phòng có lịch riêng.</li>
+<li><em>Theo lịch của pháp nhân …</em>: phòng chưa có lịch riêng, đang theo lịch của công ty.</li>
+<li><em>Theo lịch toàn hệ thống</em>: theo lịch chung của cả tập đoàn.</li>
+<li><em>Chưa gán — dùng lịch mặc định</em>: chưa ai gán gì, hệ thống dùng lịch mặc định thứ Hai đến thứ Bảy 08:00–17:00, Chủ nhật nghỉ.</li>
+</ul></li>
+<li><strong>Lưới bảy ngày</strong> từ thứ Hai đến Chủ nhật: ngày nào làm, giờ vào, giờ ra, giờ nghỉ trưa.</li>
+<li>Số <strong>ngày công/tuần</strong> và câu nhắc <em>Nhân sự nào được gán lịch riêng thì theo lịch riêng đó, không theo lịch của phòng.</em></li>
+<li>Danh sách <strong>Gán lịch riêng cho phòng</strong>: mọi lần gán lịch cho chính phòng này, mới nhất ở trên, mỗi dòng có tên mẫu, <em>Từ … · đến …</em> hoặc <em>Không thời hạn</em>; dòng đang dùng có nhãn <strong>Đang áp</strong>. Chưa gán lần nào thì ghi <em>Phòng này chưa có dòng gán lịch riêng.</em></li>
+</ul>
+<p>Ai xem được trang phòng ban là xem được tab này. Thấy câu <em>Không xem được lịch làm việc của phòng ban này.</em> thì phòng đó nằm ngoài phạm vi bạn được xem.</p>
+
+<h2>Gán lịch cho một phòng</h2>
+<p>Cần quyền tạo gán lịch làm việc (thường là phòng Nhân sự). Mẫu lịch tuần phải có sẵn ở <strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Mẫu lịch tuần</strong>; chưa có mẫu đúng giờ của phòng thì tạo mẫu trước.</p>
+<p><strong>Cách 1 — từ trang phòng ban (nhanh nhất):</strong></p>
+<ol>
+<li>Ở tab <strong>Lịch làm việc</strong> của phòng, bấm <strong>Gán lịch cho phòng</strong>.</li>
+<li>Màn <strong>Gán lịch</strong> mở ra cùng hộp <strong>Thêm dòng gán lịch</strong>, ô <strong>Cấp áp dụng</strong> đã chọn <strong>Phòng ban</strong> và ô <strong>Đối tượng áp dụng</strong> đã chọn đúng phòng này.</li>
+<li>Chọn <strong>Mẫu lịch</strong>, nhập <strong>Hiệu lực từ ngày</strong>. Ô <strong>Đến ngày</strong> để trống nếu lịch dùng lâu dài; chỉ điền khi đây là lịch tạm (ví dụ lịch mùa cao điểm). Ghi lý do ở <strong>Ghi chú</strong> nếu cần.</li>
+<li>Bấm <strong>Tạo mới</strong>. Bảng phía sau đang lọc sẵn cấp Phòng ban nên thấy ngay dòng vừa tạo; quay lại trang phòng ban, tab Lịch làm việc đã đổi theo.</li>
+</ol>
+<p><strong>Cách 2 — từ màn Gán lịch:</strong> vào <strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Gán lịch</strong> ▸ bấm <strong>Thêm dòng gán lịch</strong> ▸ chọn <strong>Cấp áp dụng</strong> = <strong>Phòng ban</strong> rồi chọn phòng ở ô <strong>Đối tượng áp dụng</strong> ▸ điền như các bước 3–4 ở trên. Ở trang phòng ban, nút <strong>Xem gán lịch</strong> mở thẳng màn này lọc sẵn cấp Phòng ban.</p>
+<p>Khi phòng đang có một lịch <em>không thời hạn</em> mà bạn gán lịch mới từ một ngày sau đó, lịch cũ tự kết thúc vào ngày liền trước; nếu lịch mới có <strong>Đến ngày</strong> thì lịch cũ tự dùng lại từ ngày hôm sau. Các trường hợp chồng ngày khác bị báo lỗi kèm tên dòng trùng — khi đó đặt <strong>Đến ngày</strong> cho dòng cũ trước. Xóa dòng vừa gán thì lịch cũ tự mở lại.</p>
+
+<h2>Trưởng phòng đổi lịch riêng cho nhân viên</h2>
+<p>Trưởng phòng được gán lịch làm việc <strong>riêng</strong> cho từng nhân viên phòng mình (ví dụ một người chuyển sang làm cả thứ Bảy), không phải nhờ phòng Nhân sự. Mẫu lịch và lịch của cả phòng, cả công ty vẫn do Nhân sự cấu hình.</p>
+<ol>
+<li>Mở hồ sơ nhân viên ▸ tab <strong>Quỹ phép</strong> ▸ khung <strong>Lịch làm việc</strong> ▸ bấm <strong>Đổi lịch riêng</strong>. (Hoặc vào <strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Gán lịch</strong> ▸ <strong>Thêm dòng gán lịch</strong>.)</li>
+<li>Hộp <strong>Thêm dòng gán lịch</strong> mở ra: ô <strong>Cấp áp dụng</strong> cố định là Nhân sự, ô <strong>Đối tượng áp dụng</strong> đã chọn sẵn người đó (ô này chỉ liệt kê những người bạn gán được).</li>
+<li>Chọn <strong>Mẫu lịch</strong>, chọn <strong>Hiệu lực từ ngày</strong> — chỉ từ hôm nay trở đi. Lịch tạm thì điền <strong>Đến ngày</strong>; hết ngày đó người này tự quay về lịch cũ.</li>
+<li>Bấm <strong>Tạo mới</strong>.</li>
+</ol>
+<p>Những điều Trưởng phòng <strong>không</strong> làm được, và câu báo khi thử:</p>
+<ul>
+<li>Gán cho người ngoài phòng mình: <em>Đối tượng được gán lịch không tồn tại</em>. Gán cho chính mình: <em>Bạn không được tự gán, sửa hay xóa lịch làm việc riêng của chính mình</em>.</li>
+<li>Gán cấp Phòng ban, Pháp nhân hay Toàn hệ thống, hoặc sửa mẫu lịch tuần: chỉ phòng Nhân sự làm.</li>
+<li>Chọn ngày hiệu lực đã qua: <em>Ngày hiệu lực phải từ hôm nay trở đi</em> — lịch của những ngày đã qua không đổi được, để số ngày nghỉ đã tính không bị đổi theo.</li>
+<li>Sửa hay xóa lịch do Nhân sự hoặc người khác gán: <em>Lịch này do Nhân sự hoặc người khác gán, bạn chỉ sửa được lịch do chính mình gán</em>. Muốn đổi thì tạo một dòng mới từ ngày cần đổi: nếu lịch cũ là <em>Không thời hạn</em> thì nó tự kết thúc vào ngày hôm trước.</li>
+<li>Lịch đã bắt đầu chỉ đặt được <strong>Đến ngày</strong> (từ hôm qua trở đi) và <strong>Ghi chú</strong>, không xóa được: <em>Lịch đã bắt đầu, không xóa được — hãy đặt ngày kết thúc</em>.</li>
+<li>Lịch đã thay một lịch trước đó thì không đổi người hay ngày bắt đầu: <em>Lịch này đã thay lịch trước đó, muốn đổi hãy xóa rồi tạo lại</em>. Đổi Đến ngày thì được, lịch cũ tự nối lại từ ngày hôm sau.</li>
+</ul>
+<p>Không thấy nút <strong>Đổi lịch riêng</strong>: vai trò của bạn chưa được cấp quyền <strong>Lịch làm việc riêng (Trưởng phòng gán)</strong> — nhờ quản trị cấp ở <strong>Quản trị ▸ Phân quyền tài khoản</strong>. Nút không hiện trên hồ sơ của chính bạn.</p>
+
+<h2>Hệ thống chọn lịch cho từng người thế nào</h2>
+<p>Một người có thể dính tới bốn mức gán; mức hẹp hơn thắng:</p>
+<table>
+<thead><tr><th>Thứ tự</th><th>Gán cho</th><th>Ví dụ</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Nhân sự</strong> (riêng một người)</td><td>Bảo vệ làm ca riêng</td></tr>
+<tr><td>2</td><td><strong>Phòng ban</strong></td><td>Kho làm cả thứ Bảy</td></tr>
+<tr><td>3</td><td><strong>Pháp nhân</strong></td><td>Cả công ty nghỉ thứ Bảy</td></tr>
+<tr><td>4</td><td><strong>Toàn hệ thống</strong></td><td>Lịch chung của tập đoàn</td></tr>
+</tbody>
+</table>
+<p>Chưa có mức nào thì dùng lịch mặc định thứ Hai đến thứ Bảy, Chủ nhật nghỉ. Người <strong>kiêm nhiệm</strong> chỉ theo lịch của <strong>phòng chính</strong>, không theo phòng kiêm nhiệm. Muốn biết chính xác một người đang theo lịch nào, mở hồ sơ của họ ▸ tab <strong>Quỹ phép</strong> ▸ khung <strong>Lịch làm việc</strong>.</p>
+
+<h2>Ngày nghỉ phép được đếm theo lịch ra sao</h2>
+<ul>
+<li>Khi lập đơn nghỉ, ô <strong>Tổng số ngày</strong> tự tính theo <strong>lịch làm việc của người nghỉ</strong> ở từng ngày trong khoảng nghỉ.</li>
+<li>Ngày <strong>Nghỉ</strong> của lịch (ví dụ Chủ nhật, hay thứ Bảy với phòng nghỉ thứ Bảy) và <strong>ngày lễ</strong> không tính.</li>
+<li>Ngày lịch chỉ làm <strong>buổi sáng</strong> hoặc <strong>buổi chiều</strong> tính tối đa <strong>0,5</strong> ngày.</li>
+<li>Loại nghỉ dài liên tục như <strong>thai sản</strong> thì đếm cả ngày nghỉ trong tuần, theo cài đặt của loại nghỉ.</li>
+<li><strong>Đổi lịch không đổi đơn đã gửi duyệt</strong>: đơn giữ số ngày lúc gửi. Đơn còn ở <strong>Nháp</strong> mở lại thì hệ gợi ý theo lịch mới.</li>
+</ul>
+<p>Chi tiết cách đếm buổi và các tình huống: {ref("Nộp đơn nghỉ phép", "Nộp đơn nghỉ phép")} · {ref("Mười tình huống nghỉ thường gặp", "Mười tình huống nghỉ thường gặp")}.</p>
+
+<h2>Hỏi Trợ lý AI</h2>
+<p>Ở khung Trợ lý AI (hoặc bot, hoặc ứng dụng AI đã nối cổng MCP), hỏi bằng lời thường:</p>
+<table>
+<thead><tr><th>Bạn hỏi</th><th>Trợ lý trả lời</th></tr></thead>
+<tbody>
+<tr><td><em>Lịch làm việc của tôi thế nào?</em> · <em>Thứ Bảy tôi có phải đi làm không?</em></td><td>Tên lịch bạn đang theo, lịch đó gán cho bạn / phòng / công ty hay là mặc định, giờ từng thứ</td></tr>
+<tr><td><em>Tôi đã nghỉ mấy ngày năm nay?</em></td><td>Số ngày đã nghỉ theo từng loại nghỉ, kể cả loại không trừ phép (không lương, ốm…); đơn chờ duyệt và đơn đã duyệt cho những ngày sắp tới được nói riêng</td></tr>
+<tr><td><em>Tôi còn bao nhiêu ngày phép?</em></td><td>Số còn nghỉ được của từng loại, đúng con số màn Quỹ phép năm</td></tr>
+<tr><td><em>Anh Nam còn mấy ngày phép?</em> · <em>Phòng Kế toán năm nay ai nghỉ bao nhiêu?</em></td><td>Chỉ người có quyền xem <strong>Quỹ phép năm</strong> mới hỏi được, và chỉ thấy người trong phạm vi được xem: phòng Nhân sự theo phạm vi được giao, Trưởng phòng thấy đúng nhân viên thuộc phòng mình. Số ngày đã nghỉ của người khác chỉ hiện khi bạn cũng được xem đơn nghỉ của họ</td></tr>
+</tbody>
+</table>
+<p>Một đơn nghỉ được tính vào năm của <strong>ngày bắt đầu nghỉ</strong>, giống quỹ phép. Đơn nghỉ vắt qua hai năm (ví dụ 30/12 đến 02/01) vì thế nằm trọn ở năm cũ; báo cáo <em>Tình hình nghỉ phép</em> có thể chia khác. Trợ lý không trả lời được thì trả lời <em>không tìm thấy trong phạm vi bạn được xem</em> — không có nghĩa người đó không có. Trợ lý chỉ đọc, không gán hay sửa lịch.</p>
+<p>Liên quan: {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")} · {ref(HR_SETTINGS, "Cài đặt nhân sự")} · {ref("Hiểu số ngày phép còn lại", "Hiểu số ngày phép còn lại")}.</p>""",
         },
         {
             "title": SO_DO,

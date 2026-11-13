@@ -32,5 +32,6 @@ def my_encashments(db, employee_id: int, year: int, limit: int) -> list[dict]:
         #  Trạng thái chi đọc từ YCTT (không lưu hai nơi); rỗng = chưa có YCTT. Tuyệt đối không trả `total`.
         "payment_status": pay.get(r.payment_request_id, ""),
         "payment_status_label": str(pay_service.STATUS_LABELS.get(pay.get(r.payment_request_id, ""), "")),
-        "decision_note": r.decision_note or "", "url": DETAIL_URL.format(id=r.id),
+        #  duoc-CR-757: bỏ `decision_note` — chữ tự do của người duyệt, có thể ghi đơn giá / số tiền (lộ lương ngày).
+        "url": DETAIL_URL.format(id=r.id),
     } for r in rows]

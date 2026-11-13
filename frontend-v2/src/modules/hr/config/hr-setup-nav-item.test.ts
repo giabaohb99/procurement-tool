@@ -99,3 +99,28 @@ describe('bố cục menu Nhân sự (duoc-CR-754)', () => {
     expect(canAccessRoute(hrModule, path, makeCan({}))).toBe(false)
   })
 })
+
+describe('Trưởng phòng gán lịch riêng (duoc-CR-757 lượt 2)', () => {
+  //  Trưởng phòng mặc định: đọc lịch + khóa riêng `work_schedule_personal`. Nút Đổi lịch riêng ở hồ sơ dẫn sang màn
+  //  Gán lịch — route đóng là bấm vào ra trang Không có quyền.
+  const headOfDepartment = makeCan({
+    employee: ['read'],
+    work_schedule: ['read'],
+    work_schedule_personal: ['read', 'create', 'write', 'delete'],
+  })
+
+  it('opens the assignment screen with only the personal key', () => {
+    expect(canAccessRoute(hrModule, '/hr/work-schedule-assignments', headOfDepartment)).toBe(true)
+  })
+
+  it('keeps the schedule template screens closed: templates stay HR-only', () => {
+    for (const path of ['/hr/work-schedules', '/hr/work-schedules/new', '/hr/work-schedules/5']) {
+      expect(canAccessRoute(hrModule, path, headOfDepartment)).toBe(false)
+    }
+  })
+
+  it('reading the personal key alone opens nothing', () => {
+    const readerOnly = makeCan({ work_schedule: ['read'], work_schedule_personal: ['read'] })
+    expect(canAccessRoute(hrModule, '/hr/work-schedule-assignments', readerOnly)).toBe(false)
+  })
+})

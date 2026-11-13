@@ -225,6 +225,9 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  Lịch làm việc: sửa lịch đổi cách tính ngày phép cả công ty —
                  #  Quản lý thu mua không tự có (chỉ `read` đại trà + hr_leave/hr_profile sửa).
                  "work_schedule",
+                 #  duoc-CR-757: gán lịch RIÊNG cho nhân sự trong phạm vi — chỉ Trưởng phòng (`dept_head`, khai tay dưới).
+                 #  Quản lý thu mua không tự có: nó đổi cách tính ngày nghỉ phép của người khác.
+                 "work_schedule_personal",
                  #  ⚠️ HĐLĐ có LƯƠNG + mẫu HĐ: không để Quản lý thu mua tự có (xem `employee_sensitive`).
                  "labor_contract", "labor_contract_template",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
@@ -694,7 +697,12 @@ STD_ROLES["dept_head"]["perms"]["leave_request"] = (
 STD_ROLES["dept_head"]["perms"]["leave_comp_request"] = (
     ["read", "create", "write", "delete", "approve", "export"], "dept")
 STD_ROLES["dept_head"]["perms"]["leave_encashment"] = (["read", "export"], "dept")
+#  duoc-CR-757 (Q2): bậc `dept` của `leave_balance` nay chỉ trúng người có phòng ban (chính hoặc kiêm nhiệm) là phòng
+#  của Trưởng phòng — trước đó là cả công ty (bảng quỹ không có cột phòng, xem `scoping.SCOPE_FIELDS`).
 STD_ROLES["dept_head"]["perms"]["leave_balance"] = (["read"], "dept")
+#  duoc-CR-757 (Q1): Trưởng phòng gán lịch làm việc RIÊNG (cấp Nhân sự) cho người phòng mình. Chỉ chọn mẫu HR tạo sẵn,
+#  không gán cho chính mình, không đụng mẫu / cấp phòng ban / pháp nhân / toàn hệ thống (chốt ở `assignment_access`).
+STD_ROLES["dept_head"]["perms"]["work_schedule_personal"] = (["read", "create", "write", "delete"], "dept")
 STD_ROLES["dept_head"]["perms"]["room_booking"] = (
     ["read", "create", "write", "delete", "approve", "cancel"], "dept")
 STD_ROLES["company_head"]["perms"]["leave_request"] = (

@@ -29,6 +29,8 @@ from .meeting_tool import MEETING_SPECS
 from .work_tool import DRAFT_WORK_PLAN_SPEC, DRAFT_WORK_TASK_SPEC, MY_WORK_TASKS_SPEC
 from .brief_tool import MANAGE_BRIEFS_SPEC
 from .leave_tool import MY_LEAVE_SUMMARY_SPEC
+from .employee_leave_tool import EMPLOYEE_LEAVE_SUMMARY_SPEC
+from .my_salary_tool import MY_SALARY_SPEC
 from .leave_comp_tool import DRAFT_LEAVE_COMP_REQUEST_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
                            PAYMENT_REQUEST_READ_SPEC)
@@ -100,6 +102,8 @@ def _active_specs() -> list:
                            *OFFICE_DRAFT_SPECS,   # kh-AI2-6: soạn nháp phiếu đặt xe / duyệt dấu
                            PROPOSE_APPROVAL_SPEC, # kh-AI2-7: đề xuất duyệt / từ chối một phiếu (đặt xe, phòng họp, nghỉ phép)
                            DRAFT_LEAVE_COMP_REQUEST_SPEC,  # duoc-CR-715 C: soạn nháp phiếu xin nghỉ bù
+                           EMPLOYEE_LEAVE_SUMMARY_SPEC,    # duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác (leave_balance.read)
+                           MY_SALARY_SPEC,                 # duoc-CR-757: lương của CHÍNH người hỏi, chỉ ở chat riêng
                            *PO_RECEIPT_SPECS,     # bao-CR-740: dòng ĐMH còn thiếu + soạn nháp ghi lần nhận từ phiếu xuất kho NCC
                            *SUPPLIER_QUOTE_SPECS,  # ai-CR-238: soạn nháp nhập báo giá NCC vào phiếu khảo sát / YCBG đang mở
                            *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)

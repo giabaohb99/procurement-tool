@@ -231,6 +231,7 @@ sánh cũ/mới.
 | `my_tickets` | Phiếu hỗ trợ CỦA CHÍNH người hỏi (mới nhất trước, kèm nhãn trạng thái + `url`) | `ticket.read`, rồi **ép lọc chính chủ** theo cả hai cột (`created_by` = tài khoản HOẶC `requester_id` = mã nhân sự — thấy cả phiếu người khác tạo hộ) kể cả khi scope là `all`; limit mặc định 10, trần 30 |
 | `my_leave_summary` *(12/09, chưa deploy)* | Quỹ phép của chính người hỏi theo **từng loại nghỉ** (tổng · đã dùng · đang giữ chỗ · chuyển sang · còn lại) + đơn nghỉ của chính họ kèm số + nhãn trạng thái, dòng loại nghỉ và `url`. Read-only: **không gọi `ensure_balance()`** (hàm đó cấp phát dòng quỹ mới), loại chưa cấp quỹ trả cờ `allocated: false` | `leave_request.read` — cùng lý lẽ với `GET /api/leave-requests/tools/my-balance`: đây là quỹ của CHÍNH người hỏi, đòi thêm `leave_balance.read` là chắc chắn có người quên cấp rồi số hiện 0 vĩnh viễn. Rồi **ép lọc `employee_id` = mã nhân sự người hỏi** kể cả khi scope là `all`; **cố ý KHÔNG lọc `created_by`** — ở phân hệ này `created_by` nghĩa là "tôi lập hộ NGƯỜI KHÁC", gộp vào là phát dữ liệu nghỉ phép của người ta. Tài khoản chưa gắn nhân sự (`employee_id = 0`) nhận lỗi mềm, không trả quỹ của "nhân sự số 0". Limit 10, trần 30 (chỉ kẹp danh sách đơn) |
 | `employee_lookup` *(12/09, chưa deploy)* | Danh bạ nhân sự: tra theo tên / mã NV / email / điện thoại / chức vụ, hoặc liệt kê theo phòng ban. **Trả đúng 12 trường danh bạ** (mã · họ tên · chức vụ · cấp bậc · phòng ban · công ty · email · điện thoại công việc · quản lý trực tiếp · nhãn tình trạng · còn làm việc) | `employee.read` + `apply_scope` — tool ĐẦU TIÊN đọc hồ sơ NGƯỜI KHÁC, trước nó trợ lý chỉ đọc 5 trường của chính người hỏi. Ba lớp: khóa quyền · `apply_scope` (người scope `own` chỉ thấy mình) · **danh sách trắng trường ra** (`_OUT_FIELDS`, dựng theo danh sách chứ không `model_dump()` rồi xóa bớt). Danh sách trắng đã loại sạch **15 trường nhạy cảm** nên tool **không đòi** `employee_sensitive.read`; vẫn chạy thêm một lượt `sensitive.mask_many` làm chốt dự phòng. Mặc định chỉ người đang làm việc; limit 10, trần 30 |
+| `employee_leave_summary` *(duoc-CR-757, 13/11/2026)* | Quỹ phép, ngày đã nghỉ theo từng loại (cả loại không trừ quỹ) và tên lịch làm việc đang áp của NHÂN SỰ KHÁC — tra theo mã / tên hoặc theo phòng; mặc định 20, trần 50 người. Chỉ đọc, không gọi `ensure_balance()`. `my_leave_summary` cùng đợt trả thêm `work_schedule` + `taken_by_type` của chính người hỏi | `leave_balance.read`, rồi người trả về = `apply_scope(Employee, "employee")` GIAO phạm vi `leave_balance` áp lên chính hồ sơ (chỗ ngồi giả lập `company_id` / `employee_id`); dòng quỹ qua `apply_scope(LeaveBalance)` thêm một lần; ngày đã nghỉ (đọc từ đơn nghỉ — nghỉ ốm, không lương gần dữ liệu sức khỏe) chỉ lấy đơn trong phạm vi `leave_request.read` của người hỏi, thiếu khóa thì rỗng. Ngoài phạm vi và không tồn tại cùng một câu. Danh sách trường trắng: mã, họ tên, phòng, lịch, số ngày — không lương, không trường nhạy cảm. Số truy vấn cố định |
 
 ### Nhóm lập bộ tài khoản có xác nhận (`account_setup_tool.py`, bao-CR-435, 21/09/2026)
 
@@ -246,6 +247,34 @@ audit + `perm_cache_clear` ăn nguyên; **không có đường ghi thứ ba** v�
 
 Bài kiểm: `test/backend/test_assistant_account_setup_tool.py` (22 ca) — mỗi cửa chặn một
 ca, cộng ca chạy lại không đổi và ca token hết hạn / sai chủ / sai loại.
+
+---
+
+### Luật lương và cờ cuộc trò chuyện riêng (duoc-CR-757, 13/11/2026)
+
+Người chủ chốt (tuyệt đối): *khi ai hỏi lương của một người thì bảo không được, trừ khi bản thân mình hỏi*. Một cửa xét "chính
+chủ" vẫn là `employee.sensitive` (`is_self`, `mask`); `assistant/tools/salary_privacy.py` chỉ thêm điều kiện KÊNH và gom các
+chỗ tiền suy ra lương.
+
+| Tool / chỗ | Việc | Điều kiện |
+|---|---|---|
+| `my_salary` (mới) | Lương + phụ cấp trên hồ sơ của CHÍNH người hỏi | Không tham số chọn người; `user.employee_id` khác 0; kênh riêng (dưới); `sensitive.mask` + `is_self`. Ẩn ở cổng MCP |
+| Lương người khác | Không có công cụ nào trả | Mô tả `my_salary` + lời dặn hệ thống: trả đúng câu *Thông tin lương là dữ liệu riêng tư, chỉ chính nhân sự đó mới xem được.*, không ước tính từ tiền thanh toán nghỉ phép hay YCTT |
+| YCTT thanh toán nghỉ phép (`source_type = leave_encashment`) | Số tiền = lương ngày × số ngày | `hides_payment_money`: giấu số (`money_hidden: true`, chỉ trạng thái + link) ở `payment_request_read` và `pending_procurement_approvals` — kể cả với kế toán có quyền xem phiếu; chỉ người NHẬN thấy số, ở kênh riêng. `dataset_query` loại hẳn các phiếu này khỏi số tổng hợp (`exclude_salary_payments`); `update_tool` không nhận chúng |
+| `leave_encashment` (đọc phiếu thanh toán nghỉ phép) | Bỏ trường `decision_note` | Chữ tự do của người duyệt có thể ghi đơn giá |
+| Công cụ trả chữ tự do (`document_read`, `drive_read`, `read_group_messages`, `read_group_file`, ghi chú, lịch sử chat) | Câu dặn `FREE_TEXT_RULE` trong mô tả | Có lương trong chữ thì không đọc ra số (trừ của chính người hỏi ở kênh riêng) |
+| `search_chat_history`, tìm ghi chú | Ở kênh không riêng bỏ lượt lương (lượt có gọi `my_salary` theo sổ ý định, hoặc câu hỏi có chữ lương) và tin có chữ lương | Không thì lương của chính chủ ra MCP qua lịch sử chat (rà mã C1) |
+| Sổ nhớ tự rút (`personal_memory._SECRET_RE`) | Không rút câu có lương / phụ cấp / thu nhập | Sổ nhớ nạp vào lời nhắc mọi lượt, ở mọi kênh |
+
+**Kênh riêng hay chung** (`is_private_conversation`): Trợ lý web luôn riêng (một người một khung chat). Bot Telegram / Zalo
+riêng khi cờ `assistant.private_chat` bật — gắn bằng MÁY ở `agent_hub.service.handle_message` (`private_chat_scope`, cạnh
+`ai_channel_scope`): chat không phải nhóm VÀ đã liên kết tài khoản ERP của chính người nhắn (chat chưa liên kết chạy dưới
+tài khoản lùi `AGENT_ASSISTANT_USER` nên không bao giờ là của chính người hỏi). Chế độ tách dịch vụ: `agent_hub.erp` gửi header
+`x-agent-private-chat`, cổng B chỉ đọc nó SAU khi chữ ký dịch vụ đúng; vắng = không riêng. Cờ không bao giờ lấy từ lời model
+hay tham số công cụ. **Cổng MCP không bao giờ là riêng** (hội thoại nằm ở máy chủ bên thứ ba, có thể được chia sẻ); kênh lạ
+cũng không riêng.
+
+Bài kiểm: `test/backend/test_tro_ly_khong_lo_luong_cr757.py`.
 
 ---
 
