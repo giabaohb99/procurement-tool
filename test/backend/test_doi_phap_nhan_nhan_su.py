@@ -5,7 +5,7 @@
 1. Phòng CHÍNH vẫn là phòng của công ty cũ -> chốt L3 (`_check_departments_exist`) chặn 400 trỏ vào chính cái phòng
    đó; người dùng chọn phòng của công ty mới hoặc bỏ trống ô phòng ban.
 2. Dòng KIÊM NHIỆM ở công ty cũ (`tab_employee_concurrent`) phải KẾT THÚC (đến ngày = hôm qua), chứ không bị xóa;
-   dòng ở công ty KHÁC công ty cũ thì không bao giờ bị đụng (Q4).
+   dòng loại Công ty ở công ty KHÁC (không phải công ty đích) thì không bao giờ bị đụng (Q4, duoc-CR-756).
 
 Bài kiểm ở đây canh cả hai chiều: **kết thúc đúng thứ phải kết thúc**, và **KHÔNG đụng thứ không được phép đụng**.
 Chi tiết tham số giữ dòng / nhập Excel / hoàn tác: `test_kiem_nhiem_luong_ghi_cr755.py`.
@@ -56,9 +56,11 @@ def san(db, seed):
                               is_primary=True, created_by=ACTOR, updated_by=ACTOR))
     start = vn_today() - timedelta(days=10)
     rows = {}
-    for key, dept, company in (("A_KIEM", "A_KIEM", seed.company_id), ("A_CHUNG", "CHUNG", seed.company_id),
-                               ("C_CHUNG", "CHUNG", THIRD_COMPANY)):
-        rows[key] = EmployeeConcurrent(employee_id=person.id, company_id=company, department_id=department[dept],
+    #  Hai dòng loại Phòng ban ở công ty chính A và một dòng loại Công ty (C, không phòng) — duoc-CR-756.
+    for key, kind, dept, company in (("A_KIEM", 1, "A_KIEM", seed.company_id), ("A_CHUNG", 1, "CHUNG", seed.company_id),
+                                     ("C_CHUNG", 2, None, THIRD_COMPANY)):
+        rows[key] = EmployeeConcurrent(employee_id=person.id, kind=kind, company_id=company,
+                                       department_id=department[dept] if dept else 0,
                                        from_date=start, counts_scope=True, created_by=ACTOR, updated_by=ACTOR)
         db.add(rows[key])
     db.commit()
@@ -107,7 +109,7 @@ def test_giu_lai_phong_vua_chon_trong_cung_lan_luu(db, san):
 
 
 def test_dong_o_cong_ty_khac_khong_bi_dung(db, san):
-    """Dòng kiêm nhiệm ở công ty C (khác công ty cũ A) không bao giờ bị đụng, kể cả cùng phòng dùng chung."""
+    """Dòng loại Công ty (C, khác công ty đích) không bao giờ bị đụng."""
     person = san["nguoi"]
     update_employee(db, person.id,
                     EmployeeUpdate(company_id=OTHER_COMPANY, department_id=0), ACTOR)
@@ -126,7 +128,7 @@ def test_go_xong_phai_ghi_vao_dau_vet(db, san):
     messages = [row.message for row in
                 db.query(AuditLog).filter(AuditLog.entity == "employee",
                                           AuditLog.entity_id == person.id).all()]
-    assert any("kiêm nhiệm ở công ty cũ" in (m or "") and "Phòng Kho vận A" in (m or "")
+    assert any("kết thúc 2 dòng kiêm nhiệm" in (m or "") and "Phòng Kho vận A" in (m or "")
                and "Phòng Hành chính chung" in (m or "") for m in messages)
 
 

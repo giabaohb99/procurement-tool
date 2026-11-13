@@ -31,6 +31,23 @@ CONCURRENT_STATUS_LABELS: dict[ConcurrentStatus, str] = {
 }
 
 
+class ConcurrentKind(IntEnum):
+    """Loại dòng kiêm nhiệm (duoc-CR-756) — LƯU cột `kind`, khác `ConcurrentStatus` (dẫn xuất). `0` KHÔNG hợp lệ.
+
+    - DEPARTMENT: kiêm nhiệm một PHÒNG BAN của chính công ty chính (`company_id` = công ty chính lúc ghi).
+    - COMPANY: kiêm nhiệm cả một CÔNG TY khác (`department_id = 0`, không phòng).
+    """
+
+    DEPARTMENT = 1   # Phòng ban
+    COMPANY = 2      # Công ty
+
+
+CONCURRENT_KIND_LABELS: dict[ConcurrentKind, str] = {
+    ConcurrentKind.DEPARTMENT: "Phòng ban",
+    ConcurrentKind.COMPANY: "Công ty",
+}
+
+
 def get_concurrent_status(from_date: date | None, to_date: date | None, today: date) -> ConcurrentStatus:
     """Trạng thái của một dòng tại ngày `today` (giờ VN — nơi gọi truyền `vn_today()`).
 
@@ -48,4 +65,9 @@ def get_concurrent_status(from_date: date | None, to_date: date | None, today: d
 CONCURRENT_STATUS_SET = register(CodeSet("concurrent_status", "Trạng thái kiêm nhiệm", [
     Code(str(int(key)), label, sort_order=int(key))
     for key, label in CONCURRENT_STATUS_LABELS.items()
+]))
+
+CONCURRENT_KIND_SET = register(CodeSet("concurrent_kind", "Loại kiêm nhiệm", [
+    Code(str(int(key)), label, sort_order=int(key))
+    for key, label in CONCURRENT_KIND_LABELS.items()
 ]))

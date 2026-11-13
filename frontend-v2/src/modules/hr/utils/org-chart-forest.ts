@@ -1,4 +1,5 @@
 import type { ConcurrentMember } from '../types/concurrent-member'
+import { CONCURRENT_KIND_COMPANY, CONCURRENT_KIND_DEPARTMENT } from '../types/employee-concurrent'
 import type { OrgChartPayload } from '../types/org-chart'
 import { resolveParents } from './org-chart-tree'
 
@@ -17,10 +18,16 @@ export interface OrgChartPerson {
   reportIds: number[]
 }
 
-/** Người kiêm nhiệm cùng MỘT (phòng, công ty) gom lại — vẽ thành một nhóm có tiêu đề riêng dưới cây quản lý. */
+/**
+ * Người kiêm nhiệm gom lại thành một nhóm có tiêu đề riêng dưới cây quản lý (duoc-CR-756): dòng loại Phòng ban gom theo
+ * (phòng, công ty); dòng loại Công ty gom theo CÔNG TY (không có phòng) — tiêu đề *Kiêm nhiệm tại công ty B*.
+ */
 export interface OrgChartConcurrentGroup {
-  /** `phòng|công ty` — khóa ổn định cho React. */
+  /** `d|phòng|công ty` hoặc `c|công ty` — khóa ổn định cho React. */
   key: string
+  /** Mã `ConcurrentKind` của cả nhóm. */
+  kind: number
+  /** Loại Công ty: rỗng. */
   departmentName: string
   companyName: string
   members: ConcurrentMember[]
@@ -117,8 +124,22 @@ export function buildOrgChartForest(
   }
 }
 
+/**
+ * Tiêu đề nhóm kiêm nhiệm trên sơ đồ: *Kiêm nhiệm tại công ty B* (loại Công ty — tên pháp nhân thường đã mở đầu bằng
+ * "Công ty" thì không lặp lại) hoặc *Phòng X — Công ty A* (loại Phòng ban).
+ */
+export function concurrentGroupTitle(group: Pick<OrgChartConcurrentGroup, 'kind' | 'departmentName' | 'companyName'>): string {
+  if (group.kind === CONCURRENT_KIND_COMPANY) {
+    const name = group.companyName.trim()
+    if (!name) return 'Kiêm nhiệm tại công ty không rõ'
+    return name.toLowerCase().startsWith('công ty') ? `Kiêm nhiệm tại ${name}` : `Kiêm nhiệm tại công ty ${name}`
+  }
+  return [group.departmentName, group.companyName].filter(Boolean).join(' — ') || 'Phòng không rõ'
+}
+
 //  Người kiêm nhiệm đi qua CÙNG bộ lọc pháp nhân / phòng ban, nhưng đo theo nơi KIÊM NHIỆM (không phải phòng chính):
-//  lọc "Công ty B / Phòng Kế toán" là để thấy ai đang làm ở đó, kể cả người đến từ công ty khác.
+//  lọc "Công ty B / Phòng Kế toán" là để thấy ai đang làm ở đó. Dòng loại Công ty không gắn phòng nào nên chỉ qua bộ lọc
+//  pháp nhân; đang lọc theo phòng thì không hiện (người đó không ngồi ở phòng đang xem).
 function groupConcurrents(
   rows: ConcurrentMember[],
   filter: OrgChartForestFilter,
@@ -127,21 +148,28 @@ function groupConcurrents(
 ): OrgChartConcurrentGroup[] {
   const groups = new Map<string, OrgChartConcurrentGroup>()
   for (const row of rows) {
+    const isCompany = row.kind === CONCURRENT_KIND_COMPANY
     if (filter.companyId !== null && companyOf(row.company_id) !== filter.companyId) continue
-    if (filter.departmentIds !== null && !filter.departmentIds.has(departmentOf(row.department_id))) continue
-    const key = `${row.department_id}|${row.company_id}`
+    if (filter.departmentIds !== null && (isCompany || !filter.departmentIds.has(departmentOf(row.department_id)))) {
+      continue
+    }
+    const key = isCompany ? `c|${row.company_id}` : `d|${row.department_id}|${row.company_id}`
     const group = groups.get(key) ?? {
       key,
-      departmentName: row.department_name,
+      kind: isCompany ? CONCURRENT_KIND_COMPANY : CONCURRENT_KIND_DEPARTMENT,
+      departmentName: isCompany ? '' : row.department_name,
       companyName: row.company_name,
       members: [],
     }
     group.members.push(row)
     groups.set(key, group)
   }
+  //  Theo công ty; trong một công ty, nhóm kiêm nhiệm CẢ công ty đứng trước các nhóm phòng.
   const sorted = [...groups.values()].sort(
     (a, b) =>
-      a.companyName.localeCompare(b.companyName, 'vi') || a.departmentName.localeCompare(b.departmentName, 'vi'),
+      a.companyName.localeCompare(b.companyName, 'vi') ||
+      b.kind - a.kind ||
+      a.departmentName.localeCompare(b.departmentName, 'vi'),
   )
   for (const group of sorted) {
     group.members.sort((a, b) => a.full_name.localeCompare(b.full_name, 'vi') || a.id - b.id)

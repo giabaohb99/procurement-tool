@@ -22,18 +22,19 @@ function profile(over: Partial<AuthUser> = {}): AuthUser {
 }
 
 describe('ProfileInfoCard — kiêm nhiệm', () => {
-  it('lists every effective concurrent role on its own line with company and position', () => {
+  it('lists every effective concurrent row on its own line, exactly the backend sentence for both kinds (duoc-CR-756)', () => {
     render(
       <ProfileInfoCard
         profile={profile({
-          kiem_nhiem: ['Phòng Kế toán — Công ty B (Phó phòng)', 'Phòng Nhân sự — Công ty C'],
+          kiem_nhiem: ['Phòng Kế toán (Phó phòng)', 'Công ty SAM GROUP (Giám đốc)', 'Phòng Nhân sự'],
         })}
       />,
     )
-    expect(screen.getByText('Phòng Kế toán — Công ty B (Phó phòng)')).toBeInTheDocument()
-    expect(screen.getByText('Phòng Nhân sự — Công ty C')).toBeInTheDocument()
-    //  Hai câu nằm ở hai phần tử riêng, không bị nối thành một chuỗi cắt bằng dấu phẩy.
-    expect(screen.queryByText(/Phó phòng\), Phòng Nhân sự/)).not.toBeInTheDocument()
+    expect(screen.getByText('Phòng Kế toán (Phó phòng)')).toBeInTheDocument()
+    expect(screen.getByText('Công ty SAM GROUP (Giám đốc)')).toBeInTheDocument()
+    expect(screen.getByText('Phòng Nhân sự')).toBeInTheDocument()
+    //  Các câu nằm ở phần tử riêng, không bị nối thành một chuỗi cắt bằng dấu phẩy.
+    expect(screen.queryByText(/Phó phòng\), Công ty/)).not.toBeInTheDocument()
   })
 
   it('says "Chưa cập nhật" when nobody concurrent, and survives a session saved before the field existed', () => {
@@ -46,7 +47,7 @@ describe('ProfileInfoCard — kiêm nhiệm', () => {
   })
 
   it('renders two identical sentences without a React key clash (same place listed twice)', () => {
-    render(<ProfileInfoCard profile={profile({ kiem_nhiem: ['Phòng X — Công ty B', 'Phòng X — Công ty B'] })} />)
-    expect(screen.getAllByText('Phòng X — Công ty B')).toHaveLength(2)
+    render(<ProfileInfoCard profile={profile({ kiem_nhiem: ['Công ty B', 'Công ty B'] })} />)
+    expect(screen.getAllByText('Công ty B')).toHaveLength(2)
   })
 })

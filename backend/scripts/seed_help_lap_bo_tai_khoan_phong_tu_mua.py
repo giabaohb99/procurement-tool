@@ -18,6 +18,7 @@ rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không t�
 Bài cố ý nói bằng TÊN VAI TRÒ, không nêu mã tài khoản mẫu của môi trường thử.
 duoc-CR-754: đổi đường menu theo menu mới (Nhân sự › Master › Phòng ban thành Nhân sự › Danh mục › Phòng ban).
 duoc-CR-755: kiêm nhiệm khai ở tab Kiêm nhiệm (nút Thêm kiêm nhiệm), không còn thẻ Kiêm nhiệm ở tab Chung.
+duoc-CR-756: dòng kiêm nhiệm chọn loại Phòng ban (phòng của công ty hiện tại) hoặc Công ty; phòng tự mua khai bằng loại Phòng ban.
 """
 import re
 import sys
@@ -102,7 +103,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li><strong>Vị trí / Chức vụ</strong>: chọn chức danh in trên phiếu. Chức vụ <strong>chỉ là nhãn</strong>, không cấp quyền gì.</li>
 <li><strong>Tình trạng làm việc</strong>: Chính thức. <strong>Trạng thái hồ sơ</strong>: Đang hoạt động. Bấm <strong>Lưu</strong>.</li>
 </ul>
-<p>Người phụ trách thu mua cho <strong>nhiều phòng tự mua</strong> thì mở hồ sơ vừa tạo, tab <strong>Kiêm nhiệm</strong>, bấm <strong>Thêm kiêm nhiệm</strong>, chọn <strong>Công ty</strong> và <strong>Phòng ban</strong> của phòng tự mua kia, <strong>Từ ngày</strong>, giữ công tắc <strong>Tính vào phạm vi quyền</strong> bật rồi bấm <strong>Lưu</strong> (mỗi phòng một dòng). Bậc trong phòng tính cả phòng kiêm nhiệm đang hiệu lực và bật công tắc. Cách khai đủ xem bài {ref("Nhân sự — Khai kiêm nhiệm (kể cả ở công ty khác)", "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</p>
+<p>Người phụ trách thu mua cho <strong>nhiều phòng tự mua</strong> thì mở hồ sơ vừa tạo, tab <strong>Kiêm nhiệm</strong>, bấm <strong>Thêm kiêm nhiệm</strong>, chọn loại <strong>Phòng ban</strong>, chọn phòng tự mua kia ở ô <strong>Phòng ban</strong>, <strong>Từ ngày</strong>, giữ công tắc <strong>Tính vào phạm vi quyền</strong> bật rồi bấm <strong>Lưu</strong> (mỗi phòng một dòng). Ô <strong>Phòng ban</strong> chỉ liệt kê phòng phục vụ công ty hiện tại của người này: phòng tự mua ở công ty khác phải là phòng dùng chung hoặc đã khai phục vụ cả công ty đó. Bậc trong phòng tính cả phòng kiêm nhiệm đang hiệu lực và bật công tắc; kiêm nhiệm loại <strong>Công ty</strong> không mở thêm gì cho bậc này. Cách khai đủ xem bài {ref("Nhân sự — Khai kiêm nhiệm (kể cả ở công ty khác)", "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</p>
 
 <h3>Bước 2 — Tạo tài khoản đăng nhập</h3>
 <ul>

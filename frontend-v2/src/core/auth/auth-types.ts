@@ -1,15 +1,19 @@
 import type { PermissionMap } from '@/core/authorization/permission-types'
 
 /** Hồ sơ người dùng do `/api/auth/login|refresh|me` trả về (payload `_me_payload`). */
-/** Một dòng kiêm nhiệm đang hiệu lực trong `/api/auth/me` (khóa `concurrents`) — duoc-CR-755. */
+/** Một dòng kiêm nhiệm đang hiệu lực trong `/api/auth/me` (khóa `concurrents`) — duoc-CR-755; hai loại ở duoc-CR-756. */
 export interface AuthConcurrent {
+  /** Mã `ConcurrentKind` (`CONCURRENT_KIND`): Phòng ban (phòng của công ty hiện tại) hoặc Công ty (công ty khác). */
+  kind: number
+  kind_label: string
+  /** Loại Công ty: `0`. */
   department_id: number
   company_id: number
+  /** Loại Công ty: rỗng. */
   department_name: string
-  /** Rỗng khi dòng chưa gắn công ty. */
   company_name: string
   position_label: string
-  /** Bật = dòng mở thêm phạm vi quyền đúng cặp (phòng, công ty); tắt = chỉ ghi nhận. */
+  /** Bật = dòng mở thêm phạm vi quyền (loại Phòng ban: phòng đó; loại Công ty: cả công ty theo bậc vai trò). */
   counts_scope: boolean
 }
 
@@ -36,8 +40,8 @@ export interface AuthUser {
   role_names?: string[]
   position?: string
   /**
-   * Kiêm nhiệm ĐANG HIỆU LỰC dạng câu: `Phòng X — Công ty B (Chức vụ)` (duoc-CR-755) — cùng hoặc khác công ty chính,
-   * kể cả dòng tắt công tắc phạm vi. Cấu trúc đầy đủ ở `concurrents`.
+   * Kiêm nhiệm ĐANG HIỆU LỰC dạng câu do backend dựng (duoc-CR-756): `Phòng X (Chức vụ)` với loại Phòng ban,
+   * `Công ty B (Chức vụ)` với loại Công ty — kể cả dòng tắt công tắc phạm vi. Cấu trúc đầy đủ ở `concurrents`.
    */
   kiem_nhiem?: string[]
   /**

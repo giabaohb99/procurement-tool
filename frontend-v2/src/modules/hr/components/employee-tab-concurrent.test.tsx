@@ -42,8 +42,10 @@ function row(overrides: Partial<EmployeeConcurrent>): EmployeeConcurrent {
   return {
     id: 1,
     employee_id: 1,
-    company_id: 11,
-    company_name: 'DEGO B',
+    kind: 1,
+    kind_label: 'Phòng ban',
+    company_id: 10,
+    company_name: 'DEGO A',
     department_id: 5,
     department_name: 'Kế toán',
     position_id: 0,
@@ -62,13 +64,13 @@ function row(overrides: Partial<EmployeeConcurrent>): EmployeeConcurrent {
   }
 }
 
-function renderTab() {
+function renderTab(who: Employee = employee) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <form onSubmit={(e) => e.preventDefault()}>
-          <EmployeeTabConcurrent employee={employee} />
+          <EmployeeTabConcurrent employee={who} />
         </form>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -84,11 +86,21 @@ beforeEach(() => {
 })
 
 describe('EmployeeTabConcurrent', () => {
-  it('renders company, department and all three status badges from the backend labels', () => {
+  it('Loại column + one "Nơi kiêm nhiệm" cell: room name for Phòng ban, company name for Công ty (never both)', () => {
     state.result = {
       items: [
         row({ id: 1, department_name: 'Kế toán', status: 2, status_label: 'Đang hiệu lực' }),
-        row({ id: 2, department_name: 'Kho', status: 1, status_label: 'Sắp tới' }),
+        row({
+          id: 2,
+          kind: 2,
+          kind_label: 'Công ty',
+          company_id: 11,
+          company_name: 'DEGO B',
+          department_id: 0,
+          department_name: '',
+          status: 1,
+          status_label: 'Sắp tới',
+        }),
         row({ id: 3, department_name: 'Mua hàng', status: 3, status_label: 'Đã hết', counts_scope: false }),
       ],
       can_edit: true,
@@ -96,7 +108,15 @@ describe('EmployeeTabConcurrent', () => {
     }
     renderTab()
     const table = screen.getByRole('table')
-    expect(within(table).getAllByText('DEGO B')).toHaveLength(3)
+    expect(within(table).getByRole('columnheader', { name: /Loại/ })).toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: /Nơi kiêm nhiệm/ })).toBeInTheDocument()
+    expect(within(table).queryByRole('columnheader', { name: /^Công ty$/ })).not.toBeInTheDocument()
+    expect(within(table).getAllByText('Phòng ban')).toHaveLength(2)
+    expect(within(table).getByText('Công ty')).toBeInTheDocument()
+    expect(within(table).getByText('Kế toán')).toBeInTheDocument()
+    expect(within(table).getByText('DEGO B')).toBeInTheDocument()
+    //  Dòng Phòng ban không lặp tên công ty hiện tại vào ô nơi kiêm nhiệm.
+    expect(within(table).queryByText('DEGO A')).not.toBeInTheDocument()
     expect(within(table).getByText('Đang hiệu lực')).toBeInTheDocument()
     expect(within(table).getByText('Sắp tới')).toBeInTheDocument()
     expect(within(table).getByText('Đã hết')).toBeInTheDocument()
@@ -172,9 +192,39 @@ describe('EmployeeTabConcurrent', () => {
     renderTab()
     await userEvent.click(screen.getByRole('button', { name: 'Xóa' }))
     expect(state.deleteMutate).not.toHaveBeenCalled()
-    expect(screen.getByText(/Xóa kiêm nhiệm phòng "Kế toán" — DEGO B/)).toBeInTheDocument()
+    expect(screen.getByText(/Xóa kiêm nhiệm phòng "Kế toán"\?/)).toBeInTheDocument()
+    expect(screen.getByText(/thôi thấy dữ liệu của phòng này/)).toBeInTheDocument()
     await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Xóa' }))
     expect(state.deleteMutate).toHaveBeenCalledTimes(1)
     expect(state.deleteMutate.mock.calls[0][0]).toBe(5)
+  })
+
+  it('delete of a Công ty row names the company and says the person stops counting as its staff', async () => {
+    state.result = {
+      items: [row({ id: 6, kind: 2, kind_label: 'Công ty', company_name: 'DEGO B', department_id: 0, department_name: '' })],
+      can_edit: true,
+      can_open_files: true,
+    }
+    renderTab()
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa' }))
+    expect(screen.getByText(/Xóa kiêm nhiệm công ty "DEGO B"\?/)).toBeInTheDocument()
+    expect(screen.getByText(/thôi được tính là người của công ty này/)).toBeInTheDocument()
+  })
+
+  it('profile without a primary company: add button disabled and a sentence says why (backend would 400 both kinds)', async () => {
+    state.result = { items: [], can_edit: true, can_open_files: true }
+    renderTab({ id: 1, company_id: 0, department_id: 0 } as Employee)
+    const add = screen.getByRole('button', { name: /Thêm kiêm nhiệm/ })
+    expect(add).toBeDisabled()
+    expect(screen.getByText(/chưa gắn pháp nhân chính/)).toBeInTheDocument()
+    await userEvent.click(add)
+    expect(state.formDialog?.open).toBe(false)
+  })
+
+  it('profile with a primary company: no such sentence, add button enabled', () => {
+    state.result = { items: [], can_edit: true, can_open_files: true }
+    renderTab()
+    expect(screen.getByRole('button', { name: /Thêm kiêm nhiệm/ })).toBeEnabled()
+    expect(screen.queryByText(/chưa gắn pháp nhân chính/)).not.toBeInTheDocument()
   })
 })

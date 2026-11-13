@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core import reference_guard
 from app.core.scoping import get_perm_profile, get_scoped
-from app.modules.employee import concurrent_transition_service, department_service, position_role_service, service
+from app.modules.employee import concurrent_company_change_service, department_service, position_role_service, service
 from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.contact_model import EmployeeContact, EmployeeFamily
 from app.modules.employee.model import Employee
@@ -148,7 +148,7 @@ def revert_blockers(db: Session, changes, user_id: int, batch=None) -> list[str]
             conflict.append("_depts")
         ended = cols.get("_concurrent_ended") or []
         if ended:
-            issues = concurrent_transition_service.revert_problems(db, emp, ended, profile)
+            issues = concurrent_company_change_service.revert_problems(db, emp, ended, profile)
             if issues:
                 problems.append(f"{code}: kiêm nhiệm ở công ty cũ — " + "; ".join(issues))
                 continue
@@ -216,7 +216,7 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
                 primary = next((d for d, is_primary in depts[0] if is_primary), 0)
                 department_service.set_primary_department(db, emp, primary, user_id)
             if ended:
-                concurrent_transition_service.restore_ended(db, emp, ended, profile)
+                concurrent_company_change_service.restore_ended(db, emp, ended, profile, actor_id=user_id)
         except HTTPException as e:
             raise HTTPException(400, f"Không hoàn tác được {code}: {e.detail}") from None
         if pos_id is not None:

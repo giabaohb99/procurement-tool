@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ConcurrentMember, ConcurrentMembersResult } from '../types/concurrent-member'
+import { CONCURRENT_KIND_DEPARTMENT } from '../types/employee-concurrent'
 import { DepartmentConcurrentMembersTable } from './department-concurrent-members-table'
 
 const state = vi.hoisted(() => ({
@@ -29,6 +30,8 @@ function member(over: Partial<ConcurrentMember> = {}): ConcurrentMember {
   return {
     id: 1,
     employee_id: 11,
+    kind: 1,
+    kind_label: 'Phòng ban',
     code: 'NSU011',
     full_name: 'Lê Văn Kiêm',
     position_label: 'Phó phòng',
@@ -124,8 +127,8 @@ describe('DepartmentConcurrentMembersTable', () => {
     expect(screen.getByText(/chỉ hiện 200 người đầu/)).toBeInTheDocument()
   })
 
-  it('passes the department id to the hook (hook is the only thing that talks to the API)', () => {
+  it('asks only for Phòng ban rows of this department (kind=1) — Công ty rows have no room and live on the company page', () => {
     renderTable()
-    expect(state.lastCall?.params).toEqual({ department_id: 7 })
+    expect(state.lastCall?.params).toEqual({ department_id: 7, kind: CONCURRENT_KIND_DEPARTMENT })
   })
 })

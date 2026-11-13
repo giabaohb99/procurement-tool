@@ -125,6 +125,7 @@ interface RouteData {
 function concurrentRow(over: Record<string, unknown> = {}) {
   return {
     id: 1,
+    kind: 1,
     status: 2,
     counts_scope: true,
     department_name: 'Phòng Kế toán',
@@ -887,11 +888,12 @@ describe('A10 — chưa mở vai trò nào', () => {
 })
 
 
-describe('duoc-CR-755 — kiêm nhiệm khác công ty hiện trong khối "thấy gì"', () => {
-  it('lists the (department, company) pairs a concurrent row opens, and only rows in effect with the switch on', async () => {
+describe('duoc-CR-756 — kiêm nhiệm phòng ban / công ty hiện trong khối "thấy gì"', () => {
+  it('lists each place a concurrent row opens (room, or whole company by role tier), only rows in effect with the switch on', async () => {
     mockRoutes({
       concurrents: [
         concurrentRow(),
+        concurrentRow({ id: 5, kind: 2, department_name: '', company_name: 'SAM GROUP' }),
         concurrentRow({ id: 2, department_name: 'Tắt công tắc', counts_scope: false }),
         concurrentRow({ id: 3, department_name: 'Sắp tới', status: 1 }),
         concurrentRow({ id: 4, department_name: 'Đã hết', status: 3 }),
@@ -899,8 +901,11 @@ describe('duoc-CR-755 — kiêm nhiệm khác công ty hiện trong khối "th�
     })
     build()
 
-    expect(await screen.findByText('Phòng Kế toán (Công ty CP DEGO Food)')).toBeInTheDocument()
-    expect(screen.getByText(/chỉ đúng từng phòng và công ty này/)).toBeInTheDocument()
+    expect(await screen.findByText('Phòng Kế toán')).toBeInTheDocument()
+    expect(screen.getByText('Công ty SAM GROUP (cả công ty theo bậc vai trò)')).toBeInTheDocument()
+    expect(screen.getByText('Kiêm nhiệm đang mở thêm phạm vi:')).toBeInTheDocument()
+    //  Câu cũ "chỉ đúng từng phòng và công ty này" sai với dòng loại Công ty (mở cả công ty theo bậc).
+    expect(screen.queryByText(/chỉ đúng từng phòng và công ty này/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Tắt công tắc/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Sắp tới/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Đã hết/)).not.toBeInTheDocument()

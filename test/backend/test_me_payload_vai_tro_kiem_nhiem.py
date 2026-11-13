@@ -3,8 +3,9 @@
 Trước đây payload lấy `role_name` từ cột `tab_employee.role_name` đã bỏ dùng (CR-022)
 nên hồ sơ luôn hiện "Chưa cập nhật"; đây là bài giữ cho lỗi đó không quay lại.
 
-duoc-CR-755 (giai đoạn 05): kiêm nhiệm đọc bảng `tab_employee_concurrent` (cùng HOẶC khác công ty, chỉ dòng
-đang hiệu lực), `kiem_nhiem` là câu *Phòng X — Công ty B (Chức vụ)* và `concurrents` có cấu trúc cho popup."""
+duoc-CR-755 (giai đoạn 05) / duoc-CR-756: kiêm nhiệm đọc bảng `tab_employee_concurrent` (chỉ dòng đang hiệu lực),
+hai loại dòng — Phòng ban (phòng của công ty hiện tại) và Công ty (công ty khác, không phòng); `kiem_nhiem` là câu
+*Phòng X (Chức vụ)* hoặc *Công ty B (Chức vụ)* và `concurrents` có cấu trúc (kèm `kind`, `kind_label`) cho popup."""
 from datetime import timedelta
 
 from app.core.vn_time import vn_today
@@ -48,16 +49,16 @@ def _build(db):
     today = vn_today()
     db.add_all([
         EmployeeDepartment(employee_id=emp.id, department_id=main.id, is_primary=True),
-        #  Cùng công ty chính, có chức vụ kiêm nhiệm.
-        EmployeeConcurrent(employee_id=emp.id, company_id=cty_1.id, department_id=extra1.id,
+        #  Loại Phòng ban: phòng của công ty chính, có chức vụ kiêm nhiệm.
+        EmployeeConcurrent(employee_id=emp.id, kind=1, company_id=cty_1.id, department_id=extra1.id,
                            position_label="Phó phòng", from_date=today - timedelta(days=5)),
-        #  KHÁC công ty, tắt công tắc phạm vi: vẫn hiện ở Trang cá nhân (chỉ là ghi nhận).
-        EmployeeConcurrent(employee_id=emp.id, company_id=cty_2.id, department_id=extra2.id,
+        #  Loại Công ty (công ty khác, không phòng), tắt công tắc phạm vi: vẫn hiện ở Trang cá nhân (chỉ là ghi nhận).
+        EmployeeConcurrent(employee_id=emp.id, kind=2, company_id=cty_2.id, department_id=0,
                            from_date=today - timedelta(days=5), counts_scope=False),
         #  Đã hết hạn và chưa bắt đầu: KHÔNG hiện.
-        EmployeeConcurrent(employee_id=emp.id, company_id=cty_2.id, department_id=main.id,
+        EmployeeConcurrent(employee_id=emp.id, kind=2, company_id=cty_2.id, department_id=0,
                            from_date=today - timedelta(days=40), to_date=today - timedelta(days=1)),
-        EmployeeConcurrent(employee_id=emp.id, company_id=cty_2.id, department_id=main.id,
+        EmployeeConcurrent(employee_id=emp.id, kind=1, company_id=cty_1.id, department_id=main.id,
                            from_date=today + timedelta(days=3)),
     ])
     db.flush()
@@ -76,15 +77,15 @@ def test_me_payload_returns_role_names_from_user_role(db):
 def test_me_payload_kiem_nhiem_lists_effective_rows_with_company_and_position(db):
     user = _build(db)
     payload = _me_payload(db, user)
-    # Chỉ dòng ĐANG HIỆU LỰC (cùng và khác công ty), KHÔNG gồm phòng chính, dòng hết hạn, dòng sắp tới; sắp theo tên.
-    assert payload["kiem_nhiem"] == ["Phòng Phụ A — Công ty Một (Phó phòng)", "Phòng Phụ B — Công ty Hai"]
+    # Chỉ dòng ĐANG HIỆU LỰC, KHÔNG gồm phòng chính, dòng hết hạn, dòng sắp tới; Phòng ban trước, Công ty sau.
+    assert payload["kiem_nhiem"] == ["Phòng Phụ A (Phó phòng)", "Công ty Hai"]
     # Cấu trúc cho popup phạm vi: đủ khóa, không lộ khóa `text` nội bộ; công tắc đi theo từng dòng.
-    assert [(c["department_name"], c["company_name"], c["position_label"], c["counts_scope"])
-            for c in payload["concurrents"]] == [
-        ("Phòng Phụ A", "Công ty Một", "Phó phòng", True),
-        ("Phòng Phụ B", "Công ty Hai", "", False),
+    assert [(c["kind"], c["kind_label"], c["department_name"], c["company_name"], c["position_label"],
+             c["counts_scope"]) for c in payload["concurrents"]] == [
+        (1, "Phòng ban", "Phòng Phụ A", "Công ty Một", "Phó phòng", True),
+        (2, "Công ty", "", "Công ty Hai", "", False),
     ]
-    assert all(set(c) == {"department_id", "company_id", "department_name", "company_name",
+    assert all(set(c) == {"kind", "kind_label", "department_id", "company_id", "department_name", "company_name",
                           "position_label", "counts_scope"} for c in payload["concurrents"])
 
 

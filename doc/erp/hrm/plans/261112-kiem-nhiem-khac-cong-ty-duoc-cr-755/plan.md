@@ -12,6 +12,9 @@ created: 2026-11-12
 # duoc-CR-755 — Kiêm nhiệm thành tab riêng, cho kiêm nhiệm ở công ty khác
 Trạng thái kế hoạch: **đang làm**
 
+> **Mô hình cặp (phòng, công ty) đã thay bằng duoc-CR-756** (13/11/2026): hai loại dòng Phòng ban / Công ty độc lập — xem
+> [`../261113-kiem-nhiem-phong-ban-cong-ty-doc-lap-duoc-cr-756/plan.md`](../261113-kiem-nhiem-phong-ban-cong-ty-doc-lap-duoc-cr-756/plan.md) và `01-ho-so-nhan-su.md` §7.18.
+
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 12/11/2026 | planner | Nháp | duoc-CR-755 (nền: CR-167, duoc-CR-342, bao-CR-709, duoc-CR-585) |

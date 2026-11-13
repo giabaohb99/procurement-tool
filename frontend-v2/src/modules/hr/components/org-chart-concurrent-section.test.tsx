@@ -11,6 +11,8 @@ function member(id: number, over: Partial<ConcurrentMember> = {}): ConcurrentMem
   return {
     id,
     employee_id: 100 + id,
+    kind: 1,
+    kind_label: 'Phòng ban',
     code: `K${id}`,
     full_name: `Người kiêm ${id}`,
     position_label: 'Phó phòng',
@@ -33,7 +35,7 @@ function member(id: number, over: Partial<ConcurrentMember> = {}): ConcurrentMem
 }
 
 function group(members: ConcurrentMember[]): OrgChartConcurrentGroup {
-  return { key: '7|2', departmentName: 'Phòng Kế toán', companyName: 'Công ty B', members }
+  return { key: 'd|7|2', kind: 1, departmentName: 'Phòng Kế toán', companyName: 'Công ty B', members }
 }
 
 function renderSection(groups: OrgChartConcurrentGroup[], truncated = false) {
@@ -90,7 +92,7 @@ describe('OrgChartConcurrentSection', () => {
   it('still renders a person whose primary place and name parts are missing (blank strings from the backend)', async () => {
     const user = userEvent.setup()
     renderSection([
-      { key: '0|0', departmentName: '', companyName: '', members: [member(1, { primary_department_name: '', primary_company_name: '', position_label: '' })] },
+      { key: 'd|0|0', kind: 1, departmentName: '', companyName: '', members: [member(1, { primary_department_name: '', primary_company_name: '', position_label: '' })] },
     ])
     expect(screen.getByText('Phòng không rõ')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Người kiêm 1/ }))
@@ -105,5 +107,19 @@ describe('OrgChartConcurrentSection', () => {
   it('shows no note for a complete list', () => {
     renderSection([group([member(1)])])
     expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+
+  it('a Công ty group is titled "Kiêm nhiệm tại ..." with no room (duoc-CR-756)', () => {
+    renderSection([
+      {
+        key: 'c|2',
+        kind: 2,
+        departmentName: '',
+        companyName: 'Công ty B',
+        members: [member(5, { kind: 2, kind_label: 'Công ty', department_id: 0, department_name: '' })],
+      },
+    ])
+    expect(screen.getByText('Kiêm nhiệm tại Công ty B')).toBeInTheDocument()
+    expect(screen.getByText('Người kiêm 5')).toBeInTheDocument()
   })
 })

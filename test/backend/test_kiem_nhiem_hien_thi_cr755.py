@@ -1,16 +1,16 @@
-"""duoc-CR-755 giai đoạn 05 — HIỂN THỊ kiêm nhiệm khác công ty ở phòng B + bật ĐỌC hồ sơ (Q1).
+"""duoc-CR-755 giai đoạn 05 (chỉnh theo mô hình hai loại dòng ở duoc-CR-756) — HIỂN THỊ kiêm nhiệm + bật ĐỌC hồ sơ (Q1).
 
-Cảnh: a2 (công ty A, phòng A.kt) kiêm nhiệm phòng B.kt của công ty B. b1 (công ty B, phòng B.kt) là người xem có
-phạm vi `dept` trên `employee`; y1 (công ty B, phòng B.hc) là người xem phòng KHÁC.
+Cảnh (xem `kiem_nhiem_factory`): a2 (công ty A, phòng DÙNG CHUNG SH) kiêm nhiệm CÔNG TY B → ngồi ở (SH, B). hb (B, SH)
+là người xem có phạm vi `dept` trên `employee`; y1 (B, B.hc) là người xem phòng KHÁC.
 
 Bốn luật phải giữ, mỗi luật có cặp đối chứng ở chiều ngược (chặn sạch thì bài nào cũng xanh):
 
-1. Q1 — MỌI đường ĐỌC hồ sơ `/api/employees/{eid}/...` mở cho người phủ cặp (phòng, công ty) của dòng hiệu lực + bật
-   công tắc; hết hạn / tắt công tắc / sắp tới / phòng khác = 404. Đường mới thêm mà quên phân loại thì bài soi
-   `app.routes` đỏ.
+1. Q1 — MỌI đường ĐỌC hồ sơ `/api/employees/{eid}/...` mở cho người phủ chỗ ngồi của dòng hiệu lực + bật công tắc;
+   hết hạn / tắt công tắc / sắp tới / phòng khác = 404. Đường mới thêm mà quên phân loại thì bài soi `app.routes` đỏ.
 2. Q1 chỉ ĐỌC: PATCH / PUT / POST / DELETE đều 404; danh sách `/api/employees`, xuất tệp, báo cáo KHÔNG có người
    kiêm nhiệm (Q5 + không đếm trùng quân số).
-3. Bảng "Kiêm nhiệm tại phòng này" + sơ đồ tổ chức: chỉ dòng người xem phủ, danh sách trắng trường, số truy vấn cố định.
+3. Bảng "Kiêm nhiệm" theo phòng / công ty + sơ đồ tổ chức: chỉ dòng người xem phủ, danh sách trắng trường, số truy vấn
+   cố định.
 4. Nhạy cảm vẫn che (`employee_sensitive`), lương không bao giờ ra; xóa dòng quá trình công tác loại Kiêm nhiệm GIỮ dòng
    kiêm nhiệm và chỉ bỏ liên kết.
 """
@@ -33,9 +33,8 @@ from app.modules.employee import work_history_service as whs
 from app.modules.employee.concurrent_model import EmployeeConcurrent
 from app.modules.employee.model import Employee
 from app.modules.employee.work_history_model import EmployeeWorkHistory
-from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401
-from scope_factory import Actor
+from kiem_nhiem_factory import add_employee, build_kn_world, kc, kn as kn_dept
 
 TODAY = vn_today()
 DAY = timedelta(days=1)
@@ -44,7 +43,7 @@ MEMBERS = "/api/employee-concurrents"
 #  Dòng kiêm nhiệm ở phòng B.kt công ty B — khóa bị che theo quyền: KHÔNG được có trong bản tóm tắt.
 FORBIDDEN_KEYS = {"phone", "phone_label", "extra_phones", "email", "birth_date", "date_of_birth", "id_number",
                   "tax_code", "bank_account_no", "permanent_address", "salary_monthly", "allowance_monthly"}
-MEMBER_KEYS = {"id", "employee_id", "code", "full_name", "position_label", "company_id", "company_name",
+MEMBER_KEYS = {"id", "employee_id", "code", "full_name", "kind", "kind_label", "position_label", "company_id", "company_name",
                "department_id", "department_name", "from_date", "to_date", "status", "status_label",
                "counts_scope", "primary_company_id", "primary_company_name", "primary_department_id",
                "primary_department_name", "can_open"}
@@ -54,35 +53,18 @@ MEMBER_KEYS = {"id", "employee_id", "code", "full_name", "position_label", "comp
 
 @pytest.fixture
 def w(world):
-    """Thế giới mẫu + y1 (công ty B, phòng B.hc) có tài khoản."""
-    db = world.db
-    emp = Employee(code="Y1", full_name="Nhân sự y1", company_id=world.co["B"],
-                   department_id=world.dept["B.hc"], is_active=True)
-    db.add(emp)
-    db.flush()
-    world.emp["y1"] = emp.id
-    user = User(email="y1", employee_id=emp.id, password_hash="x", is_active=True)
-    db.add(user)
-    db.flush()
-    world._actors["y1"] = Actor(world, "y1", user, emp)
-    db.commit()
-    return world
+    """Thế giới mẫu + công ty C, phòng dùng chung SH, người xem hb / y1 / c1; a2 chuyển sang (A, SH)."""
+    return build_kn_world(world)
 
 
-def kn(w, emp_key="a2", dept_key="B.kt", company_key="B", **kw) -> EmployeeConcurrent:
-    """Một dòng kiêm nhiệm. Mặc định ĐANG HIỆU LỰC + bật công tắc."""
-    row = EmployeeConcurrent(
-        employee_id=w.emp[emp_key], department_id=w.dept[dept_key], company_id=w.co[company_key],
-        from_date=kw.pop("from_date", TODAY - 30 * DAY), position_label=kw.pop("position_label", "Phó phòng"), **kw)
-    w.db.add(row)
-    w.db.commit()
-    perm_cache_clear()
-    return row
+def kn(w, emp_key="a2", company_key="B", **kw) -> EmployeeConcurrent:
+    """Một dòng kiêm nhiệm CÔNG TY (loại 2). Mặc định ĐANG HIỆU LỰC + bật công tắc."""
+    return kc(w, emp_key, company_key, position_label=kw.pop("position_label", "Phó phòng"), **kw)
 
 
 def head_b(w, *, sensitive=True, actions=("read", "write", "delete")):
-    """b1 = người xem phòng B.kt công ty B: đọc + ghi hồ sơ theo phạm vi `dept`."""
-    actor = w.grant("b1", "employee", "dept", actions=actions)
+    """hb = người xem phòng dùng chung SH ở công ty B: đọc + ghi hồ sơ theo phạm vi `dept`."""
+    actor = w.grant("hb", "employee", "dept", actions=actions)
     if sensitive:
         actor.grant("employee_sensitive", "all", actions=("read",))
     return actor
@@ -151,8 +133,8 @@ def test_q1_truong_phong_B_doc_duoc_moi_duong_ho_so_cua_nguoi_kiem_nhiem(w, clie
     c = client_as(b1)
     got = {t: c.get(f"/api/employees/{w.emp['a2']}{t}").status_code for t in sorted(Q1_TAILS | UNSCOPED_TAILS)}
     assert got == dict.fromkeys(got, 200), got
-    #  Đối chứng: người ĐỌC được hồ sơ này nhờ kiêm nhiệm cũng đọc hồ sơ của chính phòng mình như thường.
-    assert c.get(f"/api/employees/{w.emp['b1']}/work-history").status_code == 200
+    #  Đối chứng: người ĐỌC được hồ sơ này nhờ kiêm nhiệm cũng đọc hồ sơ của chính mình như thường.
+    assert c.get(f"/api/employees/{w.emp['hb']}/work-history").status_code == 200
     #  …và KHÔNG mở rộng sang người ngoài cặp: a3 (A.mua, công ty A) không kiêm nhiệm gì.
     assert c.get(f"/api/employees/{w.emp['a3']}/work-history").status_code == 404
 
@@ -177,9 +159,9 @@ def test_q1_nguoi_xem_phong_khac_khong_mo_duoc(w, client_as):  # noqa: F811
     assert got == dict.fromkeys(got, 404), got
 
 
-def test_q1_cap_phong_dung_chung_chi_mo_dung_cong_ty(w, client_as):  # noqa: F811
-    """Phòng B.kt ở công ty B; dòng khai công ty A (cặp (B.kt, A) không tồn tại) KHÔNG mở cho trưởng phòng B.kt."""
-    kn(w, company_key="A")
+def test_q1_phong_dung_chung_chi_mo_dung_cong_ty(w, client_as):  # noqa: F811
+    """Phòng SH dùng chung: dòng kiêm nhiệm công ty C (chỗ ngồi (SH, C)) KHÔNG mở cho người xem (SH, B)."""
+    kn(w, company_key="C")
     c = client_as(head_b(w))
     assert c.get(f"/api/employees/{w.emp['a2']}/work-history").status_code == 404
 
@@ -196,7 +178,7 @@ def test_q1_nhay_cam_van_che_va_luong_khong_bao_gio_ra(w, client_as):  # noqa: F
     assert c.get(f"/api/employees/{w.emp['a2']}/contacts").status_code == 403
     assert c.get(f"/api/employees/{w.emp['a2']}/families").status_code == 403
     #  Có employee_sensitive: nhạy cảm mở ra nhưng LƯƠNG thì chỉ chính chủ.
-    w.actor("b1").grant("employee_sensitive", "all", actions=("read",))
+    w.actor("hb").grant("employee_sensitive", "all", actions=("read",))
     body = c.get(f"/api/employees/{w.emp['a2']}").json()["data"]
     assert body["id_number"] == "079123456789"
     assert body["salary_monthly"] == 0 and body["allowance_monthly"] == 0
@@ -207,7 +189,7 @@ def test_q1_tep_quyet_dinh_chi_doc_duoc_khi_dong_con_hieu_luc(w):
     """Mở hồ sơ được mà tải tệp QĐ không được là nửa vời: tệp quá trình công tác + tệp kiêm nhiệm cùng luật."""
     row = kn(w)
     wh = EmployeeWorkHistory(employee_id=w.emp["a2"], event_type=4, from_date=TODAY - 30 * DAY,
-                             department_id=w.dept["B.kt"], created_by=1, updated_by=1)
+                             department_id=0, created_by=1, updated_by=1)
     w.db.add(wh)
     w.db.commit()
     entities = (("employee_work_history", wh.id), ("employee_concurrent", row.id))
@@ -221,7 +203,7 @@ def test_q1_tep_quyet_dinh_chi_doc_duoc_khi_dong_con_hieu_luc(w):
         with pytest.raises(HTTPException) as e:
             ac._check(w.db, no_sens.user, entity, "read", entity_id)
         assert e.value.status_code == 403
-    #  Hết hạn (cả hai tệp cùng treo vào cặp (B.kt, B) của dòng kiêm nhiệm — đã hết thì không còn gì để phủ): 403.
+    #  Hết hạn (cả hai tệp cùng treo vào chỗ ngồi của dòng kiêm nhiệm — đã hết thì không còn gì để phủ): 403.
     with_cached_off(row, "het_han", w.db)
     for entity, entity_id in entities:
         with pytest.raises(HTTPException) as e:
@@ -250,8 +232,7 @@ def test_q1_moi_duong_ghi_van_404_va_ho_so_khong_bi_dung(w, client_as):  # noqa:
         "POST work-history": c.post(f"/api/employees/{eid}/work-history",
                                     json={"event_type": 9, "from_date": "2026-01-01"}).status_code,
         "POST concurrents": c.post(f"/api/employees/{eid}/concurrents",
-                                   json={"company_id": w.co["B"], "department_id": w.dept["B.kt"],
-                                         "from_date": "2026-01-01"}).status_code,
+                                   json={"kind": 2, "company_id": w.co["C"], "from_date": "2026-01-01"}).status_code,
         "DELETE": c.delete(f"/api/employees/{eid}").status_code,
         "set-password": c.post(f"/api/employees/{eid}/set-password",
                                json={"password": "mat-khau-moi-26"}).status_code,
@@ -264,10 +245,10 @@ def test_q1_moi_duong_ghi_van_404_va_ho_so_khong_bi_dung(w, client_as):  # noqa:
 def test_q5_danh_sach_nhan_su_khong_co_nguoi_kiem_nhiem_ke_ca_loc_phong(w, client_as):  # noqa: F811
     kn(w)
     c = client_as(head_b(w))
-    for params in ({}, {"department_id": w.dept["B.kt"]}):
+    for params in ({}, {"department_id": w.dept["SH"]}):
         codes = {i["code"] for i in c.get("/api/employees", params={**params, "page_size": 100}).json()["data"]["items"]}
         assert "A2" not in codes, params
-        assert "B1" in codes, params   # đối chứng: danh sách vẫn chạy, người của phòng mình vẫn có
+        assert "HB" in codes, params   # đối chứng: danh sách vẫn chạy, người của phòng mình vẫn có
 
 
 def test_xuat_tep_nhan_su_khong_co_nguoi_kiem_nhiem(w, client_as):  # noqa: F811
@@ -276,11 +257,11 @@ def test_xuat_tep_nhan_su_khong_co_nguoi_kiem_nhiem(w, client_as):  # noqa: F811
     resp = c.get("/api/employees/export/csv")
     assert resp.status_code == 200
     text = resp.content.decode("utf-8-sig")
-    assert "B1" in text and "NHÂN SỰ A2" not in text.upper() and "A2," not in text
+    assert "HB" in text and "NHÂN SỰ A2" not in text.upper() and "A2," not in text
 
 
 def test_bao_cao_quan_so_khong_dem_trung_nguoi_kiem_nhiem(w):
-    """Phòng B.kt công ty B KHÔNG đếm a2; phòng chính A.kt vẫn đếm a2 đúng một lần; thêm dòng không đổi con số nào."""
+    """Công ty B / phòng kiêm nhiệm KHÔNG đếm a2; phòng chính SH vẫn đếm a2 đúng một lần; thêm dòng không đổi con số nào."""
     from app.core.report_period import parse_period
     from app.modules.employee import report_service
 
@@ -295,26 +276,31 @@ def test_bao_cao_quan_so_khong_dem_trung_nguoi_kiem_nhiem(w):
                                             department_id=w.dept[dept_key])
         return data["totals"]["current"]["headcount_end"]
 
-    #  A.kt: a1 + a2 + khongtk (3); B.kt: b1 (1); A.mua: a3 (1).
-    assert (heads("A.kt"), heads("B.kt"), heads("A.mua")) == (3, 1, 1)
-    kn(w)                                          # a2 kiêm nhiệm B.kt công ty B
-    kn(w, dept_key="A.mua", company_key="A")       # a2 kiêm nhiệm cả phòng cùng công ty
-    assert (heads("A.kt"), heads("B.kt"), heads("A.mua")) == (3, 1, 1)
+    #  A.kt: a1 + khongtk (2); SH: a2 + hb + c1 (3); A.mua: a3 (1).
+    assert (heads("A.kt"), heads("SH"), heads("A.mua")) == (2, 3, 1)
+    kn(w)                                          # a2 kiêm nhiệm cả công ty B
+    kn_dept(w, "a2", "A.mua")                      # a2 kiêm nhiệm thêm phòng của chính công ty A
+    assert (heads("A.kt"), heads("SH"), heads("A.mua")) == (2, 3, 1)
 
 
-# ── 3. Bảng "Kiêm nhiệm tại phòng này" ───────────────────────────────────────
+# ── 3. Bảng "Kiêm nhiệm" theo phòng / công ty ────────────────────────────────
 
 def get_members(c, **params):
     return c.get(MEMBERS, params=params)
 
 
-def test_bang_phong_B_thay_nguoi_kiem_nhiem_co_can_open_va_chi_danh_sach_trang(w, client_as):  # noqa: F811
+def of_b(c, **params):
+    """Dòng loại Công ty ở công ty B (bảng ở trang công ty B)."""
+    return get_members(c, company_id=params.pop("company_id"), kind=2, **params)
+
+
+def test_bang_cong_ty_B_thay_nguoi_kiem_nhiem_co_can_open_va_chi_danh_sach_trang(w, client_as):  # noqa: F811
     kn(w)
     a2 = w.db.get(Employee, w.emp["a2"])
     a2.phone, a2.email, a2.id_number = "0912345678", "a2@dego.vn", "079123456789"
     w.db.commit()
     c = client_as(head_b(w, sensitive=False))
-    resp = get_members(c, department_id=w.dept["B.kt"])
+    resp = of_b(c, company_id=w.co["B"])
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert data["total"] == 1 and data["truncated"] is False
@@ -323,101 +309,107 @@ def test_bang_phong_B_thay_nguoi_kiem_nhiem_co_can_open_va_chi_danh_sach_trang(w
     assert not (set(item) & FORBIDDEN_KEYS)
     assert "0912345678" not in resp.text and "a2@dego.vn" not in resp.text and "079123456789" not in resp.text
     assert (item["code"], item["position_label"], item["status"]) == ("A2", "Phó phòng", 2)
-    assert (item["company_name"], item["department_name"]) == ("Công ty B", "Phòng Kế toán")
-    assert (item["primary_company_name"], item["primary_department_name"]) == ("Công ty A", "Phòng Kế toán")
+    assert (item["kind"], item["kind_label"]) == (2, "Công ty")
+    assert (item["company_name"], item["department_id"], item["department_name"]) == ("Công ty B", 0, "")
+    assert item["primary_company_name"] == "Công ty A" and item["primary_department_name"] == "Phòng SH_DC"
     assert item["can_open"] is True and item["counts_scope"] is True
 
 
-def test_bang_phong_dong_tat_cong_tac_van_hien_ten_nhung_khong_mo_ho_so(w, client_as):  # noqa: F811
+def test_bang_dong_tat_cong_tac_van_hien_ten_nhung_khong_mo_ho_so(w, client_as):  # noqa: F811
     kn(w, counts_scope=False)
     c = client_as(head_b(w))
-    item = get_members(c, department_id=w.dept["B.kt"]).json()["data"]["items"][0]
+    item = of_b(c, company_id=w.co["B"]).json()["data"]["items"][0]
     assert item["code"] == "A2" and item["counts_scope"] is False
     assert item["can_open"] is False
     #  Khớp với đường đọc hồ sơ: tắt công tắc thì tab con 404.
     assert c.get(f"/api/employees/{w.emp['a2']}/work-history").status_code == 404
 
 
-def test_bang_phong_nguoi_phong_khac_khong_thay_gi(w, client_as):  # noqa: F811
+def test_bang_nguoi_xem_cho_ngoi_khac_khong_thay_gi(w, client_as):  # noqa: F811
     kn(w)
     y1 = w.grant("y1", "employee", "dept", actions=("read",))
-    assert get_members(client_as(y1), department_id=w.dept["B.kt"]).json()["data"]["items"] == []
+    assert of_b(client_as(y1), company_id=w.co["B"]).json()["data"]["items"] == []
     #  Người xem phạm vi `own` cũng không.
     own = w.grant("a3", "employee", "own", actions=("read",))
-    assert get_members(client_as(own), department_id=w.dept["B.kt"]).json()["data"]["items"] == []
+    assert of_b(client_as(own), company_id=w.co["B"]).json()["data"]["items"] == []
 
 
-def test_bang_phong_het_han_sap_toi_nghi_viec_va_trung_phong_chinh(w, client_as):  # noqa: F811
+def test_bang_het_han_sap_toi_nghi_viec_va_dong_loai_1_trung_phong_chinh(w, client_as):  # noqa: F811
     expired = kn(w, from_date=TODAY - 60 * DAY, to_date=TODAY - 10 * DAY)
     kn(w, emp_key="a3", from_date=TODAY + 5 * DAY, position_label="")
     gone = kn(w, emp_key="a1")
     w.db.get(Employee, w.emp["a1"]).status = "resigned"
-    #  Dòng TRÙNG cặp (phòng chính, công ty chính) của chính người đó: không hiện lần hai.
-    kn(w, emp_key="b1", dept_key="B.kt", company_key="B")
+    #  Dòng loại Phòng ban TRÙNG cặp (phòng chính, công ty chính) của chính người đó: không hiện lần hai.
+    kn_dept(w, "hb", "SH")
     w.db.commit()
     c = client_as(head_b(w))
+    #  a3 (A, A.mua) chỉ hiện khi người xem phủ (A.mua, B): cho hb thêm ô "Phòng ban được xem" A.mua.
+    w.actor("hb").grant("employee", "dept", inc_dept=["A.mua"])
 
-    items = get_members(c, department_id=w.dept["B.kt"]).json()["data"]["items"]
-    assert [(i["code"], i["status"]) for i in items] == [("A3", 1)]   # chỉ a3 sắp tới; hết hạn / nghỉ việc / trùng chính bị bỏ
-    ended = get_members(c, department_id=w.dept["B.kt"], include_ended=1).json()["data"]["items"]
+    items = of_b(c, company_id=w.co["B"]).json()["data"]["items"]
+    assert [(i["code"], i["status"]) for i in items] == [("A3", 1)]   # chỉ a3 sắp tới; hết hạn / nghỉ việc bị bỏ
+    ended = of_b(c, company_id=w.co["B"], include_ended=1).json()["data"]["items"]
     assert {(i["code"], i["status"]) for i in ended} == {("A3", 1), ("A2", 3)}
     assert expired.id in {i["id"] for i in ended} and gone.id not in {i["id"] for i in ended}
+    assert get_members(c, department_id=w.dept["SH"]).json()["data"]["items"] == []   # dòng loại 1 trùng chính: bỏ
 
 
-def test_bang_phong_loc_cong_ty_va_bat_buoc_department_id(w, client_as):  # noqa: F811
+def test_bang_loc_theo_cong_ty_kind_va_bat_buoc_mot_trong_hai_id(w, client_as):  # noqa: F811
     kn(w)
     c = client_as(head_b(w))
-    assert get_members(c, department_id=w.dept["B.kt"], company_id=w.co["B"]).json()["data"]["total"] == 1
-    assert get_members(c, department_id=w.dept["B.kt"], company_id=w.co["A"]).json()["data"]["total"] == 0
+    assert get_members(c, company_id=w.co["B"]).json()["data"]["total"] == 1
+    assert get_members(c, company_id=w.co["A"]).json()["data"]["total"] == 0
+    assert get_members(c, company_id=w.co["B"], kind=1).json()["data"]["total"] == 0
     assert c.get(MEMBERS).status_code == 422
+    assert c.get(MEMBERS, params={"kind": 2}).status_code == 422
     assert get_members(c, department_id=0).status_code == 422
-    assert get_members(c, department_id=w.dept["B.kt"], include_ended=7).status_code == 422
+    assert get_members(c, company_id=w.co["B"], kind=3).status_code == 422
+    assert get_members(c, company_id=w.co["B"], include_ended=7).status_code == 422
 
 
-def test_bang_phong_can_quyen_doc_nhan_su(w, client_as):  # noqa: F811
+def test_bang_can_quyen_doc_nhan_su(w, client_as):  # noqa: F811
     kn(w)
     nobody = w.grant("b1", "purchase_request", "all", actions=("read",))
-    assert get_members(client_as(nobody), department_id=w.dept["B.kt"]).status_code == 403
+    assert of_b(client_as(nobody), company_id=w.co["B"]).status_code == 403
 
 
-def test_bang_phong_tran_200_dong_va_co_truncated(w, client_as):  # noqa: F811
+def test_bang_tran_200_dong_va_co_truncated(w, client_as):  # noqa: F811
     for i in range(members.MAX_ROWS + 3):
-        w.db.add(EmployeeConcurrent(employee_id=w.emp["a2"], department_id=w.dept["B.kt"], company_id=w.co["B"],
+        w.db.add(EmployeeConcurrent(employee_id=w.emp["a2"], kind=2, department_id=0, company_id=w.co["B"],
                                     from_date=TODAY - (i + 1) * DAY))
     w.db.commit()
     perm_cache_clear()
     c = client_as(head_b(w))
-    data = get_members(c, department_id=w.dept["B.kt"]).json()["data"]
+    data = of_b(c, company_id=w.co["B"]).json()["data"]
     assert len(data["items"]) == members.MAX_ROWS and data["truncated"] is True
     assert data["total"] == members.MAX_ROWS
 
 
-def test_bang_phong_so_truy_van_co_dinh_khong_theo_so_dong(w, client_as):  # noqa: F811
+def test_bang_so_truy_van_co_dinh_khong_theo_so_dong(w, client_as):  # noqa: F811
     kn(w)
     c = client_as(head_b(w))
-    one, _ = count_queries(w.db, lambda: get_members(c, department_id=w.dept["B.kt"]))
+    one, _ = count_queries(w.db, lambda: of_b(c, company_id=w.co["B"]))
     for i in range(25):
-        emp = Employee(code=f"K{i:02d}", full_name=f"Kiêm nhiệm {i}", company_id=w.co["A"],
-                       department_id=w.dept["A.mua"], is_active=True)
-        w.db.add(emp)
+        add_employee(w, f"k{i:02d}", "A", "SH")
         w.db.flush()
-        w.db.add(EmployeeConcurrent(employee_id=emp.id, department_id=w.dept["B.kt"], company_id=w.co["B"],
+        w.db.add(EmployeeConcurrent(employee_id=w.emp[f"k{i:02d}"], kind=2, department_id=0, company_id=w.co["B"],
                                     from_date=TODAY - DAY))
     w.db.commit()
     perm_cache_clear()
-    many, resp = count_queries(w.db, lambda: get_members(c, department_id=w.dept["B.kt"]))
+    many, resp = count_queries(w.db, lambda: of_b(c, company_id=w.co["B"]))
     assert resp.json()["data"]["total"] == 26
     assert many == one, (one, many)
 
 
-def test_bang_phong_xep_theo_ho_ten_roi_id(w, client_as):  # noqa: F811
+def test_bang_xep_theo_ho_ten_roi_id(w, client_as):  # noqa: F811
     for key, name in (("a3", "Zeta"), ("a1", "Alpha")):
-        w.db.get(Employee, w.emp[key]).full_name = name
+        emp = w.db.get(Employee, w.emp[key])
+        emp.full_name, emp.department_id = name, w.dept["SH"]
         kn(w, emp_key=key)
     kn(w)   # a2 "Nhân sự a2"
-    kn(w, emp_key="a1", dept_key="B.kt", from_date=TODAY - 90 * DAY, to_date=TODAY - 60 * DAY)   # đã hết, bỏ
+    kn(w, emp_key="a1", from_date=TODAY - 90 * DAY, to_date=TODAY - 60 * DAY)   # đã hết, bỏ
     c = client_as(head_b(w))
-    names = [i["full_name"] for i in get_members(c, department_id=w.dept["B.kt"]).json()["data"]["items"]]
+    names = [i["full_name"] for i in of_b(c, company_id=w.co["B"]).json()["data"]["items"]]
     assert names == ["Alpha", "Nhân sự a2", "Zeta"]
 
 
@@ -430,12 +422,12 @@ def test_so_do_co_khoa_concurrents_va_khong_them_nguoi_kiem_nhiem_vao_nhan_su(w,
     assert [x["code"] for x in data["concurrents"]] == ["A2"]
     item = data["concurrents"][0]
     assert set(item) == MEMBER_KEYS and not (set(item) & FORBIDDEN_KEYS)
+    assert (item["kind"], item["kind_label"], item["department_id"], item["company_id"]) == (2, "Công ty", 0, w.co["B"])
     assert "A2" not in {e["code"] for e in data["employees"]}   # quân số gốc không đổi (Q5 + không đếm trùng)
-    assert w.dept["B.kt"] in {d["id"] for d in data["departments"]}
     assert w.co["B"] in {co["id"] for co in data["companies"]}
 
 
-def test_so_do_dong_het_han_hoac_nguoi_xem_phong_khac_khong_thay(w, client_as):  # noqa: F811
+def test_so_do_dong_het_han_hoac_nguoi_xem_cho_ngoi_khac_khong_thay(w, client_as):  # noqa: F811
     row = kn(w)
     y1 = w.grant("y1", "employee", "dept", actions=("read",))
     assert client_as(y1).get("/api/org-chart").json()["data"]["concurrents"] == []
@@ -455,12 +447,10 @@ def test_so_do_so_truy_van_co_dinh(w, client_as):  # noqa: F811
     added = 0
     for total in (13, 40):   # 1 → 13 → 40 dòng: số truy vấn không đổi
         while added < total - 1:
-            emp = Employee(code=f"S{added:02d}", full_name=f"Sơ đồ {added}", company_id=w.co["A"],
-                           department_id=w.dept["A.mua"], is_active=True)
-            w.db.add(emp)
+            add_employee(w, f"s{added:02d}", "A", "SH")
             w.db.flush()
-            w.db.add(EmployeeConcurrent(employee_id=emp.id, department_id=w.dept["B.kt"], company_id=w.co["B"],
-                                        from_date=TODAY - DAY))
+            w.db.add(EmployeeConcurrent(employee_id=w.emp[f"s{added:02d}"], kind=2, department_id=0,
+                                        company_id=w.co["B"], from_date=TODAY - DAY))
             added += 1
         w.db.commit()
         many, resp = count_queries(w.db, lambda: c.get("/api/org-chart"))
@@ -468,15 +458,16 @@ def test_so_do_so_truy_van_co_dinh(w, client_as):  # noqa: F811
         assert many == one, (total, one, many)
 
 
-# ── 5. Trợ lý AI ─────────────────────────────────────────────────────────────
+# ── 5. Trợ lý AI + /api/auth/me ──────────────────────────────────────────────
 
-def test_tro_ly_ai_tra_concurrent_roles_cua_nguoi_da_duoc_phep_xem(w):
+def test_tro_ly_ai_tra_concurrent_roles_hai_loai_cua_nguoi_da_duoc_phep_xem(w):
     kn(w)
-    kn(w, dept_key="B.hc", position_label="", to_date=TODAY - DAY)   # đã hết: không ra
+    kn_dept(w, "a2", "A.mua", position_label="Trưởng nhóm")
+    kn(w, company_key="C", position_label="", to_date=TODAY - DAY)   # đã hết: không ra
     a1 = w.grant("a1", "employee", "all", actions=("read",))
     out = T.run_tool(w.db, a1.user, "employee_lookup", {"query": "Nhân sự a2"})
     row = next(r for r in out["items"] if r["code"] == "A2")
-    assert row["concurrent_roles"] == ["Phòng Kế toán — Công ty B (Phó phòng)"]
+    assert row["concurrent_roles"] == ["Phòng Thu mua (Trưởng nhóm)", "Công ty B (Phó phòng)"]
     other = next(r for r in T.run_tool(w.db, a1.user, "employee_lookup", {"query": "Nhân sự a3"})["items"]
                  if r["code"] == "A3")
     assert other["concurrent_roles"] == []
@@ -485,11 +476,22 @@ def test_tro_ly_ai_tra_concurrent_roles_cua_nguoi_da_duoc_phep_xem(w):
 
 
 def test_tro_ly_ai_khong_doi_bo_loc_nguoi_kiem_nhiem_ngoai_pham_vi_van_khong_tra(w):
-    """`employee_lookup` KHÔNG bật `include_concurrent`: trưởng phòng B tra theo tên a2 vẫn không ra (đúng phạm vi hồ sơ)."""
+    """`employee_lookup` KHÔNG bật `include_concurrent`: người xem (SH, B) tra theo tên a2 vẫn không ra (đúng phạm vi hồ sơ)."""
     kn(w)
-    b1 = head_b(w)
-    out = T.run_tool(w.db, b1.user, "employee_lookup", {"query": "Nhân sự a2"})
+    hb = head_b(w)
+    out = T.run_tool(w.db, hb.user, "employee_lookup", {"query": "Nhân sự a2"})
     assert out["items"] == []
+
+
+def test_me_tra_kind_va_kind_label_cua_dong_kiem_nhiem(w):
+    from app.modules.auth.controller import _me_payload
+
+    kn(w)
+    kn_dept(w, "a2", "A.mua")
+    payload = _me_payload(w.db, w.actor("a2").user)
+    assert [(c["kind"], c["kind_label"]) for c in payload["concurrents"]] == [(1, "Phòng ban"), (2, "Công ty")]
+    assert payload["kiem_nhiem"] == ["Phòng Thu mua", "Công ty B (Phó phòng)"]
+    assert all("text" not in c for c in payload["concurrents"])
 
 
 # ── 6. Xóa dòng quá trình công tác loại Kiêm nhiệm giữ dòng kiêm nhiệm ───────
@@ -508,11 +510,11 @@ def test_xoa_dong_qtct_kiem_nhiem_giu_dong_kiem_nhiem_va_chi_bo_lien_ket(w):
     a1 = w.grant("a1", "employee", "all", actions=("read", "write"))
     eid = w.emp["a2"]
     wh = EmployeeWorkHistory(employee_id=eid, event_type=4, from_date=TODAY - 30 * DAY,
-                             department_id=w.dept["B.kt"], created_by=1, updated_by=1)
+                             department_id=0, created_by=1, updated_by=1)
     w.db.add(wh)
     w.db.commit()
     linked = kn(w, work_history_id=wh.id)
-    other = kn(w, dept_key="B.hc", work_history_id=0)
+    other = kn(w, company_key="C", work_history_id=0)
     qd = _attach_file(w.db, "employee_concurrent", linked.id)     # tệp QĐ riêng của dòng kiêm nhiệm
     wh_file = _attach_file(w.db, "employee_work_history", wh.id)  # tệp của dòng QTCT
 
@@ -522,7 +524,7 @@ def test_xoa_dong_qtct_kiem_nhiem_giu_dong_kiem_nhiem_va_chi_bo_lien_ket(w):
     assert w.db.get(EmployeeWorkHistory, wh.id) is None
     kept = w.db.get(EmployeeConcurrent, linked.id)
     assert kept is not None and kept.work_history_id == 0
-    assert (kept.department_id, kept.company_id, kept.counts_scope) == (w.dept["B.kt"], w.co["B"], True)
+    assert (kept.kind, kept.department_id, kept.company_id, kept.counts_scope) == (2, 0, w.co["B"], True)
     assert w.db.get(FileLink, qd.id) is not None          # tệp của dòng kiêm nhiệm còn
     assert w.db.get(FileLink, wh_file.id) is None          # tệp của dòng QTCT mất theo dòng
     assert w.db.get(EmployeeConcurrent, other.id).work_history_id == 0
@@ -533,9 +535,9 @@ def test_xoa_dong_qtct_kiem_nhiem_giu_dong_kiem_nhiem_va_chi_bo_lien_ket(w):
 def test_xoa_dong_qtct_khong_dung_lien_ket_cua_nguoi_khac(w):
     a1 = w.grant("a1", "employee", "all", actions=("read", "write"))
     mine = EmployeeWorkHistory(employee_id=w.emp["a2"], event_type=4, from_date=TODAY, created_by=1, updated_by=1,
-                               department_id=w.dept["B.kt"])
+                               department_id=0)
     theirs = EmployeeWorkHistory(employee_id=w.emp["a3"], event_type=4, from_date=TODAY, created_by=1, updated_by=1,
-                                 department_id=w.dept["B.kt"])
+                                 department_id=0)
     w.db.add_all([mine, theirs])
     w.db.commit()
     row_theirs = kn(w, emp_key="a3", work_history_id=theirs.id)

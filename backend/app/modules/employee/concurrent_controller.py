@@ -1,7 +1,8 @@
-"""API KIÊM NHIỆM — `prefix=/api/employees` (duoc-CR-755).
+"""API KIÊM NHIỆM — `prefix=/api/employees` (duoc-CR-755; hai loại dòng độc lập ở duoc-CR-756).
 
 Bốn đường REST trên `tab_employee_concurrent`. Mọi đường ghi qua `concurrent_service` (L1/L2/L3);
-đọc xét phạm vi HỒ SƠ CHA (`employee_in_scope` → 404 ngoài phạm vi).
+đọc xét phạm vi HỒ SƠ CHA (`employee_in_scope` → 404 ngoài phạm vi). Hai loại dòng: 1 Phòng ban (phòng của công ty
+chính), 2 Công ty (công ty khác, không phòng).
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/api/employees", tags=["employee"])
 
 def _describe(row) -> str:
     """Câu cho nhật ký thao tác — mã phòng / công ty theo id (tên nằm ở danh sách)."""
-    msg = f"phòng #{row.department_id} / công ty #{row.company_id}"
+    msg = f"công ty #{row.company_id}" if row.kind == 2 else f"phòng #{row.department_id}"
     if row.from_date:
         msg += f", từ {row.from_date.isoformat()}"
     if row.to_date:
@@ -38,8 +39,8 @@ def list_concurrents(eid: int, db: Session = Depends(get_db), user=Depends(requi
     """Danh sách kiêm nhiệm của một nhân sự (mới nhất trước).
 
     Quyền `employee.read` + hồ sơ nằm trong phạm vi (ngoài phạm vi: 404). Trả `items` (mỗi dòng có
-    `status` số 1 Sắp tới / 2 Đang hiệu lực / 3 Đã hết kèm `status_label`, tên công ty / phòng ban,
-    `file_count`), `can_edit` (được ghi, không phải hồ sơ của chính mình) và `can_open_files`.
+    `kind` số 1 Phòng ban / 2 Công ty kèm `kind_label`, `status` số 1 Sắp tới / 2 Đang hiệu lực / 3 Đã hết kèm
+    `status_label`, tên công ty / phòng ban (loại Công ty: `department_id` 0, tên phòng trống), `file_count`), `can_edit` (được ghi, không phải hồ sơ của chính mình) và `can_open_files`.
     """
     profile = get_perm_profile(db, user)
     employee_in_scope(db, eid, user, profile, "read")
@@ -54,11 +55,13 @@ def list_concurrents(eid: int, db: Session = Depends(get_db), user=Depends(requi
 @router.post("/{eid}/concurrents")
 def create_concurrent(eid: int, data: ConcurrentIn, db: Session = Depends(get_db),
                       user=Depends(require("employee", "write"))):
-    """Thêm một dòng kiêm nhiệm (công ty, phòng, chức vụ, ngày, quyết định, công tắc phạm vi).
+    """Thêm một dòng kiêm nhiệm: `kind` bắt buộc (1 Phòng ban, 2 Công ty) kèm chức vụ, ngày, quyết định, công tắc phạm vi.
 
-    Quyền `employee.write` đúng phạm vi hồ sơ. Chặn: tự sửa của mình (403), cặp (phòng, công ty)
-    ngoài phạm vi ghi của người thao tác (403), phòng không phục vụ công ty hoặc trùng phòng chính
-    (400), chồng giai đoạn cùng phòng + công ty (409), quá 30 dòng (400).
+    Loại 1 chỉ gửi `department_id` (công ty điền ở máy chủ = công ty chính của hồ sơ); loại 2 chỉ gửi `company_id`
+    (khác công ty chính, không phòng) — gửi sai hình là 422. Quyền `employee.write` đúng phạm vi hồ sơ. Chặn: tự sửa
+    của mình (403); loại 1 ngoài phạm vi ghi theo phòng (403); loại 2 mà người thao tác không có phạm vi ghi toàn công
+    ty đó (403); hồ sơ chưa gắn pháp nhân chính, phòng không phục vụ công ty hiện tại, trùng phòng / công ty chính
+    (400); chồng giai đoạn cùng phòng (loại 1) hoặc cùng công ty (loại 2) (409); quá 30 dòng (400).
     """
     profile = get_perm_profile(db, user)
     emp = employee_in_scope(db, eid, user, profile, "write")
@@ -76,8 +79,9 @@ def update_concurrent(eid: int, cid: int, data: ConcurrentPatch, db: Session = D
                       user=Depends(require("employee", "write"))):
     """Sửa một dòng kiêm nhiệm tại chỗ (id dòng và tệp quyết định giữ nguyên).
 
-    Cùng luật chặn với thêm mới; đổi cặp (phòng, công ty) thì cả cặp cũ lẫn cặp mới phải trong phạm
-    vi ghi. `cid` không thuộc `eid` → 404. Chỉ `to_date` / `decision_date` được gửi null.
+    Cùng luật chặn với thêm mới; KHÔNG đổi `kind` (đổi loại = xóa + thêm). Loại 1 chỉ nhận `department_id`, loại 2
+    chỉ nhận `company_id` (gửi ô của loại kia: 400). Đổi phòng / công ty thì dòng cũ lẫn dòng mới phải trong phạm vi
+    ghi. `cid` không thuộc `eid` → 404. Chỉ `to_date` / `decision_date` được gửi null.
     """
     profile = get_perm_profile(db, user)
     emp = employee_in_scope(db, eid, user, profile, "write")

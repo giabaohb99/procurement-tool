@@ -1,4 +1,4 @@
-import { CONCURRENT_ACTIVE } from '@/modules/hr/types/employee-concurrent'
+import { CONCURRENT_ACTIVE, CONCURRENT_KIND_COMPANY } from '@/modules/hr/types/employee-concurrent'
 import type { PermissionMeta, RolePermissionRow } from '@/modules/hr/types/role'
 import type { UserScope } from '@/modules/hr/types/user-account'
 
@@ -258,7 +258,9 @@ export function findSelfExcludedDepartments(
 
 /** Phần của một dòng kiêm nhiệm mà câu "kiêm nhiệm mở thêm phạm vi" cần (khớp `EmployeeConcurrent` của phân hệ HR). */
 export interface ScopeConcurrentInput {
-  /** Mã dẫn xuất `ConcurrentStatus`: 2 = Đang hiệu lực. */
+  /** Mã `ConcurrentKind`: Phòng ban hoặc Công ty (duoc-CR-756). */
+  kind: number
+  /** Mã dẫn xuất `ConcurrentStatus`. */
   status: number
   counts_scope: boolean
   department_name: string
@@ -266,20 +268,28 @@ export interface ScopeConcurrentInput {
 }
 
 /**
- * Các cặp (phòng, công ty) mà kiêm nhiệm đang MỞ THÊM phạm vi cho chủ tài khoản (duoc-CR-755), dạng
- * `Phòng X (Công ty B)`.
+ * Những NƠI kiêm nhiệm đang MỞ THÊM phạm vi cho chủ tài khoản (duoc-CR-756), mỗi nơi một câu:
+ * - loại Phòng ban → `Phòng X` (phòng của công ty hiện tại, thêm vào nhóm phòng của người này);
+ * - loại Công ty → `Công ty B (cả công ty theo bậc vai trò)` — bậc Công ty thấy cả B, bậc Phòng ban thấy phòng của họ
+ *   ở B; không phải "chỉ một phòng" như mô hình cặp của CR-755.
  *
  * Chỉ dòng ĐANG HIỆU LỰC **và** bật công tắc "Tính vào phạm vi quyền" mới có mặt: dòng tắt công tắc chỉ là ghi nhận,
  * dòng sắp tới / đã hết thì chưa / không còn mở gì — liệt kê chúng là nói sai điều tài khoản thấy hôm nay.
- * Bỏ trùng, sắp theo chữ; thiếu tên công ty thì chỉ in tên phòng.
+ * Bỏ trùng; phòng trước, công ty sau, mỗi nhóm sắp theo chữ.
  */
-export function listScopeConcurrentPairs(rows: ScopeConcurrentInput[]): string[] {
-  const pairs = new Set<string>()
+export function listScopeConcurrentPlaces(rows: ScopeConcurrentInput[]): string[] {
+  const departments = new Set<string>()
+  const companies = new Set<string>()
   for (const row of rows) {
     if (row.status !== CONCURRENT_ACTIVE || !row.counts_scope) continue
-    const department = row.department_name.trim() || 'Phòng không rõ'
-    const company = row.company_name.trim()
-    pairs.add(company ? `${department} (${company})` : department)
+    if (row.kind === CONCURRENT_KIND_COMPANY) {
+      const company = row.company_name.trim() || 'không rõ tên'
+      const label = company.toLowerCase().startsWith('công ty') ? company : `Công ty ${company}`
+      companies.add(`${label} (cả công ty theo bậc vai trò)`)
+    } else {
+      departments.add(row.department_name.trim() || 'Phòng không rõ')
+    }
   }
-  return [...pairs].sort((a, b) => a.localeCompare(b, 'vi'))
+  const byName = (a: string, b: string) => a.localeCompare(b, 'vi')
+  return [...[...departments].sort(byName), ...[...companies].sort(byName)]
 }

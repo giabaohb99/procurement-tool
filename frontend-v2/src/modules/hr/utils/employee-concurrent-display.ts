@@ -1,9 +1,11 @@
-import { CONCURRENT_STATUS, labelOf } from '@/shared/constants/statuses'
+import { CONCURRENT_KIND, CONCURRENT_STATUS, labelOf } from '@/shared/constants/statuses'
 import type { StatusTone } from '@/shared/ui/status-tone'
 import { formatDate } from '@/shared/utils/format-date'
 import {
   CONCURRENT_ACTIVE,
   CONCURRENT_ENDED,
+  CONCURRENT_KIND_COMPANY,
+  CONCURRENT_KIND_DEPARTMENT,
   CONCURRENT_UPCOMING,
   type EmployeeConcurrent,
 } from '../types/employee-concurrent'
@@ -11,6 +13,22 @@ import {
 /** Nhãn trạng thái: ưu tiên nhãn backend gửi kèm, rỗng thì tra bộ mã sinh sẵn. */
 export function concurrentStatusLabel(row: Pick<EmployeeConcurrent, 'status' | 'status_label'>): string {
   return row.status_label || labelOf(CONCURRENT_STATUS, String(row.status))
+}
+
+/** Nhãn loại (Phòng ban / Công ty): ưu tiên nhãn backend gửi kèm, rỗng thì tra bộ mã sinh sẵn `CONCURRENT_KIND`. */
+export function concurrentKindLabel(row: Pick<EmployeeConcurrent, 'kind' | 'kind_label'>): string {
+  return row.kind_label || labelOf(CONCURRENT_KIND, String(row.kind))
+}
+
+/**
+ * NƠI kiêm nhiệm của một dòng — tên PHÒNG với loại Phòng ban (công ty luôn là công ty hiện tại nên không nhắc), tên
+ * CÔNG TY với loại Công ty (không có phòng). Thiếu tên (danh mục đã xóa) thì in mã số, không để ô trống.
+ */
+export function concurrentPlaceLabel(
+  row: Pick<EmployeeConcurrent, 'kind' | 'company_id' | 'company_name' | 'department_id' | 'department_name'>,
+): string {
+  if (row.kind === CONCURRENT_KIND_COMPANY) return row.company_name || `Công ty #${row.company_id}`
+  return row.department_name || `Phòng #${row.department_id}`
 }
 
 /** Tông huy hiệu: Đang hiệu lực xanh lá, Sắp tới xanh dương, Đã hết xám. */
@@ -52,15 +70,34 @@ export function concurrentPeriodLabel(row: Pick<EmployeeConcurrent, 'from_date' 
 }
 
 /**
- * Dòng kiêm nhiệm sẽ bị ĐỘNG TỚI khi đổi pháp nhân chính khỏi `oldCompanyId` (luật backend
- * `concurrent_transition_service.end_rows_at_company`): đúng công ty cũ và CHƯA hết hạn. Dòng ở công ty khác không đụng.
+ * Dòng kiêm nhiệm sẽ bị KẾT THÚC (hoặc xóa nếu chưa bắt đầu) khi đổi pháp nhân chính `oldCompanyId` → `newCompanyId`
+ * (luật backend `end_rows_at_company`, duoc-CR-756), chỉ dòng CHƯA hết hạn:
+ * - loại Phòng ban ở công ty CŨ — phòng đó không còn là phòng của công ty hiện tại;
+ * - loại Công ty trùng công ty MỚI — kiêm nhiệm chính công ty mình là thừa.
+ * Dòng loại Công ty ở công ty khác (kể cả công ty cũ) không đụng.
  */
-export function concurrentRowsAtOldCompany(
+export function concurrentRowsEndingOnCompanyChange(
   rows: readonly EmployeeConcurrent[],
   oldCompanyId: number,
+  newCompanyId: number,
 ): EmployeeConcurrent[] {
-  if (oldCompanyId <= 0) return []
-  return rows.filter((r) => r.company_id === oldCompanyId && r.status !== CONCURRENT_ENDED)
+  if (oldCompanyId <= 0 || newCompanyId <= 0 || oldCompanyId === newCompanyId) return []
+  return rows.filter(
+    (r) =>
+      r.status !== CONCURRENT_ENDED &&
+      ((r.kind === CONCURRENT_KIND_DEPARTMENT && r.company_id === oldCompanyId) ||
+        (r.kind === CONCURRENT_KIND_COMPANY && r.company_id === newCompanyId)),
+  )
+}
+
+/**
+ * Đã có dòng loại Công ty ở `companyId` còn hiệu lực hoặc sắp tới — khi đó backend BỎ QUA yêu cầu giữ kiêm nhiệm ở
+ * công ty cũ (không tạo dòng trùng), nên hộp đổi pháp nhân nói rõ thay vì hỏi.
+ */
+export function hasOpenCompanyConcurrent(rows: readonly EmployeeConcurrent[], companyId: number): boolean {
+  return rows.some(
+    (r) => r.kind === CONCURRENT_KIND_COMPANY && r.company_id === companyId && r.status !== CONCURRENT_ENDED,
+  )
 }
 
 /**

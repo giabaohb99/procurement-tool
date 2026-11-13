@@ -63,13 +63,16 @@ def company_reach(profile: dict, entity: str, action: str = "read") -> set[int] 
       * scope `all` (không bị ô "Chỉ trong công ty" thu hẹp) → mọi pháp nhân;
       * scope hẹp hơn (own/dept/dept_proc/proc/company)      → pháp nhân CHÍNH
         của người này (`profile.company_id`) — mọi bậc hẹp hơn `all` đều không
-        vượt ra khỏi pháp nhân mình;
+        vượt ra khỏi pháp nhân mình, CỘNG công ty KIÊM NHIỆM (duoc-CR-756) với
+        ba bậc `company` / `dept` / `dept_proc` (các bậc tính công ty B như công
+        ty của họ); `own` / `assigned` / `proc` không cộng;
       * ô "Chỉ trong công ty" (include, bất kể bậc)           → CỘNG THÊM đúng
         những pháp nhân đó — cách một admin mở quyền nhìn sang pháp nhân khác.
     "Loại trừ" (exclude) trừ khỏi tập, nhất quán với việc loại trừ vốn đã khóa
     hẳn văn bản của pháp nhân đó ở `core/scoping._explicit_cond`.
     """
     own_company = profile.get("company_id") or 0
+    concurrent_companies = {int(c) for c in profile.get("concurrent_companies") or [] if c}
     reach: set[int] = set()
     for grant in profile.get("grants", []):
         perms = grant["perms"].get(entity)
@@ -87,6 +90,8 @@ def company_reach(profile: dict, entity: str, action: str = "read") -> set[int] 
         grant_reach = set(inc)
         if scope != "all" and own_company:
             grant_reach.add(own_company)
+        if scope in ("company", "dept", "dept_proc"):
+            grant_reach |= concurrent_companies
         reach |= (grant_reach - exc)
     return reach
 

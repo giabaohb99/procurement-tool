@@ -3,6 +3,7 @@ import { ChevronRight, TriangleAlert } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { employeeInitials, type Employee } from '../types/employee'
+import { EmployeeConcurrentRolesCardLine } from './employee-concurrent-roles'
 
 /** Mã tình trạng BÌNH THƯỜNG của một nhân sự đang làm việc. */
 const STATUS_NORMAL = 'official'
@@ -63,6 +64,9 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
         {workplace && (
           <span className="block truncate text-xs text-muted-foreground">{workplace}</span>
         )}
+
+        {/*  duoc-CR-756: chỉ hiện khi CÓ kiêm nhiệm; chạm mở danh sách đủ. */}
+        <EmployeeConcurrentRolesCardLine roles={employee.concurrent_roles} />
 
         {!employee.direct_manager_name && (
           <span className="flex items-center gap-1 text-xs text-destructive">

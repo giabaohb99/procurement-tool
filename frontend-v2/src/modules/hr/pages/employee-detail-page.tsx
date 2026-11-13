@@ -447,6 +447,7 @@ export function EmployeeDetailPage() {
           oldCompanyName={companyName(employee.company_id, employee.company_name)}
           newCompanyName={companyName(saveFlow.pendingCompany.values.company_id)}
           rows={saveFlow.pendingCompany.rows}
+          oldCompanyKept={saveFlow.pendingCompany.oldCompanyKept}
           pending={saveEmployee.isPending}
           onConfirm={saveFlow.answerCompanyChange}
         />

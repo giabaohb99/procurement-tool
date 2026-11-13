@@ -14,8 +14,10 @@ PHẠM VI NGƯỜI XEM (không lộ người ngoài phạm vi):
   - phòng ban: phòng nằm trong phạm vi `department` HOẶC có người xem được ở đó,
     kèm chuỗi phòng cha để cây liền mạch (chỉ lộ TÊN phòng, không lộ người);
   - nhân sự đã `resigned` hoặc ngưng hoạt động không vẽ;
-  - NGƯỜI KIÊM NHIỆM (duoc-CR-755): khóa `concurrents` = dòng kiêm nhiệm đang hiệu lực mà phạm vi `employee.read`
-    của người xem phủ cặp (phòng, công ty) của dòng — vẽ ở phòng kiêm nhiệm, nhãn Kiêm nhiệm. Truy vấn gốc
+  - NGƯỜI KIÊM NHIỆM (duoc-CR-755, hai loại dòng ở duoc-CR-756): khóa `concurrents` = dòng kiêm nhiệm đang hiệu lực
+    mà phạm vi `employee.read` của người xem phủ "chỗ ngồi" của dòng, kèm `kind` / `kind_label`. Loại Phòng ban (1)
+    vẽ ở phòng kiêm nhiệm; loại Công ty (2, `department_id = 0`) giao diện gom theo công ty (`company_id` của dòng
+    nằm trong `companies`). Nhãn Kiêm nhiệm. Truy vấn gốc
     `employees` KHÔNG đổi (không bật `include_concurrent`): người đó không thành thêm một nhân sự ở công ty
     khác, quân số không đếm trùng; phòng của dòng được thêm vào tập phòng cần vẽ.
 Chỉ lấy cột công việc (mã, họ tên, chức vụ, phòng, quản lý) — không đụng nhóm

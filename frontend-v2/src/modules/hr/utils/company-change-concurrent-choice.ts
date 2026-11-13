@@ -1,14 +1,12 @@
-import type { EmployeeConcurrent } from '../types/employee-concurrent'
-
-/** Hai cờ điều khiển gửi kèm PATCH hồ sơ — khớp `EmployeeUpdate` của backend (phase 03). */
+/**
+ * Câu trả lời của hộp đổi pháp nhân chính, gửi kèm PATCH hồ sơ — khớp `EmployeeUpdate.keep_old_company_concurrent`
+ * của backend (duoc-CR-756). `true` = thêm MỘT dòng kiêm nhiệm loại Công ty ở công ty CŨ từ hôm nay (qua chốt L2 loại
+ * Công ty); `false` = không giữ gì. Dòng loại Phòng ban ở công ty cũ luôn kết thúc, không chọn từng dòng như CR-755.
+ */
 export interface CompanyChangeConcurrentChoice {
-  end_old_company_concurrent: boolean
-  keep_concurrent_ids: number[]
+  keep_old_company_concurrent: boolean
 }
 
-/** Từ tập dòng được tick GIỮ → thân gửi đi. Giữ hết = `false` (không kết thúc gì), khỏi gửi danh sách. */
-export function buildCompanyChangeChoice(rows: readonly EmployeeConcurrent[], keepIds: ReadonlySet<number>): CompanyChangeConcurrentChoice {
-  const kept = rows.filter((r) => keepIds.has(r.id)).map((r) => r.id)
-  if (rows.length > 0 && kept.length === rows.length) return { end_old_company_concurrent: false, keep_concurrent_ids: [] }
-  return { end_old_company_concurrent: true, keep_concurrent_ids: kept }
+export function buildCompanyChangeChoice(keepOldCompany: boolean): CompanyChangeConcurrentChoice {
+  return { keep_old_company_concurrent: keepOldCompany }
 }

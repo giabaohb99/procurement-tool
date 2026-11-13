@@ -31,7 +31,7 @@ import {
   findContradictingDepartments,
   findSelfExcludedDepartments,
   groupEntitiesByScope,
-  listScopeConcurrentPairs,
+  listScopeConcurrentPlaces,
   summarizeScopeLimits,
   type ScopeOwnerProfile,
 } from '../utils/scope-summary'
@@ -143,10 +143,11 @@ export function UserScopeDialog({
     enabled: canReadEmployee,
   })
 
-  //  duoc-CR-755: kiêm nhiệm có thể ở CÔNG TY KHÁC, nên `extra_department_ids` ở trên (cùng công ty) không đủ để nói
-  //  tài khoản này thấy gì. Cùng cửa quyền `employee.read` với hồ sơ; thiếu quyền thì không gọi.
+  //  duoc-CR-756: kiêm nhiệm loại Công ty mở cả MỘT CÔNG TY KHÁC theo bậc vai trò, nên `extra_department_ids` ở trên
+  //  (phòng cùng công ty) không đủ để nói tài khoản này thấy gì. Cùng cửa quyền `employee.read` với hồ sơ; thiếu quyền
+  //  thì không gọi.
   const { data: ownerConcurrents } = useEmployeeConcurrents(employeeId, { enabled: canReadEmployee })
-  const concurrentPairs = listScopeConcurrentPairs(ownerConcurrents?.items ?? [])
+  const concurrentPlaces = listScopeConcurrentPlaces(ownerConcurrents?.items ?? [])
 
   const companyItems = companies?.items ?? []
   const departmentItems = departments?.items ?? []
@@ -258,7 +259,7 @@ export function UserScopeDialog({
               roleName={roleName}
               groups={tierGroups}
               owner={ownerProfile}
-              concurrentPairs={concurrentPairs}
+              concurrentPlaces={concurrentPlaces}
               exceptionLines={limitLines}
               isLoading={canReadRole && (tierLoading || !meta)}
               canReadRole={canReadRole}

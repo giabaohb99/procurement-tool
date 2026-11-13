@@ -174,15 +174,17 @@ export type EmployeeProfileFormValues = z.infer<typeof employeeProfileSchema>
 
 /**
  * Thân PATCH hồ sơ: các ô của form (đã lọc qua `pickWritableProfile`) cộng cờ điều khiển không nằm
- * trong form. `keep_old_department` (bao-CR-709): đổi phòng chính thì giữ phòng cũ làm kiêm nhiệm hay
- * gỡ — vắng = gỡ.
+ * trong form. `keep_old_department` (bao-CR-709): đổi phòng chính TRONG CÙNG công ty thì giữ phòng cũ làm kiêm
+ * nhiệm hay gỡ — vắng = gỡ.
  */
 export type EmployeeProfileUpdate = Partial<EmployeeProfileFormValues> & {
   keep_old_department?: boolean
-  /** duoc-CR-755 (Q4): đổi pháp nhân chính — `true`/vắng = kết thúc dòng kiêm nhiệm ở công ty cũ, `false` = giữ hết. */
-  end_old_company_concurrent?: boolean
-  /** Id dòng kiêm nhiệm ở công ty cũ được GIỮ khi đang kết thúc (≤ 30). */
-  keep_concurrent_ids?: number[]
+  /**
+   * duoc-CR-756 (Q4): đổi pháp nhân chính A → C — dòng loại Phòng ban ở A và dòng loại Công ty trùng C luôn kết thúc;
+   * `true` = thêm MỘT dòng kiêm nhiệm loại Công ty ở A từ hôm nay. Thay `end_old_company_concurrent` +
+   * `keep_concurrent_ids` của CR-755 (giao diện thôi gửi hai khóa đó).
+   */
+  keep_old_company_concurrent?: boolean
 }
 
 export const EMPTY_EMPLOYEE_PROFILE_FORM: EmployeeProfileFormValues = {

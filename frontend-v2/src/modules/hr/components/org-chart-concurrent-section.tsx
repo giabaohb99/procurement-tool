@@ -10,10 +10,11 @@ import { nameInitials } from '@/shared/utils/name-initials'
 import type { ConcurrentMember } from '../types/concurrent-member'
 import { formatConcurrentPeriod, formatPrimaryPlace } from '../utils/concurrent-member-display'
 import { pickOrgChartAvatarTone } from '../utils/org-chart-avatar-tone'
-import type { OrgChartConcurrentGroup } from '../utils/org-chart-forest'
+import { concurrentGroupTitle, type OrgChartConcurrentGroup } from '../utils/org-chart-forest'
 
 /**
- * Người KIÊM NHIỆM trên sơ đồ tổ chức (duoc-CR-755), vẽ dưới cây quản lý theo từng nơi kiêm nhiệm.
+ * Người KIÊM NHIỆM trên sơ đồ tổ chức (duoc-CR-755), vẽ dưới cây quản lý theo từng nơi kiêm nhiệm: nhóm phòng
+ * (*Phòng X — Công ty A*) cho dòng loại Phòng ban, nhóm *Kiêm nhiệm tại công ty B* cho dòng loại Công ty (duoc-CR-756).
  *
  * Thẻ viền NÉT ĐỨT + huy hiệu **Kiêm nhiệm** để không ai nhầm với nhân sự thuộc phòng. Không có cạnh quản lý trực
  * tiếp: cạnh đó thuộc vị trí chính của người ấy (ở công ty / phòng chính), vẽ thêm ở đây là nói sai tổ chức.
@@ -33,7 +34,7 @@ export function OrgChartConcurrentSection({
 
   return (
     <section aria-label="Người kiêm nhiệm" className="mt-12 flex max-w-4xl flex-col items-center gap-5">
-      <h3 className="text-sm font-semibold text-muted-foreground">Kiêm nhiệm tại các phòng đang xem</h3>
+      <h3 className="text-sm font-semibold text-muted-foreground">Kiêm nhiệm tại các phòng và công ty đang xem</h3>
       {truncated && (
         <p role="note" className="text-xs text-muted-foreground">
           Sơ đồ chỉ hiện phần đầu danh sách kiêm nhiệm (xếp theo họ tên); còn một số người chưa được vẽ ở đây.
@@ -41,9 +42,7 @@ export function OrgChartConcurrentSection({
       )}
       {groups.map((group) => (
         <div key={group.key} className="flex flex-col items-center gap-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            {[group.departmentName, group.companyName].filter(Boolean).join(' — ') || 'Phòng không rõ'}
-          </p>
+          <p className="text-xs font-medium text-muted-foreground">{concurrentGroupTitle(group)}</p>
           <div className="flex flex-wrap justify-center gap-3">
             {group.members.map((member) => (
               <ConcurrentCard

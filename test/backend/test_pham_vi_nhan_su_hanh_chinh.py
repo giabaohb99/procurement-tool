@@ -1203,11 +1203,11 @@ def set_extra_departments_via_api(world, actor, employee_id: int, dept_keys):
     from app.modules.employee.concurrent_schema import ConcurrentIn
     from app.modules.employee.model import Employee
 
-    company_id = world.db.get(Employee, employee_id).company_id
+    #  duoc-CR-756: dòng loại Phòng ban (kind=1) chỉ gửi phòng, máy chủ tự điền công ty chính của hồ sơ.
     out = None
     for key in dept_keys:
         out = cc.create_concurrent(
-            employee_id, ConcurrentIn(company_id=company_id,
+            employee_id, ConcurrentIn(kind=1,
                                       department_id=world.dept[key] if isinstance(key, str) else key,
                                       from_date=date(2026, 1, 1)),
             world.db, actor.user)

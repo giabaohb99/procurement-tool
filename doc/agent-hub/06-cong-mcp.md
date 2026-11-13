@@ -229,13 +229,15 @@ Năm tool chỉ **khóa được ghi** thấy, và chỉ khi chủ khóa có đ�
   bộ chứa) hoàn tác được; xuất bản ghi sổ `PUBLISH` (7), không hoàn tác. Kênh ghi `MCP` (4). Phát / thu hồi khóa CHƯA vào sổ
   (bảng khóa ở dịch vụ AI) — vết nằm ở nhật ký lượt gọi MCP + `issued_by` / `revoked_at` của khóa. Nhật ký MCP ghi `skill_id`.
 
-### 3.6 Danh bạ `employee_lookup` trả thêm kiêm nhiệm (duoc-CR-755, 12/11/2026)
+### 3.6 Danh bạ `employee_lookup` trả thêm kiêm nhiệm (duoc-CR-755, câu theo hai loại dòng ở duoc-CR-756, 13/11/2026)
 
-Nhóm `directory`. Mỗi người trong kết quả có thêm `concurrent_roles`: danh sách câu *Phòng X — Công ty B (Chức vụ)* của các
-dòng kiêm nhiệm **đang hiệu lực** (kể cả ở công ty khác, kể cả dòng tắt công tắc phạm vi); rỗng = không kiêm nhiệm. Không đổi
-tên tool, tham số hay bộ lọc người: vẫn `apply_scope` theo phạm vi hồ sơ CHÍNH, nên người chỉ kiêm nhiệm ở phòng của người hỏi
-(hồ sơ chính ở công ty khác) có thể không ra. Một truy vấn cho cả lô (`concurrent_members_service.effective_roles_of`). Luật
-kiêm nhiệm: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.18.
+Nhóm `directory`. Mỗi người trong kết quả có thêm `concurrent_roles`: danh sách câu của các dòng kiêm nhiệm **đang hiệu lực**
+(kể cả dòng tắt công tắc phạm vi), mỗi mục theo loại dòng: *Phòng X (Chức vụ)* = kiêm nhiệm một phòng của chính công ty họ,
+*Công ty B (Chức vụ)* = kiêm nhiệm cả công ty khác; loại Phòng ban xếp trước, mỗi nhóm theo tên; không có chức vụ thì bỏ ngoặc;
+rỗng = không kiêm nhiệm. Mô tả công cụ (`_DESC` ở `assistant/tools/employee_tool.py`) nói đúng hai dạng câu đó. Không đổi tên
+tool, tham số hay bộ lọc người: vẫn `apply_scope` theo phạm vi hồ sơ CHÍNH, nên người chỉ kiêm nhiệm ở phòng / công ty của
+người hỏi (hồ sơ chính ở nơi khác) có thể không ra. Một truy vấn cho cả lô (`concurrent_members_service.effective_roles_of`).
+Luật kiêm nhiệm: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.18.
 
 ## 4. Nhóm tool và cấu hình (G7, ai-CR-216)
 

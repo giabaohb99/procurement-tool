@@ -7,7 +7,13 @@ import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { formatDate } from '@/shared/utils/format-date'
 import type { CellGetters } from '@/shared/utils/sort-rows-by-cell'
 import { EmployeeConcurrentStatusBadge } from '../components/employee-concurrent-status-badge'
-import { CONCURRENT_ACTIVE, CONCURRENT_UPCOMING, type EmployeeConcurrent } from '../types/employee-concurrent'
+import {
+  CONCURRENT_ACTIVE,
+  CONCURRENT_KIND_COMPANY,
+  CONCURRENT_UPCOMING,
+  type EmployeeConcurrent,
+} from '../types/employee-concurrent'
+import { concurrentKindLabel, concurrentPlaceLabel } from '../utils/employee-concurrent-display'
 
 /** Hành động trên mỗi dòng — chỉ dựng cột "Thao tác" khi backend cho sửa (`can_edit`). */
 export interface EmployeeConcurrentRowActions {
@@ -27,8 +33,9 @@ interface BuildColumnsOptions {
  * (Sắp tới → Đang hiệu lực → Đã hết), ô trống xuống cuối cả hai chiều.
  */
 export const EMPLOYEE_CONCURRENT_SORT_GETTERS: CellGetters<EmployeeConcurrent> = {
-  company_name: (row) => row.company_name,
-  department_name: (row) => row.department_name,
+  //  Loại xếp theo SỐ mã (Phòng ban trước Công ty) — đúng thứ tự khai của bộ mã.
+  kind: (row) => row.kind,
+  place: (row) => concurrentPlaceLabel(row),
   position_label: (row) => row.position_label,
   from_date: (row) => row.from_date,
   to_date: (row) => row.to_date,
@@ -70,11 +77,18 @@ export function renderConcurrentFileCell(
   )
 }
 
-/** Câu xác nhận xóa — dòng đang có tác dụng thì nói rõ người này mất phạm vi phòng đó ngay. */
+/** Câu xác nhận xóa — dòng đang có tác dụng thì nói rõ người này mất phạm vi phòng / công ty đó ngay. */
 export function concurrentDeleteDescription(row: EmployeeConcurrent): string {
   const live = row.counts_scope && (row.status === CONCURRENT_ACTIVE || row.status === CONCURRENT_UPCOMING)
-  const scope = live ? ' Người này sẽ thôi thấy dữ liệu của phòng này ở công ty này.' : ''
-  return `Xóa kiêm nhiệm phòng "${row.department_name}" — ${row.company_name}? Tệp QĐ đính kèm (nếu có) cũng bị xóa.${scope}`
+  const isCompany = row.kind === CONCURRENT_KIND_COMPANY
+  const place = concurrentPlaceLabel(row)
+  const scope = live
+    ? isCompany
+      ? ' Người này sẽ thôi được tính là người của công ty này.'
+      : ' Người này sẽ thôi thấy dữ liệu của phòng này.'
+    : ''
+  const what = isCompany ? `công ty "${place}"` : `phòng "${place}"`
+  return `Xóa kiêm nhiệm ${what}? Tệp QĐ đính kèm (nếu có) cũng bị xóa.${scope}`
 }
 
 export function buildEmployeeConcurrentColumns({
@@ -83,10 +97,11 @@ export function buildEmployeeConcurrentColumns({
   actions,
 }: BuildColumnsOptions): DataTableColumn<EmployeeConcurrent>[] {
   const columns: DataTableColumn<EmployeeConcurrent>[] = [
-    { key: 'company_name', sortable: true, header: 'Công ty', width: 150, wrap: true, hideable: false,
-      cell: (row) => row.company_name || `Công ty #${row.company_id}` },
-    { key: 'department_name', sortable: true, header: 'Phòng ban', width: 140, wrap: true, hideable: false,
-      cell: (row) => row.department_name || `Phòng #${row.department_id}` },
+    { key: 'kind', sortable: true, header: 'Loại', width: 95, hideable: false, cell: (row) => concurrentKindLabel(row) },
+    //  Một cột cho NƠI kiêm nhiệm: tên phòng (loại Phòng ban) hoặc tên công ty (loại Công ty) — thay hai cột Công ty /
+    //  Phòng ban của duoc-CR-755, vốn luôn trống một nửa sau khi tách hai loại.
+    { key: 'place', sortable: true, header: 'Nơi kiêm nhiệm', width: 200, wrap: true, hideable: false,
+      cell: (row) => concurrentPlaceLabel(row) },
     { key: 'position_label', sortable: true, header: 'Chức vụ', width: 110, wrap: true,
       cell: (row) => row.position_label || '—' },
     { key: 'from_date', sortable: true, header: 'Từ ngày', width: 95, cell: (row) => formatDate(row.from_date) || '—' },
@@ -126,7 +141,7 @@ export function buildEmployeeConcurrentColumns({
           variant="ghost"
           size="icon-sm"
           title="Sửa"
-          aria-label={`Sửa kiêm nhiệm ${row.department_name}`}
+          aria-label={`Sửa kiêm nhiệm ${concurrentPlaceLabel(row)}`}
           onClick={() => actions.onEdit(row)}
         >
           <Pencil />

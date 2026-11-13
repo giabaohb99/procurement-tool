@@ -18,7 +18,7 @@ from .work_history_access import check_file_read_scope, is_own_profile
 def can_edit(db: Session, user, profile: dict, eid: int) -> bool:
     """Có `employee.write` đúng phạm vi trên hồ sơ VÀ không phải hồ sơ của chính mình (L1).
 
-    Cờ cấp hồ sơ; việc gán từng cặp (phòng, công ty) còn qua L2 ở lúc ghi.
+    Cờ cấp hồ sơ; việc gán từng dòng (theo loại) còn qua L2 ở lúc ghi.
     """
     if is_own_profile(user, eid):
         return False
@@ -72,12 +72,13 @@ def check_file(db: Session, user, entity: str, entity_id: int | None, mode: str)
             403, "Bạn không có quyền xem tệp quyết định (nhạy cảm) của hồ sơ nhân sự này")
     if mode != "read":
         #  Gắn/gỡ cần THẬT `employee.write` (nhánh chung của `_check` chấp nhận cả `create`,
-        #  là quyền tạo hồ sơ mới — không phải quyền sửa hồ sơ người khác) + L2 theo cặp.
+        #  là quyền tạo hồ sơ mới — không phải quyền sửa hồ sơ người khác) + L2 theo loại dòng.
         if get_scoped(db, Employee, "employee", row.employee_id, user, profile, "write") is None:
             raise HTTPException(
                 403, "Cần quyền sửa hồ sơ nhân sự (employee.write, đúng phạm vi) để gắn/gỡ "
                      "tệp quyết định của người khác")
-        department_service.block_out_of_scope_pair(db, [(row.department_id, row.company_id)], profile)
+        department_service.block_out_of_scope_concurrent(
+            db, [(row.kind, row.company_id, row.department_id)], profile)
         return True
     #  Đọc: tự xét phạm vi hồ sơ CÓ nhánh kiêm nhiệm (Q1) — luồng thường không biết nhánh đó.
     check_file_read_scope(db, user, profile, row.employee_id)

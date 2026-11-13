@@ -292,11 +292,12 @@ class EmployeeUpdate(BaseModel):
     #  người đó vẫn thấy phiếu của phòng cũ (phạm vi dữ liệu tính theo MỌI phòng), như ca NSU012 ngày 31/10.
     #  Cờ điều khiển, không phải cột hồ sơ: `update_employee_core` bóc ra trước vòng `setattr`.
     keep_old_department: bool | None = None
-    #  duoc-CR-755 (Q4): đổi pháp nhân chính thì các dòng KIÊM NHIỆM ở công ty CŨ mặc định KẾT THÚC (đến ngày = hôm qua;
-    #  dòng chưa bắt đầu thì xóa). `False` = giữ hết; `keep_concurrent_ids` = giữ riêng các dòng này (hộp hỏi ở màn hồ sơ).
-    #  Dòng ở công ty KHÁC công ty cũ không bao giờ bị đụng. Cờ điều khiển, không phải cột hồ sơ.
+    #  duoc-CR-756: đổi pháp nhân chính A -> C thì dòng kiêm nhiệm loại Phòng ban ở A và dòng loại Công ty trùng C mặc định
+    #  KẾT THÚC (đến ngày = hôm qua; dòng chưa bắt đầu thì xóa). `keep_old_company_concurrent = True` = giữ MỘT dòng loại
+    #  Công ty ở công ty cũ A (từ hôm nay; cần quyền ghi toàn công ty A — chốt L2). Cờ điều khiển, không phải cột hồ sơ.
+    keep_old_company_concurrent: bool | None = None
+    #  Cờ NỘI BỘ (hoàn tác lô Nhập Excel gửi False để không kết thúc dòng "công ty cũ"); giao diện không gửi.
     end_old_company_concurrent: bool | None = None
-    keep_concurrent_ids: list[Annotated[int, Field(gt=0)]] | None = Field(None, max_length=30)
     position: Str100 | None = None
     position_id: int | None = None
     role_name: Str100 | None = None

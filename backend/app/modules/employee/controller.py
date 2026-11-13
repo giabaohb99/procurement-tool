@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import (concurrent_service, contact_service, department_service, pending_work_service,
-               position_service, self_contact_service, sensitive, service, sort_expressions)
+from . import (concurrent_members_service, concurrent_service, contact_service, department_service,
+               pending_work_service, position_service, self_contact_service, sensitive, service, sort_expressions)
 from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
                      EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
                      EmployeeOut, EmployeeUpdate, SelfContactsIn, SelfContactUpdate)
@@ -39,6 +39,12 @@ def list_employees(
     query = query.order_by(*order) if order else query.order_by(service.Employee.id.desc())
     total, items = service.list_employees(db, query, pg)
     rows = [EmployeeOut.model_validate(i).model_dump() for i in items]
+    #  duoc-CR-756: cột "Kiêm nhiệm" — câu mô tả các dòng CÒN HIỆU LỰC (không xét công tắc tính phạm vi), nạp GOM theo
+    #  danh sách id của trang (số truy vấn cố định, không N+1). Mỗi mục `{kind, text}`: `kind` (1 Phòng ban / 2 Công ty)
+    #  để giao diện chọn biểu tượng, `text` là câu `describe_concurrent`. Chỉ để HIỂN THỊ: lọc / tổng / phạm vi ở trên không đổi.
+    roles_by_employee = concurrent_members_service.effective_roles_of(db, [r["id"] for r in rows])
+    for r in rows:
+        r["concurrent_roles"] = [{"kind": x["kind"], "text": x["text"]} for x in roles_by_employee.get(r["id"], [])]
     #  Che nhóm nhạy cảm NGAY Ở ĐÂY, không để tầng giao diện tự ẩn — danh sách
     #  này còn đi ra qua trợ lý AI và qua mọi client gọi thẳng API.
     return success({
@@ -361,7 +367,7 @@ def update_employee(
         department_service.block_out_of_scope_primary_department(
             db, data.department_id, data.company_id or current.company_id or 0, profile)
 
-    obj = service.update_employee(db, eid, data, user.id)
+    obj = service.update_employee(db, eid, data, user.id, profile=profile)
     return success(_masked(db, obj, user), "Đã cập nhật")
 
 
@@ -421,9 +427,9 @@ def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):
 def list_employee_departments(
     eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
 ):
-    """Phòng chính + phòng kiêm nhiệm CÙNG công ty còn hiệu lực (giữ cho nơi gọi cũ).
+    """Phòng chính + phòng kiêm nhiệm loại Phòng ban (cùng công ty chính) còn hiệu lực (giữ cho nơi gọi cũ).
 
-    Hai khóa tách bạch, không gộp thành một danh sách. Kiêm nhiệm đầy đủ (khác công ty, ngày,
+    Hai khóa tách bạch, không gộp thành một danh sách. Kiêm nhiệm đầy đủ (hai loại Phòng ban / Công ty, ngày,
     quyết định, tệp) đọc/ghi ở `/api/employees/{eid}/concurrents` (duoc-CR-755); đường `PUT` đặt
     lại phòng phụ đã gỡ — ghi đi qua đường kia.
     """

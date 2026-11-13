@@ -57,8 +57,9 @@ Tìm được theo tên, mã nhân viên, email, số điện thoại hoặc ch�
 Nó trả **đúng phần danh bạ**: mã NV · họ tên · chức vụ · cấp bậc · phòng ban ·
 công ty · email · điện thoại (`phone` là **số chính**, nhãn của nó ở `phone_label`;
 `extra_phones` là các **số khác**, mỗi số kèm nhãn như **Công việc**, **Zalo**) · quản lý
-trực tiếp · tình trạng làm việc · `concurrent_roles` = các **kiêm nhiệm đang hiệu lực**, mỗi mục một câu
-**Phòng X — Công ty B (Chức vụ)** (có thể ở công ty khác; rỗng = không kiêm nhiệm).
+trực tiếp · tình trạng làm việc · `concurrent_roles` = các **kiêm nhiệm đang hiệu lực**, mỗi mục một câu:
+**Phòng X (Chức vụ)** = kiêm nhiệm một phòng của chính công ty họ; **Công ty B (Chức vụ)** = kiêm nhiệm cả công ty khác
+(rỗng = không kiêm nhiệm).
 Tìm theo số điện thoại thì khớp cả số chính lẫn số khác. Đọc ra số chính trước; người
 hỏi cần số Zalo / số khác thì đọc số có nhãn tương ứng.
 **Không** có ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng, BHXH, lương —
@@ -73,36 +74,63 @@ Hai điều phải nói đúng khi đọc kết quả:
 - Mặc định chỉ ra **người đang làm việc**. Ai hỏi về người đã nghỉ thì nói rõ là
   cần tra riêng, đừng kết luận "không có người tên đó".
 
-## Kiêm nhiệm — tab riêng, kiêm nhiệm được ở công ty khác (từ 12/11/2026)
+## Kiêm nhiệm — hai loại: một phòng của công ty mình, hoặc cả một công ty khác (từ 13/11/2026)
 
 Kiêm nhiệm khai ở tab ***Kiêm nhiệm*** của hồ sơ (**Nhân sự ▸ Nhân sự** ▸ mở hồ sơ), nút ***Thêm kiêm nhiệm***. Thẻ chọn nhiều
-phòng kiêm nhiệm ở tab *Chung* **đã bỏ** — đừng chỉ đường tới đó. Mỗi dòng: **Công ty** (khác công ty chính được), **Phòng ban**
-(phải phục vụ công ty đó), **Chức vụ**, **Từ ngày** (bắt buộc), **Đến ngày** (trống = chưa kết thúc), **Số QĐ**, **Ngày QĐ**,
-**Ghi chú**, tệp QĐ, và công tắc ***Tính vào phạm vi quyền***.
+phòng kiêm nhiệm ở tab *Chung* **đã bỏ** — đừng chỉ đường tới đó. Đầu hộp chọn loại ***Phòng ban*** hoặc ***Công ty***; mỗi dòng
+là MỘT trong hai loại, độc lập nhau:
 
-Câu hay bị hỏi: **kiêm nhiệm ở công ty khác có thấy dữ liệu công ty đó không?** Trả lời đúng ba ý, đừng nói chung chung:
+- ***Phòng ban*** — kiêm nhiệm thêm một phòng của **công ty hiện tại** của người đó: chọn ở ô ***Phòng ban*** (chỉ có phòng phục vụ
+  công ty hiện tại, không có phòng chính); hộp không có ô công ty.
+- ***Công ty*** — kiêm nhiệm **cả một công ty khác** trong tập đoàn, không gắn phòng nào: chọn ở ô ***Công ty kiêm nhiệm*** (không có
+  công ty hiện tại); hộp không có ô phòng.
 
-- **Chỉ thấy đúng PHÒNG đó ở đúng CÔNG TY đó**, không thấy cả công ty B. Thấy như một nhân viên của phòng, theo vai trò họ đang
-  có (xem, duyệt, sửa nếu vai trò cho phép ở mức phòng ban). Văn bản, thư mục, báo cáo, skill AI chia cho phòng đó cũng tới họ.
-- **Chỉ khi công tắc *Tính vào phạm vi quyền* đang BẬT** — tắt thì dòng chỉ là ghi nhận, không mở dữ liệu gì.
-- **Chỉ trong thời gian dòng còn hiệu lực.** Trạng thái tự đổi theo ngày (giờ Việt Nam): ***Sắp tới*** → ***Đang hiệu lực***
-  → ***Đã hết***; tới ngày là tự hết, không ai phải bấm. Thay đổi có tác dụng sau tối đa khoảng một phút.
+Ví dụ: anh A làm chính ở công ty A, kiêm nhiệm phòng Kế toán của công ty A và kiêm nhiệm công ty B → hai dòng, một loại Phòng ban,
+một loại Công ty. Phòng riêng của công ty khác không khai thẳng được: khai loại ***Công ty*** cho công ty đó (phòng dùng chung của
+cả hai công ty thì khai loại ***Phòng ban*** được). Các ô khác: **Chức vụ**, **Từ ngày** (bắt buộc), **Đến ngày** (trống = chưa kết
+thúc), **Số QĐ**, **Ngày QĐ**, **Tệp QĐ** (nút ***Chọn tệp***), công tắc ***Tính vào phạm vi quyền***, **Ghi chú**. Sửa dòng thì không
+đổi được loại (muốn đổi: xóa rồi thêm). Hồ sơ chưa gắn pháp nhân chính thì chưa khai được loại nào.
+
+Câu hay bị hỏi: **kiêm nhiệm công ty B thì thấy gì ở công ty B?** Trả lời **theo mức phạm vi của từng vai trò** người đó đang có,
+đừng nói chung chung "thấy cả công ty" hay "chỉ thấy một phòng":
+
+- vai trò phạm vi **cả công ty** → thấy mọi phiếu, hồ sơ của công ty B như người của B, làm được ở B mọi việc vai trò đó cho phép
+  (xem, sửa, duyệt);
+- vai trò phạm vi **phòng ban** → chỉ thấy phiếu của các phòng của chính họ (phòng chính + phòng kiêm nhiệm loại Phòng ban) phát
+  sinh ở công ty B, thường là phòng dùng chung; các phòng khác của B thì không;
+- vai trò phạm vi **cá nhân**, **toàn hệ thống**, hay theo việc thu mua được giao → **không đổi gì**.
+
+Văn bản, thư mục, báo cáo, skill AI chia cho công ty B cũng tới người kiêm nhiệm B. Kiêm nhiệm loại ***Phòng ban*** thì như một nhân
+viên của phòng đó, theo vai trò đang có; tài liệu chia cho phòng đó cũng tới họ. Cả hai loại chỉ có tác dụng khi:
+
+- **công tắc *Tính vào phạm vi quyền* đang BẬT** — tắt thì dòng chỉ là ghi nhận, không mở dữ liệu gì;
+- **dòng còn hiệu lực**: trạng thái tự đổi theo ngày (giờ Việt Nam) ***Sắp tới*** → ***Đang hiệu lực*** → ***Đã hết***; tới ngày là
+  tự hết, không ai phải bấm. Thay đổi có tác dụng sau tối đa khoảng một phút.
 
 Các luật khác phải nói đúng:
 
 - **Chức vụ kiêm nhiệm không tự cấp thêm vai trò** — quyền mặc định theo chức vụ chỉ theo chức vụ CHÍNH.
-- **Ai khai được:** người có quyền sửa hồ sơ đó, VÀ phòng + công ty kiêm nhiệm nằm trong phạm vi sửa của chính họ (phạm vi phòng
-  chỉ khai được phòng mình; phạm vi công ty chỉ trong công ty mình; toàn hệ thống thì mọi nơi). **Không ai tự khai kiêm nhiệm cho
-  chính mình, kể cả quản trị.**
-- **Đổi pháp nhân chính**: kiêm nhiệm ở công ty CŨ mặc định **kết thúc vào hôm qua**; lúc Lưu có hộp ***Kiêm nhiệm ở công ty cũ***
-  để tick dòng muốn giữ; dòng chưa bắt đầu mà không giữ thì **bị xóa** kèm tệp. Kiêm nhiệm ở công ty khác không bị đụng.
-  Đổi phòng chính thì có hộp ***Giữ phòng cũ làm kiêm nhiệm?***.
-- **Phía phòng được kiêm nhiệm** thấy người đó ở **trang chi tiết phòng ban** (khối ***Kiêm nhiệm tại phòng này***) và **sơ đồ
-  tổ chức** (khối riêng, nhãn ***Kiêm nhiệm***); mở được hồ sơ của họ (chỉ xem) khi dòng đang hiệu lực + bật công tắc.
-  **Quân số và báo cáo vẫn tính ở phòng chính** — không đếm hai lần. Danh sách *Nhân sự* lọc theo phòng KHÔNG ra người kiêm nhiệm.
+- **Ai khai được:** người có quyền sửa hồ sơ đó, VÀ nơi kiêm nhiệm nằm trong phạm vi sửa của chính họ. Loại ***Phòng ban***: phạm vi
+  toàn hệ thống, cả công ty (ở công ty của người kiêm nhiệm), hoặc phạm vi phòng mà phòng đó là phòng của họ. Loại ***Công ty***: chặt
+  hơn — chỉ phạm vi sửa hồ sơ **toàn hệ thống**, hoặc **cả công ty** ở chính công ty đó (công ty chính hay công ty họ đang kiêm nhiệm);
+  phạm vi phòng ban không khai được; tài khoản bị giới hạn *Chỉ trong công ty* (hoặc loại trừ công ty đó) thì không khai được ở
+  công ty ngoài giới hạn; công ty đã ngừng hoạt động không khai được. Mỗi lần bật / tắt phạm vi của dòng loại Công ty đều ghi vào
+  nhật ký thao tác. **Không ai tự khai kiêm nhiệm cho chính mình, kể cả quản trị.**
+- **Đổi pháp nhân chính A → C**: lúc Lưu có hộp ***Kiêm nhiệm khi đổi pháp nhân*** liệt kê dòng sẽ **kết thúc vào hôm qua**: mọi dòng
+  loại Phòng ban ở A và dòng loại Công ty trùng C; dòng chưa bắt đầu thì **bị xóa** kèm tệp. Chỉ còn MỘT câu hỏi: tick ***Vẫn kiêm
+  nhiệm ở công ty cũ*** thì thêm một dòng loại Công ty (A) từ hôm nay (người bấm Lưu cần phạm vi sửa hồ sơ cả công ty A). Dòng loại
+  Công ty ở công ty khác không bị đụng. Chỉ đổi phòng chính (công ty giữ nguyên) thì có hộp ***Giữ phòng cũ làm kiêm nhiệm?***; đổi cả
+  hai cùng lúc thì không hỏi giữ phòng cũ nữa.
+- **Xem người kiêm nhiệm ở đâu:** cột ***Kiêm nhiệm*** ở danh sách *Nhân sự* (mục đầu kèm ***+N***, rê chuột xem đủ — chỉ để xem, lọc
+  theo công ty / phòng vẫn chỉ ra người làm CHÍNH ở đó); **trang chi tiết phòng ban** (khối ***Kiêm nhiệm tại phòng này***, loại
+  Phòng ban); **trang chi tiết công ty** (khối ***Kiêm nhiệm tại công ty này***, loại Công ty); **sơ đồ tổ chức** (khối riêng, nhãn
+  ***Kiêm nhiệm***). Mở được hồ sơ của họ (chỉ xem) khi dòng đang hiệu lực + bật công tắc và phạm vi của người xem phủ nơi kiêm
+  nhiệm. **Quân số và báo cáo vẫn tính ở công ty và phòng chính** — không đếm hai lần.
 - Tệp QĐ kiêm nhiệm của người khác cần quyền xem thông tin nhạy cảm (`employee_sensitive`).
 - Trợ lý **không** thêm / sửa / xóa kiêm nhiệm hộ; chỉ chỉ đường. `employee_lookup` vẫn lọc người theo phạm vi hồ sơ CHÍNH: người
-  chỉ kiêm nhiệm ở phòng của người hỏi mà hồ sơ chính ở công ty khác có thể không ra — khi đó gợi ý xem trang chi tiết phòng ban.
+  chỉ kiêm nhiệm ở phòng / công ty của người hỏi mà hồ sơ chính ở nơi khác có thể không ra — khi đó gợi ý xem trang chi tiết phòng ban
+  hoặc trang chi tiết công ty.
+- Bài diễn đàn gửi cho đối tượng *Công ty* chưa tính công ty kiêm nhiệm.
 - Báo cáo ***Điều chuyển & bổ nhiệm*** đếm kiêm nhiệm theo dòng ở tab *Quá trình công tác*, nên số ở đó có thể thấp hơn số dòng
   ở tab *Kiêm nhiệm*.
 

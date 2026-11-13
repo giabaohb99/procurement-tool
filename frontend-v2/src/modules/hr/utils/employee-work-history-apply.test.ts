@@ -202,6 +202,8 @@ function concurrentRow(overrides: Partial<EmployeeConcurrent>): EmployeeConcurre
   return {
     id: 70,
     employee_id: 1,
+    kind: 1,
+    kind_label: 'Phòng ban',
     company_id: 10,
     company_name: 'Công ty cũ',
     department_id: 50,
@@ -222,8 +224,8 @@ function concurrentRow(overrides: Partial<EmployeeConcurrent>): EmployeeConcurre
   }
 }
 
-describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755)', () => {
-  it('chưa có dòng kiêm nhiệm nối với dòng này → hỏi THÊM, nêu phòng, công ty khác và khoảng ngày', () => {
+describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755; hai loại ở duoc-CR-756)', () => {
+  it('công ty KHÁC công ty chính → hỏi THÊM dòng loại Công ty: nêu công ty, KHÔNG nêu phòng của dòng QTCT', () => {
     expect(
       planApplyPrompt(
         values({
@@ -240,16 +242,16 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755)', () => {
       ),
     ).toEqual({
       kind: 'profile',
-      changes: ['Thêm dòng kiêm nhiệm: phòng "Kế toán" — công ty "DEGO B", từ 03/10/2026 đến 31/12/2026'],
+      changes: ['Thêm dòng kiêm nhiệm: công ty "DEGO B", từ 03/10/2026 đến 31/12/2026'],
     })
   })
 
-  it('công ty trống thì câu nói công ty CHÍNH (backend lấy công ty chính), chưa có ngày kết thúc thì nói rõ', () => {
+  it('công ty trống = công ty chính → loại Phòng ban, câu chỉ nêu phòng; chưa có ngày kết thúc thì nói rõ', () => {
     expect(
       planApplyPrompt(values({ event_type: 4, department_id: 50 }), employee, [], TODAY),
     ).toEqual({
       kind: 'profile',
-      changes: ['Thêm dòng kiêm nhiệm: phòng này — công ty "Công ty cũ", từ 03/10/2026 chưa kết thúc'],
+      changes: ['Thêm dòng kiêm nhiệm: phòng này, từ 03/10/2026 chưa kết thúc'],
     })
   })
 
@@ -257,7 +259,7 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755)', () => {
     expect(planApplyPrompt(values({ event_type: 4, department_id: 20 }), employee, [], TODAY)).toBeNull()
   })
 
-  it('cùng id phòng (phòng dùng chung) nhưng ở công ty KHÁC → vẫn hỏi THÊM', () => {
+  it('công ty KHÁC mà phòng trùng phòng chính → vẫn hỏi THÊM (loại Công ty bỏ phòng, không có gì trùng)', () => {
     const prompt = planApplyPrompt(values({ event_type: 4, department_id: 20, company_id: 11 }), employee, [], TODAY)
     expect(prompt?.kind).toBe('profile')
   })
@@ -294,7 +296,7 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755)', () => {
       ),
     ).toEqual({
       kind: 'profile',
-      changes: ['Cập nhật dòng kiêm nhiệm: phòng "Kế toán" — công ty "Công ty cũ", từ 03/10/2026 đến 30/11/2026'],
+      changes: ['Cập nhật dòng kiêm nhiệm: phòng "Kế toán", từ 03/10/2026 đến 30/11/2026'],
     })
   })
 
@@ -314,6 +316,47 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4, duoc-CR-755)', () => {
   it('dòng đã kết thúc mà CHƯA có dòng nối → không hỏi (backend không tạo dòng đã chết)', () => {
     expect(
       planApplyPrompt(values({ event_type: 4, department_id: 50, to_date: '2026-10-01' }), employee, [], TODAY, [], 9),
+    ).toBeNull()
+  })
+
+  it('loại Công ty KHÔNG cần phòng: dòng QTCT không chọn phòng vẫn hỏi THÊM', () => {
+    const prompt = planApplyPrompt(
+      values({ event_type: 4, company_id: 11, company_label: 'DEGO B' }),
+      employee,
+      [],
+      TODAY,
+    )
+    expect(prompt).toEqual({ kind: 'profile', changes: [expect.stringMatching(/^Thêm dòng kiêm nhiệm: công ty "DEGO B"/)] })
+  })
+
+  it('cùng công ty chính mà KHÔNG chọn phòng → không hỏi (loại Phòng ban cần phòng)', () => {
+    expect(planApplyPrompt(values({ event_type: 4, company_id: 10 }), employee, [], TODAY)).toBeNull()
+  })
+
+  it('hồ sơ chưa gắn pháp nhân chính → không hỏi (backend chặn 400 cả hai loại)', () => {
+    const noCompany = { ...employee, company_id: 0, company_name: '' }
+    expect(
+      planApplyPrompt(values({ event_type: 4, company_id: 11, department_id: 50 }), noCompany, [], TODAY),
+    ).toBeNull()
+  })
+
+  it('Áp lại sang công ty khác: dòng nối đang loại Phòng ban → hỏi CẬP NHẬT (đổi loại tại chỗ, cùng id)', () => {
+    const linked = concurrentRow({})
+    const prompt = planApplyPrompt(
+      values({ event_type: 4, department_id: 50, company_id: 11, company_label: 'DEGO B' }),
+      employee,
+      [linked],
+      TODAY,
+      [],
+      9,
+    )
+    expect(prompt).toEqual({ kind: 'profile', changes: ['Cập nhật dòng kiêm nhiệm: công ty "DEGO B", từ 03/10/2026 chưa kết thúc'] })
+  })
+
+  it('dòng nối loại Công ty giữ nguyên công ty + ngày → không hỏi, dù phòng trên dòng QTCT khác (loại Công ty không có phòng)', () => {
+    const linked = concurrentRow({ kind: 2, kind_label: 'Công ty', company_id: 11, department_id: 0, department_name: '' })
+    expect(
+      planApplyPrompt(values({ event_type: 4, department_id: 50, company_id: 11 }), employee, [linked], TODAY, [], 9),
     ).toBeNull()
   })
 

@@ -2,15 +2,18 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { EmployeeConcurrent } from '../types/employee-concurrent'
+import { CONCURRENT_KIND_COMPANY, CONCURRENT_KIND_DEPARTMENT, type EmployeeConcurrent } from '../types/employee-concurrent'
+import type { CompanyChangeConcurrentChoice } from '../utils/company-change-concurrent-choice'
 import { EmployeeCompanyChangeConcurrentDialog } from './employee-company-change-concurrent-dialog'
 
 const TODAY = '2026-11-12'
 
-function row(id: number, name: string, fromDate: string): EmployeeConcurrent {
+function departmentRow(id: number, name: string, fromDate: string): EmployeeConcurrent {
   return {
     id,
     employee_id: 1,
+    kind: CONCURRENT_KIND_DEPARTMENT,
+    kind_label: 'Phòng ban',
     company_id: 10,
     company_name: 'DEGO A',
     department_id: id,
@@ -30,16 +33,37 @@ function row(id: number, name: string, fromDate: string): EmployeeConcurrent {
   }
 }
 
-const ROWS = [row(7, 'Kế toán', '2026-01-01'), row(8, 'Kho', '2026-12-01')]
+/** Dòng loại Công ty trùng công ty MỚI — cũng kết thúc khi đổi pháp nhân sang đó. */
+function companyRow(id: number, companyName: string): EmployeeConcurrent {
+  return {
+    ...departmentRow(id, '', '2026-01-01'),
+    kind: CONCURRENT_KIND_COMPANY,
+    kind_label: 'Công ty',
+    company_id: 11,
+    company_name: companyName,
+    department_id: 0,
+  }
+}
 
-function renderDialog(onConfirm = vi.fn()) {
+const ROWS = [departmentRow(7, 'Kế toán', '2026-01-01'), departmentRow(8, 'Kho', '2026-12-01'), companyRow(9, 'DEGO B')]
+
+function renderDialog({
+  rows = ROWS,
+  oldCompanyKept = false,
+  onConfirm = vi.fn<(choice: CompanyChangeConcurrentChoice) => void>(),
+}: {
+  rows?: EmployeeConcurrent[]
+  oldCompanyKept?: boolean
+  onConfirm?: ReturnType<typeof vi.fn<(choice: CompanyChangeConcurrentChoice) => void>>
+} = {}) {
   render(
     <EmployeeCompanyChangeConcurrentDialog
       open
       onOpenChange={vi.fn()}
       oldCompanyName="DEGO A"
       newCompanyName="DEGO B"
-      rows={ROWS}
+      rows={rows}
+      oldCompanyKept={oldCompanyKept}
       today={TODAY}
       onConfirm={onConfirm}
     />,
@@ -47,34 +71,45 @@ function renderDialog(onConfirm = vi.fn()) {
   return onConfirm
 }
 
-describe('EmployeeCompanyChangeConcurrentDialog', () => {
-  it('names both companies and warns that the unstarted row will be deleted', () => {
+describe('EmployeeCompanyChangeConcurrentDialog (duoc-CR-756)', () => {
+  it('lists every ending row with its kind and place, warns once for the unstarted one, and has no per-row checkbox', () => {
     renderDialog()
-    expect(screen.getAllByText('DEGO A').length).toBeGreaterThan(0)
-    expect(screen.getByText('DEGO B')).toBeInTheDocument()
-    expect(screen.getAllByText(/sẽ bị xóa nếu không giữ/)).toHaveLength(1)
+    expect(screen.getByText('Phòng ban: Kế toán')).toBeInTheDocument()
+    expect(screen.getByText('Phòng ban: Kho')).toBeInTheDocument()
+    expect(screen.getByText('Công ty: DEGO B')).toBeInTheDocument()
+    expect(screen.getAllByText(/Chưa bắt đầu — sẽ bị xóa/)).toHaveLength(1)
+    //  CR-755 cho tick giữ TỪNG dòng; mô hình mới chỉ còn MỘT câu hỏi.
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1)
   })
 
-  it('default (nothing ticked) ends every row', async () => {
+  it('default (box unticked) sends keep_old_company_concurrent = false', async () => {
     const onConfirm = renderDialog()
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu, kết thúc 2 dòng' }))
-    expect(onConfirm).toHaveBeenCalledWith({ end_old_company_concurrent: true, keep_concurrent_ids: [] })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu, kết thúc 3 dòng' }))
+    expect(onConfirm).toHaveBeenCalledWith({ keep_old_company_concurrent: false })
   })
 
-  it('ticking one row keeps exactly that id and hides its deletion warning', async () => {
+  it('ticking "Vẫn kiêm nhiệm ở công ty cũ" sends keep_old_company_concurrent = true and nothing else', async () => {
     const onConfirm = renderDialog()
-    await userEvent.click(screen.getByLabelText(/Giữ: Kho/))
-    expect(screen.queryByText(/sẽ bị xóa nếu không giữ/)).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu, kết thúc 1 dòng' }))
-    expect(onConfirm).toHaveBeenCalledWith({ end_old_company_concurrent: true, keep_concurrent_ids: [8] })
+    await userEvent.click(screen.getByLabelText(/Vẫn kiêm nhiệm ở công ty cũ/))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu, kết thúc 3 dòng' }))
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(onConfirm.mock.calls[0][0]).toEqual({ keep_old_company_concurrent: true })
   })
 
-  it('ticking every row sends "keep all" (false), not a full id list', async () => {
-    const onConfirm = renderDialog()
-    await userEvent.click(screen.getByLabelText(/Giữ: Kế toán/))
-    await userEvent.click(screen.getByLabelText(/Giữ: Kho/))
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu, giữ tất cả' }))
-    expect(onConfirm).toHaveBeenCalledWith({ end_old_company_concurrent: false, keep_concurrent_ids: [] })
+  it('no row ends: still asks the one question, button is a plain "Lưu"', async () => {
+    const onConfirm = renderDialog({ rows: [] })
+    expect(screen.getByText(/Không có dòng kiêm nhiệm nào phải kết thúc/)).toBeInTheDocument()
+    await userEvent.click(screen.getByLabelText(/Vẫn kiêm nhiệm ở công ty cũ/))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(onConfirm).toHaveBeenCalledWith({ keep_old_company_concurrent: true })
+  })
+
+  it('already has a Công ty row at the old company: no checkbox, says so, never asks backend to add a duplicate', async () => {
+    const onConfirm = renderDialog({ oldCompanyKept: true })
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getByText(/đã có dòng kiêm nhiệm loại Công ty ở/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu, kết thúc 3 dòng' }))
+    expect(onConfirm).toHaveBeenCalledWith({ keep_old_company_concurrent: false })
   })
 
   describe('default "today" (no prop) follows Vietnam time like backend vn_today()', () => {
@@ -89,11 +124,11 @@ describe('EmployeeCompanyChangeConcurrentDialog', () => {
           onOpenChange={vi.fn()}
           oldCompanyName="DEGO A"
           newCompanyName="DEGO B"
-          rows={[row(9, 'Mua hàng', '2026-11-12')]}
+          rows={[departmentRow(9, 'Mua hàng', '2026-11-12')]}
           onConfirm={vi.fn()}
         />,
       )
-      expect(screen.queryByText(/sẽ bị xóa nếu không giữ/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Chưa bắt đầu — sẽ bị xóa/)).not.toBeInTheDocument()
     })
 
     it('control: a row starting on the Vietnam "today" is still warned as unstarted', () => {
@@ -105,11 +140,11 @@ describe('EmployeeCompanyChangeConcurrentDialog', () => {
           onOpenChange={vi.fn()}
           oldCompanyName="DEGO A"
           newCompanyName="DEGO B"
-          rows={[row(9, 'Mua hàng', '2026-11-13')]}
+          rows={[departmentRow(9, 'Mua hàng', '2026-11-13')]}
           onConfirm={vi.fn()}
         />,
       )
-      expect(screen.getAllByText(/sẽ bị xóa nếu không giữ/)).toHaveLength(1)
+      expect(screen.getAllByText(/Chưa bắt đầu — sẽ bị xóa/)).toHaveLength(1)
     })
   })
 })

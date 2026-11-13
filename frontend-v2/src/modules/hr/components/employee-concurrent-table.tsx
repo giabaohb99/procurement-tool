@@ -63,7 +63,7 @@ export function EmployeeConcurrentTable({
       isLoading={isLoading}
       isError={isError}
       errorMessage="Không tải được danh sách kiêm nhiệm."
-      emptyMessage="Người này chưa kiêm nhiệm phòng nào."
+      emptyMessage="Người này chưa có dòng kiêm nhiệm nào."
       storageKey="hr.employee-concurrents"
       filtersActive={false}
       mobileCard={(row) => (

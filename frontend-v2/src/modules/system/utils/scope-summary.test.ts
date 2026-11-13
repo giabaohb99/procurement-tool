@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  CONCURRENT_ACTIVE,
+  CONCURRENT_ENDED,
+  CONCURRENT_KIND_COMPANY,
+  CONCURRENT_KIND_DEPARTMENT,
+  CONCURRENT_UPCOMING,
+} from '@/modules/hr/types/employee-concurrent'
 import type { PermissionMeta, RolePermissionRow } from '@/modules/hr/types/role'
 import {
   SCOPE_MEANINGS,
@@ -7,7 +14,7 @@ import {
   findSelfExcludedDepartments,
   groupEntitiesByScope,
   joinLabels,
-  listScopeConcurrentPairs,
+  listScopeConcurrentPlaces,
   summarizeScopeLimits,
 } from './scope-summary'
 
@@ -220,34 +227,56 @@ describe('findSelfExcludedDepartments', () => {
   })
 })
 
-describe('listScopeConcurrentPairs', () => {
-  const row = (over: Partial<Parameters<typeof listScopeConcurrentPairs>[0][number]> = {}) => ({
-    status: 2,
+describe('listScopeConcurrentPlaces (duoc-CR-756)', () => {
+  const row = (over: Partial<Parameters<typeof listScopeConcurrentPlaces>[0][number]> = {}) => ({
+    kind: CONCURRENT_KIND_DEPARTMENT,
+    status: CONCURRENT_ACTIVE,
     counts_scope: true,
     department_name: 'Phòng Kế toán',
-    company_name: 'Công ty B',
+    company_name: 'DEGO A',
     ...over,
   })
+  const companySeat = (name: string, over: Parameters<typeof row>[0] = {}) =>
+    row({ kind: CONCURRENT_KIND_COMPANY, department_name: '', company_name: name, ...over })
 
-  it('lists only rows in effect AND counting toward scope, as "Phòng X (Công ty B)"', () => {
+  it('two sentences: "Phòng X" for Phòng ban rows, "Công ty B (cả công ty theo bậc vai trò)" for Công ty rows', () => {
+    expect(listScopeConcurrentPlaces([companySeat('SAM GROUP'), row()])).toEqual([
+      'Phòng Kế toán',
+      'Công ty SAM GROUP (cả công ty theo bậc vai trò)',
+    ])
+  })
+
+  it('a Phòng ban row never names the company (it is always the current one), unlike the CR-755 pair', () => {
+    expect(listScopeConcurrentPlaces([row({ company_name: 'DEGO A' })])).toEqual(['Phòng Kế toán'])
+  })
+
+  it('does not double "Công ty" when the legal name already starts with it', () => {
+    expect(listScopeConcurrentPlaces([companySeat('CÔNG TY TNHH DEGO FOOD')])).toEqual([
+      'CÔNG TY TNHH DEGO FOOD (cả công ty theo bậc vai trò)',
+    ])
+  })
+
+  it('only rows in effect AND counting toward scope', () => {
     expect(
-      listScopeConcurrentPairs([
-        row(),
-        row({ department_name: 'Phòng Nhân sự', company_name: 'Công ty C' }),
+      listScopeConcurrentPlaces([
         row({ department_name: 'Tắt công tắc', counts_scope: false }),
-        row({ department_name: 'Sắp tới', status: 1 }),
-        row({ department_name: 'Đã hết', status: 3 }),
+        row({ department_name: 'Sắp tới', status: CONCURRENT_UPCOMING }),
+        companySeat('Đã hết', { status: CONCURRENT_ENDED }),
+        companySeat('Tắt', { counts_scope: false }),
       ]),
-    ).toEqual(['Phòng Kế toán (Công ty B)', 'Phòng Nhân sự (Công ty C)'])
+    ).toEqual([])
   })
 
   it('drops duplicates and survives empty names without printing "undefined" or empty brackets', () => {
-    expect(listScopeConcurrentPairs([row(), row()])).toEqual(['Phòng Kế toán (Công ty B)'])
-    expect(listScopeConcurrentPairs([row({ company_name: '  ' })])).toEqual(['Phòng Kế toán'])
-    expect(listScopeConcurrentPairs([row({ department_name: '', company_name: '' })])).toEqual(['Phòng không rõ'])
+    expect(listScopeConcurrentPlaces([row(), row(), companySeat('B'), companySeat('B')])).toEqual([
+      'Phòng Kế toán',
+      'Công ty B (cả công ty theo bậc vai trò)',
+    ])
+    expect(listScopeConcurrentPlaces([row({ department_name: '  ' })])).toEqual(['Phòng không rõ'])
+    expect(listScopeConcurrentPlaces([companySeat('')])).toEqual(['Công ty không rõ tên (cả công ty theo bậc vai trò)'])
   })
 
   it('returns an empty list for no rows', () => {
-    expect(listScopeConcurrentPairs([])).toEqual([])
+    expect(listScopeConcurrentPlaces([])).toEqual([])
   })
 })

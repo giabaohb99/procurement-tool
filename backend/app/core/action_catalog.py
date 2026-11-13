@@ -322,6 +322,9 @@ _PERMISSION = (
     ActionCode("auto_grant_skipped_position", "Bỏ qua tự cấp vai trò theo chức vụ", ACTION_GROUP_PERMISSION),
     ActionCode("set_position_roles", "Sửa quyền mặc định của chức vụ", ACTION_GROUP_PERMISSION),
     ActionCode("apply_position_roles", "Áp lại quyền mặc định cho người giữ chức vụ", ACTION_GROUP_PERMISSION),
+    #  duoc-CR-756: kiem nhiem loai Cong ty mo / dong pham vi du lieu cua ca mot cong ty cho nhan su.
+    ActionCode("concurrent_scope_open", "Mở phạm vi công ty qua kiêm nhiệm", ACTION_GROUP_PERMISSION),
+    ActionCode("concurrent_scope_close", "Đóng phạm vi công ty qua kiêm nhiệm", ACTION_GROUP_PERMISSION),
     ActionCode("reset_password", "Đặt lại mật khẩu", ACTION_GROUP_PERMISSION),
     ActionCode("activate", "Mở khóa tài khoản", ACTION_GROUP_PERMISSION),
     ActionCode("deactivate", "Khóa tài khoản", ACTION_GROUP_PERMISSION),

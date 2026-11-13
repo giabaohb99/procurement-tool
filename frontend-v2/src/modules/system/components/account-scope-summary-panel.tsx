@@ -23,10 +23,11 @@ interface AccountScopeSummaryPanelProps {
    */
   owner: ScopeOwnerProfile | null
   /**
-   * Cặp (phòng, công ty) mà KIÊM NHIỆM đang mở thêm phạm vi (duoc-CR-755), dạng `Phòng X (Công ty B)` —
-   * chỉ dòng đang hiệu lực + bật công tắc (`listScopeConcurrentPairs`). Rỗng = không có gì để nói.
+   * Nơi KIÊM NHIỆM đang mở thêm phạm vi (duoc-CR-756): `Phòng X` (loại Phòng ban) hoặc
+   * `Công ty B (cả công ty theo bậc vai trò)` (loại Công ty) — chỉ dòng đang hiệu lực + bật công tắc
+   * (`listScopeConcurrentPlaces`). Rỗng = không có gì để nói.
    */
-  concurrentPairs?: string[]
+  concurrentPlaces?: string[]
   /** Ngoại lệ đang khai ở tầng 2, mỗi chiều một câu; rỗng = chưa khai gì. */
   exceptionLines: string[]
   isLoading: boolean
@@ -56,7 +57,7 @@ export function AccountScopeSummaryPanel({
   roleName,
   groups,
   owner,
-  concurrentPairs = [],
+  concurrentPlaces = [],
   exceptionLines,
   isLoading,
   canReadRole,
@@ -119,16 +120,16 @@ export function AccountScopeSummaryPanel({
         </p>
       )}
 
-      {concurrentPairs.length > 0 && (
-        //  Kiêm nhiệm mở thêm ĐÚNG từng cặp (phòng, công ty) chứ không mở cả phòng ở công ty chính hay cả công ty
-        //  kia — nói rõ để người khai không tưởng người này thấy toàn công ty B.
+      {concurrentPlaces.length > 0 && (
+        //  Phòng kiêm nhiệm cộng vào nhóm phòng của người này; công ty kiêm nhiệm thì người này được tính như người của
+        //  công ty đó THEO BẬC vai trò (bậc Công ty thấy cả công ty) — nói rõ để người khai biết dòng Công ty mở rộng.
         <div className="mt-2 border-t border-primary/20 pt-2">
           <p className="text-xs font-medium text-navy">
-            Kiêm nhiệm đang mở thêm phạm vi (chỉ đúng từng phòng và công ty này):
+            Kiêm nhiệm đang mở thêm phạm vi:
           </p>
           <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-xs text-navy">
-            {concurrentPairs.map((pair) => (
-              <li key={pair}>{pair}</li>
+            {concurrentPlaces.map((place) => (
+              <li key={place}>{place}</li>
             ))}
           </ul>
         </div>

@@ -1,4 +1,8 @@
-"""Lược đồ vào/ra cho KIÊM NHIỆM (duoc-CR-755).
+"""Lược đồ vào/ra cho KIÊM NHIỆM (duoc-CR-755; hai loại dòng ở duoc-CR-756).
+
+Hai loại dòng ĐỘC LẬP (`ConcurrentKind`): **Phòng ban** (chỉ gửi `department_id`; công ty = công ty chính, máy chủ
+điền) và **Công ty** (chỉ gửi `company_id` khác công ty chính; không phòng). Hình sai là 422 ngay ở tầng schema;
+phần cần đọc hồ sơ (công ty chính, trùng, phục vụ) kiểm ở service.
 
 Khuôn của `work_history_schema.py`: `extra="forbid"`, ô chuỗi có `max_length` khớp cột
 (`decision_no` 50, `note` 500 — vượt là 422 chứ không phải 500 của MySQL), ngày trong dải
@@ -10,6 +14,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.core.hr_concurrent_codes import ConcurrentKind
+
 from .field_limits import Str50, Str500
 
 #  Dải ngày của kiêm nhiệm hẹp hơn `ProfileDate` (1900-2200): một quyết định bổ nhiệm không
@@ -17,6 +23,8 @@ from .field_limits import Str50, Str500
 ConcurrentDate = Annotated[date, Field(ge=date(1900, 1, 1), le=date(2100, 12, 31))]
 
 ORDER_ERROR = "Đến ngày phải sau hoặc bằng từ ngày"
+KIND_DEPARTMENT_NO_COMPANY = "Dòng loại Phòng ban không chọn công ty — công ty là công ty chính của hồ sơ"
+KIND_COMPANY_NO_DEPARTMENT = "Dòng loại Công ty không chọn phòng ban"
 
 
 class ConcurrentIn(BaseModel):
@@ -24,8 +32,12 @@ class ConcurrentIn(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    company_id: int = Field(gt=0)
-    department_id: int = Field(gt=0)
+    #  `kind` bắt buộc: 1 Phòng ban, 2 Công ty. Số lạ (0, 3...) là 422.
+    kind: ConcurrentKind
+    #  Loại 1: `department_id > 0` bắt buộc, `company_id` PHẢI 0/vắng (máy chủ điền công ty chính).
+    #  Loại 2: `company_id > 0` bắt buộc (khác công ty chính — kiểm ở service), `department_id` PHẢI 0/vắng.
+    company_id: int = Field(0, ge=0)
+    department_id: int = Field(0, ge=0)
     position_id: int = Field(0, ge=0)
     from_date: ConcurrentDate
     to_date: ConcurrentDate | None = None
@@ -40,13 +52,31 @@ class ConcurrentIn(BaseModel):
             raise ValueError(ORDER_ERROR)
         return self
 
+    @model_validator(mode="after")
+    def _check_shape_by_kind(self):
+        if self.kind == ConcurrentKind.DEPARTMENT:
+            if self.department_id <= 0:
+                raise ValueError("Dòng loại Phòng ban phải chọn phòng ban")
+            if self.company_id:
+                raise ValueError(KIND_DEPARTMENT_NO_COMPANY)
+        else:
+            if self.company_id <= 0:
+                raise ValueError("Dòng loại Công ty phải chọn công ty")
+            if self.department_id:
+                raise ValueError(KIND_COMPANY_NO_DEPARTMENT)
+        return self
+
 
 #  Chỉ hai ô này được gửi `null` tường minh trong PATCH (xóa / mở lại).
 _NULL_ALLOWED: frozenset[str] = frozenset({"to_date", "decision_date"})
 
 
 class ConcurrentPatch(BaseModel):
-    """Sửa một dòng — mọi ô tùy chọn (PATCH một phần), khóa lạ bị cấm."""
+    """Sửa một dòng — mọi ô tùy chọn (PATCH một phần), khóa lạ bị cấm.
+
+    KHÔNG có `kind` (gửi là 422 do `extra=forbid`): đổi loại = xóa + thêm. Loại 1 chỉ nhận `department_id`, loại 2 chỉ
+    nhận `company_id` — gửi ô của loại kia thì service trả 400 (cần biết loại của dòng nên không kiểm ở đây).
+    """
 
     model_config = {"extra": "forbid"}
 
@@ -84,6 +114,9 @@ class ConcurrentOut(BaseModel):
 
     id: int
     employee_id: int
+    #  `kind` số (`ConcurrentKind`) kèm `kind_label`. Loại 2: `department_id` 0, `department_name` "".
+    kind: int
+    kind_label: str
     company_id: int
     company_name: str = ""
     department_id: int

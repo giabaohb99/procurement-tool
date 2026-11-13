@@ -1,6 +1,12 @@
 import { EMPLOYEE_STATUS, labelOf } from '@/shared/constants/statuses'
 import type { ExtraPhone } from '../schemas/extra-phones-schema'
 
+/** Một dòng kiêm nhiệm trong danh sách nhân sự: `kind` 1 Phòng ban · 2 Công ty (`ConcurrentKind`). */
+export interface EmployeeConcurrentRole {
+  kind: number
+  text: string
+}
+
 /** Nhân viên — khớp `EmployeeOut` của backend. */
 export interface Employee {
   id: number
@@ -47,6 +53,13 @@ export interface Employee {
   gender: number
   department_name?: string | null
   manager_name?: string | null
+  /**
+   * Cột "Kiêm nhiệm" của DANH SÁCH (duoc-CR-756): các dòng kiêm nhiệm CÒN HIỆU LỰC của người đó, đã xếp (loại, tên).
+   * `text` là câu dựng sẵn ở backend (`Phòng X (Chức vụ)` / `Công ty B (Chức vụ)`), `kind` để chọn biểu tượng.
+   * Chỉ để hiển thị — lọc theo công ty / phòng ban vẫn chỉ ra người làm CHÍNH ở đó. Tùy chọn vì chỉ đường
+   * danh sách trả khóa này (chi tiết hồ sơ thì có tab Kiêm nhiệm riêng).
+   */
+  concurrent_roles?: EmployeeConcurrentRole[]
   /** Lấy từ tài khoản đăng nhập (`tab_user.avatar`) — nguồn ảnh duy nhất. */
   avatar: string
   /** Ảnh chữ ký, cũng từ tài khoản đăng nhập (`tab_user.signature`). */

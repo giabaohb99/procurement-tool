@@ -21,7 +21,7 @@ import {
 import type { Employee } from '../types/employee'
 import type { EmployeeConcurrent } from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
-import { MAIN_TRACK } from '../utils/employee-work-history-apply'
+import { CONCURRENT_TYPE, MAIN_TRACK } from '../utils/employee-work-history-apply'
 import { buildEmployeeWorkHistoryDefaultValues } from '../utils/employee-work-history-form-defaults'
 import {
   EmployeeWorkHistoryFilesDialog,
@@ -127,6 +127,10 @@ export function EmployeeWorkHistoryFormDialog({
     .filter((d) => !companyId || !d.company_id || d.company_id === companyId)
     .map((d) => ({ id: d.id, label: d.name }))
   const positionOptions: LookupItem[] = (positions?.items ?? []).map((p) => ({ id: p.id, label: p.name }))
+  //  duoc-CR-756: Áp dòng Kiêm nhiệm ở công ty KHÁC công ty chính ghi thành dòng loại Công ty, bỏ phòng ban (dòng quá
+  //  trình công tác vẫn giữ phòng) — nói trước để người nhập không tưởng phòng đã chọn sẽ vào tab Kiêm nhiệm.
+  const concurrentAtOtherCompany =
+    eventType === CONCURRENT_TYPE && companyId > 0 && employee.company_id > 0 && companyId !== employee.company_id
 
   const { saveMutation, onSubmit, pendingResign, setPendingResign, handleResignConfirm } =
     useEmployeeWorkHistoryFormSubmit({
@@ -155,6 +159,11 @@ export function EmployeeWorkHistoryFormDialog({
             </DialogTitle>
           </DialogHeader>
 
+          {concurrentAtOtherCompany && (
+            <p role="note" className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Công ty khác công ty chính: Áp ghi kiêm nhiệm loại Công ty, bỏ phòng ban.
+            </p>
+          )}
           <EmployeeWorkHistoryFormDialogFields
             form={form}
             onSubmit={onSubmit}

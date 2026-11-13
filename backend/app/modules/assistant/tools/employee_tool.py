@@ -86,8 +86,8 @@ _DESC = (
     "Tra DANH BẠ NHÂN SỰ: họ tên, mã nhân viên, chức vụ, cấp bậc, phòng ban, công ty, email "
     "và điện thoại công việc (phone = số chính, phone_label = nhãn của nó; extra_phones = các "
     "số khác, mỗi số kèm nhãn như Công việc / Zalo), người quản lý trực tiếp, tình trạng làm "
-    "việc, concurrent_roles = các phòng đang KIÊM NHIỆM (dạng 'Phòng X — Công ty B (Chức vụ)', có thể ở "
-    "công ty khác; rỗng = không kiêm nhiệm). Gọi khi người "
+    "việc, concurrent_roles = các chân đang KIÊM NHIỆM, hai loại: 'Phòng X (Chức vụ)' = kiêm nhiệm một phòng "
+    "của chính công ty họ, 'Công ty B (Chức vụ)' = kiêm nhiệm cả công ty khác (rỗng = không kiêm nhiệm). Gọi khi người "
     "dùng hỏi 'anh/chị X làm ở phòng nào', 'ai là quản lý trực tiếp của tôi', 'cho xin email "
     "của ...', 'phòng Kế toán có những ai'. CHỈ trả thông tin liên hệ công việc — KHÔNG có "
     "ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng hay lương; ai hỏi những thứ đó thì "
@@ -165,7 +165,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     rows = q.order_by(Employee.full_name).limit(limit).all()
 
     items = [_dump(r) for r in rows]
-    #  duoc-CR-755: kiêm nhiệm ĐANG HIỆU LỰC của đúng những người đã nằm trong kết quả (đã qua `apply_scope`) — một
+    #  duoc-CR-755 / 756: kiêm nhiệm ĐANG HIỆU LỰC của đúng những người đã nằm trong kết quả (đã qua `apply_scope`) — một
     #  truy vấn cho cả lô. Không đổi bộ lọc: người kiêm nhiệm ở công ty khác vẫn chỉ tra được khi hồ sơ của họ
     #  nằm trong phạm vi xem như trước.
     from app.modules.employee.concurrent_members_service import effective_roles_of

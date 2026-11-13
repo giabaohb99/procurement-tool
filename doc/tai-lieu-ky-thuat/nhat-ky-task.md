@@ -173,6 +173,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** bản kiêm nhiệm hôm trước bắt chọn công ty rồi chọn phòng của công ty đó, trong khi nghiệp vụ thật là phòng ban và công ty độc lập: một người kiêm nhiệm phòng A của công ty mình và kiêm nhiệm thêm công ty B.
+
+**Đã làm**
+- Mỗi dòng kiêm nhiệm nay thuộc một trong hai loại: Phòng ban (chọn phòng của công ty hiện tại) hoặc Công ty (chọn cả một công ty khác, không chọn phòng); dữ liệu cũ đã chuyển sang hai loại.
+- Kiêm nhiệm công ty B có bật công tắc thì người đó thấy dữ liệu công ty B theo bậc vai trò: bậc công ty thấy toàn công ty B, bậc phòng ban thấy các phòng của mình ở công ty B; văn bản và thư mục chia cho công ty B cũng mở cho họ.
+- Gán kiêm nhiệm công ty cần quyền ghi hồ sơ ở chính công ty đó, tôn trọng giới hạn công ty trong từng quyền của người gán; mỗi lần mở hoặc đóng phạm vi công ty đều ghi nhật ký riêng để quản trị soi lại.
+- Hộp thêm kiêm nhiệm chọn loại trước và đã gọn lại theo góp ý; trang công ty có bảng người kiêm nhiệm tại công ty; danh sách nhân sự có cột kiêm nhiệm hiện mục đầu kèm số mục còn lại, rê chuột xem đủ.
+- Rà mã độc lập phát hiện chốt gán kiêm nhiệm công ty bỏ qua giới hạn công ty của quyền người gán, cùng hai lỗi nhỏ hơn; đã sửa và thêm bài kiểm canh.
+- Cập nhật tài liệu nhân sự, phân quyền, tài liệu API, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý.
+
+Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `department_service.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn756a_kiem_nhiem_loai_phong_cong_ty.py`, `frontend-v2/src/modules/hr/components/employee-concurrent-form-fields.tsx`, `company-concurrent-members-table.tsx`, `employee-concurrent-roles.tsx`
+
 ## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
 - status: xong
 - date: 2026-11-13

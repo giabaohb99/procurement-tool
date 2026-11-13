@@ -1,7 +1,8 @@
 """KIÊM NHIỆM PHÒNG BAN — đọc, ghi, và ba chốt chặn chống vượt quyền (CR-167).
 
 duoc-CR-755: kiêm nhiệm nay nằm ở `tab_employee_concurrent` (`concurrent_service.py`) và dùng lại ba chốt L1/L2/L3
-của tệp này (L2 thêm bản theo CẶP phòng + công ty: `pair_in_write_scope`). `tab_employee_department` CHỈ còn dòng phòng
+của tệp này (L2 theo loại dòng, duoc-CR-756: loại Phòng ban theo CẶP phòng + công ty `pair_in_write_scope`, loại
+Công ty theo công ty `company_in_write_scope`; gộp ở `block_out_of_scope_concurrent`). `tab_employee_department` CHỈ còn dòng phòng
 CHÍNH — đường ghi duy nhất là `set_primary_department`.
 
 ⚠️ **Gán phòng ban KHÔNG phải thao tác hành chính vô hại.** Phạm vi dữ liệu bậc
@@ -27,6 +28,7 @@ sang phòng của pháp nhân khác là mở dữ liệu xuyên pháp nhân bằ
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.hr_concurrent_codes import ConcurrentKind
 from app.modules.department.model import Department
 
 from .department_model import EmployeeDepartment
@@ -93,16 +95,60 @@ def _write_grants(profile: dict) -> list[dict]:
             if (grant["perms"].get("employee") or {}).get("write")]
 
 
-def pair_in_write_scope(db: Session, profile: dict, department_id: int, company_id: int) -> bool:
-    """L2 theo CẶP (phòng, công ty) — người này có ghi được vào cặp đó không (duoc-CR-755).
+def _actor_companies(profile: dict) -> set[int]:
+    """Công ty người thao tác "có chân": công ty chính + công ty KIÊM NHIỆM đang hiệu lực (loại Công ty, duoc-CR-756).
 
-    Dùng cho kiêm nhiệm (gán cặp đích) VÀ cho đổi phòng CHÍNH của hồ sơ (cặp = phòng mới + công ty của HỒ SƠ ĐÍCH).
-    Đo trên `employee.write`, xét TỪNG grant rồi hợp (OR) — KHÔNG lấy bậc rộng nhất, nếu không người có grant
-    `company` (A) + grant `dept` phủ cặp (X, B) bị chặn nhầm ở cặp (X, B):
-    - `all` → được; `company` → `company_id` trùng công ty chính của người thao tác (`company_id = 0` coi như
-      công ty của người thao tác, xem bên dưới);
-    - `dept` trở xuống → cặp nằm trong `concurrent_pairs`, hoặc phòng nằm trong `dept_ids` / ô "Phòng ban được xem"
-      CỦA CÔNG TY CHÍNH.
+    Khóa `concurrent_companies` do `core/auth.get_perm_profile` dựng (chỉ dòng hiệu lực + bật công tắc phạm vi,
+    khác công ty chính). Bỏ số 0.
+    """
+    return {int(c) for c in [profile.get("company_id"), *(profile.get("concurrent_companies") or [])] if c}
+
+
+def _company_ids(values) -> list[int]:
+    """Giá trị số trong một ô "công ty" của grant (`auth.py` giữ nguyên chuỗi rác; rác bị bỏ như `_parse_int_values`)."""
+    ids: list[int] = []
+    for value in values or []:
+        try:
+            ids.append(int(value))
+        except (TypeError, ValueError):
+            continue
+    return ids
+
+
+def grant_writes_company(grant: dict, company_id: int, reach: set[int]) -> bool:
+    """MỘT grant `employee.write` có ghi được ở công ty `company_id` không — khớp `core/scoping._explicit_cond`.
+
+    Phần theo BẬC: `all` không ràng công ty; mọi bậc khác cần `company_id` thuộc `reach` (công ty chính ∪ công ty
+    kiêm nhiệm). Phần theo Ô của grant (áp cho MỌI bậc, AND như `_explicit_cond`): "Chỉ trong công ty" (`inc.company`)
+    có giá trị thì `company_id` phải nằm trong đó — ô có giá trị mà không giá trị nào dùng được thì CHẶN (không nở ra
+    bằng bậc vai trò); "Loại trừ công ty" (`exc.company`) thì `company_id` không được nằm trong đó. Cấu hình `all` +
+    "Chỉ trong công ty A" là cách duy nhất để một người có phạm vi nhiều pháp nhân hẹp — bỏ qua ô này là cho họ gán
+    kiêm nhiệm sang công ty tùy ý (duoc-CR-756, rà mã C1).
+    """
+    scope_name = grant["perms"]["employee"].get("scope", "all")
+    if scope_name != "all" and company_id not in reach:
+        return False
+    box = grant.get("scope") or {}
+    raw_inc = (box.get("inc") or {}).get("company") or []
+    inc = _company_ids(raw_inc)
+    if raw_inc and not inc:
+        return False
+    if inc and company_id not in inc:
+        return False
+    return company_id not in _company_ids((box.get("exc") or {}).get("company"))
+
+
+def pair_in_write_scope(db: Session, profile: dict, department_id: int, company_id: int) -> bool:
+    """L2 theo CẶP (phòng, công ty) — người này có ghi được vào cặp đó không (duoc-CR-755, theo bậc ở duoc-CR-756).
+
+    Dùng cho kiêm nhiệm loại Phòng ban (cặp = phòng + công ty chính của hồ sơ) VÀ cho đổi phòng CHÍNH của hồ sơ
+    (cặp = phòng mới + công ty của HỒ SƠ ĐÍCH). Đo trên `employee.write`, xét TỪNG grant rồi hợp (OR) — KHÔNG lấy
+    bậc rộng nhất. Công ty của cặp phải qua `grant_writes_company` (bậc + ô "Chỉ trong công ty" / "Loại trừ công ty"
+    của chính grant đó), rồi:
+    - `all` / `company` → được;
+    - `dept` trở xuống → phòng nằm trong `dept_ids`, hoặc trong ô "Phòng ban được xem" khi `company_id` = công ty chính.
+    `company_id = 0` coi như công ty chính của người thao tác (dòng cũ của nhân sự chưa gắn pháp nhân; người sửa
+    được hồ sơ đó đã qua `employee_in_scope`).
 
     ⚠️ Ô "Phòng ban được xem" (`inc.department`) CHỈ phủ công ty chính — chặt hơn phạm vi ĐỌC,
     cố ý: gán phòng là mở rộng tầm nhìn của người KHÁC, không được dựa vào một ô chọn
@@ -112,44 +158,44 @@ def pair_in_write_scope(db: Session, profile: dict, department_id: int, company_
     if not grants:
         return False
     own_company = profile.get("company_id") or 0
-    #  Dòng chép từ dữ liệu cũ của nhân sự CHƯA GẮN pháp nhân mang `company_id = 0` (phòng dùng chung, không có
-    #  công ty đích). Người sửa được hồ sơ đó (đã qua `employee_in_scope`) coi như cùng công ty với mình để đo tiếp
-    #  theo PHÒNG — nếu không, chỉ phạm vi `all` mới sửa / xóa / kết thúc được dòng này.
     if not company_id:
         company_id = own_company
-    pairs = {(int(d), int(c)) for d, c in (profile.get("concurrent_pairs") or [])}
-    same_company = bool(own_company) and company_id == own_company
+    reach = _actor_companies(profile)
     base_ids = {x for x in (profile.get("dept_ids") or []) if x}
     if profile.get("dept_id"):
         base_ids.add(profile["dept_id"])
 
     for grant in grants:
-        scope_name = grant["perms"]["employee"].get("scope", "all")
-        if scope_name == "all":
-            return True
-        if scope_name == "company":
-            if same_company:
-                return True
+        if not grant_writes_company(grant, company_id, reach):
             continue
-        if (department_id, company_id) in pairs:
+        if grant["perms"]["employee"].get("scope", "all") in ("all", "company"):
             return True
-        if not same_company:
-            continue
         extra_ids = {x for x in ((grant.get("scope") or {}).get("inc", {}).get("department") or []) if x}
-        if department_id in base_ids or department_id in extra_ids:
+        if department_id in base_ids or (company_id == own_company and department_id in extra_ids):
             return True
     return False
 
 
+def company_in_write_scope(profile: dict, company_id: int) -> bool:
+    """L2 cho kiêm nhiệm loại CÔNG TY — gán công ty B mở cả công ty B cho người khác, nên chặt hơn loại Phòng ban:
+    chỉ grant `employee.write` bậc `all` hoặc `company` mà B qua `grant_writes_company` (bậc + ô công ty của chính
+    grant đó) — xét từng grant rồi hợp. Bậc phòng ban trở xuống KHÔNG đủ (duoc-CR-756)."""
+    reach = _actor_companies(profile)
+    return any(grant["perms"]["employee"].get("scope", "all") in ("all", "company")
+               and grant_writes_company(grant, company_id, reach)
+               for grant in _write_grants(profile))
+
+
 def _pair_label(db: Session, pairs: list[tuple[int, int]]) -> str:
-    """`"Phòng" (Công ty), ...` cho câu báo lỗi."""
+    """`"Phòng" (Công ty), ...` cho câu báo lỗi; phòng 0 (loại Công ty) chỉ ghi tên công ty."""
     from app.modules.company.model import Company
 
     dept_names = {row[0]: row[1] for row in db.query(Department.id, Department.name)
-                  .filter(Department.id.in_({d for d, _ in pairs})).all()}
+                  .filter(Department.id.in_({d for d, _ in pairs if d})).all()}
     company_names = {row[0]: row[1] for row in db.query(Company.id, Company.name)
                      .filter(Company.id.in_({c for _, c in pairs})).all()}
-    return ", ".join(f'"{dept_names.get(d, d)}" ({company_names.get(c, c)})' for d, c in pairs)
+    return ", ".join(f'"{dept_names.get(d, d)}" ({company_names.get(c, c)})' if d else f'"{company_names.get(c, c)}"'
+                     for d, c in pairs)
 
 
 def block_out_of_scope_primary_department(db: Session, department_id: int, target_company_id: int,
@@ -179,14 +225,24 @@ def block_out_of_scope_primary_department(db: Session, department_id: int, targe
                  f"{_pair_label(db, [(department_id, owner)])}. Nhờ người phụ trách phòng đó thao tác.")
 
 
-def block_out_of_scope_pair(db: Session, pairs: list[tuple[int, int]], profile: dict) -> None:
-    """L2 theo cặp — 403 nêu tên phòng + công ty nếu có cặp nằm ngoài tầm người thao tác."""
-    bad = [(d, c) for d, c in pairs if d and not pair_in_write_scope(db, profile, d, c)]
-    if not bad:
-        return
-    raise HTTPException(
-        403, "Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: "
-             f"{_pair_label(db, bad)}. Nhờ người phụ trách phòng đó thao tác.")
+def block_out_of_scope_concurrent(db: Session, specs: list[tuple[int, int, int]], profile: dict) -> None:
+    """L2 cho dòng kiêm nhiệm — `specs` = `[(kind, company_id, department_id), ...]`; 403 nêu tên nếu có dòng ngoài tầm.
+
+    Loại Phòng ban đo theo CẶP (`pair_in_write_scope`), loại Công ty đo theo công ty (`company_in_write_scope`,
+    chặt hơn). Sửa dòng thì truyền cả bộ CŨ lẫn MỚI.
+    """
+    bad_pairs = [(d, c) for k, c, d in specs
+                 if k == ConcurrentKind.DEPARTMENT and d and not pair_in_write_scope(db, profile, d, c)]
+    if bad_pairs:
+        raise HTTPException(
+            403, "Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: "
+                 f"{_pair_label(db, bad_pairs)}. Nhờ người phụ trách phòng đó thao tác.")
+    bad_companies = [(0, c) for k, c, _d in specs
+                     if k == ConcurrentKind.COMPANY and not company_in_write_scope(profile, c)]
+    if bad_companies:
+        raise HTTPException(
+            403, "Không gán được kiêm nhiệm ở công ty mà bạn không có phạm vi ghi toàn công ty: "
+                 f"{_pair_label(db, bad_companies)}. Nhờ người phụ trách công ty đó thao tác.")
 
 
 def check_primary_belongs(db: Session, employee: Employee) -> None:

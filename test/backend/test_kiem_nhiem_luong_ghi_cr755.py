@@ -1,5 +1,6 @@
-"""duoc-CR-755 giai đoạn 03 — các ĐƯỜNG GHI kiêm nhiệm từ nơi khác: Áp quá trình công tác loại 4, giữ phòng cũ,
-đổi pháp nhân chính (Q4), nhập Excel nhân sự và hoàn tác, chặn xóa chức vụ đang dùng, L2 cho dòng công ty = 0.
+"""duoc-CR-755 giai đoạn 03 (hai loại dòng độc lập, duoc-CR-756) — các ĐƯỜNG GHI kiêm nhiệm từ nơi khác: Áp quá trình
+công tác loại 4, giữ phòng cũ, đổi pháp nhân chính (Q4), nhập Excel nhân sự và hoàn tác, chặn xóa chức vụ đang dùng,
+L2 cho dòng công ty = 0.
 
 Tách khỏi `test_kiem_nhiem_khac_cong_ty_du_lieu_cr755.py` (CRUD của tab) cho dễ đọc. Mỗi chốt có cặp đối chứng ở chiều ngược.
 """
@@ -35,6 +36,7 @@ YESTERDAY = TODAY - timedelta(days=1)
 
 def _conc(db, eid, company, dept, **kw) -> EmployeeConcurrent:
     kw.setdefault("from_date", TODAY - timedelta(days=10))
+    kw.setdefault("kind", 1 if dept else 2)          # có phòng = loại Phòng ban; không phòng = loại Công ty
     row = EmployeeConcurrent(employee_id=eid, company_id=company, department_id=dept, counts_scope=True,
                              created_by=ACTOR, updated_by=ACTOR, **kw)
     db.add(row)
@@ -66,7 +68,8 @@ def _rows_of(db, eid) -> list[EmployeeConcurrent]:
 @pytest.fixture
 def move(world):
     """a3 (công ty A) có 5 dòng kiêm nhiệm để thử đổi pháp nhân A -> C:
-    ở A: đang hiệu lực / đã hết / chưa bắt đầu; ở B: đang hiệu lực (công ty KHÁC, không bao giờ bị đụng)."""
+    loại Phòng ban ở A: đang hiệu lực / đã hết / chưa bắt đầu; loại Công ty: C (trùng công ty đích, sẽ kết thúc) và
+    B (công ty KHÁC, không bao giờ bị đụng)."""
     db = world.db
     c_new = Company(code="CTY_C", name="Công ty C", is_active=True)
     db.add(c_new)
@@ -76,9 +79,10 @@ def move(world):
         "open": _conc(db, eid, co_a, world.dept["A.kt"]),
         "ended": _conc(db, eid, co_a, world.dept["A.kt"], from_date=TODAY - timedelta(days=100),
                        to_date=TODAY - timedelta(days=50)),
-        "future": _conc(db, eid, co_a, world.dept["B.hc"],
+        "future": _conc(db, eid, co_a, world.dept["A.kt"],
                         from_date=TODAY + timedelta(days=5)),
-        "b": _conc(db, eid, co_b, world.dept["B.kt"]),
+        "b": _conc(db, eid, co_b, 0),
+        "c": _conc(db, eid, c_new.id, 0),
     }
     return {"world": world, "eid": eid, "c_new": c_new.id, "rows": rows, "co_a": co_a, "co_b": co_b}
 
@@ -87,15 +91,16 @@ def move(world):
 #  1. Đổi pháp nhân chính (Q4)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def test_doi_phap_nhan_ket_thuc_dong_cong_ty_cu_xoa_dong_chua_bat_dau_khong_dung_dong_cong_ty_khac(move):
+def test_doi_phap_nhan_ket_thuc_phong_ban_cu_va_cong_ty_trung_dich_xoa_chua_bat_dau_khong_dung_cong_ty_khac(move):
     w, rows = move["world"], move["rows"]
     update_employee(w.db, move["eid"], EmployeeUpdate(company_id=move["c_new"], department_id=0), ACTOR)
 
-    assert _fresh(w.db, rows["open"]).to_date == YESTERDAY, "dòng còn hiệu lực ở công ty cũ kết thúc hôm qua"
+    assert _fresh(w.db, rows["open"]).to_date == YESTERDAY, "dòng Phòng ban ở công ty cũ kết thúc hôm qua"
+    assert _fresh(w.db, rows["c"]).to_date == YESTERDAY, "dòng Công ty trùng công ty đích: thừa nên kết thúc"
     assert _fresh(w.db, rows["ended"]).to_date == TODAY - timedelta(days=50), "dòng đã hết giữ nguyên ngày"
     assert w.db.get(EmployeeConcurrent, rows["future"].id) is None, "dòng chưa bắt đầu bị xóa"
     other = _fresh(w.db, rows["b"])
-    assert other.to_date is None and other.company_id == move["co_b"], "dòng ở công ty khác không bị đụng"
+    assert other.to_date is None and other.company_id == move["co_b"], "dòng Công ty khác không bị đụng"
     assert concurrent_service.active_concurrent_rows(w.db, move["eid"]) == [other]
 
 
@@ -107,17 +112,21 @@ def test_doi_phap_nhan_ghi_nhat_ky_dong_da_ket_thuc(move):
 
     msgs = [r.message or "" for r in w.db.query(AuditLog).filter(
         AuditLog.entity == "employee", AuditLog.entity_id == move["eid"])]
-    assert any("kết thúc 2 dòng kiêm nhiệm ở công ty cũ" in m and "Phòng Kế toán" in m
+    assert any("kết thúc 3 dòng kiêm nhiệm" in m and "Phòng Kế toán" in m and "Công ty Công ty C" in m
                and "chưa bắt đầu, đã xóa" in m for m in msgs)
 
 
-def test_doi_phap_nhan_tham_so_giu_lai_dong_duoc_chon(move):
+def test_doi_phap_nhan_giu_ghe_cong_ty_cu_tao_mot_dong_loai_cong_ty_qua_l2(move):
     w, rows = move["world"], move["rows"]
+    boss = w.grant("a1", "employee", scope="all", actions=("read", "write"))
     update_employee(w.db, move["eid"], EmployeeUpdate(
-        company_id=move["c_new"], department_id=0, keep_concurrent_ids=[rows["open"].id]), ACTOR)
+        company_id=move["c_new"], department_id=0, keep_old_company_concurrent=True), boss.user.id,
+        profile=boss.profile())
 
-    assert _fresh(w.db, rows["open"]).to_date is None, "dòng được chọn giữ thì nguyên"
-    assert w.db.get(EmployeeConcurrent, rows["future"].id) is None, "dòng không được chọn vẫn bị xử lý"
+    seats = [r for r in _rows_of(w.db, move["eid"]) if r.note == "Giữ kiêm nhiệm khi đổi pháp nhân"]
+    assert [(r.kind, r.company_id, r.department_id, r.from_date, r.to_date) for r in seats] == [
+        (2, move["co_a"], 0, TODAY, None)]
+    assert _fresh(w.db, rows["open"]).to_date == YESTERDAY, "dòng Phòng ban cũ vẫn kết thúc"
 
 
 def test_doi_phap_nhan_tat_co_ket_thuc_thi_giu_het(move):
@@ -132,10 +141,11 @@ def test_doi_phap_nhan_tat_co_ket_thuc_thi_giu_het(move):
 def test_co_dieu_khien_khong_thanh_cot_ho_so(move):
     w = move["world"]
     update_employee(w.db, move["eid"], EmployeeUpdate(
-        company_id=move["c_new"], department_id=0, end_old_company_concurrent=True, keep_concurrent_ids=[1]), ACTOR)
+        company_id=move["c_new"], department_id=0, end_old_company_concurrent=True,
+        keep_old_company_concurrent=True), ACTOR)
 
     obj_vars = vars(w.db.get(Employee, move["eid"]))
-    assert "end_old_company_concurrent" not in obj_vars and "keep_concurrent_ids" not in obj_vars
+    assert "end_old_company_concurrent" not in obj_vars and "keep_old_company_concurrent" not in obj_vars
 
 
 def test_khong_doi_cong_ty_thi_khong_ket_thuc_gi(move):
@@ -176,7 +186,8 @@ def test_giu_phong_cu_tao_dung_mot_dong_cong_ty_truoc_luc_luu(world):
     db.commit()
 
     (row,) = _rows_of(db, eid)
-    assert (row.department_id, row.company_id, row.from_date, row.to_date) == (old, world.co["A"], TODAY, None)
+    assert (row.kind, row.department_id, row.company_id, row.from_date, row.to_date) == (
+        1, old, world.co["A"], TODAY, None)
     assert row.note == "Giữ phòng cũ khi đổi phòng chính" and row.counts_scope is True
     assert any("giữ phòng cũ" in n for n in out.notes)
 
@@ -201,20 +212,23 @@ def test_khong_chon_giu_thi_phong_cu_khong_thanh_dong_nao(world):
     assert _rows_of(db, eid) == []
 
 
-def test_giu_phong_cu_cung_luc_doi_cong_ty_dong_giu_o_cong_ty_truoc_va_khong_bi_ket_thuc(move):
-    """Đổi A -> C, chọn phòng của C và giữ phòng cũ: dòng phòng cũ (công ty A) là LỰA CHỌN TƯỜNG MINH nên sống sót."""
+def test_giu_phong_cu_cung_luc_doi_cong_ty_gop_thanh_mot_dong_loai_cong_ty_cu(move):
+    """Đổi A -> C, chọn phòng của C và giữ phòng cũ: phòng cũ thuộc A nên gộp thành MỘT dòng loại Công ty (A), qua L2."""
     from app.modules.department.model import Department
 
     w = move["world"]
+    boss = w.grant("a1", "employee", scope="all", actions=("read", "write"))
     d_c = Department(code="C_KT", name="Phòng KT C", company_id=move["c_new"], is_active=True)
     w.db.add(d_c)
     w.db.flush()
-    old_primary = w.db.get(Employee, move["eid"]).department_id
     update_employee(w.db, move["eid"], EmployeeUpdate(
-        company_id=move["c_new"], department_id=d_c.id, keep_old_department=True), ACTOR)
+        company_id=move["c_new"], department_id=d_c.id, keep_old_department=True), boss.user.id,
+        profile=boss.profile())
 
-    kept = [r for r in _rows_of(w.db, move["eid"]) if r.note == "Giữ phòng cũ khi đổi phòng chính"]
-    assert [(r.department_id, r.company_id, r.to_date) for r in kept] == [(old_primary, move["co_a"], None)]
+    rows = _rows_of(w.db, move["eid"])
+    assert [r for r in rows if r.note == "Giữ phòng cũ khi đổi phòng chính"] == [], "không còn dòng Phòng ban của A"
+    seats = [r for r in rows if r.note == "Giữ kiêm nhiệm khi đổi pháp nhân"]
+    assert [(r.kind, r.company_id, r.department_id, r.to_date) for r in seats] == [(2, move["co_a"], 0, None)]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -233,6 +247,7 @@ def test_ap_hai_lan_ra_mot_dong_sua_ngay_roi_ap_lai_thi_cap_nhat_dong(world):
     assert applysvc.apply(db, wh, a1.user, a1.profile()) == [], "Áp lại khi đã khớp: không đổi gì"
     db.commit()
     assert len(_rows_of(db, eid)) == 1
+    assert _rows_of(db, eid)[0].kind == 1 and _rows_of(db, eid)[0].company_id == world.co["A"]
 
     wh.from_date, wh.decision_no = TODAY - timedelta(days=20), "QD-2"
     db.commit()
@@ -261,8 +276,8 @@ def test_ap_khong_doi_cong_tac_pham_vi_da_tat_tay(world):
     assert row.counts_scope is False and row.note == "đổi ghi chú"
 
 
-def test_ap_ghi_cong_ty_khac_va_dong_het_han_khong_mo_pham_vi(world):
-    """Công ty của dòng QTCT được giữ (khác công ty chính); dòng đã hết hạn không nằm trong `dept_ids`."""
+def test_ap_cong_ty_khac_thanh_dong_loai_cong_ty_bo_phong_va_dong_het_han_khong_tao(world):
+    """Công ty khác công ty chính -> loại Công ty (bỏ phòng của QTCT); dòng QTCT đã hết hạn không tạo dòng chết."""
     db = world.db
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
     eid = world.emp["a3"]
@@ -271,7 +286,8 @@ def test_ap_ghi_cong_ty_khac_va_dong_het_han_khong_mo_pham_vi(world):
     applysvc.apply(db, wh, a1.user, a1.profile())
     db.commit()
     (row,) = _rows_of(db, eid)
-    assert (row.company_id, row.department_id) == (world.co["B"], world.dept["B.kt"])
+    assert (row.kind, row.company_id, row.department_id) == (2, world.co["B"], 0)
+    assert wh.department_id == world.dept["B.kt"], "dòng QTCT giữ nguyên"
 
     wh2 = _wh(db, eid, WorkEventType.CONCURRENT, TODAY - timedelta(days=60), department_id=world.dept["A.kt"],
               to_date=TODAY - timedelta(days=30))
@@ -425,7 +441,7 @@ ROW = {"Mã NV *": "DEMONV", "Công ty (mã)": "CT02", "Phòng ban (mã)": "DEPT
 
 def test_nhap_excel_doi_phap_nhan_ket_thuc_kiem_nhiem_cong_ty_cu_va_hoan_tac_tra_lai(db, seed, hr, xl):
     open_row = _conc(db, xl["eid"], xl["co1"], xl["d3"])
-    other = _conc(db, xl["eid"], 4242, xl["d3"])                   # công ty KHÁC công ty cũ
+    other = _conc(db, xl["eid"], 4242, 0)                          # dòng Công ty khác công ty đích
     b = run_import(db, [ROW], hr)
     assert b.error_count == 0 and b.updated_count == 1
 

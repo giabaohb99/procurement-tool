@@ -1,8 +1,12 @@
-"""KIÊM NHIỆM (tab riêng, khác công ty được) — `tab_employee_concurrent` (duoc-CR-755).
+"""KIÊM NHIỆM (tab riêng, hai loại dòng ĐỘC LẬP) — `tab_employee_concurrent` (duoc-CR-755, sửa mô hình ở duoc-CR-756).
 
-Mỗi dòng = "nhân sự X kiêm nhiệm phòng Y của công ty Z, chức vụ W, từ ngày … đến ngày …,
-theo quyết định số …". Thay cho dòng phụ (`is_primary = 0`) của `tab_employee_department`,
-bảng đó từ nay CHỈ còn dòng phòng CHÍNH.
+Mỗi dòng thuộc MỘT trong hai loại (cột `kind`, bộ mã `ConcurrentKind`):
+- **Phòng ban** (`kind = 1`): "nhân sự X kiêm nhiệm phòng Y CỦA CÔNG TY HIỆN TẠI của họ". `company_id` = công ty
+  chính lúc ghi (lưu thật, không để 0) để lọc đổi pháp nhân, chỉ mục (phòng, công ty) và câu mô tả chạy nguyên.
+- **Công ty** (`kind = 2`): "nhân sự X kiêm nhiệm cả công ty B" — `company_id` = B (khác công ty chính),
+  `department_id = 0` (không phòng). Công ty B tính như công ty của họ THEO BẬC vai trò (xem `core/auth`).
+Cả hai kèm chức vụ W, từ ngày … đến ngày …, theo quyết định số …. Thay cho dòng phụ (`is_primary = 0`) của
+`tab_employee_department`, bảng đó từ nay CHỈ còn dòng phòng CHÍNH.
 
 Vì sao bảng mới mà không mở rộng bảng cũ:
 - `set_departments` xóa hết rồi chèn lại nên id dòng đổi mỗi lần lưu — tệp quyết định
@@ -21,7 +25,7 @@ tầng service. `position_label` là nhãn CHỤP lúc ghi, không đi theo đ�
 """
 from datetime import date
 
-from sqlalchemy import BigInteger, Boolean, Date, Index, String
+from sqlalchemy import BigInteger, Boolean, Date, Index, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -36,11 +40,16 @@ class EmployeeConcurrent(Base, AuditMixin):
         Index("ix_employee_concurrent_employee", "employee_id"),
         #  "Phòng này ở công ty này có ai kiêm nhiệm" (phòng B thấy người kiêm nhiệm, phase 05).
         Index("ix_employee_concurrent_dept_company", "department_id", "company_id"),
+        #  duoc-CR-756: trang công ty liệt kê người kiêm nhiệm CÔNG TY (loại 2).
+        Index("ix_employee_concurrent_company_kind", "company_id", "kind"),
         #  Dòng quá trình công tác đã Áp ra dòng này (phase 03).
         Index("ix_employee_concurrent_work_history", "work_history_id"),
     )
 
     employee_id: Mapped[int] = mapped_column(BigInteger)
+    #  Loại dòng (`ConcurrentKind`): 1 Phòng ban, 2 Công ty. Không đổi qua PATCH tab (đổi loại = xóa + thêm);
+    #  chỉ Áp quá trình công tác được đổi loại tại chỗ.
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
     company_id: Mapped[int] = mapped_column(BigInteger)
     department_id: Mapped[int] = mapped_column(BigInteger)
     position_id: Mapped[int] = mapped_column(BigInteger, default=0)

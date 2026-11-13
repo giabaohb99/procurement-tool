@@ -1,4 +1,5 @@
 """Xác thực (JWT) + phân quyền (RBAC) dùng chung — giống AuthMiddleware."""
+import logging
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -10,6 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.hr_concurrent_codes import ConcurrentKind
+
+#  Cùng tên logger với `core/scoping` — dòng cảnh báo dữ liệu kiêm nhiệm trôi nằm chung chỗ với `scope chan`.
+log = logging.getLogger("app.scoping")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -246,7 +251,7 @@ def get_perm_profile(db: Session, user) -> dict:
     company_id, dept_name, emp_code, dept_id, emp_name = 0, "", "", 0, ""
     dept_ids: list[int] = []
     dept_names: list[str] = []
-    concurrent_pairs: list[list[int]] = []
+    concurrent_companies: list[int] = []
     if getattr(user, "employee_id", 0):
         from app.modules.department.model import Department
         from app.modules.employee.concurrent_service import active_concurrent_rows
@@ -258,31 +263,34 @@ def get_perm_profile(db: Session, user) -> dict:
             emp_name = emp.full_name or ""   # dùng khớp NSPT (ĐMH lưu theo tên)
             dept_id = emp.department_id or 0
 
-            #  KIÊM NHIỆM (CR-167, duoc-CR-755) — người này có chân ở những phòng nào. Phòng
-            #  CHÍNH (`tab_employee.department_id`) đứng đầu; `dept_id` / `dept_name` số ít vẫn
-            #  là phòng chính, giữ nguyên cho những nơi chỉ dùng được một phòng.
+            #  KIÊM NHIỆM (CR-167, duoc-CR-755, mô hình hai loại dòng ở duoc-CR-756) — người này có chân ở
+            #  những phòng nào và ở những công ty nào. Phòng CHÍNH (`tab_employee.department_id`) đứng đầu;
+            #  `dept_id` / `dept_name` số ít vẫn là phòng chính, giữ nguyên cho những nơi chỉ dùng được một phòng.
             #
-            #  Phòng kiêm nhiệm lấy từ `tab_employee_concurrent`: dòng CÒN HIỆU LỰC hôm nay
-            #  (giờ VN) + bật công tắc "Tính vào phạm vi quyền". Một truy vấn, số truy vấn không đổi
-            #  theo số dòng. Chia hai nhóm (duoc-CR-755 giai đoạn 02):
-            #    · CÙNG công ty chính (công ty dòng = 0 coi như công ty chính — phòng dùng chung /
-            #      nhân sự chưa gắn pháp nhân) → nối vào `dept_ids` (hành vi y CR-167);
-            #    · KHÁC công ty → khóa `concurrent_pairs` = [[phòng, công ty], ...]. KHÔNG nối vào
-            #      `dept_ids` vì nó không mang công ty: nối vào là mở phòng đó ở CÔNG TY CHÍNH. Cặp
-            #      chỉ được `core/scoping` cộng ở những nhánh tự ràng `AND công ty == c`; còn
-            #      `company_id` giữ MỘT số nên bậc "công ty" không phình.
+            #  Lấy từ `tab_employee_concurrent`: dòng CÒN HIỆU LỰC hôm nay (giờ VN) + bật công tắc "Tính vào
+            #  phạm vi quyền". MỘT truy vấn, số truy vấn không đổi theo số dòng. Hai loại:
+            #    · Phòng ban (`kind = 1`, phòng của công ty CHÍNH) → nối vào `dept_ids` (hành vi y CR-167);
+            #    · Công ty (`kind = 2`, công ty KHÁC, không phòng) → khóa `concurrent_companies`. `company_id`
+            #      vẫn là MỘT số; `core/scoping` cộng các công ty này THEO BẬC (bậc `company` / `dept` mới
+            #      tính công ty B như công ty của họ, `own` / `all` không đổi).
             dept_ids = [dept_id] if dept_id else []
-            seen_pairs: set[tuple[int, int]] = set()
+            companies: set[int] = set()
             for row in active_concurrent_rows(db, user.employee_id, counts_scope_only=True):
+                if row.kind == ConcurrentKind.COMPANY:
+                    if row.company_id and row.company_id != company_id:
+                        companies.add(int(row.company_id))
+                    continue
                 if not row.department_id:
                     continue
-                row_company = row.company_id or company_id
-                if row_company == company_id:
-                    if row.department_id not in dept_ids:
-                        dept_ids.append(row.department_id)
-                else:
-                    seen_pairs.add((int(row.department_id), int(row_company)))
-            concurrent_pairs = [[d, c] for c, d in sorted((c, d) for d, c in seen_pairs)]
+                if (row.company_id or company_id) != company_id:
+                    #  Dòng phòng ban lệch công ty chính = dữ liệu trôi (đổi pháp nhân mà dòng không kết thúc).
+                    #  Nối vào `dept_ids` là mở phòng đó ở công ty CHÍNH → bỏ qua, để lại dấu vết.
+                    log.warning("kiem nhiem phong ban lech cong ty chinh: employee=%s row=%s — bo qua",
+                                user.employee_id, row.id)
+                    continue
+                if row.department_id not in dept_ids:
+                    dept_ids.append(row.department_id)
+            concurrent_companies = sorted(companies)
             if dept_ids:
                 department_names = dict(db.query(Department.id, Department.name)
                                  .filter(Department.id.in_(dept_ids)).all())
@@ -293,8 +301,8 @@ def get_perm_profile(db: Session, user) -> dict:
                "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code, "emp_name": emp_name,
                #  Danh sách ĐẦY ĐỦ cho phạm vi dữ liệu — xem `core/scoping._dept_match`.
                "dept_ids": dept_ids, "dept_names": dept_names,
-               #  Cặp (phòng, công ty) kiêm nhiệm KHÁC công ty chính — xem chú thích ở trên.
-               "concurrent_pairs": concurrent_pairs,
+               #  Công ty kiêm nhiệm (loại Công ty) KHÁC công ty chính — xem chú thích ở trên.
+               "concurrent_companies": concurrent_companies,
                "employee_id": getattr(user, "employee_id", 0) or 0}
     _PERM_CACHE[user.id] = (profile, now + _PERM_TTL)
     return profile

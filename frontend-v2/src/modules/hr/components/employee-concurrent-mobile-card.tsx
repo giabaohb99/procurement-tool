@@ -8,7 +8,7 @@ import {
   type EmployeeConcurrentRowActions,
 } from '../config/employee-concurrent-columns'
 import type { EmployeeConcurrent } from '../types/employee-concurrent'
-import { concurrentPeriodLabel } from '../utils/employee-concurrent-display'
+import { concurrentKindLabel, concurrentPeriodLabel, concurrentPlaceLabel } from '../utils/employee-concurrent-display'
 import { EmployeeConcurrentStatusBadge } from './employee-concurrent-status-badge'
 
 interface EmployeeConcurrentMobileCardProps {
@@ -19,8 +19,9 @@ interface EmployeeConcurrentMobileCardProps {
 }
 
 /**
- * Một dòng kiêm nhiệm ở khổ điện thoại (`DataTableProps.mobileCard`). Dòng đầu là PHÒNG — công ty (thứ người đọc dùng để
- * nhận ra dòng), kèm huy hiệu trạng thái; nút Sửa / Xóa / Tệp dùng đúng hàm của bảng, không chép luồng.
+ * Một dòng kiêm nhiệm ở khổ điện thoại (`DataTableProps.mobileCard`). Dòng đầu là NƠI kiêm nhiệm (tên phòng hoặc tên
+ * công ty — thứ người đọc dùng để nhận ra dòng), kèm huy hiệu trạng thái; dòng hai là Loại · Chức vụ; nút Sửa / Xóa /
+ * Tệp dùng đúng hàm của bảng, không chép luồng.
  */
 export function EmployeeConcurrentMobileCard({ row, canOpenFiles, onOpenFiles, actions }: EmployeeConcurrentMobileCardProps) {
   const period = concurrentPeriodLabel(row)
@@ -28,11 +29,11 @@ export function EmployeeConcurrentMobileCard({ row, canOpenFiles, onOpenFiles, a
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="min-w-0 font-medium text-foreground">{row.department_name}</span>
+          <span className="min-w-0 font-medium text-foreground">{concurrentPlaceLabel(row)}</span>
           <EmployeeConcurrentStatusBadge row={row} />
         </div>
         <p className="text-sm text-muted-foreground">
-          {[row.company_name, row.position_label].filter(Boolean).join(' · ')}
+          {[concurrentKindLabel(row), row.position_label].filter(Boolean).join(' · ')}
         </p>
         {period && <p className="text-xs text-muted-foreground">{period}</p>}
         <p className="text-xs text-muted-foreground">

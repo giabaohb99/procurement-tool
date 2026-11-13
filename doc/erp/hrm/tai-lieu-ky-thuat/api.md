@@ -2,17 +2,17 @@
 
 | | |
 |---|---|
-| Bản | 0.1 |
-| Ngày | 12/11/2026 |
+| Bản | 0.2 (13/11/2026: phần Kiêm nhiệm sửa theo hai loại dòng — duoc-CR-756) · 0.1 |
+| Ngày | 13/11/2026 |
 | Người phụ trách | tai-lieu-kiem-thu (Agent 2) |
 | Trạng thái | Nháp — mục 1 dựng bằng máy cho cả phân hệ; mục 2–5 mới viết phần Kiêm nhiệm, các phần khác chưa viết |
-| CR liên quan | duoc-CR-755 |
+| CR liên quan | duoc-CR-755, duoc-CR-756 |
 
 **Tra tham số đầy đủ:** trang `/api/docs` (Swagger do FastAPI sinh từ mã — chỉ mở ở dev `https://deverp.degoholding.vn/api/docs` và local `http://localhost:8000/api/docs`; prod tắt), nhóm (tag) `employee`, `employee-work-history`, `employee-change-request`, `job-position-roles`, `leave`, `work_schedule`, `labor-contract`, `labor-contract-template`, `labor-contract-variable`, `labor_contract`, `labor_register`, `labor_usage_report`, `meeting-room`, `report`. Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, luật nghiệp vụ, ai gọi**.
 
 **Phong bì chung:** mọi đường trả `{success, message, data}`; lỗi trả `{success: false, error: {code, message, details}}`. Danh sách có phân trang trả `data = {items, total, page, page_size}`.
 
-> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 12/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
+> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 13/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
 
 Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_register`, `meeting_room`; danh mục dựng bằng `make_crud_router`: `/api/job-positions`, `/api/leave-policies`, `/api/leave-types`, `/api/holidays`, `/api/leave-block-periods`, `/api/meeting-rooms`
 
@@ -26,7 +26,7 @@ Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_regi
 | GET | `/api/benefit-audience/summary` | benefit summary | `báo cáo 22`, `employee.read` |  | tự dò: v2 `report` |
 | GET | `/api/benefit-audience/summary/export` | benefit summary export | `báo cáo 22`, `employee.export` |  | tự dò: v2 `report` |
 | GET | `/api/benefit-audience/summary/rows` | benefit summary rows | `báo cáo 22`, `employee.read` |  | tự dò: v2 `report` |
-| GET | `/api/employee-concurrents` | Người đang kiêm nhiệm ở một phòng ban (trang chi tiết phòng ban, bảng "Kiêm nhiệm tại phòng này"). | `employee.read` | chỉ dòng mà phạm vi `employee.read` của người xem phủ cặp (phòng, công ty) — `concurrent_row_scope_condition` | tự dò: v2 `hr` |
+| GET | `/api/employee-concurrents` | Người đang kiêm nhiệm ở một phòng ban hoặc một công ty (bảng "Kiêm nhiệm" của trang phòng ban và trang công ty). | `employee.read` | chỉ dòng mà phạm vi `employee.read` của người xem phủ chỗ ngồi của dòng (loại Phòng ban: phòng của dòng ở công ty chính; loại Công ty B: các phòng của người đó ở B) — `concurrent_row_visible_condition` | tự dò: v2 `hr` |
 | GET | `/api/employees` | list employees | `employee.read` | `apply_scope` | tự dò: v2 `dossier`, v2 `hr`, v2 `procurement` |
 | POST | `/api/employees` | create employee | `employee.create` |  | tự dò: v2 `dossier`, v2 `hr`, v2 `procurement` |
 | GET | `/api/employees/change-requests` | list change requests | `employee.write` |  | tự dò: v2 `hr` |
@@ -58,12 +58,12 @@ Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_regi
 | DELETE | `/api/employees/{eid}` | delete employee | `employee.delete` |  | tự dò: v2 `hr` |
 | POST | `/api/employees/{eid}/avatar` | Đổi ảnh đại diện của nhân sự. | `employee.write` |  | tự dò: v2 `hr` |
 | GET | `/api/employees/{eid}/concurrents` | Danh sách kiêm nhiệm của một nhân sự (mới nhất trước). | `employee.read` | hồ sơ cha: `employee_in_scope(read)` có nhánh kiêm nhiệm (Q1); ngoài → 404 | tự dò: v2 `hr` |
-| POST | `/api/employees/{eid}/concurrents` | Thêm một dòng kiêm nhiệm (công ty, phòng, chức vụ, ngày, quyết định, công tắc phạm vi). | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1/L2 cặp/L3 | tự dò: v2 `hr` |
-| PATCH | `/api/employees/{eid}/concurrents/{cid}` | Sửa một dòng kiêm nhiệm tại chỗ (id dòng và tệp quyết định giữ nguyên). | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1/L2 cặp/L3 | tự dò: v2 `hr` |
-| DELETE | `/api/employees/{eid}/concurrents/{cid}` | Xóa một dòng kiêm nhiệm cùng tệp quyết định đính kèm. | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1/L2 cặp/L3 | tự dò: v2 `hr` |
+| POST | `/api/employees/{eid}/concurrents` | Thêm một dòng kiêm nhiệm: `kind` bắt buộc (1 Phòng ban, 2 Công ty) kèm chức vụ, ngày, quyết định, công tắc phạm vi. | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1 / L2 theo loại / L3 | tự dò: v2 `hr` |
+| PATCH | `/api/employees/{eid}/concurrents/{cid}` | Sửa một dòng kiêm nhiệm tại chỗ (id dòng và tệp quyết định giữ nguyên). | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1 / L2 theo loại / L3 | tự dò: v2 `hr` |
+| DELETE | `/api/employees/{eid}/concurrents/{cid}` | Xóa một dòng kiêm nhiệm cùng tệp quyết định đính kèm. | `employee.write` | hồ sơ cha: `employee_in_scope(write)` theo vị trí chính + L1 / L2 theo loại / L3 | tự dò: v2 `hr` |
 | GET | `/api/employees/{eid}/contacts` | Người báo tin trong trường hợp cần thiết. | `employee.read` |  | tự dò: v2 `hr` |
 | PUT | `/api/employees/{eid}/contacts` | set employee contacts | `employee.write` |  | tự dò: v2 `hr` |
-| GET | `/api/employees/{eid}/departments` | Phòng chính + phòng kiêm nhiệm CÙNG công ty còn hiệu lực (giữ cho nơi gọi cũ). | `employee.read` |  | tự dò: v2 `hr` |
+| GET | `/api/employees/{eid}/departments` | Phòng chính + phòng kiêm nhiệm loại Phòng ban (cùng công ty chính) còn hiệu lực (giữ cho nơi gọi cũ). | `employee.read` |  | tự dò: v2 `hr` |
 | GET | `/api/employees/{eid}/families` | Thành viên hộ gia đình — phục vụ kê khai BHXH. | `employee.read` |  | tự dò: v2 `hr` |
 | PUT | `/api/employees/{eid}/families` | set employee families | `employee.write` |  | tự dò: v2 `hr` |
 | POST | `/api/employees/{eid}/id-image/{side}` | Tải ảnh CCCD mặt trước / mặt sau. | `employee.write` |  | tự dò: v2 `hr` |
@@ -269,23 +269,24 @@ Mã backend: `employee`, `leave`, `work_schedule`, `labor_contract`, `labor_regi
 
 ## 2. Dữ liệu vào / ra chính
 
-Mới viết phần **Kiêm nhiệm** (duoc-CR-755). Luật nghiệp vụ đầy đủ: [`../01-ho-so-nhan-su.md` §7.18](../01-ho-so-nhan-su.md).
+Mới viết phần **Kiêm nhiệm** (duoc-CR-755, hai loại dòng ở duoc-CR-756). Luật nghiệp vụ đầy đủ: [`../01-ho-so-nhan-su.md` §7.18](../01-ho-so-nhan-su.md).
 
 | Đường | Trường | Ý nghĩa / luật |
 |---|---|---|
-| `GET /api/employees/{eid}/concurrents` | `items[]` | Mọi dòng kiêm nhiệm của một người, mới nhất trước. Mỗi dòng: `company_id` + `company_name`, `department_id` + `department_name`, `position_id` + `position_label` (nhãn chụp), `from_date`, `to_date`, `decision_no`, `decision_date`, `note`, `counts_scope`, `work_history_id` (0 = nhập tay), `status` (số `ConcurrentStatus`: 1 Sắp tới · 2 Đang hiệu lực · 3 Đã hết, dẫn xuất từ ngày theo giờ VN) + `status_label`, `file_count` |
+| `GET /api/employees/{eid}/concurrents` | `items[]` | Mọi dòng kiêm nhiệm của một người, mới nhất trước. Mỗi dòng: `kind` (1 Phòng ban · 2 Công ty) + `kind_label`, `company_id` + `company_name` (loại Phòng ban = công ty chính lúc ghi), `department_id` + `department_name` (loại Công ty: `0` + `""`), `position_id` + `position_label` (nhãn chụp), `from_date`, `to_date`, `decision_no`, `decision_date`, `note`, `counts_scope`, `work_history_id` (0 = nhập tay), `status` (số `ConcurrentStatus`: 1 Sắp tới · 2 Đang hiệu lực · 3 Đã hết, dẫn xuất từ ngày theo giờ VN) + `status_label`, `file_count` |
 | | `can_edit` · `can_open_files` | Cờ do backend tính: `can_edit` = có `employee.write` đúng phạm vi hồ sơ và không phải hồ sơ của chính mình (L1, kể cả quản trị); `can_open_files` = đọc được nhạy cảm của hồ sơ (chính chủ luôn được). Giao diện chỉ dựa vào hai cờ này |
-| `POST /api/employees/{eid}/concurrents` | thân `ConcurrentIn` | `company_id` > 0, `department_id` > 0 bắt buộc; `position_id` (0 = không); `from_date` bắt buộc; `to_date` trống = chưa kết thúc, phải ≥ `from_date`; ngày trong 1900-2100; `decision_no` ≤ 50, `note` ≤ 500; `counts_scope` mặc định `true`. Khóa lạ → 422. Trả `{item}`, mã 201 |
-| `PATCH /api/employees/{eid}/concurrents/{cid}` | thân `ConcurrentPatch` | Gửi ô nào đổi ô đó, sửa TẠI CHỖ (id + tệp giữ nguyên). Chỉ `to_date` / `decision_date` được gửi `null` (mở lại / xóa ngày); ô khác gửi `null` → 422. Đổi cặp (phòng, công ty) thì L2 đo cả cặp cũ lẫn mới |
+| `POST /api/employees/{eid}/concurrents` | thân `ConcurrentIn` | `kind` bắt buộc (1 / 2, số khác → 422). Loại 1: `department_id` > 0, KHÔNG gửi `company_id` (máy chủ điền công ty chính; gửi khác 0 → 422). Loại 2: `company_id` > 0 khác công ty chính, KHÔNG gửi `department_id` (gửi khác 0 → 422). Còn lại: `position_id` (0 = không); `from_date` bắt buộc; `to_date` trống = chưa kết thúc, phải ≥ `from_date`; ngày trong 1900-2100; `decision_no` ≤ 50, `note` ≤ 500; `counts_scope` mặc định `true`. Khóa lạ → 422. Trả `{item}`, mã 201 |
+| `PATCH /api/employees/{eid}/concurrents/{cid}` | thân `ConcurrentPatch` | Gửi ô nào đổi ô đó, sửa TẠI CHỖ (id + tệp giữ nguyên). KHÔNG có `kind` (gửi → 422; đổi loại = xóa rồi thêm). Loại 1 gửi `company_id` / loại 2 gửi `department_id` → 400. Chỉ `to_date` / `decision_date` được gửi `null` (mở lại / xóa ngày); ô khác gửi `null` → 422. Đổi nơi kiêm nhiệm thì L2 đo cả bộ cũ lẫn mới |
 | `DELETE /api/employees/{eid}/concurrents/{cid}` | — | Xóa dòng kèm tệp QĐ. Dòng có tệp của người khác cần thêm `employee_sensitive.read` |
-| `GET /api/employee-concurrents` | `department_id` (bắt buộc, > 0) · `company_id` (tùy chọn) · `include_ended` (0/1) | Người đang kiêm nhiệm ở một phòng — chỉ dòng mà phạm vi `employee.read` của người xem phủ cặp (phòng, công ty); bỏ người đã nghỉ việc, dòng trùng phòng chính; mặc định bỏ dòng đã hết. Trả `{items, total, truncated}`, trần 200, xếp họ tên. Mỗi dòng là bản tóm tắt: `id`, `employee_id`, `code`, `full_name`, `position_label`, công ty + phòng kiêm nhiệm, `from_date`, `to_date`, `status` + `status_label`, `counts_scope`, `primary_company_*`, `primary_department_*`, `can_open` (mở được hồ sơ đầy đủ không). Không điện thoại, email, ngày sinh |
-| `PATCH /api/employees/{id}` | `end_old_company_concurrent: bool \| null` · `keep_concurrent_ids: int[]` (≤ 30) | Trường ĐIỀU KHIỂN (không phải cột), chỉ có tác dụng khi `company_id` đổi sang công ty khác 0. `null` / `true` = kết thúc dòng kiêm nhiệm ở công ty cũ (đến ngày = hôm qua) trừ id trong `keep_concurrent_ids`; `false` = giữ hết. Dòng đã hết không đụng; dòng chưa bắt đầu bị XÓA kèm tệp; dòng ở công ty khác không đụng |
-| `PATCH /api/employees/{id}` | `keep_old_department` | (có từ bao-CR-709) đổi phòng chính mà giữ phòng cũ → nay tạo dòng kiêm nhiệm (phòng cũ, công ty trước lần lưu, từ hôm nay, công tắc bật) |
-| `POST /api/employees/{eid}/work-history/{hid}/apply` | loại Kiêm nhiệm (mã 4) | Ghi / cập nhật MỘT dòng kiêm nhiệm khóa `work_history_id`; `applied_changes` là *Kiêm nhiệm — thêm phòng "X"* / *cập nhật phòng "X"* / *kết thúc phòng "X" (đến dd/mm/yyyy)* |
-| `GET /api/org-chart` | `concurrents[]` | Dòng kiêm nhiệm ĐANG HIỆU LỰC trong phạm vi người xem, cùng hình dạng dòng của `/api/employee-concurrents` |
-| `GET /api/auth/me` | `kiem_nhiem[]` · `concurrents[]` | `kiem_nhiem` = câu *Phòng X — Công ty B (Chức vụ)* của mọi dòng đang hiệu lực (kể cả tắt công tắc); `concurrents` có cấu trúc (`department_id`, `company_id`, tên, `position_label`, `counts_scope`) cho popup phạm vi |
-| `GET /api/employees/{eid}/departments` | `extra_department_ids` | Giữ cho tương thích: = phòng kiêm nhiệm đang hiệu lực CÙNG công ty chính. Đường `PUT` cùng tên ĐÃ BỎ |
-| MCP `employee_lookup` | `concurrent_roles[]` | Câu *Phòng X — Công ty B (Chức vụ)* của các dòng đang hiệu lực; rỗng = không kiêm nhiệm. Bộ lọc người không đổi |
+| `GET /api/employee-concurrents` | `department_id` · `company_id` (ít nhất một, > 0) · `kind` (1 / 2, tùy chọn) · `include_ended` (0/1) | Người đang kiêm nhiệm ở một phòng (trang phòng ban gọi `department_id` + `kind=1`) hoặc một công ty (trang công ty gọi `company_id` + `kind=2`). Chỉ dòng mà phạm vi `employee.read` của người xem phủ chỗ ngồi của dòng; bỏ người đã nghỉ việc; mặc định bỏ dòng đã hết. Trả `{items, total, truncated}`, trần 200, xếp họ tên. Mỗi dòng là bản tóm tắt: `id`, `employee_id`, `code`, `full_name`, `kind` + `kind_label`, `position_label`, công ty + phòng kiêm nhiệm, `from_date`, `to_date`, `status` + `status_label`, `counts_scope`, `primary_company_*`, `primary_department_*`, `can_open` (mở được hồ sơ đầy đủ không). Không điện thoại, email, ngày sinh |
+| `GET /api/employees` | `items[].concurrent_roles[]` | Cột **Kiêm nhiệm** của danh sách: `[{kind, text}]` các dòng ĐANG HIỆU LỰC (kể cả tắt công tắc), `text` = *Phòng X (Chức vụ)* / *Công ty B (Chức vụ)*; loại Phòng ban trước rồi loại Công ty, mỗi nhóm theo tên. Nạp gom theo id của trang (số truy vấn cố định). Chỉ để HIỂN THỊ: lọc, tổng, phạm vi, xếp không đổi; không xếp được theo cột này |
+| `PATCH /api/employees/{id}` | `keep_old_company_concurrent: bool \| null` | Trường ĐIỀU KHIỂN (không phải cột), thay `keep_concurrent_ids` của CR-755 (đã bỏ). Khi `company_id` đổi A → C (khác 0): dòng loại 1 ở A và dòng loại 2 trùng C luôn KẾT THÚC (đến ngày = hôm qua; đã hết không đụng; chưa bắt đầu bị XÓA kèm tệp); dòng loại 2 ở công ty khác không đụng. `true` = thêm MỘT dòng loại 2 (A) từ hôm nay qua L1 + L2 loại Công ty (403 nếu thiếu quyền ghi toàn công ty A, cả lượt không đổi); đã có dòng loại 2 ở A còn hiệu lực / sắp tới thì bỏ qua. `end_old_company_concurrent` còn trong schema làm cờ nội bộ, giao diện không gửi |
+| `PATCH /api/employees/{id}` | `keep_old_department` | (có từ bao-CR-709) Pháp nhân không đổi: đổi phòng chính mà giữ phòng cũ → tạo dòng loại 1 (phòng cũ, từ hôm nay, công tắc bật). Pháp nhân đổi kèm đổi phòng: `true` gộp với `keep_old_company_concurrent` thành MỘT dòng loại 2 (công ty cũ) |
+| `POST /api/employees/{eid}/work-history/{hid}/apply` | loại Kiêm nhiệm (mã 4) | Ghi / cập nhật MỘT dòng kiêm nhiệm khóa `work_history_id`: công ty của dòng quá trình công tác trùng công ty chính → loại 1 (cần phòng), khác → loại 2 (bỏ phòng); Áp lại sau khi đổi công ty thì đổi loại tại chỗ. `applied_changes` là *Kiêm nhiệm — thêm phòng "X"* / *thêm công ty "B"* / *cập nhật …* / *kết thúc … (đến dd/mm/yyyy)* |
+| `GET /api/org-chart` | `concurrents[]` | Dòng kiêm nhiệm ĐANG HIỆU LỰC trong phạm vi người xem, cùng hình dạng dòng của `/api/employee-concurrents` (có `kind`, `kind_label`) |
+| `GET /api/auth/me` | `kiem_nhiem[]` · `concurrents[]` | `kiem_nhiem` = câu *Phòng X (Chức vụ)* / *Công ty B (Chức vụ)* của mọi dòng đang hiệu lực (kể cả tắt công tắc); `concurrents` có cấu trúc (`kind`, `kind_label`, `department_id`, `company_id`, tên, `position_label`, `counts_scope`) cho popup phạm vi |
+| `GET /api/employees/{eid}/departments` | `extra_department_ids` | Giữ cho tương thích: = phòng của dòng loại 1 đang hiệu lực. Đường `PUT` cùng tên ĐÃ BỎ |
+| MCP `employee_lookup` | `concurrent_roles[]` | Câu *Phòng X (Chức vụ)* / *Công ty B (Chức vụ)* của các dòng đang hiệu lực; rỗng = không kiêm nhiệm. Bộ lọc người không đổi |
 
 ## 3. Lỗi riêng của phân hệ
 
@@ -293,28 +294,36 @@ Mới viết phần **Kiêm nhiệm**.
 
 | Mã HTTP | Khi nào | Câu báo |
 |---|---|---|
-| 400 | Phòng không phục vụ công ty đã chọn (L3) | *Phòng ban "X" không phục vụ công ty đã chọn* |
-| 400 | Phòng trùng phòng chính | *Trùng phòng ban chính — phòng này đã là phòng chính của nhân sự* |
+| 400 | Hồ sơ chưa gắn pháp nhân chính (cả hai loại) | *Hồ sơ chưa gắn pháp nhân chính — gắn pháp nhân chính trước khi khai kiêm nhiệm* |
+| 400 | Loại 1: phòng không phục vụ công ty hiện tại (L3) | *Phòng ban "X" không phục vụ công ty hiện tại* |
+| 400 | Loại 1: phòng trùng phòng chính | *Trùng phòng ban chính — phòng này đã là phòng chính của nhân sự* |
+| 400 | Loại 2: công ty trùng công ty chính | *Công ty kiêm nhiệm trùng công ty chính* |
+| 400 | Công ty / phòng không có thật | *Công ty không tồn tại* · *Phòng ban không tồn tại* |
+| 400 | PATCH gửi ô của loại kia | *Dòng loại Phòng ban không chọn công ty — công ty là công ty chính của hồ sơ* · *Dòng loại Công ty không chọn phòng ban* |
 | 400 | Quá 30 dòng / người | *Hồ sơ này đã có N dòng kiêm nhiệm — tối đa 30 dòng/người* |
-| 400 | Nhập Excel đổi pháp nhân còn dòng chưa bắt đầu ở công ty cũ (lỗi dòng) | *Còn kiêm nhiệm chưa bắt đầu ở công ty cũ — sửa ở tab Kiêm nhiệm trước* |
+| 400 | Nhập Excel đổi pháp nhân còn dòng chưa bắt đầu sẽ phải kết thúc (lỗi dòng) | *Còn kiêm nhiệm chưa bắt đầu ở công ty cũ hoặc công ty mới — sửa ở tab Kiêm nhiệm trước* |
 | 403 | Tự sửa phòng / kiêm nhiệm của chính mình (L1, kể cả quản trị) | *Không tự đổi phòng ban của chính mình được — …* |
-| 403 | Cặp đích ngoài phạm vi ghi của người thao tác (L2) | *Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: "X" (Công ty B). …* |
+| 403 | Loại 1: phòng đích ngoài phạm vi ghi của người thao tác (L2) | *Không gán được kiêm nhiệm ở phòng ban mà chính bạn không có phạm vi ghi trên đó: "X" (Công ty A). …* |
+| 403 | Loại 2 (kể cả **Vẫn kiêm nhiệm ở công ty cũ**): người thao tác không có quyền ghi toàn công ty B (L2), kể cả khi grant bị giới hạn "Chỉ trong công ty" / loại trừ công ty B | *Không gán được kiêm nhiệm ở công ty mà bạn không có phạm vi ghi toàn công ty: "Công ty B". Nhờ người phụ trách công ty đó thao tác.* |
 | 403 | Xóa / gắn / gỡ tệp QĐ của người khác khi thiếu `employee_sensitive.read` | *… cần quyền xem nhạy cảm (employee_sensitive.read) …* |
 | 403 | Gắn / gỡ tệp QĐ kiêm nhiệm của chính mình | *Không tự gắn/gỡ tệp quyết định kiêm nhiệm của chính mình được* |
 | 404 | Hồ sơ ngoài phạm vi, hoặc `cid` không thuộc `eid` | *Không tìm thấy dòng kiêm nhiệm* |
-| 409 | Hai giai đoạn của cùng (phòng, công ty) chồng nhau | *Giai đoạn kiêm nhiệm chồng với một dòng khác của cùng phòng ban và công ty — sửa dòng cũ hoặc đổi ngày.* |
-| 422 | `to_date` < `from_date`; gửi `null` cho ô không được null; khóa lạ | *Đến ngày phải sau hoặc bằng từ ngày* |
+| 409 | Hai giai đoạn cùng phòng (loại 1) / cùng công ty (loại 2) chồng nhau | *Giai đoạn kiêm nhiệm chồng với một dòng khác của cùng phòng ban — …* / *… cùng công ty — sửa dòng cũ hoặc đổi ngày.* |
+| 422 | `kind` lạ hoặc gửi sai ô theo loại; PATCH gửi `kind`; `to_date` < `from_date`; gửi `null` cho ô không được null; khóa lạ | *Dòng loại Phòng ban phải chọn phòng ban* · *Dòng loại Công ty phải chọn công ty* · *Đến ngày phải sau hoặc bằng từ ngày* |
+| 422 | `GET /api/employee-concurrents` thiếu cả `department_id` lẫn `company_id` | *Cần truyền phòng ban (department_id) hoặc công ty (company_id) cần xem* |
 
 ## 4. Bộ lọc danh sách
 
 | Tham số | Kiểu | Ghi chú |
 |---|---|---|
-| `department_id` (`/api/employee-concurrents`) | int > 0, bắt buộc | Thiếu / ≤ 0 → 422 |
-| `company_id` (`/api/employee-concurrents`) | int > 0, tùy chọn | Chỉ lấy kiêm nhiệm ở công ty này (phòng dùng chung) |
+| `department_id` (`/api/employee-concurrents`) | int > 0, tùy chọn | Phòng cần xem (loại 1); thiếu cả hai id → 422 |
+| `company_id` (`/api/employee-concurrents`) | int > 0, tùy chọn | Công ty cần xem (trang công ty, loại 2), hoặc thu hẹp phòng dùng chung |
+| `kind` (`/api/employee-concurrents`) | 1 / 2, tùy chọn | 1 = chỉ dòng loại Phòng ban, 2 = chỉ loại Công ty; bỏ trống = cả hai |
 | `include_ended` (`/api/employee-concurrents`) | 0 / 1 | 1 = lấy cả dòng đã hết |
 
 ## 5. Thay đổi gần đây
 
 | Ngày | CR | Đổi gì (thêm / sửa / bỏ đường) |
 |---|---|---|
+| 13/11/2026 | duoc-CR-756 | Kiêm nhiệm hai loại dòng: `ConcurrentIn` thêm `kind` bắt buộc (ô theo loại), `ConcurrentPatch` không đổi loại; `ConcurrentOut`, `/api/org-chart`, `/api/auth/me` thêm `kind`, `kind_label`; `GET /api/employee-concurrents` thêm `company_id` (ngang hàng `department_id`, cần ít nhất một) và `kind`; `GET /api/employees` thêm `concurrent_roles: [{kind, text}]`; `PATCH /api/employees/{id}` bỏ `keep_concurrent_ids`, thêm `keep_old_company_concurrent`. Hồ sơ quyền bỏ `concurrent_pairs`, thêm `concurrent_companies` |
 | 12/11/2026 | duoc-CR-755 | Thêm `GET/POST /api/employees/{eid}/concurrents`, `PATCH/DELETE /api/employees/{eid}/concurrents/{cid}`, `GET /api/employee-concurrents`; `PATCH /api/employees/{id}` thêm `end_old_company_concurrent`, `keep_concurrent_ids`; `/api/org-chart` và `/api/auth/me` thêm `concurrents`; MCP `employee_lookup` thêm `concurrent_roles`. Bỏ `PUT /api/employees/{eid}/departments` |

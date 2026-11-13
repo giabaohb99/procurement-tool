@@ -21,11 +21,14 @@ interface EmployeeTabConcurrentProps {
 type EditorState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; row: EmployeeConcurrent }
 
 /**
- * Tab **Kiêm nhiệm** của hồ sơ nhân sự (duoc-CR-755) — thay thẻ chọn nhiều phòng cũ ở tab Chung.
+ * Tab **Kiêm nhiệm** của hồ sơ nhân sự (duoc-CR-755; hai loại dòng ở duoc-CR-756) — thay thẻ chọn nhiều phòng cũ ở tab
+ * Chung.
  *
- * Mỗi dòng là một (phòng, công ty) người này phụ trách thêm, có ngày, quyết định và công tắc phạm vi quyền. Được sửa /
+ * Mỗi dòng là MỘT phòng ban của công ty hiện tại (loại Phòng ban) hoặc MỘT công ty khác (loại Công ty) người này phụ
+ * trách thêm, có ngày, quyết định và công tắc phạm vi quyền. Hồ sơ chưa gắn pháp nhân chính thì backend chặn 400 cả hai
+ * loại — nút Thêm tắt kèm câu giải thích, không để người dùng điền hết hộp rồi mới ăn lỗi. Được sửa /
  * được mở tệp lấy từ cờ BACKEND (`can_edit`, `can_open_files`) — không tự ghép `can()`: `can_edit` đã gồm L1 (không ai
- * tự sửa kiêm nhiệm của chính mình, kể cả quản trị). Chốt cuối vẫn ở backend (L2 theo cặp, chồng giai đoạn, trần 30 dòng).
+ * tự sửa kiêm nhiệm của chính mình, kể cả quản trị). Chốt cuối vẫn ở backend (L2 theo loại, chồng giai đoạn, trần 30 dòng).
  */
 export function EmployeeTabConcurrent({ employee }: EmployeeTabConcurrentProps) {
   const { user } = useAuth()
@@ -39,6 +42,7 @@ export function EmployeeTabConcurrent({ employee }: EmployeeTabConcurrentProps) 
   const canEdit = data?.can_edit ?? false
   const canOpenFiles = data?.can_open_files ?? false
   const isOwnProfile = Boolean(user?.employee_id) && user?.employee_id === employee.id
+  const hasPrimaryCompany = employee.company_id > 0
 
   const openFiles = useCallback((row: EmployeeConcurrent) => setFilesRow(row), [])
   const { run: runDelete, ids: deletingIds } = deleting
@@ -56,7 +60,12 @@ export function EmployeeTabConcurrent({ employee }: EmployeeTabConcurrentProps) 
 
   const addButton = canEdit ? (
     //  `type="button"`: tab nằm TRONG `<form>` của trang hồ sơ — thiếu là bấm Thêm thành lưu cả hồ sơ.
-    <Button type="button" onClick={() => setEditor({ mode: 'create' })}>
+    <Button
+      type="button"
+      disabled={!hasPrimaryCompany}
+      title={hasPrimaryCompany ? undefined : 'Gắn pháp nhân chính cho hồ sơ trước'}
+      onClick={() => setEditor({ mode: 'create' })}
+    >
       <Plus className="size-4" />
       Thêm kiêm nhiệm
     </Button>
@@ -67,6 +76,12 @@ export function EmployeeTabConcurrent({ employee }: EmployeeTabConcurrentProps) 
       {!isLoading && !isError && !canEdit && isOwnProfile && (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Đây là hồ sơ của chính bạn nên chỉ xem được — kiêm nhiệm của bạn do người khác cập nhật.
+        </p>
+      )}
+
+      {!isLoading && !isError && canEdit && !hasPrimaryCompany && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Hồ sơ chưa gắn pháp nhân chính nên chưa thêm được kiêm nhiệm. Chọn Pháp nhân ở tab Chung rồi Lưu trước.
         </p>
       )}
 

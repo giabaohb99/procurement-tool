@@ -39,6 +39,7 @@ import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identi
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
 import { ActiveStatusSelect } from '../components/active-status-select'
+import { CompanyConcurrentMembersTable } from '../components/company-concurrent-members-table'
 import { LookupSelect } from '../components/lookup-select'
 import {
   useCompanies,
@@ -446,7 +447,9 @@ export function CompanyDetailPage() {
         </form>
       </Form>
 
-      <div className="mt-5">
+      <div className="mt-5 space-y-5">
+        {/*  duoc-CR-756: người công ty khác kiêm nhiệm cả công ty này (dòng loại Công ty) — tự ẩn khi không có ai. */}
+        <CompanyConcurrentMembersTable companyId={companyId} />
         <AuditTimeline entity="company" entityId={companyId} />
       </div>
     </PageContainer>

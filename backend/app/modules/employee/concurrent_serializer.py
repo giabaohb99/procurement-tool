@@ -3,7 +3,8 @@ MỘT truy vấn (không N+1). Trạng thái dẫn xuất tính từ ngày + `vn
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.hr_concurrent_codes import CONCURRENT_STATUS_LABELS, get_concurrent_status
+from app.core.hr_concurrent_codes import (CONCURRENT_KIND_LABELS, CONCURRENT_STATUS_LABELS, ConcurrentKind,
+                                          get_concurrent_status)
 from app.core.vn_time import vn_today
 
 from .concurrent_model import EmployeeConcurrent
@@ -38,8 +39,10 @@ def serialize_list(db: Session, rows: list[EmployeeConcurrent]) -> list[dict]:
     out: list[dict] = []
     for r in rows:
         status = get_concurrent_status(r.from_date, r.to_date, today)
+        kind = ConcurrentKind(r.kind or ConcurrentKind.DEPARTMENT)
         out.append(ConcurrentOut(
-            id=r.id, employee_id=r.employee_id, company_id=r.company_id,
+            id=r.id, employee_id=r.employee_id, kind=int(kind), kind_label=CONCURRENT_KIND_LABELS[kind],
+            company_id=r.company_id,
             company_name=company_names.get(r.company_id, ""), department_id=r.department_id,
             department_name=department_names.get(r.department_id, ""), position_id=r.position_id or 0,
             position_label=r.position_label or "", from_date=r.from_date, to_date=r.to_date,

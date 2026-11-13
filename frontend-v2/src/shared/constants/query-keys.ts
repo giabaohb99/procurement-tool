@@ -220,6 +220,13 @@ export const queryKeys = {
     /** Tệp QĐ của MỘT dòng kiêm nhiệm (entity `employee_concurrent`) — tách khỏi `workHistoryFiles` vì id hai bảng trùng nhau. */
     concurrentFiles: (concurrentId: number) => ['hr', 'concurrents', concurrentId, 'files'] as const,
     /**
+     * Người KIÊM NHIỆM ở một phòng (`kind=1`, trang phòng ban) hoặc một công ty (`kind=2`, trang công ty) —
+     * `GET /api/employee-concurrents` (duoc-CR-755, tham số theo loại ở duoc-CR-756). Dưới `hr` nên lưu / xóa dòng ở tab
+     * hồ sơ, đổi phòng, đổi pháp nhân (đều nạp lại `hr.all`) quét luôn hai bảng này.
+     */
+    concurrentMembers: (params: { department_id?: number; company_id?: number; kind?: number }) =>
+      ['hr', 'concurrent-members', params] as const,
+    /**
      * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab "Quá trình
      * công tác". Nằm DƯỚI khóa hồ sơ nên `invalidateQueries({ queryKey: hr.all })`
      * quét luôn.

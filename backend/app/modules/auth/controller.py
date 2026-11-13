@@ -85,9 +85,10 @@ def _me_payload(db: Session, user) -> dict:
     from app.modules.vehicle_booking.model import Driver
     is_driver = db.query(Driver.id).filter(Driver.user_id == user.id).first() is not None
 
-    #  Kiêm nhiệm (duoc-CR-755) = các dòng ĐANG HIỆU LỰC của `tab_employee_concurrent` (cùng hoặc khác công ty),
-    #  hiện dưới Vị trí / Chức vụ ở Trang cá nhân. `kiem_nhiem` là câu *Phòng X — Công ty B (Chức vụ)*;
-    #  `concurrents` có cấu trúc cho popup phạm vi (chỉ dòng `counts_scope` mới tính vào phạm vi quyền).
+    #  Kiêm nhiệm (duoc-CR-755, hai loại dòng ở duoc-CR-756) = các dòng ĐANG HIỆU LỰC của `tab_employee_concurrent`,
+    #  hiện dưới Vị trí / Chức vụ ở Trang cá nhân. `kiem_nhiem` là câu *Phòng X (Chức vụ)* (loại Phòng ban, phòng của
+    #  công ty hiện tại) hoặc *Công ty B (Chức vụ)* (loại Công ty); `concurrents` có cấu trúc (`kind`, `kind_label`)
+    #  cho popup phạm vi (chỉ dòng `counts_scope` mới tính vào phạm vi quyền).
     concurrents: list[dict] = []
     if emp:
         from app.modules.employee.concurrent_members_service import effective_roles_of

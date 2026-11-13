@@ -691,7 +691,8 @@ def test_a4_khuon_dung_nam_ngay_trong_cung_mot_tep(world):
     a1 = world.grant("a1", "employee", scope="company", actions=("read", "write"))
     with pytest.raises(HTTPException) as e:
         cc.create_concurrent(
-            world.emp["b1"], ConcurrentIn(company_id=world.co["B"], department_id=world.dept["B.hc"],
+            #  duoc-CR-756: dòng loại Phòng ban chỉ gửi phòng, máy chủ tự điền công ty chính của hồ sơ.
+            world.emp["b1"], ConcurrentIn(kind=1, department_id=world.dept["B.hc"],
                                           from_date=date(2026, 1, 1)),
             world.db, a1.user)
     assert e.value.status_code == 404

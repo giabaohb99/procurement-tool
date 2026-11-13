@@ -1,11 +1,12 @@
-"""NGƯỜI KIÊM NHIỆM Ở MỘT PHÒNG — dữ liệu chung cho bảng "Kiêm nhiệm" của trang phòng ban và sơ đồ tổ chức
-(duoc-CR-755, giai đoạn 05).
+"""NGƯỜI KIÊM NHIỆM Ở MỘT PHÒNG / MỘT CÔNG TY — dữ liệu chung cho bảng "Kiêm nhiệm" của trang phòng ban, trang công
+ty và sơ đồ tổ chức (duoc-CR-755 giai đoạn 05; hai loại dòng ở duoc-CR-756).
 
-Ai thấy dòng nào = phạm vi `employee.read` của người XEM áp lên cặp (phòng, công ty) của dòng
-(`scoping.concurrent_row_scope_condition`). Không có khóa quyền mới, và KHÔNG đổi phạm vi đọc hồ sơ:
-đây chỉ là dòng tóm tắt, mở hồ sơ đầy đủ là việc của `include_concurrent` (Q1) ở các đường đọc hồ sơ.
+Ai thấy dòng nào = phạm vi `employee.read` của người XEM áp lên "chỗ ngồi" của dòng
+(`scoping.concurrent_row_visible_condition`): dòng loại Phòng ban ngồi ở (phòng dòng, công ty chính), dòng loại Công
+ty B ngồi ở (mỗi phòng của người đó, B). Không có khóa quyền mới, và KHÔNG đổi phạm vi đọc hồ sơ: đây chỉ là dòng
+tóm tắt, mở hồ sơ đầy đủ là việc của `include_concurrent` (Q1) ở các đường đọc hồ sơ.
 
-Danh sách trắng trường (chống lộ liên lạc của người công ty khác): mã, họ tên, chức vụ kiêm nhiệm, ngày,
+Danh sách trắng trường (chống lộ liên lạc của người công ty khác): mã, họ tên, loại, chức vụ kiêm nhiệm, ngày,
 công ty + phòng kiêm nhiệm, công ty + phòng CHÍNH (chỉ tên), công tắc, cờ `can_open`. KHÔNG điện thoại,
 email, ngày sinh. Số truy vấn cố định (một truy vấn chính, một truy vấn `can_open`, hai truy vấn tên).
 """
@@ -14,8 +15,9 @@ from datetime import date
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from app.core.hr_concurrent_codes import CONCURRENT_STATUS_LABELS, get_concurrent_status
-from app.core.scoping import apply_scope, concurrent_row_scope_condition
+from app.core.hr_concurrent_codes import (CONCURRENT_KIND_LABELS, CONCURRENT_STATUS_LABELS, ConcurrentKind,
+                                          get_concurrent_status)
+from app.core.scoping import apply_scope, concurrent_row_visible_condition
 from app.core.vn_time import vn_today
 
 from .concurrent_model import EmployeeConcurrent
@@ -34,14 +36,17 @@ _RESIGNED = "resigned"
 
 
 def list_visible_members(db: Session, user, profile: dict, *, department_id: int | None = None,
-                         company_id: int | None = None, include_ended: bool = False,
+                         company_id: int | None = None, kind: int | None = None, include_ended: bool = False,
                          effective_only: bool = False, limit: int = MAX_ROWS,
                          today: date | None = None) -> list[dict]:
-    """Dòng kiêm nhiệm của nhân sự ĐANG LÀM mà người xem có phạm vi phủ cặp (phòng, công ty) của dòng.
+    """Dòng kiêm nhiệm của nhân sự ĐANG LÀM mà người xem có phạm vi phủ "chỗ ngồi" của dòng.
 
+    - lọc: `department_id` (dòng loại Phòng ban của phòng đó), `company_id` (dòng ở công ty đó — loại Phòng ban của
+      người làm chính ở đó lẫn loại Công ty B), `kind` (1 | 2); không truyền thì không lọc chiều đó;
     - mặc định: dòng đang hiệu lực + sắp tới; `include_ended` thêm dòng đã hết; `effective_only` chỉ dòng
       đang hiệu lực (sơ đồ tổ chức);
-    - bỏ dòng TRÙNG cặp (phòng chính, công ty chính) của chính người đó — không vẽ / đếm hai lần;
+    - dòng loại Phòng ban TRÙNG cặp (phòng chính, công ty chính) của chính người đó thì bỏ — không vẽ / đếm hai lần
+      (loại Công ty không bao giờ trùng);
     - xếp theo họ tên rồi id dòng; cắt ở `limit`.
     """
     today = today or vn_today()
@@ -49,17 +54,20 @@ def list_visible_members(db: Session, user, profile: dict, *, department_id: int
     q = (db.query(C, Employee.code, Employee.full_name, Employee.company_id, Employee.department_id)
          .join(Employee, Employee.id == C.employee_id)
          .filter(Employee.is_active.is_(True), Employee.status != _RESIGNED,
-                 ~and_(C.department_id == Employee.department_id, C.company_id == Employee.company_id)))
+                 or_(C.kind == ConcurrentKind.COMPANY,
+                     ~and_(C.department_id == Employee.department_id, C.company_id == Employee.company_id))))
     if department_id is not None:
         q = q.filter(C.department_id == department_id)
     if company_id is not None:
         q = q.filter(C.company_id == company_id)
+    if kind is not None:
+        q = q.filter(C.kind == kind)
     if effective_only:
         q = q.filter(effective_filter(today))
     elif not include_ended:
         q = q.filter(or_(C.to_date.is_(None), C.to_date >= today))
 
-    visible = concurrent_row_scope_condition(user, profile, "read")
+    visible = concurrent_row_visible_condition(C, Employee.department_id, user, profile, "read")
     if visible is not None:   # None = người xem thấy tất cả
         q = q.filter(visible)
 
@@ -86,11 +94,14 @@ def _serialize(db: Session, user, profile: dict, rows: list, today: date) -> lis
     out: list[dict] = []
     for c, code, full_name, primary_company_id, primary_department_id in rows:
         status = get_concurrent_status(c.from_date, c.to_date, today)
+        row_kind = ConcurrentKind(c.kind or ConcurrentKind.DEPARTMENT)
         out.append({
             "id": c.id,
             "employee_id": c.employee_id,
             "code": code or "",
             "full_name": full_name or "",
+            "kind": int(row_kind),
+            "kind_label": CONCURRENT_KIND_LABELS[row_kind],
             "position_label": c.position_label or "",
             "company_id": c.company_id,
             "company_name": company_names.get(c.company_id, ""),
@@ -110,11 +121,15 @@ def _serialize(db: Session, user, profile: dict, rows: list, today: date) -> lis
     return out
 
 
-def describe_concurrent(department_name: str, company_name: str, position_label: str) -> str:
-    """Một dòng kiêm nhiệm thành câu: *Phòng X — Công ty B (Chức vụ)*. Thiếu công ty / chức vụ thì bỏ phần đó."""
-    text = department_name or "Phòng không rõ"
-    if company_name:
-        text += f" — {company_name}"
+def describe_concurrent(kind: int, department_name: str, company_name: str, position_label: str) -> str:
+    """Một dòng kiêm nhiệm thành câu: loại Phòng ban *Phòng X (Chức vụ)*, loại Công ty *Công ty B (Chức vụ)*
+    (duoc-CR-756). Thiếu tên / chức vụ thì bỏ phần đó."""
+    if int(kind or ConcurrentKind.DEPARTMENT) == ConcurrentKind.COMPANY:
+        #  Tên pháp nhân thường đã mở đầu bằng "Công ty ..." — không thêm lần nữa.
+        text = (company_name if company_name.lower().startswith("công ty") else f"Công ty {company_name}") \
+            if company_name else "Công ty không rõ"
+    else:
+        text = department_name or "Phòng không rõ"
     if position_label:
         text += f" ({position_label})"
     return text
@@ -122,8 +137,8 @@ def describe_concurrent(department_name: str, company_name: str, position_label:
 
 def effective_roles_of(db: Session, employee_ids: set[int] | list[int], today: date | None = None
                        ) -> dict[int, list[dict]]:
-    """Dòng kiêm nhiệm ĐANG HIỆU LỰC của nhiều người (kể cả dòng tắt công tắc) — mỗi dòng đã có tên phòng, tên công
-    ty và câu mô tả. Hai truy vấn cố định (dòng + tên), không N+1.
+    """Dòng kiêm nhiệm ĐANG HIỆU LỰC của nhiều người (kể cả dòng tắt công tắc) — mỗi dòng đã có loại, tên phòng,
+    tên công ty và câu mô tả. Hai truy vấn cố định (dòng + tên), không N+1.
 
     Dùng cho `/api/auth/me` (người xem là chính chủ) và trợ lý AI (người đã nằm trong kết quả được phép xem) —
     cả hai chỉ gọi với id mà bên gọi ĐÃ xác nhận được đọc, hàm này không xét phạm vi.
@@ -144,12 +159,15 @@ def effective_roles_of(db: Session, employee_ids: set[int] | list[int], today: d
     for r in rows:
         dept_name = dept_names.get(r.department_id, "")
         company_name = company_names.get(r.company_id, "")
+        row_kind = ConcurrentKind(r.kind or ConcurrentKind.DEPARTMENT)
         out.setdefault(r.employee_id, []).append({
+            "kind": int(row_kind), "kind_label": CONCURRENT_KIND_LABELS[row_kind],
             "department_id": r.department_id, "company_id": r.company_id,
             "department_name": dept_name, "company_name": company_name,
             "position_label": r.position_label or "", "counts_scope": bool(r.counts_scope),
-            "text": describe_concurrent(dept_name, company_name, r.position_label or ""),
+            "text": describe_concurrent(row_kind, dept_name, company_name, r.position_label or ""),
         })
+    #  Phòng ban trước (theo tên phòng), rồi Công ty (theo tên công ty).
     for items in out.values():
-        items.sort(key=lambda x: (x["department_name"], x["company_name"], x["department_id"]))
+        items.sort(key=lambda x: (x["kind"], x["department_name"], x["company_name"], x["department_id"]))
     return out

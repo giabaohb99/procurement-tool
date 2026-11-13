@@ -4,6 +4,7 @@ import type { DataTableColumn } from '@/shared/data-table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { formatDateTime } from '@/shared/utils/format-date'
+import { EmployeeConcurrentRolesCell } from '../components/employee-concurrent-roles'
 import { employeeInitials, type Employee } from '../types/employee'
 
 /**
@@ -70,6 +71,15 @@ export const EMPLOYEE_COLUMNS: DataTableColumn<Employee>[] = [
   //  truy vấn là đủ. Bộ lọc thì ngược lại — lọc theo KHÓA, xem
   //  `hr-filter-fields.ts`.
   { key: 'position', header: 'Chức vụ', width: 180, sortable: true, cell: (e) => e.position || '—' },
+  {
+    //  duoc-CR-756 — cột "Kiêm nhiệm": các dòng CÒN HIỆU LỰC của người đó, câu dựng sẵn ở backend. Chỉ hiển thị:
+    //  lọc công ty / phòng ban vẫn chỉ ra người làm CHÍNH ở đó. ⚠️ KHÔNG `sortable` — đa giá trị, máy chủ không
+    //  nhận khóa xếp (luật mục 8 của `chung-dat-ten-va-quy-uoc.md`). Chỉ MỤC ĐẦU + huy hiệu "+N", đủ danh sách ở tooltip; ô trống để TRỐNG, không gạch ngang.
+    key: 'concurrent_roles',
+    header: 'Kiêm nhiệm',
+    width: 260,
+    cell: (e) => <EmployeeConcurrentRolesCell roles={e.concurrent_roles} />,
+  },
   {
     //  Ba cột của HRM Đợt 2. `compactHidden` không có ở `DataTable` (đó là
     //  của `LinesTable`), nên để mặc định HIỆN — người dùng ẩn bớt bằng menu

@@ -1,6 +1,10 @@
 import { formatDate } from '@/shared/utils/format-date'
 import type { Employee } from '../types/employee'
-import type { EmployeeConcurrent } from '../types/employee-concurrent'
+import {
+  CONCURRENT_KIND_COMPANY,
+  CONCURRENT_KIND_DEPARTMENT,
+  type EmployeeConcurrent,
+} from '../types/employee-concurrent'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 
 /**
@@ -66,21 +70,41 @@ function describeFieldChange(fieldLabel: string, oldLabel: string | null | undef
 }
 
 /**
- * `phòng "Kế toán" — công ty "DEGO B", từ 01/11/2026 đến 30/11/2026` — câu mô tả dòng kiêm nhiệm sẽ ghi.
- * Thiếu nhãn thì bỏ phần đó; chưa có ngày kết thúc thì nói "chưa kết thúc".
+ * Câu mô tả dòng kiêm nhiệm sẽ ghi (duoc-CR-756): loại Phòng ban `phòng "Kế toán", từ 01/11/2026 đến 30/11/2026` (phòng
+ * của công ty hiện tại nên không nhắc công ty); loại Công ty `công ty "DEGO B", từ ...` (bỏ phòng của dòng quá trình
+ * công tác). Thiếu nhãn thì nói chung chung; chưa có ngày kết thúc thì nói "chưa kết thúc".
  */
-function describeConcurrentTarget(values: ApplyPromptValues, companyLabel: string | null | undefined): string {
-  const dept = values.department_label?.trim() ? `phòng "${values.department_label}"` : 'phòng này'
-  const company = companyLabel?.trim() ? ` — công ty "${companyLabel}"` : ''
+function describeConcurrentTarget(
+  values: ApplyPromptValues,
+  kind: number,
+  companyLabel: string | null | undefined,
+): string {
+  const place =
+    kind === CONCURRENT_KIND_COMPANY
+      ? companyLabel?.trim()
+        ? `công ty "${companyLabel}"`
+        : 'công ty này'
+      : values.department_label?.trim()
+        ? `phòng "${values.department_label}"`
+        : 'phòng này'
   const to = values.to_date && isValidDate(values.to_date) ? `đến ${formatDate(values.to_date)}` : 'chưa kết thúc'
-  return `${dept}${company}, từ ${formatDate(values.from_date)} ${to}`
+  return `${place}, từ ${formatDate(values.from_date)} ${to}`
 }
 
-/** Dòng kiêm nhiệm sẵn có khác gì giá trị sắp áp — so đúng các ô backend chép từ quá trình công tác. */
-function concurrentDiffers(row: EmployeeConcurrent, values: ApplyPromptValues, companyId: number): boolean {
+/**
+ * Dòng kiêm nhiệm sẵn có khác gì giá trị sắp áp — so đúng các ô backend chép từ quá trình công tác. Áp lại mà đổi công
+ * ty có thể ĐỔI LOẠI dòng tại chỗ (cùng id) nên so cả loại; loại Công ty không có phòng nên không so phòng.
+ */
+function concurrentDiffers(
+  row: EmployeeConcurrent,
+  values: ApplyPromptValues,
+  kind: number,
+  companyId: number,
+): boolean {
   return (
+    row.kind !== kind ||
     row.company_id !== companyId ||
-    row.department_id !== values.department_id ||
+    (kind === CONCURRENT_KIND_DEPARTMENT && row.department_id !== values.department_id) ||
     row.position_id !== values.position_id ||
     (row.from_date ?? '') !== values.from_date ||
     (row.to_date ?? '') !== values.to_date
@@ -143,27 +167,31 @@ export function planApplyPrompt(
   }
 
   if (values.event_type === CONCURRENT_TYPE) {
-    if (values.department_id <= 0) return null
+    //  duoc-CR-756 — khớp `upsert_from_work_history`: công ty trống = công ty chính. CÙNG công ty chính → loại Phòng
+    //  ban (cần phòng; trùng phòng chính thì không có gì để kiêm nhiệm thêm); KHÁC công ty → loại Công ty (bỏ phòng
+    //  của dòng quá trình công tác, dòng đó giữ nguyên). Hồ sơ chưa gắn pháp nhân chính: backend chặn 400 → không hỏi.
+    if (employee.company_id <= 0) return null
+    const companyId = values.company_id > 0 ? values.company_id : employee.company_id
+    const kind = companyId === employee.company_id ? CONCURRENT_KIND_DEPARTMENT : CONCURRENT_KIND_COMPANY
+    if (kind === CONCURRENT_KIND_DEPARTMENT) {
+      if (values.department_id <= 0 || values.department_id === employee.department_id) return null
+    }
     //  Cùng lý do với POSITION_TRACK — kiêm nhiệm nhập bù quá khứ không hỏi.
     if (hasLaterMainRow(existingRows, editingId, values.from_date)) return null
 
-    //  duoc-CR-755 — khớp `concurrent_transition_service.upsert_from_work_history`: công ty trống = công ty chính;
-    //  trùng đúng vị trí chính thì không có gì để kiêm nhiệm thêm. Dòng đích tìm theo `work_history_id` (một dòng quá
-    //  trình công tác ↔ tối đa một dòng kiêm nhiệm), không còn so danh sách phòng như trước.
-    const companyId = values.company_id > 0 ? values.company_id : employee.company_id
-    if (values.department_id === employee.department_id && companyId === employee.company_id) return null
+    //  Dòng đích tìm theo `work_history_id` (một dòng quá trình công tác ↔ tối đa một dòng kiêm nhiệm).
     const companyLabel = values.company_id > 0 ? values.company_label : employee.company_name
     const linked = editingId > 0 ? concurrents.find((c) => c.work_history_id === editingId) : undefined
-    const target = describeConcurrentTarget(values, companyLabel)
+    const target = describeConcurrentTarget(values, kind, companyLabel)
 
     if (isEnded(values.to_date, today)) {
       //  Đã kết thúc: backend chỉ cập nhật dòng SẴN CÓ (thành Đã hết), không tạo dòng đã chết.
-      return linked && concurrentDiffers(linked, values, companyId)
+      return linked && concurrentDiffers(linked, values, kind, companyId)
         ? { kind: 'profile', changes: [`Kết thúc dòng kiêm nhiệm: ${target}`] }
         : null
     }
     if (!linked) return { kind: 'profile', changes: [`Thêm dòng kiêm nhiệm: ${target}`] }
-    return concurrentDiffers(linked, values, companyId)
+    return concurrentDiffers(linked, values, kind, companyId)
       ? { kind: 'profile', changes: [`Cập nhật dòng kiêm nhiệm: ${target}`] }
       : null
   }

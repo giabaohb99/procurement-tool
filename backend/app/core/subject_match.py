@@ -28,8 +28,8 @@ def subject_pairs(profile: dict) -> list[tuple[int, int]]:
     """Người đang đăng nhập ứng với những (loại đối tượng, id) nào.
 
     Một người khớp nhiều dòng cùng lúc: bản thân họ, MỌI phòng KIÊM NHIỆM
-    (CR-167 — lùi về phòng chính khi hồ sơ quyền chưa có danh sách; duoc-CR-755 — kể cả phòng kiêm nhiệm ở
-    công ty khác), pháp nhân của họ, và từng vai trò họ mang. Bản DÙNG CHUNG, chuyển nguyên logic từ
+    (CR-167 — lùi về phòng chính khi hồ sơ quyền chưa có danh sách), pháp nhân của họ (duoc-CR-756 — kể cả công ty
+    kiêm nhiệm), và từng vai trò họ mang. Bản DÙNG CHUNG, chuyển nguyên logic từ
     `document/access_service.py` (bản gốc giữ nguyên tên hàm, gọi qua đây).
     """
     pairs: list[tuple[int, int]] = []
@@ -37,18 +37,17 @@ def subject_pairs(profile: dict) -> list[tuple[int, int]]:
         pairs.append((SUBJECT_EMPLOYEE, profile["employee_id"]))
     department_ids = list(profile.get("dept_ids")
                           or ([profile["dept_id"]] if profile.get("dept_id") else []))
-    #  duoc-CR-755 (Q3): phòng của dòng kiêm nhiệm KHÁC công ty (còn hiệu lực + bật công tắc, đã lọc sẵn ở hồ sơ
-    #  quyền) cũng là phòng của người này. Dòng ACL loại PHÒNG không mang công ty nên không ràng được — rủi ro đã
-    #  chấp nhận: phòng dùng chung ở nhiều công ty thì ACL cấp cho phòng X khớp mọi người có chân ở X. KHÔNG cộng
-    #  công ty của dòng thành chủ thể CÔNG TY (chủ thể công ty vẫn chỉ là công ty chính).
-    for pair in profile.get("concurrent_pairs") or []:
-        if pair and pair[0] and pair[0] not in department_ids:
-            department_ids.append(pair[0])
     for department_id in department_ids:
         if department_id:
             pairs.append((SUBJECT_DEPARTMENT, department_id))
     if profile.get("company_id"):
         pairs.append((SUBJECT_COMPANY, profile["company_id"]))
+    #  duoc-CR-756 (Q3): công ty KIÊM NHIỆM (loại Công ty, còn hiệu lực + bật công tắc — đã lọc sẵn ở hồ sơ quyền)
+    #  cũng là công ty của người này: dòng ACL chia cho công ty B khớp cả người kiêm nhiệm B. Phòng của dòng loại
+    #  Phòng ban đã nằm sẵn trong `dept_ids`.
+    for company_id in profile.get("concurrent_companies") or []:
+        if company_id and (SUBJECT_COMPANY, company_id) not in pairs:
+            pairs.append((SUBJECT_COMPANY, company_id))
     for grant in profile.get("grants", []):
         if grant.get("role_id"):
             pairs.append((SUBJECT_ROLE, grant["role_id"]))

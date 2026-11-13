@@ -3,7 +3,15 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { employeeConcurrentApi } from '../api/employee-concurrent-api'
-import type { EmployeeConcurrentPayload } from '../types/employee-concurrent'
+import type {
+  EmployeeConcurrentCreatePayload,
+  EmployeeConcurrentUpdatePayload,
+} from '../types/employee-concurrent'
+
+/** Thêm (không `id`, thân có `kind`) hoặc sửa (có `id`, thân KHÔNG có `kind` — duoc-CR-756). */
+export type SaveConcurrentVariables =
+  | { id?: undefined; payload: EmployeeConcurrentCreatePayload }
+  | { id: number; payload: EmployeeConcurrentUpdatePayload }
 
 /**
  * Dòng kiêm nhiệm của MỘT hồ sơ. `0` = chưa biết id (đang tải trang chi tiết).
@@ -25,10 +33,10 @@ export function useSaveEmployeeConcurrent(employeeId: number) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id?: number; payload: EmployeeConcurrentPayload }) =>
-      id
-        ? employeeConcurrentApi.update(employeeId, id, payload)
-        : employeeConcurrentApi.create(employeeId, payload),
+    mutationFn: (variables: SaveConcurrentVariables) =>
+      variables.id === undefined
+        ? employeeConcurrentApi.create(employeeId, variables.payload)
+        : employeeConcurrentApi.update(employeeId, variables.id, variables.payload),
     onSuccess: (_result, variables) => {
       toast.success(variables.id ? 'Đã cập nhật kiêm nhiệm' : 'Đã thêm kiêm nhiệm')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
