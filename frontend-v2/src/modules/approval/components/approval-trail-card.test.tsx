@@ -2,15 +2,44 @@ import { render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApprovalTrailCard } from './approval-trail-card'
-import { ACTION, INSTANCE_STATUS, TASK_STATUS, type ApprovalTrail } from '../types/approval'
+import {
+  ACTION,
+  INSTANCE_STATUS,
+  TASK_STATUS,
+  type ApprovalTrail,
+  type ApprovalUpcomingStage,
+} from '../types/approval'
 
-const { mockUseApprovalTrail } = vi.hoisted(() => ({
+const { mockUseApprovalTrail, mockUseUpcoming } = vi.hoisted(() => ({
   mockUseApprovalTrail: vi.fn(),
+  mockUseUpcoming: vi.fn(),
 }))
 
 vi.mock('../hooks/use-approvals', () => ({
   useApprovalTrail: mockUseApprovalTrail,
+  useApprovalUpcomingStages: mockUseUpcoming,
 }))
+
+const UPCOMING: ApprovalUpcomingStage[] = [
+  {
+    seq: 2,
+    name: 'Trưởng phòng Nhân sự duyệt',
+    rule_label: 'Đích danh',
+    approvers: [{ employee_id: 7, name: 'Lê Văn HR', position: 'Trưởng phòng' }],
+    fallback_used: false,
+    note: '',
+    unresolved_reason: '',
+  },
+  {
+    seq: 3,
+    name: 'Giám đốc duyệt',
+    rule_label: 'Theo vai trò: Giám đốc',
+    approvers: [],
+    fallback_used: false,
+    note: '',
+    unresolved_reason: 'Không tìm được người duyệt cho chặng "Giám đốc duyệt".',
+  },
+]
 
 const TRAIL: ApprovalTrail = {
   instance: {
@@ -79,6 +108,7 @@ const TRAIL: ApprovalTrail = {
 describe('ApprovalTrailCard', () => {
   beforeEach(() => {
     mockUseApprovalTrail.mockReturnValue({ data: TRAIL, isLoading: false })
+    mockUseUpcoming.mockReturnValue({ data: UPCOMING })
   })
 
   it('hiện timeline chi tiết theo người, hành động, chặng, thời gian và ý kiến', () => {
@@ -194,5 +224,47 @@ describe('ApprovalTrailCard', () => {
     unmount()
     render(<ApprovalTrailCard instanceId={8} hidePrint />)
     expect(screen.queryByRole('button', { name: 'In lịch sử phê duyệt' })).not.toBeInTheDocument()
+  })
+
+  //  duoc-CR-766: người nộp đơn nghỉ hỏi "duyệt xong chặng này thì tới ai".
+  it('shows upcoming stages with expected approver names above the pending task when enabled', () => {
+    render(<ApprovalTrailCard instanceId={8} showUpcoming />)
+
+    const timeline = screen.getByRole('list', { name: 'Các mốc phê duyệt' })
+    const upcoming = within(timeline).getByRole('region', { name: 'Chặng tiếp theo' })
+    const pending = within(timeline).getByRole('region', { name: 'Đang chờ phản hồi' })
+
+    expect(upcoming).toHaveTextContent('(dự kiến)')
+    expect(within(upcoming).getByText('Lê Văn HR')).toBeInTheDocument()
+    expect(upcoming).toHaveTextContent('Chặng 2: Trưởng phòng Nhân sự duyệt')
+    expect(
+      upcoming.compareDocumentPosition(pending) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(mockUseUpcoming).toHaveBeenCalledWith(8, true)
+  })
+
+  it('says a stage has no approver instead of leaving the name blank', () => {
+    render(<ApprovalTrailCard instanceId={8} showUpcoming />)
+
+    const upcoming = screen.getByRole('region', { name: 'Chặng tiếp theo' })
+    expect(within(upcoming).getByText('Chưa xác định người duyệt')).toBeInTheDocument()
+    expect(upcoming).toHaveTextContent('Không tìm được người duyệt cho chặng')
+  })
+
+  it('does not ask for upcoming stages unless enabled and the instance is still running', () => {
+    const { unmount } = render(<ApprovalTrailCard instanceId={8} />)
+    expect(mockUseUpcoming).toHaveBeenLastCalledWith(8, false)
+    expect(screen.queryByRole('region', { name: 'Chặng tiếp theo' })).not.toBeInTheDocument()
+    unmount()
+
+    mockUseApprovalTrail.mockReturnValue({
+      data: {
+        ...TRAIL,
+        instance: { ...TRAIL.instance, status: INSTANCE_STATUS.approved, status_label: 'Đã duyệt' },
+      },
+      isLoading: false,
+    })
+    render(<ApprovalTrailCard instanceId={8} showUpcoming />)
+    expect(mockUseUpcoming).toHaveBeenLastCalledWith(8, false)
   })
 })

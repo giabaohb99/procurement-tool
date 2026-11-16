@@ -20287,3 +20287,20 @@ Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 Mã nguồn: `backend/app/modules/assistant/tools/my_projects_tool.py`, `backend/app/modules/assistant/tool_router.py`, `backend/app/modules/agent_hub/mcp.py`, `backend/app/modules/agent_hub/mcp_settings.py`, `backend/app/modules/ai_skill/seed_handbook/30-du-an-cong-viec.md`.
 Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9, cẩm nang du-an-cong-viec bản 4, dịch vụ AI dựng lại cùng đợt)
 Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.
+
+## duoc-CR-766 | Đơn nghỉ phép hiện tên người duyệt dự kiến của các chặng sau trên dòng thời gian duyệt
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** ở chi tiết đơn nghỉ phép, thẻ Lịch sử phê duyệt chỉ nêu tên người đang giữ việc ở chặng hiện tại; các chặng phía sau không hiện gì nên người nộp không biết duyệt xong chặng này thì đơn tới tay ai.
+
+**Đã làm**
+- Thêm đường API chỉ đọc trả các chặng chưa tới lượt của một phiên duyệt đang chạy kèm người duyệt dự kiến, gác đọc giống đường xem dấu vết duyệt. Người duyệt được tính bằng đúng vòng lặp của màn xem trước người duyệt bên Văn bản trên bản chụp luồng của chính phiếu, nên luật người nộp không tự duyệt, luật bỏ qua khi trùng người và người dự phòng khớp với lúc chặng mở thật.
+- Thẻ Lịch sử phê duyệt của đơn nghỉ phép, phiếu nghỉ bù và phiếu thanh toán nghỉ phép có thêm khối **Chặng tiếp theo (dự kiến)** ở đầu dòng thời gian, mỗi chặng một dòng gồm tên người duyệt, số chặng và tên chặng. Chặng không tìm được ai ghi rõ là chưa xác định người duyệt kèm lý do; chặng sẽ tự qua vì trùng người thì ghi tự động qua. Phiên đã xong thì không hỏi thêm gì.
+
+**Kiểm:** bài kiểm backend mới 6 bài xanh (chỉ liệt kê chặng sau chặng hiện tại, danh sách ngắn lại khi duyệt xong một chặng, chặng cuối và phiên đã duyệt không còn gì phía trước, chặng trùng người được báo tự động qua, chặng hiện tại nhiều người theo chế độ một người là đủ thì không coi cả nhóm là đã ký); rà mã độc lập không có lỗi chặn, hai điểm nên sửa đã sửa cùng các bài xem trước người duyệt cũ; vitest phân hệ Phê duyệt và các thẻ Nghỉ phép xanh; typecheck, lint, ruff sạch; xem tận mắt đơn NP001 trên local.
+
+Mã nguồn: `backend/app/modules/approval/upcoming_stages_service.py`, `backend/app/modules/approval/preview_service.py`, `backend/app/modules/approval/instance_controller.py`, `frontend-v2/src/modules/approval/components/approval-trail-upcoming-event.tsx`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
+Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.

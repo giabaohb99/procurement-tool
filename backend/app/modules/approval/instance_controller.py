@@ -19,6 +19,7 @@ from . import (action_service, entity_hooks, serializer, steps_service,
                task_service)
 from .concurrency import run_with_contention_retry
 from .instance_model import ApprovalInstance, ApprovalTask
+from .upcoming_stages_service import list_upcoming_stages
 
 router = APIRouter(prefix="/api/approvals", tags=["approval"])
 
@@ -250,6 +251,20 @@ def trail(instance_id: int, db: Session = Depends(get_db),
         "tasks": [serializer.task_out(db, row)
                   for row in serializer.instance_service_tasks(db, instance.id)],
     })
+
+
+@router.get("/{instance_id}/upcoming")
+def upcoming(instance_id: int, db: Session = Depends(get_db),
+             user=Depends(get_current_user)):
+    """Các chặng chưa tới lượt của phiên duyệt đang chạy, kèm người duyệt dự kiến.
+
+    Gác đọc như `/trail` (ai đọc được dấu vết thì đọc được chặng sắp tới). Phiên
+    không còn chạy (đã duyệt, từ chối, trả về, rút, kẹt) trả danh sách rỗng.
+    Mỗi chặng: `seq`, `name`, `rule_label`, `approvers` (`employee_id`, `name`,
+    `position`), `fallback_used`, `note`, `unresolved_reason` — cùng hình dạng
+    chặng của màn xem trước người duyệt dự kiến.
+    """
+    return success(list_upcoming_stages(db, _load(db, instance_id, user)))
 
 
 @router.post("/{instance_id}/approve")

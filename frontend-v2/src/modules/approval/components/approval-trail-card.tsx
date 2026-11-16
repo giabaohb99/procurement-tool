@@ -23,7 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { useApprovalTrail } from '../hooks/use-approvals'
+import { useApprovalTrail, useApprovalUpcomingStages } from '../hooks/use-approvals'
+import { ApprovalTrailUpcomingEvent } from './approval-trail-upcoming-event'
 import {
   ACTION,
   INSTANCE_STATUS,
@@ -72,6 +73,11 @@ interface ApprovalTrailCardProps {
    * in đơn (bao-CR-506).
    */
   hidePrint?: boolean
+  /**
+   * Hiện thêm các chặng CHƯA TỚI LƯỢT kèm người duyệt dự kiến (phiên đang chạy).
+   * Bật theo từng chứng từ: tốn thêm một lượt gọi tính người duyệt.
+   */
+  showUpcoming?: boolean
   className?: string
 }
 
@@ -167,11 +173,17 @@ export function ApprovalTrailCard({
   extraEvents = [],
   trailingEvents = [],
   hidePrint = false,
+  showUpcoming = false,
   className,
 }: ApprovalTrailCardProps) {
   const { data, isLoading } = useApprovalTrail(instanceId)
 
   const instance = data?.instance
+  const wantsUpcoming = showUpcoming && instance?.status === INSTANCE_STATUS.running
+  const { data: upcomingData } = useApprovalUpcomingStages(instanceId, wantsUpcoming)
+  //  Kiểm lại trạng thái ở đây, không chỉ ở `enabled`: bản cũ còn trong bộ nhớ đệm
+  //  không được hiện lên một phiên đã kết thúc.
+  const upcoming = wantsUpcoming ? (upcomingData ?? []) : []
   const lines = data?.lines ?? []
   const tasks = data?.tasks ?? []
   const pending = tasks.filter((row) => row.status === TASK_STATUS.pending)
@@ -269,6 +281,17 @@ export function ApprovalTrailCard({
                 </p>
               ) : (
                 <ol aria-label="Các mốc phê duyệt">
+                  {upcoming.length > 0 && (
+                    <ApprovalTrailUpcomingEvent
+                      stages={upcoming}
+                      showRail={
+                        extraEvents.length > 0 ||
+                        pending.length > 0 ||
+                        recentLines.length > 0 ||
+                        trailingEvents.length > 0
+                      }
+                    />
+                  )}
                   {extraEvents.map((event, index) => (
                     <ExtraEvent
                       key={event.title}

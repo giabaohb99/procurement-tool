@@ -7,6 +7,7 @@ import type {
   ApprovalSwitch,
   ApprovalTask,
   ApprovalTrail,
+  ApprovalUpcomingStage,
   Delegation,
   MyDecision,
   MyTask,
@@ -74,6 +75,8 @@ export const approvalApi = {
 
   getById: (id: number) => apiGet<ApprovalInstance>(`${INSTANCE_URL}/${id}`),
   trail: (id: number) => apiGet<ApprovalTrail>(`${INSTANCE_URL}/${id}/trail`),
+  /** Các chặng chưa tới lượt của phiên đang chạy, kèm người duyệt dự kiến. Phiên đã xong → `[]`. */
+  upcoming: (id: number) => apiGet<ApprovalUpcomingStage[]>(`${INSTANCE_URL}/${id}/upcoming`),
 
   /**
    * Phiên duyệt mới nhất của một chứng từ — `null` nếu nó chưa vào bộ máy.

@@ -533,6 +533,11 @@ export const queryKeys = {
     flows: (entity: string) => ['approval', 'flows', entity] as const,
     flow: (id: number) => ['approval', 'flows', 'detail', id] as const,
     trail: (instanceId: number) => ['approval', 'trail', instanceId] as const,
+    /**
+     * Các chặng CHƯA MỞ kèm người duyệt dự kiến. Nằm DƯỚI khóa `trail` của cùng phiên
+     * để chỗ nào làm mới dấu vết (duyệt, trả lại, rút) cũng làm mới luôn phần này.
+     */
+    upcoming: (instanceId: number) => ['approval', 'trail', instanceId, 'upcoming'] as const,
     /** Phiên duyệt của MỘT chứng từ — trang chi tiết chứng từ hỏi bằng key này. */
     ofEntity: (entity: string, entityId: number) =>
       ['approval', 'of-entity', entity, entityId] as const,

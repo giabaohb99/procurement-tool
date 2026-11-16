@@ -79,6 +79,18 @@ export function useApprovalTrail(instanceId?: number) {
 }
 
 /**
+ * Các chặng chưa tới lượt kèm người duyệt dự kiến. `enabled` để thẻ dấu vết chỉ hỏi
+ * khi phiên còn chạy — phiên đã xong thì không còn chặng nào phía trước.
+ */
+export function useApprovalUpcomingStages(instanceId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.approval.upcoming(instanceId),
+    queryFn: () => approvalApi.upcoming(instanceId),
+    enabled: enabled && instanceId > 0,
+  })
+}
+
+/**
  * Phiên duyệt của MỘT chứng từ, cho trang chi tiết của chứng từ đó.
  *
  * Trả `null` khi chứng từ chưa từng vào bộ máy — đó là câu trả lời hợp lệ, không
