@@ -114,6 +114,28 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-763 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
+- status: xong
+- date: 2026-11-16
+- list: Công cụ Ai
+- pic: NSU209
+**Bối cảnh:** ChatGPT đổi giao diện: bỏ mục **Settings ▸ Connectors** và **Developer mode**, nay thêm máy chủ MCP ở trang
+**Plugins** (nút **Add ▸ Add custom MCP server**). Bài hướng dẫn và màn **Kết nối AI** vẫn ghi bước cũ nên người dùng không tìm thấy chỗ bấm.
+
+**Đã làm**
+- Bước nối ChatGPT mới (theo ảnh chụp trang Plugins ngày 16/11 và bài trợ giúp của OpenAI): **Plugins ▸ Add ▸ Add custom
+  MCP server**, điền Name, dán địa chỉ cổng vào **Connection**, Authentication **OAuth**, tick **I understand and want to
+  continue** ▸ **Create as a plugin**, Cho phép trên trang ERP, rồi gõ **@** trong ô chat để chọn DEGO ERP.
+- Ghi thêm: không cần Developer mode; chỉ nối được trên trình duyệt; gói Business chỉ admin / owner thêm được; gói Plus / Pro
+  có thể chỉ có công cụ tra cứu; giữ một dòng cho ChatGPT bản cũ.
+- Sửa cùng lúc ba nơi: bài HDSD **Cách 1 (khuyên dùng): nối bằng đăng nhập ERP**, các bước trên màn **Kết nối AI** (v2) và
+  tài liệu chức năng Kết nối AI riêng; bài kiểm của màn đổi theo bước mới.
+
+**Kết quả:** người dùng ChatGPT làm theo đúng giao diện hiện tại.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` · `backend/scripts/seed_help_ket_noi_ai_cach_1.py` ·
+`doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md` · `test/backend/test_agent_hub_ai_cua_toi_cr213.py`
+
 ## duoc-CR-762 | Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức, tự tính lại khi ký hợp đồng
 - status: xong
 - date: 2026-11-16
