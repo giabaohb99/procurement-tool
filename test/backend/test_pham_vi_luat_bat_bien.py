@@ -22,7 +22,7 @@ import pytest
 
 from app.core.permissions import ENTITIES
 from app.core.scoping import PUBLIC, SCOPE_FIELDS
-from scope_factory import ENTITY_MODEL_PATHS, build_world, model_of
+from scope_factory import ENTITY_MODEL_PATHS, model_of
 
 # ── BB-1 ────────────────────────────────────────────────────────────────────────
 
@@ -229,10 +229,6 @@ BB4_CONTROLLER_MIEN_TRU = {
                                            "user_has_permission theo `_OWNER_RULES`; MỌI đường nạp chứng từ "
                                            "cha qua `rule.load` = `_in_scope` của controller YCBG / ĐMH "
                                            "(apply_scope … .first(), 404 ngoài phạm vi) trước khi đụng khối",
-    "employee/work_history_controller.py": "duoc-CR-585: mọi đường /{eid} gọi "
-                                           "`work_history_access.employee_in_scope` → get_scoped(Employee, "
-                                           "'employee', …); `/me/work-history` chỉ đọc hồ sơ của chính "
-                                           "`user.employee_id`, không nhận tham số",
     "labor_contract/template_controller.py": "05/10/2026: mọi đường /{template_id} đi qua `_scoped` → "
                                              "`access.get_or_404_scoped` → get_scoped(LaborContractTemplate, "
                                              "'labor_contract_template', …); danh sách lọc ở "
@@ -421,7 +417,7 @@ def _controllers_without_scope_call() -> dict[str, str]:
     for path in sorted(root.rglob("*controller*.py")):
         text = path.read_text(encoding="utf-8")
         if not any(call in text for call in _SCOPE_CALLS):
-            out[str(path.relative_to(root))] = text
+            out[path.relative_to(root).as_posix()] = text
     return out
 
 

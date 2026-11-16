@@ -53,6 +53,7 @@ import {
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseRequestLineCard } from './purchase-request-line-card'
+import { resolveWarehouseByName } from '../utils/warehouse-ref'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 const TABLE_STORAGE_KEY = 'purchase-request-items'
@@ -114,6 +115,7 @@ export const EMPTY_PURCHASE_REQUEST_ITEM: PurchaseRequestItem = {
   vat_pct: 8,
   amount: 0,
   warehouse: '',
+  warehouse_code: '',
   required_date: '',
   assignee: '',
   expected_date: '',
@@ -325,12 +327,16 @@ export function PurchaseRequestItemsTable({
     const vat = Number(history.vat)
     const itemGroup = history.extra?.item_group?.trim() || current.item_group
     const previousWarehouse = history.extra?.warehouse_code?.trim() || ''
-    const warehouse = previousWarehouse
+    const matchedWarehouse = previousWarehouse
       ? warehouses.data?.items.find(
           (option) =>
             option.code === previousWarehouse || option.name === previousWarehouse,
-        )?.name || current.warehouse
-      : current.warehouse
+        )
+      : undefined
+    //  bao-CR-759: ghi CẢ tên lẫn mã kho; không khớp danh mục thì giữ nguyên kho đang chọn.
+    const warehouse = matchedWarehouse
+      ? { warehouse: matchedWarehouse.name, warehouse_code: matchedWarehouse.code }
+      : { warehouse: current.warehouse, warehouse_code: current.warehouse_code ?? '' }
 
     patch(index, {
       unit: history.unit || current.unit,
@@ -339,7 +345,7 @@ export function PurchaseRequestItemsTable({
       vat_pct: VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat_pct,
       item_group: itemGroup,
       group_desc: groupDescription(itemGroup),
-      warehouse,
+      ...warehouse,
       note: history.extra?.item_note?.trim() || current.note,
     })
     toast.success('Đã áp dụng dữ liệu từ lịch sử — bấm Lưu để ghi nhận')
@@ -471,7 +477,10 @@ export function PurchaseRequestItemsTable({
                 ? `${warehouse.code} - ${warehouse.name}`
                 : warehouse.name,
             }))}
-            onChange={(value) => patch(index, { warehouse: value })}
+            //  bao-CR-759: ghi kèm MÃ kho để đổi tên kho trong danh mục không làm dòng mất liên kết.
+            onChange={(value) =>
+              patch(index, resolveWarehouseByName(warehouses.data?.items ?? [], value))
+            }
           />
         ) : (
           <span className="block break-words whitespace-normal leading-snug" title={item.warehouse}>

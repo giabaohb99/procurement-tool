@@ -7,12 +7,14 @@ import type {
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
 import type { PurchaseRequestOption } from '../types/purchase-request-options'
+import type { WarehouseOption } from '../api/purchase-request-support-api'
 import type {
   PurchaseOrderDetail,
   PurchaseOrderImportCost,
   PurchaseOrderItem,
 } from '../types/purchase-order-detail'
 import { describeOrdered, formatQty, type LineProgress, type OrderProgress } from './over-order'
+import { resolveWarehouseCode } from './warehouse-ref'
 import {
   ALLOCATION_BY_VALUE,
   DEFAULT_CURRENCY,
@@ -224,6 +226,8 @@ export function buildPurchaseOrderLines(
   orderedByCode: Record<string, number> = {},
   pendingByCode: Record<string, number> = {},
   ordersByCode: OrderProgress['orders'] = {},
+  /** bao-CR-758: danh mục kho để đổi TÊN kho của dòng YCMH cũ (chưa có mã) sang MÃ kho của ĐMH. */
+  warehouses: readonly WarehouseOption[] = [],
 ): PurchaseOrderLinesFromRequest {
   const remaining: PurchaseOrderItem[] = []
   const exceeded: PurchaseOrderItem[] = []
@@ -239,10 +243,10 @@ export function buildPurchaseOrderLines(
     const left = requested - ordered - pending
 
     if (left > 0) {
-      remaining.push(toOrderLine(item, left))
+      remaining.push(toOrderLine(item, left, warehouses))
     } else {
       // Đại ca chốt 15/10: vẫn điền đủ số yêu cầu, người lập tự sửa ở form tạo đơn.
-      exceeded.push(toOrderLine(item, requested))
+      exceeded.push(toOrderLine(item, requested, warehouses))
       const orders = ordersByCode?.[item.product_code] ?? []
       exceededMessages.push(
         `• ${item.product_name}${item.product_code ? ` (${item.product_code})` : ''} — yêu cầu ` +
@@ -254,7 +258,11 @@ export function buildPurchaseOrderLines(
   return { remaining, exceeded, exceededMessages }
 }
 
-function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem {
+function toOrderLine(
+  item: PurchaseRequestItem,
+  qty: number,
+  warehouses: readonly WarehouseOption[],
+): PurchaseOrderItem {
   // H.10.6 — dòng đã CHỌN phương án thì đường tạo ĐMH tay cũng điền sẵn theo
   // phương án đó (giá / VAT / đơn vị báo giá + cam kết giao vào ghi chú), cùng
   // luật với nút gom tự động. Phương án 0 chụp đúng giá trị dòng nên dòng chưa
@@ -290,7 +298,10 @@ function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem 
     price: chosen ? Number(chosen.snap_price_by_volume) || 0 : Number(item.price) || 0,
     // VAT theo TỪNG DÒNG của YCMH, không lấy mức chung của đơn.
     vat,
-    warehouse_code: '',
+    //  bao-CR-758: kho nhận lấy từ dòng YCMH — MÃ kho đã lưu (bao-CR-759), dòng cũ chỉ có TÊN thì
+    //  tra theo tên trong danh mục như bản v1 (`createPO`). Trước đây gán cứng '' nên mọi ĐMH tạo
+    //  từ YCMH trên v2 trống kho nhận (PO01160, PO01163, PO01175, PO01178).
+    warehouse_code: resolveWarehouseCode(warehouses, item),
     note: noteParts.filter(Boolean).join('; '),
     currency: '',
     exchange_rate: 0,

@@ -22,6 +22,9 @@ AI-0006 (đại ca chốt 09/10) mở thêm:
   tài khoản đủ quyền `delete` + phạm vi xóa. YCMH · YCBG · đơn nghỉ phép · việc Dự án.
   Đề nghị thanh toán và phiếu hỗ trợ KHÔNG xóa qua trợ lý — tool trả link để người dùng tự
   mở. Cùng một token / một nút / một endpoint `confirm-update` (khóa `a = delete` trong token).
+
+ai-CR-241 (đại ca duyệt 16/11): Đơn mua hàng Nháp / Bị trả lại — ghi chú, hình thức thanh toán NCC và các ô dòng hàng
+(`po_lines`: đơn giá, VAT, SL đặt, kho, tên hóa đơn, hai ngày, ghi chú dòng). Phần riêng ĐMH ở `po_update.py`.
 """
 import base64
 import hashlib
@@ -38,6 +41,7 @@ from app.core.config import settings as _env
 from app.core.scoping import apply_scope, get_scoped
 from app.modules.leave.constants import EDITABLE_STATUSES
 
+from . import po_update
 from .approval_tool import _detail_url
 from .base import ToolContext, ToolSpec
 from .draft_tool import _clean_text, _iso_date
@@ -91,7 +95,15 @@ _ENTITY_RULES: dict[str, dict] = {
         "fields": {"from_date": "Từ ngày", "to_date": "Đến ngày", "leave_type": "Loại nghỉ",
                    "reason": "Lý do", "periods": "Các khoảng ngày nghỉ"},
     },
+    #  ai-CR-241: dòng hàng ĐMH đi khóa riêng `po_lines` (theo id dòng, nhiều ô) — khác `line_ops` của YCMH / YCBG.
+    "purchase_order": {
+        "label": "Đơn mua hàng (ĐMH)",
+        "fields": {"note": "Ghi chú", "payment_terms": "Hình thức thanh toán NCC"},
+        "po_lines": True,
+    },
 }
+#  Trần chữ theo đúng cột / schema của form — cắt dài hơn là 422 ở bước ghi.
+_TEXT_MAX = {"reason": 1000, "payment_terms": 255}
 
 _PARAMS = {
     "type": "object",
@@ -100,11 +112,11 @@ _PARAMS = {
             "type": "string",
             "enum": list(_ENTITY_RULES),
             "description": "Loại phiếu: purchase_request (YCMH) | survey_request (YCBG) | "
-                           "payment_request (YCTT) | leave_request (đơn nghỉ phép).",
+                           "payment_request (YCTT) | leave_request (đơn nghỉ phép) | purchase_order (ĐMH).",
         },
         "code": {
             "type": "string",
-            "description": "Mã phiếu cần sửa, ví dụ YCMH00012 / YCBG00034 / YCTT00045 / mã đơn nghỉ.",
+            "description": "Mã phiếu cần sửa, ví dụ YCMH00012 / YCBG00034 / YCTT00045 / PO01178 / mã đơn nghỉ.",
         },
         "changes": {
             "type": "object",
@@ -115,7 +127,9 @@ _PARAMS = {
                             "description": "Mục đích mới (YCMH/YCBG)."},
                 "need_date": {"type": "string",
                               "description": "Ngày cần hàng mới, YYYY-MM-DD (chỉ YCMH)."},
-                "note": {"type": "string", "description": "Ghi chú mới (YCMH/YCBG)."},
+                "note": {"type": "string", "description": "Ghi chú mới (YCMH/YCBG/ĐMH — ghi chú đầu đơn)."},
+                "payment_terms": {"type": "string",
+                                  "description": "Hình thức thanh toán NCC mới (chỉ ĐMH)."},
                 "print_content": {
                     "type": "string",
                     "description": "Câu **Nội dung** mới trên bản in YCTT (chỉ YCTT).",
@@ -177,6 +191,7 @@ _PARAMS = {
                 "required": ["op"],
             },
         },
+        "po_lines": po_update.PO_LINES_PARAM,
     },
     "required": ["entity", "code"],
 }
@@ -188,8 +203,13 @@ _DESC = (
     "YCBG mục đích / ghi chú; dòng hàng YCMH và YCBG (thêm dòng, bỏ dòng, đổi số lượng — "
     "qua line_ops); đơn nghỉ phép từ ngày / đến ngày (hoặc `periods` khi đơn có nhiều khoảng ngày) / loại nghỉ / lý do (YCMH, YCBG, đơn nghỉ chỉ "
     "khi phiếu Nháp hoặc Bị trả lại); YCTT sửa được 3 câu chữ bản in (kể cả khi phiếu đã "
-    "gửi duyệt / đã duyệt). KHÔNG sửa được: giá, nhà cung cấp, số tiền, trạng thái, hạn chi "
-    "— các phần đó phải mở form sửa tay, nói rõ cho người dùng. Chỉ điền đúng trường người "
+    "gửi duyệt / đã duyệt). Đơn mua hàng (ĐMH) Nháp hoặc Bị trả lại: ghi chú, hình thức thanh "
+    "toán NCC và từng dòng qua `po_lines` (đơn giá, VAT, SL đặt, kho nhận, tên trên hóa đơn, "
+    "ngày yêu cầu / dự kiến có hàng, ghi chú dòng — tra đơn bằng procurement_doc_read để lấy "
+    "line_id; đặt kho / VAT / ngày cho cả đơn thì dùng all_lines); không thêm / bỏ dòng ĐMH. "
+    "KHÔNG sửa được: nhà cung cấp, trạng thái, hạn chi, giá YCMH / YCBG, đơn đã gửi duyệt "
+    "— các phần đó phải mở form sửa tay, nói rõ cho người dùng. Bảng đề xuất ĐMH có "
+    "`warnings` (giá lệch YCMH nguồn quá 20%) — đọc cho người dùng trước khi mời xác nhận. Chỉ điền đúng trường người "
     "dùng yêu cầu đổi với giá trị MỚI họ nêu — thiếu giá trị thì hỏi lại trước, CẤM tự bịa. "
     "Sau khi gọi, tóm tắt thay đổi và mời người dùng bấm nút 'Xác nhận sửa' dưới câu trả "
     "lời — nhấn mạnh phiếu CHƯA bị sửa cho tới khi họ bấm."
@@ -220,12 +240,15 @@ def _model_of(entity: str):
     if entity == "ticket":
         from app.modules.ticket.model import Ticket
         return Ticket
+    if entity == "purchase_order":
+        from app.modules.purchase_order.model import PurchaseOrder
+        return PurchaseOrder
     from app.modules.payment_request.model import PaymentRequest
     return PaymentRequest
 
 
 #  Phiếu có cột `is_deleted` (xóa mềm): YCMH · YCBG (ai-CR-170) · YCTT (ai-CR-176) · nghỉ phép.
-_SOFT_DELETE_ENTITIES = ("purchase_request", "survey_request", "payment_request", "leave_request")
+_SOFT_DELETE_ENTITIES = ("purchase_request", "survey_request", "payment_request", "leave_request", "purchase_order")
 
 
 def _soft_deleted(entity: str, doc) -> bool:
@@ -270,6 +293,9 @@ def _editable_error(entity: str, doc) -> str | None:
                 "Trả về chỉnh sửa.")
     if doc.status in _DRAFT_STATUSES:
         return None
+    if entity == "purchase_order":
+        return (f"Đơn {doc.code} đang ở trạng thái {label} — trợ lý chỉ sửa đơn Nháp hoặc Bị trả lại. Đơn đã gửi duyệt "
+                "thì mở đơn trên web: người duyệt trả lại, hoặc đơn đã duyệt thì bấm Hủy duyệt rồi sửa tay.")
     return (f"Phiếu {doc.code} đang ở trạng thái {label} — chỉ sửa được khi phiếu ở "
             "trạng thái Nháp hoặc Bị trả lại.")
 
@@ -319,6 +345,8 @@ def _state_sig(db, entity: str, doc) -> str:
     state: dict = {f: _old_value(db, entity, doc, f) for f in rules["fields"]}
     if rules.get("lines"):
         state["_lines"] = [[r.id, _line_qty(entity, r)] for r in _current_lines(db, entity, doc.id)]
+    if rules.get("po_lines"):
+        state["_po_lines"] = po_update.line_state(db, doc)
     raw = json.dumps(state, ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(raw.encode()).hexdigest()[:24]
 
@@ -380,7 +408,7 @@ def _clean_changes(entity: str, raw, allow_empty: bool = False) -> tuple[dict, s
                 return {}, "leave_type rỗng — hỏi người dùng muốn đổi sang loại nghỉ nào."
         else:
             #  Lý do đơn nghỉ là `Str1000` ở schema của form — cắt đúng trần đó, đừng cụt ở 500.
-            value = _clean_text(raw.get(key), 1000 if key == "reason" else 500)
+            value = _clean_text(raw.get(key), _TEXT_MAX.get(key, 500))
             if key == "reason" and not value:
                 return {}, "reason rỗng — hỏi người dùng lý do nghỉ mới là gì."
         fields[key] = value
@@ -637,12 +665,17 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
 
     status_error = _editable_error(entity, doc)
     if status_error:
-        return {"error": status_error}
+        #  ai-CR-241: kèm link để người dùng tự mở phiếu trên web.
+        return {"error": status_error, "url": _url_of(entity, doc.id)}
 
     raw_ops = args.get("line_ops")
+    raw_po_lines = args.get("po_lines")
     if raw_ops and not rules.get("lines"):
-        return {"error": f"{rules['label']} không sửa dòng hàng qua trợ lý — chỉ YCMH và YCBG."}
-    fields, clean_error = _clean_changes(entity, args.get("changes"), allow_empty=bool(raw_ops))
+        hint = " — dòng ĐMH sửa qua po_lines." if rules.get("po_lines") else " — chỉ YCMH và YCBG."
+        return {"error": f"{rules['label']} không sửa dòng hàng qua line_ops{hint}"}
+    if raw_po_lines and not rules.get("po_lines"):
+        return {"error": "po_lines chỉ dùng cho Đơn mua hàng (entity=purchase_order)."}
+    fields, clean_error = _clean_changes(entity, args.get("changes"), allow_empty=bool(raw_ops or raw_po_lines))
     if clean_error:
         return {"error": clean_error}
     shown: dict[str, str] = {}
@@ -669,6 +702,13 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
         if ops_error:
             return {"error": ops_error}
         changes += line_view
+    po_ops: list = []
+    warnings: list[str] = []
+    if raw_po_lines:
+        po_ops, po_view, warnings, po_error = po_update.clean_po_lines(ctx.db, doc, raw_po_lines)
+        if po_error:
+            return {"error": po_error}
+        changes += po_view
     if not changes:
         return {"error": "Giá trị mới trùng giá trị hiện tại — không có gì để sửa, "
                          "xác nhận lại với người dùng."}
@@ -678,6 +718,8 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
                "s": _state_sig(ctx.db, entity, doc)}
     if ops:
         payload["ln"] = ops
+    if po_ops:
+        payload["pl"] = po_ops
     token = _fernet().encrypt(json.dumps(payload, ensure_ascii=False).encode()).decode()
 
     # Gói vào khóa `proposal` để tầng provider chuyển tiếp nguyên khối về FE
@@ -693,6 +735,7 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
             "changes": changes,
             "confirm_token": token,
             "url": _url_of(entity, doc.id),
+            **({"currency": po_update._currency(doc), "warnings": warnings} if rules.get("po_lines") else {}),
         },
         "total": len(changes),
         "reminder": "Phiếu CHƯA bị sửa. Hãy tóm tắt các thay đổi (cũ → mới) và mời người "
@@ -940,9 +983,12 @@ def confirm_update(db, user, token: str, source: int = 0) -> dict:
     ops = _check_ops_payload(payload.get("ln"))
     if ops and not rules.get("lines"):
         raise HTTPException(400, "Đề xuất sửa dòng không hợp lệ.")
+    if payload.get("pl") is not None and not rules.get("po_lines"):
+        raise HTTPException(400, "Đề xuất sửa dòng không hợp lệ.")
+    raw_po_ops = payload.get("pl") if rules.get("po_lines") else None
     raw = payload.get("ch")
     fields, clean_error = _clean_changes(entity, raw if isinstance(raw, dict) else {},
-                                         allow_empty=bool(ops))
+                                         allow_empty=bool(ops or raw_po_ops))
     if clean_error:
         raise HTTPException(400, clean_error)
     if entity == "leave_request" and fields:
@@ -952,22 +998,28 @@ def confirm_update(db, user, token: str, source: int = 0) -> dict:
     if payload.get("s") != _state_sig(db, entity, doc):
         raise HTTPException(409, "Đề xuất này đã dùng rồi, hoặc phiếu đã đổi sau lúc đề xuất — nhờ trợ lý soạn lại "
                                  "đề xuất mới.")
+    #  ai-CR-241: dòng ĐMH kiểm lại từng giá trị (kho còn dùng, luật VAT nhập khẩu, trần số) — token chỉ là đề xuất.
+    po_ops = po_update.check_po_ops(db, doc, raw_po_ops) if raw_po_ops is not None else []
 
     #  ai-CR-182: chụp ảnh TRƯỚC (chỉ trường sắp đổi + dòng nếu có sửa dòng) để ghi sổ thay đổi.
     from app.modules.assistant import change_service
-    before = change_service.snapshot(db, entity, doc, fields=list(fields), lines=bool(ops))
+    with_lines = bool(ops or po_ops)
+    before = change_service.snapshot(db, entity, doc, fields=list(fields), lines=with_lines)
 
-    lines = _apply_line_ops(db, entity, doc, ops) if ops else None
-    write_doc(db, user, profile, entity, doc, fields, lines)
+    if entity == "purchase_order":
+        po_update.write_po(db, user, doc, fields, po_ops)
+    else:
+        lines = _apply_line_ops(db, entity, doc, ops) if ops else None
+        write_doc(db, user, profile, entity, doc, fields, lines)
 
     updated = [rules["fields"][f] for f in fields]
-    if ops:
+    if with_lines:
         updated.append("Dòng hàng")
     db.refresh(doc)
     change_service.record_change(
         db, user, entity=entity, entity_id=doc.id, doc_code=doc.code, action=change_service.ChangeAction.UPDATE,
         summary=f"Sửa {rules['label']} {doc.code}: {', '.join(updated)}",
-        before=before, after=change_service.snapshot(db, entity, doc, fields=list(fields), lines=bool(ops)),
+        before=before, after=change_service.snapshot(db, entity, doc, fields=list(fields), lines=with_lines),
         after_sig=change_service.state_sig(db, entity, doc), source=source)
     return {
         "entity": entity,

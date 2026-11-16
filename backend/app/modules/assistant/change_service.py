@@ -144,6 +144,10 @@ def _snapshot(db, entity: str, doc, fields: list[str] | None, lines: bool) -> di
         out["fields"] = {f: ut._old_value(db, entity, doc, f) for f in keys}
         if rules.get("lines") and lines:
             out["lines"] = _line_dicts(db, entity, doc)
+        if rules.get("po_lines") and lines:
+            #  ai-CR-241: ĐMH chỉ ghi sổ (không hoàn tác tự động — purchase_order không nằm trong DOC_ENTITIES).
+            from .tools.po_update import LINE_FIELDS, line_state
+            out["lines"] = [dict(zip(("id", *LINE_FIELDS), row)) for row in line_state(db, doc)]
         if entity == "leave_request":
             out["leave"] = _leave_full(db, doc)
         out["status"] = str(doc.status)

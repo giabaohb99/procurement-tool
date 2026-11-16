@@ -22,6 +22,8 @@ class PRItemIn(BaseModel):
     # Cột DB là Numeric(5,2), trên 999,99 là MySQL báo lỗi tràn thay vì trả 422 tử tế.
     vat_pct: float = Field(0, ge=0, lt=100)
     warehouse: Str100 = ""
+    # bao-CR-759: mã kho. Client cũ chỉ gửi tên thì máy chủ tự suy mã từ tên; gửi mã thì máy chủ điền tên.
+    warehouse_code: Str25 = ""
     required_date: Str10 = ""
     assignee: Str100 = ""
     # MÃ cố định, xem PR_LINE_STATUS trong app/core/status_codes.py (B-06). CR-074: dòng mới

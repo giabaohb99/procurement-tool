@@ -311,7 +311,8 @@ export function PurchaseRequestLineDetailDialog({
               {editing ? (
                 <Input
                   value={draft.warehouse}
-                  onChange={(event) => patch({ warehouse: event.target.value })}
+                  //  bao-CR-759: gõ tay TÊN kho thì bỏ mã cũ — máy chủ suy lại mã theo tên lúc lưu.
+                  onChange={(event) => patch({ warehouse: event.target.value, warehouse_code: '' })}
                 />
               ) : (
                 <ReadOnlyValue>{draft.warehouse}</ReadOnlyValue>
