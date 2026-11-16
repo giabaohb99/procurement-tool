@@ -30,6 +30,7 @@ from . import draft_create, mcp_admin, mcp_keys, mcp_log
 log = logging.getLogger("app.agent_hub.mcp")
 
 PROTOCOL_VERSION = "2025-06-18"
+UNSUPPORTED_PROTOCOL_VERSION = -32022   # bao-CR-765: mã lỗi SEP-2575 (MCP 2026-07-28)
 SERVER_INFO = {"name": "dego-erp", "version": "1.0"}
 INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy dưới quyền của chủ khóa: dữ liệu trả về đã lọc theo "
                 "phạm vi người đó được xem. TRƯỚC khi làm một việc nghiệp vụ (lập phiếu, lập báo cáo, trả lời về quy "
@@ -565,12 +566,16 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
     if method == "ping":
         return _ok(rid, {})
     if method == "server/discover":
-        #  bao-CR-765: MCP 2026-07-28 (SEP-2575) — ChatGPT trang Plugins gọi ngay sau OAuth, trước mọi thứ; trả rỗng (như
-        #  kh-AI2-5 cũ) thì ChatGPT báo "action discovery failed". Chỉ khai bản giao thức đang phục vụ thật để ứng dụng
-        #  quay về bắt tay `initialize`. Câu dặn có phần riêng của quản trị nên cache theo người (private), sống ngắn.
-        return _ok(rid, {"resultType": "complete", "supportedVersions": [PROTOCOL_VERSION], "capabilities": CAPABILITIES,
-                         "instructions": _instructions(db), "_meta": {"io.modelcontextprotocol/serverInfo": SERVER_INFO},
-                         "ttlMs": 300_000, "cacheScope": "private"})
+        #  bao-CR-765: server/discover là của MCP bản không phiên (2026-07-28, SEP-2575). Cổng này mới phục vụ bản có bắt tay
+        #  `initialize` (PROTOCOL_VERSION), nên theo luật tương thích của SEP phải trả lỗi "bản giao thức không hỗ trợ"
+        #  (-32022, kèm danh sách bản hỗ trợ) để ứng dụng quay về bắt tay `initialize`. Trả rỗng (kh-AI2-5 cũ) hay trả
+        #  DiscoverResult thì ChatGPT trang Plugins báo "Authentication succeeded, action discovery failed".
+        meta = params.get("_meta") if isinstance(params.get("_meta"), dict) else {}
+        requested = str(meta.get("io.modelcontextprotocol/protocolVersion") or "")[:40]
+        trace["reason"] = f"Bản {requested or '?'} chưa hỗ trợ, mời bắt tay initialize"
+        return {"jsonrpc": "2.0", "id": rid,
+                "error": {"code": UNSUPPORTED_PROTOCOL_VERSION, "message": "Unsupported protocol version",
+                          "data": {"supported": [PROTOCOL_VERSION], "requested": requested}}}
     if method == "prompts/list":
         return _ok(rid, {"prompts": list_prompts(db, user)})
     if method == "prompts/get":
@@ -767,7 +772,9 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     if not out:
         return Response(status_code=202)
     payload = out if isinstance(body, list) else out[0]
-    return Response(status_code=200, content=json.dumps(payload, ensure_ascii=False), media_type="application/json")
+    #  bao-CR-765: lượt lẻ chỉ có lỗi "bản giao thức không hỗ trợ" thì HTTP 400 như luật Streamable HTTP của SEP-2575.
+    status = 400 if isinstance(payload, dict) and (payload.get("error") or {}).get("code") == UNSUPPORTED_PROTOCOL_VERSION else 200
+    return Response(status_code=status, content=json.dumps(payload, ensure_ascii=False), media_type="application/json")
 
 
 @router.get("")
