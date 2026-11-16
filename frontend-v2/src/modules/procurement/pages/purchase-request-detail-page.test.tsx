@@ -52,6 +52,7 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
 }))
 vi.mock('../hooks/use-purchase-request-support', () => ({
   useRelatedPurchaseOrders: () => ({ data: { items: [] } }),
+  usePurchaseRequestWarehouses: () => ({ data: { items: [] } }),
 }))
 vi.mock('../hooks/use-approver-candidates', () => ({
   useApproverCandidates: () => ({ data: { items: [] } }),

@@ -101,7 +101,10 @@ import {
   type PurchaseRequestAction,
 } from '../hooks/use-purchase-request'
 import { useGeneratePrOrders } from '../hooks/use-purchase-request-options'
-import { useRelatedPurchaseOrders } from '../hooks/use-purchase-request-support'
+import {
+  usePurchaseRequestWarehouses,
+  useRelatedPurchaseOrders,
+} from '../hooks/use-purchase-request-support'
 import { isPrOptionStageOpen } from '../types/purchase-request-options'
 import { PR_STATUS_LABELS } from '../types/purchase-document'
 import type { PurchaseOrder } from '../types/purchase-document'
@@ -201,6 +204,8 @@ export function PurchaseRequestDetailPage() {
   // này ĐÃ có đơn mua hàng nào chưa. Gọi đúng truy vấn của thẻ "Chứng từ liên quan"
   // (cùng `queryKey`) nên TanStack Query dùng lại kết quả, không tốn thêm lượt gọi.
   const { data: relatedOrdersData } = useRelatedPurchaseOrders(isNew ? '' : serverData?.code || '')
+  //  bao-CR-758: danh mục kho để dòng YCMH cũ (chỉ có TÊN kho) ra được MÃ kho khi tạo ĐMH.
+  const { data: warehousesData } = usePurchaseRequestWarehouses()
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
   // bao-CR-414: danh mục phòng ban cho ô "Phòng xử lý" (bao-CR-480 đổi tên). Mọi vai trò seed đều đọc được
@@ -574,6 +579,7 @@ export function PurchaseRequestDetailPage() {
       progress?.ordered,
       progress?.pending,
       progress?.orders,
+      warehousesData?.items,
     )
     // Không có dòng nào đã đặt đủ/vượt thì đi thẳng, khỏi hỏi.
     if (!exceeded.length) {
