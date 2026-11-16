@@ -152,6 +152,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-order-draft.ts`
 (listPurchaseOrderLineIssues), `frontend-v2/src/shared/ui/number-input.tsx`, `backend/app/modules/purchase_order/edit_service.py`
 (create_po).
 Kiểm: `pages/purchase-order-detail-page.test.tsx`, `test/backend/test_dmh_tao_giu_truong_phong_duyet_cr758.py`.
+Deploy: dev 16/11; prod 16/11/2026 11:40 bản 2.22.0 (main 6e22ac6e), sao lưu `prod_truoc_release_20261116_1136.sql.gz`
 
 ## bao-CR-759 | Dòng yêu cầu mua hàng lưu mã kho, không chỉ tên kho
 - status: xong
@@ -181,6 +182,7 @@ Mã nguồn: `backend/migrations/versions/prwh759a_ycmh_dong_luu_ma_kho.py`, `ba
 `frontend/src/pages/PurchaseRequestDetail.tsx`, `frontend-v2/src/modules/procurement/utils/warehouse-ref.ts`,
 `components/purchase-request-items-table.tsx`, `components/purchase-request-line-detail-dialog.tsx`.
 Kiểm: `test/backend/test_ycmh_dong_luu_ma_kho_cr759.py`.
+Deploy: dev 16/11; prod 16/11/2026 11:40 bản 2.22.0 (main 6e22ac6e), sao lưu `prod_truoc_release_20261116_1136.sql.gz`; migration `prwh759a` điền mã kho đủ 817/817 dòng YCMH
 
 ## ai-CR-241 | Trợ lý AI và cổng MCP đề xuất sửa đơn mua hàng đang Nháp hoặc Bị trả lại
 - status: xong
@@ -227,6 +229,7 @@ Kiểm: `test/backend/test_mcp_sua_don_mua_hang_cr241.py`.
 Tài liệu: `doc/agent-hub/06-cong-mcp.md` mục 3.3, `doc/tai-lieu-ky-thuat/change-log-ai.md`, `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py`, `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md`.
 
 ---
+Deploy: dev 16/11; prod 16/11/2026 11:40 bản 2.22.0 (main 6e22ac6e), sao lưu `prod_truoc_release_20261116_1136.sql.gz`; nhóm cấu hình MCP *Sửa và xóa phiếu của chính mình* bật trên prod theo quyết định Ban điều hành
 
 ## van-hanh-sua-gia-dmh-1311 | Sửa đơn giá năm đơn mua hàng đã duyệt hoặc đã nhận hàng trên prod rồi tính lại công nợ
 - status: xong
