@@ -13,6 +13,7 @@ from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
 
 from .model import PurchaseRequest, PurchaseRequestItem
+from .warehouse_ref import WarehouseCatalog, sync_line_warehouse
 from .schema import PRCreate, PRUpdate
 from .base_service import ENTITY, LINE_STATUS_CANCELLED, LINE_STATUS_NO_PO, get_pr, items_of, sla_base_date
 from .department_service import (default_handler_dept_id, fill_department_from_employee, find_dept_head_id,
@@ -207,9 +208,12 @@ def _save_items(db: Session, pr_id: int, items, user_id: int, auto_urgent: bool 
     _base = sla_base_date(_pr)                   # mốc tính ngày QĐ có hàng — xem sla_base_date
     _std = lead_time.std_days_map(db)
     keep: set[int] = set()
+    warehouses = WarehouseCatalog(db)
     for it in items or []:
         data = it.model_dump()
         rid = data.pop("id", None)
+        # bao-CR-759: mã kho <-> tên kho khớp nhau (client cũ chỉ gửi tên; giao diện mới gửi cả mã)
+        sync_line_warehouse(data, warehouses, existing.get(rid) if rid else None)
         # Task 4: thành tiền dòng GỒM VAT (qty × giá × (1 + vat%/100))
         _vp = data.get("vat_pct") or 0
         data["amount"] = round((data.get("qty") or 0) * (data.get("price") or 0) * (1 + _vp / 100), 2)
@@ -302,7 +306,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         pr.code = f"{prefix}{seq:02d}"
         db.commit()
     _COPY = ["product_code", "product_name", "item_group", "group_desc", "qty", "unit",
-             "price", "vat_pct", "amount", "warehouse", "required_date", "note"]
+             "price", "vat_pct", "amount", "warehouse", "warehouse_code", "required_date", "note"]
     _std = lead_time.std_days_map(db)
     for it in items_of(db, src.id):
         data = {k: getattr(it, k) for k in _COPY}

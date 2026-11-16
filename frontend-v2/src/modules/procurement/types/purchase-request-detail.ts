@@ -30,7 +30,13 @@ export interface PurchaseRequestItem {
   vat_pct: number
   /** Backend tự tính = qty × price × (1 + vat_pct). */
   amount: number
+  /** TÊN kho nhận — chữ hiển thị. */
   warehouse: string
+  /**
+   * bao-CR-759 — MÃ kho nhận (khớp danh mục kho). Dòng cũ / dòng trợ lý AI lập có thể còn trống,
+   * máy chủ tự suy từ tên lúc lưu; chỗ cần mã dùng `resolveWarehouseCode`.
+   */
+  warehouse_code?: string
   required_date: string
   /** Mã nhân sự thu mua phụ trách dòng. */
   assignee: string

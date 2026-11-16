@@ -51,7 +51,7 @@ const LS_CANCELLED = 'cancelled'
 const LS_COLOR = PR_LINE_STATUS_COLOR
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
-  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: LS_NO_PO, progress_note: '', note: '',
+  price: 0, vat_pct: 8, warehouse: '', warehouse_code: '', required_date: '', assignee: '', line_status: LS_NO_PO, progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
 // Hằng số dùng chung cho dòng CHƯA có ảnh chờ: phải là CÙNG một mảng qua mọi lần render,
@@ -420,6 +420,14 @@ export default function PurchaseRequestDetail() {
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
     setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
+  /** bao-CR-759: chọn kho -> ghi cả TÊN lẫn MÃ kho (đổi tên kho trong danh mục không làm dòng mất liên kết).
+   *  Trùng tên thì lấy kho đứng trước trong danh mục — cùng luật máy chủ dùng khi suy mã từ tên. */
+  const setWarehouse = (i: number, name: string) =>
+    setPr((s: any) => ({
+      ...s, items: s.items.map((it: any, idx: number) => idx !== i ? it : {
+        ...it, warehouse: name, warehouse_code: warehouses.find((w) => w.name === name)?.code || '',
+      }),
+    }))
   /** Chọn Phân loại -> điền luôn "Thời gian dự kiến có hàng" = NGÀY QĐ CÓ HÀNG (Ngày tiếp nhận +
    *  số ngày QĐ của phân loại). CHỈ với dòng CHƯA lưu và ô còn trống: dòng đã lưu mà đổi ngày dự
    *  kiến thì phải qua luật nhập lý do, còn ô người dùng đã tự điền/cố ý xóa trắng thì tôn trọng. */
@@ -768,7 +776,8 @@ export default function PurchaseRequestDetail() {
       expected_date: it.expected_date || '',   // Dự kiến có hàng: chép xuống ĐMH (backend cũng tự chép nếu để trống)
       qty_request: qty, qty_order: qty,
       price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
-      warehouse_code: whCode(it.warehouse), note: it.note || '',
+      // bao-CR-759: ưu tiên MÃ kho đã lưu trên dòng, dòng cũ chưa có mã mới tra theo tên
+      warehouse_code: (it.warehouse_code || '').trim() || whCode(it.warehouse), note: it.note || '',
     })
     const lines = (pr.items || []).filter((it: any) => it.product_name)
     const normal: any[] = [], exceeded: any[] = [], exceededMsg: string[] = []
@@ -1298,7 +1307,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td>
                         {editable ? (
-                          <select className="cell-input" value={it.warehouse || ''} onChange={(e) => setItem(i, 'warehouse', e.target.value)} style={{ width: '100%' }}>
+                          <select className="cell-input" value={it.warehouse || ''} onChange={(e) => setWarehouse(i, e.target.value)} style={{ width: '100%' }}>
                             <option value="">-- Kho --</option>
                             {warehouses.map((w) => <option key={w.name} value={w.name}>{w.code} - {w.name}</option>)}
                           </select>
@@ -1573,7 +1582,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Kho nhận <span className="req">*</span></label>
-                <SearchSelect autoSelectSingle value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
+                <SearchSelect autoSelectSingle value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setWarehouse(editIdx, v)} />
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>

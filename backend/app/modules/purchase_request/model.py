@@ -111,6 +111,9 @@ class PurchaseRequestItem(Base, AuditMixin):
     vat_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)       # % VAT theo dòng (Task 4)
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)       # thành tiền = qty*price*(1+vat_pct%)
     warehouse: Mapped[str] = mapped_column(String(100), default="")        # kho nhận
+    # bao-CR-759: MÃ kho nhận (khớp `tab_warehouse.code`). Cột `warehouse` ở trên vẫn giữ TÊN để báo cáo,
+    # xuất Excel, trợ lý AI đọc như cũ; máy chủ giữ hai cột khớp nhau lúc lưu (`warehouse_ref.py`).
+    warehouse_code: Mapped[str] = mapped_column(String(25), default="", server_default="")
     required_date: Mapped[str] = mapped_column(String(10), default="")     # ngày cần hàng (theo dòng)
     expected_date: Mapped[str] = mapped_column(String(10), default="")     # thời gian dự kiến có hàng (NSTM cập nhật; đổi giá trị đã có phải kèm lý do)
     assignee: Mapped[str] = mapped_column(String(100), default="", index=True)  # NSTM phụ trách (mã NV) — scope "được giao" lọc theo cột này
