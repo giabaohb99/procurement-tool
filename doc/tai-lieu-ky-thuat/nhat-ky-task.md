@@ -133,6 +133,8 @@ tên, trong khi trên hệ có PO01187, PO01143, PO01027 tháng 11.
 **Kết quả:** 100 bài kiểm (công cụ trợ lý, canh phạm vi, cổng MCP) đạt; ruff sạch. Không đổi DB.
 
 Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `test/backend/test_assistant_tools.py`
+Deploy: prod 16/11/2026 bản 2.23.4 (main 924b6ca6, dump `prod_truoc_release_20261116_1719.sql.gz`, dựng lại api + dịch vụ AI); thử CPT0234 trên prod ra PO01187, PO01143, PO01027 đúng tên trên hóa đơn
+
 
 ## bao-CR-769 | Trợ lý trả tên trên hóa đơn khi tra lịch sử mua theo mã hàng
 - status: xong
