@@ -9,85 +9,6 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
-- status: xong
-- date: 2026-11-13
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 4
-**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
-
-**Đã làm**
-- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
-- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
-- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
-- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
-- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
-- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
-- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
-
-Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
-Commit: 057b70ac (erp-v2)
-
-## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
-- status: xong
-- date: 2026-11-12
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 2
-**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
-
-**Đã làm**
-- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
-- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
-- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
-- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
-- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
-- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
-- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
-
-Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
-Commit: 3e898b75 (erp-v2)
-Deploy: dev
-
-## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
-- status: xong
-- date: 2026-11-12
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 2
-**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
-
-**Đã làm**
-- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
-- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
-- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
-- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
-- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
-- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
-- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
-- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
-
-Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
-Commit: 8836760a (erp-v2)
-Deploy: dev
-
-## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
-- status: xong
-- date: 2026-11-11
-- list: Thu mua
-- pic: NSU209
-- tag: Bảo
-**Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
-
-**Đã làm**
-- Thêm vào bảng v1 các cột v2 đang có. Hiện sẵn: Mã NCC, Tên VTBB, ĐVT, SL dự kiến, Đơn giá, VAT, Thành tiền, Thời gian giao, Ngày công nợ. Ẩn sẵn, bật ở menu Cột: Giá mua gần nhất, Giá mua cao nhất, Giá đề xuất, phí vận chuyển, thông tin NCC, quy cách, mẫu, các mốc ngày, ghi chú.
-- Cột thêm đều bấm tiêu đề để xếp được; người đã lưu bố cục cũ vẫn thấy ngay các cột hiện sẵn, cột ẩn sẵn vẫn ẩn.
-- Xuất CSV theo đúng các cột đang hiện trên bảng.
-- Máy chủ không đổi: API đã trả đủ các trường này từ trước.
-
-Mã nguồn: `frontend/src/pages/SurveyReport.tsx`
-
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
@@ -193,6 +114,140 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-241 | Trợ lý AI và cổng MCP đề xuất sửa đơn mua hàng đang Nháp hoặc Bị trả lại
+- status: xong
+- date: 2026-11-16
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** ngày 16/11 đơn PO01178 tạo trên giao diện mới bị trống kho nhận và đơn giá về 0, phải chạy script trên prod
+mới sửa được. Trợ lý AI và cổng MCP chỉ sửa được yêu cầu mua hàng, yêu cầu báo giá, câu chữ bản in đề nghị thanh toán và
+đơn nghỉ phép, chưa sửa được đơn mua hàng. Đã được duyệt ngày 16/11.
+
+**Đã làm**
+- Công cụ đề xuất sửa phiếu nhận thêm đơn mua hàng: đầu đơn sửa được **Ghi chú** và **Hình thức thanh toán NCC**; từng dòng
+  sửa được đơn giá, VAT, số lượng đặt, kho nhận, tên trên hóa đơn, ngày yêu cầu có hàng, ngày dự kiến có hàng, ghi chú dòng.
+  Dòng nhận dạng bằng id dòng, hoặc mã hàng khi mã chỉ có một dòng trên đơn (mã trùng thì bắt buộc dùng id); kho, VAT, hai
+  ngày và ghi chú đặt được cho cả đơn một lượt. Kho nhận gõ mã hoặc tên đều được, máy chủ quy về mã trong danh mục kho đang
+  dùng. Đợt này không thêm, không bỏ dòng.
+- Chỉ sửa đơn **Nháp** hoặc **Bị trả lại**; đơn ở trạng thái khác bị từ chối kèm câu giải thích và link mở đơn trên web. Gác
+  đúng quyền ghi đơn mua hàng và phạm vi dữ liệu như nút **Lưu** trên web; đơn ngoài phạm vi trả cùng một câu với đơn không
+  tồn tại. Kiểm giá trị: đơn giá và số lượng không âm, có trần; VAT từ 0 tới dưới 100; đơn nhập khẩu thì VAT dòng phải 0;
+  ngày đúng dạng năm-tháng-ngày; dòng đã Hoàn thành hoặc Hủy không sửa.
+- Bảng đề xuất ghi cũ và mới từng ô của từng dòng, kèm giá trị đặt trước và sau VAT theo loại tiền của đơn, cảnh báo khi
+  đơn giá mới lệch giá đề xuất trên yêu cầu mua hàng nguồn quá 20%, và link tuyệt đối tới đơn.
+- Bước xác nhận kiểm lại từ đầu quyền, phạm vi, trạng thái, từng giá trị, và mọi ô sửa được của đầu đơn cùng mọi dòng chưa
+  bị ai đổi kể từ lúc đề xuất; có thay đổi thì chặn, xác nhận hai lần không ghi đôi. Ghi đi đúng hàm lưu đơn của màn web với
+  đủ danh sách dòng và lần giao dựng lại từ sổ, nên phần tính lại tiến độ, nhật ký và đồng bộ yêu cầu mua hàng chạy như khi
+  sửa tay. Sổ thay đổi của bot ghi ảnh trước và sau, chưa hoàn tác tự động cho đơn mua hàng.
+- Công cụ đọc chứng từ trả thêm id dòng, kho nhận và tên trên hóa đơn của dòng đơn mua hàng để AI chỉ đúng dòng.
+
+**Kiểm:** 24 bài kiểm mới (sửa giá và kho đơn Nháp, đặt kho cả đơn, giữ lần giao, cảnh báo lệch giá, đơn đã duyệt, thiếu
+quyền, ngoài phạm vi, kho không có, VAT đơn nhập khẩu, giá trị sai, mã hàng trùng, đổi giữa hai bước, gửi duyệt giữa hai
+bước, xác nhận hai lần, token của người khác, khóa chỉ đọc, đi trọn qua cổng MCP). 347 bài của công cụ sửa phiếu, sổ thay
+đổi và các bài canh cổng MCP đạt; ruff sạch. 30 bài đỏ ở lõi hội thoại bot và ba bài canh phạm vi đỏ sẵn trên mã gốc trước
+khi sửa, không liên quan.
+
+**Còn lại:** nhóm cấu hình MCP **Sửa và xóa phiếu của chính mình** phải đang bật thì cổng MCP mới gọi được; chưa thêm hoặc
+bỏ dòng; chưa hoàn tác tự động; bài hướng dẫn sử dụng do Agent 2 viết.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_update.py`, `update_tool.py`, `procurement_doc_tool.py`,
+`assistant/tool_router.py`, `assistant/change_service.py`.
+Kiểm: `test/backend/test_mcp_sua_don_mua_hang_cr241.py`.
+Tài liệu: `doc/agent-hub/06-cong-mcp.md` mục 3.3, `doc/tai-lieu-ky-thuat/change-log-ai.md`.
+
+---
+
+## van-hanh-sua-gia-dmh-1311 | Sửa đơn giá năm đơn mua hàng đã duyệt hoặc đã nhận hàng trên prod rồi tính lại công nợ
+- status: xong
+- date: 2026-11-13
+- list: Sản xuất - Thu mua
+- pic: NSU209
+**Bối cảnh:** phiếu hỗ trợ TK13112601 ngày 13/11 (NSTM Lâm Bích Dư) báo đơn giá trên một số đơn mua hàng sai so với giá chốt với nhà cung cấp. Trưởng phòng không tự sửa được: đơn đã nhận hàng thì nút *Hủy duyệt* bị chặn, *Trả về* chỉ dùng cho đơn *Chờ duyệt*, còn đơn đã duyệt thì khóa ô đơn giá. Ban điều hành chốt không mở đơn đã nhận hàng về *Nháp*, mà sửa thẳng đơn giá rồi tính lại thành tiền và công nợ.
+
+**Đã làm**
+- Viết script sửa giá chạy trong container api trên prod. Script chạy thử trước, chỉ ghi khi thêm `--apply`. Script dừng khi giá cũ trên đơn không khớp giá báo sửa, khi đơn đã có đề nghị thanh toán chưa hủy, hoặc khi công nợ đã được trả.
+- Sau khi đặt giá mới, script gọi đúng hàm tính lại của luồng lưu đơn, nên thành tiền dòng và công nợ (tính theo số lượng đã nhận) cùng cập nhật. Lịch sử đổi giá tự ghi vào nhật ký thay đổi.
+- Sao lưu toàn bộ cơ sở dữ liệu prod trước mỗi lần ghi.
+- Đã sửa năm đơn:
+  - PO00572 (ĐMH02266), dòng NTN5310: 3.340 thành 3.440.
+  - PO00789 (ĐMH02330), dòng NTN5293 và NTN5337: 3.612 thành 3.440.
+  - PO00343 (ĐMH02246), dòng NTN5273: 3.340 thành 3.440. Đơn đã nằm trong đề nghị thanh toán YCTT00126 ở *Nháp*, dòng đã ghi sẵn số tiền theo giá mới, Ban điều hành cho bỏ qua chặn này.
+  - PO00967, dòng NTN5369: 1.040 thành 987. Đơn mới *Đã duyệt*, chưa nhận hàng nên không có công nợ.
+  - PO00665 (ĐMH02322, NCC Phương Nam), năm dòng: CHT0212 3.500 thành 3.800, NAP0136 1.000 thành 700, CHT0218 6.800 thành 7.100, CHT0057 2.400 thành 2.700, NAP0144 1.000 thành 700. Ở đơn này người dùng xin đưa đơn về *Nháp*, nhưng đơn đã nhận đủ và đã có 5 khoản công nợ nên chuyển sang sửa thẳng đơn giá.
+
+**Kết quả:** cả năm đơn giữ nguyên trạng thái và số đã nhận. Công nợ PO00665 từ 75.234.960đ lên 77.225.940đ, chưa trả. Các đơn còn lại có công nợ khớp giá mới, đọc lại qua màn chi tiết đơn.
+
+**Còn lại:** chờ Ban điều hành quyết có làm nút *Sửa giá* cho trưởng phòng ở đơn đã duyệt hoặc đã nhận hàng hay không (chặn khi đã có đề nghị thanh toán gửi duyệt hoặc đã trả tiền), để thu mua tự sửa mà không cần nhờ kỹ thuật.
+
+Mã nguồn: script `sua_gia_tk13112601.py` (mẫu) gọi `purchase_order.delivery_service.recompute_effects`; chặn gốc ở `purchase_order/edit_service.py` (`unapprove_po`, `block_edit_approved_order`)
+Deploy: prod 13/11 và 14/11, sửa dữ liệu bằng script; bản sao trước khi sửa `prod_truoc_release_20261113_1534.sql.gz`, `prod_truoc_release_20261114_1032.sql.gz`, `prod_truoc_release_20261114_1159.sql.gz` trong `~/backups/release-2026-10/` trên máy chủ prod.
+
+## duoc-CR-757b | Trưởng phòng gán lịch làm việc riêng cho nhân viên, quỹ phép bậc phòng ban đúng phòng, trợ lý không bao giờ nói lương người khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** thử trên máy local sau lượt đầu của duoc-CR-757 thấy hai chỗ thiếu: Trưởng phòng không đổi được lịch cho nhân viên (chỉ phòng Nhân sự có quyền, mà cấp quyền đó thì họ sửa được cả mẫu lịch và lịch của cả công ty), và Trưởng phòng hỏi trợ lý phép của nhân viên thì ra rỗng, còn mức phạm vi Phòng ban của quỹ phép thực chất là cả công ty. Đã chốt: Trưởng phòng được gán lịch riêng cho nhân viên phòng mình trong giới hạn chặt; quỹ phép mức Phòng ban chỉ gồm người phòng mình. Cùng đợt chốt thêm luật tuyệt đối: trợ lý AI, bot và cổng MCP không bao giờ nói lương của người khác, chỉ chính người đó hỏi lương của mình trong cuộc trò chuyện riêng.
+
+**Đã làm**
+- Thêm khóa quyền **Lịch làm việc riêng (Trưởng phòng gán)**. Người có khóa này chỉ gán được lịch cấp Nhân sự cho nhân viên trong phạm vi, không cho chính mình, chỉ chọn mẫu đang dùng, ngày hiệu lực từ hôm nay; chỉ sửa hoặc xóa dòng do chính mình gán; dòng đã bắt đầu chỉ đặt được ngày kết thúc và không xóa được. Vai trò Trưởng phòng mẫu được cấp khóa này ở mức Phòng ban.
+- Đặt ngày kết thúc cho một lịch tạm thì lịch cũ tự nối lại liền mạch từ ngày hôm sau, áp cho cả phòng Nhân sự lẫn Trưởng phòng; dòng nối lại giữ người gán gốc để Trưởng phòng không xóa được lịch do Nhân sự gán.
+- Thêm đường API trả danh sách nhân viên mà người gọi gán được lịch riêng, dùng cho ô chọn người; hồ sơ nhân sự có nút **Đổi lịch riêng** mở sẵn hộp gán lịch cho đúng người đó.
+- Mức phạm vi Phòng ban của quỹ phép nay lọc qua hồ sơ nhân sự: chỉ người có phòng chính thuộc phòng của người xem và đang ở công ty hiện tại của người xem; ô **Phòng ban được xem** cũng không mở sang công ty khác. Áp cho mọi màn và báo cáo quỹ phép cùng công cụ trợ lý.
+- Trợ lý có công cụ mới trả lương và phụ cấp của chính người hỏi, chỉ trong khung Trợ lý trên web hoặc chat riêng đã liên kết với bot; cổng MCP không có công cụ này và lời dặn của cổng cấm nói lương của bất kỳ ai. Tiền của phiếu thanh toán nghỉ phép bị giấu với người khác người nhận và bị loại khỏi số tổng hợp; tìm lịch sử chat ở kênh chung bỏ các lượt hỏi lương.
+- Viết tài liệu: mục 20 (Trưởng phòng gán lịch riêng, chín luật, ma trận quyền) và mục 21 (sổ việc trước và sau khi deploy) của tài liệu Lịch làm việc, mục 4d của tài liệu thiết kế phân quyền, phần quỹ phép mức Phòng ban ở tài liệu Nghỉ phép và luật nghỉ phép cho người viết mã, bảng API Nhân sự dựng lại bằng máy cùng các lỗi mới, chức năng CN-HRM-04 và hai yêu cầu phi chức năng mới về lương và phân quyền, tài liệu công cụ và bảo mật của Trợ lý AI, tài liệu cổng MCP, sổ việc deploy trong kế hoạch.
+- Bài hướng dẫn **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** thêm mục Trưởng phòng đổi lịch riêng cho nhân viên; cẩm nang Nghỉ phép của trợ lý thêm cách trả lời Trưởng phòng hỏi phép và đổi lịch của nhân viên.
+
+**Kết quả:** mã, tài liệu, bài hướng dẫn và cẩm nang xong ở máy local; bài hướng dẫn và cẩm nang đã nạp vào cơ sở dữ liệu local. Kho tìm kiếm của trợ lý ở local đang tắt nên chưa nạp lại.
+
+**Còn lại:** trên dev và prod phải làm đủ năm bước ở mục 21 của tài liệu Lịch làm việc: đếm trước các vai trò có quỹ phép mức Phòng ban (sẽ hẹp lại), cấp khóa mới cho vai trò quản trị trước, tick quyền cho vai trò Trưởng phòng, khởi động lại API, chạy lại bài hướng dẫn, cẩm nang và chỉ mục tìm kiếm.
+
+Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py` · `assignment_picker.py` · `assignment_heal.py` · `assignment_controller.py` · `assignment_service.py` · `core/scoping.py` · `core/permissions.py` · `seed.py` · `assistant/tools/salary_privacy.py` · `my_salary_tool.py` · `assistant/private_chat.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/hr/components/employee-work-schedule-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `test/backend/test_truong_phong_gan_lich_rieng_cr757.py` · `test_tro_ly_khong_lo_luong_cr757.py`
+
+## duoc-CR-757 | Lịch làm việc theo phòng ban trên trang phòng ban và trợ lý AI tra lịch làm việc, ngày đã nghỉ, phép của nhân sự khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** yêu cầu cấu hình lịch làm việc riêng cho từng phòng ban, tính ngày nghỉ phép theo lịch đó, và hỏi trợ lý AI (chat hoặc MCP) được số ngày phép còn lại và số ngày đã nghỉ. Lịch theo bốn cấp và cách đếm ngày nghỉ theo lịch của người nghỉ đã có từ duoc-CR-589; đợt này bổ sung phần còn thiếu. Đã chốt: trợ lý tra được cả người khác theo quyền, và trang phòng ban có thêm tab Lịch làm việc.
+
+**Đã làm**
+- Trang chi tiết phòng ban chia hai tab *Pháp nhân & nhân sự* và *Lịch làm việc*. Tab mới cho biết phòng đang theo mẫu lịch nào, lịch lấy từ đâu (gán riêng cho phòng, theo pháp nhân, theo toàn hệ thống hay lịch mặc định), lưới bảy ngày, số ngày công mỗi tuần và danh sách các lần gán lịch riêng cho phòng.
+- Nút *Gán lịch cho phòng* mở màn Gán lịch với hộp *Thêm dòng gán lịch* đã chọn sẵn cấp Phòng ban và đúng phòng đang xem; nút *Xem gán lịch* mở màn đó lọc sẵn cấp Phòng ban.
+- Thêm đường API trả lịch làm việc đang áp cho cả một phòng kèm cấp nguồn và các lần gán lịch của phòng, gác bằng quyền xem phòng ban và phạm vi phòng ban.
+- Trợ lý AI và cổng MCP trả thêm lịch làm việc đang áp của người hỏi và số ngày đã nghỉ trong năm theo từng loại nghỉ, kể cả loại không trừ quỹ phép như nghỉ không lương hay nghỉ ốm; đơn đã duyệt cho ngày sắp tới và đơn chờ duyệt được tách riêng, không cộng vào số đã nghỉ.
+- Thêm công cụ chỉ đọc cho phòng Nhân sự và quản lý tra quỹ phép, ngày đã nghỉ và lịch làm việc của nhân sự khác theo mã, tên hoặc phòng. Công cụ gác bằng quyền xem quỹ phép, chỉ trả người nằm trong cả phạm vi xem hồ sơ lẫn phạm vi xem quỹ phép; số ngày đã nghỉ của người khác chỉ hiện khi người hỏi còn được xem đơn nghỉ của họ. Không trả lương hay thông tin nhạy cảm.
+- Viết tài liệu: mục 19 mới của tài liệu Lịch làm việc (kèm sửa mã cấp gán cho khớp bộ mã thật, nhãn ô của hộp gán lịch, vị trí khung lịch trên hồ sơ và tên các bài kiểm), mục 17 của tài liệu Nghỉ phép, bảng API Nhân sự dựng lại bằng máy cùng phần dữ liệu vào ra, hai chức năng mới CN-HRM-02 và CN-HRM-03, ba yêu cầu phi chức năng mới, tài liệu cổng MCP và bảng bảo mật công cụ của Trợ lý AI.
+- Thêm bài hướng dẫn sử dụng **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** (xem và gán lịch cho phòng, thứ tự áp lịch, cách đếm ngày nghỉ theo lịch, cách hỏi trợ lý AI) và dạy cẩm nang Nghỉ phép của trợ lý trả lời ba loại câu hỏi mới.
+
+**Kết quả:** mã và tài liệu xong ở máy local, bài hướng dẫn và cẩm nang đã nạp vào cơ sở dữ liệu local. Lượt 2 ghi ở mục duoc-CR-757b.
+
+**Còn lại:** lên dev thì làm theo sổ việc deploy ở mục 21 của tài liệu Lịch làm việc.
+
+Mã nguồn: `backend/app/modules/work_schedule/resolver.py` · `template_controller.py` · `assistant/tools/leave_tool.py` · `leave_taken_schedule.py` · `employee_leave_tool.py` · `agent_hub/mcp.py` · `mcp_settings.py` · `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `hr/pages/department-detail-page.tsx` · `hr/pages/work-schedule-assignment-list-page.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `ai_skill/seed_handbook/40-nghi-phep.md` · `test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py`
+
+## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
+- status: xong
+- date: 2026-11-13
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** bản kiêm nhiệm hôm trước bắt chọn công ty rồi chọn phòng của công ty đó, trong khi nghiệp vụ thật là phòng ban và công ty độc lập: một người kiêm nhiệm phòng A của công ty mình và kiêm nhiệm thêm công ty B.
+
+**Đã làm**
+- Mỗi dòng kiêm nhiệm nay thuộc một trong hai loại: Phòng ban (chọn phòng của công ty hiện tại) hoặc Công ty (chọn cả một công ty khác, không chọn phòng); dữ liệu cũ đã chuyển sang hai loại.
+- Kiêm nhiệm công ty B có bật công tắc thì người đó thấy dữ liệu công ty B theo bậc vai trò: bậc công ty thấy toàn công ty B, bậc phòng ban thấy các phòng của mình ở công ty B; văn bản và thư mục chia cho công ty B cũng mở cho họ.
+- Gán kiêm nhiệm công ty cần quyền ghi hồ sơ ở chính công ty đó, tôn trọng giới hạn công ty trong từng quyền của người gán; mỗi lần mở hoặc đóng phạm vi công ty đều ghi nhật ký riêng để quản trị soi lại.
+- Hộp thêm kiêm nhiệm chọn loại trước và đã gọn lại theo góp ý; trang công ty có bảng người kiêm nhiệm tại công ty; danh sách nhân sự có cột kiêm nhiệm hiện mục đầu kèm số mục còn lại, rê chuột xem đủ.
+- Rà mã độc lập phát hiện chốt gán kiêm nhiệm công ty bỏ qua giới hạn công ty của quyền người gán, cùng hai lỗi nhỏ hơn; đã sửa và thêm bài kiểm canh.
+- Cập nhật tài liệu nhân sự, phân quyền, tài liệu API, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý.
+
+Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `department_service.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn756a_kiem_nhiem_loai_phong_cong_ty.py`, `frontend-v2/src/modules/hr/components/employee-concurrent-form-fields.tsx`, `company-concurrent-members-table.tsx`, `employee-concurrent-roles.tsx`
+Deploy: dev 13/11/2026, commit 1fad738b (migration kn755a + kn756a, seed hướng dẫn sử dụng nhân sự, xuất bản cẩm nang nhan-su-ho-so); prod chưa
+
 ## ai-CR-240 | Link trợ lý AI mở thẳng hộp đính tệp của lần giao, đề nghị thanh toán, phiếu khảo sát và yêu cầu báo giá
 - status: xong
 - date: 2026-11-13
@@ -237,6 +292,85 @@ Mã nguồn: `backend/app/modules/assistant/tools/po_invoice_check.py` (`reconci
 Commit: 5405d917, gộp ada7a00e (erp-v2)
 Deploy: chưa
 
+## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
+
+**Đã làm**
+- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
+- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
+- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
+- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
+- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
+- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
+- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
+Commit: 057b70ac (erp-v2)
+
+## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
+
+**Đã làm**
+- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
+- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
+- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
+- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
+- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
+- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
+- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
+Commit: 3e898b75 (erp-v2)
+Deploy: dev
+
+## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
+
+**Đã làm**
+- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
+- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
+- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
+- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
+- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
+- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
+- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
+- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
+Commit: 8836760a (erp-v2)
+Deploy: dev
+
+## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
+- status: xong
+- date: 2026-11-11
+- list: Thu mua
+- pic: NSU209
+- tag: Bảo
+**Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
+
+**Đã làm**
+- Thêm vào bảng v1 các cột v2 đang có. Hiện sẵn: Mã NCC, Tên VTBB, ĐVT, SL dự kiến, Đơn giá, VAT, Thành tiền, Thời gian giao, Ngày công nợ. Ẩn sẵn, bật ở menu Cột: Giá mua gần nhất, Giá mua cao nhất, Giá đề xuất, phí vận chuyển, thông tin NCC, quy cách, mẫu, các mốc ngày, ghi chú.
+- Cột thêm đều bấm tiêu đề để xếp được; người đã lưu bố cục cũ vẫn thấy ngay các cột hiện sẵn, cột ẩn sẵn vẫn ẩn.
+- Xuất CSV theo đúng các cột đang hiện trên bảng.
+- Máy chủ không đổi: API đã trả đủ các trường này từ trước.
+
+Mã nguồn: `frontend/src/pages/SurveyReport.tsx`
+
 ## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
 - status: xong
 - date: 2026-11-13
@@ -252,6 +386,7 @@ Deploy: chưa
 - Đã xuất bản cẩm nang ở máy local; dev và prod xuất bản ở lần deploy tới.
 
 Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `70-dat-xe.md`
+Deploy: dev 13/11/2026, xuất bản cẩm nang nhan-su-ho-so và dat-xe; prod chưa
 
 ## duoc-CR-755 | Kiêm nhiệm thành tab riêng trên hồ sơ nhân sự và cho phép kiêm nhiệm ở công ty khác
 - status: xong
@@ -271,6 +406,7 @@ Mã nguồn: `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`, `
 - Viết tài liệu nhân sự, tài liệu API, mục phân quyền, bài hướng dẫn sử dụng khai kiêm nhiệm và cẩm nang trợ lý; đã nạp lại kho tìm kiếm của trợ lý ở máy local.
 
 Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, `core/auth.py`, `core/subject_match.py`, migration `kn755a_bang_kiem_nhiem.py`, `frontend-v2/src/modules/hr/components/employee-tab-concurrent.tsx`, `employee-concurrent-form-dialog.tsx`, `employee-company-change-concurrent-dialog.tsx`, `department-concurrent-members-table.tsx`, `org-chart-concurrent-section.tsx`
+Deploy: dev 13/11/2026 cùng đợt duoc-CR-756, commit 1fad738b; prod chưa
 
 ## duoc-CR-754 | Sắp lại menu Nhân sự: đổi Master thành Danh mục, gom các màn cấu hình vào một mục Thiết lập có dải tab phẳng
 - status: xong
@@ -289,6 +425,7 @@ Mã nguồn: `backend/app/modules/employee/concurrent_*.py`, `core/scoping.py`, 
 - Kho tìm kiếm của trợ lý ở máy local chưa nạp lại được 46 bài vì hạn mức nhúng Gemini trong ngày đã hết, cần chạy lại lệnh nạp chỉ mục khi hạn mức mở lại; dev và prod nạp ở lần deploy tới.
 
 Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.tsx`, `utils/hr-setup-tab-list.ts`, `components/hr-setup-tabs.tsx`, `components/sub-tab-link.tsx`, `shared/crud/crud-list-page.tsx`, `shared/ui/page-header.tsx`, `app/layouts/module-sidebar.tsx`, `backend/scripts/seed_help_*.py`, `backend/app/modules/ai_skill/seed_handbook/*.md`
+Deploy: dev 13/11/2026, commit 1fad738b (seed hướng dẫn sử dụng nghỉ phép, đặt phòng họp, nhân sự; xuất bản cẩm nang nghi-phep, dat-phong-hop); prod chưa
 
 ## duoc-CR-752 | Viết hướng dẫn sử dụng cho các đợt Nhân sự, Hợp đồng lao động, Đặt xe, Tra cứu thị trường chưa có bài để Trợ lý AI trích được
 - status: xong
@@ -309,6 +446,7 @@ Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `config/hr-setup-nav-item.
 - Trên máy local đã chạy seed hai lần và nạp lại chỉ mục kèm dọn đoạn mồ côi, kho đủ 159 bài và 11 câu hỏi thường gặp; hỏi thử sáu câu đều trích đúng bài mới. Dev và prod nạp ở lần deploy tới theo mục B.6 của quy trình deploy.
 
 Mã nguồn: `backend/scripts/seed_help_hop_dong_lao_dong.py`, `seed_help_nhan_su.py`, `seed_help_dat_xe_chon_nguoi_duyet.py`, `seed_help_phe_duyet_theo_quyen.py`, `seed_help_customs_prices.py`, `seed_help_he_thong_cap_nhat.py`
+Deploy: dev 13/11/2026, commit 1fad738b (seed các bài hướng dẫn sử dụng, kho tìm kiếm trợ lý 178/182 bài, 4 bài Báo cáo Nhân sự chờ nạp lại khi hạn mức nhúng mở); prod chưa
 
 ## ai-CR-235 | Cẩm nang trợ lý cho bốn phân hệ văn phòng: đặt xe, duyệt dấu, diễn đàn, kho
 - status: xong

@@ -77,7 +77,9 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),
-     r"\bsua\b|\bdoi\b|chinh|\bxoa\b|bo dong|them .{1,40} vao|cap nhat|ly do"),
+     r"\bsua\b|\bdoi\b|chinh|\bxoa\b|bo dong|them .{1,40} vao|cap nhat|ly do"
+     #  ai-CR-241: "đặt kho cho PO01178", "đơn giá dòng 2 thành 1.100" — sửa ĐMH không luôn có chữ "sửa".
+     r"|\bdat kho\b|kho nhan|don gia .{0,30}(thanh|la|=)"),
     ("account", frozenset({"propose_account_setup", "employee_lookup"}),
      r"tai khoan|vai tro|phan quyen|gan quyen|loai tru phong"),
     ("employee", frozenset({"employee_lookup"}),
