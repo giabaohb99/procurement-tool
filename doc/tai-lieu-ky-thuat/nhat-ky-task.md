@@ -114,6 +114,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-765 | Cổng MCP trả lời server/discover để ChatGPT trang Plugins nối được
+- status: xong
+- date: 2026-11-16
+- list: Công cụ Ai
+- pic: NSU209
+**Bối cảnh:** nối ChatGPT vào ERP prod theo trang **Plugins** mới thì đăng nhập ERP và Cho phép đều thành công, nhưng
+ChatGPT báo **Authentication succeeded, action discovery failed**. Nhật ký cổng MCP prod 16/11 cho thấy sau khi lấy token,
+ChatGPT chỉ gọi **server/discover** (phương thức của MCP bản 2026-07-28) rồi dừng; cổng trả kết quả rỗng (cách làm cũ từ
+kh-AI2-5, khi chỉ Claude gọi phương thức này) nên ChatGPT không biết máy chủ có công cụ. Kết nối ChatGPT tạo từ trước (dev)
+vẫn chạy vì đi đường bắt tay **initialize** cũ.
+
+**Đã làm**
+- **server/discover** trả đủ kết quả khám phá: bản giao thức đang phục vụ, khả năng (tools, prompts), danh tính máy chủ,
+  câu dặn (kèm câu dặn thêm của quản trị), gợi ý lưu tạm 5 phút theo từng người.
+- **initialize** và **server/discover** dùng chung một khai báo khả năng và câu dặn, không lệch nhau.
+- Bài kiểm đổi theo: kết quả khám phá phải đủ trường và khớp với initialize.
+
+**Kết quả:** bài kiểm cổng MCP và màn Kết nối AI đạt (12 bài). Cần người dùng thử nối lại ChatGPT sau khi lên.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
+
 ## bao-CR-764 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
 - status: xong
 - date: 2026-11-16

@@ -498,6 +498,16 @@ def _ok(rid, result) -> dict:
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
+CAPABILITIES = {"tools": {"listChanged": False}, "prompts": {"listChanged": False}}
+
+
+def _instructions(db: Session) -> str:
+    from . import mcp_settings
+
+    extra = mcp_settings.current(db)["extra_instructions"]              # ai-CR-216: câu dặn thêm của quản trị (G7)
+    return f"{INSTRUCTIONS}\n\n{extra}" if extra else INSTRUCTIONS
+
+
 #  kh-AI2-4: MCP `prompts` — mỗi cẩm nang (skill) người dùng được đọc thành một lời nhắc sẵn, để ứng dụng AI ngoài (Claude
 #  Desktop, ChatGPT) chọn từ danh sách là AI đọc cẩm nang trước khi làm. Chỉ dặn GỌI read_skill, không nhét nội dung skill
 #  vào lời nhắc — nội dung vẫn đi qua tool có gác quyền và nhật ký.
@@ -550,17 +560,17 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         return None
     if method == "initialize":
         trace["client"] = mcp_log.client_from_initialize(params)
-        from . import mcp_settings
-
-        extra = mcp_settings.current(db)["extra_instructions"]          # ai-CR-216: câu dặn thêm của quản trị (G7)
-        instructions = f"{INSTRUCTIONS}\n\n{extra}" if extra else INSTRUCTIONS
-        return _ok(rid, {"protocolVersion": PROTOCOL_VERSION,
-                         "capabilities": {"tools": {"listChanged": False}, "prompts": {"listChanged": False}},
-                         "serverInfo": SERVER_INFO, "instructions": instructions})
+        return _ok(rid, {"protocolVersion": PROTOCOL_VERSION, "capabilities": CAPABILITIES,
+                         "serverInfo": SERVER_INFO, "instructions": _instructions(db)})
     if method == "ping":
         return _ok(rid, {})
-    if method == "server/discover":          # kh-AI2-5: Claude gọi phương thức này — trả rỗng cho sạch nhật ký
-        return _ok(rid, {})
+    if method == "server/discover":
+        #  bao-CR-765: MCP 2026-07-28 (SEP-2575) — ChatGPT trang Plugins gọi ngay sau OAuth, trước mọi thứ; trả rỗng (như
+        #  kh-AI2-5 cũ) thì ChatGPT báo "action discovery failed". Chỉ khai bản giao thức đang phục vụ thật để ứng dụng
+        #  quay về bắt tay `initialize`. Câu dặn có phần riêng của quản trị nên cache theo người (private), sống ngắn.
+        return _ok(rid, {"resultType": "complete", "supportedVersions": [PROTOCOL_VERSION], "capabilities": CAPABILITIES,
+                         "instructions": _instructions(db), "_meta": {"io.modelcontextprotocol/serverInfo": SERVER_INFO},
+                         "ttlMs": 300_000, "cacheScope": "private"})
     if method == "prompts/list":
         return _ok(rid, {"prompts": list_prompts(db, user)})
     if method == "prompts/get":

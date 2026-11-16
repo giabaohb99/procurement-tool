@@ -93,7 +93,19 @@ def test_khoa_chi_doc_va_nhom_tat_khong_dung_duoc(db, seed, cap_quyen):
     assert mcp_settings.GROUP_OF["propose_document_delete"].key == "edit"
 
 
-def test_server_discover_tra_rong(db, seed):
+def test_server_discover_tra_kha_nang_may_chu(db, seed):
+    """bao-CR-765: ChatGPT (trang Plugins) gọi `server/discover` ngay sau OAuth rồi mới liệt kê công cụ. Trả rỗng như cũ
+    thì ChatGPT báo *Authentication succeeded, action discovery failed* và không gọi tools/list. Phải trả DiscoverResult
+    (MCP 2026-07-28): bản giao thức máy chủ hỗ trợ, khả năng, danh tính, câu dặn, gợi ý cache."""
     user = db.get(User, seed.u_req_id)
     res = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 7, "method": "server/discover"}, {})
-    assert res == {"jsonrpc": "2.0", "id": 7, "result": {}}
+    assert res["id"] == 7 and "error" not in res
+    r = res["result"]
+    assert r["resultType"] == "complete"
+    assert r["supportedVersions"] == [mcp.PROTOCOL_VERSION]     # chỉ khai bản đang phục vụ thật (bắt tay initialize)
+    assert "tools" in r["capabilities"] and "prompts" in r["capabilities"]
+    assert r["_meta"]["io.modelcontextprotocol/serverInfo"] == mcp.SERVER_INFO
+    assert r["instructions"].startswith(mcp.INSTRUCTIONS[:20])
+    assert r["cacheScope"] == "private" and isinstance(r["ttlMs"], int)
+    init = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 8, "method": "initialize", "params": {}}, {})["result"]
+    assert init["capabilities"] == r["capabilities"] and init["instructions"] == r["instructions"]
