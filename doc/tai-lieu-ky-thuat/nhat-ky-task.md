@@ -131,6 +131,8 @@ mua theo mã hàng chưa trả **Tên trên hóa đơn**, nên trợ lý phải 
 
 Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `backend/app/modules/purchase_history/service.py` ·
 `purchase_history/controller.py` · `test/backend/test_assistant_tools.py` · `test_lich_su_ten_hoa_don_cr522.py`
+Deploy: prod 16/11/2026 bản 2.23.3 (main aadfa26e, dump trước, dựng lại api + dịch vụ AI; thử trên prod trả đúng tên trên hóa đơn)
+
 
 ## bao-CR-768 | Dịch vụ giữ phiên Zalo ký và kiểm chữ ký theo khuôn mới của cổng ERP
 - status: xong
