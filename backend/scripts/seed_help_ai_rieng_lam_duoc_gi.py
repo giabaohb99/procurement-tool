@@ -42,7 +42,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <tr><td><strong>Báo cáo gom sẵn và bảng số tổng hợp</strong></td><td>13 báo cáo của phân hệ Báo cáo và bảng số tự ghép (mua hàng, công nợ, đề nghị thanh toán) — chỉ báo cáo bạn được giao.</td><td>Bật</td></tr>
 <tr><td><strong>Kho skill AI</strong></td><td>Liệt kê, đọc skill và tệp đi kèm.</td><td>Bật</td></tr>
 <tr><td><strong>Thu mua</strong></td><td>Đọc danh sách / chi tiết YCMH, YCBG, ĐMH, nhận hàng; sản phẩm, nhà cung cấp, hợp đồng; giá tốt nhất và lịch sử mua; chấm điểm NCC; <strong>so giá trên web</strong> với giá mua gần nhất; soạn YCMH, YCBG.</td><td>Bật</td></tr>
-<tr><td><strong>Công nợ và thanh toán</strong></td><td>Tra công nợ, đọc đề nghị thanh toán; soạn đề nghị thanh toán thì AI trả link mở form điền sẵn trên web.</td><td>Bật</td></tr>
+<tr><td><strong>Công nợ và thanh toán</strong></td><td>Tra công nợ, đọc đề nghị thanh toán; soạn đề nghị thanh toán: AI tạo phiếu ở <strong>Nháp</strong>, bạn vào web xem lại rồi tự bấm Gửi duyệt.</td><td>Bật</td></tr>
 <tr><td><strong>Tra cứu thị trường (tờ khai hải quan)</strong></td><td>Giá nhập khẩu theo kỳ, thời điểm nên mua, nhà nhập khẩu / xuất xứ, kiểm pháp lý hóa chất và biểu thuế.</td><td>Bật</td></tr>
 <tr><td><strong>Đặt xe, duyệt dấu, tồn kho, diễn đàn</strong></td><td>Đọc phiếu đặt xe, phiếu duyệt dấu, tồn kho theo kho / mã hàng, tìm và đọc bài diễn đàn (chỉ đọc).</td><td>Bật</td></tr>
 <tr><td><strong>Xuất tệp Excel / Word mẫu công ty</strong></td><td>Xuất bảng số ra Excel, báo cáo trình bày ra Word mẫu DEGO; đường tải dùng một lần, hết hạn sau 15 phút.</td><td>Bật</td></tr>
@@ -51,7 +51,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <tr><td><strong>Duyệt phiếu qua AI (đợt 1)</strong></td><td>Duyệt / từ chối phiếu đặt xe, đặt phòng họp, đơn nghỉ phép đang chờ CHÍNH bạn duyệt — mỗi phiếu một lần xác nhận, từ chối phải có lý do. Cần khóa được ghi.</td><td>Bật</td></tr>
 <tr><td>Văn thư</td><td>Tìm và đọc văn bản, xem cấu hình luồng duyệt.</td><td>Tắt — nhờ quản trị bật</td></tr>
 <tr><td><strong>Công việc và dự án</strong></td><td>Soạn việc, soạn cả kế hoạch nhiều giai đoạn, gợi ý ai nên giao, thống kê tốc độ theo loại việc.</td><td>Bật</td></tr>
-<tr><td>Sửa và xóa phiếu của chính mình</td><td>Đề xuất sửa / xóa phiếu mình lập (có xác nhận, xem dưới).</td><td>Tắt — nhờ quản trị bật</td></tr>
+<tr><td>Sửa và xóa phiếu của chính mình</td><td>Đề xuất sửa / xóa phiếu mình lập, sửa ĐMH đang Nháp (có xác nhận, xem dưới).</td><td>Tắt — nhờ quản trị bật</td></tr>
 <tr><td><strong>Tạo phiếu hỗ trợ</strong></td><td>Lập phiếu hỗ trợ cho bộ phận nhận phiếu. (Báo lỗi phần mềm qua công cụ <em>báo lỗi</em> thì luôn có.)</td><td>Bật</td></tr>
 <tr><td>Lịch và Drive Google · Sổ nhớ, ghi chú, nhóm chat, biên bản họp · Nghiên cứu sâu nhiều nguồn</td><td>Các việc cá nhân dùng chủ yếu qua bot Telegram; nghiên cứu sâu tốn phí công ty.</td><td>Tắt — nhờ quản trị bật</td></tr>
 </tbody>
@@ -69,13 +69,66 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <thead><tr><th>Việc</th><th>Bước 1 (chưa ghi gì)</th><th>Bước 2 (ghi thật)</th></tr></thead>
 <tbody>
 <tr><td>Lập đơn nghỉ, YCMH, YCBG, phiếu hỗ trợ, phiếu đặt xe, phiếu duyệt dấu</td><td>AI soạn <strong>bản nháp</strong> và đưa bạn xem.</td><td>Bạn gật ▸ AI xác nhận nháp; nói <em>tạo và gửi duyệt</em> thì gửi duyệt luôn.</td></tr>
-<tr><td>Sửa phiếu của mình</td><td>AI đưa bảng <strong>cũ → mới</strong>.</td><td>Bạn gật ▸ AI xác nhận. ERP kiểm lại quyền, phạm vi, trạng thái, trường được sửa; đề xuất hết hạn sau 15 phút.</td></tr>
+<tr><td>Sửa phiếu của mình (YCMH, YCBG, đơn nghỉ, ĐMH đang Nháp)</td><td>AI đưa bảng <strong>cũ → mới</strong>.</td><td>Bạn gật ▸ AI xác nhận. ERP kiểm lại quyền, phạm vi, trạng thái, trường được sửa; đề xuất hết hạn sau 15 phút.</td></tr>
 <tr><td>Xóa phiếu của mình</td><td>AI nêu phiếu sẽ xóa.</td><td>Bạn gật ▸ AI xác nhận. Chỉ xóa phiếu chính bạn lập, còn Nháp hoặc Bị trả lại.</td></tr>
 <tr><td>Duyệt / từ chối phiếu (đặt xe, phòng họp, nghỉ phép)</td><td>AI tóm tắt phiếu đang chờ bạn và nêu sẽ duyệt hay từ chối (kèm lý do).</td><td>Bạn đồng ý rõ ▸ AI xác nhận. ERP kiểm lại bạn còn đúng là người được giao duyệt chặng đó và phiếu chưa đổi; lịch sử duyệt ghi <em>qua AI</em>. Mỗi phiếu một lần, không duyệt hàng loạt.</td></tr>
 <tr><td>Quản trị skill / khóa AI</td><td>AI soạn bản nháp thao tác.</td><td>Bạn gật ▸ AI xác nhận; ERP kiểm lại quyền quản trị.</td></tr>
 </tbody>
 </table>
-<p>Mọi việc AI làm hộ được ghi sổ thay đổi, xem ở <strong>Trang cá nhân ▸ Bot vừa làm gì</strong>; việc tạo / sửa / xóa phiếu hoàn tác được trong 24 giờ ở đó.</p>
+<p>Mọi việc AI làm hộ được ghi sổ thay đổi, xem ở <strong>Trang cá nhân ▸ Bot vừa làm gì</strong>; việc tạo / sửa / xóa phiếu hoàn tác được trong 24 giờ ở đó, trừ sửa đơn mua hàng.</p>
+
+<h2>Nhờ AI sửa đơn mua hàng đang Nháp</h2>
+<p>Đơn mua hàng (ĐMH) còn ở <strong>Nháp</strong> hoặc <strong>Bị trả lại</strong> mà bạn được sửa trên web thì AI riêng sửa
+hộ được một số ô, theo đúng hai bước: AI đưa bảng <strong>cũ → mới</strong>, bạn đồng ý rõ thì mới ghi. Cần khóa được ghi
+(hoặc nối bằng đăng nhập ERP) và nhóm <strong>Sửa và xóa phiếu của chính mình</strong> đang bật.</p>
+<h3>Câu mẫu</h3>
+<ul>
+<li><em>Cập nhật giá theo báo giá HNS vào PO01178.</em> AI đọc báo giá bạn gửi kèm, khớp từng mặt hàng với dòng của đơn theo mã
+hàng rồi đưa bảng đơn giá cũ → mới.</li>
+<li><em>Đặt kho Dego Cần Thơ cho cả đơn PO01178.</em> Gọi kho bằng tên hay mã đều được.</li>
+<li><em>PO01178 mã CHT0238: SL đặt 1.200, VAT 8%, ngày dự kiến có hàng 25/11/2026.</em></li>
+<li><em>Ghi chú đầu đơn PO01178: giao trong giờ hành chính.</em></li>
+</ul>
+<h3>Sửa được gì</h3>
+<table>
+<thead><tr><th>Phần</th><th>Ô sửa được</th></tr></thead>
+<tbody>
+<tr><td>Từng dòng hàng</td><td><strong>Đơn giá</strong>, <strong>VAT %</strong>, <strong>SL đặt</strong>, <strong>Kho nhận</strong>,
+<strong>Tên trên hóa đơn</strong>, <strong>Ngày yêu cầu có hàng</strong>, <strong>Ngày dự kiến có hàng</strong>,
+<strong>Ghi chú</strong> của dòng.</td></tr>
+<tr><td>Cả đơn một lần</td><td>Kho nhận, VAT %, hai ngày có hàng, ghi chú dòng. Đơn giá và SL đặt thì sửa từng dòng.</td></tr>
+<tr><td>Đầu đơn</td><td><strong>Ghi chú</strong>, <strong>Hình thức thanh toán NCC</strong>.</td></tr>
+</tbody>
+</table>
+<p>Mã hàng xuất hiện ở hai dòng trên cùng đơn thì nói rõ dòng nào (AI xem số dòng trên đơn rồi hỏi lại bạn). Đơn nhập khẩu
+thì VAT của dòng phải để 0.</p>
+<h3>Không sửa được qua AI</h3>
+<table>
+<thead><tr><th>Trường hợp</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td>Đơn đang chờ duyệt</td><td>Nhờ người duyệt <strong>Trả lại</strong>; đơn về Bị trả lại rồi mới nhờ AI sửa.</td></tr>
+<tr><td>Đơn đã duyệt, chưa nhận hàng</td><td>Người có quyền duyệt bấm <strong>Hủy duyệt</strong> trên web, đơn về Nháp, rồi mới nhờ AI sửa.</td></tr>
+<tr><td>Đơn đã nhận hàng, có dòng Hoàn thành hoặc đã có yêu cầu thanh toán</td><td>Không hủy duyệt được, nên cũng không sửa qua
+AI. Liên hệ thu mua / kế toán.</td></tr>
+<tr><td>Thêm, bỏ dòng; đổi mã hàng, nhà cung cấp, công ty, đồng tiền</td><td>Làm trên màn ĐMH.</td></tr>
+<tr><td>Đơn ngoài phạm vi bạn được sửa</td><td>AI báo không tìm thấy đơn trong phạm vi của bạn.</td></tr>
+</tbody>
+</table>
+<h3>Đọc bảng cũ → mới trước khi gật</h3>
+<ol>
+<li>Mỗi hàng của bảng là một ô sẽ đổi, ghi dạng <em>Dòng 2 · CHT0238 · Đơn giá</em>: cột <strong>Cũ</strong> là giá trị đang
+lưu, cột <strong>Mới</strong> là giá trị sẽ ghi. Ô không nằm trong bảng thì giữ nguyên.</li>
+<li>Dòng đổi đơn giá hoặc SL đặt có thêm hàng <strong>Giá trị đặt (trước / sau VAT)</strong>: xem tổng tiền của dòng có hợp
+lý không.</li>
+<li>AI báo <strong>cảnh báo</strong> khi đơn giá mới lệch quá 20% so với giá đề xuất trên YCMH gốc (đơn VNĐ): kiểm lại đơn vị
+tính và giá trước hay sau VAT trên báo giá, vì AI đọc báo giá có thể nhầm dòng.</li>
+<li>Sai chỗ nào thì nói lại (<em>dòng 3 giữ giá cũ</em>), AI soạn bảng mới. Đúng hết thì trả lời rõ <em>đồng ý sửa</em>.</li>
+<li>Đề xuất hết hạn sau <strong>15 phút</strong>. Có người sửa đơn giữa hai bước thì ERP chặn và báo <em>phiếu đã đổi sau lúc
+đề xuất</em>, chưa ghi gì; nhờ AI soạn lại.</li>
+<li>Ghi xong, mở link đơn AI gửi để xem lại rồi tự bấm <strong>Gửi duyệt</strong> trên web: AI không gửi duyệt ĐMH.</li>
+<li>Việc sửa ĐMH có ghi ở <strong>Trang cá nhân ▸ Bot vừa làm gì</strong> (trước và sau) nhưng <strong>không hoàn tác</strong> ở
+đó được: muốn trả lại thì nhờ AI sửa ngược hoặc sửa tay trên web.</li>
+</ol>
 
 <h2>Skill và lời nhắc sẵn</h2>
 <ul>
@@ -126,7 +179,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <ul>
 <li><strong>Gửi duyệt phiếu duyệt dấu</strong> qua AI: AI chỉ lưu Nháp, vì gửi duyệt cần tệp chứng từ tải lên trên web.</li>
 <li><strong>Duyệt phiếu khác ba loại trên</strong> (YCTT, ĐMH, YCMH, YCBG, duyệt dấu, văn bản) và <strong>trả lại để chỉnh sửa</strong>: làm trên web.</li>
-<li><strong>Tạo đề nghị thanh toán</strong>: AI chỉ trả link mở form điền sẵn trên web.</li>
+<li><strong>Gửi duyệt đề nghị thanh toán, đơn mua hàng</strong>: AI chỉ lưu / sửa Nháp, bạn tự bấm Gửi duyệt trên web.</li>
 <li><strong>Xóa đề nghị thanh toán, phiếu hỗ trợ</strong>, xóa phiếu của người khác hoặc phiếu đã gửi duyệt.</li>
 <li><strong>Sửa / xóa phiếu, văn thư</strong> khi nhóm tương ứng đang tắt — nhờ quản trị bật.</li>
 <li><strong>Đọc tệp đính kèm của phiếu</strong> (hóa đơn, ảnh, PDF) và <strong>xem màn hình</strong> của bạn.</li>
