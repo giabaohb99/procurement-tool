@@ -114,6 +114,70 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-768 | Dịch vụ giữ phiên Zalo ký và kiểm chữ ký theo khuôn mới của cổng ERP
+- status: xong
+- date: 2026-11-16
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** bản 2.23.0 (duoc-CR-757) đưa hai header ngữ cảnh (kênh AI và cờ chat riêng) vào chuỗi ký máy-nói-máy giữa
+ERP và dịch vụ AI. Dịch vụ giữ phiên Zalo vẫn ký và kiểm theo khuôn cũ, nên mọi lệnh từ bot sang Zalo (gửi tin, đăng nhập
+QR, kéo sự kiện) sẽ bị từ chối với lý do chữ ký sai. Bài kiểm của dịch vụ vẫn xanh vì dùng giá trị mẫu tính theo khuôn cũ.
+Được giao sửa ngày 16/11.
+
+**Đã làm**
+- Hàm ký của dịch vụ Zalo nhận thêm phần ngữ cảnh (vắng header thì là chuỗi rỗng, đúng như bản Python); bước kiểm đọc hai
+  header ngữ cảnh rồi ký lại theo khuôn mới.
+- Giá trị mẫu trong bài kiểm tính lại bằng chính hàm ký của ERP, thêm một mẫu có ngữ cảnh; bài HTTP mới: ký đúng ngữ cảnh
+  thì qua, thêm hoặc đổi header ngữ cảnh sau khi ký thì bị từ chối.
+- Soát cả kho: mọi chỗ ký khác đều đi qua hàm ký chung của ERP; kho trợ lý Zalo của IDA không dùng chữ ký này nên không
+  lệch. Sửa hai tài liệu kỹ thuật còn ghi khuôn cũ.
+
+**Kiểm:** bài kiểm Node của dịch vụ Zalo đạt trên mã mới và đỏ trên mã cũ (chạy bằng node trên máy, thư viện Zalo thay
+bằng bản giả vì bài kiểm không gọi Zalo thật).
+
+**Còn lại:** Zalo đang tắt ở prod và VPS 2, không bật lại trong việc này; bản vá lên prod chờ duyệt.
+
+Mã nguồn: `zalo-listener/index.mjs`.
+Kiểm: `zalo-listener/index.test.mjs`.
+Tài liệu: `doc/agent-hub/14-cong-erp-api.md`, `doc/agent-hub/16-kien-truc-ky-thuat.md`.
+
+---
+Deploy: mã đã vào main 2.23.2 (13cb9806); Zalo đang tắt nên chưa dựng ảnh zalo-listener — khi bật lại thì dựng ảnh và chạy lại npm test
+
+
+## bao-CR-767 | Trưởng phòng không sửa được lịch làm việc riêng đã kết thúc
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** bản 2.23.0 (duoc-CR-757) cho Trưởng phòng gán lịch làm việc riêng cho nhân viên. Phát hiện Trưởng phòng
+vẫn sửa được dòng lịch đã kết thúc từ lâu, tức viết lại quá khứ: dòng của Trưởng phòng chạy 01/10 tới 31/10, phòng Nhân
+sự có dòng nối lại từ 01/11; hôm 16/11 Trưởng phòng đặt dòng cũ thành không thời hạn thì dòng nối lại của Nhân sự bị xóa
+và các ngày 01 tới 15/11 bị tính lại theo lịch của Trưởng phòng. Mã chỉ kiểm ngày kết thúc mới phải từ hôm qua trở đi,
+không kiểm ngày kết thúc cũ. Được giao sửa ngày 16/11.
+
+**Đã làm**
+- Trên đường Trưởng phòng, dòng đã kết thúc trước hôm qua (giờ Việt Nam) bị chặn mọi thay đổi, kể cả ghi chú, với câu
+  **Lịch này đã kết thúc, không sửa được nữa — muốn đổi lịch từ hôm nay trở đi hãy gán lịch mới**. Dòng kết thúc hôm qua
+  vẫn mở lại được như trước. Xóa dòng đã bắt đầu vốn đã bị chặn.
+- Đường phòng Nhân sự giữ nguyên. Cập nhật bảng luật của đường Trưởng phòng trong tài liệu lịch làm việc.
+
+**Kiểm:** ba bài kiểm mới (Trưởng phòng mở lại, dời ngày kết thúc hay sửa ghi chú dòng đã kết thúc đều bị chặn và dòng nối
+lại của Nhân sự còn nguyên; dòng kết thúc hôm qua vẫn sửa được; Nhân sự vẫn sửa được dòng đã kết thúc) cùng toàn bộ bài kiểm
+gán lịch của Trưởng phòng đều đạt.
+
+**Còn lại:** bản vá lên prod chờ duyệt.
+
+Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py`.
+Kiểm: `test/backend/test_truong_phong_gan_lich_rieng_cr757.py`.
+Tài liệu: `doc/erp/hrm/03-lich-lam-viec.md` mục 20.2.
+
+---
+Deploy: prod 16/11/2026 bản 2.23.2 (main 13cb9806, dump `prod_truoc_release_20261116_1633.sql.gz`, chỉ dựng lại api)
+
+
 ## bao-CR-765 | Cổng MCP trả lời server/discover để ChatGPT trang Plugins nối được
 - status: xong
 - date: 2026-11-16
