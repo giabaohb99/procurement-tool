@@ -4,7 +4,6 @@ import {
   Building,
   Building2,
   IdCard,
-  Info,
   KeyRound,
   Layers,
   Mail,
@@ -16,8 +15,9 @@ import {
 
 import type { AuthUser } from '@/core/auth/auth-types'
 import { FormCard } from '@/shared/ui/form-card'
-import { cn } from '@/shared/utils/cn'
 import { ChangePasswordDialog } from './change-password-dialog'
+import { ProfileFieldGroup } from './profile-field-group'
+import { ProfileFieldRow } from './profile-field-row'
 
 interface ProfileField {
   key: keyof AuthUser
@@ -46,95 +46,48 @@ const ACCOUNT_FIELDS: ProfileField[] = [
   { key: 'phone', label: 'Số điện thoại', icon: Phone },
 ]
 
+/** Một trường của phiên đăng nhập thành một dòng hồ sơ. `kiem_nhiem` là mảng câu: mỗi câu một dòng. */
 function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
   const value = profile[field.key]
-  // kiem_nhiem/role_names là mảng — nối lại; còn lại là chuỗi.
-  const text = Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
-  // Kiêm nhiệm: mỗi dòng là một câu "Phòng X (Chức vụ)" / "Công ty B (Chức vụ)" có thể chứa dấu phẩy / ngoặc bên
-  // trong, nên nối bằng dấu phẩy sẽ khó đọc — mỗi dòng một hàng, cho xuống dòng thay vì cắt bằng "…" (duoc-CR-755).
-  const kiemNhiemLines =
-    field.key === 'kiem_nhiem' && Array.isArray(value)
-      ? value.filter((line): line is string => typeof line === 'string')
-      : []
-  const lines = kiemNhiemLines.length > 0 ? kiemNhiemLines : null
+  if (Array.isArray(value)) {
+    const lines = value.filter((line): line is string => typeof line === 'string')
+    return <ProfileFieldRow icon={field.icon} label={field.label} lines={lines} />
+  }
   return (
-    //  ⚠️ Khổ hẹp XẾP CHỒNG nhãn trên / giá trị dưới. Một hàng ngang thì riêng
-    //  nhãn `w-40` đã chiếm 160px trong 358px dùng được, phần còn lại không đủ
-    //  cho một tên pháp nhân — "CÔNG TY TNHH DEGO HOLDING" bị cắt cụt đúng chỗ
-    //  phân biệt được các pháp nhân với nhau. Từ `sm` trở lên về lại một hàng.
-    <div className="flex flex-col gap-0.5 border-b border-dashed py-2 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
-      <div className="flex items-center gap-3 sm:shrink-0">
-        <field.icon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="text-[13px] text-muted-foreground sm:w-40">{field.label}</span>
-      </div>
-      {/*  `pl-7` = bề ngang biểu tượng (16) + khe (12): giá trị thẳng cột với
-           nhãn ở trên. Khổ hẹp cho XUỐNG DÒNG thay vì cắt — đọc được cả tên dài
-           quan trọng hơn giữ mỗi dòng đúng một hàng. */}
-      <span
-        className={cn(
-          'min-w-0 flex-1 pl-7 text-sm break-words sm:pl-0',
-          !lines && 'sm:truncate',
-          text ? 'font-medium text-navy dark:text-foreground' : 'text-muted-foreground italic',
-        )}
-      >
-        {lines
-          ? lines.map((line, index) => (
-              // Khóa kèm thứ tự: hai dòng cùng chữ (dữ liệu cũ nhập trùng) không được đè khóa của nhau.
-              <span key={`${index}-${line}`} className="block">
-                {line}
-              </span>
-            ))
-          : text || 'Chưa cập nhật'}
-      </span>
-    </div>
+    <ProfileFieldRow icon={field.icon} label={field.label} value={typeof value === 'string' ? value : ''} />
   )
 }
 
 /**
- * Hồ sơ nhân sự + khối Tài khoản — CHỈ XEM (trừ nút Đổi mật khẩu).
- *
- * Cố ý không cho sửa hồ sơ tại đây: mã nhân viên, phòng ban và vai trò là dữ liệu
- * gốc của phân hệ Nhân sự, sửa ở hai nơi thì sớm muộn cũng lệch nhau.
- *
- * Nhóm LIÊN HỆ (số điện thoại · hai địa chỉ · người báo tin) là ngoại lệ, tự sửa
- * được từ bao-CR-508 — nhưng ở thẻ "Liên hệ" (`ProfileContactCard`), không ở
- * đây. Số điện thoại trong khối "Tài khoản" vẫn chỉ xem; nó đọc từ phiên đăng
- * nhập và được nạp lại sau khi người dùng tự sửa.
+ * Nhóm TỔ CHỨC trong thẻ Hồ sơ nhân sự — căn cước của người đó trong công ty (mã NV, pháp nhân,
+ * phòng ban, chức vụ, kiêm nhiệm, vai trò). CHỈ XEM: đây là dữ liệu gốc của phân hệ Nhân sự, sửa ở
+ * hai nơi thì sớm muộn cũng lệch nhau. Đọc từ phiên đăng nhập nên có cả với tài khoản chưa gắn hồ sơ.
  */
-export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
+export function ProfileOrgFields({ profile }: { profile: AuthUser }) {
   return (
-    <>
-      {/*  ⚠️ Tên thẻ là "Hồ sơ nhân sự", KHÔNG phải "Thông tin cá nhân" — thẻ
-           này bày mã NV, pháp nhân, phòng ban, vị trí, vai trò, tức căn cước
-           của người đó TRONG TỔ CHỨC. "Thông tin cá nhân" nay là tên thẻ nhân
-           thân (ngày sinh, dân tộc, hôn nhân…) ngay bên dưới, trùng đúng tên
-           `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ trường. Để hai thẻ
-           cùng tên nằm sát nhau thì người đọc không biết vì sao phải có hai. */}
-      <FormCard title="Hồ sơ nhân sự" icon={User} iconClassName="text-muted-foreground">
-        {HR_FIELDS.map((field) => (
-          <Row key={field.key} field={field} profile={profile} />
-        ))}
+    <ProfileFieldGroup title="Tổ chức" icon={User}>
+      {HR_FIELDS.map((field) => (
+        <Row key={field.key} field={field} profile={profile} />
+      ))}
+    </ProfileFieldGroup>
+  )
+}
 
-        <p className="mt-3 flex gap-2 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            Hồ sơ nhân sự và vai trò do bộ phận Nhân sự / Quản trị hệ thống cập nhật. Nếu thông tin
-            chưa đúng, hãy liên hệ bộ phận Nhân sự để được chỉnh sửa. Số điện thoại, địa chỉ và
-            người báo tin thì bạn tự sửa ở thẻ <strong>Liên hệ</strong> bên dưới.
-          </span>
-        </p>
-      </FormCard>
-
-      <FormCard
-        title="Tài khoản"
-        icon={KeyRound}
-        iconClassName="text-muted-foreground"
-        actions={<ChangePasswordDialog />}
-      >
-        {ACCOUNT_FIELDS.map((field) => (
-          <Row key={field.key} field={field} profile={profile} />
-        ))}
-      </FormCard>
-    </>
+/**
+ * Thẻ TÀI KHOẢN — tên đăng nhập, email, số điện thoại và nút Đổi mật khẩu. Số điện thoại ở đây chỉ
+ * xem; nó đọc từ phiên đăng nhập và được nạp lại sau khi người dùng tự sửa ở nhóm Liên hệ.
+ */
+export function ProfileAccountCard({ profile }: { profile: AuthUser }) {
+  return (
+    <FormCard
+      title="Tài khoản"
+      icon={KeyRound}
+      iconClassName="text-muted-foreground"
+      actions={<ChangePasswordDialog />}
+    >
+      {ACCOUNT_FIELDS.map((field) => (
+        <Row key={field.key} field={field} profile={profile} />
+      ))}
+    </FormCard>
   )
 }

@@ -20384,3 +20384,21 @@ Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `fronten
 
 Mã nguồn: `frontend-v2/src/modules/approval/helpers/split-quoted-name.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
 Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+
+## duoc-CR-771 | Bố trí lại mục Thông tin cá nhân ở Trang cá nhân: tóm tắt ở đầu, hồ sơ gom một thẻ
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** mục Thông tin cá nhân của Trang cá nhân dồn khoảng mười thẻ thành hai cột cao thấp lệch nhau nên chừa khoảng trống lớn; thẻ Hồ sơ nhân sự và thẻ Thông tin cá nhân lặp ý nhau, nút in phiếu thông tin nằm lơ lửng giữa trang. Thanh bên trái giữ nguyên, chỉ bố trí lại phần bên phải.
+
+**Đã làm**
+- Hàng đầu là hai thẻ ngắn cao bằng nhau: Quỹ phép và Lương của tôi.
+- Gom tổ chức, liên hệ, thông tin cá nhân, công việc, căn cước, ngân hàng, bảo hiểm vào MỘT thẻ Hồ sơ nhân sự; các nhóm chảy theo hai cột nên không còn lỗ trống, nút in phiếu thông tin nằm ở tiêu đề thẻ, nhóm Liên hệ tự sửa được đứng ngay sau nhóm Tổ chức với nút Sửa ở tiêu đề nhóm.
+- Ca làm việc tuần này bên trái, Tài khoản và Chữ ký bên phải; Email thông báo, Người báo tin, Đề nghị sửa hồ sơ, Lịch sử thao tác chạy hết bề ngang. Tài khoản chưa gắn hồ sơ nhân sự chỉ thấy nhóm Tổ chức, Tài khoản, Chữ ký, Email thông báo.
+- Tách phần bố cục ra tệp riêng nên tệp trang còn khoảng 200 dòng. Chỉ đổi giao diện, không đổi API hay dữ liệu.
+
+**Kiểm:** vitest Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt ở khổ 1440px và 390px, không tràn ngang.
+
+Mã nguồn: `frontend-v2/src/app/components/profile/profile-info-section.tsx`, `frontend-v2/src/app/components/profile/profile-record-card.tsx`, `frontend-v2/src/app/components/profile/profile-field-group.tsx`, `frontend-v2/src/app/components/profile/profile-info-card.tsx`, `frontend-v2/src/app/pages/profile-page.tsx`.

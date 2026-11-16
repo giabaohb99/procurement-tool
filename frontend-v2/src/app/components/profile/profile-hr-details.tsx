@@ -20,11 +20,10 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 import type { Employee } from '@/modules/hr/types/employee'
-import { FormCard } from '@/shared/ui/form-card'
 import { formatDate } from '@/shared/utils/format-date'
+import { ProfileFieldGroup } from './profile-field-group'
 import { ProfileFieldRow } from './profile-field-row'
 
 interface Field {
@@ -42,14 +41,14 @@ function asDate(value?: string | null): string {
 }
 
 /**
- * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — năm khối CHỈ XEM + chỗ cắm thẻ "Liên hệ".
+ * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — năm nhóm CHỈ XEM trong thẻ `ProfileRecordCard`.
  *
  * ⚠️ **Vì sao chỉ xem.** Mã nhân viên, phòng ban, vai trò… là dữ liệu gốc của
  * phân hệ Nhân sự; cho sửa ở hai nơi thì sớm muộn cũng lệch nhau. NGOẠI LỆ duy
  * nhất là nhóm LIÊN HỆ (bao-CR-508, khách chốt 28/09/2026): số điện thoại, hai
- * địa chỉ, người báo tin — người dùng tự sửa. Thẻ đó (`ProfileContactCard`) do
- * nơi gọi truyền vào qua `children` và đứng CUỐI lưới, thay chỗ thẻ "Địa chỉ"
- * chỉ-xem cũ — khối này không tự gọi API ghi nào.
+ * địa chỉ, người báo tin — người dùng tự sửa. Nhóm đó (`ProfileContactCard`) do
+ * `ProfileRecordCard` dựng riêng, ngay sau nhóm Tổ chức — khối này không tự gọi
+ * API ghi nào.
  *
  * ⚠️ **KHÔNG dựng `SensitiveFieldsNotice` ở đây, và đó là chủ ý.** Ở màn hồ sơ
  * người khác, 15 trường nhạy cảm (ngày sinh · MST · địa chỉ nhà · ngân hàng ·
@@ -65,11 +64,9 @@ function asDate(value?: string | null): string {
  */
 interface ProfileHrDetailsProps {
   employee: Employee
-  /** Thẻ cắm thêm vào cuối lưới — hiện là thẻ "Liên hệ" tự sửa được. */
-  children?: ReactNode
 }
 
-export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) {
+export function ProfileHrDetails({ employee }: ProfileHrDetailsProps) {
   const personal: Field[] = [
     { icon: Cake, label: 'Ngày sinh', value: asDate(employee.date_of_birth) },
     { icon: MapPin, label: 'Nơi sinh', value: employee.place_of_birth },
@@ -123,11 +120,8 @@ export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) 
     { icon: Building2, label: 'Chi nhánh', value: employee.bank_branch },
   ]
 
-  //  ⚠️ Thứ tự XẾP THEO CẶP chứ không theo mạch đọc: lưới hai cột lấy chiều cao
-  //  của thẻ CAO NHẤT trong mỗi hàng, nên ghép "Thông tin cá nhân" (9 dòng) với
-  //  "Địa chỉ" (2 dòng) là chừa một lỗ trắng bảy dòng bên phải. Ghép thẻ dài với
-  //  thẻ dài, ngắn với ngắn thì hai cột đi gần bằng nhau. "Bảo hiểm" (3 dòng)
-  //  đứng cặp với thẻ "Liên hệ" (3 dòng) mà nơi gọi cắm vào qua `children`.
+  //  Thứ tự theo mạch đọc: các nhóm chảy theo cột (`columns-2` của thẻ bao ngoài, duoc-CR-766) nên
+  //  không còn phải ghép cặp nhóm dài với nhóm dài như thời lưới thẻ.
   //
   //  Tên thẻ lấy đúng tên `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ
   //  trường ở màn chi tiết nhân sự — người vừa xem hồ sơ người khác rồi mở hồ sơ
@@ -140,27 +134,18 @@ export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) 
     { title: 'Bảo hiểm', icon: HeartPulse, fields: insurance },
   ]
 
+  //  Fragment, KHÔNG tự dựng lưới: các nhóm chảy vào các cột của thẻ "Hồ sơ nhân sự" bao ngoài
+  //  (`ProfileRecordCard`, duoc-CR-766) sau nhóm Tổ chức và nhóm Liên hệ. Lưới thẻ riêng từng
+  //  nhóm như trước đây làm thẻ ngắn đứng cạnh thẻ dài và chừa khoảng trống lớn.
   return (
-    //  ⚠️ Khối này tự dựng LƯỚI RIÊNG chứ không nhét vào một cột của lưới phía
-    //  trên: nhét vào thì cột trái có chín thẻ còn cột phải hai thẻ, và cả nửa
-    //  phải màn hình trống từ giữa trang trở xuống.
-    //
-    //  `items-start` để mỗi thẻ giữ chiều cao của chính nó — thiếu nó thì thẻ
-    //  ngắn bị kéo dãn bằng thẻ dài cùng hàng, thành một ô viền rỗng nửa dưới.
-    <div className="grid items-start gap-4 lg:grid-cols-2">
+    <>
       {groups.map((group) => (
-        <FormCard
-          key={group.title}
-          title={group.title}
-          icon={group.icon}
-          iconClassName="text-muted-foreground"
-        >
+        <ProfileFieldGroup key={group.title} title={group.title} icon={group.icon}>
           {group.fields.map((field) => (
             <ProfileFieldRow key={field.label} {...field} />
           ))}
-        </FormCard>
+        </ProfileFieldGroup>
       ))}
-      {children}
-    </div>
+    </>
   )
 }

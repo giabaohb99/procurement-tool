@@ -1,22 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
-import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileAiConnectSection } from '@/app/components/profile/profile-ai-connect-section'
 import { ProfileAiKeyTab } from '@/app/components/profile/profile-ai-key-tab'
 import { ProfileChangesTab } from '@/app/components/profile/profile-changes-tab'
-import { ProfileContactCard } from '@/app/components/profile/profile-contact-card'
 import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
-import { ProfileEmergencyContacts } from '@/app/components/profile/profile-emergency-contacts'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
-import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
+import { ProfileInfoSection } from '@/app/components/profile/profile-info-section'
 import { ProfileLaborContractsTab } from '@/app/components/profile/profile-labor-contracts-tab'
-import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
-import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
-import { ProfileSalaryCard } from '@/app/components/profile/profile-salary-card'
-import { ProfileShiftCard } from '@/app/components/profile/profile-shift-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
 import { ProfileMemoryTab } from '@/app/components/profile/profile-memory-tab'
 import { ProfilePasswordCard } from '@/app/components/profile/profile-password-card'
@@ -34,18 +26,13 @@ import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifi
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTelegramTab } from '@/app/components/profile/profile-telegram-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
-import { SignatureCard } from '@/app/components/profile/signature-card'
-import { AuditTimeline } from '@/shared/audit'
 import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
-import { SelfChangeRequestCard } from '@/modules/hr/components/self-change-request-card'
 import { useMyEmployee } from '@/modules/hr/hooks/use-employees'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useNotifications } from '@/shared/notifications/use-notifications'
 import { ThemePresetPicker } from '@/shared/theme/theme-preset-picker'
-import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -55,7 +42,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
  * TRANG CÁ NHÂN — hồ sơ của chính người đang đăng nhập.
  *
  * Bố cục trang cài đặt có THANH BÊN TRÁI, 4 nhóm (P0 doc 21 §6.5 + §7.1, thay dải 13 tab ngang tràn hàng):
- * - Hồ sơ: Thông tin cá nhân (xem hồ sơ, chữ ký, quỹ phép, email thông báo) · Quá trình công tác · Quyết định bổ
+ * - Hồ sơ: Thông tin cá nhân (`ProfileInfoSection`: quỹ phép, lương, hồ sơ, ca, chữ ký, email thông báo) · Quá trình công tác · Quyết định bổ
  *   nhiệm — hai mục sau CHỈ ĐỌC, ẩn khi tài khoản chưa gắn hồ sơ nhân sự (`employee_id = 0`, đại ca chốt 03/10/2026).
  * - Việc của tôi: Việc cần làm (CR-215 gom cả "Chờ tôi duyệt") · Thông báo (bản đầy đủ của chuông) · Yêu cầu hỗ trợ
  *   (gác `ticket.read`).
@@ -107,108 +94,16 @@ export function ProfilePage() {
   const profile = data ?? user
 
   function renderInfo() {
-    return (
-      <>
-        {isPending && !profile ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Skeleton className="h-64" />
-            <Skeleton className="h-64" />
-          </div>
-        ) : (
-          profile && (
-            <>
-              {/* Hàng 1: 2 cột cao BẰNG NHAU (items-stretch). Cột 1 xếp
-                  [Hồ sơ nhân sự] trên + [Tài khoản] dưới; cột 2 là [Chữ ký]
-                  kéo cao đầy cột. */}
-              {/*  ⚠️ `min-w-0` ở HAI Ô LƯỚI là bắt buộc, không phải dọn dẹp.
-                   Ô của lưới mặc định `min-width: auto`, tức KHÔNG co xuống
-                   dưới bề rộng nội dung tối thiểu — mà các dòng hồ sơ dùng
-                   `truncate` (= `white-space: nowrap`), nên bề rộng tối
-                   thiểu của chúng là TOÀN BỘ chuỗi chưa cắt. Đo ở 390px:
-                   dòng "Công ty / Pháp nhân" đòi 418px, kéo cả cột lên
-                   452px trong khi chỗ có là 358px — thẻ tràn khỏi màn và
-                   `truncate` không bao giờ có dịp cắt chữ. */}
-              <div className="grid items-stretch gap-4 lg:grid-cols-2">
-                <div className="flex min-w-0 flex-col gap-4">
-                  <ProfileInfoCard profile={profile} />
-                </div>
-                <div className="flex min-w-0 flex-col gap-4">
-                  <SignatureCard signature={profile.signature} />
-
-                  {/*  QUỸ PHÉP của chính mình (duoc-CR-379) — "còn bao
-                       nhiêu ngày phép" là câu hỏi hay gặp nhất về hồ sơ
-                       của bản thân. Thẻ tự tắt khi thiếu `leave_balance.read`
-                       hoặc tài khoản chưa gắn nhân sự; xem ghi chú trong
-                       `ProfileLeaveCard` về việc vì sao ở đây KHÔNG mở cửa
-                       `/me` riêng như hồ sơ nhân sự. */}
-                  {myEmployee && (
-                    <ProfileLeaveCard
-                      employeeId={myEmployee.id}
-                      hasHireDate={Boolean(myEmployee.hire_date)}
-                    />
-                  )}
-                  {/*  duoc-CR-761 — ca làm việc của chính mình theo tuần (mẫu tuần + ca xếp riêng). Chuông
-                       "ca được xếp / đổi" mở về `/me`, nên thẻ đứng ngay trong mục mặc định này. */}
-                  {myEmployee && <ProfileShiftCard />}
-                  {/*  duoc-CR-693 — lương của chính mình, mặc định che số (xem ghi chú trong thẻ). */}
-                  {myEmployee && <ProfileSalaryCard employee={myEmployee} />}
-                  {/* bao-CR-349 — công tắc email thông báo của chính mình.
-                      Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
-                      người dùng TỰ tắt, ba cửa còn lại là của quản trị. */}
-                  <EmailNotificationCard value={profile.notify_email} />
-                </div>
-              </div>
-
-              {/*  HỒ SƠ NHÂN SỰ ĐẦY ĐỦ (duoc-CR-378) — sáu khối chỉ xem,
-                   đọc từ `/api/employees/me`. Trước đó trang này chỉ có 7 ô
-                   lấy từ phiên đăng nhập, trong khi hồ sơ thật có hơn 30
-                   trường: người dùng muốn soát lại ngày sinh hay số tài
-                   khoản nhận lương của CHÍNH MÌNH thì không có chỗ nào xem.
-
-                   Đặt NGOÀI lưới phía trên và tự dựng lưới riêng — xem ghi
-                   chú trong `ProfileHrDetails`.
-
-                   `myEmployee` rỗng khi tài khoản chưa gắn hồ sơ nhân sự
-                   (admin, tài khoản hệ thống): không dựng khối nào, và thẻ
-                   "Hồ sơ nhân sự" phía trên đã có sẵn câu nhắc liên hệ bộ
-                   phận Nhân sự. */}
-              {/*  bao-CR-508 — nhóm LIÊN HỆ tự sửa được: thẻ "Liên hệ" cắm
-                   vào cuối lưới hồ sơ (thay thẻ "Địa chỉ" chỉ-xem cũ), bảng
-                   người báo tin chạy hết bề ngang ngay dưới vì mỗi dòng có
-                   bốn ô nhập. */}
-              {myEmployee && (
-                <>
-                  {/*  duoc-CR-676 — in Phiếu thông tin nhân viên của chính mình (BM00../QT01/NS). */}
-                  <div className="flex justify-end">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={appRoutes.hr.myEmployeeInfoPrint}>
-                        <Printer className="size-4" />
-                        In phiếu thông tin
-                      </Link>
-                    </Button>
-                  </div>
-                  <ProfileHrDetails employee={myEmployee}>
-                    <ProfileContactCard employee={myEmployee} />
-                  </ProfileHrDetails>
-                  <ProfileEmergencyContacts employeeId={myEmployee.id} />
-                  {/*  duoc-CR-676 (C6) — phần còn lại của hồ sơ: ĐỀ NGHỊ sửa, phòng Nhân sự duyệt
-                       rồi mới áp. Đứng ngay dưới nhóm Liên hệ (thứ tự sửa ngay) cho người dùng thấy
-                       rõ hai cách sửa khác nhau. */}
-                  <SelfChangeRequestCard employee={myEmployee} />
-                </>
-              )}
-
-              {/*  ⚠️ Gọi TRẦN, đừng bọc `FormCard`. `AuditTimeline` tự dựng
-                   `Card` kèm tiêu đề "Lịch sử thao tác" của chính nó, nên
-                   bọc thêm là **thẻ trong thẻ, tiêu đề in hai lần** — hai
-                   khung viền lồng nhau còn ăn thêm hai lớp đệm, ở khổ điện
-                   thoại thì thấy rõ ngay. Mọi màn khác đều gọi trần. */}
-              <AuditTimeline entity="user" entityId={profile.id} />
-            </>
-          )
-        )}
-      </>
-    )
+    if (isPending && !profile) {
+      return (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      )
+    }
+    //  Bố cục của mục nằm ở `ProfileInfoSection` (duoc-CR-766).
+    return profile ? <ProfileInfoSection profile={profile} employee={myEmployee} /> : null
   }
 
   //  Mỗi lúc chỉ dựng ĐÚNG một mục (giống Radix Tabs cũ không mount tab ẩn): mục nào tự gọi API riêng thì chỉ gọi

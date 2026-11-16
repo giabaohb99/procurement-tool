@@ -7,6 +7,8 @@ interface ProfileFieldRowProps {
   label: string
   /** Giá trị đã dựng thành chữ. Rỗng thì hiện "Chưa cập nhật" nghiêng, mờ. */
   value?: string
+  /** Giá trị nhiều dòng (vd kiêm nhiệm): mỗi phần tử một dòng riêng. Rỗng thì dùng `value`. */
+  lines?: readonly string[]
 }
 
 /**
@@ -24,8 +26,9 @@ interface ProfileFieldRowProps {
  * ⚠️ Khổ hẹp cho XUỐNG DÒNG thay vì cắt (`break-words`, không `truncate`): đọc
  * được cả một địa chỉ thường trú dài quan trọng hơn giữ mỗi dòng đúng một hàng.
  */
-export function ProfileFieldRow({ icon: Icon, label, value }: ProfileFieldRowProps) {
+export function ProfileFieldRow({ icon: Icon, label, value, lines }: ProfileFieldRowProps) {
   const text = value?.trim()
+  const hasLines = Boolean(lines && lines.length > 0)
 
   return (
     <div className="flex flex-col gap-0.5 border-b border-dashed py-2 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
@@ -38,10 +41,16 @@ export function ProfileFieldRow({ icon: Icon, label, value }: ProfileFieldRowPro
       <span
         className={cn(
           'min-w-0 flex-1 pl-7 text-sm break-words sm:pl-0',
-          text ? 'font-medium text-navy dark:text-foreground' : 'text-muted-foreground italic',
+          text || hasLines ? 'font-medium text-navy dark:text-foreground' : 'text-muted-foreground italic',
         )}
       >
-        {text || 'Chưa cập nhật'}
+        {hasLines
+          ? lines?.map((line, index) => (
+              <span key={`${index}-${line}`} className="block">
+                {line}
+              </span>
+            ))
+          : text || 'Chưa cập nhật'}
       </span>
     </div>
   )
