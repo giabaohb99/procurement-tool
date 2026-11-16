@@ -108,7 +108,7 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     gpt = _setup("chatgpt")
     assert gpt["format"] == "url" and "OAuth" in " ".join(gpt["steps"])
     assert "«" not in gpt["note"] and "Connectors" in desk["note"]
-    #  bao-CR-763 (16/11, ảnh trang chatgpt.com/plugins): ChatGPT nay nối ở Plugins → Add custom MCP server (Connection
+    #  bao-CR-764 (16/11, ảnh trang chatgpt.com/plugins): ChatGPT nay nối ở Plugins → Add custom MCP server (Connection
     #  dán URL, Authentication OAuth, tick I understand and want to continue → Create as a plugin); không còn Developer
     #  mode ở bước chính. Bước "Apps & Connectors" / "Create MCP App" không được quay lại; bước Cho phép phải nhắc tên miền.
     steps = " ".join(gpt["steps"])

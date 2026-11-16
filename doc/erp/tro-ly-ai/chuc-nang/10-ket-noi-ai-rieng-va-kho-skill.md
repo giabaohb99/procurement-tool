@@ -142,7 +142,7 @@ Bước người dùng (từ `mcp_setup.py`):
   ghi** (`export_*` không nằm trong `READ_TOOLS`); đã nối Cách 2 trước đó thì xóa khối `dego-erp` trong tệp cấu hình + gỡ
   khóa cũ kẻo trùng công cụ. Dữ liệu hải quan chỉ tra qua AI (nhóm `customs` 4 tool đều chỉ đọc), không nạp qua AI — đại ca
   chốt 27/10.
-- **ChatGPT** (bao-CR-763, theo ảnh trang `chatgpt.com/plugins` đại ca chụp 16/11/2026 và bài trợ giúp OpenAI
+- **ChatGPT** (bao-CR-764, theo ảnh trang `chatgpt.com/plugins` đại ca chụp 16/11/2026 và bài trợ giúp OpenAI
   *Connecting custom MCP servers in ChatGPT*; cần gói trả phí, chỉ trên trình duyệt): cột trái **Plugins** ▸ **Add** ▸
   **Add custom MCP server** → Name, Description (tùy chọn), **Connection** = `<gốc>/api/mcp` (không dùng Tunnel),
   **Authentication = OAuth**, tick **I understand and want to continue** ▸ **Create as a plugin** → trang ERP: kiểm tên

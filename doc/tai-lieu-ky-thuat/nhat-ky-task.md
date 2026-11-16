@@ -114,7 +114,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
-## bao-CR-763 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
+## bao-CR-764 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
 - status: xong
 - date: 2026-11-16
 - list: Công cụ Ai
