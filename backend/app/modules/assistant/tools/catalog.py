@@ -272,7 +272,35 @@ def product_purchase_history(ctx: ToolContext, args: dict) -> dict:
     out = {"items": items, "total": total, "product_code": product_code}
     if not see_supplier:
         out["note"] = "Ẩn thông tin nhà cung cấp vì người hỏi không có quyền xem NCC."
+    _attach_order_lines(ctx, out, product_code, limit, see_supplier)
     return out
+
+
+def _attach_order_lines(ctx: ToolContext, out: dict, product_code: str, limit: int, see_supplier: bool) -> None:
+    """bao-CR-770: dòng ĐƠN MUA HÀNG trên hệ của mã hàng, mới nhất trước (kể cả đơn chưa nhận, bỏ đơn đã hủy).
+
+    Bảng lịch sử mua chỉ có dòng ĐMH đã HOÀN TẤT (phần lớn là Excel cũ), nên câu "tên trên hóa đơn / giá 3 đơn gần nhất"
+    phải đọc ở đây. Gác phạm vi ĐMH như màn danh sách; không có quyền xem ĐMH thì chỉ báo, không trả."""
+    if not ctx.can("purchase_order"):
+        out["order_lines_note"] = "Không có quyền xem đơn mua hàng nên chỉ có lịch sử mua đã hoàn tất."
+        return
+    from .procurement_doc_tool import _label
+    from .approval_tool import _detail_url
+
+    q = apply_scope(ctx.db.query(PurchaseOrder, POItem).join(POItem, POItem.po_id == PurchaseOrder.id),
+                    PurchaseOrder, "purchase_order", ctx.user, ctx.profile)
+    rows = (q.filter(POItem.product_code == product_code, PurchaseOrder.status != "cancelled")
+            .order_by(PurchaseOrder.order_date.desc(), PurchaseOrder.id.desc(), POItem.id.asc())
+            .limit(limit).all())
+    lines = []
+    for po, it in rows:
+        line = {"order_date": po.order_date, "po_code": po.code, "status_label": _label("purchase_order", po.status),
+                "invoice_name": it.invoice_name or "", "price": _num(it.price), "qty_order": _num(it.qty_order),
+                "unit": it.unit, "url": _detail_url("purchase_order", po.id)}
+        if see_supplier:
+            line["supplier_name"] = po.supplier_name
+        lines.append(line)
+    out["order_lines"] = lines
 
 
 def _history_rows_for(ctx: ToolContext, product_code: str,
@@ -737,7 +765,9 @@ SPECS: list[ToolSpec] = [
         name="product_purchase_history",
         description="Lịch sử mua của một mã hàng: đã mua của ai, giá bao nhiêu, số lượng, ngày, "
                     "mã PO, tên trên hóa đơn từng lần (invoice_name; invoice_name_from_catalog=true là tên lấy "
-                    "từ danh mục vì dữ liệu cũ không lưu). Sắp theo ngày mới nhất.",
+                    "từ danh mục vì dữ liệu cũ không lưu). Sắp theo ngày mới nhất. items = lần mua ĐÃ HOÀN TẤT; "
+                    "order_lines = các dòng đơn mua hàng trên hệ gần nhất (kể cả chưa nhận hàng) kèm tên trên hóa "
+                    "đơn, giá, trạng thái — dùng order_lines khi hỏi N đơn gần nhất.",
         parameters={
             "type": "object",
             "properties": {

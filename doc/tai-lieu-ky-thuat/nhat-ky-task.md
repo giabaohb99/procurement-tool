@@ -114,6 +114,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-770 | Trợ lý đọc dòng đơn mua hàng trên hệ khi hỏi N đơn gần nhất của một mã hàng
+- status: xong
+- date: 2026-11-16
+- list: Công cụ Ai
+- pic: NSU209
+**Bối cảnh:** soát bao-CR-769 trên prod thấy bảng lịch sử mua chỉ có dòng đơn mua hàng đã hoàn tất: 6.411 dòng nạp từ
+Excel cũ và 5 dòng do hệ ghi. Hỏi "tên trên hóa đơn 3 đơn gần nhất của mã CPT0234" thì ra 3 lần mua tháng 5–7 không có
+tên, trong khi trên hệ có PO01187, PO01143, PO01027 tháng 11.
+
+**Đã làm**
+- Công cụ **product_purchase_history** trả thêm phần **order_lines**: các dòng đơn mua hàng trên hệ của mã hàng, mới
+  nhất trước, kể cả đơn chưa nhận hàng, bỏ đơn đã hủy; mỗi dòng có ngày, mã đơn, trạng thái, tên trên hóa đơn, giá, số
+  lượng, link đơn, NCC (chỉ khi có quyền xem NCC).
+- Gác phạm vi đơn mua hàng như màn danh sách; không có quyền xem đơn mua hàng thì chỉ báo, không trả.
+- Mô tả công cụ dặn trợ lý dùng **order_lines** khi hỏi N đơn gần nhất.
+
+**Kết quả:** 100 bài kiểm (công cụ trợ lý, canh phạm vi, cổng MCP) đạt; ruff sạch. Không đổi DB.
+
+Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `test/backend/test_assistant_tools.py`
+
 ## bao-CR-769 | Trợ lý trả tên trên hóa đơn khi tra lịch sử mua theo mã hàng
 - status: xong
 - date: 2026-11-16
