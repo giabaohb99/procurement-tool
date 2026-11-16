@@ -40,6 +40,9 @@ bao-CR-604 (07/10/2026) — ba luật thêm để bảng dự án đọc đượ
 Đẩy lên PROD: đổi `WORK_SYNC_BASE_URL` sang https://erp.degoholding.vn và tài
 khoản prod (có quyền `work_task` create/write + đọc hồ sơ nhân sự), chạy
 `--dry-run` xem trước; nhóm "DX" chưa có thì script tự tạo.
+⚠️ Mã nhân sự KHÁC NHAU giữa dev và prod: sổ ghi mã dev (NSU231 = anh Được ở local / dev, nhưng ở prod NSU231 là
+"Dego Marketing" và anh Được là NSU265). Tệp env của prod BẮT BUỘC có `WORK_SYNC_PIC_ALIAS=NSU231=NSU265`, và
+`WORK_SYNC_PIC_BY_PREFIX` phải dùng mã prod — thiếu là gán nhầm việc cho người khác (đã xảy ra 16/11/2026, đã sửa lại).
 """
 from __future__ import annotations
 
@@ -63,7 +66,7 @@ DEFAULT_ENV_FILE = SCRIPT_DIR / ".task_sync.env"
 DEFAULT_LIST_NAME = "ERP v2"
 
 #  bao-CR-604: mặc định theo TIỀN TỐ key (`bao-CR-…`, `duoc-CR-…`, `giang-CR-…`, `ai-CR-…`).
-#  Mã nhân sự giống nhau ở local / dev / prod nên để thẳng ở đây; đổi bằng env
+#  Mặc định theo mã của local / dev (prod KHÁC: anh Được là NSU265 — xem cảnh báo ở đầu tệp); đổi bằng env
 #  `WORK_SYNC_PIC_BY_PREFIX` / `WORK_SYNC_TAG_BY_PREFIX` (dạng `k=v,k=v`; "-" = tắt).
 DEFAULT_PIC_BY_PREFIX = {"bao": "NSU209", "duoc": "NSU231", "giang": "NSU199", "ai": "NSU209"}
 DEFAULT_TAG_BY_PREFIX = {"bao": "Bảo", "duoc": "Được", "giang": "Giang", "ai": "Bot AI"}
