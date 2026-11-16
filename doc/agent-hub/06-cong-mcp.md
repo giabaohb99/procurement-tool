@@ -281,6 +281,16 @@ mức **Chỉ đọc** cũng gọi được:
 - Xếp / đổi ca không có qua MCP (chỉ trên màn Xem lịch). Không lương. Luật và hợp đồng dữ liệu: `doc/erp/hrm/03-lich-lam-viec.md`
   §22, mục 2 của `doc/erp/hrm/tai-lieu-ky-thuat/api.md`.
 
+### 3.7b Dự án tôi tham gia (duoc-CR-763, 16/11/2026)
+
+Tool CHỈ ĐỌC `my_projects(include_archived?, group?, q?)` ở nhóm `mine` (bật mặc định), đã khai `READ_TOOLS`. Trả dự án và nhóm
+dự án chủ khóa thấy, đúng tập của màn Dự án (`membership_service.visible_list_ids`), gác `work_task.read`. Kết quả: `groups[]`
+(`group_id`, `name` dạng *cha / con*, `project_count`, `projects[]`), mỗi dự án `id`, `name`, `group_name`, `my_role` (1 Chủ sở hữu ·
+2 Quản trị · 3 Thành viên · 4 Khách xem) + `my_role_label`, `owner_name`, `member_count`, `task_count`, `task_done`, `progress_pct`
+(như thanh tiến độ), `open_task_count` (việc cha đang mở), `my_open_task_count` (việc đang mở mình phụ trách, kể cả việc con),
+`archived`, `url` = `/project/lists/{id}`; cộng `total`, `returned`, `has_more` (trần 100), `group_count`, `my_open_task_count`,
+`note`. Số truy vấn cố định. Câu *nhóm dự án* không nạp công cụ nhóm chat.
+
 ### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)
 
 Cổng MCP **không bao giờ** là cuộc trò chuyện riêng (hội thoại nằm ở máy chủ của ứng dụng AI bên ngoài và có thể được chia

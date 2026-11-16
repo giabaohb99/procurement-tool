@@ -62,7 +62,8 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("shift", frozenset({"my_work_shifts", "employee_work_shifts"}),
      r"\bca (cua|lam|truc|livestream|live|sang|chieu|toi|dem|nao)\b|xep ca|doi ca|co ca\b|lich lam (tuan|thang|hom|ngay"
      r"|thu|cua|viec)|lam (may|bao nhieu) (gio|tieng)|gio lam|livestream|ai lam ca|lam ca nao|lich (truc|ca)\b"),
-    ("work", frozenset({"my_work_tasks", "draft_work_task", "draft_work_plan"}),
+    #  duoc-CR-763: my_projects = dự án / nhóm dự án người hỏi tham gia ("anh đang có trong những dự án nào", "nhóm dự án").
+    ("work", frozenset({"my_work_tasks", "my_projects", "draft_work_task", "draft_work_plan"}),
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào "work" (lõi bot coi nhóm thiếu công cụ là
     #  chưa nạp, sẽ đòi nạp lại; và câu nào có chữ "việc" cũng kéo theo hai công cụ này).
@@ -107,8 +108,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("meeting", frozenset({"latest_meeting_report", "list_my_meetings", "rewrite_meeting_minutes",
                            "save_meeting_template"}),
      r"bien ban|recap|cuoc hop|buoi hop|mau bien ban"),
+    #  duoc-CR-763: "nhóm dự án" là thư mục của phân hệ Dự án (nhóm work), KHÔNG phải nhóm chat — 16/11 bot trả lời câu
+    #  "anh có đang trong nhóm dự án nào" bằng danh sách nhóm Telegram.
     ("group", frozenset({"list_my_groups", "read_group_messages", "read_group_file"}),
-     r"\bnhom\b|group|zalo"),
+     r"\bnhom\b(?! du an)|group|zalo"),
     ("personal", frozenset({"add_personal_item", "list_personal_items", "mark_personal_item", "save_note",
                             "search_notes"}),
      r"chi tieu|\bchi \d|mua gi|ghi chu|viec rieng|\bnhac\b|di cho|danh sach mua|so nho|\bnho\b"),

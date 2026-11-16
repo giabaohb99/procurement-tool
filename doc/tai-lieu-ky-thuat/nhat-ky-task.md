@@ -20238,3 +20238,21 @@ Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
 Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 
+
+## duoc-CR-763 | Trợ lý AI liệt kê dự án và nhóm dự án người hỏi đang tham gia
+- status: xong
+- date: 2026-11-16
+- pic: NSU231
+- tag: Được
+- list: Công cụ Ai
+**Bối cảnh:** trên prod một người là thành viên 14 dự án của nhóm DX hỏi Trợ lý *anh đang có trong những dự án nào* thì nhận câu không có dự án nào, vì Trợ lý chỉ có công cụ tra việc của chính mình tới hạn hôm nay; hỏi tiếp *anh có đang trong nhóm dự án nào* thì Trợ lý đi kể các nhóm chat Telegram.
+
+**Đã làm**
+- Thêm công cụ chỉ đọc **my_projects** cho Trợ lý web, bot và cổng MCP: liệt kê dự án gom theo nhóm dự án, đúng tập dự án của màn Dự án (dùng chung hàm thấy dự án của màn, không viết luật thứ hai), mỗi dự án kèm vai trò của người hỏi, chủ sở hữu, số thành viên, phần trăm tiến độ tính đúng như thanh tiến độ trên màn, số việc đang mở, số việc đang mở người hỏi phụ trách và đường mở bảng dự án. Lọc được theo tên nhóm, tên dự án và xin xem cả dự án đã lưu trữ; tối đa 100 dự án một lượt, số truy vấn cố định.
+- Bộ lọc công cụ nạp công cụ mới cho mọi câu nói về dự án; chữ *nhóm dự án* không còn kéo theo công cụ nhóm chat. Mô tả công cụ tra việc và công cụ nhóm chat chỉ đường sang công cụ mới, lời dặn của Trợ lý có thêm một mục, cẩm nang Dự án có thêm đoạn chọn công cụ.
+- Khai công cụ vào danh sách chỉ đọc của cổng MCP, nhóm cấu hình tra cứu của chính mình (bật sẵn), nhãn ý định và thêm hai mẫu chấm lõi cho đúng hai câu hỏi bị sai.
+
+**Kiểm:** bài kiểm mới 19 bài xanh (đối chiếu thẳng với hàm của màn Dự án, dự án người khác không lộ, dự án lưu trữ chỉ hiện khi xin, vai trò khớp hàm vai trò hiệu lực, tiến độ 1/8 ra 13 phần trăm như màn, đếm việc đang mở, bộ lọc công cụ cho cả hai câu, sổ khai cổng MCP, 2 và 20 dự án cùng số truy vấn); các bài canh cửa sổ công cụ xanh; ruff sạch.
+
+Mã nguồn: `backend/app/modules/assistant/tools/my_projects_tool.py`, `backend/app/modules/assistant/tool_router.py`, `backend/app/modules/agent_hub/mcp.py`, `backend/app/modules/agent_hub/mcp_settings.py`, `backend/app/modules/ai_skill/seed_handbook/30-du-an-cong-viec.md`.
+Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.

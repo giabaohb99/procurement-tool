@@ -61,6 +61,8 @@ TOOL_CHUNG_TU = {
     "my_tickets": "ticket",
     #  ai-CR-140: việc Dự án mình PHỤ TRÁCH trong các dự án mình thấy (visible_list_ids).
     "my_work_tasks": "work_task",
+    #  duoc-CR-763: dự án / nhóm dự án mình tham gia — đúng visible_list_ids của màn Dự án (tư cách thành viên).
+    "my_projects": "work_task",
     #  bao-CR-740: dòng ĐMH còn thiếu + lần giao của một NCC — apply_scope(PurchaseOrder, 'purchase_order', read).
     "po_open_lines": "purchase_order",
     #  duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác — employee ∩ leave_balance (apply_scope / scope_condition).
@@ -198,7 +200,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  92 = + `employee_leave_summary` (duoc-CR-757 — tra phép + ngày đã nghỉ của nhân sự khác).
     #  93 = + `my_salary` (duoc-CR-757 — lương của chính người hỏi, chỉ ở chat riêng).
     #  95 = + `my_work_shifts` / `employee_work_shifts` (duoc-CR-761 — ca làm việc theo ngày của tôi / của nhân sự khác).
-    assert len(thuc_te) == 95, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  96 = + `my_projects` (duoc-CR-763 — dự án / nhóm dự án người hỏi tham gia, cùng luật màn Dự án).
+    assert len(thuc_te) == 96, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)
@@ -227,6 +230,7 @@ CA_O_TEP_KHAC = {
     "my_approval_tasks": "test_assistant_approval_tool::test_cho_toi_duyet_khong_thay_viec_cua_nguoi_khac",
     "my_requests_status": "test_assistant_approval_tool::test_phieu_cua_toi_khong_lan_phieu_nguoi_khac_va_loc_only_open",
     "my_work_tasks": "test_agent_hub_ban_tin::test_viec_du_an_toi_han_cua_toi",
+    "my_projects": "test_tro_ly_du_an_toi_tham_gia_cr763::test_chi_thay_dung_du_an_cua_man_du_an",
     "po_open_lines": "test_assistant_ghi_lan_nhan_hang_cr740::test_thieu_quyen_va_ngoai_pham_vi",
     "employee_leave_summary":
         "test_tro_ly_tra_phep_lich_lam_viec_cr757::test_tra_phep_nguoi_khac_khong_lot_cong_ty_khac",

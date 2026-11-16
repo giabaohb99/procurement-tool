@@ -38,7 +38,7 @@ class ToolGroup:
 GROUPS: tuple[ToolGroup, ...] = (
     ToolGroup("mine", "Tra cứu phiếu và việc của chính mình", True, frozenset({
         "my_approval_tasks", "my_requests_status", "my_procurement_requests", "my_documents", "my_tickets",
-        "my_work_tasks", "pending_procurement_approvals", "search_chat_history"})),
+        "my_work_tasks", "my_projects", "pending_procurement_approvals", "search_chat_history"})),
     #  duoc-CR-715 C: phiếu nghỉ bù; duoc-CR-757: tra phép nhân sự khác (tool tự gác leave_balance.read + phạm vi).
     #  duoc-CR-761: ca làm việc theo ngày — cùng mức nhạy cảm với lịch làm việc đã ở nhóm này (không lương), nên gộp vào
     #  đây thay vì mở nhóm mới (khóa nhóm cũ giữ nguyên, cấu hình G7 đã lưu không lệch).

@@ -1345,6 +1345,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_work_plan": "ctx.can(work_task, create) — chỉ soạn nháp cả cây kế hoạch; \"tạo\" qua draft_create → work_plan.build "
                        "dùng đúng list/task_service của web (thành viên dự án), người lạ không đọc gì (bao-CR-616)",
     "my_work_tasks": "ctx.can(work_task, read) + visible_list_ids + người phụ trách = chính người hỏi (ai-CR-140)",
+    "my_projects": "ctx.can(work_task, read) + visible_list_ids như màn Dự án (tư cách thành viên dự án / nhóm) "
+                   "(duoc-CR-763)",
     "team_capacity": "khóa báo cáo 16 (can_view_report) → mọi phòng; không khóa → chỉ phòng có manager_id = người hỏi + phòng con, chỉ thứ tự không số (kh-AI1-2)",
     "task_type_stats": "chỉ khóa báo cáo 16 (can_view_report) — không khóa thì denied (kh-AI1-2)",
     "background_jobs": "sổ việc chạy ngầm của hệ thống, ctx.can('setting', 'read') — thiếu thì denied (bao-CR-703)",

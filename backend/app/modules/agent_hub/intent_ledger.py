@@ -194,7 +194,7 @@ TOOL_SUB: dict[str, Sub] = {
     #  ai-CR-208 / 210 / 211: ba tool dữ liệu cho AI (báo cáo gom sẵn, bảng số tổng hợp, đọc danh sách / chi tiết phiếu).
     "report_summary": Sub.LOOKUP_ANALYTICS, "dataset_query": Sub.LOOKUP_ANALYTICS,
     "erp_read": Sub.LOOKUP_PURCHASE,
-    "my_work_tasks": Sub.LOOKUP_WORK,
+    "my_work_tasks": Sub.LOOKUP_WORK, "my_projects": Sub.LOOKUP_WORK,   # duoc-CR-763: dự án tôi tham gia
     "team_capacity": Sub.LOOKUP_WORK, "task_type_stats": Sub.LOOKUP_WORK,   # kh-AI1-2
     "plan_context": Sub.LOOKUP_WORK,   # kh-AI1-3
     "office_read": Sub.LOOKUP_OTHER,   # kh-AI2-3

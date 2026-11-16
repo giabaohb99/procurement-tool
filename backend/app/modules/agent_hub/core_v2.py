@@ -245,8 +245,8 @@ def _more_tools_tool() -> ToolDef:
         description="Bộ công cụ lượt này đã lọc theo câu. Cần tra / tạo thứ chưa có công cụ thì gọi với nhóm cần — hệ thống "
                     "nạp thêm rồi chạy lại. Nhóm: purchase (tra mua hàng, NCC, giá), make_purchase (lập YCMH / YCBG), "
                     "payable (công nợ, thanh toán), approval (duyệt), leave (nghỉ phép), shift (ca làm việc theo ngày), "
-                    "work (việc Dự án), ticket (hỗ trợ IT), edit (sửa / xóa phiếu), account (tài khoản, quyền), employee (nhân sự), customs (hải quan), "
-                    "document (văn bản), google (lịch, Drive), meeting (biên bản), group (nhóm chat), personal (việc "
+                    "work (việc, dự án, nhóm dự án), ticket (hỗ trợ IT), edit (sửa / xóa phiếu), account (tài khoản, quyền), employee (nhân sự), customs (hải quan), "
+                    "document (văn bản), google (lịch, Drive), meeting (biên bản), group (nhóm chat Telegram), personal (việc "
                     "riêng, ghi chú), brief (bản tin), research (nghiên cứu sâu), export (xuất tệp), analytics (thống kê).",
         parameters={"type": "object", "properties": {"nhom": {"type": "array", "items": {"type": "string", "enum": groups}}},
                     "required": ["nhom"]})

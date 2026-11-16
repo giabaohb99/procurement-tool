@@ -855,8 +855,11 @@ def test_xin_nhom_da_nap_thi_khong_chay_lai():
     assert "error" in have and "employee_lookup" in have["error"] and not core_v2._stop_after(core_v2.MORE_TOOLS, have)
     mixed = core_v2._more_tools_result({"nhom": ["employee", "leave"]}, {"employee_lookup"})
     assert mixed == {"ok": True, "nhom": ["leave"]} and core_v2._stop_after(core_v2.MORE_TOOLS, mixed)
-    #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói "kế hoạch") vẫn tính là đã có.
-    assert "error" in core_v2._more_tools_result({"nhom": ["work"]}, {"my_work_tasks", "draft_work_task"})
+    #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói "kế hoạch") vẫn tính là đã có. duoc-CR-763: nhóm work có thêm
+    #  my_projects — thiếu nó thì nhóm chưa đủ, xin nạp là đúng.
+    offered = {"my_work_tasks", "my_projects", "draft_work_task"}
+    assert "error" in core_v2._more_tools_result({"nhom": ["work"]}, offered)
+    assert core_v2._more_tools_result({"nhom": ["work"]}, offered - {"my_projects"}) == {"ok": True, "nhom": ["work"]}
 
 
 def test_tin_nhap_bo_y_tam_hieu_trung_o_da_hien():
