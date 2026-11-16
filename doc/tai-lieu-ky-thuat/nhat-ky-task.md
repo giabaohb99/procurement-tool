@@ -114,6 +114,74 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-758 | Giao diện mới: đơn mua hàng tạo từ yêu cầu mua hàng có kho nhận, giữ đơn giá, báo ô còn thiếu
+- status: xong
+- date: 2026-11-16
+- list: Sản xuất - Thu mua
+- pic: NSU209
+**Bối cảnh:** ngày 14 và 16/11 các đơn PO01160, PO01163, PO01175, PO01178 tạo từ yêu cầu mua hàng PYC12112604 trên giao diện
+mới đều trống kho nhận; riêng PO01178 lần lưu đầu đưa cả bốn đơn giá về 0, các lần lưu sau gõ giá mới mà không ăn, phải tải
+lại trang mới lưu được. Đơn tạo trên giao diện cũ thì đủ kho.
+
+**Đã làm**
+- Kho nhận: hàm dựng dòng đơn từ yêu cầu mua hàng của giao diện mới gán cứng kho rỗng. Nay lấy **mã kho** đã lưu trên dòng yêu
+  cầu (bao-CR-759); dòng cũ chỉ có tên kho thì tra mã theo danh mục kho như giao diện cũ.
+- Đơn giá, lỗi thứ nhất: màn đơn mua hàng thay nguyên bản đang sửa bằng bản máy chủ mỗi khi dữ liệu đơn nạp lại, nên lượt nạp
+  lại về muộn của lần lưu trước, hay một thao tác khác làm mới đơn, xóa sạch giá người dùng vừa gõ và lần lưu kế tiếp gửi lên
+  giá cũ. Nay gộp ba bên: ô người dùng đã sửa mà chưa lưu giữ nguyên, phần máy chủ đổi vẫn cập nhật; lưu xong dựng lại bản đang
+  sửa ngay từ bản máy chủ vừa trả về; sửa ô khi bản đang sửa chưa dựng không còn bị bỏ qua im lặng.
+- Đơn giá, lỗi thứ hai: ô số dùng chung của giao diện mới khi rời ô luôn ghi lại con số chụp lúc bấm vào, nên ô được bấm lúc giá
+  còn 0 rồi giá mới về trong lúc con trỏ đang ở đó thì rời ô là đè giá về 0. Nay ô chỉ ghi khi người dùng thật sự gõ; xóa trắng
+  rồi rời ô vẫn ghi 0 như cũ.
+- Thêm khung vàng **Còn thiếu thông tin bắt buộc — chưa gửi duyệt được** trên màn đơn mua hàng như giao diện cũ, liệt kê theo
+  dòng các ô còn trống (Tên trên hóa đơn, Kho nhận mặc định, Đơn giá...), chỉ hiện khi đơn còn sửa được, cùng một nguồn luật với
+  câu chặn lúc gửi duyệt (khớp danh sách trường bắt buộc của máy chủ).
+- Máy chủ ghi ô **Trưởng phòng phê duyệt** chọn ở form tạo đơn; trước đây ô này bị bỏ rơi lúc tạo, mở đơn vừa tạo ra lại trống.
+
+**Kết quả:** bài kiểm trang đơn mua hàng 6 bài (tạo từ yêu cầu mua hàng rồi lưu thì giá giữ nguyên; gõ giá mới rồi lưu thì lần lưu
+mang giá mới, lưu tiếp vẫn giữ, không cần tải lại trang; dữ liệu nạp lại ngầm không xóa giá vừa gõ), ô số thêm 3 bài, hàm gộp ba
+bên 4 bài, khung thiếu thông tin 3 bài, dựng dòng đơn từ yêu cầu mua hàng thêm 4 bài, máy chủ 2 bài — xanh. Thư mục thu mua và ô
+dùng chung chạy 1.799 bài, các phân hệ khác có dùng ô số chạy 2.539 bài: chỉ còn bài cũ đỏ sẵn không liên quan (danh mục báo cáo,
+chapter-demo thiếu gói ở máy này). Đang ở nhánh erp-v2, chưa lên prod.
+
+**Còn lại:** chưa tái hiện được đúng thao tác làm cả bốn giá về 0 ở lần lưu 02:48:22 (dữ liệu chỉ có nhật ký thay đổi); hai lỗi trên là
+hai đường dẫn tới đúng triệu chứng đó và đã chặn. Đơn PO01178 đã sửa trên prod bằng script.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-order-draft.ts` (toOrderLine), `utils/purchase-order-rebase.ts`,
+`pages/purchase-order-detail-page.tsx`, `components/purchase-order-missing-fields-notice.tsx`, `utils/required-fields.ts`
+(listPurchaseOrderLineIssues), `frontend-v2/src/shared/ui/number-input.tsx`, `backend/app/modules/purchase_order/edit_service.py`
+(create_po).
+Kiểm: `pages/purchase-order-detail-page.test.tsx`, `test/backend/test_dmh_tao_giu_truong_phong_duyet_cr758.py`.
+
+## bao-CR-759 | Dòng yêu cầu mua hàng lưu mã kho, không chỉ tên kho
+- status: xong
+- date: 2026-11-16
+- list: Sản xuất - Thu mua
+- pic: NSU209
+**Bối cảnh:** dòng YCMH (yêu cầu mua hàng) trước giờ chỉ lưu TÊN kho, trong khi đơn mua hàng, lần giao, phiếu nhập kho, tồn kho
+đều lưu MÃ kho. Đổi tên kho trong danh mục là dòng yêu cầu mất liên kết, và mọi chỗ cần mã phải tự tra ngược tên sang mã — giao
+diện mới quên bước đó nên đơn tạo từ yêu cầu bị trống kho (bao-CR-758). Đã chốt ngày 16/11: lưu thêm mã.
+
+**Đã làm**
+- Thêm cột mã kho vào dòng yêu cầu mua hàng bằng migration; điền sẵn cho dữ liệu cũ bằng cách khớp đúng tên kho với danh mục
+  (đo trên prod 817/817 dòng khớp), trùng tên thì lấy kho đang dùng rồi kho tạo trước. Cột tên kho giữ nguyên để báo cáo, xuất
+  Excel, trợ lý AI và bản in đọc như cũ.
+- Máy chủ giữ hai cột khớp nhau lúc lưu: gửi mã thì tên lấy theo danh mục; giao diện cũ hay trợ lý AI chỉ gửi tên thì máy chủ tự
+  suy mã; dòng đang có mà không gửi mã, tên không đổi thì giữ mã cũ nên kho đổi tên vẫn không mất liên kết; công cụ chỉ đổi tên
+  kho thì mã được suy lại theo tên mới. Nhân bản phiếu chép cả mã.
+- Giao diện cũ và mới: chọn kho trên dòng yêu cầu ghi kèm mã; tạo đơn mua hàng từ yêu cầu ưu tiên mã của dòng, rơi về tra theo
+  tên. Kết quả đọc phiếu của trợ lý AI có thêm mã kho. Hiển thị vẫn là tên kho.
+
+**Kết quả:** 9 bài kiểm máy chủ mới (suy mã từ tên, điền tên từ mã, kho đổi tên, công cụ chỉ đổi tên, xóa trắng, nhân bản, trùng
+tên, câu điền sẵn của migration) và bài chụp kết quả serializer cập nhật — xanh cùng 454 bài liên quan của yêu cầu mua hàng, trợ lý
+AI, cổng MCP. 6 bài giao diện mới cho hàm tra mã kho. Migration một head. Đang ở nhánh erp-v2, chưa lên prod.
+
+Mã nguồn: `backend/migrations/versions/prwh759a_ycmh_dong_luu_ma_kho.py`, `backend/app/modules/purchase_request/warehouse_ref.py`,
+`purchase_request/model.py`, `schema.py`, `serializer.py`, `edit_service.py`, `assistant/tools/procurement_doc_tool.py`,
+`frontend/src/pages/PurchaseRequestDetail.tsx`, `frontend-v2/src/modules/procurement/utils/warehouse-ref.ts`,
+`components/purchase-request-items-table.tsx`, `components/purchase-request-line-detail-dialog.tsx`.
+Kiểm: `test/backend/test_ycmh_dong_luu_ma_kho_cr759.py`.
+
 ## ai-CR-241 | Trợ lý AI và cổng MCP đề xuất sửa đơn mua hàng đang Nháp hoặc Bị trả lại
 - status: xong
 - date: 2026-11-16
