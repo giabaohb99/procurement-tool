@@ -5,7 +5,7 @@ có, nên lùi về tên đang khai ở danh mục sản phẩm và GẮN CỜ �
 tên đã xuất trên hóa đơn lần đó.
 """
 from app.modules.product.model import Product
-from app.modules.purchase_history.controller import _attach_invoice_names
+from app.modules.purchase_history.service import attach_invoice_names as _attach_invoice_names
 
 
 def test_history_name_wins_and_legacy_falls_back_to_catalog_with_flag(db):
