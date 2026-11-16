@@ -137,6 +137,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 **Còn lại:** lên dev và prod theo sổ việc deploy ở mục 19.8 của tài liệu Nghỉ phép: chạy thử script trên bản sao dữ liệu prod để phòng Nhân sự soát người thiếu hợp đồng và dòng âm, chạy thật ngoài giờ làm việc, đẩy cẩm nang, chạy lại bài hướng dẫn, nạp lại chỉ mục tìm kiếm và báo nhân viên số phép dùng được đã đổi.
 
 Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_refresh_service.py` · `accrual_service.py` · `balance_accrual_info.py` · `constants.py` · `catalog_controller.py` · `labor_contract/service.py` · `employee/service.py` · `core/crud.py` · `scripts/apply_monthly_after_annual_leave.py` · `frontend-v2/src/modules/hr/utils/leave-accrual-status.ts` · `hr/components/leave-accrual-status-badge.tsx` · `leave-balance-missing-contract-strip.tsx` · `doc/erp/hrm/02-nghi-phep.md` · `backend/scripts/seed_help_nghi_phep.py` · `test/backend/test_phep_nam_cong_sau_thang_cr762.py`
+Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ phép, xuất bản cẩm nang nghi-phep, nạp lại kho tìm kiếm trợ lý; CHƯA chạy script chuyển Phép năm sang cách cấp mới); prod chưa
 
 ## duoc-CR-761 | Trưởng phòng xếp ca theo tiếng cho từng nhân viên từng ngày, tính phép theo ca, nhân viên xem ca của mình
 - status: xong
@@ -165,6 +166,7 @@ Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_re
 **Còn lại:** lên dev thì làm theo sổ việc deploy ở mục 22.11 của tài liệu Lịch làm việc: chạy migration, khởi động lại API, liệt kê vai trò có quyền xem hồ sơ mà không có quyền sửa lịch (người giữ các vai trò đó sẽ chỉ còn thấy chính mình hoặc phòng mình trên màn Lịch làm việc), kiểm quyền sửa lịch của vai trò Nhân sự, đẩy cẩm nang Nghỉ phép kèm câu tóm tắt, chạy lại bài hướng dẫn và nạp lại chỉ mục tìm kiếm. Giao diện chép tuần chưa liệt kê tên người và mã đơn của ngày bị bỏ qua vì đơn nghỉ (đọc sai khóa trả về), đã báo người làm giao diện.
 
 Mã nguồn: `backend/app/modules/work_schedule/shift_controller.py` · `shift_access.py` · `shift_service.py` · `shift_leave_conflicts.py` · `shift_notify.py` · `day_rules.py` · `resolver.py` · `leave/workday_service.py` · `leave/comp_request_service.py` · `assistant/tools/work_shift_tool.py` · `migrations/versions/wshift758_xep_ca_theo_ngay.py` · `frontend-v2/src/modules/hr/components/work-shift-dialog.tsx` · `app/components/profile/profile-shift-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `test/backend/test_xep_ca_theo_tieng_cr761.py` · `test_tro_ly_ca_lam_viec_cr761.py`
+Deploy: dev 16/11/2026, commit 8f2bf458 (migration wshift758 + mrg761a, seed hướng dẫn sử dụng nhân sự, xuất bản cẩm nang nghi-phep có tóm tắt mới, nạp lại kho tìm kiếm trợ lý 185/185 bài, dựng lại dịch vụ AI); prod chưa
 ## bao-CR-760 | Sửa 30 bài kiểm backend đỏ sẵn trên nhánh phát triển
 - status: xong
 - date: 2026-11-16
@@ -388,6 +390,7 @@ Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py` · `assign
 **Còn lại:** lên dev thì làm theo sổ việc deploy ở mục 21 của tài liệu Lịch làm việc.
 
 Mã nguồn: `backend/app/modules/work_schedule/resolver.py` · `template_controller.py` · `assistant/tools/leave_tool.py` · `leave_taken_schedule.py` · `employee_leave_tool.py` · `agent_hub/mcp.py` · `mcp_settings.py` · `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `hr/pages/department-detail-page.tsx` · `hr/pages/work-schedule-assignment-list-page.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `ai_skill/seed_handbook/40-nghi-phep.md` · `test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py`
+Deploy: dev 16/11/2026 cùng đợt duoc-CR-761, commit 8f2bf458 (xuất bản cẩm nang nghi-phep và nhan-su-ho-so, nạp lại kho tìm kiếm trợ lý); prod chưa
 
 ## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
 - status: xong
