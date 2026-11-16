@@ -267,4 +267,32 @@ describe('ApprovalTrailCard', () => {
     render(<ApprovalTrailCard instanceId={8} showUpcoming />)
     expect(mockUseUpcoming).toHaveBeenLastCalledWith(8, false)
   })
+
+  //  Người dùng không muốn thấy ngoặc kép góc ở câu trình duyệt (duoc-CR-766): tên luồng in đậm.
+  it('shows the flow name of the start event in bold without angle quotes', () => {
+    mockUseApprovalTrail.mockReturnValue({
+      data: {
+        ...TRAIL,
+        lines: [{ ...TRAIL.lines[0], comment: 'Trình duyệt theo luồng \u00abDuyệt đơn nghỉ phép\u00bb bản 3' }],
+      },
+      isLoading: false,
+    })
+
+    render(<ApprovalTrailCard instanceId={8} />)
+
+    const name = screen.getByText('Duyệt đơn nghỉ phép')
+    expect(name.tagName).toBe('STRONG')
+    expect(name.closest('p')).toHaveTextContent('Trình duyệt theo luồng Duyệt đơn nghỉ phép bản 3')
+  })
+
+  it('keeps quotes typed by people in approval comments', () => {
+    mockUseApprovalTrail.mockReturnValue({
+      data: { ...TRAIL, lines: [{ ...TRAIL.lines[1], comment: 'Sửa lại mục "Lý do" giúp em' }] },
+      isLoading: false,
+    })
+
+    render(<ApprovalTrailCard instanceId={8} />)
+
+    expect(screen.getByText('Sửa lại mục "Lý do" giúp em')).toBeInTheDocument()
+  })
 })

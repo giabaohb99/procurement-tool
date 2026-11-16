@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
+import { splitQuotedName } from '../helpers/split-quoted-name'
 import { useApprovalTrail, useApprovalUpcomingStages } from '../hooks/use-approvals'
 import { ApprovalTrailUpcomingEvent } from './approval-trail-upcoming-event'
 import {
@@ -427,7 +428,7 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
              giao diện thật 03/09/2026 với lý do hủy 420 ký tự). */}
         {line.comment && (
           <p className="mt-1 max-w-3xl text-sm leading-5 break-words whitespace-pre-wrap text-muted-foreground">
-            {line.comment}
+            {line.action === ACTION.start ? <StartComment text={line.comment} /> : line.comment}
           </p>
         )}
 
@@ -453,6 +454,23 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
         )}
       </article>
     </li>
+  )
+}
+
+/**
+ * Câu máy ghi lúc trình duyệt ("Trình duyệt theo luồng ... bản N"): tên luồng hiện IN ĐẬM
+ * thay cho dấu ngoặc. Chỉ áp cho mốc bắt đầu — ý kiến người dùng gõ thì giữ nguyên
+ * từng ký tự, kể cả dấu nháy họ cố ý đặt.
+ */
+function StartComment({ text }: { text: string }) {
+  return splitQuotedName(text).map((segment, index) =>
+    segment.strong ? (
+      <strong key={index} className="font-semibold text-foreground">
+        {segment.text}
+      </strong>
+    ) : (
+      segment.text
+    ),
   )
 }
 

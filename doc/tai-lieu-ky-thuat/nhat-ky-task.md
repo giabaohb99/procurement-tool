@@ -20368,3 +20368,19 @@ Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.
 
 Mã nguồn: `backend/app/modules/approval/upcoming_stages_service.py`, `backend/app/modules/approval/preview_service.py`, `backend/app/modules/approval/instance_controller.py`, `frontend-v2/src/modules/approval/components/approval-trail-upcoming-event.tsx`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
 Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+
+## duoc-CR-766-luot-2 | Câu trình duyệt trên dòng thời gian hiện tên luồng in đậm, bỏ ngoặc kép góc
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** mốc bắt đầu trình duyệt trên thẻ Lịch sử phê duyệt ghi tên luồng trong ngoặc kép góc, người dùng không muốn thấy dấu đó. Mã hiện tại đã ghi bằng nháy thẳng, nhưng câu của các phiếu cũ đã nằm trong cơ sở dữ liệu với ngoặc kép góc.
+
+**Đã làm**
+- Ở mốc bắt đầu trình duyệt, tên luồng nằm trong ngoặc (ngoặc kép góc của dữ liệu cũ hoặc nháy thẳng của dữ liệu mới) được bỏ ngoặc và hiện in đậm. Ý kiến người dùng tự gõ ở các mốc khác giữ nguyên từng ký tự.
+
+**Kiểm:** bài kiểm hàm tách tên luồng (dữ liệu cũ, dữ liệu mới, ngoặc không đóng, ngoặc rỗng, chuỗi rỗng) và hai bài trên thẻ Lịch sử phê duyệt xanh; typecheck, lint sạch; xem tận mắt đơn NP003 trên local.
+
+Mã nguồn: `frontend-v2/src/modules/approval/helpers/split-quoted-name.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
+Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
