@@ -76,7 +76,8 @@ def _read_group_file(ctx: ToolContext, args: dict) -> dict:
 LIST_MY_GROUPS_SPEC = ToolSpec(
     name="list_my_groups",
     description=("Liệt kê các NHÓM Telegram mà bot đang ở và người hỏi đọc được (người đã thêm bot vào, hoặc đang là thành "
-                 "viên). Gọi khi người dùng hỏi **nhóm nào**, **bot đang ở nhóm nào**, hoặc nói tên nhóm chưa rõ."),
+                 "viên). Gọi khi người dùng hỏi **nhóm nào**, **bot đang ở nhóm nào**, hoặc nói tên nhóm chưa rõ. "
+                 "**Nhóm dự án** (thư mục chứa dự án ở phân hệ Dự án) KHÔNG phải nhóm chat: dùng my_projects."),
     parameters={"type": "object", "properties": {}},
     handler=_list_my_groups,
 )

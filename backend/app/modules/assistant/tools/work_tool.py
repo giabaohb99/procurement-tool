@@ -254,7 +254,8 @@ MY_WORK_TASKS_SPEC = ToolSpec(
                  "`project` = tên dự án, `all_open` = true (kể cả chưa đặt hạn), `only_mine` = false (việc của cả dự án, kèm "
                  "người phụ trách). Hỏi về một dự án thì kết quả có `sections` = các CỘT kanban của dự án ('dự án X có cột "
                  "nào') và mỗi việc có `section` = cột đang nằm. Tool trả `need_choice` khi tên dự án khớp nhiều → hỏi người "
-                 "dùng MỘT câu."),
+                 "dùng MỘT câu. Hỏi đang ở / tham gia DỰ ÁN nào, NHÓM DỰ ÁN nào ('anh có trong những dự án nào') thì dùng "
+                 "my_projects — tool này chỉ trả VIỆC, rỗng không có nghĩa là không tham gia dự án nào."),
     parameters={"type": "object", "properties": {
         "until": {"type": "string", "description": "Lấy việc có hạn tới ngày này (YYYY-MM-DD, giờ VN); bỏ trống = hôm nay."},
         "project": {"type": "string", "description": "Tên (một phần) của dự án muốn xem; bỏ trống = mọi dự án mình thấy."},

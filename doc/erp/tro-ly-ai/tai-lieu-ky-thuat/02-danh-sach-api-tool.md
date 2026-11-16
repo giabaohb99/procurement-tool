@@ -754,6 +754,15 @@ mục 2, luật ở `doc/erp/hrm/03-lich-lam-viec.md` §19.3.
   `total_hours`, `work_days`, `shift_dates`, `url` = `/me`, `glossary` và `leave_rule` (luật tính phép của ngày có ca).
 - Lịch theo mẫu tuần (tên lịch, cấp nguồn) vẫn ở `my_leave_summary`.
 
+### my_projects — dự án và nhóm dự án người hỏi tham gia [ĐÃ CODE 16/11/2026, duoc-CR-763]
+- Mục đích: "anh đang có trong những dự án nào", "tôi ở nhóm dự án nào", "nhóm DX có những dự án gì". **Nhóm dự án** là thư mục
+  của phân hệ Dự án, không phải nhóm chat Telegram (bộ lọc công cụ không nạp nhóm chat cho chữ *nhóm dự án*).
+- Tham số: `include_archived` (mặc định false), `group` (một phần tên nhóm, không cần dấu), `q` (một phần tên dự án).
+- Quyền: `work_task.read`; tập dự án = `visible_list_ids` của màn Dự án (mời riêng ∪ kế thừa từ nhóm / nhóm cha).
+- Trả nhóm → dự án; mỗi dự án có vai trò, chủ sở hữu, số thành viên, tiến độ %, việc đang mở, việc đang mở của tôi, link
+  `/project/lists/{id}`; trần 100 dự án (`has_more`), số truy vấn cố định. Hợp đồng đủ ở `doc/agent-hub/06-cong-mcp.md` §3.7b.
+- Hỏi VIỆC thì vẫn là `my_work_tasks`.
+
 ### employee_work_shifts — ca làm việc từng ngày của nhân sự khác [ĐÃ CODE 16/11/2026, duoc-CR-761]
 - Mục đích: "phòng X tuần này ai làm ca nào", "chị Y thứ Bảy làm mấy giờ", "ca livestream tuần sau của phòng Z".
 - Tham số: `employee` (mã / một phần họ tên, không cần dấu) hoặc `department` (ID / một phần tên), `from_date`, `to_date`

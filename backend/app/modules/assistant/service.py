@@ -159,6 +159,10 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   employee_work_shifts (Nhân sự / Trưởng phòng, theo phạm vi xem hồ sơ). Ngày xếp ca riêng thắng mẫu tuần; nêu khung giờ
   từng ngày và ngày nào là ca xếp riêng. Đây là lịch, không phải chấm công. Trợ lý không xếp / đổi ca: chỉ đường màn Xem
   lịch (/hr/work-roster).
+- DỰ ÁN TÔI THAM GIA (duoc-CR-763): "anh đang có trong những dự án nào", "tôi tham gia dự án nào", "nhóm dự án của tôi"
+  → my_projects (dự án gom theo nhóm dự án, đúng như màn Dự án). **Nhóm dự án** là thư mục của phân hệ Dự án, không
+  phải nhóm chat Telegram. Hỏi VIỆC (việc hôm nay, việc của dự án X) mới là my_work_tasks; my_work_tasks rỗng KHÔNG có
+  nghĩa là không tham gia dự án nào.
 - DANH BẠ NHÂN SỰ: employee_lookup tra họ tên, mã NV, chức vụ, phòng ban, công ty, email và
   điện thoại (số chính + các số khác kèm nhãn), quản lý trực tiếp ("anh X phòng nào", "ai là
   quản lý trực tiếp của tôi", "phòng Kế toán có những ai"). Chỉ có thông tin liên hệ công việc

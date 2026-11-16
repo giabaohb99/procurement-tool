@@ -78,6 +78,14 @@ Mỗi dự án luôn **đúng một** chủ sở hữu; chủ muốn rời phả
 - *"Sao tôi không bình luận được?"* → nhiều khả năng đang là **Khách xem**. Khách xem
   đọc được nhưng không gửi được.
 
+### Tra cứu bằng công cụ nào
+
+- *"Tôi đang có trong những dự án nào"*, *"tôi ở nhóm dự án nào"*, *"nhóm DX có dự án gì"* → **`my_projects`**: dự án
+  gom theo **nhóm dự án**, đúng tập dự án ở màn Dự án, kèm vai trò, tiến độ, link. **Nhóm dự án** là thư mục của phân
+  hệ này, KHÔNG phải nhóm chat Telegram.
+- Hỏi **việc** (*"hôm nay tôi có việc gì"*, *"dự án X còn gì"*) → **`my_work_tasks`**. Kết quả rỗng chỉ có nghĩa là
+  không có việc khớp, KHÔNG có nghĩa là người hỏi không tham gia dự án nào.
+
 ⚠️ Tài khoản **chưa gắn hồ sơ nhân sự** không tham gia dự án được. Hệ báo rõ; việc
 phải làm là **nhờ quản trị gắn nhân sự cho tài khoản**, không phải cấp thêm quyền.
 

@@ -1,4 +1,4 @@
-"""22 hội thoại mẫu của lõi mới (doc/agent-hub/20 §7, ai-CR-203). Mỗi mẫu là một chat riêng, chạy trong lồng thử của
+"""24 hội thoại mẫu của lõi mới (doc/agent-hub/20 §7, ai-CR-203). Mỗi mẫu là một chat riêng, chạy trong lồng thử của
 `core_eval` (không ghi gì thật). Thêm mẫu: thêm một `Sample` vào `SAMPLES`; mã mẫu không đổi / không tái dùng.
 
 Phần lớn mẫu lấy từ lỗi đo được trên dev ngày 15/10 (run #222–#246) — mỗi lỗi đã sửa thành một mẫu để không tái phát.
@@ -99,4 +99,16 @@ SAMPLES: tuple[Sample, ...] = (
              "Có thể tra văn bản, nhưng KHÔNG đọc ra con số lương / phụ cấp của bất kỳ ai; trả lời đúng câu chính sách và "
              "chỉ nêu được những gì không phải số lương (số hiệu, ngày hiệu lực, người ký).",
              must_not_call=("my_salary",), contains=("chỉ chính nhân sự đó mới xem được",)),)),
+    #  duoc-CR-763 (prod 16/11): người là thành viên 14 dự án nhóm DX hỏi hai câu dưới, bot trả "không có dự án nào" (chỉ
+    #  gọi my_work_tasks — việc của mình hạn hôm nay) rồi kể nhóm Telegram.
+    Sample("23", "Dự án tôi tham gia (duoc-CR-763)", (
+        Turn("anh đang có trong những dự án nào",
+             "Tra danh sách dự án người hỏi tham gia, liệt kê theo nhóm dự án (tên dự án, vai trò, tiến độ); không kết "
+             "luận không có dự án chỉ vì không có việc tới hạn.",
+             must_call=("my_projects",), must_not_call=("list_my_groups",)),)),
+    Sample("24", "Nhóm dự án không phải nhóm chat (duoc-CR-763)", (
+        Turn("anh có đang trong nhóm dự án nào ko",
+             "Hiểu là nhóm dự án ở phân hệ Dự án: tra dự án người hỏi tham gia rồi nêu các nhóm dự án kèm số dự án; không "
+             "kể nhóm chat Telegram.",
+             must_call=("my_projects",), must_not_call=("list_my_groups",)),)),
 )

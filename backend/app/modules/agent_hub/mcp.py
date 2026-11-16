@@ -62,6 +62,7 @@ READ_TOOLS = frozenset({
     "employee_leave_summary",   # duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác, gác leave_balance.read + phạm vi
     #  duoc-CR-761: ca làm việc theo ngày — của chính mình (không khóa) / của nhân sự khác (employee.read + phạm vi).
     "my_work_shifts", "employee_work_shifts",
+    "my_projects",   # duoc-CR-763: dự án / nhóm dự án mình tham gia, cùng luật visible_list_ids của màn Dự án
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
