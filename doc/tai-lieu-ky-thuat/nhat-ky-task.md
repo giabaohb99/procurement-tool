@@ -137,7 +137,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 **Còn lại:** lên dev và prod theo sổ việc deploy ở mục 19.8 của tài liệu Nghỉ phép: chạy thử script trên bản sao dữ liệu prod để phòng Nhân sự soát người thiếu hợp đồng và dòng âm, chạy thật ngoài giờ làm việc, đẩy cẩm nang, chạy lại bài hướng dẫn, nạp lại chỉ mục tìm kiếm và báo nhân viên số phép dùng được đã đổi.
 
 Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_refresh_service.py` · `accrual_service.py` · `balance_accrual_info.py` · `constants.py` · `catalog_controller.py` · `labor_contract/service.py` · `employee/service.py` · `core/crud.py` · `scripts/apply_monthly_after_annual_leave.py` · `frontend-v2/src/modules/hr/utils/leave-accrual-status.ts` · `hr/components/leave-accrual-status-badge.tsx` · `leave-balance-missing-contract-strip.tsx` · `doc/erp/hrm/02-nghi-phep.md` · `backend/scripts/seed_help_nghi_phep.py` · `test/backend/test_phep_nam_cong_sau_thang_cr762.py`
-Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ phép, xuất bản cẩm nang nghi-phep, nạp lại kho tìm kiếm trợ lý; CHƯA chạy script chuyển Phép năm sang cách cấp mới); prod chưa
+Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ phép, xuất bản cẩm nang nghi-phep, nạp lại kho tìm kiếm trợ lý; chạy script chuyển Phép năm sang cách cấp mới: 274 dòng quỹ, 1 dòng đổi hạn mức, 1 dòng âm là tài khoản thử; tick quyền dev cho Trưởng phòng và Quản lý công ty); prod chưa
 
 ## duoc-CR-761 | Trưởng phòng xếp ca theo tiếng cho từng nhân viên từng ngày, tính phép theo ca, nhân viên xem ca của mình
 - status: xong
