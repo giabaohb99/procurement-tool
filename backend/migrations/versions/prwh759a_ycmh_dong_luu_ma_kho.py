@@ -1,7 +1,7 @@
 """bao-CR-759: tab_purchase_request_item.warehouse_code — dòng YCMH lưu MÃ kho, không chỉ TÊN kho
 
 Revision ID: prwh759a
-Revises: kn756a
+Revises: stix723
 Create Date: 2026-11-16
 
 Dòng YCMH trước giờ chỉ lưu TÊN kho (cột `warehouse`, chữ tự do khớp `tab_warehouse.name`), trong khi ĐMH, lần
@@ -21,6 +21,9 @@ khớp nhau lúc lưu (`purchase_request/warehouse_ref.py`).
 Chạy lại được: cột đã có thì bỏ qua bước (a); bước (b) chỉ xét dòng còn mã trống. So khớp tên làm trong Python
 (khớp đúng từng byte, tránh lệch collation giữa hai bảng), ghi theo lô id — chạy được cả trên SQLite của bài kiểm.
 
+Nối thẳng sau `stix723` (head của prod), KHÔNG sau `kn756a`: duoc-CR-755/756 chưa duyệt lên prod, nối sau chúng thì
+cherry-pick CR-759 lên main là gãy chuỗi. Trên erp-v2 hai nhánh gặp lại ở migration gộp `mrg759a`.
+
 downgrade: bỏ cột `warehouse_code`. Tên kho vẫn còn ở cột `warehouse` nên không mất dữ liệu nào.
 """
 from typing import Sequence, Union
@@ -29,7 +32,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "prwh759a"
-down_revision: Union[str, None] = "kn756a"
+down_revision: Union[str, None] = "stix723"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
