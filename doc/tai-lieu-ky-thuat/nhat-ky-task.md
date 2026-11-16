@@ -181,6 +181,7 @@ Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` · `backend/scripts/se
 
 Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_refresh_service.py` · `accrual_service.py` · `balance_accrual_info.py` · `constants.py` · `catalog_controller.py` · `labor_contract/service.py` · `employee/service.py` · `core/crud.py` · `scripts/apply_monthly_after_annual_leave.py` · `frontend-v2/src/modules/hr/utils/leave-accrual-status.ts` · `hr/components/leave-accrual-status-badge.tsx` · `leave-balance-missing-contract-strip.tsx` · `doc/erp/hrm/02-nghi-phep.md` · `backend/scripts/seed_help_nghi_phep.py` · `test/backend/test_phep_nam_cong_sau_thang_cr762.py`
 Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ phép, xuất bản cẩm nang nghi-phep, nạp lại kho tìm kiếm trợ lý; chạy script chuyển Phép năm sang cách cấp mới: 274 dòng quỹ, 1 dòng đổi hạn mức, 1 dòng âm là tài khoản thử; tick quyền dev cho Trưởng phòng và Quản lý công ty); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9; chạy script chuyển Phép năm sang cách cấp mới: 264 dòng quỹ, không dòng âm, cả 264 người chưa có HĐLĐ nên tính từ ngày vào làm; seed hướng dẫn nghỉ phép)
 
 ## duoc-CR-761 | Trưởng phòng xếp ca theo tiếng cho từng nhân viên từng ngày, tính phép theo ca, nhân viên xem ca của mình
 - status: xong
@@ -210,6 +211,7 @@ Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ 
 
 Mã nguồn: `backend/app/modules/work_schedule/shift_controller.py` · `shift_access.py` · `shift_service.py` · `shift_leave_conflicts.py` · `shift_notify.py` · `day_rules.py` · `resolver.py` · `leave/workday_service.py` · `leave/comp_request_service.py` · `assistant/tools/work_shift_tool.py` · `migrations/versions/wshift758_xep_ca_theo_ngay.py` · `frontend-v2/src/modules/hr/components/work-shift-dialog.tsx` · `app/components/profile/profile-shift-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `test/backend/test_xep_ca_theo_tieng_cr761.py` · `test_tro_ly_ca_lam_viec_cr761.py`
 Deploy: dev 16/11/2026, commit 8f2bf458 (migration wshift758 + mrg761a, seed hướng dẫn sử dụng nhân sự, xuất bản cẩm nang nghi-phep có tóm tắt mới, nạp lại kho tìm kiếm trợ lý 185/185 bài, dựng lại dịch vụ AI); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9; diễn tập migration trên bản sao prod trước; migration wshift758 + mrg761a; tick quyền Trưởng phòng, Quản lý công ty, HR cấp công ty; seed hướng dẫn nhân sự; kho tìm kiếm 167/167 bài)
 ## bao-CR-760 | Sửa 30 bài kiểm backend đỏ sẵn trên nhánh phát triển
 - status: xong
 - date: 2026-11-16
@@ -434,6 +436,7 @@ Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py` · `assign
 
 Mã nguồn: `backend/app/modules/work_schedule/resolver.py` · `template_controller.py` · `assistant/tools/leave_tool.py` · `leave_taken_schedule.py` · `employee_leave_tool.py` · `agent_hub/mcp.py` · `mcp_settings.py` · `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `hr/pages/department-detail-page.tsx` · `hr/pages/work-schedule-assignment-list-page.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `ai_skill/seed_handbook/40-nghi-phep.md` · `test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py`
 Deploy: dev 16/11/2026 cùng đợt duoc-CR-761, commit 8f2bf458 (xuất bản cẩm nang nghi-phep và nhan-su-ho-so, nạp lại kho tìm kiếm trợ lý); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9, cẩm nang nghi-phep bản 8 và nhan-su-ho-so bản 5, tick quyền Trưởng phòng)
 
 ## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
 - status: xong
@@ -20276,4 +20279,5 @@ Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 **Kiểm:** bài kiểm mới 19 bài xanh (đối chiếu thẳng với hàm của màn Dự án, dự án người khác không lộ, dự án lưu trữ chỉ hiện khi xin, vai trò khớp hàm vai trò hiệu lực, tiến độ 1/8 ra 13 phần trăm như màn, đếm việc đang mở, bộ lọc công cụ cho cả hai câu, sổ khai cổng MCP, 2 và 20 dự án cùng số truy vấn); các bài canh cửa sổ công cụ xanh; ruff sạch.
 
 Mã nguồn: `backend/app/modules/assistant/tools/my_projects_tool.py`, `backend/app/modules/assistant/tool_router.py`, `backend/app/modules/agent_hub/mcp.py`, `backend/app/modules/agent_hub/mcp_settings.py`, `backend/app/modules/ai_skill/seed_handbook/30-du-an-cong-viec.md`.
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9, cẩm nang du-an-cong-viec bản 4, dịch vụ AI dựng lại cùng đợt)
 Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.
