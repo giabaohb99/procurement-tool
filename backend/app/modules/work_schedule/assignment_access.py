@@ -17,7 +17,9 @@
   7. ngày hiệu lực chỉ từ hôm nay trở đi (lúc tạo, và lúc sửa mà ngày đổi) — không lùi ngày làm đổi cách đếm ngày nghỉ
      đã qua;
   8. dòng ĐÃ BẮT ĐẦU (`effective_from` < hôm nay): chỉ đặt được ngày kết thúc (và ghi chú), ngày kết thúc phải từ hôm qua
-     trở đi; không xóa được (xóa là viết lại quá khứ). Mẫu lịch / đích / cấp / ngày bắt đầu không đổi được;
+     trở đi; không xóa được (xóa là viết lại quá khứ). Mẫu lịch / đích / cấp / ngày bắt đầu không đổi được. Dòng ĐÃ KẾT
+     THÚC trước hôm qua (`effective_to` < hôm qua) thì không sửa gì được nữa (bao-CR-767) — mở lại / dời ngày kết thúc
+     của nó sẽ kéo `move_resume` xóa hoặc dời dòng nối lại của Nhân sự, tính lại các ngày đã qua;
   9. dòng đã tự đóng một dòng khác (lúc tạo) thì không đổi đích hay ngày bắt đầu được — đổi sẽ gỡ liên kết mở lại lịch cũ;
      muốn đổi thì xóa (khi chưa bắt đầu) rồi tạo lại. Ngày KẾT THÚC thì đổi được: lịch cũ của Nhân sự tự nối lại từ ngày
      sau đó (`assignment_service.update_assignment` + `assignment_heal.move_resume`).
@@ -53,6 +55,7 @@ STARTED_EDIT_MESSAGE = "Lịch đã bắt đầu, chỉ đặt được ngày k�
 STARTED_DELETE_MESSAGE = "Lịch đã bắt đầu, không xóa được — hãy đặt ngày kết thúc"
 STARTED_END_MESSAGE = "Ngày kết thúc của lịch đã bắt đầu phải từ hôm qua trở đi"
 LINKED_MESSAGE = "Lịch này đã thay lịch trước đó, muốn đổi hãy xóa rồi tạo lại"
+ENDED_EDIT_MESSAGE = "Lịch này đã kết thúc, không sửa được nữa — muốn đổi lịch từ hôm nay trở đi hãy gán lịch mới"
 _STARTED_LOCKED = ("target_level", "target_id", "schedule_id", "effective_from")   # đổi được khi CHƯA bắt đầu
 _LINK_LOCKED = ("target_level", "target_id", "effective_from")                     # đổi sẽ gỡ liên kết mở lại
 _VERBS = {"create": "gán", "write": "sửa", "delete": "xóa"}
@@ -128,8 +131,12 @@ def _changed_fields(row: WorkScheduleAssignment, data: AssignmentUpdate) -> set[
 
 
 def check_personal_update(db: Session, row: WorkScheduleAssignment, data: AssignmentUpdate) -> None:
-    """Chốt SỬA trên đường Trưởng phòng: dòng đã bắt đầu (chỉ đặt ngày kết thúc) + dòng đã thay lịch trước đó."""
+    """Chốt SỬA trên đường Trưởng phòng: dòng đã kết thúc (khóa hẳn), dòng đã bắt đầu (chỉ đặt ngày kết thúc), dòng đã
+    thay lịch trước đó."""
     today = vn_today()
+    #  Mốc "hôm qua" cùng mốc với ngày kết thúc MỚI nhỏ nhất cho phép bên dưới: dòng kết thúc hôm qua vẫn mở lại được.
+    if row.effective_to is not None and row.effective_to < today - timedelta(days=1):
+        raise HTTPException(403, ENDED_EDIT_MESSAGE)
     changed = _changed_fields(row, data)
     started = row.effective_from < today
     if started and changed & set(_STARTED_LOCKED):

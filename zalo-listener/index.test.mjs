@@ -10,21 +10,26 @@ process.env.PORT = "0";
 const mod = await import("./index.mjs");
 
 test("chữ ký khớp core/agent_signature.py", () => {
-  // Hai vectơ tính bằng Python `agent_signature.build`.
+  // Vectơ tính bằng Python `agent_signature.build` (khuôn duoc-CR-757: thêm ".<kênh AI>|<chat riêng>", vắng = ".|").
   assert.equal(mod.buildSignature("k-test", "1700000000", "post", "/send", 0, Buffer.from('{"a":1}')),
-    "91c8ad13395778a4d394d8b7fa85511792ac8da038420c2dcaaae474977e221e");
+    "bafc037a8c2ac5a5a2ddc2089ee980e537979eb0f5cbc74bd0424f176d9ee2d5");
   assert.equal(mod.buildSignature("k-test", "1700000000", "GET", "/updates", 0, Buffer.alloc(0)),
-    "48d0857600fe76289f4e233df84a48cdc7597e8c83e80508c281d525cd9c4e02");
+    "21fbaf8bcc575e4a49fdd7dd51a372739ed1413ec300ecb14512c4555414828b");
+  assert.equal(mod.buildSignature("k-test", "1700000000", "POST", "/send", 7, Buffer.from('{"a":1}'), "zalo|1"),
+    "4cfb2ce8732ba61b47f63cd0a796f48916e8f52150fceb07129e3784e34b5301");
+  assert.equal(mod.contextMaterial({ "x-agent-ai-channel": " zalo ", "x-agent-private-chat": "1" }), "zalo|1");
+  assert.equal(mod.contextMaterial({}), "|");
 });
 
-async function call(port, method, urlPath, body, { sign = true } = {}) {
+async function call(port, method, urlPath, body, { sign = true, context = {}, signedContext = context } = {}) {
   const raw = body ? Buffer.from(JSON.stringify(body)) : Buffer.alloc(0);
   const ts = String(Math.floor(Date.now() / 1000));
-  const headers = { "content-type": "application/json" };
+  const headers = { "content-type": "application/json", ...context };
   if (sign) {
     headers["x-agent-ts"] = ts;
     headers["x-agent-user"] = "0";
-    headers["x-agent-sign"] = mod.buildSignature("k-test", ts, method, urlPath.split("?")[0], 0, raw);
+    headers["x-agent-sign"] = mod.buildSignature("k-test", ts, method, urlPath.split("?")[0], 0, raw,
+      mod.contextMaterial(signedContext));
   }
   const res = await fetch(`http://127.0.0.1:${port}${urlPath}`, { method, headers, body: raw.length ? raw : undefined });
   return { status: res.status, json: await res.json() };
@@ -60,6 +65,13 @@ test("HTTP: không ký bị từ chối, có ký thì đọc được trạng th
     assert.equal(out.status, 200);
     assert.equal(out.json.state, "idle");
     assert.equal((await call(port, "POST", "/logout", {}, { sign: false })).status, 401);
+
+    // duoc-CR-757: hai header ngữ cảnh nằm trong chuỗi ký — ký đúng thì qua, thêm / đổi sau khi ký thì 401.
+    const ctx = { "x-agent-ai-channel": "zalo", "x-agent-private-chat": "1" };
+    assert.equal((await call(port, "GET", "/status", null, { context: ctx })).status, 200);
+    assert.equal((await call(port, "GET", "/status", null, { context: ctx, signedContext: {} })).status, 401);
+    assert.equal((await call(port, "GET", "/status", null,
+      { context: { ...ctx, "x-agent-private-chat": "0" }, signedContext: ctx })).status, 401);
   } finally {
     server.close();
   }
