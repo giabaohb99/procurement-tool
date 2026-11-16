@@ -439,7 +439,7 @@ def _dem_db_get_that() -> dict[str, int]:
     for path in sorted(root.rglob("*controller*.py")):
         n = path.read_text(encoding="utf-8").count("db.get(")
         if n:
-            out[str(path.relative_to(root))] = n
+            out[path.relative_to(root).as_posix()] = n
     return out
 
 

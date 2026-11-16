@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.modules.agent_hub import core_v2, service
 from app.modules.agent_hub.constants import ACT_ANSWER, ACT_ASKED, ACT_DRAFT_WAIT, DIR_IN, DIR_OUT, RUN_ERROR, RUN_OK
 from app.modules.agent_hub.model import AgentMessage, AgentRun
+from app.modules.agent_hub.timeutil import now_local, now_utc
 from app.modules.assistant.provider.base import ChatResult
 
 CHAT = "5551"
@@ -57,7 +58,7 @@ def chat(db, monkeypatch):
 
 def _incoming(db, text, minutes_ago=0):
     row = service.log_message(db, DIR_IN, CHAT, 0, text, action="")
-    row.created_at = datetime.now() - timedelta(minutes=minutes_ago)
+    row.created_at = now_utc() - timedelta(minutes=minutes_ago)
     db.commit()
     return row
 
@@ -72,7 +73,7 @@ def _install(monkeypatch, script):
 def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch):
     #  Lịch sử cũ: 2 lượt hỏi đáp trong 24 giờ, 1 lượt quá cũ phải bị bỏ.
     old = service.log_message(db, DIR_IN, CHAT, 0, "câu hỏi hôm kia", action=ACT_ASKED)
-    old.created_at = datetime.now() - timedelta(days=2)
+    old.created_at = now_utc() - timedelta(days=2)
     service.log_message(db, DIR_IN, CHAT, 0, "nháp hồi nãy đâu", action=ACT_ASKED)
     service.log_message(db, DIR_OUT, CHAT, 0, "Em còn giữ, anh muốn đổi gì?", action=ACT_ANSWER)
     db.commit()
@@ -82,7 +83,7 @@ def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch)
     core_v2.handle(db, CHAT, row, "tạo cho anh task nghiên cứu luồng agent")
 
     sysm = prov.seen["system"]
-    assert f"{datetime.now():%d/%m/%Y} (hôm nay)" in sysm                  # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
+    assert f"{now_local():%d/%m/%Y} (hôm nay)" in sysm                  # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
     assert "LỊCH" in sysm and "(mai)" in sysm                              # và tính sai thứ sáu = 17/10
     assert "Trần Minh Được" in sysm and "KHÔNG gọi **đại ca**" in sysm       # biết đang nói với ai
     assert "KHÔNG dùng emoji" in sysm
@@ -547,7 +548,7 @@ def test_cong_cu_ve_sua_ma_chi_cho_chat_duoc_giao(db, chat, monkeypatch):
     out: dict = {}
 
     def script(msgs, tools, execute):
-        out["tools"] = list(t.name for t in tools)
+        out["tools"] = [t.name for t in tools]
         out["res"] = execute("create_code_task", {"mo_ta": "Màn danh sách đơn mua hàng: thêm ô lọc theo ngày giao hàng"})
         return _result("Em ghi yêu cầu rồi.", [{"name": "create_code_task", "args": {}}])
 
@@ -830,7 +831,7 @@ def test_lich_su_luoc_tin_nhap_cu_con_dong_dau(db):
     service.log_message(db, DIR_OUT, CHAT, 0, "Em soạn nháp công việc (Dự án) như sau:\n- Việc: A\n- Hạn: 16/10/2026",
                         action=ACT_ANSWER)
     row = _incoming(db, "đổi hạn")
-    turns = core_v2.history(db, CHAT, row.id, datetime.now())
+    turns = core_v2.history(db, CHAT, row.id, now_utc())
     assert turns[-1]["content"] == "Em soạn nháp công việc (Dự án) như sau: (chi tiết nháp đã lược)"
 
 
@@ -958,7 +959,7 @@ def test_chi_phi_claude_qua_tram_tinh_ca_bo_dem():
 # ---------------------------------------------------------------------------
 def _say(db, direction, text, minutes_ago):
     r = service.log_message(db, direction, CHAT, 0, text, action=ACT_ASKED if direction == DIR_IN else ACT_ANSWER)
-    r.created_at = datetime.now() - timedelta(minutes=minutes_ago)
+    r.created_at = now_utc() - timedelta(minutes=minutes_ago)
     return r
 
 
@@ -1007,7 +1008,6 @@ def test_boi_canh_luot_co_tran_tung_khoi(db, chat, monkeypatch):
 # ---------------------------------------------------------------------------
 def test_moi_chat_deu_di_loi_moi(db, monkeypatch):
     """Đại ca 15/10: "bỏ cái cũ luôn, sử dụng luồng mới". Không còn cờ / danh sách chat; tin chữ nào cũng tới core_v2."""
-    from app.modules.agent_hub import chat_link
 
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
     monkeypatch.setattr(settings, "AGENT_HUB_ENABLED", True)

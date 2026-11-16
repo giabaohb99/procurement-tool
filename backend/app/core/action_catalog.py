@@ -123,6 +123,9 @@ _EDIT = (
     ActionCode("catalog_merge", "Cập nhật danh mục từ tệp theo trang", ACTION_GROUP_EDIT),
     # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
     ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
+    # bao-CR-727 (04/11/2026) — Nhật ký email: gửi lại một thư (dòng nhật ký MỚI trỏ thư gốc). CR đó ghi `record(...
+    # "resend")` mà quên khai ở đây — bao-CR-760 bổ sung.
+    ActionCode("resend", "Gửi lại thư", ACTION_GROUP_EDIT),
 )
 
 #  ---------------------------------------------------------------------

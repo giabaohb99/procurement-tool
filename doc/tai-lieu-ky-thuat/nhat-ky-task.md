@@ -114,6 +114,42 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-760 | Sửa 30 bài kiểm backend đỏ sẵn trên nhánh phát triển
+- status: xong
+- date: 2026-11-16
+- list: Nền tảng
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** lúc làm ai-CR-241 phát hiện 30 bài kiểm backend đỏ sẵn trên nhánh phát triển (đỏ cả trên mã trước khi sửa):
+27 bài lõi hội thoại bot, bài canh số lần đọc bản ghi theo id trong controller, bài canh controller không lọc phạm vi và
+bài canh mã hành động nhật ký. Đã được duyệt ngày 16/11 để tìm nguyên nhân thật và sửa.
+
+**Phân loại và cách sửa**
+- **Lỗi mã thật (một chỗ):** chức năng gửi lại thư trong Nhật ký email (bao-CR-727) ghi mã hành động **resend** vào nhật ký
+  thao tác nhưng chưa khai trong danh mục mã hành động, nên dòng dấu vết hiện mã tiếng Anh và rơi vào nhóm Không rõ. Đã khai
+  **Gửi lại thư** thuộc nhóm Sửa. Bài canh mã hành động đạt lại.
+- **Chỉ đỏ trên máy Windows (29 bài):**
+  - Hai bài canh phạm vi dựng tên tệp controller theo dấu phân cách của hệ điều hành, nên trên Windows ra dấu gạch ngược và
+    không khớp bảng khai. Đã đổi sang dạng dấu gạch xuôi cố định. Bảng khai giữ nguyên; không chỗ đọc nào mới, không thêm
+    gì vào danh sách cho phép.
+  - 27 bài lõi hội thoại đặt mốc thời gian tin nhắn bằng giờ của máy chạy, trong khi cột lưu theo giờ UTC của cơ sở dữ
+    liệu. Máy giờ Việt Nam lệch 7 tiếng, vượt khoảng ngắt phiên 6 tiếng nên bài kiểm không thấy lịch sử. Đã đổi bài kiểm sang
+    đúng hàm giờ UTC và giờ Việt Nam mà mã chạy thật dùng.
+  - Chứng minh: chạy bốn tệp trong container api (Linux, giờ UTC) thì đạt cả trước khi sửa các bài kiểm này.
+- **Bài kiểm lỗi thời:** không có.
+- Dọn thêm lỗi ruff sẵn có trong ba tệp kiểm: một khóa khai trùng hai lần trong bảng miễn trừ phạm vi (cùng lý do), hai
+  import thừa, một danh sách viết dạng thừa.
+
+**Kiểm:** bốn tệp (187 bài) đạt cả trên máy Windows lẫn trong container api; thêm bốn tệp liên quan nhật ký thao tác, tổng
+304 bài đạt trên Windows; ruff sạch.
+
+**Còn lại:** dòng khai **Gửi lại thư** chỉ đổi chữ hiển thị trong nhật ký thao tác, lên prod theo đợt tới, không gấp.
+
+Mã nguồn: `backend/app/core/action_catalog.py`.
+Kiểm: `test/backend/test_agent_hub_core_v2.py`, `test_pham_vi_duong_vong.py`, `test_pham_vi_luat_bat_bien.py`.
+
+---
+
 ## bao-CR-758 | Giao diện mới: đơn mua hàng tạo từ yêu cầu mua hàng có kho nhận, giữ đơn giá, báo ô còn thiếu
 - status: xong
 - date: 2026-11-16
