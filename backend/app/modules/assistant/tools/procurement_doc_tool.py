@@ -272,6 +272,7 @@ def _read_pr(ctx: ToolContext, code: str, doc_id) -> dict:
         "price": _num(it.price),
         "amount": _num(it.amount),
         "warehouse": it.warehouse,
+        "warehouse_code": it.warehouse_code or "",   # bao-CR-759
         "required_date": it.required_date,
         "expected_date": it.expected_date,
         "assignee": it.assignee,        # mã NSTM phụ trách dòng
