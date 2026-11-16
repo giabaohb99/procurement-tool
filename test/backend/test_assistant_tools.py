@@ -343,3 +343,37 @@ def test_lich_su_mua_tra_ten_tren_hoa_don(db, seed, cap_quyen):
     assert moi["po_code"] == "PO1" and moi["invoice_name"] == "CHAI NHỰA 1000ML +NẮP"
     assert moi["invoice_name_from_catalog"] is False
     assert cu["invoice_name"] == "CHAI NHỰA DANH MỤC" and cu["invoice_name_from_catalog"] is True
+
+
+def test_lich_su_mua_kem_dong_dmh_tren_he(db, seed, cap_quyen):
+    """bao-CR-770: bảng lịch sử mua chỉ có dòng ĐMH đã hoàn tất (prod 16/11: 5 dòng hệ, còn lại là Excel cũ), nên hỏi
+    "tên trên hóa đơn 3 đơn gần nhất" phải đọc thẳng dòng ĐMH trên hệ: mới nhất trước, bỏ đơn đã hủy, gác phạm vi ĐMH,
+    ẩn NCC khi thiếu supplier.read. Không có quyền xem ĐMH thì không trả phần này (chỉ báo)."""
+    from app.modules.user.model import User
+    for code, d, st, name in (("PO-C", "2026-11-16", "draft", "CHAI 500ML + NẮP"),
+                              ("PO-B", "2026-11-12", "approved", "CHAI 500ML + NẮP"),
+                              ("PO-H", "2026-11-14", "cancelled", "ĐƠN HỦY"),
+                              ("PO-A", "2026-11-09", "received", "CHAI 500ML CŨ")):
+        po = PurchaseOrder(code=code, supplier_code="PN", supplier_name="Phương Nam", order_date=d, status=st,
+                           company_id=seed.company_id)
+        db.add(po)
+        db.flush()
+        db.add(POItem(po_id=po.id, product_code="CPT0234", invoice_name=name, price=2400, qty_order=1000, unit="Cái"))
+    db.commit()
+    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "product_purchase_history", {"product_code": "CPT0234", "limit": 3})
+    assert "order_lines" not in out and out.get("order_lines_note")          # chưa có quyền xem ĐMH
+
+    cap_quyen(seed.u_req_id, "purchase_order", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "product_purchase_history", {"product_code": "CPT0234", "limit": 3})
+    lines = out["order_lines"]
+    assert [x["po_code"] for x in lines] == ["PO-C", "PO-B", "PO-A"]           # mới nhất trước, bỏ đơn hủy
+    assert lines[0]["invoice_name"] == "CHAI 500ML + NẮP" and lines[0]["price"] == 2400.0
+    assert lines[0]["status_label"] and lines[0]["url"]
+    assert "supplier_name" not in lines[0]                                       # thiếu supplier.read
+    cap_quyen(seed.u_req_id, "supplier", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "product_purchase_history", {"product_code": "CPT0234", "limit": 3})
+    assert out["order_lines"][0]["supplier_name"] == "Phương Nam"
