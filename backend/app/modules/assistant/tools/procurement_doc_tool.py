@@ -173,9 +173,12 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
     items = (ctx.db.query(POItem).filter(POItem.po_id == po.id)
              .order_by(POItem.id.asc()).all())
     lines = [{
+        "line_id": it.id,               # ai-CR-241: propose_document_update (po_lines) nhận dạng dòng bằng id này
         "product_code": it.product_code,
         "product_name": it.product_name,
+        "invoice_name": it.invoice_name,
         "unit": it.unit,
+        "warehouse_code": it.warehouse_code,
         "qty_order": _num(it.qty_order),
         "qty_received": _num(it.qty_received),
         "qty_remaining": _num(it.qty_remaining),

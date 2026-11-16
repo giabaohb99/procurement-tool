@@ -114,6 +114,50 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-241 | Trợ lý AI và cổng MCP đề xuất sửa đơn mua hàng đang Nháp hoặc Bị trả lại
+- status: xong
+- date: 2026-11-16
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** ngày 16/11 đơn PO01178 tạo trên giao diện mới bị trống kho nhận và đơn giá về 0, phải chạy script trên prod
+mới sửa được. Trợ lý AI và cổng MCP chỉ sửa được yêu cầu mua hàng, yêu cầu báo giá, câu chữ bản in đề nghị thanh toán và
+đơn nghỉ phép, chưa sửa được đơn mua hàng. Đã được duyệt ngày 16/11.
+
+**Đã làm**
+- Công cụ đề xuất sửa phiếu nhận thêm đơn mua hàng: đầu đơn sửa được **Ghi chú** và **Hình thức thanh toán NCC**; từng dòng
+  sửa được đơn giá, VAT, số lượng đặt, kho nhận, tên trên hóa đơn, ngày yêu cầu có hàng, ngày dự kiến có hàng, ghi chú dòng.
+  Dòng nhận dạng bằng id dòng, hoặc mã hàng khi mã chỉ có một dòng trên đơn (mã trùng thì bắt buộc dùng id); kho, VAT, hai
+  ngày và ghi chú đặt được cho cả đơn một lượt. Kho nhận gõ mã hoặc tên đều được, máy chủ quy về mã trong danh mục kho đang
+  dùng. Đợt này không thêm, không bỏ dòng.
+- Chỉ sửa đơn **Nháp** hoặc **Bị trả lại**; đơn ở trạng thái khác bị từ chối kèm câu giải thích và link mở đơn trên web. Gác
+  đúng quyền ghi đơn mua hàng và phạm vi dữ liệu như nút **Lưu** trên web; đơn ngoài phạm vi trả cùng một câu với đơn không
+  tồn tại. Kiểm giá trị: đơn giá và số lượng không âm, có trần; VAT từ 0 tới dưới 100; đơn nhập khẩu thì VAT dòng phải 0;
+  ngày đúng dạng năm-tháng-ngày; dòng đã Hoàn thành hoặc Hủy không sửa.
+- Bảng đề xuất ghi cũ và mới từng ô của từng dòng, kèm giá trị đặt trước và sau VAT theo loại tiền của đơn, cảnh báo khi
+  đơn giá mới lệch giá đề xuất trên yêu cầu mua hàng nguồn quá 20%, và link tuyệt đối tới đơn.
+- Bước xác nhận kiểm lại từ đầu quyền, phạm vi, trạng thái, từng giá trị, và mọi ô sửa được của đầu đơn cùng mọi dòng chưa
+  bị ai đổi kể từ lúc đề xuất; có thay đổi thì chặn, xác nhận hai lần không ghi đôi. Ghi đi đúng hàm lưu đơn của màn web với
+  đủ danh sách dòng và lần giao dựng lại từ sổ, nên phần tính lại tiến độ, nhật ký và đồng bộ yêu cầu mua hàng chạy như khi
+  sửa tay. Sổ thay đổi của bot ghi ảnh trước và sau, chưa hoàn tác tự động cho đơn mua hàng.
+- Công cụ đọc chứng từ trả thêm id dòng, kho nhận và tên trên hóa đơn của dòng đơn mua hàng để AI chỉ đúng dòng.
+
+**Kiểm:** 24 bài kiểm mới (sửa giá và kho đơn Nháp, đặt kho cả đơn, giữ lần giao, cảnh báo lệch giá, đơn đã duyệt, thiếu
+quyền, ngoài phạm vi, kho không có, VAT đơn nhập khẩu, giá trị sai, mã hàng trùng, đổi giữa hai bước, gửi duyệt giữa hai
+bước, xác nhận hai lần, token của người khác, khóa chỉ đọc, đi trọn qua cổng MCP). 347 bài của công cụ sửa phiếu, sổ thay
+đổi và các bài canh cổng MCP đạt; ruff sạch. 30 bài đỏ ở lõi hội thoại bot và ba bài canh phạm vi đỏ sẵn trên mã gốc trước
+khi sửa, không liên quan.
+
+**Còn lại:** nhóm cấu hình MCP **Sửa và xóa phiếu của chính mình** phải đang bật thì cổng MCP mới gọi được; chưa thêm hoặc
+bỏ dòng; chưa hoàn tác tự động; bài hướng dẫn sử dụng do Agent 2 viết.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_update.py`, `update_tool.py`, `procurement_doc_tool.py`,
+`assistant/tool_router.py`, `assistant/change_service.py`.
+Kiểm: `test/backend/test_mcp_sua_don_mua_hang_cr241.py`.
+Tài liệu: `doc/agent-hub/06-cong-mcp.md` mục 3.3, `doc/tai-lieu-ky-thuat/change-log-ai.md`.
+
+---
+
 ## van-hanh-sua-gia-dmh-1311 | Sửa đơn giá năm đơn mua hàng đã duyệt hoặc đã nhận hàng trên prod rồi tính lại công nợ
 - status: xong
 - date: 2026-11-13
