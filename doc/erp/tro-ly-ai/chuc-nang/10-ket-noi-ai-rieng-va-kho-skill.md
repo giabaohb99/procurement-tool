@@ -188,6 +188,17 @@ Câu mẫu: *Liệt kê các skill công ty mà bạn đọc được* · *Tôi 
 trước đang ở bước nào?* · *Lập báo cáo mua hàng tháng 9 theo nhà cung cấp, xuất Excel* · khóa được ghi: *Soạn đơn nghỉ
 phép thứ Sáu tuần sau* → xem nháp → *tạo và gửi duyệt*.
 
+**Sửa ĐMH đang Nháp (ai-CR-241)** — mục *Nhờ AI sửa đơn mua hàng đang Nháp* của bài d. `propose_document_update` với
+`entity = purchase_order`, `changes{note, payment_terms}`, `po_lines[{line_id | product_code | all_lines, ...}]` (hợp đồng đủ ở
+doc 06 §3.3), xác nhận `confirm_draft(kind = "update")`, nhóm G7 `edit` (tắt mặc định). Chỉ đơn Nháp / Bị trả lại trong phạm vi
+`purchase_order.write`. Dòng hàng: đơn giá, VAT %, SL đặt, kho nhận (mã hoặc tên), tên trên hóa đơn, ngày yêu cầu / dự kiến có
+hàng, ghi chú; `all_lines` chỉ cho kho, VAT, hai ngày, ghi chú; đầu đơn: ghi chú, hình thức thanh toán NCC. Không thêm / bỏ
+dòng. Bảng cũ → mới theo từng ô (*Dòng n · mã · ô*) kèm *Giá trị đặt (trước / sau VAT)*, cảnh báo khi đơn giá lệch giá YCMH
+nguồn quá 20% (đơn VNĐ). Ghi qua `update_po` như nút Lưu. Đơn chờ duyệt: người duyệt trả lại; đã duyệt: Hủy duyệt (quyền
+duyệt) về Nháp; đã nhận hàng / dòng Hoàn thành / có YCTT: không hủy duyệt được nên không sửa. Đổi giữa hai bước → 409, xác nhận
+hai lần không ghi đôi. Sổ *Bot vừa làm gì* ghi trước / sau, không hoàn tác. Câu mẫu: *Cập nhật giá theo báo giá HNS vào
+PO01178* · *Đặt kho Dego Cần Thơ cho cả đơn PO01178*.
+
 ## 6. Quản trị Kho skill AI (bài e)
 
 Từ bao-CR-696 (30/10/2026) Trợ lý AI và Kho skill AI gom thành **một phân hệ AI** (`modules/ai/routes.tsx`, khung phân hệ nhận

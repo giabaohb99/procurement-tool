@@ -217,12 +217,14 @@ bước, xác nhận hai lần, token của người khác, khóa chỉ đọc, 
 khi sửa, không liên quan.
 
 **Còn lại:** nhóm cấu hình MCP **Sửa và xóa phiếu của chính mình** phải đang bật thì cổng MCP mới gọi được; chưa thêm hoặc
-bỏ dòng; chưa hoàn tác tự động; bài hướng dẫn sử dụng do Agent 2 viết.
+bỏ dòng; chưa hoàn tác tự động.
+
+**Hướng dẫn sử dụng (Agent 2):** bài *AI riêng của bạn làm được gì trong ERP* thêm mục *Nhờ AI sửa đơn mua hàng đang Nháp*: câu mẫu (cập nhật giá theo báo giá vào một đơn, đặt kho cho cả đơn), ô sửa được theo dòng, cả đơn và đầu đơn, các trường hợp không sửa được kèm cách làm trên web (chờ duyệt thì nhờ trả lại, đã duyệt thì Hủy duyệt, đã nhận hàng thì không sửa), cách đọc bảng cũ và mới trước khi gật, và việc sửa đơn mua hàng không hoàn tác được ở mục Bot vừa làm gì. Cùng bài sửa hai chỗ còn ghi đề nghị thanh toán qua AI chỉ trả link form. Tài liệu chức năng Kết nối AI riêng thêm đoạn tương ứng. Chưa chạy seed trên dev.
 
 Mã nguồn: `backend/app/modules/assistant/tools/po_update.py`, `update_tool.py`, `procurement_doc_tool.py`,
 `assistant/tool_router.py`, `assistant/change_service.py`.
 Kiểm: `test/backend/test_mcp_sua_don_mua_hang_cr241.py`.
-Tài liệu: `doc/agent-hub/06-cong-mcp.md` mục 3.3, `doc/tai-lieu-ky-thuat/change-log-ai.md`.
+Tài liệu: `doc/agent-hub/06-cong-mcp.md` mục 3.3, `doc/tai-lieu-ky-thuat/change-log-ai.md`, `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py`, `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md`.
 
 ---
 
