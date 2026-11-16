@@ -9,85 +9,6 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
-- status: xong
-- date: 2026-11-13
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 4
-**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
-
-**Đã làm**
-- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
-- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
-- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
-- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
-- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
-- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
-- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
-
-Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
-Commit: 057b70ac (erp-v2)
-
-## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
-- status: xong
-- date: 2026-11-12
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 2
-**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
-
-**Đã làm**
-- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
-- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
-- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
-- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
-- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
-- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
-- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
-
-Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
-Commit: 3e898b75 (erp-v2)
-Deploy: dev
-
-## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
-- status: xong
-- date: 2026-11-12
-- list: Kế hoạch hệ agent
-- pic: NSU209
-- tag: Agent 2
-**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
-
-**Đã làm**
-- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
-- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
-- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
-- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
-- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
-- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
-- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
-- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
-
-Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
-Commit: 8836760a (erp-v2)
-Deploy: dev
-
-## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
-- status: xong
-- date: 2026-11-11
-- list: Thu mua
-- pic: NSU209
-- tag: Bảo
-**Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
-
-**Đã làm**
-- Thêm vào bảng v1 các cột v2 đang có. Hiện sẵn: Mã NCC, Tên VTBB, ĐVT, SL dự kiến, Đơn giá, VAT, Thành tiền, Thời gian giao, Ngày công nợ. Ẩn sẵn, bật ở menu Cột: Giá mua gần nhất, Giá mua cao nhất, Giá đề xuất, phí vận chuyển, thông tin NCC, quy cách, mẫu, các mốc ngày, ghi chú.
-- Cột thêm đều bấm tiêu đề để xếp được; người đã lưu bố cục cũ vẫn thấy ngay các cột hiện sẵn, cột ẩn sẵn vẫn ẩn.
-- Xuất CSV theo đúng các cột đang hiện trên bảng.
-- Máy chủ không đổi: API đã trả đủ các trường này từ trước.
-
-Mã nguồn: `frontend/src/pages/SurveyReport.tsx`
-
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
@@ -192,6 +113,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
    task, chữ trơn) và chữ nằm trong `mã` thì dùng nháy thẳng `"…"`.
 
 ---
+
+## van-hanh-sua-gia-dmh-1311 | Sửa đơn giá năm đơn mua hàng đã duyệt hoặc đã nhận hàng trên prod rồi tính lại công nợ
+- status: xong
+- date: 2026-11-13
+- list: Sản xuất - Thu mua
+- pic: NSU209
+**Bối cảnh:** phiếu hỗ trợ TK13112601 ngày 13/11 (NSTM Lâm Bích Dư) báo đơn giá trên một số đơn mua hàng sai so với giá chốt với nhà cung cấp. Trưởng phòng không tự sửa được: đơn đã nhận hàng thì nút *Hủy duyệt* bị chặn, *Trả về* chỉ dùng cho đơn *Chờ duyệt*, còn đơn đã duyệt thì khóa ô đơn giá. Ban điều hành chốt không mở đơn đã nhận hàng về *Nháp*, mà sửa thẳng đơn giá rồi tính lại thành tiền và công nợ.
+
+**Đã làm**
+- Viết script sửa giá chạy trong container api trên prod. Script chạy thử trước, chỉ ghi khi thêm `--apply`. Script dừng khi giá cũ trên đơn không khớp giá báo sửa, khi đơn đã có đề nghị thanh toán chưa hủy, hoặc khi công nợ đã được trả.
+- Sau khi đặt giá mới, script gọi đúng hàm tính lại của luồng lưu đơn, nên thành tiền dòng và công nợ (tính theo số lượng đã nhận) cùng cập nhật. Lịch sử đổi giá tự ghi vào nhật ký thay đổi.
+- Sao lưu toàn bộ cơ sở dữ liệu prod trước mỗi lần ghi.
+- Đã sửa năm đơn:
+  - PO00572 (ĐMH02266), dòng NTN5310: 3.340 thành 3.440.
+  - PO00789 (ĐMH02330), dòng NTN5293 và NTN5337: 3.612 thành 3.440.
+  - PO00343 (ĐMH02246), dòng NTN5273: 3.340 thành 3.440. Đơn đã nằm trong đề nghị thanh toán YCTT00126 ở *Nháp*, dòng đã ghi sẵn số tiền theo giá mới, Ban điều hành cho bỏ qua chặn này.
+  - PO00967, dòng NTN5369: 1.040 thành 987. Đơn mới *Đã duyệt*, chưa nhận hàng nên không có công nợ.
+  - PO00665 (ĐMH02322, NCC Phương Nam), năm dòng: CHT0212 3.500 thành 3.800, NAP0136 1.000 thành 700, CHT0218 6.800 thành 7.100, CHT0057 2.400 thành 2.700, NAP0144 1.000 thành 700. Ở đơn này người dùng xin đưa đơn về *Nháp*, nhưng đơn đã nhận đủ và đã có 5 khoản công nợ nên chuyển sang sửa thẳng đơn giá.
+
+**Kết quả:** cả năm đơn giữ nguyên trạng thái và số đã nhận. Công nợ PO00665 từ 75.234.960đ lên 77.225.940đ, chưa trả. Các đơn còn lại có công nợ khớp giá mới, đọc lại qua màn chi tiết đơn.
+
+**Còn lại:** chờ Ban điều hành quyết có làm nút *Sửa giá* cho trưởng phòng ở đơn đã duyệt hoặc đã nhận hàng hay không (chặn khi đã có đề nghị thanh toán gửi duyệt hoặc đã trả tiền), để thu mua tự sửa mà không cần nhờ kỹ thuật.
+
+Mã nguồn: script `sua_gia_tk13112601.py` (mẫu) gọi `purchase_order.delivery_service.recompute_effects`; chặn gốc ở `purchase_order/edit_service.py` (`unapprove_po`, `block_edit_approved_order`)
+Deploy: prod 13/11 và 14/11, sửa dữ liệu bằng script; bản sao trước khi sửa `prod_truoc_release_20261113_1534.sql.gz`, `prod_truoc_release_20261114_1032.sql.gz`, `prod_truoc_release_20261114_1159.sql.gz` trong `~/backups/release-2026-10/` trên máy chủ prod.
 
 ## duoc-CR-757b | Trưởng phòng gán lịch làm việc riêng cho nhân viên, quỹ phép bậc phòng ban đúng phòng, trợ lý không bao giờ nói lương người khác
 - status: xong
@@ -301,6 +247,85 @@ Deploy: chưa
 Mã nguồn: `backend/app/modules/assistant/tools/po_invoice_check.py` (`reconcile`) · `po_receipt_tool.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_doi_chieu_hoa_don_cr239.py`
 Commit: 5405d917, gộp ada7a00e (erp-v2)
 Deploy: chưa
+
+## ai-CR-238 | Trợ lý nhập báo giá nhà cung cấp từ tệp vào phiếu khảo sát hoặc yêu cầu báo giá đang mở
+- status: xong
+- date: 2026-11-13
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** thu mua đang gõ tay từng dòng giá nhà cung cấp vào phiếu khảo sát. Đại ca chốt ngày 13/11: ứng dụng AI đọc tệp báo giá (PDF hoặc ảnh) rồi nhập vào phiếu khảo sát hoặc yêu cầu báo giá đang mở, theo kiểu soạn nháp rồi xác nhận.
+
+**Đã làm**
+- Thêm công cụ soạn nháp nhập báo giá: AI truyền nhà cung cấp, số và ngày báo giá, từng dòng gồm mã hoặc tên hàng, đơn giá, VAT, đơn vị tính, số lượng tối thiểu, thời gian giao, hạn công nợ, ghi chú.
+- Công cụ tự tìm phiếu khảo sát đang ở Nháp hoặc Bị trả lại trong phạm vi người hỏi được sửa, chọn phiếu có nhiều dòng khớp nhất, cùng mức thì ưu tiên phiếu của chính người hỏi; người dùng nêu mã phiếu khảo sát hoặc mã yêu cầu báo giá thì đi thẳng phiếu đó. Không phiếu nào khớp thì hỏi lại, kèm các phiếu đang mở và các yêu cầu báo giá người hỏi đang phụ trách.
+- Mỗi dòng báo giá được khớp theo hàng và nhà cung cấp: đã có dòng của nhà cung cấp đó thì sửa, chưa có thì thêm dòng mới. Nháp báo rõ dòng khớp, dòng không khớp (không ghi), dòng sẽ ghi đè giá đã có và dòng có đơn vị tính lệch.
+- Yêu cầu báo giá đang khảo sát mà chưa có phiếu khảo sát thì xác nhận sẽ lập phiếu khảo sát Nháp gắn với yêu cầu đó, như nút lập phiếu trên web.
+- Chưa ghi gì cho tới khi người dùng gật. Lúc ghi gọi đúng hàm lưu phiếu khảo sát của form web, kiểm lại quyền sửa, phạm vi, trạng thái và dòng chưa bị đổi; xác nhận hai lần không ghi đôi. Phiếu đã gửi duyệt, đã duyệt hoặc đã hủy thì không sửa được.
+- Kết quả trả link tuyệt đối tới phiếu để người dùng tự đính tệp báo giá trên web. Công cụ nằm trong nhóm cấu hình MCP riêng, tắt sẵn, chỉ khóa được ghi mới dùng.
+- Cập nhật tài liệu cổng MCP và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/assistant/tools/supplier_quote_tool.py` · `agent_hub/mcp.py` · `agent_hub/mcp_settings.py` · `agent_hub/draft_create.py` · `assistant/tool_router.py` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_nhap_bao_gia_ncc_cr238.py` (11 bài)
+Commit: 057b70ac (erp-v2)
+
+## ai-CR-237 | Trợ lý ghi số và ngày hóa đơn vào lần giao của đơn mua hàng
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** ngày 12/11 người dùng gửi Claude hóa đơn PDF của NCC PHL (số 6265, ngày 12/11/2026). Claude tìm ra đơn PO01017 với lần giao 800 và 801 nhưng không ghi được số và ngày hóa đơn: công cụ ghi nhận hàng chỉ thêm lần nhận và số lượng.
+
+**Đã làm**
+- Công cụ soạn nháp nhận hàng nhận thêm số và ngày hóa đơn, ghi chung một lần cho cả phiếu hoặc riêng từng mã hàng, ghi cùng lần nhận mới hoặc lần giao đang chờ.
+- Thêm cách ghi hóa đơn vào lần giao đã có theo id lần giao (ví dụ 800, 801), không đổi số lượng. Vẫn hai bước: soạn nháp, người dùng gật rồi mới ghi.
+- Ghi đi đúng đường nút Lưu của màn đơn mua hàng nên công nợ hàng cập nhật luôn số hóa đơn; kiểm quyền sửa và phạm vi từng đơn như web.
+- Ngày hóa đơn không đoán: có số mà thiếu ngày, có ngày mà thiếu số, hay ngày sai dạng đều báo lỗi để AI hỏi lại.
+- Lần giao đã có số hóa đơn khác thì nháp cảnh báo ghi đè và nêu số cũ. Hóa đơn bị người khác đổi sau lúc soạn thì chặn, không ghi.
+- Tệp hóa đơn không gửi qua AI được. Nháp và kết quả trả link tuyệt đối mở thẳng màn đơn mua hàng (giao diện mới) và tự bật hộp dòng hàng chứa lần giao đó, kèm câu nhắc người dùng bấm link để tự đính tệp.
+- Mô tả công cụ hướng dẫn AI tìm đơn theo nhà cung cấp, mã hàng, số lượng, tên trên hóa đơn rồi mới ghi; tài liệu cổng MCP đã ghi phần mới.
+
+Mã nguồn: `backend/app/modules/assistant/tools/po_receipt_tool.py` · `agent_hub/mcp.py` · `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx` · `doc/agent-hub/06-cong-mcp.md` · `test/backend/test_assistant_ghi_hoa_don_lan_giao_cr237.py` (8 bài)
+Commit: 3e898b75 (erp-v2)
+Deploy: dev
+
+## ai-CR-236 | Cổng MCP tạo được đề nghị thanh toán ở trạng thái Nháp
+- status: xong
+- date: 2026-11-12
+- list: Kế hoạch hệ agent
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** đại ca dùng Claude qua MCP soạn được nháp đề nghị thanh toán (khoản công nợ 922, 923 của NCC PHL) nhưng không tạo được phiếu vì cổng trả link form web (chặn từ ai-CR-063). Đại ca chốt hướng A ngày 12/11: cho tạo phiếu Nháp, không cho tự gửi duyệt.
+
+**Đã làm**
+- Ứng dụng AI nối qua MCP nay tạo được đề nghị thanh toán từ bản nháp, dưới tài khoản của chủ khóa và chỉ với khóa được ghi. Phiếu tạo ra luôn ở trạng thái Nháp.
+- Việc tạo đi đúng đường của form web: kiểm quyền tạo đề nghị thanh toán, kiểm các khoản công nợ nằm trong phạm vi được xem, rồi gọi cùng hàm tạo phiếu. Một bản nháp có nhiều nhà cung cấp hay nhiều công ty thì tách nhiều phiếu như web.
+- Số tiền đọc lại từ công nợ lúc tạo, không tin số trong bản nháp: mặc định bằng số còn lại, trừ phần cấn trừ tiền treo nếu có (cấn trừ không vượt số còn lại).
+- AI xin gửi duyệt luôn thì bỏ qua và ghi rõ phiếu nằm ở Nháp. Kết quả trả mã phiếu, link tuyệt đối tới từng phiếu và lời nhắc người lập vào web xem lại rồi tự bấm Gửi duyệt.
+- Nhóm Công nợ và thanh toán đang tắt thì không tạo được. Khoản đã tất toán, bản nháp rỗng, khoản công nợ chưa gắn công ty thì trả câu lỗi đọc được để AI hỏi lại người dùng.
+- Khoản công nợ đã nằm ở một đề nghị thanh toán khác vẫn tạo được Nháp như trên web; luật khớp công nợ vẫn bắt lúc gửi duyệt và lúc duyệt.
+- Trợ lý web vẫn mở form điền sẵn, không đi chung đường này. Bot Telegram đang đóng băng nên vẫn gửi link form như cũ.
+- Sửa các chỗ còn ghi "đề nghị thanh toán chỉ tạo trên web": mô tả công cụ, tài liệu cổng MCP, danh sách tính năng, tài liệu chức năng và bài hướng dẫn Kết nối AI.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `draft_create.py` · `payment_request/service.py` (`ensure_payables_in_scope`) · `payment_request/controller.py` · `assistant/tools/payable_tool.py` · `scripts/seed_help_ket_noi_ai_cach_1.py` · `test/backend/test_mcp_tao_de_nghi_thanh_toan_nhap_cr236.py` (11 bài) · `test_agent_hub.py`
+Commit: 8836760a (erp-v2)
+Deploy: dev
+
+## bao-CR-746 | Báo cáo khảo sát v1: thêm cột giá, NCC, sản phẩm như v2
+- status: xong
+- date: 2026-11-11
+- list: Thu mua
+- pic: NSU209
+- tag: Bảo
+**Bối cảnh:** người dùng nhà máy (chỉ dùng v1) báo 11/11 không xem được giá VTBB. Báo cáo khảo sát v1 chỉ có 10 cột, chưa từng có cột giá; v2 có đủ, cùng một API.
+
+**Đã làm**
+- Thêm vào bảng v1 các cột v2 đang có. Hiện sẵn: Mã NCC, Tên VTBB, ĐVT, SL dự kiến, Đơn giá, VAT, Thành tiền, Thời gian giao, Ngày công nợ. Ẩn sẵn, bật ở menu Cột: Giá mua gần nhất, Giá mua cao nhất, Giá đề xuất, phí vận chuyển, thông tin NCC, quy cách, mẫu, các mốc ngày, ghi chú.
+- Cột thêm đều bấm tiêu đề để xếp được; người đã lưu bố cục cũ vẫn thấy ngay các cột hiện sẵn, cột ẩn sẵn vẫn ẩn.
+- Xuất CSV theo đúng các cột đang hiện trên bảng.
+- Máy chủ không đổi: API đã trả đủ các trường này từ trước.
+
+Mã nguồn: `frontend/src/pages/SurveyReport.tsx`
 
 ## duoc-CR-752b | Dạy trợ lý AI các tính năng nhân sự và đặt xe đã có hướng dẫn sử dụng ở duoc-CR-752
 - status: xong
