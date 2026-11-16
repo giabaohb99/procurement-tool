@@ -89,7 +89,7 @@ def build(client: str) -> dict | None:
                 "note": "Gói Team / Enterprise thì chủ tổ chức thêm kết nối trong Organization settings trước."}
     if client == "chatgpt":
         return {"client": client, "label": "ChatGPT", "supported": True, "auth": "oauth", "format": "url", "snippet": url,
-                #  bao-CR-763 (16/11, theo ảnh chụp trang chatgpt.com/plugins + help.openai.com bài 12584461): ChatGPT bỏ
+                #  bao-CR-764 (16/11, theo ảnh chụp trang chatgpt.com/plugins + help.openai.com bài 12584461): ChatGPT bỏ
                 #  Settings → Connectors / Developer mode; nay vào Plugins → Add → Add custom MCP server → Name · Connection
                 #  (URL) · Authentication = OAuth · tick "I understand and want to continue" → Create as a plugin.
                 "requires": ["Tài khoản ChatGPT trả phí, dùng trên trình duyệt (chưa nối được trên điện thoại). Gói Business: "
