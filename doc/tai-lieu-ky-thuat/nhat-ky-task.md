@@ -143,6 +143,8 @@ Kiểm: `zalo-listener/index.test.mjs`.
 Tài liệu: `doc/agent-hub/14-cong-erp-api.md`, `doc/agent-hub/16-kien-truc-ky-thuat.md`.
 
 ---
+Deploy: mã đã vào main 2.23.2 (13cb9806); Zalo đang tắt nên chưa dựng ảnh zalo-listener — khi bật lại thì dựng ảnh và chạy lại npm test
+
 
 ## bao-CR-767 | Trưởng phòng không sửa được lịch làm việc riêng đã kết thúc
 - status: xong
@@ -173,6 +175,8 @@ Kiểm: `test/backend/test_truong_phong_gan_lich_rieng_cr757.py`.
 Tài liệu: `doc/erp/hrm/03-lich-lam-viec.md` mục 20.2.
 
 ---
+Deploy: prod 16/11/2026 bản 2.23.2 (main 13cb9806, dump `prod_truoc_release_20261116_1633.sql.gz`, chỉ dựng lại api)
+
 
 ## bao-CR-765 | Cổng MCP trả lời server/discover để ChatGPT trang Plugins nối được
 - status: xong
