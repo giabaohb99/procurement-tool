@@ -142,12 +142,13 @@ Bước người dùng (từ `mcp_setup.py`):
   ghi** (`export_*` không nằm trong `READ_TOOLS`); đã nối Cách 2 trước đó thì xóa khối `dego-erp` trong tệp cấu hình + gỡ
   khóa cũ kẻo trùng công cụ. Dữ liệu hải quan chỉ tra qua AI (nhóm `customs` 4 tool đều chỉ đọc), không nạp qua AI — đại ca
   chốt 27/10.
-- **ChatGPT** (bao-CR-639, theo ảnh đại ca chụp 19/10/2026; cần gói trả phí Plus / Pro / Business): Settings ▸
-  **Connectors** (`chatgpt.com/#settings/Connectors`; chưa có nút tạo thì bật **Developer mode** ở Security and login hoặc
-  Connectors ▸ Advanced settings) ▸ **Create** → hộp **New Connector (Beta)**: Name, Description (tùy chọn), **MCP Server
-  URL** = `<gốc>/api/mcp`, **Authentication = OAuth**, tick **I trust this application** ▸ Create → trang ERP: kiểm tên
-  miền chatgpt.com / openai.com, Chỉ đọc, Cho phép → nút + / Apps trong ô chat bật DEGO ERP. Bản cũ gọi là *Apps &
-  Connectors*; bước **Plugins ▸ Create MCP App** ghi lúc đầu là đoán sai, đã bỏ.
+- **ChatGPT** (bao-CR-763, theo ảnh trang `chatgpt.com/plugins` đại ca chụp 16/11/2026 và bài trợ giúp OpenAI
+  *Connecting custom MCP servers in ChatGPT*; cần gói trả phí, chỉ trên trình duyệt): cột trái **Plugins** ▸ **Add** ▸
+  **Add custom MCP server** → Name, Description (tùy chọn), **Connection** = `<gốc>/api/mcp` (không dùng Tunnel),
+  **Authentication = OAuth**, tick **I understand and want to continue** ▸ **Create as a plugin** → trang ERP: kiểm tên
+  miền chatgpt.com / openai.com, chọn mức, Cho phép → trong ô chat gõ **@** chọn DEGO ERP. Không cần Developer mode nữa.
+  Gói Business chỉ admin / owner workspace thêm được; Plus / Pro theo OpenAI có thể chỉ có công cụ đọc. Bản cũ (bao-CR-639,
+  19/10): Settings ▸ Connectors ▸ Create (bật Developer mode trước).
 
 Màn Cho phép (`oauth-consent-page.tsx`, API `GET /api/agent-hub/oauth/request/{req}`, `POST …/approve | deny`): tiêu đề
 *Cho phép ứng dụng AI dùng ERP thay bạn*; ghi tên ứng dụng (TỰ KHAI) + **`redirect_host`** (hostname nơi quay về; máy cục bộ

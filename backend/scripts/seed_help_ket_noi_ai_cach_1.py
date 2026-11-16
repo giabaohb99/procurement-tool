@@ -38,7 +38,7 @@ giữ khóa nào. Chỉ dùng {ref(TAO_KHOA, "Cách 2 — khóa riêng")} khi �
 <table>
 <thead><tr><th></th><th>Cách 1 (khuyên dùng)</th><th>Cách 2 (nâng cao)</th></tr></thead>
 <tbody>
-<tr><td>Ứng dụng</td><td>ChatGPT, claude.ai, Claude Desktop (mục Connectors)</td><td>Claude Code, Cursor, Gemini CLI, Claude Desktop sửa tệp cấu hình</td></tr>
+<tr><td>Ứng dụng</td><td>ChatGPT (mục Plugins), claude.ai, Claude Desktop (mục Connectors)</td><td>Claude Code, Cursor, Gemini CLI, Claude Desktop sửa tệp cấu hình</td></tr>
 <tr><td>Bạn làm</td><td>Dán địa chỉ cổng ▸ đăng nhập ERP ▸ bấm Cho phép</td><td>Tạo khóa ở Trang cá nhân ▸ dán đoạn cấu hình có khóa vào tệp của ứng dụng</td></tr>
 <tr><td>Giữ bí mật</td><td>Không có khóa trên tay</td><td>Khóa <code>dego_mcp_…</code> là chìa vào dữ liệu của bạn — không gửi, không chụp</td></tr>
 <tr><td>Hạn, gỡ</td><td colspan="2">90 ngày; gỡ hoặc tạm tắt ở Trang cá nhân ▸ Kết nối AI riêng ▸ Khóa của bạn</td></tr>
@@ -73,16 +73,23 @@ ví dụ <code>{URL}</code>.</p>
 <li>Gói Team / Enterprise: có thể chỉ chủ tổ chức mới thêm được kết nối (ở <em>Organization settings</em>), sau đó từng người bấm Connect.</li>
 </ul>
 
-<h2>ChatGPT (gói trả phí)</h2>
+<h2>ChatGPT (gói trả phí, trên trình duyệt)</h2>
 <ol>
-<li>Mở <strong>Settings ▸ Connectors</strong> (hoặc <code>chatgpt.com/#settings/Connectors</code>). Chưa thấy nút tạo thì bật
-<strong>Developer mode</strong> (Connectors ▸ Advanced settings).</li>
-<li>Bấm <strong>Create</strong>: Name <em>DEGO ERP</em> · MCP Server URL dán địa chỉ cổng · Authentication <strong>OAuth</strong> · tick
-<strong>I trust this application</strong> ▸ <strong>Create</strong>.</li>
+<li>Mở ChatGPT trên trình duyệt ▸ cột trái bấm <strong>Plugins</strong> (hoặc mở thẳng <code>chatgpt.com/plugins</code>).</li>
+<li>Góc trên bên phải bấm <strong>Add</strong> ▸ <strong>Add custom MCP server</strong>.</li>
+<li>Name <em>DEGO ERP</em> (Description bỏ trống được) · ở <strong>Connection</strong> dán địa chỉ cổng (không chọn Tunnel) ·
+Authentication <strong>OAuth</strong> · tick <strong>I understand and want to continue</strong> ▸ <strong>Create as a plugin</strong>.</li>
 <li>Trang ERP mở ra ▸ kiểm tên miền quay về là <em>chatgpt.com</em> / <em>openai.com</em> ▸ đăng nhập ▸ chọn mức ▸ <strong>Cho phép</strong>.</li>
-<li>Trong ô chat bấm <strong>+</strong> (hoặc <em>Apps</em>) ▸ bật <em>DEGO ERP</em> rồi hỏi.</li>
+<li>Mở cuộc trò chuyện mới, gõ <strong>@</strong> trong ô chat ▸ chọn <em>DEGO ERP</em> rồi hỏi.</li>
 </ol>
-<p>Chữ <em>Beta intended for developer use only</em> là của ChatGPT, không phải lỗi.</p>
+<ul>
+<li>Không cần bật <em>Developer mode</em> nữa. Hộp cảnh báo rủi ro khi thêm là của ChatGPT, không phải lỗi.</li>
+<li>Chỉ nối được trên trình duyệt máy tính, chưa nối được trên ứng dụng điện thoại.</li>
+<li>Gói <strong>Business</strong>: chỉ admin / owner của workspace thêm được; người khác nhờ họ thêm. Gói <strong>Plus / Pro</strong>
+có thể chỉ dùng được công cụ tra cứu, chưa soạn phiếu được.</li>
+<li>ChatGPT bản cũ chưa có mục Plugins: vào <strong>Settings ▸ Connectors</strong>, bật <em>Developer mode</em> rồi bấm <strong>Create</strong>,
+điền các ô như trên.</li>
+</ul>
 
 <h2>Màn Cho phép: đọc kỹ trước khi bấm</h2>
 <ul>

@@ -89,20 +89,20 @@ def build(client: str) -> dict | None:
                 "note": "Gói Team / Enterprise thì chủ tổ chức thêm kết nối trong Organization settings trước."}
     if client == "chatgpt":
         return {"client": client, "label": "ChatGPT", "supported": True, "auth": "oauth", "format": "url", "snippet": url,
-                #  bao-CR-639 (19/10, theo ảnh đại ca chụp): ChatGPT nối ở Settings → Connectors → hộp "New Connector (BETA)":
-                #  Name · Description · MCP Server URL · Authentication = OAuth · tick "I trust this application" → Create.
-                #  Nút tạo chỉ hiện khi đã bật Developer mode. Gói Free có thể không có mục này.
-                "requires": ["Tài khoản ChatGPT trả phí (Plus / Pro / Business); gói Free có thể không có mục Connectors"],
-                "steps": ["Mở ChatGPT → Settings (Cài đặt) → Connectors (địa chỉ thẳng: chatgpt.com/#settings/Connectors). "
-                          "Chưa thấy nút tạo thì bật Developer mode trước (Settings → Security and login, hoặc Connectors → "
-                          "Advanced settings).",
-                          "Bấm Create: hộp New Connector mở ra. Name ghi DEGO ERP; Description bỏ trống cũng được; MCP Server "
-                          "URL dán địa chỉ ở dưới; Authentication chọn OAuth; tick I trust this application → Create.",
+                #  bao-CR-763 (16/11, theo ảnh chụp trang chatgpt.com/plugins + help.openai.com bài 12584461): ChatGPT bỏ
+                #  Settings → Connectors / Developer mode; nay vào Plugins → Add → Add custom MCP server → Name · Connection
+                #  (URL) · Authentication = OAuth · tick "I understand and want to continue" → Create as a plugin.
+                "requires": ["Tài khoản ChatGPT trả phí, dùng trên trình duyệt (chưa nối được trên điện thoại). Gói Business: "
+                             "chỉ admin / owner của workspace thêm được; gói Plus / Pro có thể chỉ cho công cụ đọc"],
+                "steps": ["Mở ChatGPT trên trình duyệt → cột trái bấm Plugins (địa chỉ thẳng: chatgpt.com/plugins).",
+                          "Góc trên bên phải bấm Add (nút +) → Add custom MCP server.",
+                          "Name ghi DEGO ERP; Description bỏ trống cũng được; ở Connection dán địa chỉ ở dưới (không chọn "
+                          "Tunnel); Authentication chọn OAuth; tick I understand and want to continue → Create as a plugin.",
                           "Trang ERP mở ra — kiểm tên miền quay về là chatgpt.com hoặc openai.com, đăng nhập ERP nếu chưa, "
                           "chọn mức Chỉ đọc (hoặc Được ghi), bấm Cho phép.",
-                          "Trong ô chat bấm nút + (hoặc Apps), bật DEGO ERP rồi hỏi như bình thường."],
-                "note": "Hộp New Connector đang ghi Beta, tên mục có thể đổi theo phiên bản ChatGPT — tìm chữ Connectors "
-                        "hoặc MCP."}
+                          "Mở cuộc trò chuyện mới, gõ @ trong ô chat, chọn DEGO ERP rồi hỏi như bình thường."],
+                "note": "Không cần bật Developer mode nữa. Bản ChatGPT cũ chưa có mục Plugins thì vào Settings → Connectors "
+                        "→ Create (cần bật Developer mode trước)."}
     return None
 
 
