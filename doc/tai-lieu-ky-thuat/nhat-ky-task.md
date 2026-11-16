@@ -114,6 +114,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-769 | Trợ lý trả tên trên hóa đơn khi tra lịch sử mua theo mã hàng
+- status: xong
+- date: 2026-11-16
+- list: Công cụ Ai
+- pic: NSU209
+**Bối cảnh:** người dùng hỏi trợ lý AI (qua MCP) "mã VTBB này, tên trên hóa đơn ở 3 đơn gần nhất là gì". Công cụ lịch sử
+mua theo mã hàng chưa trả **Tên trên hóa đơn**, nên trợ lý phải mở từng đơn mua hàng (4 lượt gọi), chậm và hay trả thiếu.
+
+**Đã làm**
+- Công cụ **product_purchase_history** trả thêm tên trên hóa đơn của từng lần mua (chụp lúc ĐMH hoàn tất). Dữ liệu cũ nạp
+  từ Excel không có tên này thì lùi về tên trên hóa đơn ở danh mục sản phẩm, kèm cờ cho trợ lý nói rõ là tên danh mục.
+- Dùng chung một hàm với cột **Tên trên hóa đơn** của popup lịch sử mua (bao-CR-522), chuyển từ controller sang service.
+
+**Kết quả:** 29 bài kiểm (công cụ trợ lý, popup lịch sử, canh phạm vi) đạt; ruff sạch. Không đổi DB.
+
+Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `backend/app/modules/purchase_history/service.py` ·
+`purchase_history/controller.py` · `test/backend/test_assistant_tools.py` · `test_lich_su_ten_hoa_don_cr522.py`
+
 ## bao-CR-768 | Dịch vụ giữ phiên Zalo ký và kiểm chữ ký theo khuôn mới của cổng ERP
 - status: xong
 - date: 2026-11-16

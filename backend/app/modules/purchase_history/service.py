@@ -109,3 +109,26 @@ def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: s
     items = (query.order_by(PurchaseHistory.order_date.desc(), PurchaseHistory.id.desc())
              .offset(pg["offset"]).limit(pg["limit"]).all())
     return total, items
+
+
+def attach_invoice_names(db: Session, rows: list[dict]) -> None:
+    """Cột "Tên trên hóa đơn" của popup lịch sử (bao-CR-522); trợ lý dùng chung (bao-CR-769).
+
+    `rows`: dict có `product_code` và `extra` (dict đã giải JSON).
+
+    Lần mua đi qua ĐMH trên hệ chụp sẵn tên đó vào `extra.invoice_name`. Dòng DỮ LIỆU CŨ (nạp
+    từ Excel, `source='legacy'`) không có cột này trong tệp gốc — lùi về tên trên hóa đơn đang khai
+    ở DANH MỤC sản phẩm, gắn cờ `invoice_name_from_catalog` để giao diện ghi rõ là số danh mục
+    chứ không phải tên đã xuất trên hóa đơn lần đó. MỘT truy vấn cho cả trang.
+    """
+    from app.modules.product.model import Product
+
+    missing = {r["product_code"] for r in rows
+               if not (r.get("extra") or {}).get("invoice_name") and r.get("product_code")}
+    catalog = dict(db.query(Product.code, Product.invoice_name)
+                   .filter(Product.code.in_(missing)).all()) if missing else {}
+    for r in rows:
+        own = ((r.get("extra") or {}).get("invoice_name") or "").strip()
+        fallback = (catalog.get(r.get("product_code")) or "").strip()
+        r["invoice_name"] = own or fallback
+        r["invoice_name_from_catalog"] = bool(not own and fallback)
