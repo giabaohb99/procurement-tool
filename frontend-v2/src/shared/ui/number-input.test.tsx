@@ -114,6 +114,37 @@ describe('NumberInput', () => {
     expect(onChange).toHaveBeenLastCalledWith(99.99)
   })
 
+  //  bao-CR-758: ô đơn giá ĐMH bị đưa về 0 / giữ giá cũ. Ô chỉ được ghi xuống khi NGƯỜI DÙNG gõ;
+  //  bấm vào rồi rời ô không được đè giá trị mới (dữ liệu máy chủ vừa về) bằng chuỗi chụp lúc focus.
+  it('bấm vào ô lúc giá còn 0, dữ liệu mới về trong lúc đang focus, rời ô: không ghi đè về 0', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<NumberInput value={0} onChange={onChange} />)
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    rerender(<NumberInput value={4250} onChange={onChange} />)
+    expect(box).toHaveValue('4.250')
+    await userEvent.tab()
+    expect(onChange).not.toHaveBeenCalledWith(0)
+    expect(box).toHaveValue('4.250')
+  })
+
+  it('bấm vào ô rồi rời ô mà không gõ gì thì không báo thay đổi', async () => {
+    const onChange = vi.fn()
+    render(<NumberInput value={4250} onChange={onChange} />)
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.tab()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('gõ xóa trắng rồi rời ô vẫn ghi 0 — người dùng cố ý xóa', async () => {
+    const onChange = vi.fn()
+    render(<NumberInput value={4250} onChange={onChange} />)
+    const box = screen.getByRole('textbox')
+    await userEvent.clear(box)
+    await userEvent.tab()
+    expect(onChange).toHaveBeenLastCalledWith(0)
+  })
+
   it('is a text box, not a spinner — no wheel-scroll surprises', () => {
     render(<NumberInput value={5} onChange={vi.fn()} />)
     expect(screen.getByRole('textbox')).toHaveAttribute('type', 'text')

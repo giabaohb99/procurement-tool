@@ -219,15 +219,35 @@ export function validatePurchaseOrder(data: PurchaseOrderDetail, forSubmit = fal
 
   // Gộp mọi dòng thiếu vào MỘT câu, giống hệt `submit_po` của backend: sửa xong
   // dòng 1 lại bị chặn ở dòng 2 thì người lập tưởng màn hình hỏng.
-  const problems = lines
-    .map((line, index) => ({ index, line, missing: missingPurchaseOrderLineFields(line) }))
-    .filter((entry) => entry.missing.length)
-    .map(
-      ({ index, line, missing }) =>
-        `dòng ${index + 1} (${line.product_code.trim() || 'chưa có mã hàng'}): ${missing.join(', ')}`,
-    )
+  const problems = listPurchaseOrderLineIssues(data).map(
+    ({ lineNumber, code, missing }) => `dòng ${lineNumber} (${code}): ${missing.join(', ')}`,
+  )
   if (problems.length) return `Chưa gửi duyệt được — còn thiếu ${problems.join('; ')}.`
   return ''
+}
+
+/** Một dòng ĐMH còn thiếu ô bắt buộc — nguồn chung của câu chặn gửi duyệt và khung nhắc trên màn. */
+export interface PurchaseOrderLineIssue {
+  /** Số thứ tự dòng (đếm từ 1) trong các dòng thật sự được gửi lên. */
+  lineNumber: number
+  /** Mã hàng để người lập dò đúng dòng; trống thì ghi rõ là chưa có mã. */
+  code: string
+  missing: string[]
+}
+
+/**
+ * bao-CR-758 — các dòng còn thiếu ô bắt buộc (bộ `PURCHASE_ORDER_LINE_REQUIRED`, khớp
+ * `REQUIRED_LINE_FIELDS` của backend, cổng gửi duyệt CR-095). Khung vàng *Còn thiếu thông tin bắt
+ * buộc* trên màn ĐMH và câu chặn lúc Gửi duyệt cùng đọc từ đây để hai chỗ không nói khác nhau.
+ */
+export function listPurchaseOrderLineIssues(data: PurchaseOrderDetail): PurchaseOrderLineIssue[] {
+  return purchaseOrderLines(data)
+    .map((line, index) => ({
+      lineNumber: index + 1,
+      code: line.product_code.trim() || 'chưa có mã hàng',
+      missing: missingPurchaseOrderLineFields(line),
+    }))
+    .filter((issue) => issue.missing.length > 0)
 }
 
 /**

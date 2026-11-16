@@ -98,8 +98,16 @@ export function NumberInput({
 }: NumberInputProps) {
   const [focused, setFocused] = useState(false)
   const [raw, setRaw] = useState('')
+  /**
+   * bao-CR-758: người dùng ĐÃ GÕ trong lượt focus này chưa. Chưa gõ thì ô hiện đúng `value` đang có
+   * và rời ô KHÔNG ghi gì — trước đây rời ô luôn ghi lại chuỗi chụp lúc bấm vào, nên ô được bấm khi
+   * giá còn 0 (hoặc giá cũ) rồi dữ liệu mới về trong lúc đang focus thì rời ô là đè giá mới bằng 0
+   * / giá cũ, mà màn hình không báo gì. Ô đơn giá ĐMH bị về 0 đúng kiểu đó.
+   */
+  const [dirty, setDirty] = useState(false)
 
-  const shown = focused ? raw : formatNumberVn(Number(value) || 0, decimals, maxDecimals)
+  const shown =
+    focused && dirty ? raw : formatNumberVn(Number(value) || 0, decimals, maxDecimals)
   const allowed = decimals ? /[^\d.,]/g : /[^\d.]/g
   //  Kẹp NGAY lúc gõ chứ không đợi rời ô: người dùng thấy con số bị chặn lại, thay
   //  vì gõ xong mới ăn lỗi 422 từ server.
@@ -117,13 +125,14 @@ export function NumberInput({
       className={cn('tabular-nums', className)}
       value={shown}
       onFocus={() => {
-        const num = Number(value) || 0
-        setRaw(num ? formatNumberVn(num, decimals, maxDecimals) : '')
         setFocused(true)
+        setDirty(false)
       }}
       onBlur={() => {
         setFocused(false)
-        onChange(clamp(parseNumberVn(raw, decimals, maxDecimals)))
+        //  Chỉ ghi khi đã gõ — xem chú thích ở `dirty`.
+        if (dirty) onChange(clamp(parseNumberVn(raw, decimals, maxDecimals)))
+        setDirty(false)
       }}
       onChange={(event) => {
         const cleaned = event.target.value.replace(allowed, '')
@@ -131,6 +140,7 @@ export function NumberInput({
         const next = clamp(parsed)
         //  Vượt trần thì hiện luôn con số đã kẹp, đừng để ô hiện một đằng state một nẻo.
         setRaw(max != null && parsed > max ? formatNumberVn(next, decimals, maxDecimals) : cleaned)
+        setDirty(true)
         onChange(next)
       }}
     />

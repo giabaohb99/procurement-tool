@@ -72,6 +72,7 @@ import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
 import { PurchaseOrderAddManyLinesButton } from '../components/purchase-order-add-many-lines-button'
+import { PurchaseOrderMissingFieldsNotice } from '../components/purchase-order-missing-fields-notice'
 import {
   buildCompleteConfirmMessage,
   buildExpectedDateDiffMessage,
@@ -114,7 +115,12 @@ import {
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { describeOrdered, findOverOrders, formatQty } from '../utils/over-order'
-import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/required-fields'
+import { rebasePurchaseOrderDraft } from '../utils/purchase-order-rebase'
+import {
+  duplicatePurchaseOrderCodes,
+  listPurchaseOrderLineIssues,
+  validatePurchaseOrder,
+} from '../utils/required-fields'
 import {
   displayLineBaseAmount,
   isMissingExchangeRate,
@@ -267,11 +273,27 @@ export function PurchaseOrderDetailPage() {
    */
   const [pendingFiles, setPendingFiles] = useState<PendingDeliveryFiles>({})
 
+  /**
+   * bao-CR-758: bản máy chủ mà bản nháp đang dựng từ đó — mốc để biết ô nào người dùng đã sửa
+   * mà chưa lưu khi dữ liệu đơn nạp lại (xem `rebasePurchaseOrderDraft`).
+   */
+  const [draftBase, setDraftBase] = useState<PurchaseOrderDetail | null>(null)
+
   // Dữ liệu server về (hoặc đổi đơn) -> nạp lại bản nháp đang xem.
   // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
+  //  bao-CR-758: trước đây THAY NGUYÊN bản nháp — lượt nạp lại về muộn của lần Lưu trước, hay một
+  //  thao tác khác làm mới đơn, xóa sạch giá người dùng vừa gõ. Nay gộp: phần đã sửa giữ nguyên.
   const serverDataChanged = useHasChanged(serverData)
   const isNewChanged = useHasChanged(isNew)
-  if ((serverDataChanged || isNewChanged) && !isNew) setDraft(serverData ?? null)
+  if ((serverDataChanged || isNewChanged) && !isNew) {
+    const latest = serverData ?? null
+    setDraft(
+      !isNewChanged && draft && draftBase && latest
+        ? rebasePurchaseOrderDraft(draftBase, draft, latest)
+        : latest,
+    )
+    setDraftBase(latest)
+  }
 
   //  ai-CR-237: link trợ lý AI gửi (`?delivery=<id lần giao>` hoặc `?line=<id dòng>`) mở sẵn hộp dòng hàng chứa lần
   //  giao đó — chỗ người dùng tự đính tệp hóa đơn. Chỉ mở MỘT lần khi dữ liệu đơn về.
@@ -417,7 +439,12 @@ export function PurchaseOrderDetailPage() {
   )?.id
 
   function patch(changes: Partial<PurchaseOrderDetail>) {
-    setDraft((current) => (current ? { ...current, ...changes } : current))
+    //  bao-CR-758: bản nháp chưa dựng (lượt vẽ đang hiện thẳng bản máy chủ) thì sửa TRÊN bản đang
+    //  hiện — trước đây trả về nguyên `null`, ô vừa gõ bị nuốt im lặng mà màn hình không báo gì.
+    setDraft((current) => {
+      const base = current ?? serverData ?? null
+      return base ? { ...base, ...changes } : base
+    })
   }
 
   /**
@@ -472,6 +499,10 @@ export function PurchaseOrderDetailPage() {
       navigate(appRoutes.procurement.purchaseOrderDetail(saved.id), { replace: true })
       return true
     }
+    //  bao-CR-758: dựng lại bản nháp ngay từ bản máy chủ vừa trả (dòng mới đã có id) thay vì chờ
+    //  lượt nạp lại — gõ tiếp trong lúc chờ thì lượt nạp đó không còn đè lên phần vừa gõ.
+    setDraft(saved)
+    setDraftBase(saved)
     if (submitAfterSave) await runAction.mutateAsync({ action: 'submit' })
     return true
   }
@@ -920,6 +951,13 @@ export function PurchaseOrderDetailPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4 px-4">
+            {/*  bao-CR-758: khung vàng như bản v1 (CR-095) — chỉ khi đơn còn sửa được. */}
+            {headerEditable && (
+              <PurchaseOrderMissingFieldsNotice
+                issues={listPurchaseOrderLineIssues(data)}
+                isMobile={isMobile}
+              />
+            )}
             {overOrders.length > 0 && (
               <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
                 <p className="flex items-center gap-1.5 font-medium">

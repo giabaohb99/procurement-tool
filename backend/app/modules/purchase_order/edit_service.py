@@ -158,6 +158,9 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
         department_id=data.department_id, handler_dept_id=handler_dept_id, nspt=nspt, nspt_id=nspt_id,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
+        # bao-CR-758: người lập chọn "Trưởng phòng phê duyệt" ngay ở form TẠO (bao-CR-499) — trước đây ô
+        # này bị bỏ rơi lúc tạo, mở đơn vừa tạo ra lại trống, phải chọn lại rồi Lưu thêm một lần.
+        approver_employee_id=int(data.approver_employee_id or 0),
         order_type=data.order_type or int(OrderType.DOMESTIC),
         currency=(data.currency or "").strip() or DEFAULT_CURRENCY,
         exchange_rate=float(data.exchange_rate or 0) or 1,

@@ -182,6 +182,51 @@ describe('buildPurchaseOrderLines — điền sẵn theo phương án đã chọ
   })
 })
 
+describe('buildPurchaseOrderLines — kho nhận theo dòng YCMH (bao-CR-758)', () => {
+  const warehouses = [
+    { id: 1, code: 'Dego Cần Thơ', name: 'CÔNG TY TNHH DEGO HOLDING' },
+    { id: 2, code: 'KHO-HN', name: 'Kho Hà Nội' },
+  ]
+
+  it('ưu tiên MÃ kho đã lưu trên dòng YCMH (bao-CR-759)', () => {
+    const { remaining } = buildPurchaseOrderLines(
+      [makeItem({ warehouse: 'Kho Hà Nội', warehouse_code: 'KHO-HN' })],
+      {},
+      {},
+      {},
+      warehouses,
+    )
+    expect(remaining[0].warehouse_code).toBe('KHO-HN')
+  })
+
+  it('dòng cũ chỉ có TÊN kho thì tra mã theo danh mục như bản v1 — đúng ca PYC12112604', () => {
+    const { remaining } = buildPurchaseOrderLines(
+      [makeItem({ warehouse: 'CÔNG TY TNHH DEGO HOLDING' })],
+      {},
+      {},
+      {},
+      warehouses,
+    )
+    expect(remaining[0].warehouse_code).toBe('Dego Cần Thơ')
+  })
+
+  it('dòng đã đặt đủ (mua thêm) cũng mang kho', () => {
+    const { exceeded } = buildPurchaseOrderLines(
+      [makeItem({ warehouse: 'Kho Hà Nội', qty: 10 })],
+      { 'SP-A': 10 },
+      {},
+      {},
+      warehouses,
+    )
+    expect(exceeded[0].warehouse_code).toBe('KHO-HN')
+  })
+
+  it('tên kho không có trong danh mục thì để trống cho người lập chọn', () => {
+    const { remaining } = buildPurchaseOrderLines([makeItem({ warehouse: 'Kho lạ' })], {}, {}, {}, warehouses)
+    expect(remaining[0].warehouse_code).toBe('')
+  })
+})
+
 describe('toDraftFromRequest — NCC đầu đơn theo phương án thống nhất (H.10.6)', () => {
   const chosenNx = () =>
     makeOption({ supplier_code: 'NX', supplier_name: 'Nhà Xuất NX', snap_price_by_volume: 1 })
