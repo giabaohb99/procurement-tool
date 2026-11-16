@@ -30,11 +30,20 @@ const USER_AGENT = process.env.ZALO_USER_AGENT
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
 // ---------------------------------------------------------------------------
-// Chữ ký (khớp core/agent_signature.py: HMAC(secret, "ts.METHOD.path.user.sha256(body)"))
+// Chữ ký (khớp core/agent_signature.py:
+//   HMAC(secret, "ts.METHOD.path.user.sha256(body).<x-agent-ai-channel>|<x-agent-private-chat>")
+// duoc-CR-757 đưa hai header ngữ cảnh vào chuỗi ký; vắng header = chuỗi rỗng, nên lượt không ngữ cảnh ký đuôi ".|".
+// bao-CR-767: bản Node trước đó vẫn khuôn cũ nên mọi lượt `zalo_account._request` bị từ chối "chữ ký sai".)
 // ---------------------------------------------------------------------------
-export function buildSignature(secret, ts, method, urlPath, userId, body) {
+export const SIGNED_CONTEXT_HEADERS = ["x-agent-ai-channel", "x-agent-private-chat"];
+
+export function contextMaterial(headers) {
+  return SIGNED_CONTEXT_HEADERS.map((h) => String((headers || {})[h] ?? "").trim()).join("|");
+}
+
+export function buildSignature(secret, ts, method, urlPath, userId, body, context = "|") {
   const digest = crypto.createHash("sha256").update(body || Buffer.alloc(0)).digest("hex");
-  const payload = `${ts}.${method.toUpperCase()}.${urlPath}.${Number(userId || 0)}.${digest}`;
+  const payload = `${ts}.${method.toUpperCase()}.${urlPath}.${Number(userId || 0)}.${digest}.${context}`;
   return crypto.createHmac("sha256", secret || "").update(payload).digest("hex");
 }
 
@@ -46,7 +55,8 @@ function verify(req, urlPath, body) {
   if (!/^\d+$/.test(ts) || !sign) return "thiếu chữ ký";
   if (Math.abs(Date.now() / 1000 - Number(ts)) > MAX_SKEW_SEC) return "chữ ký quá hạn";
   if (!/^-?\d+$/.test(user)) return "danh tính không hợp lệ";
-  const expected = Buffer.from(buildSignature(SECRET, ts, req.method, urlPath, user, body));
+  // Node hạ tên header về chữ thường sẵn (`req.headers`), nên đọc thẳng theo khóa chữ thường.
+  const expected = Buffer.from(buildSignature(SECRET, ts, req.method, urlPath, user, body, contextMaterial(req.headers)));
   const got = Buffer.from(sign);
   if (expected.length !== got.length || !crypto.timingSafeEqual(expected, got)) return "chữ ký sai";
   return "";

@@ -182,9 +182,9 @@ Ba hàng rào của sổ nhớ: không ghi bí mật (mật khẩu, khóa, số 
 | `service` (dịch vụ AI) | `app.agent_main` + poller + worker + beat | `agent_hub` | Nhận qua chuyển tiếp | Gọi cổng B ở `AGENT_GATEWAY_URL` |
 | `erp` (ERP khi đã tách) | `app.main`, không bot | DB ERP | Chuyển sang `AGENT_SERVICE_URL` | Mở `/api/agent-gw/*` |
 
-**Chữ ký máy-nói-máy:** `HMAC-SHA256(AGENT_SERVICE_SECRET, "<ts>.<METHOD>.<path>.<user_id>.<sha256(body)>")`, header
+**Chữ ký máy-nói-máy:** `HMAC-SHA256(AGENT_SERVICE_SECRET, "<ts>.<METHOD>.<path>.<user_id>.<sha256(body)>.<x-agent-ai-channel>|<x-agent-private-chat>")` (duoc-CR-757: hai header ngữ cảnh nằm trong chuỗi ký, vắng = rỗng nên đuôi là `.|`), header
 `X-Agent-Ts` / `X-Agent-Sign` / `X-Agent-User`; lệch giờ quá 5 phút thì từ chối; so bằng `compare_digest`. Khóa trùng hai
-đầu (`.env.dev` của ERP và `.env.agent`). `zalo-listener` dùng cùng khuôn ký.
+đầu (`.env.dev` của ERP và `.env.agent`). `zalo-listener` dùng cùng khuôn ký (`buildSignature` + `contextMaterial`, bản Node theo khuôn mới từ bao-CR-767).
 
 - **AI → ERP:** `X-Agent-User` = tài khoản chạy dưới quyền; ERP kiểm tài khoản còn hoạt động rồi chạy như người đó bấm.
   Dịch vụ AI không có **khóa thần**.

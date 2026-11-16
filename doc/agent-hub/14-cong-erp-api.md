@@ -16,7 +16,7 @@ Mọi deploy hiện tại (dev, prod) vẫn là `embedded` cho tới khi làm b�
 
 ## 2. Chữ ký máy-nói-máy
 
-`HMAC-SHA256(AGENT_SERVICE_SECRET, "<ts>.<METHOD>.<path>.<user_id>.<sha256(body)>")`, header `X-Agent-Ts`, `X-Agent-Sign`,
+`HMAC-SHA256(AGENT_SERVICE_SECRET, "<ts>.<METHOD>.<path>.<user_id>.<sha256(body)>.<x-agent-ai-channel>|<x-agent-private-chat>")` (duoc-CR-757: hai header ngữ cảnh nằm trong chuỗi ký, vắng = rỗng nên đuôi là `.|`), header `X-Agent-Ts`, `X-Agent-Sign`,
 `X-Agent-User`; lệch giờ > 5 phút từ chối; so bằng `compare_digest`. Khóa trùng hai đầu (`.env.dev` của ERP và `.env.agent`).
 
 - Chiều **AI → ERP** (cổng B): `X-Agent-User` = tài khoản ERP mà lượt gọi chạy DƯỚI QUYỀN; ERP tra tài khoản (phải đang hoạt

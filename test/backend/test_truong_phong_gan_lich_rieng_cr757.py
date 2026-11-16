@@ -849,3 +849,51 @@ def test_o_chon_doi_tuong_so_truy_van_co_dinh(w, db, client_as):
         assert res.json()["data"]["total"] >= n
         counts.append(len(sql))
     assert counts[0] == counts[1], counts
+
+
+# ── bao-CR-767: dòng đã kết thúc trước hôm qua — đường Trưởng phòng không sửa được (không viết lại quá khứ) ────
+
+ENDED = "Lịch này đã kết thúc, không sửa được nữa — muốn đổi lịch từ hôm nay trở đi hãy gán lịch mới"
+
+
+def _ended_replacing_rows(db, w):
+    """Kịch bản thật: P (Nhân sự) bị R (Trưởng phòng) thay; R đã kết thúc 16 ngày trước; S nối lại P từ R.to + 1."""
+    today = _today()
+    p = assign(db, L.EMPLOYEE, w.a1.id, w.sched2.id, today - timedelta(days=90), today - timedelta(days=47))
+    p.created_by = w.hr_user.id
+    r = assign(db, L.EMPLOYEE, w.a1.id, w.sched.id, today - timedelta(days=46), today - timedelta(days=16))
+    r.created_by = w.mgr_user.id
+    s = assign(db, L.EMPLOYEE, w.a1.id, w.sched2.id, today - timedelta(days=15))
+    s.created_by = w.hr_user.id
+    db.flush()
+    p.linked_assignment_id = r.id
+    s.linked_assignment_id = r.id
+    db.commit()
+    return r
+
+
+def test_truong_phong_khong_mo_lai_dong_da_ket_thuc_nen_dong_noi_lai_cua_nhan_su_con_nguyen(w, db, client_as):
+    r = _ended_replacing_rows(db, w)
+    before = _shape(db, w)
+    client = client_as(w.mgr_user)
+    for patch in ({"effective_to": None}, {"effective_to": (_today() + timedelta(days=5)).isoformat()},
+                  {"effective_to": (_today() - timedelta(days=1)).isoformat()}, {"note": "sửa ghi chú"}):
+        res = client.patch(f"{URL}/{r.id}", json=patch)
+        assert res.status_code == 403 and res.json()["error"]["message"] == ENDED, patch
+    assert _shape(db, w) == before
+
+
+def test_dong_ket_thuc_hom_qua_van_con_sua_duoc_tren_duong_truong_phong(w, db, client_as):
+    row = assign(db, L.EMPLOYEE, w.a1.id, w.sched.id, _today() - timedelta(days=10), _today() - timedelta(days=1))
+    row.created_by = w.mgr_user.id
+    db.commit()
+    res = client_as(w.mgr_user).patch(f"{URL}/{row.id}", json={"effective_to": None})
+    assert res.status_code == 200
+    db.expire_all()
+    assert db.get(WorkScheduleAssignment, row.id).effective_to is None
+
+
+def test_duong_nhan_su_van_sua_dong_da_ket_thuc(w, db, client_as):
+    r = _ended_replacing_rows(db, w)
+    end = _today() - timedelta(days=20)
+    assert client_as(w.hr_user).patch(f"{URL}/{r.id}", json={"effective_to": end.isoformat()}).status_code == 200
