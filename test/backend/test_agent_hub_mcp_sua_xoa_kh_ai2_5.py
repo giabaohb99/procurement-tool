@@ -93,19 +93,18 @@ def test_khoa_chi_doc_va_nhom_tat_khong_dung_duoc(db, seed, cap_quyen):
     assert mcp_settings.GROUP_OF["propose_document_delete"].key == "edit"
 
 
-def test_server_discover_tra_kha_nang_may_chu(db, seed):
-    """bao-CR-765: ChatGPT (trang Plugins) gọi `server/discover` ngay sau OAuth rồi mới liệt kê công cụ. Trả rỗng như cũ
-    thì ChatGPT báo *Authentication succeeded, action discovery failed* và không gọi tools/list. Phải trả DiscoverResult
-    (MCP 2026-07-28): bản giao thức máy chủ hỗ trợ, khả năng, danh tính, câu dặn, gợi ý cache."""
+def test_server_discover_moi_quay_ve_initialize(db, seed):
+    """bao-CR-765: ChatGPT (trang Plugins) gọi `server/discover` kèm bản giao thức mới (2026-07-28) ngay sau OAuth. Cổng
+    chỉ phục vụ bản có bắt tay initialize, nên theo SEP-2575 phải trả lỗi -32022 kèm danh sách bản hỗ trợ để ứng dụng quay
+    về initialize. Trả rỗng (cũ) hay trả DiscoverResult đều làm ChatGPT báo action discovery failed."""
     user = db.get(User, seed.u_req_id)
-    res = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 7, "method": "server/discover"}, {})
-    assert res["id"] == 7 and "error" not in res
-    r = res["result"]
-    assert r["resultType"] == "complete"
-    assert r["supportedVersions"] == [mcp.PROTOCOL_VERSION]     # chỉ khai bản đang phục vụ thật (bắt tay initialize)
-    assert "tools" in r["capabilities"] and "prompts" in r["capabilities"]
-    assert r["_meta"]["io.modelcontextprotocol/serverInfo"] == mcp.SERVER_INFO
-    assert r["instructions"].startswith(mcp.INSTRUCTIONS[:20])
-    assert r["cacheScope"] == "private" and isinstance(r["ttlMs"], int)
-    init = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 8, "method": "initialize", "params": {}}, {})["result"]
-    assert init["capabilities"] == r["capabilities"] and init["instructions"] == r["instructions"]
+    msg = {"jsonrpc": "2.0", "id": 7, "method": "server/discover",
+           "params": {"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"}}}
+    res = mcp.handle(db, user, None, msg, {})
+    assert res["id"] == 7 and "result" not in res
+    assert res["error"]["code"] == mcp.UNSUPPORTED_PROTOCOL_VERSION == -32022
+    assert res["error"]["data"] == {"supported": [mcp.PROTOCOL_VERSION], "requested": "2026-07-28"}
+    bare = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 8, "method": "server/discover"}, {})
+    assert bare["error"]["data"]["requested"] == ""
+    init = mcp.handle(db, user, None, {"jsonrpc": "2.0", "id": 9, "method": "initialize", "params": {}}, {})["result"]
+    assert init["protocolVersion"] == mcp.PROTOCOL_VERSION and "tools" in init["capabilities"]

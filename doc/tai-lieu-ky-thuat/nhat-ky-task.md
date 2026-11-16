@@ -126,12 +126,14 @@ kh-AI2-5, khi chỉ Claude gọi phương thức này) nên ChatGPT không biế
 vẫn chạy vì đi đường bắt tay **initialize** cũ.
 
 **Đã làm**
-- **server/discover** trả đủ kết quả khám phá: bản giao thức đang phục vụ, khả năng (tools, prompts), danh tính máy chủ,
-  câu dặn (kèm câu dặn thêm của quản trị), gợi ý lưu tạm 5 phút theo từng người.
-- **initialize** và **server/discover** dùng chung một khai báo khả năng và câu dặn, không lệch nhau.
-- Bài kiểm đổi theo: kết quả khám phá phải đủ trường và khớp với initialize.
+- Lượt 1: trả đủ kết quả khám phá (bản giao thức, khả năng, danh tính). Thử trên dev vẫn hỏng: ChatGPT gửi kèm bản giao
+  thức 2026-07-28 mà cổng chỉ phục vụ bản có bắt tay **initialize**, nên kết quả bị coi là không khớp.
+- Lượt 2 (theo luật tương thích của SEP-2575): **server/discover** trả lỗi mã **-32022** (bản giao thức không hỗ trợ) kèm danh
+  sách bản cổng hỗ trợ và bản ứng dụng hỏi, HTTP 400; ứng dụng theo luật sẽ quay về bắt tay **initialize** rồi liệt kê công cụ.
+- **initialize** dùng chung một khai báo khả năng và câu dặn.
+- Bài kiểm đổi theo.
 
-**Kết quả:** bài kiểm cổng MCP và màn Kết nối AI đạt (12 bài). Cần người dùng thử nối lại ChatGPT sau khi lên.
+**Kết quả:** 20 bài kiểm cổng MCP và màn Kết nối AI đạt. Cần người dùng thử nối lại ChatGPT trên dev rồi mới lên prod.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
 
