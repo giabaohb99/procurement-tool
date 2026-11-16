@@ -18,31 +18,10 @@ from .schema import PurchaseHistoryOut
 router = APIRouter(tags=["purchase_history"])
 
 
-def _attach_invoice_names(db: Session, rows: list[dict]) -> None:
-    """Cột "Tên trên hóa đơn" của popup lịch sử (bao-CR-522).
-
-    Lần mua đi qua ĐMH trên hệ chụp sẵn tên đó vào `extra.invoice_name`. Dòng DỮ LIỆU CŨ (nạp
-    từ Excel, `source='legacy'`) không có cột này trong tệp gốc — lùi về tên trên hóa đơn đang khai
-    ở DANH MỤC sản phẩm, gắn cờ `invoice_name_from_catalog` để giao diện ghi rõ là số danh mục
-    chứ không phải tên đã xuất trên hóa đơn lần đó. MỘT truy vấn cho cả trang.
-    """
-    from app.modules.product.model import Product
-
-    missing = {r["product_code"] for r in rows
-               if not (r.get("extra") or {}).get("invoice_name") and r.get("product_code")}
-    catalog = dict(db.query(Product.code, Product.invoice_name)
-                   .filter(Product.code.in_(missing)).all()) if missing else {}
-    for r in rows:
-        own = ((r.get("extra") or {}).get("invoice_name") or "").strip()
-        fallback = (catalog.get(r.get("product_code")) or "").strip()
-        r["invoice_name"] = own or fallback
-        r["invoice_name_from_catalog"] = bool(not own and fallback)
-
-
 def _payload(db: Session, total: int, items, show_supplier: bool = True) -> dict:
     """`hien_ncc=False` -> xóa tên/mã NCC khỏi payload (người xem không có quyền supplier.read)."""
     rows = [PurchaseHistoryOut.model_validate(i).model_dump() for i in items]
-    _attach_invoice_names(db, rows)
+    service.attach_invoice_names(db, rows)
     if not show_supplier:
         for r in rows:
             r["supplier_code"] = ""

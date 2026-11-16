@@ -320,3 +320,26 @@ def test_tao_viec_tu_nhap_bao_chuong_nguoi_duoc_giao(db, seed, cap_quyen):
     assert bell.link == f"/project/tasks/{tid}" and "Gọi NCC Thiên An" in bell.title
     assert db.query(Notification).filter_by(user_id=user.id).count() == 0       # người tạo không tự báo mình
     assert any("đã báo chuông" in x for x in draft_create.created_details(db, "work_task", tid))
+
+
+def test_lich_su_mua_tra_ten_tren_hoa_don(db, seed, cap_quyen):
+    """bao-CR-769: hỏi "mã X, tên trên hóa đơn 3 đơn gần nhất" thì product_purchase_history trả luôn tên trên hóa
+    đơn của từng lần mua (chụp ở `extra.invoice_name`), khỏi mở từng ĐMH. Dòng dữ liệu cũ không có tên đó thì lùi về
+    tên trên hóa đơn ở danh mục sản phẩm, gắn cờ `invoice_name_from_catalog` để trợ lý nói rõ là số danh mục."""
+    import json
+    from app.modules.user.model import User
+    db.add(Product(code="VTBB01", name="Chai nhựa", invoice_name="CHAI NHỰA DANH MỤC"))
+    db.add_all([
+        PurchaseHistory(product_code="VTBB01", product_name="Chai nhựa", po_code="PO1", order_date="2026-11-01",
+                        qty_order=100, price=1500, extra=json.dumps({"invoice_name": "CHAI NHỰA 1000ML +NẮP"})),
+        PurchaseHistory(product_code="VTBB01", product_name="Chai nhựa", po_code="PO0", order_date="2026-10-01",
+                        qty_order=50, price=1400, source="legacy", extra=""),
+    ])
+    db.commit()
+    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "product_purchase_history", {"product_code": "VTBB01", "limit": 3})
+    moi, cu = out["items"]
+    assert moi["po_code"] == "PO1" and moi["invoice_name"] == "CHAI NHỰA 1000ML +NẮP"
+    assert moi["invoice_name_from_catalog"] is False
+    assert cu["invoice_name"] == "CHAI NHỰA DANH MỤC" and cu["invoice_name_from_catalog"] is True
