@@ -136,6 +136,8 @@ vẫn chạy vì đi đường bắt tay **initialize** cũ.
 **Kết quả:** 20 bài kiểm cổng MCP và màn Kết nối AI đạt. Cần người dùng thử nối lại ChatGPT trên dev rồi mới lên prod.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
+Deploy: dev 16/11/2026; prod 16/11/2026 bản 2.23.1 (main 95a11ef2, dump `prod_truoc_release_20261116_1606.sql.gz`, dựng lại api + dịch vụ AI; bài HDSD Cách 1 đã seed prod lúc 15:30)
+
 
 ## bao-CR-764 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
 - status: xong
@@ -158,6 +160,8 @@ Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` · `backend/scripts/seed_help_ket_noi_ai_cach_1.py` ·
 `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md` · `test/backend/test_agent_hub_ai_cua_toi_cr213.py`
+Deploy: dev 16/11/2026; prod 16/11/2026 bản 2.23.1 (main 95a11ef2, dump `prod_truoc_release_20261116_1606.sql.gz`, dựng lại api + dịch vụ AI; bài HDSD Cách 1 đã seed prod lúc 15:30)
+
 
 ## duoc-CR-762 | Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức, tự tính lại khi ký hợp đồng
 - status: xong
