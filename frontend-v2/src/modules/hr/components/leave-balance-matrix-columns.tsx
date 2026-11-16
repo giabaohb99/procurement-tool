@@ -3,6 +3,8 @@ import type {
   LeaveBalanceMatrixColumn,
   LeaveBalanceMatrixRow,
 } from '../api/leave-balance-matrix-api'
+import { pickAccrualInfo } from '../utils/leave-accrual-status'
+import { AccrualStartTooltip, LeaveAccrualStatusBadge } from './leave-accrual-status-badge'
 import { PolicyName } from './leave-balance-cells'
 import { MatrixDayCell } from './leave-balance-matrix-day-cell'
 
@@ -15,6 +17,8 @@ import { MatrixDayCell } from './leave-balance-matrix-day-cell'
  */
 export function buildLeaveBalanceMatrixColumns(
   columns: LeaveBalanceMatrixColumn[],
+  /** Ẩn biểu tượng *Chưa có HĐLĐ* — quá nửa số người trên trang thiếu (duoc-CR-762 phương án B). */
+  hideNoContract = false,
 ): DataTableColumn<LeaveBalanceMatrixRow>[] {
   return [
     { key: 'code', header: 'Mã NV', width: 100, defaultPinned: true, sortable: true, cell: (r) => r.code },
@@ -25,7 +29,18 @@ export function buildLeaveBalanceMatrixColumns(
       hideable: false,
       defaultPinned: true,
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.name}</span>,
+      //  duoc-CR-762: nhãn thử việc / chưa có HĐLĐ đứng cạnh TÊN (cột loại nghỉ chỉ 120px), dạng BIỂU TƯỢNG + gợi ý rê
+      //  chuột — nhãn chữ đầy đủ cắt tên còn ba chữ cái.
+      cell: (r) => (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate font-medium">{r.name}</span>
+          <LeaveAccrualStatusBadge
+            compact
+            info={pickAccrualInfo(Object.values(r.accrual ?? {}), hideNoContract)}
+            hideContractWarning={hideNoContract}
+          />
+        </span>
+      ),
     },
     {
       key: 'department',
@@ -50,7 +65,15 @@ export function buildLeaveBalanceMatrixColumns(
       width: 120,
       align: 'right',
       //  ⚠️ Khóa `cells` là CHUỖI id — đọc bằng số là ra `undefined` hết, cả bảng thành "—".
-      cell: (r) => <MatrixDayCell value={r.cells[String(c.leave_type_id)]} />,
+      //  Người đang tích (duoc-CR-762): rê chuột vào ô ra *Tích từ dd/mm/yyyy*, không thêm chữ nào.
+      cell: (r) => (
+        <AccrualStartTooltip info={r.accrual?.[String(c.leave_type_id)]}>
+          {/*  Bọc `span` DOM: `asChild` cần phần tử nhận được ref + sự kiện, `MatrixDayCell` không chuyển tiếp. */}
+          <span>
+            <MatrixDayCell value={r.cells[String(c.leave_type_id)]} />
+          </span>
+        </AccrualStartTooltip>
+      ),
     })),
     {
       key: 'total',

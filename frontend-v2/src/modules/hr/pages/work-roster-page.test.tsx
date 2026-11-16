@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -53,9 +54,12 @@ function renderPage(search = '?date=2026-10-07') {
   )
 }
 
+//  Mặc định: Nhân sự (`work_schedule.write`) — phạm vi xem đủ bộ lọc. Trưởng phòng / nhân viên tự đặt trong bài của mình.
+const HR_KEYS = { employee: { read: true }, work_schedule: { read: true, write: true } }
+
 beforeEach(() => {
   apiGetMock.mockReset()
-  useAuthStore.setState({ user: user({ employee: { read: true } }) })
+  useAuthStore.setState({ user: user(HR_KEYS) })
 })
 
 describe('WorkRosterPage', () => {
@@ -105,7 +109,7 @@ describe('WorkRosterPage', () => {
 
   it('shows the filters and calls the lookups when permitted', async () => {
     useAuthStore.setState({
-      user: user({ employee: { read: true }, company: { read: true }, department: { read: true } }),
+      user: user({ ...HR_KEYS, company: { read: true }, department: { read: true } }),
     })
     mockApi()
     renderPage()
@@ -143,5 +147,108 @@ describe('WorkRosterPage', () => {
     renderPage()
     await screen.findByText('An')
     expect(screen.getByRole('searchbox', { name: /Tìm nhân sự/ })).toHaveAttribute('maxlength', '100')
+  })
+  //  duoc-CR-761 — xếp ca theo ngày.
+  it('a manager (personal arranging key only) opens on their own department, and department=0 on the URL means all', async () => {
+    useAuthStore.setState({
+      user: {
+        ...user({ employee: { read: true }, company: { read: true }, department: { read: true }, work_schedule_personal: { read: true, write: true } }),
+        department_id: 4,
+        department_name: 'IT',
+        concurrents: [
+          { kind: 1, kind_label: 'Phòng ban', department_id: 7, company_id: 1, department_name: 'Kế toán', company_name: 'DEGO', position_label: '', counts_scope: true },
+        ],
+      },
+    })
+    mockApi()
+    renderPage('?date=2026-10-07')
+    await screen.findByText('An')
+    expect(rosterCalls()[0].department_id).toBe(4)
+    //  Không lọc pháp nhân, không đọc danh mục phòng ban: ô phòng ban chỉ có phòng của mình + "Các phòng của tôi".
+    expect(screen.queryByRole('combobox', { name: 'Lọc theo pháp nhân' })).toBeNull()
+    expect(urlsCalled().filter((u) => u === '/api/companies' || u === '/api/departments')).toEqual([])
+    const actor = userEvent.setup()
+    await actor.click(screen.getByRole('combobox', { name: 'Lọc theo phòng ban' }))
+    expect((await screen.findAllByRole('option')).map((o) => o.textContent)).toEqual(['Các phòng của tôi', 'IT', 'Kế toán'])
+    await actor.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: /Chép tuần trước/ })).toBeInTheDocument()
+    //  Mặc định của Trưởng phòng KHÔNG tính là "đang lọc" — không bày nút Xóa lọc vô cớ.
+    expect(screen.queryByRole('button', { name: 'Xóa lọc' })).toBeNull()
+
+    apiGetMock.mockClear()
+    renderPage('?date=2026-10-07&department=0')
+    await waitFor(() => expect(rosterCalls().some((p) => p.department_id === 0)).toBe(true))
+  })
+
+  it('a director (personal key read only) browses the company: department catalog of their company, no company filter, search, no shift tools', async () => {
+    useAuthStore.setState({
+      user: {
+        ...user({ employee: { read: true }, company: { read: true }, department: { read: true }, work_schedule_personal: { read: true } }),
+        company_id: 1,
+        department_id: 4,
+      },
+    })
+    mockApi()
+    renderPage('?date=2026-10-07&company=3')
+    await screen.findByText('An')
+    expect(rosterCalls()[0]).toMatchObject({ company_id: 0, department_id: 0 })
+    expect(screen.queryByRole('combobox', { name: 'Lọc theo pháp nhân' })).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Lọc theo phòng ban' })).toHaveTextContent('Tất cả phòng ban')
+    expect(screen.getByRole('searchbox', { name: /Tìm nhân sự/ })).toBeInTheDocument()
+    const deptCall = apiGetMock.mock.calls.find((c) => c[0] === '/api/departments')
+    expect((deptCall?.[1] as { params: Record<string, unknown> }).params.company_id).toBe(1)
+    expect(urlsCalled()).not.toContain('/api/companies')
+    expect(screen.queryByRole('button', { name: /Chép tuần trước/ })).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  it('a manager pasting a link to another department is pulled back to their own', async () => {
+    useAuthStore.setState({
+      user: { ...user({ employee: { read: true }, work_schedule_personal: { read: true, write: true } }), department_id: 4, department_name: 'IT' },
+    })
+    mockApi()
+    renderPage('?date=2026-10-07&department=99')
+    await screen.findByText('An')
+    expect(rosterCalls()[0].department_id).toBe(4)
+  })
+
+  it('staff (no schedule key) only see themselves: no filters, no search, a note, and a stale q is not sent', async () => {
+    useAuthStore.setState({ user: user({ employee: { read: true }, company: { read: true }, department: { read: true } }) })
+    mockApi()
+    renderPage('?date=2026-10-07&q=Bình&company=3&department=4')
+    await screen.findByText('An')
+    expect(screen.getByText('Bạn đang xem lịch của chính mình.')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByRole('searchbox')).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(rosterCalls()[0]).toMatchObject({ company_id: 0, department_id: 0 })
+    expect(rosterCalls()[0].q).toBeUndefined()
+    expect(urlsCalled().filter((u) => u === '/api/companies' || u === '/api/departments')).toEqual([])
+  })
+
+  it('HR keeps "all departments" as the default', async () => {
+    useAuthStore.setState({ user: { ...user({ employee: { read: true }, work_schedule: { read: true, write: true } }), department_id: 4 } })
+    mockApi()
+    renderPage('?date=2026-10-07')
+    await screen.findByText('An')
+    expect(rosterCalls()[0].department_id).toBe(0)
+  })
+
+  it('a viewer without any arranging key sees no shift tools and cells stay plain', async () => {
+    useAuthStore.setState({ user: user({ employee: { read: true } }) })
+    mockApi()
+    renderPage('?date=2026-10-07')
+    await screen.findByText('An')
+    expect(screen.queryByRole('button', { name: /Chép tuần trước/ })).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: /Chọn An/ })).toBeNull()
+  })
+
+  it('an arranger clicks a cell to open the shift dialog', async () => {
+    useAuthStore.setState({ user: user({ employee: { read: true }, work_schedule: { read: true, write: true } }) })
+    mockApi()
+    renderPage('?date=2026-10-07')
+    await screen.findByText('An')
+    fireEvent.click(screen.getByTitle(/^An · 2026-10-05/))
+    expect(await screen.findByRole('dialog', { name: 'An' })).toBeInTheDocument()
   })
 })

@@ -9,9 +9,11 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.export_xlsx import VN_OFFSET
 from app.core.utils import generate_code
 from app.core.vn_time import vn_today
 from app.modules.employee.model import Employee
+from app.modules.work_schedule.model import WorkShiftDay, WorkShiftSegment
 
 from . import balance_service, request_service, workday_service
 from .catalog_model import LeaveType
@@ -114,12 +116,34 @@ def check_work_date(db: Session, employee: Employee, work_date: date, exclude_id
         raise HTTPException(
             422, "Ngày này là ngày làm việc bình thường của bạn nên không có ngày nghỉ bù. "
                  "Chỉ xin được cho ngày lễ hoặc ngày nghỉ theo lịch làm việc.")
+    _block_retroactive_shift_off(db, employee, work_date)
     dup = (db.query(LeaveCompRequest.code)
            .filter(LeaveCompRequest.employee_id == employee.id, LeaveCompRequest.work_date == work_date,
                    LeaveCompRequest.is_deleted.is_(False), LeaveCompRequest.id != exclude_id,
                    LeaveCompRequest.status.in_([int(s) for s in COMP_ACTIVE_STATUSES])).first())
     if dup:
         raise HTTPException(409, f"Ngày {work_date:%d/%m/%Y} đã có phiếu nghỉ bù {dup[0]} — mỗi ngày một phiếu")
+
+
+SHIFT_OFF_AFTER_THE_FACT = "Ngày này được xếp nghỉ sau khi đã qua, không dùng để xin nghỉ bù"
+
+
+def _block_retroactive_shift_off(db: Session, employee: Employee, work_date: date) -> None:
+    """Ngày nghỉ CHỈ vì một ca xếp không khung (duoc-CR-761) mà dòng ca đó được tạo / sửa vào hoặc sau chính ngày ấy thì
+    không dùng để xin nghỉ bù — nếu không thì xếp nghỉ lùi ngày là cách biến một ngày đã đi làm thành ngày được bù.
+
+    Chỉ xét ngày nghỉ do xếp ca: ngày nghỉ theo mẫu tuần và ngày lễ giữ nguyên luật cũ (ngày lễ vẫn qua kể cả khi có ca nghỉ).
+    Mốc so là NGÀY VN của lần ghi gần nhất (`updated_at`, `created_at` nếu chưa sửa) ≥ `work_date`.
+    """
+    row = (db.query(WorkShiftDay.id, WorkShiftDay.created_at, WorkShiftDay.updated_at)
+           .filter(WorkShiftDay.employee_id == employee.id, WorkShiftDay.work_date == work_date).first())
+    if row is None or db.query(WorkShiftSegment.id).filter(WorkShiftSegment.shift_day_id == row.id).first():
+        return
+    if work_date in workday_service.holiday_dates(db, int(employee.company_id or 0), work_date, work_date):
+        return
+    stamp = max(t for t in (row.created_at, row.updated_at) if t is not None)
+    if (stamp + VN_OFFSET).date() >= work_date:
+        raise HTTPException(422, SHIFT_OFF_AFTER_THE_FACT)
 
 
 def check_editable(obj: LeaveCompRequest) -> None:

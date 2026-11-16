@@ -249,8 +249,24 @@ export const queryKeys = {
     /** Lịch làm việc ĐANG ÁP của một nhân sự — thẻ "Lịch làm việc" trên hồ sơ. */
     workScheduleEffective: (employeeId: number) =>
       ['hr', 'work-schedule', 'effective', employeeId] as const,
+    /**
+     * Lịch đang áp của một nhân sự tại MỘT ngày — hộp xếp ca đọc giờ mẫu tuần (kèm nghỉ trưa) để điền sẵn
+     * (duoc-CR-761). Nằm DƯỚI `workScheduleEffective(id)` nên quét khóa đó là quét luôn.
+     */
+    workScheduleEffectiveOn: (employeeId: number, onDate: string) =>
+      ['hr', 'work-schedule', 'effective', employeeId, onDate] as const,
     /** Lưới "Lịch tuần" (ai làm, ai nghỉ) — khóa theo toàn bộ tham số hỏi. */
     workRoster: (params: Record<string, unknown>) => ['hr', 'work-schedule', 'roster', params] as const,
+    /** Gốc của MỌI lưới Xem lịch — xếp ca xong phải nạp lại cả lưới đang mở lẫn lưới tuần khác trong bộ nhớ. */
+    workRosterRoot: () => ['hr', 'work-schedule', 'roster'] as const,
+    /** Gốc của xếp ca theo ngày (duoc-CR-761) — ghi ca xong quét khóa này là quét luôn "Ca của tôi". */
+    workShiftsRoot: () => ['hr', 'work-shifts'] as const,
+    /**
+     * "Ca làm việc" của CHÍNH MÌNH (`/api/work-shifts/me`) — thẻ ở Trang cá nhân, theo khoảng ngày. `stamp` = id thông
+     * báo "ca" mới nhất: chuông báo ca đổi là khóa đổi, thẻ tự nạp lại.
+     */
+    myWorkShifts: (fromDate: string, toDate: string, stamp = 0) =>
+      ['hr', 'work-shifts', 'me', fromDate, toDate, stamp] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
     departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,

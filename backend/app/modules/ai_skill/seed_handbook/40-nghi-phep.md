@@ -47,7 +47,8 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
 
     còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù cộng thêm) − đã nghỉ − đang chờ duyệt
               − đã thanh toán ra tiền
-              (− phần CHƯA TỚI THÁNG nếu loại nghỉ cộng dần theo tháng)
+              (− phần CHƯA TỚI THÁNG nếu loại nghỉ cộng dần theo tháng, hoặc phần của tháng CHƯA LÀM XONG nếu
+               loại nghỉ cộng dần sau mỗi tháng làm đủ — Phép năm từ 16/11/2026)
 
 - ⚠️ **Hỏi "còn bao nhiêu phép" thì gọi `my_leave_summary` và đọc `remaining_days`** — đó là đúng con số form nộp
   đơn, bảng Quỹ phép năm và báo cáo đang dùng. **Đừng tự lấy hạn mức năm trừ đi** (sai với loại cộng dần, sai khi
@@ -76,12 +77,54 @@ Nhân sự khai ở *Thiết lập*, tab *Loại nghỉ* (trang một loại có
 | **Đủ hạn mức đầu năm** (mặc định) | Đầu năm có đủ số ngày. |
 | **Theo tỷ lệ tháng làm việc** | Người vào làm giữa năm được hạn mức × số tháng làm / 12 (vào làm ngày 1–15 tính cả tháng đó). |
 | **Cộng dần theo tháng** | Quỹ ghi đủ cả năm nhưng **phần chưa tới tháng chưa dùng được**: 12 ngày, đang tháng 5 → dùng được 5 (làm tròn xuống nửa ngày). Tool trả phần này ở `not_yet_accrued_days`. Thâm niên, phép chuyển sang, điều chỉnh tay, nghỉ bù không bị cộng dần. |
+| **Cộng dần sau mỗi tháng làm đủ** (Phép năm, từ 16/11/2026) | Chỉ tháng đã **làm xong** mới có phần của tháng đó, tính từ **ngày làm chính thức** (thử việc không tích). Xem mục ngay dưới. |
 
 - **Hạn mức theo nhóm**: một loại nghỉ có thể khai hạn mức riêng theo **hình thức nhân viên** (chính thức, thử việc…)
   hoặc **cấp bậc**; ưu tiên **chính sách nghỉ phép được phân bổ cho người đó** (mục dưới) → hình thức → cấp bậc → hạn mức chung. Quỹ đã cấp **không tự tính lại** khi Nhân sự đổi luật —
   người dùng hỏi "sao đổi rồi mà quỹ tôi không đổi" thì bảo họ nhờ Nhân sự điều chỉnh tay.
 - **Dùng được sau N ngày vào làm** (`applicable_after_days`): nhân viên mới xin loại đó trước mốc thì hệ chặn với câu
   *Loại nghỉ "Phép năm" chỉ dùng được sau 60 ngày vào làm (từ dd/mm/yyyy).* — chọn ngày từ mốc đó hoặc loại khác.
+
+## Phép năm cộng sau mỗi tháng làm đủ (từ 16/11/2026)
+
+Luật công ty: **làm đủ một tháng thì được một ngày phép** (hạn mức 12 ngày/năm). Áp cho **mọi người**, loại **Phép năm**,
+hiệu lực cả năm 2026.
+
+- **Làm XONG tháng nào mới có phần của tháng đó.** Hết tháng 1 → từ 01/02 có 1 ngày; ngày 15/01 vẫn là 0; ngày 16/11 có
+  tối đa **10** ngày (đã xong tháng 1–10). Làm tròn xuống nửa ngày. Tháng hiện tại chưa tính.
+- **Tính từ ngày làm chính thức** = ngày bắt đầu của hợp đồng lao động chính thức đầu tiên đã ký (không tính HĐ Thử việc,
+  HĐ dịch vụ, HĐ cộng tác viên). Bắt đầu ngày 1–15 tính cả tháng đó, từ ngày 16 tính từ tháng sau. Ví dụ chính thức
+  10/03/2026 → hạn mức năm nay 10 ngày (tháng 3–12), ngày 16/11 dùng được 8.
+- **Đang thử việc thì chưa có phép năm.** Ký HĐ chính thức xong là hệ tự tính lại quỹ, không phải chờ ai.
+- Thâm niên, phép năm trước mang sang, điều chỉnh tay, nghỉ bù **không** bị cộng dần — dùng được ngay. Tháng 1 hằng năm phần
+  từ hạn mức năm mới là 0, chỉ còn các khoản đó.
+- **Số âm**: ai đã nghỉ (hoặc đang có đơn chờ duyệt) nhiều hơn số đã tích thì còn lại ra **âm** — không bị trừ thêm hay hủy
+  đơn nào; chỉ là chưa xin thêm được cho tới khi các tháng làm tiếp bù lại.
+
+Tool trả ba trường ở từng dòng `balances` của loại này: `accrual_start_date` (ngày bắt đầu tích), `accrual_status` +
+`accrual_status_label`. Đọc nhãn, đừng tự suy:
+
+| `accrual_status` | Nhãn | Trả lời người hỏi thế nào |
+|---|---|---|
+| 1 | Đang tích | Nói ngày bắt đầu tích (`accrual_start_date`) và số đã tích tới hôm nay (`remaining_days`). |
+| 2 | Đang thử việc — chưa tích | Thời gian thử việc chưa có phép năm; ký HĐ chính thức thì bắt đầu tích từ ngày HĐ đó. Muốn nghỉ thì dùng **Nghỉ không lương**. |
+| 3 | Chưa có HĐLĐ trên hệ thống | Đang tính TẠM từ ngày vào làm; nhờ phòng Nhân sự nhập hợp đồng lao động để tính đúng. |
+| 4 | Lịch sử HĐLĐ chưa đủ — đang tính từ ngày vào làm | Hệ thiếu HĐ cũ nên đang tính tạm từ ngày vào làm; nhờ Nhân sự nhập bù HĐ trước đó. |
+| 5 | Hợp đồng dịch vụ / cộng tác viên — không tích phép năm | HĐ dịch vụ / cộng tác viên không có phép năm; sai loại HĐ thì báo Nhân sự. |
+| 6 | Chưa tới ngày làm chính thức | HĐ chính thức chưa tới ngày bắt đầu; tới ngày đó mới bắt đầu tích, hết tháng đầu mới có ngày đầu tiên. |
+
+`null` cả ba = loại nghỉ khác hoặc năm đã qua.
+
+Câu hay hỏi:
+
+- **Sao tôi chỉ còn 10 ngày (năm ngoái có 12 ngày đầu năm)?** — gọi `my_leave_summary`, rồi giải thích: từ 16/11/2026 Phép
+  năm cộng sau mỗi tháng làm đủ; tới hôm nay đã xong N tháng nên có N ngày từ hạn mức, cộng thâm niên / mang sang / điều
+  chỉnh, trừ đã nghỉ và đang chờ duyệt. Hết tháng này được cộng thêm phần của tháng này; làm xong tháng 12 thì quỹ năm đó đủ hạn mức.
+- **Khi nào tôi có phép?** — đọc `accrual_status`: 1 → mỗi khi làm xong một tháng (ngày 01 tháng sau); 2 → sau khi ký HĐ
+  chính thức và làm xong tháng đầu; 6 → từ tháng sau tháng bắt đầu HĐ chính thức; 3 / 4 → đang có theo ngày vào làm, nhờ
+  Nhân sự nhập HĐ.
+- **Sao số của tôi âm?** — đã nghỉ trước phần chưa tích; không bị trừ thêm, các tháng tới bù dần.
+- Đừng hứa ngày phép của tháng đang làm dở, và đừng tự nhân hạn mức với số tháng — đọc `remaining_days`.
 
 ## Chính sách nghỉ phép và phân bổ (từ 03/11/2026)
 
@@ -344,7 +387,8 @@ soạn xong mới biết không đủ phép là bắt người ta làm lại.
 - `balances` là **một dòng cho MỖI loại nghỉ**, không phải một con số chung. Trả lời
   **còn 7 ngày** mà không nói loại nào là câu trả lời sai.
 - `remaining_days` **đã trừ** `pending_days` (đơn đang chờ duyệt) và phần chưa tới tháng
-  (`not_yet_accrued_days`, loại cộng dần). Người hỏi thấy hụt ngày mà chưa nghỉ hôm nào thì
+  (`not_yet_accrued_days`, loại cộng dần; loại cộng dần sau mỗi tháng làm đủ thì là phần của tháng chưa làm xong —
+  đọc thêm `accrual_status_label`). Người hỏi thấy hụt ngày mà chưa nghỉ hôm nào thì
   nói rõ lý do nào. Số **âm** = đang ứng phép (chỉ có khi `max_negative_days` > 0).
 - `comp_days` là ngày **nghỉ bù đã duyệt** cộng vào loại đó (đã nằm trong `total_days`);
   `comp_requests` là các phiếu xin nghỉ bù của họ kèm trạng thái.
@@ -385,9 +429,12 @@ lẫn hai cái), và không xem được phép của người khác (đó là `e
 
 ## Lịch làm việc — trả lời thế nào
 
-- **"Lịch làm việc của tôi thế nào / thứ Bảy tôi có phải đi làm không / mấy giờ vào làm"**:
-  gọi `my_leave_summary`, đọc `work_schedule`. Kể tên lịch, lịch đó đến từ đâu (gán riêng
-  cho bạn / theo phòng ban / theo pháp nhân / toàn công ty / mặc định) và giờ từng thứ.
+- **"Lịch làm việc của tôi thế nào / lịch tôi đang theo là lịch nào"**: gọi `my_leave_summary`, đọc
+  `work_schedule`. Kể tên lịch, lịch đó đến từ đâu (gán riêng cho bạn / theo phòng ban / theo pháp nhân /
+  toàn công ty / mặc định) và giờ từng thứ.
+- **Hỏi theo NGÀY CỤ THỂ** (**tuần này tôi làm mấy giờ**, **thứ Bảy này tôi có phải đi làm không**, **ca của
+  tôi tuần sau**): gọi `my_work_shifts` — nó đã gộp mẫu tuần với **ca xếp theo ngày** (mục dưới), còn
+  `work_schedule` của `my_leave_summary` chỉ là mẫu tuần, không biết ca xếp riêng.
 - **"Phòng tôi đang theo lịch nào / gán lịch cho phòng ở đâu"**: lịch của một phòng xem ở
   *Nhân sự ▸ Danh mục ▸ Phòng ban* ▸ bấm vào phòng ▸ tab ***Lịch làm việc***. Người có quyền
   gán lịch thấy nút ***Gán lịch cho phòng*** (mở sẵn hộp ***Thêm dòng gán lịch*** đã chọn đúng
@@ -403,6 +450,73 @@ lẫn hai cái), và không xem được phép của người khác (đó là `e
   chỉ đặt được ngày kết thúc; không sửa được lịch do Nhân sự gán (tạo dòng mới từ ngày cần đổi). Lịch của cả phòng / công
   ty và mẫu lịch là việc của phòng Nhân sự.
 - Trợ lý **không gán / sửa lịch được** — chỉ hướng dẫn thao tác trên màn.
+
+## Xếp ca theo ngày — ca theo tiếng (từ 16/11/2026)
+
+Có việc làm **không liền** (livestream bán hàng, trực theo khung) nên Trưởng phòng / Nhân sự xếp lại ca **theo
+từng ngày cụ thể** cho từng người. Đây là **xếp ca, không phải chấm công**: hệ không biết ai đã đi làm, đi trễ hay
+về sớm — đừng trả lời những câu đó.
+
+- **Ca xếp theo ngày THẮNG mẫu lịch tuần** của ngày đó (thắng cả lịch gán riêng cho nhân sự, phòng, pháp nhân).
+  Ngày **không xếp** thì vẫn theo mẫu lịch tuần như cũ.
+- Một ngày có thể **nhiều khung giờ rời nhau**, mỗi khung là **giờ tròn** trong 00:00–24:00 (ví dụ 08:00–10:00,
+  14:00–16:00, 20:00–23:00 = 7 giờ), tối đa 12 khung. Ngày được xếp mà **không có khung nào** = **nghỉ do xếp
+  ca**.
+- **Tính phép trên ngày có ca** — ngày có ca = **1 ngày công**, dù ca dài hay ngắn:
+  - nghỉ **cả ngày** → trừ **1**;
+  - nghỉ **nửa ngày**: khung **bắt đầu trước 12:00** là buổi **sáng**, khung **từ 12:00** là buổi **chiều**
+    (khung vắt qua 12:00 thuộc cả hai buổi); xin nghỉ đúng buổi **không có khung nào** thì trừ **0**;
+  - nghỉ **theo giờ** → số giờ nghỉ **trùng khung ca** chia **tổng giờ ca ngày đó** (ca 7 giờ, nghỉ trùng 2 giờ →
+    trừ 2/7 ngày);
+  - ngày **nghỉ do xếp ca** không tính; **ngày lễ** vẫn bỏ qua như cũ.
+  Ca được xếp **sau khi** đơn đã gửi duyệt thì đơn giữ số ngày lúc gửi (như đổi lịch).
+- **Ai xếp được:**
+  - **Nhân sự** (quyền ghi *Lịch làm việc*): mọi người trong phạm vi xem hồ sơ của họ, **mọi ngày** (kể cả ngày đã
+    qua khi cần sửa lại).
+  - **Trưởng phòng** (quyền *Lịch làm việc riêng (Trưởng phòng gán)*): nhân viên **phòng mình**, **không xếp cho chính
+    mình**, chỉ **từ hôm nay trở đi** (giờ Việt Nam).
+  - Nhân viên **không tự xếp ca**; muốn đổi ca thì nhờ Trưởng phòng / Nhân sự.
+- **Xếp ở đâu:** *Nhân sự ▸ Lịch làm việc* (màn Xem lịch, `/hr/work-roster`) ▸ bấm ô của người × ngày ▸ hộp xếp ca:
+  mục **Khung giờ làm việc** (khung đánh số, ô **Từ – Đến** giờ tròn, **Thêm khung giờ**), **Mẫu nhanh** (**Theo lịch
+  tuần** · **Hành chính 08–17** · **Nghỉ cả ngày**), **Ghi chú**, mục gập **Áp cùng ca cho ngày / người khác** (nút
+  chính đổi thành **Lưu cho N ô**); chân hộp **Về mẫu tuần** · **Hủy** · **Lưu**. Thanh công cụ có **Chép tuần
+  trước** sang tuần đang xem. Ô có ca xếp riêng nổi màu và hiện khung giờ.
+- **Ai thấy ai trên màn Lịch làm việc** (cũng là luật của tool `employee_work_shifts`): Nhân sự (quyền ghi *Lịch làm
+  việc*) và quản trị thấy mọi người trong phạm vi xem hồ sơ; Trưởng phòng CHỈ thấy nhân viên phòng mình (kể cả phòng
+  kiêm nhiệm) và chính mình; nhân viên thường CHỈ thấy chính mình. Mở màn vẫn cần quyền xem hồ sơ nhân sự.
+- **Nhân viên biết bằng cách nào:** mỗi lượt lưu, người được xếp / đổi ca nhận **một chuông** *Ca làm việc của bạn
+  vừa được cập nhật* (người bấm lưu không nhận chuông của chính mình); ca của mình xem ở **Trang cá nhân** (thẻ *Ca
+  làm việc*) hoặc hỏi trợ lý.
+
+### Tool `my_work_shifts` — ca của chính người hỏi
+
+Gọi khi hỏi **ca của tôi**, **lịch làm tuần này / tuần sau**, **tuần này tôi làm mấy giờ**, **ca livestream của
+tôi**, **thứ Bảy tôi có ca không**. Không cần quyền gì; không có ô chọn người — luôn là lịch của người đang hỏi.
+Mặc định **tuần này (thứ Hai – Chủ nhật, giờ Việt Nam)**; `week_offset` = 1 tuần sau, -1 tuần trước; hoặc
+`from_date` / `to_date` (YYYY-MM-DD, tối đa 42 ngày).
+
+Đọc kết quả: mỗi ngày trong `days` có `source` (*Xếp ca theo ngày* hay *Mẫu lịch tuần*), `segments` (các khung
+giờ), `hours`, `is_day_off`, `holiday_name`, `note`. `total_hours` / `work_days` chỉ tính ngày phải đi làm (ngày
+lễ theo mẫu tuần không tính; ca xếp vào ngày lễ thì có tính); `shift_dates` là các ngày xếp riêng — nêu rõ ngày nào
+khác mẫu tuần. Tài khoản chưa gắn hồ sơ nhân sự thì tool báo lỗi: bảo người dùng liên hệ phòng Nhân sự.
+
+### Tool `employee_work_shifts` — ca của nhân sự khác (Nhân sự, Trưởng phòng)
+
+Gọi khi hỏi **phòng X tuần này ai làm ca nào**, **chị Y thứ Bảy làm mấy giờ**, **ca livestream tuần sau của phòng Z**.
+Cần quyền **xem hồ sơ nhân sự**; người trả về theo đúng luật **ai thấy ai** của màn Xem lịch ở trên (Trưởng phòng chỉ
+phòng mình + bản thân, nhân viên thường chỉ bản thân). Truyền `employee` (mã / tên,
+không cần dấu, bỏ *anh / chị*) **hoặc** `department` (tên / ID phòng, gõ cả *phòng Kinh doanh* cũng được); khoảng
+tối đa **14 ngày**, mặc định tuần này; `limit` mặc định 20, trần 50 — nhưng mỗi lượt tối đa 210 ô người × ngày
+(một tuần → 30 người, hai tuần → 15 người); `has_more` + `note` báo còn bao nhiêu người.
+
+Mỗi ô trong `days`: `segments`, `hours`; `shift: true` = ngày **xếp ca riêng** (không có cờ = theo mẫu tuần), `off:
+true` = ngày nghỉ, `holiday` = tên ngày lễ.
+
+- `employees` rỗng (`note` *Không tìm thấy nhân sự nào khớp trong phạm vi bạn được xem.*) = không có ai khớp
+  **trong phạm vi người hỏi** — đừng khẳng định người đó không tồn tại.
+- Tool **chỉ đọc**. Hỏi **xếp ca giúp / đổi ca cho em Lan** thì chỉ đường màn *Nhân sự ▸ Lịch làm việc* (link `url`)
+  và nói đúng luật ai xếp được ở trên — trợ lý không xếp ca hộ.
+- Không có lương, lý do nghỉ hay thông tin cá nhân.
 
 ## Tool `employee_leave_summary` — phép của người khác (Nhân sự, quản lý)
 

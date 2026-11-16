@@ -234,3 +234,41 @@ Chi tiết: `doc/erp/hrm/02-nghi-phep.md` §17, `doc/erp/hrm/03-lich-lam-viec.md
 - Trợ lý: `employee_leave_summary` (người khác) gác `leave_balance.read`; số ngày đã nghỉ của người khác còn qua phạm vi
   `leave_request` (thiếu thì rỗng). Năm của đơn = năm `from_date` (khớp sổ quỹ, lệch báo cáo Tình hình nghỉ phép ở đơn vắt
   hai năm).
+
+#### Xếp ca theo ngày (duoc-CR-761, 16/11/2026)
+
+Chi tiết: `doc/erp/hrm/03-lich-lam-viec.md` §22, `doc/erp/hrm/02-nghi-phep.md` §18.
+
+- ⚠️ **Ngày XẾP CA** (`tab_work_shift_day`, `DaySpec.segments` khác `None`) thắng mọi mẫu tuần; `()` = nghỉ do xếp ca. Công trừ
+  phép của MỘT ngày chỉ tính ở `day_rules.leave_credit(spec, mask)` — đừng tự nhân `0.5 × bit` ở chỗ đếm mới (ngày có ca = 1 ngày
+  công; nửa ngày 0,5 nếu ca ở cả hai buổi, 1 nếu cả ca nằm trong buổi nghỉ, 0 nếu buổi đó không có khung).
+- Nghỉ THEO GIỜ nhiều ngày: khoảng giờ của từng ngày chỉ lấy qua `day_rules.hourly_window` rồi `worked_hours` (tự cắt theo khung
+  ca, khe giữa khung không tính). Ngày lễ vẫn bỏ qua dù có ca.
+- ⚠️ **Đổi / gỡ ca của ngày đã có đơn CHỜ DUYỆT / ĐÃ DUYỆT bị chặn (409)** ở `work_schedule/shift_leave_conflicts` — đọc khoảng
+  qua `period_spans`, mã đơn chỉ lộ khi người xếp có `leave_request.read` phủ đơn. Thêm đường ghi ca mới thì phải qua chốt này.
+- ⚠️ **Nghỉ bù**: ngày nghỉ do xếp ca mà dòng ca ghi vào / sau chính ngày đó bị từ chối (`comp_request_service.
+  _block_retroactive_shift_off`, so ngày VN của `updated_at`). Sửa chỉ ghi chú cũng đẩy `updated_at` — giới hạn đã biết.
+
+
+#### Phép năm cộng sau mỗi tháng làm đủ (duoc-CR-762, 16/11/2026)
+
+Chi tiết: `doc/erp/hrm/02-nghi-phep.md` §19.
+
+- ⚠️ **Chế độ `MONTHLY_AFTER` (4) KHÔNG BAO GIỜ đọc `hire_date` trực tiếp.** Mốc tích = ngày làm chính thức, chỉ lấy qua
+  `accrual_start_service` (`official_start` / `official_start_map` / `official_start_map_by_ids`, nạp gom một truy vấn HĐLĐ) rồi
+  đưa `AccrualStart.math_date` vào các hàm thuần (`NOT_STARTED = date.max` = chưa tích). Chỗ đếm mới gọi
+  `balance_service.available_days(..., accrual_start=...)` / `available_days_map`, đừng tự tính lại luật HĐLĐ.
+- Tình trạng tích `LeaveAccrualStatus` 1–6 là DẪN XUẤT (không lưu cột); ba trường trả API chỉ dựng ở
+  `balance_accrual_info` (loại khác mã 4 hoặc năm đã qua → `null`). Nhãn do backend gửi, giao diện không gõ nhãn.
+- ⚠️ **`accrual_refresh_service.refresh_monthly_after_allocation` chỉ `flush`, nơi gọi commit** cùng giao dịch của mình. Hàm
+  `db.flush()` NGAY ĐẦU vì phiên tắt `autoflush`: không flush thì các truy vấn bên trong (dò loại mã 4, HĐLĐ đã ký, hình thức
+  nhân viên) đọc trạng thái CŨ. Nơi gọi đổi gì trước (HĐ vừa Đã ký, hồ sơ vừa sang Thử việc, loại vừa đổi chế độ) thì gọi SAU khi
+  gán giá trị, đừng commit xen giữa.
+- Bốn chỗ gọi: `labor_contract.service.transition` (sang Đã ký — điểm DUY NHẤT), `employee.service.update_employee_core` (vào /
+  ra Thử việc hoặc đổi `hire_date`; `refresh_quota=False` ở nhập Excel chạy thử), hook `after_update` của `/api/leave-types`
+  (đổi SANG mã 4), script `apply_monthly_after_annual_leave.py`. Hai chỗ đầu truyền `previous_starts` (mốc chụp TRƯỚC khi đổi)
+  để chỉ làm lại dòng có mốc đổi thật. Thêm đường mới đổi HĐLĐ / hình thức / ngày vào làm thì phải gọi hàm này.
+- `make_crud_router(..., after_update=fn)` (`core/crud.py`): `fn(db, obj, before, user)` chạy SAU khi gán, TRƯỚC commit; `before`
+  = giá trị CŨ của các cột vừa gửi. Lỗi trong hook hủy cả lần sửa.
+- Chỉ dòng quỹ năm nay (giờ VN) + năm sau đã có dòng bị đụng, chỉ cột `allocated_days`; ghi qua
+  `policy_assignment_balances.apply_values` (nhật ký `leave_balance` như duoc-CR-717). Khóa: hồ sơ (id tăng) rồi dòng quỹ.

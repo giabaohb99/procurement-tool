@@ -11,19 +11,29 @@ from sqlalchemy.orm import Session
 
 from app.core.work_schedule_codes import WorkScheduleLevel
 
-from .day_rules import FALLBACK_NAME, FALLBACK_WEEK, DaySpec
+from .day_rules import FALLBACK_NAME, FALLBACK_WEEK, DaySpec, shift_spec
 from .model import WorkSchedule, WorkScheduleAssignment
 from .resolver import _candidate_pairs, _load_days, _pick
+from .shift_loader import load_shift_records
 
 
 class DayPlansMany:
     """Kết quả `load_day_plans_many` — tra thuần bộ nhớ, không chạm DB nữa."""
 
-    def __init__(self, by_emp: dict, weeks: dict, names: dict[int, str]):
+    def __init__(self, by_emp: dict, weeks: dict, names: dict[int, str], shifts: dict | None = None):
         self._by_emp, self._weeks, self.names = by_emp, weeks, names
+        self._shifts = shifts or {}   # {(employee_id, ngày): ShiftRecord} — ca xếp theo ngày (duoc-CR-761)
+
+    def shift_at(self, employee_id: int, day: date):
+        """`ShiftRecord` nếu ngày này được XẾP CA riêng (kể cả ngày nghỉ do xếp ca), ngược lại None."""
+        return self._shifts.get((employee_id, day))
 
     def at(self, employee_id: int, day: date) -> tuple[DaySpec, int]:
-        """`(DaySpec, schedule_id)` của nhân sự vào `day`; fallback → `schedule_id = 0`."""
+        """`(DaySpec, schedule_id)` của nhân sự vào `day`; fallback và NGÀY XẾP CA → `schedule_id = 0`
+        (ngày xếp ca thắng mọi cấp gán; hỏi `shift_at` để biết ngày nào là ca xếp)."""
+        shift = self._shifts.get((employee_id, day))
+        if shift is not None:
+            return shift_spec(shift.segments), 0
         hit = self.winner(employee_id, day)
         if hit is None:
             return FALLBACK_WEEK[day.weekday()], 0
@@ -41,8 +51,8 @@ class DayPlansMany:
 
 
 def load_day_plans_many(db: Session, employees, from_date: date, to_date: date) -> DayPlansMany:
-    """BẢN GOM của `load_day_plans` cho cả một trang nhân sự — **3 truy vấn cố định**
-    (dòng gán · ngày của các mẫu · tên mẫu) bất kể bao nhiêu người × bao nhiêu ngày.
+    """BẢN GOM của `load_day_plans` cho cả một trang nhân sự — **4 truy vấn cố định**
+    (dòng gán · ngày của các mẫu · tên mẫu · ca xếp theo ngày) bất kể bao nhiêu người × bao nhiêu ngày.
 
     `employees`: các đối tượng có `id`, `department_id`, `company_id`. Cùng luật thắng
     `_pick` với bản một người nên hai bản không thể lệch nhau.
@@ -78,4 +88,5 @@ def load_day_plans_many(db: Session, employees, from_date: date, to_date: date) 
     sched_ids = {a.schedule_id for a in rows}
     names = ({r.id: r.name for r in db.query(WorkSchedule.id, WorkSchedule.name)
               .filter(WorkSchedule.id.in_(sched_ids)).all()} if sched_ids else {})
-    return DayPlansMany(by_emp, _load_days(db, sched_ids), names)
+    return DayPlansMany(by_emp, _load_days(db, sched_ids), names,
+                        load_shift_records(db, ids, from_date, to_date))

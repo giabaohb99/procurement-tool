@@ -19,9 +19,10 @@ from app.core.report_aggregate import DerivedSpec, DimensionSpec, MetricSpec, Re
 from app.core.scoping import apply_scope
 from app.modules.employee.model import Employee
 from app.modules.employee.service import STATUS_RESIGNED
-from app.modules.leave import accrual_service
+from app.modules.leave import accrual_service, accrual_start_service
 from app.modules.leave.balance_model import LeaveBalance
 from app.modules.leave.catalog_model import LeaveType
+from app.modules.leave.constants import LeaveAccrualMode
 
 EMPLOYEE_STATUSES = ("working", "resigned", "all")
 #  Chỉ số bấm được ra danh sách (`GET /api/leave-balances/summary/rows`).
@@ -98,8 +99,16 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
             .outerjoin(LeaveType, LeaveType.id == LeaveBalance.leave_type_id)
             .outerjoin(emp_join, emp_join.id == LeaveBalance.employee_id)
             .with_entities(*BAL_COLS, LeaveType.accrual_mode.label("accrual_mode"),
-                           emp_join.hire_date.label("hire_date")).all())
+                           emp_join.hire_date.label("hire_date"),
+                           emp_join.employment_type.label("employment_type")).all())
     today = vn_today()
+    #  duoc-CR-762: loại MONTHLY_AFTER tính từ ngày làm chính thức (HĐLĐ đầu tiên đã ký không phải Thử việc). Ngày đó
+    #  không có trong câu SQL trên (phải gộp theo HĐ) nên nạp GOM bằng MỘT truy vấn riêng cho cả báo cáo — số truy vấn
+    #  vẫn cố định, và chỉ phát sinh khi có dòng của loại MONTHLY_AFTER.
+    after_mode = int(LeaveAccrualMode.MONTHLY_AFTER)
+    after_rows = [r for r in rows if int(r.accrual_mode or 1) == after_mode]
+    facts = accrual_start_service.contract_facts(
+        db, {r.employee_id for r in after_rows}, {r.employee_id: r.hire_date for r in after_rows})
     #  "Chưa nghỉ ngày nào" xét THEO NGƯỜI: tổng cấp > 0 và tổng (dùng + giữ chỗ) = 0 trên MỌI
     #  dòng quỹ — người đã nghỉ phép năm nhưng còn quỹ ốm chưa đụng thì KHÔNG tính.
     granted_sum, spent_sum = {}, {}
@@ -116,8 +125,10 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
         #  thì nhớ sửa luôn ở đây.
         granted = round((r.allocated_days or 0) + (r.seniority_days or 0) + (r.carried_days or 0)
                         + (r.adjusted_days or 0) + (r.comp_days or 0), 2)
-        held = accrual_service.accrual_holdback(
-            r.allocated_days or 0.0, int(r.accrual_mode or 1), r.hire_date, year, today)
+        mode = int(r.accrual_mode or 1)
+        start = (accrual_start_service.resolve(r.hire_date, r.employment_type, facts.get(r.employee_id)).math_date
+                 if mode == after_mode else r.hire_date)
+        held = accrual_service.accrual_holdback(r.allocated_days or 0.0, mode, start, year, today)
         remaining = round(granted - (r.used_days or 0) - (r.pending_days or 0)
                           - (r.carried_out_days or 0) - (r.encashed_days or 0) - held, 2)
         out.append(BalanceRow(

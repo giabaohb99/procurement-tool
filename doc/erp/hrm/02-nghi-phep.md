@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 2.3 — 13/11/2026 (**trợ lý AI trả ngày đã nghỉ theo loại + lịch làm việc, công cụ tra phép của nhân sự khác; bậc Phòng ban của Quỹ phép năm siết về đúng phòng** — duoc-CR-757: §17 mới) · 2.2 — 11/11/2026 (**gộp Chính sách + Phân bổ thành một màn hai tab** — duoc-CR-750: bảng màn hình §2) · 2.1 — 11/11/2026 (**nối Phân bổ chính sách với Quỹ phép năm** — duoc-CR-745: §15.6a mới) · 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** · duoc-CR-757 |
+| Bản | 2.5 — 16/11/2026 (**Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức** — duoc-CR-762: §19 mới, §13.1 thêm mã 4) · 2.4 — 16/11/2026 (**ngày xếp ca theo tiếng tính phép theo ca; chặn đổi ca ngày đã có đơn; nghỉ bù không nhận ngày nghỉ do xếp ca ghi lùi** — duoc-CR-761: §18 mới) · 2.3 — 13/11/2026 (**trợ lý AI trả ngày đã nghỉ theo loại + lịch làm việc, công cụ tra phép của nhân sự khác; bậc Phòng ban của Quỹ phép năm siết về đúng phòng** — duoc-CR-757: §17 mới) · 2.2 — 11/11/2026 (**gộp Chính sách + Phân bổ thành một màn hai tab** — duoc-CR-750: bảng màn hình §2) · 2.1 — 11/11/2026 (**nối Phân bổ chính sách với Quỹ phép năm** — duoc-CR-745: §15.6a mới) · 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** · duoc-CR-757 · duoc-CR-761 · **duoc-CR-762** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
-| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` · CR-719: `doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` |
-| Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (15 bài: thẻ + 14 bài con) · bài YCTT nghỉ phép cho kế toán ở `backend/scripts/seed_help_yctt_thanh_toan_nghi_phep.py` · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py` · báo cáo khóa 30 ở `backend/scripts/seed_help_bao_cao_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
+| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` · CR-719: `doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` · CR-762: `doc/erp/hrm/plans/261116-phep-nam-cong-sau-moi-thang-duoc-cr-762/plan.md` |
+| Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (16 bài: thẻ + 15 bài con) · bài YCTT nghỉ phép cho kế toán ở `backend/scripts/seed_help_yctt_thanh_toan_nghi_phep.py` · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py` · báo cáo khóa 30 ở `backend/scripts/seed_help_bao_cao_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
 
 ---
@@ -811,12 +811,14 @@ mặc định = hành vi cũ** — bật tính năng mới là việc của qu�
 | `1` FULL_YEAR | Đủ hạn mức đầu năm | Như cũ: ai cũng nhận đủ hạn mức (mặc định) |
 | `2` PRORATA_HIRE | Theo tỷ lệ tháng làm việc (người vào làm trong năm) | Người vào làm TRONG năm: `hạn mức × số tháng làm / 12` (Điều 113 khoản 2 BLLĐ 2019). Ngày vào làm 1–15 tính cả tháng đó, từ 16 tính từ tháng sau; làm tròn **lên** tới 0,5. Vào làm trước năm đó hoặc chưa có `hire_date` → đủ; vào làm năm SAU → 0 |
 | `3` MONTHLY | Cộng dần theo tháng | `allocated_days` vẫn ghi CẢ NĂM (đã tỷ lệ như mã 2) để báo cáo đọc đúng; phần chưa tới tháng trừ động ở `accrual_holdback`: dùng được = `allocated × số tháng đã tới (tính cả tháng hiện tại) / số tháng của kỳ`, làm tròn **xuống** 0,5. Năm đã qua → đủ |
+| `4` MONTHLY_AFTER | Cộng dần sau mỗi tháng làm đủ | (duoc-CR-762) Như mã 3 nhưng chỉ tháng đã LÀM XONG mới tính (tháng hiện tại chưa tính), và mốc là **ngày làm chính thức** chứ không phải `hire_date`. Luật đủ ở §19 |
 
 Ví dụ hạn mức 12: vào làm 10/03 → 10 ngày; vào làm 20/03 → 9 ngày; loại cộng dần, đang tháng 5 → dùng được 5 ngày.
 Thâm niên, phép mang sang, điều chỉnh tay và `comp_days` **không** tỷ lệ, **không** cộng dần.
 
-⚠️ Quỹ ĐÃ CẤP không tính lại khi đổi `accrual_mode` hay hạn mức (luật cũ của `allocate`) — **trừ** mã 3, vì phần chưa
-tới tháng tính động. Lời giải thích của ô trên form nói đúng điều này.
+⚠️ Quỹ ĐÃ CẤP không tính lại khi đổi `accrual_mode` hay hạn mức (luật cũ của `allocate`) — **trừ** mã 3 và mã 4, vì phần
+chưa tới tháng tính động; riêng đổi SANG mã 4 thì quỹ năm nay và năm sau của loại đó được tính lại ngay (§19.5). Lời giải
+thích của ô trên form nói đúng điều này.
 
 ### 13.2. Hạn mức theo nhóm — `tab_leave_type_quota`
 
@@ -1315,3 +1317,181 @@ và mục 2 của [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
 - Cẩm nang trợ lý `ai_skill/seed_handbook/40-nghi-phep.md` có mục *Lịch làm việc và ngày đã nghỉ*; bài HDSD *Nhân sự — Lịch làm
   việc của phòng ban và cách đếm ngày nghỉ* (`seed_help_nhan_su.py`) có mục hỏi trợ lý.
 - Bài kiểm: `test_tro_ly_tra_phep_lich_lam_viec_cr757.py`.
+
+---
+
+## 18. Tính phép theo ca xếp theo ngày (duoc-CR-761, 16/11/2026)
+
+Bản đủ (dữ liệu, quyền, giao diện, sổ việc deploy) ở [`03-lich-lam-viec.md` §22](03-lich-lam-viec.md). Phần chạm tới nghỉ phép:
+
+- **Ngày có ca xếp riêng tính khác ngày theo mẫu tuần.** Ngày có khung giờ = 1 ngày công dù ca dài ngắn bao nhiêu. Nghỉ cả ngày trừ
+  **1**; nghỉ nửa ngày: khung trước 12:00 là buổi sáng, từ 12:00 là buổi chiều — ca ở cả hai buổi trừ **0,5**, mọi khung nằm trong
+  đúng buổi xin nghỉ trừ **1**, buổi đó không có khung trừ **0**; nghỉ theo giờ = giờ nghỉ trùng khung ÷ tổng giờ ca ngày đó. Ngày
+  nghỉ do xếp ca và ngày lễ trừ **0**. Ví dụ ca livestream 08–10, 14–16, 20–23 (7 giờ), nghỉ theo giờ 14:00–16:00 → **0,29** ngày;
+  ca chỉ sáng 08–12 + nghỉ buổi sáng → **1**.
+- MỘT công thức: `work_schedule/day_rules.leave_credit` (theo buổi) và `worked_hours` / `day_hours` qua `hourly_window` (theo giờ),
+  gọi từ `workday_service.count_leave_days` / `count_hourly_days` — vẫn là nơi DUY NHẤT đoán số ngày (§12 của tài liệu lịch).
+- **Ngày đã có đơn chờ duyệt / đã duyệt thì không đổi hay gỡ ca được** (409, kèm mã đơn nếu người xếp xem được đơn): số ngày của
+  đơn đã tính trên ca cũ. Muốn xếp lại thì sửa / hủy đơn trước. Đơn Nháp / Trả về không chặn và giữ số ngày đã lưu tới khi mở ra
+  sửa (giới hạn đã biết).
+- **Phiếu nghỉ bù** không nhận ngày nghỉ do xếp ca nếu dòng ca đó được ghi vào hoặc sau chính ngày đó (422 *Ngày này được xếp nghỉ
+  sau khi đã qua, không dùng để xin nghỉ bù*). Ngày nghỉ theo mẫu tuần và ngày lễ giữ luật cũ. Giới hạn đã biết: sửa CHỈ ghi chú của
+  ngày nghỉ đó sau ngày đó cũng làm chốt này chặn.
+- Cẩm nang trợ lý `40-nghi-phep.md` có mục ca làm việc; bài HDSD **Nhân sự — Xếp ca theo tiếng cho từng ngày** (`seed_help_nhan_su.py`).
+
+## 19. Phép năm cộng sau mỗi tháng làm đủ (duoc-CR-762, 16/11/2026)
+
+Yêu cầu của Anh Được: *"Nhân viên làm đủ 1 tháng thì tính 1 ngày phép."* Sáu câu chốt Q1–Q6 và các chốt sau rà mã ở
+[`plans/261116-phep-nam-cong-sau-moi-thang-duoc-cr-762/plan.md`](plans/261116-phep-nam-cong-sau-moi-thang-duoc-cr-762/plan.md).
+Mã: `leave/constants.py` (`LeaveAccrualMode.MONTHLY_AFTER = 4`, `LeaveAccrualStatus` 1–6), `accrual_service.py`
+(`accrual_holdback`), `accrual_start_service.py` (mốc tích), `accrual_refresh_service.py` (tính lại quỹ),
+`balance_accrual_info.py` (ba trường trả kèm dòng quỹ), script `backend/scripts/apply_monthly_after_annual_leave.py`.
+Bài kiểm: `test/backend/test_phep_nam_cong_sau_thang_cr762.py`; vitest `hr/utils/leave-accrual-status.test.ts`,
+`hr/components/leave-accrual-status-badge.test.tsx`, `hr/components/leave-balance-missing-contract-strip.test.tsx`.
+
+### 19.1. Luật tích
+
+- Chế độ cấp quỹ mới **`4` Cộng dần sau mỗi tháng làm đủ** (`MONTHLY_AFTER`) áp cho loại **Phép năm** (mã `annual`), cho mọi
+  người (Q3). Chế độ `3` *Cộng dần theo tháng* cũ giữ nguyên cho loại nào đang dùng.
+- **Làm XONG tháng nào mới có phần của tháng đó** (Q1): số dùng được hôm nay = `allocated_days × số tháng đã làm xong / số tháng
+  của kỳ`, làm tròn **xuống** 0,5 ngày (`accrual_holdback`). Tháng hiện tại chưa tính. Hết tháng 1 → từ 01/02 có 1 ngày.
+- **Tháng lịch, mốc ngày 15** (Q2): bắt đầu tích từ ngày 1–15 thì tính cả tháng đó, từ ngày 16 tính từ tháng sau.
+- `allocated_days` vẫn ghi phần CẢ KỲ (đã tỷ lệ theo tháng bắt đầu như mã 2) để báo cáo đọc đúng; phần chưa tới hạn trừ động
+  lúc đọc. Thâm niên, phép mang sang, điều chỉnh tay, nghỉ bù **không** bị cộng dần — dùng được ngay.
+- Năm đã qua → đủ (quỹ đã chốt). Năm sau → chưa có tháng nào.
+
+Ví dụ hạn mức 12 ngày, người làm chính thức từ trước năm 2026:
+
+| Ngày xem | Tháng đã làm xong | Dùng được từ hạn mức |
+|---|---|---|
+| 15/01/2026 | 0 | **0** — tháng 1 chưa xong; chỉ còn thâm niên / mang sang / điều chỉnh nếu có |
+| 01/02/2026 | 1 | **1** |
+| 16/11/2026 | 10 | **10** |
+| 01/01/2027 (quỹ năm 2026) | năm đã qua | **12** |
+
+Người bắt đầu tích giữa năm: chính thức 10/03/2026 → kỳ 10 tháng (tháng 3–12), `allocated_days` = 10; ngày 16/11 đã xong
+tháng 3–10 = 8 tháng → dùng được 8. Chính thức 20/03 → kỳ 9 tháng, `allocated_days` = 9; ngày 16/11 dùng được 7.
+
+### 19.2. Mốc bắt đầu tích = ngày làm chính thức (Q4, Q5)
+
+Một hàm duy nhất `accrual_start_service.resolve` (nạp gom: `contract_facts` một truy vấn HĐLĐ cho cả nhóm). Chỉ tính HĐLĐ
+**đã ký**: trạng thái `SIGNED` (kể cả đã hết hạn — hết hạn là suy ra, DB vẫn ghi `SIGNED`) hoặc `TERMINATED` (đã ký rồi mới
+chấm dứt); Nháp, Đã hủy, HĐ xóa mềm không tính. Xét từ trên xuống, gặp trường hợp nào dừng ở đó:
+
+| Hồ sơ + HĐLĐ đã ký | Mốc tích | Mã tình trạng |
+|---|---|---|
+| Có HĐ **chính thức** (không phải Thử việc, Dịch vụ, Cộng tác viên); HĐ chính thức sớm nhất bắt đầu sau `hire_date` hơn **một tháng**, KHÔNG có HĐ Thử việc và KHÔNG có HĐ Dịch vụ / Cộng tác viên | `hire_date` (coi lịch sử HĐ chưa đủ — thường do mới nhập HĐ gần nhất) | `4` |
+| Có HĐ chính thức (các trường hợp còn lại) | `start_date` của HĐ chính thức sớm nhất | `1`, hoặc `6` nếu ngày đó còn ở tương lai |
+| Chỉ có HĐ **Thử việc** (còn hạn hay đã hết), chưa có HĐ chính thức | Chưa tích | `2` |
+| Chỉ có HĐ **Dịch vụ / Cộng tác viên** | Không tích phép năm | `5` |
+| Không có HĐ đã ký nào, hồ sơ để hình thức **Thử việc** | Chưa tích | `2` |
+| Không có HĐ đã ký nào, hình thức khác | `hire_date` | `3` |
+
+Có HĐ Dịch vụ / Cộng tác viên rồi mới ký HĐLĐ thì mốc là HĐLĐ sớm nhất — thời gian CTV không tích phép. **Nhận lại sau khi
+nghỉ:** HĐ đã kết thúc (ngày chấm dứt, không thì ngày hết hạn) trước `hire_date − 1 ngày` bị bỏ qua, nên mốc tính từ lần vào làm
+mới. Hồ sơ không có `hire_date` mà rơi vào nhánh lấy `hire_date` thì tính từ 01/01 như phần còn lại của hệ. Chưa tích (`2`, `5`)
+thì `allocated_days` của năm đó ra 0 và cả quỹ bị giữ lại; mốc ở tương lai (`6`) thì chưa dùng được gì tới khi làm xong tháng đầu.
+
+### 19.3. Sáu mã tình trạng tích (`LeaveAccrualStatus`, dẫn xuất, không lưu cột)
+
+| Mã | Nhãn (API gửi, giao diện không tự gõ) | Nghĩa | Nhân sự làm gì |
+|---|---|---|---|
+| `1` | Đang tích | Có mốc tích hợp lệ | Không cần làm gì. Bảng chỉ có gợi ý rê chuột *Tích từ dd/mm/yyyy* |
+| `2` | Đang thử việc — chưa tích | Chỉ có HĐ Thử việc, hoặc hồ sơ để hình thức Thử việc mà chưa có HĐ | Ký HĐ chính thức đúng ngày khi hết thử việc; quỹ tự tính lại (§19.5) |
+| `3` | Chưa có HĐLĐ trên hệ thống | Không có HĐ đã ký nào, đang tính TẠM từ ngày vào làm | **Nhập HĐLĐ** (kể cả HĐ Thử việc cũ nếu có) rồi chuyển sang Đã ký |
+| `4` | Lịch sử HĐLĐ chưa đủ — đang tính từ ngày vào làm | HĐ chính thức đầu tiên bắt đầu muộn hơn ngày vào làm hơn một tháng, không có HĐ Thử việc | **Nhập bù HĐ cũ** (Thử việc hoặc chính thức trước đó); nếu ngày vào làm sai thì sửa ngày vào làm |
+| `5` | Hợp đồng dịch vụ / cộng tác viên — không tích phép năm | Chỉ có HĐ không phải HĐLĐ | Đúng thì không làm gì; sai loại HĐ thì sửa HĐ |
+| `6` | Chưa tới ngày làm chính thức | HĐ chính thức đã ký nhưng bắt đầu sau hôm nay | Không cần làm gì — tới ngày thì tự sang `1` |
+
+Loại nghỉ không phải mã 4, hoặc dòng quỹ của năm đã qua: ba trường đều `null`.
+
+### 19.4. Giao diện (màn Quỹ phép năm, đơn nghỉ, form Loại nghỉ)
+
+- Ba trường `accrual_start_date`, `accrual_status`, `accrual_status_label` trả kèm dòng quỹ (§19.7). Giao diện chia mã thành ba
+  tông (`hr/utils/leave-accrual-status.ts`): `1` không thêm chữ (chỉ gợi ý rê chuột *Tích từ dd/mm/yyyy*; thẻ điện thoại in chữ
+  mờ); `2`, `5`, `6` nhãn mờ (biểu tượng đồng hồ cát); `3`, `4` nhãn hổ phách (biểu tượng tam giác) gọi chung *chưa đủ HĐLĐ*, rê
+  chuột thêm việc cần làm (*Đang tính từ ngày vào làm — nhập hợp đồng lao động để tính đúng* / *Nhập đủ hợp đồng lao động để tính
+  đúng*). Nhãn đặt cạnh tên người ở thẻ **Theo dòng quỹ** và **Theo nhân sự** (cột Họ tên hẹp nên chỉ vẽ biểu tượng).
+- **Dải đếm, phương án B** (`LeaveBalanceMissingContractStrip`): có người *chưa đủ HĐLĐ* thì đầu bảng hiện dải hổ phách. Số người
+  thiếu ≤ một nửa số người có dòng loại mã 4 → nhãn hiện trên từng dòng, dải ghi *N nhân sự chưa đủ HĐLĐ trên hệ thống — phép năm
+  đang tính từ ngày vào làm. Nhập hợp đồng lao động để tính đúng.* Quá một nửa → nhãn hổ phách trên dòng ẩn (nhãn mờ vẫn hiện), dải
+  ghi *N/M người chưa đủ HĐLĐ …* và ở thẻ **Theo dòng quỹ** có nút **Chỉ hiện người chưa đủ HĐLĐ** / **Hiện tất cả** (lọc ở trình
+  duyệt vì bảng đã nạp trọn). Thẻ **Theo nhân sự** phân trang ở máy chủ nên dải nói *… trên trang đang xem* và không có nút lọc.
+- **Trang chi tiết dòng quỹ** (`LeaveAccrualStatusNote`): câu đủ ngay trên các con số — mã 3 *Chưa có HĐLĐ trên hệ thống — phép
+  đang tính từ ngày vào làm dd/mm/yyyy. Nhập hợp đồng lao động để tính đúng.*; mã 4 nhãn kèm ngày + việc cần làm; mã 2, 5, 6 nhãn;
+  mã 1 *Tích từ dd/mm/yyyy — làm xong tháng nào được cộng phần của tháng đó.*
+- **Đơn nghỉ** (dải số dư dưới ô Loại nghỉ): mã 2 ghi *Bạn đang thử việc — chưa tích phép năm.* (lập hộ: *Nhân sự này …*); mã 5,
+  6 ghi nhãn của API.
+- **Form Loại nghỉ**: ô **Cách cấp quỹ** có thêm *Cộng dần sau mỗi tháng làm đủ*; lời giải thích nói rõ tháng phải làm xong mới
+  cộng, thử việc không tích, và đổi sang chế độ này sẽ tính lại quỹ năm nay theo ngày làm chính thức.
+
+### 19.5. Tự tính lại quỹ khi mốc tích đổi
+
+Mốc tích đổi sau khi quỹ đã cấp, nên `allocated_days` của mã 4 được tính lại tự động bằng MỘT hàm
+`accrual_refresh_service.refresh_monthly_after_allocation` (cùng đường cấp quỹ `policy_allocation.allocated_days` — đã tính phân
+bổ chính sách — và cùng hàm ghi + nhật ký `leave_balance` của duoc-CR-717). Bốn chỗ gọi:
+
+| Sự kiện | Chỗ gọi | Dòng nào được tính lại |
+|---|---|---|
+| HĐLĐ chuyển sang **Đã ký** | `labor_contract/service.transition` (điểm DUY NHẤT một HĐ thành Đã ký; lập mới luôn là Nháp) | Của người đó, chỉ khi mốc tích ĐỔI THẬT |
+| Hồ sơ đổi hình thức vào / ra **Thử việc**, hoặc đổi **ngày vào làm** | `employee/service.update_employee_core` (lưu hồ sơ, nhập Excel ghi thật, áp quá trình công tác; nhập Excel chạy thử không tính) | Của người đó, chỉ khi mốc tích ĐỔI THẬT |
+| Loại nghỉ được đổi SANG chế độ 4 ở form / API | hook `after_update` của `/api/leave-types` (`catalog_controller._refresh_on_accrual_mode_change`) | Mọi dòng của loại đó |
+| Chạy script chuyển Phép năm | `scripts/apply_monthly_after_annual_leave.py` | Mọi dòng của loại `annual` |
+
+- Chỉ cột `allocated_days` của dòng quỹ **năm hiện tại (giờ VN) và các năm sau đã có dòng** bị đụng; năm đã qua, thâm niên, mang
+  sang, điều chỉnh, nghỉ bù, đã dùng, giữ chỗ, đã thanh toán giữ nguyên. Loại chưa có dòng quỹ thì không tạo (dòng sẽ cấp đúng mốc
+  khi người đó chạm tới).
+- **Chỉ dòng có mốc đổi thật**: hai chỗ gọi đầu chụp mốc TRƯỚC khi đổi (`previous_starts`); mốc không đổi thì quỹ không bị đụng,
+  để một lần sửa hồ sơ lặt vặt không kéo theo việc áp lại hạn mức hiện hành lên quỹ đã cấp. Hai chỗ gọi sau tính lại hết.
+- Mỗi dòng đổi có một dòng ở **Lịch sử thao tác** của dòng quỹ (số cũ → số mới, kèm nhãn sự kiện, ví dụ *Ký hợp đồng lao động
+  HĐ…*). Đổi RỜI chế độ 4 thì `allocated_days` giữ nguyên. Lỗi khi tính lại hủy cả lần sửa (cùng giao dịch).
+
+### 19.6. Số âm (Q6)
+
+Áp NGAY cho cả năm 2026. Ai đã nghỉ (đã duyệt + đang chờ duyệt) nhiều hơn số đã tích thì **Còn lại** ra số âm (tô đỏ): không xin
+thêm được (trừ phần ứng phép của loại, nếu có) tới khi tích đủ — mỗi tháng làm xong lại cộng phần của tháng đó. Không có gì bị
+thu hồi hay hủy: các đơn đã duyệt vẫn giữ nguyên. Tháng 1 hằng năm, phần từ hạn mức của năm mới là **0** (tháng 1 chưa xong), chỉ
+thâm niên / phép mang sang / điều chỉnh / nghỉ bù dùng được.
+
+### 19.7. API và trợ lý AI
+
+- Ba trường `accrual_start_date` (`YYYY-MM-DD` hoặc `null`), `accrual_status` (1–6), `accrual_status_label` trả ở
+  `GET /api/leave-balances`, `GET /api/leave-balances/{bid}` (và kết quả `PATCH …/{bid}/adjust`), `GET /api/leave-balances/tools/summary`, khóa `accrual` của từng
+  dòng `GET /api/leave-balances/matrix` (chỉ ô của loại mã 4) và `GET /api/leave-requests/tools/my-balance`. Nạp gom, số truy vấn
+  cố định. Chi tiết: mục 2 của [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
+- `remaining_days` ở mọi đường (màn hình, chốt đủ quỹ, báo cáo Quỹ phép năm, `my_leave_summary`, `employee_leave_summary`) đều đọc
+  `balance_service.available_days`, nên tự theo luật mới. Hai công cụ AI trả thêm ba trường trên ở từng dòng `balances`; cẩm nang
+  `40-nghi-phep.md` có mục trả lời *sao tôi chỉ còn 10 ngày*, *khi nào tôi có phép*.
+
+### 19.8. Sổ việc deploy duoc-CR-762 (dev / prod)
+
+Không có migration (chế độ 4 là giá trị mới của cột `accrual_mode` SMALLINT đã có). Loại Phép năm KHÔNG tự đổi chế độ khi deploy —
+phải chạy script ở bước 2.
+
+1. **TRƯỚC khi chạy thật, trên bản SAO của prod:** dựng bản sao DB prod (hoặc dev đã nạp dữ liệu prod mới nhất), chạy
+   ```bash
+   docker compose exec -T api python -m scripts.apply_monthly_after_annual_leave --dry-run --all > phep-nam-cr762.md
+   ```
+   Script làm đúng từng bước rồi hoàn tác, chỉ in bảng *Mã NV · Họ tên · Cũ · Mới · Dùng được hôm nay · Đã dùng + giữ chỗ · Mốc
+   tích · Ghi chú* và phần *Tổng hợp*. Nhân sự soát: người ghi chú *Chưa có HĐLĐ trên hệ thống* (mã 3), *Lịch sử HĐLĐ chưa đủ* (mã
+   4), *Hợp đồng dịch vụ / cộng tác viên* (mã 5), dòng **ÂM**, và dòng *đổi do hạn mức hiện hành* (hạn mức đổi dù mốc vẫn là ngày
+   vào làm). Nhập bù HĐLĐ / sửa ngày vào làm trên prod trước nếu cần, rồi chạy thử lại.
+2. **Chạy thật trên prod NGOÀI GIỜ LÀM VIỆC** (script khóa hồ sơ + dòng quỹ của mọi người có quỹ Phép năm trong một giao dịch):
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api python -m scripts.apply_monthly_after_annual_leave
+   ```
+   Chạy lại được (lần sau không còn dòng nào đổi). Không cần khởi động lại gì ngoài lượt deploy mã.
+3. Cẩm nang trợ lý và bài hướng dẫn trên đúng môi trường đích (prod theo đợt đồng bộ Help Center riêng của điều phối):
+   ```bash
+   docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep --sync-summary --note "duoc-CR-762"
+   docker compose exec -T api python scripts/seed_help_nghi_phep.py
+   docker compose exec -T api python scripts/reindex_help_rag.py
+   ```
+   ⚠️ `seed_help_nghi_phep.py` không có chế độ chạy thử: chạy là xóa cây Nghỉ phép rồi dựng lại. Kho tìm kiếm của trợ lý ở local
+   đang tắt nên chưa nạp lại chỉ mục ở local — bước `reindex_help_rag.py` phải chạy trên dev ngay sau khi lên bản.
+4. **Báo nhân viên** trước khi chạy thật: số ngày phép năm *dùng được* đổi (ngày 16/11/2026 tối đa **10** ngày từ hạn mức 12, mỗi
+   tháng làm xong cộng thêm phần của tháng đó); người đang thử việc chưa có phép năm; ai thấy số âm là đã nghỉ trước phần chưa
+   tích, không bị trừ thêm gì.
+5. Thử nhanh: mở *Quỹ phép năm* thấy cột **Còn lại** đã giảm, nhãn / dải *chưa đủ HĐLĐ* đúng người; ký một HĐLĐ chính thức cho
+   một người đang thử việc → dòng quỹ Phép năm của họ có số mới và một dòng **Lịch sử thao tác**; hỏi trợ lý *sao tôi chỉ còn 10
+   ngày phép*.

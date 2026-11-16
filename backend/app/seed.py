@@ -711,6 +711,10 @@ STD_ROLES["company_head"]["perms"]["leave_comp_request"] = (
     ["read", "approve", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_encashment"] = (["read", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_balance"] = (["read"], "company")
+#  duoc-CR-761: Quản lý công ty XEM lịch / ca của cả công ty mình (chỉ đọc) — `roster_visibility` đọc phạm vi của
+#  `work_schedule_personal.read`. KHÔNG có create / write / delete nên không xếp ca hay gán lịch riêng được (đó là việc của
+#  Trưởng phòng bậc phòng và Nhân sự).
+STD_ROLES["company_head"]["perms"]["work_schedule_personal"] = (["read"], "company")
 STD_ROLES["company_head"]["perms"]["room_booking"] = (
     ["read", "create", "write", "approve", "cancel"], "company")
 

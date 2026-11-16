@@ -21,9 +21,11 @@ from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 from app.modules.employee.model import Employee
 
-from . import balance_service, carryover_review_service, carryover_service
+from . import accrual_start_service, balance_service, carryover_review_service, carryover_service
+from .balance_accrual_info import NO_ACCRUAL_INFO, accrual_info_map
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
+from .constants import LeaveAccrualMode
 from .policy_balance_links import policy_names_for_balances
 from .schema import (LeaveBalanceAdjust, LeaveBalanceAllocate,
                      LeaveBalanceCloseYear, LeaveBalanceResponse)
@@ -36,7 +38,8 @@ FILTERABLE = ["employee_id", "year", "leave_type_id", "company_id"]
 
 
 def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int, str],
-          available: dict[int, float] | None = None, policies: dict[int, str] | None = None) -> dict:
+          available: dict[int, float] | None = None, policies: dict[int, str] | None = None,
+          accrual: dict[int, dict] | None = None) -> dict:
     data = LeaveBalanceResponse.model_validate(obj).model_dump()
     #  Hai số dẫn xuất — `model_validate` không lấy được `@property` nên gán tay.
     data["total_days"] = obj.total_days
@@ -48,6 +51,8 @@ def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int
     data["leave_type_name"] = types.get(obj.leave_type_id, "")
     #  duoc-CR-745: chính sách quyết định hạn mức của loại này năm đó; rỗng = theo luật của loại nghỉ.
     data["policy_name"] = (policies or {}).get(obj.id, "")
+    #  duoc-CR-762: ba trường tích phép (chỉ loại MONTHLY_AFTER, còn lại null) — xem `balance_accrual_info`.
+    data.update((accrual if accrual is not None else accrual_info_map(db, [obj])).get(obj.id, NO_ACCRUAL_INFO))
     return data
 
 
@@ -127,7 +132,8 @@ def list_balances(request: Request, pg: dict = Depends(pagination),
     types = _type_names(db)
     avail = balance_service.available_days_map(db, items)
     policies = policy_names_for_balances(db, items)
-    return success({"total": total, "items": [_dump(db, i, names, types, avail, policies) for i in items]})
+    accrual = accrual_info_map(db, items)
+    return success({"total": total, "items": [_dump(db, i, names, types, avail, policies, accrual) for i in items]})
 
 
 @router.get("/{bid}")
@@ -214,13 +220,16 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     #  người bấm thấy "Có lỗi xảy ra" và cả lô của họ bị hủy). Đường này chỉ TẠO dòng còn thiếu nên chạy lại là an
     #  toàn: lùi lại rồi chạy lại một lần; vẫn vấp thì báo 409 bằng lời.
     #  ⚠️ Lỗi văng ra ngay trong `ensure_balance` (nó `flush` dòng mới), không đợi tới `commit` — nên bọc CẢ vòng.
+    #  duoc-CR-762: loại MONTHLY_AFTER tính từ ngày làm chính thức — nạp GOM một lượt cho cả lô (không truy vấn HĐLĐ từng dòng).
+    starts = (accrual_start_service.official_start_map(db, employees)
+              if any(int(t.accrual_mode or 1) == int(LeaveAccrualMode.MONTHLY_AFTER) for t in types) else None)
     for attempt in (1, 2):
         created, missing_hire_date = 0, []
         try:
             for employee in employees:
                 for leave_type in types:
                     before = balance_service.get_balance(db, employee.id, year, leave_type.id)
-                    balance_service.ensure_balance(db, employee, year, leave_type, user.id)
+                    balance_service.ensure_balance(db, employee, year, leave_type, user.id, starts=starts)
                     if before is None:
                         created += 1
                 if getattr(employee, "hire_date", None) is None:
@@ -340,10 +349,11 @@ def balance_summary(employee_id: int = 0, year: int = Query(0),
 
     names, types = _names(db, {target}), _type_names(db)
     avail = balance_service.available_days_map(db, rows)
+    accrual = accrual_info_map(db, rows)
     return success({
         "employee_id": target,
         "employee_name": names.get(target, ""),
         "year": year,
-        "items": [_dump(db, r, names, types, avail) for r in rows],
+        "items": [_dump(db, r, names, types, avail, accrual=accrual) for r in rows],
         "total_remaining": round(sum(avail.values()), 2),
     })

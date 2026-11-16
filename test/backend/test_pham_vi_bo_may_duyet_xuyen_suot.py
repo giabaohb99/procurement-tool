@@ -1330,6 +1330,9 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "employee_leave_summary": "ctx.can(leave_balance) + apply_scope(employee) ∩ phạm vi leave_balance trên hồ sơ "
                               "+ apply_scope(LeaveBalance) cho dòng quỹ + ctx.can(leave_request) và "
                               "scope_condition(leave_request) cho ngày đã nghỉ (duoc-CR-757)",
+    "my_work_shifts": "khóa cứng hồ sơ của chính người hỏi (shift_view.employee_of, user.employee_id ≠ 0) (duoc-CR-761)",
+    "employee_work_shifts": "ctx.can(employee) + apply_scope(Employee, employee) như màn Xem lịch; ngoài phạm vi và không "
+                            "tồn tại cùng một câu (duoc-CR-761)",
     # (b') danh bạ nội bộ: apply_scope trên `employee`, và 15 trường nhạy cảm
     #      (CCCD · ngân hàng · BHXH…) đi qua đúng `employee_sensitive` như API
     "employee_lookup": "ctx.can(employee) + apply_scope; trường nhạy cảm gác employee_sensitive",

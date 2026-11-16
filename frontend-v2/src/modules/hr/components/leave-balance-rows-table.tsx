@@ -20,9 +20,11 @@ import {
   leaveBalanceRowClass,
   type LeaveBalanceRow,
 } from '../utils/group-leave-balances'
+import { hasMissingContract, summarizeMissingContract } from '../utils/leave-accrual-status'
 import { LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { sortLeaveBalanceGroups } from '../utils/sort-leave-balance-groups'
 import { buildLeaveBalanceColumns } from './leave-balance-columns'
+import { LeaveBalanceMissingContractStrip } from './leave-balance-missing-contract-strip'
 import { LeaveBalanceRowCard } from './leave-balance-row-card'
 import { LeaveBalanceYearSelect } from './leave-balance-year-select'
 
@@ -70,10 +72,19 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
   //  duoc-CR-748: bấm tiêu đề cột xếp các NHÓM NGƯỜI ngay ở trình duyệt (bảng đã nạp trọn năm) — giữ ở state, không
   //  lên URL: cùng trang còn thẻ Ma trận với bảng riêng của nó, hai bảng không tranh nhau một cặp `sort_by`.
   const sort = useLocalTableSort()
+  //  duoc-CR-762: nút *Chỉ hiện người chưa có HĐLĐ* — lọc ở trình duyệt vì bảng đã nạp trọn năm. Giữ ở state, không lên URL.
+  const [onlyMissingRequested, setOnlyMissingRequested] = useState(false)
   //  Trang TỰ VỀ 1 khi đổi bộ lọc hoặc đổi thứ tự: kết quả mới thường ít hơn, giữ số trang cũ
   //  là rơi vào trang trống. Theo dõi giá trị tìm kiếm ĐÃ HOÃN, không theo ô
   //  nhập thô — kẻo mỗi ký tự gõ vào là một lần đặt lại trang.
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, leaveTypeId, sort.sortBy, sort.sortDir])
+  const [page, setPage] = usePageResetOnFilterChange([
+    debouncedValue,
+    year,
+    leaveTypeId,
+    sort.sortBy,
+    sort.sortDir,
+    onlyMissingRequested,
+  ])
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { data: typeData } = useLeaveTypes()
 
@@ -97,18 +108,27 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
     return p
   }, [year, debouncedValue, leaveTypeId])
   const { data, isLoading, isError } = useLeaveBalances(params)
+  //  duoc-CR-762 phương án B: đếm theo NGƯỜI trên cả danh sách đã nạp (năm + loại nghỉ + ô tìm), không theo trang.
+  const missingContract = useMemo(() => summarizeMissingContract(data?.items), [data])
+  const hideNoContract = !missingContract.showRowBadges
+  //  Nút lọc chỉ tồn tại khi nhãn trên dòng bị ẩn; đổi năm / loại nghỉ mà tỷ lệ tụt xuống ≤ nửa thì nút biến mất — lọc
+  //  phải tắt theo, không thì bảng kẹt ở trạng thái lọc mà không còn nút nào để gỡ.
+  const onlyMissing = onlyMissingRequested && hideNoContract && missingContract.missing > 0
 
   //  Xếp TRƯỚC khi cắt trang — xếp trong một trang là người đứng đầu trang 2 trông như người đầu danh sách.
-  const groups = useMemo(
-    () => sortLeaveBalanceGroups(groupLeaveBalances(data?.items), sort.sortBy, sort.sortDir),
-    [data, sort.sortBy, sort.sortDir],
-  )
+  const groups = useMemo(() => {
+    const all = sortLeaveBalanceGroups(groupLeaveBalances(data?.items), sort.sortBy, sort.sortDir)
+    return onlyMissing ? all.filter((g) => hasMissingContract(g.balances)) : all
+  }, [data, sort.sortBy, sort.sortDir, onlyMissing])
   //  Vượt trần `page_size` thì danh sách bị cắt cụt ở backend và mọi tổng đều
   //  thiếu. Nói ra chứ đừng để người dùng đọc một con số sai mà không biết.
   const truncated = (data?.total ?? 0) > (data?.items?.length ?? 0)
   const pageGroups = useMemo(() => groups.slice((page - 1) * pageSize, page * pageSize), [groups, page, pageSize])
   const rows = useMemo(() => flattenLeaveBalanceGroups(pageGroups, expanded), [pageGroups, expanded])
-  const columns = useMemo(() => buildLeaveBalanceColumns({ expanded, onToggle: toggleGroup }), [expanded, toggleGroup])
+  const columns = useMemo(
+    () => buildLeaveBalanceColumns({ expanded, onToggle: toggleGroup, hideNoContract }),
+    [expanded, toggleGroup, hideNoContract],
+  )
 
   //  Bấm vào hàng: hàng NHÓM thì bung/thu (nó không có dòng quỹ nào để mở),
   //  hàng còn lại mở trang chi tiết đúng dòng quỹ đó.
@@ -140,7 +160,7 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
     </Select>
   )
   const yearSelect = <LeaveBalanceYearSelect value={year} onChange={onYearChange} />
-  const filtering = Boolean(debouncedValue) || leaveTypeId !== ALL
+  const filtering = Boolean(debouncedValue) || leaveTypeId !== ALL || onlyMissing
 
   return (
     <>
@@ -151,6 +171,10 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
           thiếu người và các con số tổng chưa đủ. Lọc bớt theo loại nghỉ hoặc tìm theo tên để xem đúng.
         </p>
       )}
+      <LeaveBalanceMissingContractStrip
+        summary={missingContract}
+        filter={{ active: onlyMissing, onToggle: () => setOnlyMissingRequested(!onlyMissing) }}
+      />
       <DataTable
         fillHeight
         columns={columns}
@@ -178,7 +202,11 @@ export function LeaveBalanceRowsTable({ year, onYearChange, search }: LeaveBalan
         }
         //  Khổ hẹp: thẻ thay bảng — bảng này tới mười một cột số, trên máy 393px chỉ thấy cột tên.
         mobileCard={(row) => (
-          <LeaveBalanceRowCard row={row} expanded={row.kind === 'group' && expanded.has(row.group.employeeId)} />
+          <LeaveBalanceRowCard
+            row={row}
+            expanded={row.kind === 'group' && expanded.has(row.group.employeeId)}
+            hideNoContract={hideNoContract}
+          />
         )}
         pagination={{
           page,

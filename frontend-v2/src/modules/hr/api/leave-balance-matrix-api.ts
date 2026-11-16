@@ -1,4 +1,5 @@
 import { apiGet, downloadFile } from '@/core/api'
+import type { LeaveAccrualInfo } from '../types/leave'
 
 /**
  * Ma trận "Tổng hợp theo người" của Quỹ phép năm (duoc-CR-717) — mỗi người một dòng, mỗi loại
@@ -25,6 +26,11 @@ export interface LeaveBalanceMatrixRow {
    * VẮNG khóa đó — khác hẳn số `0` (có quỹ, đã dùng hết).
    */
   cells: Record<string, number>
+  /**
+   * Tình trạng tích phép theo loại nghỉ (duoc-CR-762) — khóa CHUỖI id loại như `cells`, CHỈ có ô của loại
+   * `MONTHLY_AFTER`. Backend cũ: vắng.
+   */
+  accrual?: Record<string, LeaveAccrualInfo>
   total: number
 }
 

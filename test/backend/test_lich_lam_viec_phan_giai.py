@@ -126,7 +126,8 @@ def test_so_truy_van_co_dinh_1_ngay_va_400_ngay(db):
         _, more = count_queries(db, lambda: plan(MON))
         assert more == []
         counts.append(len(sql))
-    assert counts == [2, 2]
+    #  3 = dòng gán + ngày của mẫu + ca xếp theo ngày (duoc-CR-761); vẫn không đổi theo độ dài khoảng.
+    assert counts == [3, 3]
 
 
 def test_effective_fallback_va_co_gan(db):

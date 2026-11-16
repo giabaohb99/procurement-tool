@@ -156,12 +156,23 @@ def transition(db: Session, user, row: LaborContract, data: TransitionIn) -> Lab
         raise HTTPException(exc.status_code, exc.message)
     if int(plan.status) == int(S.SIGNED):   # duoc-CR-630: biến "bắt buộc" còn trống chặn việc ký (lưu nháp thì không)
         ensure_required_filled(db, row.custom_values, placeholders_for_signing(db, row), "chuyển sang Đã ký")
+    #  duoc-CR-762: chụp mốc tích Phép năm TRƯỚC khi HĐ đổi trạng thái — sau khi ký chỉ làm mới quỹ nếu mốc đổi thật.
+    previous_start = None
+    if int(plan.status) == int(S.SIGNED):
+        from app.modules.leave import accrual_start_service
+        owner = db.get(Employee, row.employee_id)
+        previous_start = {owner.id: accrual_start_service.official_start(db, owner)} if owner is not None else None
     row.status = plan.status
     for key, value in plan.changes.items():
         setattr(row, key, value)
     row.updated_by = user.id
     if int(plan.status) == int(S.SIGNED):    # duoc-CR-693: ký xong thì chép lương / phụ cấp sang ô hồ sơ (cùng giao dịch)
         salary_sync.sync_profile_salary(db, row, user.id)
+        #  duoc-CR-762: HĐ vừa ký có thể là mốc "làm chính thức" của Phép năm cộng dần → tính lại quỹ năm nay của người
+        #  này (chỉ flush, cùng giao dịch). Điểm DUY NHẤT một HĐ thành Đã ký: `create` luôn lập Nháp.
+        from app.modules.leave.accrual_refresh_service import refresh_monthly_after_allocation
+        refresh_monthly_after_allocation(db, [row.employee_id], previous_starts=previous_start, actor=user.id,
+                                         label=f"Ký hợp đồng lao động {row.code}")
     db.commit()
     db.refresh(row)
     return row

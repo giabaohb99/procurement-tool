@@ -65,6 +65,8 @@ TOOL_CHUNG_TU = {
     "po_open_lines": "purchase_order",
     #  duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác — employee ∩ leave_balance (apply_scope / scope_condition).
     "employee_leave_summary": "leave_balance",
+    #  duoc-CR-761: ca theo ngày của nhân sự khác — apply_scope(Employee, 'employee') như màn Xem lịch.
+    "employee_work_shifts": "employee",
 }
 
 #  DANH MỤC / THỐNG KÊ dùng chung toàn công ty: không có cột chủ sở hữu để lọc, phạm vi
@@ -132,6 +134,8 @@ TOOL_KHONG_PHAM_VI = {
     #  duoc-CR-757: không có tham số chọn người — luôn hồ sơ gắn với tài khoản hỏi, qua `employee.sensitive.mask`
     #  (chính chủ) + chỉ ở kênh riêng (`salary_privacy`).
     "my_salary": "lương của CHÍNH người hỏi (user.employee_id), sensitive.mask + chỉ kênh riêng",
+    #  duoc-CR-761: không có tham số chọn người — luôn hồ sơ gắn với tài khoản hỏi (như GET /api/work-shifts/me).
+    "my_work_shifts": "ca làm việc theo ngày của CHÍNH người hỏi (user.employee_id), không khóa quyền như /me",
     #  ai-CR-064: dữ liệu KHÔNG nằm trong ERP — lịch và Drive Google của CHÍNH người hỏi, đọc bằng token
     #  của người đó (tab_agent_google_link); không có bản ghi ERP nào để lọc phạm vi.
     "my_calendar_events": "lịch Google của chính người hỏi, bằng token của họ",
@@ -193,7 +197,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  91 = + `draft_supplier_quote` (ai-CR-238 — nhập báo giá NCC vào phiếu khảo sát / YCBG đang mở).
     #  92 = + `employee_leave_summary` (duoc-CR-757 — tra phép + ngày đã nghỉ của nhân sự khác).
     #  93 = + `my_salary` (duoc-CR-757 — lương của chính người hỏi, chỉ ở chat riêng).
-    assert len(thuc_te) == 93, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  95 = + `my_work_shifts` / `employee_work_shifts` (duoc-CR-761 — ca làm việc theo ngày của tôi / của nhân sự khác).
+    assert len(thuc_te) == 95, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)
@@ -225,6 +230,7 @@ CA_O_TEP_KHAC = {
     "po_open_lines": "test_assistant_ghi_lan_nhan_hang_cr740::test_thieu_quyen_va_ngoai_pham_vi",
     "employee_leave_summary":
         "test_tro_ly_tra_phep_lich_lam_viec_cr757::test_tra_phep_nguoi_khac_khong_lot_cong_ty_khac",
+    "employee_work_shifts": "test_tro_ly_ca_lam_viec_cr761::test_ca_nguoi_khac_truong_phong_chi_thay_phong_minh",
 }
 
 #  Tool đọc chứng từ CHƯA có ca rò rỉ ở BẤT KỲ đâu. Để trống là mục tiêu; còn dòng nào thì

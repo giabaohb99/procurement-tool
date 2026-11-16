@@ -32,7 +32,7 @@ from app.modules.leave.holiday_calendar import MAX_RANGE_DAYS, date_range, holid
 from app.modules.leave.period_spans import periods_by_request
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 from app.modules.leave.workday_service import leave_mask
-from app.modules.work_schedule.day_rules import FULL_DAY_SPEC, work_mask
+from app.modules.work_schedule.day_rules import FULL_DAY_SPEC, leave_credit
 from app.modules.work_schedule.resolver_many import load_day_plans_many
 
 #  Đơn góp ngày vào báo cáo khi ở một trong hai trạng thái này.
@@ -96,7 +96,7 @@ def _day_weights(period, spec_at: Callable[[date], object], holidays: set[date])
     for day in date_range(period.from_date, period.to_date):
         mask = leave_mask(day, period.from_date, period.to_date, period.from_session,
                           period.to_session)
-        weights[day] = 0.0 if day in holidays else 0.5 * bin(mask & work_mask(spec_at(day))).count("1")
+        weights[day] = 0.0 if day in holidays else leave_credit(spec_at(day), mask)
     total = sum(weights.values())
     if total <= 0:   # cả khoảng là ngày nghỉ/lễ → chia đều theo ngày lịch
         return {d: 1 / len(weights) for d in weights}

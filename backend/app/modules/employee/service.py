@@ -17,6 +17,7 @@ from . import concurrent_company_change_service as company_change_service
 from . import concurrent_transition_service as transition
 from . import department_service, phone_rules, position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
+from .constants import EMPLOYMENT_PROBATION
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 from .sensitive import SALARY_FIELDS
@@ -400,7 +401,7 @@ class WriteOutcome:
 
 def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_id: int, *,
                          lock_users: bool = True, import_mode: bool = False,
-                         profile: dict | None = None) -> WriteOutcome:
+                         profile: dict | None = None, refresh_quota: bool = True) -> WriteOutcome:
     """Lõi sửa hồ sơ: kiểm + gán + `flush`. KHÔNG commit/refresh/record/xóa cache — xem
     `create_employee_core`. Lỗi thì ném ra, bên gọi lo rollback (hoặc savepoint).
 
@@ -408,6 +409,7 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     dành cho chạy thử (dry-run) và hoàn tác lô.
     `import_mode=True` (nhập Excel): đổi pháp nhân mà còn dòng kiêm nhiệm CHƯA BẮT ĐẦU ở công ty cũ thì lỗi 400
     thay vì xóa (hoàn tác lô không dựng lại được dòng đã xóa).
+    `refresh_quota=False` (nhập Excel CHẠY THỬ): không tính lại quỹ Phép năm cộng dần khi đổi Thử việc / ngày vào làm.
     `profile` (hồ sơ quyền của người thao tác, duoc-CR-756): có thì cờ "giữ kiêm nhiệm ở công ty cũ" mới tạo được
     dòng loại Công ty (qua L1/L2); `None` = đường nội bộ (nhập Excel, hoàn tác lô, áp quá trình công tác) — không tạo."""
     old_email = (obj.email or "").strip()
@@ -421,6 +423,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     #  Chức vụ ĐANG giữ — `sync_label` cần nó để phân biệt "gán mới" với "gửi
     #  lại y nguyên", xem ghi chú ở đó. Phải chụp TRƯỚC vòng `setattr`.
     old_position_id = obj.position_id or 0
+    #  duoc-CR-762: hai ô quyết định mốc tích Phép năm cộng dần khi người đó chưa có HĐLĐ chính thức.
+    old_accrual_inputs = (int(obj.employment_type or 0), obj.hire_date)
     fields = data.model_dump(exclude_unset=True)
     #  duoc-CR-693: lương gửi `null` = GIỮ NGUYÊN (cột NOT NULL; muốn xóa gửi 0). Lương đi đường `set_salary`
     #  (đóng dấu thời điểm), không qua vòng `setattr` chung.
@@ -462,6 +466,20 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     salary_changed = (new_salary is not None or new_allowance is not None) and set_salary(
         obj, (obj.salary_monthly or 0) if new_salary is None else new_salary,
         (obj.allowance_monthly or 0) if new_allowance is None else new_allowance)
+    new_accrual_inputs = (int(obj.employment_type or 0), obj.hire_date)
+    if refresh_quota and (
+            (new_accrual_inputs[0] == EMPLOYMENT_PROBATION) != (old_accrual_inputs[0] == EMPLOYMENT_PROBATION)
+            or new_accrual_inputs[1] != old_accrual_inputs[1]):
+        #  duoc-CR-762: vào / ra Thử việc hoặc đổi ngày vào làm → tính lại quỹ Phép năm cộng dần (năm nay + năm sau) của
+        #  người này NẾU mốc tích đổi thật (cùng giao dịch, chỉ flush; không có loại MONTHLY_AFTER hoặc chưa có dòng quỹ
+        #  thì không làm gì). Mốc "trước" dựng từ hai ô cũ + HĐLĐ hiện có.
+        from app.modules.leave import accrual_start_service
+        from app.modules.leave.accrual_refresh_service import refresh_monthly_after_allocation
+        old_type, old_hire = old_accrual_inputs
+        before = accrual_start_service.official_start_with_inputs(
+            db, obj.id, hire_date=old_hire, employment_type=old_type)
+        refresh_monthly_after_allocation(db, [obj.id], previous_starts={obj.id: before}, actor=user_id,
+                                         label="Đổi hình thức nhân viên / ngày vào làm")
     if "position_id" in fields and (obj.position_id or 0) != old_position_id:
         #  duoc-CR-653: đổi chức vụ → đổi phần vai trò HỆ THỐNG đã tự cấp (cùng giao dịch, chỉ flush).
         #  Đường nhập Excel, áp quá trình công tác, lưu hồ sơ đều đi qua lõi này.

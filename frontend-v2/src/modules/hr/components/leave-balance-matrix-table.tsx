@@ -20,10 +20,12 @@ import {
   MATRIX_STATUS_OPTIONS as STATUS_OPTIONS,
   MATRIX_STATUS_WORKING as STATUS_WORKING,
 } from '../utils/leave-balance-matrix-filters'
+import { matrixAccrualEntries, summarizeMissingContract } from '../utils/leave-accrual-status'
 import { LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { LeaveBalanceMatrixCard } from './leave-balance-matrix-card'
 import { buildLeaveBalanceMatrixColumns } from './leave-balance-matrix-columns'
 import { LeaveBalanceMatrixFilters } from './leave-balance-matrix-filters'
+import { LeaveBalanceMissingContractStrip } from './leave-balance-missing-contract-strip'
 
 interface LeaveBalanceMatrixTableProps {
   year: string
@@ -77,7 +79,14 @@ export function LeaveBalanceMatrixTable({ year, onYearChange, search }: LeaveBal
 
   const { data, isLoading, isError } = useLeaveBalanceMatrix({ ...filters, page, page_size: pageSize })
   const typeColumns = useMemo(() => data?.columns ?? [], [data])
-  const columns = useMemo(() => buildLeaveBalanceMatrixColumns(typeColumns), [typeColumns])
+  //  duoc-CR-762 phương án B: bảng phân trang ở MÁY CHỦ nên chỉ đếm được trên trang đang xem — dải nói rõ điều đó và
+  //  không có nút lọc (lọc một trang là nói sai về cả danh sách).
+  const missingContract = useMemo(() => summarizeMissingContract(matrixAccrualEntries(data?.items)), [data])
+  const hideNoContract = !missingContract.showRowBadges
+  const columns = useMemo(
+    () => buildLeaveBalanceMatrixColumns(typeColumns, hideNoContract),
+    [typeColumns, hideNoContract],
+  )
 
   //  Chặn bấm đúp bằng cờ ref (`exporting` là state, đổi ở lượt render sau) — tệp 5000 người
   //  dựng mất vài giây, bấm hai lần là hai lượt dựng trên máy chủ và hai tệp tải về.
@@ -97,68 +106,73 @@ export function LeaveBalanceMatrixTable({ year, onYearChange, search }: LeaveBal
     Boolean(debouncedValue) || departmentId !== ALL_DEPARTMENTS || status !== STATUS_WORKING
 
   return (
-    <DataTable
-      fillHeight
-      columns={columns}
-      rows={data?.items}
-      getRowId={(r) => r.employee_id}
-      isLoading={isLoading}
-      isError={isError}
-      emptyMessage={
-        filtering ? 'Không có nhân sự nào khớp bộ lọc.' : `Chưa có ai được cấp quỹ phép năm ${year}.`
-      }
-      storageKey="hr.leave-balances.matrix"
-      sortBy={sortBy}
-      sortDir={sortDir}
-      onSortChange={handleSortChange}
-      toolbarClassName={LIST_TOOLBAR_STICKY}
-      keepFilterParams={['view']}
-      //  Hàng khóa theo `employee_id`, không có `id` — lúc bảng rỗng bảng không suy ra được điều
-      //  đó và tự chèn cột "ID" trống (thấy tận mắt ở năm chưa cấp quỹ).
-      idColumn={false}
-      mobileCard={(row) => <LeaveBalanceMatrixCard row={row} columns={typeColumns} />}
-      pagination={{
-        page,
-        pageSize,
-        total: data?.total ?? 0,
-        onPageChange: setPage,
-        onPageSizeChange: setPageSize,
-        unitLabel: 'nhân sự',
-      }}
-      toolbar={
-        <>
-          <SearchField
-            value={keyword}
-            onChange={setKeyword}
-            placeholder="Tìm tên, mã nhân sự"
-            className="md:max-w-xs md:min-w-56"
-          />
-          <LeaveBalanceMatrixFilters
-            departments={canReadDepartment ? (departments?.items ?? []) : undefined}
-            departmentId={departmentId}
-            onDepartmentChange={setDepartmentId}
-            status={status}
-            onStatusChange={setStatus}
-            year={year}
-            onYearChange={onYearChange}
-          />
-        </>
-      }
-      toolbarEnd={
-        canExport && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportExcel}
-            disabled={exporting || !data?.items.length}
-            //  Khổ hẹp chỉ còn biểu tượng: nhãn đầy đủ ép ô tìm còn 3 chữ "Tìm" (thấy ở 390px).
-            aria-label="Xuất Excel"
-          >
-            <Download className="size-4" />
-            <span className="max-md:hidden">Xuất Excel</span>
-          </Button>
-        )
-      }
-    />
+    <>
+      <LeaveBalanceMissingContractStrip summary={missingContract} scopeNote="trên trang đang xem" />
+      <DataTable
+        fillHeight
+        columns={columns}
+        rows={data?.items}
+        getRowId={(r) => r.employee_id}
+        isLoading={isLoading}
+        isError={isError}
+        emptyMessage={
+          filtering ? 'Không có nhân sự nào khớp bộ lọc.' : `Chưa có ai được cấp quỹ phép năm ${year}.`
+        }
+        storageKey="hr.leave-balances.matrix"
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
+        toolbarClassName={LIST_TOOLBAR_STICKY}
+        keepFilterParams={['view']}
+        //  Hàng khóa theo `employee_id`, không có `id` — lúc bảng rỗng bảng không suy ra được điều
+        //  đó và tự chèn cột "ID" trống (thấy tận mắt ở năm chưa cấp quỹ).
+        idColumn={false}
+        mobileCard={(row) => (
+          <LeaveBalanceMatrixCard row={row} columns={typeColumns} hideNoContract={hideNoContract} />
+        )}
+        pagination={{
+          page,
+          pageSize,
+          total: data?.total ?? 0,
+          onPageChange: setPage,
+          onPageSizeChange: setPageSize,
+          unitLabel: 'nhân sự',
+        }}
+        toolbar={
+          <>
+            <SearchField
+              value={keyword}
+              onChange={setKeyword}
+              placeholder="Tìm tên, mã nhân sự"
+              className="md:max-w-xs md:min-w-56"
+            />
+            <LeaveBalanceMatrixFilters
+              departments={canReadDepartment ? (departments?.items ?? []) : undefined}
+              departmentId={departmentId}
+              onDepartmentChange={setDepartmentId}
+              status={status}
+              onStatusChange={setStatus}
+              year={year}
+              onYearChange={onYearChange}
+            />
+          </>
+        }
+        toolbarEnd={
+          canExport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportExcel}
+              disabled={exporting || !data?.items.length}
+              //  Khổ hẹp chỉ còn biểu tượng: nhãn đầy đủ ép ô tìm còn 3 chữ "Tìm" (thấy ở 390px).
+              aria-label="Xuất Excel"
+            >
+              <Download className="size-4" />
+              <span className="max-md:hidden">Xuất Excel</span>
+            </Button>
+          )
+        }
+      />
+    </>
   )
 }

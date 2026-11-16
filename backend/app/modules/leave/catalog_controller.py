@@ -22,7 +22,7 @@ from app.core.response import success
 from .balance_model import LeaveBalance
 from .catalog_model import (Holiday, LeaveBlockPeriod, LeaveType, LeaveTypeQuota,
                             LeaveTypeSeniority)
-from .constants import YEAR_END_CONVERT
+from .constants import YEAR_END_CONVERT, LeaveAccrualMode
 from .encashment_model import LeaveEncashment
 from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
@@ -135,6 +135,18 @@ def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
     )
 
 
+def _refresh_on_accrual_mode_change(db: Session, obj: LeaveType, before: dict, user) -> None:
+    """duoc-CR-762 (N1): loại nghỉ được đổi SANG "Cộng dần sau mỗi tháng làm đủ" thì tính lại quỹ năm nay + năm sau của
+    loại đó ngay trong giao dịch sửa (quỹ đã cấp theo luật cũ mới nay không còn khớp). Đổi RỜI chế độ này thì giữ nguyên
+    `allocated_days` đã có — chế độ mới tự tính phần giữ lại khi cần. Lỗi ở đây hủy cả lần sửa (không để nửa vời)."""
+    target = int(LeaveAccrualMode.MONTHLY_AFTER)
+    if "accrual_mode" in before and int(obj.accrual_mode or 1) == target and int(before["accrual_mode"] or 1) != target:
+        from .accrual_refresh_service import refresh_monthly_after_allocation
+        refresh_monthly_after_allocation(
+            db, None, leave_type_ids=[obj.id], actor=user.id,
+            label="Đổi cách cấp quỹ sang cộng dần sau mỗi tháng làm đủ (duoc-CR-762)")
+
+
 leave_type_router = make_crud_router(
     "/api/leave-types", "leave_type", LeaveType,
     LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse,
@@ -143,6 +155,7 @@ leave_type_router = make_crud_router(
     unique_field="code",
     before_create=_check_type_create,
     before_update=_block_code_change,
+    after_update=_refresh_on_accrual_mode_change,
     before_delete=_block_delete_used_type,
 )
 

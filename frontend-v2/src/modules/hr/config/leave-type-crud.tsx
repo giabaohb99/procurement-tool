@@ -43,6 +43,7 @@ const ACCRUAL_OPTIONS = [
   LEAVE_ACCRUAL_MODE.FULL_YEAR,
   LEAVE_ACCRUAL_MODE.PRORATA_HIRE,
   LEAVE_ACCRUAL_MODE.MONTHLY,
+  LEAVE_ACCRUAL_MODE.MONTHLY_AFTER,
 ].map((value) => ({ value, label: LEAVE_ACCRUAL_MODE_LABELS[value] }))
 
 //  Ba nước xử lý số dư cuối năm — xem `YEAR_END_MODE`. Trước 07/09/2026 chỗ này
@@ -334,7 +335,12 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       hint:
         'Chỉ áp cho quỹ cấp SAU khi lưu — quỹ đã cấp cho từng người không tính lại. ' +
         'Ngoại lệ là "Cộng dần theo tháng": phần chưa tới tháng được trừ ngay lúc xem số còn lại. ' +
-        '"Theo tỷ lệ tháng" và "Cộng dần" tính tháng vào làm từ ngày 1–15 là cả tháng, từ ngày 16 là tháng sau.',
+        '"Theo tỷ lệ tháng" và "Cộng dần" tính tháng vào làm từ ngày 1–15 là cả tháng, từ ngày 16 là tháng sau. ' +
+        //  duoc-CR-762: chế độ 4 — khác "Cộng dần theo tháng" ở chỗ tháng phải LÀM XONG mới được cộng.
+        '"Cộng dần sau mỗi tháng làm đủ": làm xong một tháng mới được cộng phần của tháng đó ' +
+        '(hết tháng 1 → từ 01/02 có 1 ngày). Thời gian thử việc không tích. ' +
+        //  Ngoại lệ thứ hai của câu đầu: backend tính lại quỹ năm nay / năm sau khi đổi SANG chế độ này.
+        'Đổi sang chế độ này sẽ tính lại quỹ năm nay theo ngày làm chính thức.',
     },
     {
       name: 'max_negative_days',

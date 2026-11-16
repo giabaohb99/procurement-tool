@@ -2,11 +2,15 @@ import { ChevronRight } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
 import type { LeaveBalanceRow } from '../utils/group-leave-balances'
+import { pickAccrualInfo } from '../utils/leave-accrual-status'
+import { LeaveAccrualStatusBadge } from './leave-accrual-status-badge'
 import { LeaveBalanceCard } from './leave-balance-card'
 
 interface LeaveBalanceRowCardProps {
   row: LeaveBalanceRow
   expanded: boolean
+  /** Ẩn nhãn *Chưa có HĐLĐ* (duoc-CR-762 phương án B). */
+  hideNoContract?: boolean
 }
 
 /**
@@ -16,7 +20,7 @@ interface LeaveBalanceRowCardProps {
  * `LeaveBalanceCard` cũ, hàng NHÓM mới cần thẻ riêng vì nó không có dòng quỹ nào
  * để mà bày — nó là một phép cộng.
  */
-export function LeaveBalanceRowCard({ row, expanded }: LeaveBalanceRowCardProps) {
+export function LeaveBalanceRowCard({ row, expanded, hideNoContract = false }: LeaveBalanceRowCardProps) {
   if (row.kind === 'group') {
     const { group } = row
     return (
@@ -28,7 +32,13 @@ export function LeaveBalanceRowCard({ row, expanded }: LeaveBalanceRowCardProps)
           )}
         />
         <div className="min-w-0 flex-1 space-y-1">
-          <span className="block truncate font-medium text-foreground">{group.employeeName}</span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-medium text-foreground">{group.employeeName}</span>
+            <LeaveAccrualStatusBadge
+              info={pickAccrualInfo(group.balances, hideNoContract)}
+              hideContractWarning={hideNoContract}
+            />
+          </div>
           <p className="text-xs text-muted-foreground">
             {group.balances.length} loại nghỉ · tổng cấp{' '}
             <span className="font-medium text-foreground">{group.totals.total_days}</span> · đã
@@ -58,7 +68,11 @@ export function LeaveBalanceRowCard({ row, expanded }: LeaveBalanceRowCardProps)
   //  không có đường kẻ cột nào nói hộ điều đó.
   return (
     <div className={cn(row.kind === 'child' && 'border-l-2 border-border pl-3')}>
-      <LeaveBalanceCard balance={row.balance} hideEmployeeName={row.kind === 'child'} />
+      <LeaveBalanceCard
+        balance={row.balance}
+        hideEmployeeName={row.kind === 'child'}
+        hideNoContract={hideNoContract}
+      />
     </div>
   )
 }

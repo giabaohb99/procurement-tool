@@ -12,6 +12,9 @@ luôn có ngoại lệ máy không biết (ca kíp, nghỉ bù, công trường 
 Quy ước hai ô buổi giữ **y hệt** `suggested_days()` của giấy GNP — là MỐC chứ không phải
 buổi (xem `constants.START_DAY_CREDIT`). Ở đây nó thành BITMASK nửa buổi:
 `leave_mask` (nghỉ nửa nào) ∩ `work_mask` (phải làm nửa nào) → công = 0.5 × số nửa.
+
+duoc-CR-761: ngày XẾP CA (`DaySpec.segments`) tính theo `day_rules.leave_credit` — nghỉ cả ngày trừ 1.0, nửa ngày 0.5 nếu
+nửa đó có giờ ca; nghỉ THEO GIỜ = giờ nghỉ ∩ khung ÷ tổng giờ ca (`day_capacity` = 1.0 nên công thức giờ giữ nguyên).
 """
 from datetime import date, time
 
@@ -20,8 +23,8 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 from app.modules.work_schedule import resolver
 from app.modules.work_schedule.day_rules import (AM, FULL_DAY_SPEC, PM, DaySpec,
-                                                 day_capacity, day_hours, work_mask,
-                                                 worked_hours)
+                                                 day_capacity, day_hours, hourly_window,
+                                                 leave_credit, work_mask, worked_hours)
 
 from .constants import SESSION_AFTERNOON, SESSION_FULL, SESSION_MORNING
 from .holiday_calendar import MAX_RANGE_DAYS, date_range, holiday_dates  # noqa: F401 (tái xuất)
@@ -79,8 +82,7 @@ def count_hourly_days(db: Session, from_date: date, to_date: date,
         spec: DaySpec = plan(day)
         if day in holidays or work_mask(spec) == 0 or spec.start is None or spec.end is None:
             continue
-        lo = from_time if day == from_date else spec.start
-        hi = to_time if day == to_date else spec.end
+        lo, hi = hourly_window(day, from_date, to_date, from_time, to_time)
         whole = day_hours(spec)
         if whole <= 0:
             continue
@@ -95,8 +97,8 @@ def _sum_masks(plan, holidays: set[date], from_date: date, to_date: date,
     for day in date_range(from_date, to_date):
         if day in holidays:
             continue
-        mask = leave_mask(day, from_date, to_date, from_session, to_session) & work_mask(plan(day))
-        total += 0.5 * bin(mask).count("1")
+        #  `leave_credit`: ngày theo mẫu lịch = 0.5 × nửa buổi vừa nghỉ vừa phải làm; ngày XẾP CA có luật riêng (Q3, CR-761).
+        total += leave_credit(plan(day), leave_mask(day, from_date, to_date, from_session, to_session))
     return round(total, 2)
 
 

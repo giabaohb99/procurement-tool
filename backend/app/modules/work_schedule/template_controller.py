@@ -90,7 +90,11 @@ def work_roster(from_date: date, to_date: date, company_id: int = Query(0, ge=0)
                 db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     """"Ai làm / ai nghỉ" từng ngày — lưới nhân sự × ngày (tối đa 42 ngày, phân trang theo người).
 
-    Hàng theo phạm vi `employee.read`; lớp nghỉ phép theo phạm vi `leave_request.read` (xem
+    Quyền: `employee.read` (cổng vào). Hàng theo `roster_visibility`: Nhân sự (`work_schedule.write`) và quản trị hệ thống =
+    mọi người trong phạm vi `employee.read`; Trưởng phòng / Quản lý công ty (`work_schedule_personal.read`) = người trong
+    phạm vi khóa đó (phòng hoặc công ty, gồm kiêm nhiệm) cộng chính mình; còn lại chỉ chính mình. Bộ lọc công ty / phòng /
+    từ khóa áp BÊN TRONG tập đó. Mỗi ô có `is_shift` / `shift` (ca xếp theo ngày) và `leave_hold` (ngày đã có đơn nghỉ chờ
+    duyệt / đã duyệt nên không xếp ca được); lớp nghỉ phép `leave` theo phạm vi `leave_request.read` (xem
     `roster_service`). Số truy vấn cố định."""
     if not (YEAR_MIN <= from_date.year <= YEAR_MAX and YEAR_MIN <= to_date.year <= YEAR_MAX):
         raise HTTPException(422, f"Ngày phải nằm trong năm {YEAR_MIN}–{YEAR_MAX}")

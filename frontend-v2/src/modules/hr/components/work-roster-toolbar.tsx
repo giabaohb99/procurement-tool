@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -10,6 +11,8 @@ interface WorkRosterToolbarProps {
   label: string
   onShift: (step: number) => void
   onToday: () => void
+  /** Nút thao tác đứng cuối hàng (vd "Chép tuần trước" của xếp ca). */
+  actions?: ReactNode
 }
 
 const MODE_LABEL: Record<WorkRosterMode, string> = { week: 'Tuần', month: 'Tháng' }
@@ -19,7 +22,7 @@ const MODE_LABEL: Record<WorkRosterMode, string> = { week: 'Tuần', month: 'Th�
  * Bộ lọc và ô tìm nằm ở `WorkRosterFilterBar` — hai việc khác nhau ("xem kỳ nào"
  * và "xem ai"), tách để mỗi bên đủ chỗ trên khổ hẹp.
  */
-export function WorkRosterToolbar({ mode, onModeChange, label, onShift, onToday }: WorkRosterToolbarProps) {
+export function WorkRosterToolbar({ mode, onModeChange, label, onShift, onToday, actions }: WorkRosterToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
       <div role="group" aria-label="Chế độ xem lịch" className="flex items-center rounded-md border p-0.5">
@@ -56,6 +59,8 @@ export function WorkRosterToolbar({ mode, onModeChange, label, onShift, onToday 
       <span aria-live="polite" className="text-base font-semibold tabular-nums">
         {label}
       </span>
+
+      {actions && <div className="flex flex-wrap items-center gap-2 sm:ml-auto">{actions}</div>}
     </div>
   )
 }

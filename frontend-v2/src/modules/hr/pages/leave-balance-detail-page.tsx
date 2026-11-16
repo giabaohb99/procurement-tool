@@ -7,6 +7,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { LeaveAccrualStatusNote } from '../components/leave-accrual-status-note'
 import { LeaveBalanceAdjustCard } from '../components/leave-balance-adjust-card'
 import { LeaveBalanceBreakdownCard } from '../components/leave-balance-breakdown-card'
 import { LeaveBalancePolicyNote } from '../components/leave-balance-policy-note'
@@ -138,6 +139,8 @@ export function LeaveBalanceDetailPage() {
           leaveTypeId={balance.leave_type_id}
           year={balance.year}
         />
+        {/*  duoc-CR-762: thử việc / chưa có HĐLĐ / tích từ ngày nào — giải thích vì sao số dùng được nhỏ hơn số cấp. */}
+        <LeaveAccrualStatusNote info={balance} />
         <LeaveBalanceBreakdownCard balance={balance} />
         <LeaveBalanceRequestsCard balance={balance} />
         {/*  Chỉ dựng thẻ sửa khi có quyền: hiện form rồi chặn lúc bấm Lưu là

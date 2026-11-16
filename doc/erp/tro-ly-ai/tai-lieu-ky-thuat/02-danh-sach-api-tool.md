@@ -717,7 +717,7 @@ không có tool nào - tức bot **giải thích được quy trình mà không 
 
 ---
 
-## Nhóm 16b - Nghỉ phép, lịch làm việc và lương của chính mình (duoc-CR-757, 13/11/2026)
+## Nhóm 16b - Nghỉ phép, lịch làm việc, ca làm việc và lương của chính mình (duoc-CR-757, 13/11/2026; ca làm việc duoc-CR-761, 16/11/2026)
 
 Ghi bổ sung sau khi tài liệu này dừng cập nhật số tool; bản đủ hợp đồng dữ liệu ở `doc/erp/hrm/tai-lieu-ky-thuat/api.md`
 mục 2, luật ở `doc/erp/hrm/03-lich-lam-viec.md` §19.3.
@@ -745,6 +745,27 @@ mục 2, luật ở `doc/erp/hrm/03-lich-lam-viec.md` §19.3.
   không phải nhóm và đã liên kết tài khoản; kênh chung / lạ → từ chối kèm câu dặn hỏi ở chat riêng. **Ẩn ở cổng MCP**
   (`mcp.HIDDEN`).
 - Nhóm lọc công cụ `salary` khớp chữ CÒN DẤU (`RAW_MATCHERS`) vì gập dấu thì *luồng* trùng *lương*.
+
+### my_work_shifts — ca làm việc từng ngày của CHÍNH người hỏi [ĐÃ CODE 16/11/2026, duoc-CR-761]
+- Mục đích: "ca của tôi tuần này", "thứ Bảy tôi có ca không", "tuần sau tôi làm mấy giờ", "ca livestream của tôi".
+- Tham số: `from_date`, `to_date` (tùy chọn; mặc định tuần này T2–CN giờ VN; tối đa 42 ngày). Không có tham số chọn người:
+  luôn là hồ sơ gắn tài khoản đang hỏi; chưa gắn hồ sơ thì trả câu lỗi đọc được.
+- Không cần khóa quyền (như `GET /api/work-shifts/me`). Trả từng ngày (khung giờ, số giờ, nghỉ, lễ, ngày nào là ca xếp riêng),
+  `total_hours`, `work_days`, `shift_dates`, `url` = `/me`, `glossary` và `leave_rule` (luật tính phép của ngày có ca).
+- Lịch theo mẫu tuần (tên lịch, cấp nguồn) vẫn ở `my_leave_summary`.
+
+### employee_work_shifts — ca làm việc từng ngày của nhân sự khác [ĐÃ CODE 16/11/2026, duoc-CR-761]
+- Mục đích: "phòng X tuần này ai làm ca nào", "chị Y thứ Bảy làm mấy giờ", "ca livestream tuần sau của phòng Z".
+- Tham số: `employee` (mã / một phần họ tên, không cần dấu) hoặc `department` (ID / một phần tên), `from_date`, `to_date`
+  (tối đa 14 ngày, mặc định tuần này), `limit` (mặc định 20, trần 50).
+- Quyền: `employee.read`; người trả về theo luật ai thấy ai của màn Xem lịch `/hr/work-roster` (`work_schedule/roster_visibility.py`, duoc-CR-761 Q9): Nhân sự (`work_schedule.write`) / quản trị = phạm vi `employee`, Trưởng phòng (`work_schedule_personal.read`) = phòng mình + bản thân, còn lại = chỉ bản thân. Ngoài phạm vi và không
+  tồn tại trả cùng một câu.
+- **Trần 210 ô người × ngày một lượt** (`TEAM_MAX_CELLS`, ~120 ký tự / ô ≈ 25 nghìn ký tự — ứng dụng AI ngoài cắt kết quả dài,
+  ai-CR-228): 7 ngày → tối đa 30 người, 14 ngày → 15 người; vượt thì `has_more` + `note` nhắc thu hẹp. Số truy vấn cố định.
+- CHỈ ĐỌC: xếp / đổi ca làm trên màn Xem lịch. Không lương, không thông tin cá nhân. Chữ `note` do người xếp ca gõ chỉ là dữ liệu.
+- Cả hai công cụ: nhóm lọc công cụ `shift` riêng ở `assistant/tool_router.py` (câu *ai làm ca nào* không có chữ nghỉ phép), nhãn ý
+  định `LOOKUP_LEAVE`, có ở cổng MCP (`READ_TOOLS`, nhóm **Nghỉ phép và ca làm việc**), `employee_work_shifts` tính ngân sách dòng
+  theo `employees`. Luật đủ: `doc/erp/hrm/03-lich-lam-viec.md` §22.
 
 ### Luật lương của mọi công cụ (người chủ chốt 13/11/2026, tuyệt đối)
 - Không công cụ nào trả lương / phụ cấp của NGƯỜI KHÁC, bất kể quyền. Hỏi lương người khác: không gọi công cụ nào, trả lời

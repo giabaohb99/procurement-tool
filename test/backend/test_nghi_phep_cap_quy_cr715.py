@@ -60,7 +60,7 @@ def test_schema_mac_dinh_va_bien(db):
     base = dict(code="x", name="X")
     got = LeaveTypeCreate(**base)
     assert (got.accrual_mode, got.applicable_after_days, got.max_negative_days) == (1, 0, 0.0)
-    for bad in ({"accrual_mode": 0}, {"accrual_mode": 4}, {"applicable_after_days": 3651},
+    for bad in ({"accrual_mode": 0}, {"accrual_mode": 5}, {"applicable_after_days": 3651},
                 {"applicable_after_days": -1}, {"max_negative_days": 30.5}, {"max_negative_days": -1}):
         with pytest.raises(ValidationError):
             LeaveTypeCreate(**base, **bad)

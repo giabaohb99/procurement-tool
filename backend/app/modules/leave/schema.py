@@ -47,7 +47,7 @@ class LeaveTypeBase(BaseModel):
     require_attachment: bool = False
     exclude_holiday: bool = True
     #  duoc-CR-715 — mặc định = hành vi cũ.
-    accrual_mode: int = Field(int(LeaveAccrualMode.FULL_YEAR), ge=1, le=3)
+    accrual_mode: int = Field(int(LeaveAccrualMode.FULL_YEAR), ge=1, le=int(max(LeaveAccrualMode)))
     applicable_after_days: int = Field(0, ge=0, le=3650)
     max_negative_days: float = Field(0.0, ge=0, le=30)
     #  duoc-CR-719 — thanh toán ngày phép chưa nghỉ ra tiền (trần theo NĂM, 0 = không trần).
@@ -87,7 +87,7 @@ class LeaveTypeUpdate(BaseModel):
     gender: int | None = None
     require_attachment: bool | None = None
     exclude_holiday: bool | None = None
-    accrual_mode: int | None = Field(None, ge=1, le=3)
+    accrual_mode: int | None = Field(None, ge=1, le=int(max(LeaveAccrualMode)))
     applicable_after_days: int | None = Field(None, ge=0, le=3650)
     max_negative_days: float | None = Field(None, ge=0, le=30)
     allow_encashment: bool | None = None

@@ -67,13 +67,15 @@ def _doc(text: str):
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
-                     sort_nulls_last=(), csv_import=True, audit_entity=None):
+                     sort_nulls_last=(), csv_import=True, audit_entity=None, after_update=None):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
       duy nhất phức hợp mà `unique_field` (chỉ một cột) không diễn tả nổi.
     - `before_update(db, obj, values)` — gọi TRƯỚC khi gán giá trị, nên `obj` còn
       mang dữ liệu cũ để so sánh (vd "mã này đã cấp số chưa").
+    - `after_update(db, obj, before, user)` — gọi SAU khi gán giá trị, TRƯỚC khi commit (cùng giao dịch); `before` là
+      `{cột: giá trị CŨ}` của các cột vừa gửi lên. Dùng khi đổi một cột kéo theo việc ghi nơi khác (duoc-CR-762).
     - `before_delete(db, obj)` — chỗ duy nhất chặn được việc xóa một dòng danh mục
       mà nơi khác đang trỏ tới. Không có nó thì mọi danh mục dùng bộ sinh này đều
       xóa được thoải mái và để lại dữ liệu mồ côi.
@@ -161,11 +163,18 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         values = data.model_dump(exclude_unset=True)
         if before_update:
             before_update(db, o, values)
+        before_values = {k: getattr(o, k, None) for k in values} if after_update else {}
         for k, v in values.items():
             setattr(o, k, v)
         o.updated_by = user.id
-        commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
-                           else "Dữ liệu vi phạm ràng buộc duy nhất")
+        conflict_message = f"{unique_field} đã tồn tại" if unique_field else "Dữ liệu vi phạm ràng buộc duy nhất"
+        if after_update:
+            try:
+                after_update(db, o, before_values, user)     # hook có thể `flush` → vi phạm duy nhất nổ ở đây
+            except IntegrityError:
+                db.rollback()
+                raise HTTPException(400, conflict_message)
+        commit_or_conflict(db, conflict_message)
         db.refresh(o)
         record(db, user.id, log_entity, oid, "update")
         return success(out(o), "Đã cập nhật")

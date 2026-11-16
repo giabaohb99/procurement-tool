@@ -12,6 +12,10 @@ import type { WorkRosterCell, WorkRosterItem } from '../types/work-roster'
  * · `partial`  — đơn nghỉ phủ một nửa, nửa còn lại vẫn đi làm;
  * · `working`  — đi làm bình thường.
  *
+ * Ca XẾP THEO NGÀY (duoc-CR-761) không thêm trạng thái mới: ô vẫn là `working` / `off` / `leave` / `partial` như
+ * trên (backend đã dịch các khung thành `work_kind` sáng / chiều / cả ngày), chỉ bật `isShift` để ô nổi màu riêng
+ * và chữ ngắn là các khung giờ. Nhờ vậy hàng tổng, cột "đóng" và hàng dính có nghỉ không phải biết gì về ca.
+ *
  * ⚠️ Đơn nghỉ chỉ có nghĩa khi nó rơi vào buổi PHẢI đi làm. Ngày lễ / ngày nghỉ
  * tuần thì đơn nghỉ không đổi gì (không ai trừ phép ngày đó) nên ô giữ nguyên là
  * Lễ / Nghỉ tuần; ngày làm buổi sáng mà đơn chỉ phủ buổi chiều thì vẫn là đi làm.
@@ -35,6 +39,34 @@ export interface WorkRosterCellView {
   isPending: boolean
   /** Ngày này người đó CÓ đi làm (kể cả nửa buổi) — dùng cho hàng tổng và danh sách điện thoại. */
   isWorking: boolean
+  /** Ô theo ca xếp riêng (ngoại lệ so với mẫu tuần) — tô màu ca. */
+  isShift: boolean
+  /** Chữ của ô tuần khi có ca: tối đa 2 dòng (xem `shiftCellLines`). Rỗng khi không ca / nghỉ do xếp ca. */
+  shiftLines: string[]
+}
+
+/**
+ * Chữ của ô tuần cho ngày xếp ca. Ô cao 40px chứa vừa 2 dòng chữ nhỏ: 1–2 khung thì mỗi khung một dòng (đủ HH:MM);
+ * 3 khung trở lên thì dòng 1 là khung đầu + "…", dòng 2 là số khung + tổng giờ — đủ để nhận ra, tooltip có đủ hết.
+ */
+export function shiftCellLines(segments: readonly string[], hours: number): string[] {
+  if (segments.length === 0) return []
+  if (segments.length <= 2) return [...segments]
+  return [`${segments[0]} …`, `${segments.length} khung · ${formatShiftHours(hours)} giờ`]
+}
+
+/** Tổng giờ bỏ đuôi `.0`: 4 → "4", 4.5 → "4.5". */
+export function formatShiftHours(hours: number): string {
+  return Number.isInteger(hours) ? String(hours) : hours.toFixed(1)
+}
+
+/** Câu mô tả ca cho tooltip: "Ca xếp theo ngày: 08:00–10:00 · 14:00–16:00 (4 giờ) — ghi chú". */
+function shiftSentence(cell: WorkRosterCell): string {
+  const shift = cell.shift
+  if (!cell.is_shift || !shift) return ''
+  const note = shift.note ? ` — ${shift.note}` : ''
+  if (shift.segments.length === 0) return `Nghỉ cả ngày do xếp ca${note}`
+  return `Ca xếp theo ngày: ${shift.segments.join(' · ')} (${formatShiftHours(shift.hours)} giờ)${note}`
 }
 
 /**
@@ -72,6 +104,8 @@ const UNKNOWN_VIEW: WorkRosterCellView = {
   leaveRequestId: null,
   isPending: false,
   isWorking: false,
+  isShift: false,
+  shiftLines: [],
 }
 
 function timeRange(cell: WorkRosterCell): string {
@@ -85,7 +119,14 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
   const halves = scheduledHalves(cell.work_kind)
   if (!halves) return UNKNOWN_VIEW
 
-  const base = { morningOff: false, afternoonOff: false, leaveRequestId: null, isPending: false }
+  const shift = cell.is_shift && cell.shift ? cell.shift : null
+  const shiftText = shiftSentence(cell)
+  const shiftFields = {
+    isShift: shift !== null,
+    shiftLines: shift ? shiftCellLines(shift.segments, shift.hours) : [],
+  }
+  const withShift = (text: string) => (shiftText ? `${text} · ${shiftText}` : text)
+  const base = { morningOff: false, afternoonOff: false, leaveRequestId: null, isPending: false, ...shiftFields }
 
   if (cell.is_holiday) {
     return {
@@ -93,13 +134,17 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
       state: 'holiday',
       shortLabel: 'Lễ',
       glyph: '',
-      description: cell.holiday_name ? `Ngày lễ: ${cell.holiday_name}` : 'Ngày lễ',
+      description: withShift(cell.holiday_name ? `Ngày lễ: ${cell.holiday_name}` : 'Ngày lễ'),
       isWorking: false,
     }
   }
 
   const [worksMorning, worksAfternoon] = halves
   if (!worksMorning && !worksAfternoon) {
+    if (shift) {
+      //  Nghỉ do XẾP CA là ngoại lệ người quản lý chủ động đặt → nổi màu ca, khác "Nghỉ theo lịch" (lùi, sọc mờ).
+      return { ...base, state: 'off', shortLabel: 'Nghỉ (xếp ca)', glyph: 'N', description: shiftText, isWorking: false }
+    }
     return {
       ...base,
       state: 'off',
@@ -125,6 +170,7 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
       afternoonOff,
       leaveRequestId: leave.request_id,
       isPending: !leave.is_approved,
+      ...shiftFields,
     }
 
     if (!remainsMorning && !remainsAfternoon) {
@@ -133,7 +179,7 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
         state: 'leave',
         shortLabel: leave.leave_type_name || 'Nghỉ phép',
         glyph: 'P',
-        description: `Nghỉ cả ngày — ${detail}`,
+        description: withShift(`Nghỉ cả ngày — ${detail}`),
         isWorking: false,
       }
     }
@@ -144,7 +190,18 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
       //  (ô `working` của ngày nửa buổi cũng ghi "Sáng") — hai nghĩa ngược nhau, một chữ.
       shortLabel: morningOff ? 'Nghỉ sáng' : 'Nghỉ chiều',
       glyph: 'P',
-      description: `Nghỉ ${morningOff ? 'buổi sáng' : 'buổi chiều'} — ${detail}`,
+      description: withShift(`Nghỉ ${morningOff ? 'buổi sáng' : 'buổi chiều'} — ${detail}`),
+      isWorking: true,
+    }
+  }
+
+  if (shift) {
+    return {
+      ...base,
+      state: 'working',
+      shortLabel: shift.segments.join(' · '),
+      glyph: `${formatShiftHours(shift.hours)}h`,
+      description: shiftText,
       isWorking: true,
     }
   }

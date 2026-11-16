@@ -16,7 +16,8 @@ from app.modules.leave.period_spans import LeaveSpan, span_of
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestPeriod
 from app.modules.leave.workday_service import leave_mask
 
-from .day_rules import AM, PM, DaySpec, work_mask
+from .day_rules import (AM, DAY_MINUTES, PM, DaySpec, is_shift, minutes_of, shift_window_mask,
+                        work_mask)
 
 _LUNCH_START, _LUNCH_END = time(12, 0), time(13, 0)   # lịch chưa khai giờ nghỉ trưa → mốc chuẩn
 
@@ -34,6 +35,10 @@ def leave_mask_on(req: LeaveSpan, day: date, spec: DaySpec) -> int:
     với mốc nghỉ trưa của lịch (`leave_mask` coi buổi `HOURLY` là cả ngày — sai với "khám 9–10h").
     Chạm đúng mốc trưa (12–13h) không tô nửa nào."""
     if req.from_session == SESSION_HOURLY and req.from_time and req.to_time:
+        if is_shift(spec):   # ngày XẾP CA (duoc-CR-761): nửa buổi nào có khung giờ bị khoảng nghỉ chạm vào
+            lo = minutes_of(req.from_time) if day == req.from_date else 0
+            hi = minutes_of(req.to_time) if day == req.to_date else DAY_MINUTES
+            return shift_window_mask(spec, lo, hi)
         if spec.start is None or spec.end is None:
             return 0
         lo, hi = _hourly_window(req, day, spec)

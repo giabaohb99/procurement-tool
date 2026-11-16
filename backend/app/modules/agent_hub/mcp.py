@@ -60,6 +60,8 @@ READ_TOOLS = frozenset({
     "background_jobs",   # bao-CR-703: sổ việc chạy ngầm, gác setting.read trong tool
     "po_open_lines",   # bao-CR-740: dòng ĐMH còn thiếu + lần giao của một NCC (purchase_order.read + supplier.read)
     "employee_leave_summary",   # duoc-CR-757: phép + ngày đã nghỉ của nhân sự khác, gác leave_balance.read + phạm vi
+    #  duoc-CR-761: ca làm việc theo ngày — của chính mình (không khóa) / của nhân sự khác (employee.read + phạm vi).
+    "my_work_shifts", "employee_work_shifts",
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
@@ -82,8 +84,9 @@ PROPOSAL_TOOLS = frozenset({"propose_document_update", "propose_document_delete"
 PROPOSAL_KINDS = {"update": "propose_document_update", "delete": "propose_document_delete", "approval": "propose_approval"}
 _PROPOSAL_SHAPE = {"update": "update_proposal", "delete": "update_proposal", "approval": "approval_proposal"}
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
-#  duoc-CR-757: employee_leave_summary trả tới 50 người / lượt (đếm theo khóa `employees`).
-ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read", "employee_leave_summary"})
+#  duoc-CR-757: employee_leave_summary trả tới 50 người / lượt (đếm theo khóa `employees`); duoc-CR-761: employee_work_shifts
+#  cùng khuôn (tới 50 người × 7 ngày).
+ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read", "employee_leave_summary", "employee_work_shifts"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
 STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read", "office_read"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).

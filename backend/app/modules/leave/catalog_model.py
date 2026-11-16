@@ -97,7 +97,7 @@ class LeaveType(Base, AuditMixin):
     exclude_holiday: Mapped[bool] = mapped_column(Boolean, default=True)
 
     #  duoc-CR-715 — luật cấp quỹ kiểu ERPNext. Mặc định của cả ba = hành vi cũ.
-    #  Cách cấp quỹ (`LeaveAccrualMode`); quỹ ĐÃ cấp không tính lại khi đổi, trừ MONTHLY.
+    #  Cách cấp quỹ (`LeaveAccrualMode`); quỹ ĐÃ cấp không tính lại khi đổi, trừ MONTHLY / MONTHLY_AFTER (phần giữ lại tính sống ở `available_days`).
     accrual_mode: Mapped[int] = mapped_column(
         SmallInteger, default=int(LeaveAccrualMode.FULL_YEAR), server_default="1")
     #  Chỉ dùng được loại này sau N ngày kể từ ngày vào làm. `0` = không chặn.

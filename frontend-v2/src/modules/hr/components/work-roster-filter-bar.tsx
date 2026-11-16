@@ -17,6 +17,10 @@ interface WorkRosterFilterBarProps {
   onDepartmentChange: (id: number) => void
   search: string
   onSearchChange: (value: string) => void
+  /** Nhãn mục `0` của ô phòng ban; `null` = không có mục đó (Trưởng phòng chỉ một phòng). Mặc định "Tất cả phòng ban". */
+  departmentAllLabel?: string | null
+  /** Ẩn ô tìm (người chỉ xem được lịch của chính mình). */
+  showSearch?: boolean
 }
 
 /** Backend chặn `q` quá 100 ký tự → chặn ngay ở ô nhập thay vì để người dùng ăn 422. */
@@ -30,7 +34,8 @@ function IdSelect({
   onChange,
 }: {
   label: string
-  allLabel: string
+  /** `null` = không có mục "tất cả". */
+  allLabel: string | null
   options: LookupOption[]
   value: number
   onChange: (id: number) => void
@@ -41,7 +46,7 @@ function IdSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
+        {allLabel !== null && <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>}
         {options.map((o) => (
           <SelectItem key={o.id} value={String(o.id)}>
             {o.name}
@@ -61,7 +66,10 @@ export function WorkRosterFilterBar({
   onDepartmentChange,
   search,
   onSearchChange,
+  departmentAllLabel = 'Tất cả phòng ban',
+  showSearch = true,
 }: WorkRosterFilterBarProps) {
+  if (!companies && !departments && !showSearch) return null
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {companies && (
@@ -76,24 +84,26 @@ export function WorkRosterFilterBar({
       {departments && (
         <IdSelect
           label="Lọc theo phòng ban"
-          allLabel="Tất cả phòng ban"
+          allLabel={departmentAllLabel}
           options={departments}
           value={departmentId}
           onChange={onDepartmentChange}
         />
       )}
-      <div className="relative sm:w-64">
-        <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          value={search}
-          maxLength={ROSTER_SEARCH_MAX_LENGTH}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Tìm theo mã hoặc tên"
-          aria-label="Tìm nhân sự theo mã hoặc tên"
-          className="h-8 pl-8"
-        />
-      </div>
+      {showSearch && (
+        <div className="relative sm:w-64">
+          <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={search}
+            maxLength={ROSTER_SEARCH_MAX_LENGTH}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Tìm theo mã hoặc tên"
+            aria-label="Tìm nhân sự theo mã hoặc tên"
+            className="h-8 pl-8"
+          />
+        </div>
+      )}
     </div>
   )
 }

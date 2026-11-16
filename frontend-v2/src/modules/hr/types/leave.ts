@@ -104,13 +104,43 @@ export const YEAR_END_MODE_LABELS: Record<number, string> = {
 // ── Cách cấp quỹ (duoc-CR-715) ─────────────────────────────────────────────────
 
 //  Khớp `constants.LeaveAccrualMode` ở backend. Quỹ ĐÃ cấp không tính lại khi đổi chế độ,
-//  trừ CỘNG DẦN (phần chưa tới tháng tính động).
-export const LEAVE_ACCRUAL_MODE = { FULL_YEAR: 1, PRORATA_HIRE: 2, MONTHLY: 3 } as const
+//  trừ CỘNG DẦN (phần chưa tới tháng tính động). `MONTHLY_AFTER` (duoc-CR-762): chỉ tháng đã LÀM XONG mới
+//  được cộng, mốc là ngày làm chính thức (thử việc không tích).
+export const LEAVE_ACCRUAL_MODE = { FULL_YEAR: 1, PRORATA_HIRE: 2, MONTHLY: 3, MONTHLY_AFTER: 4 } as const
 
 export const LEAVE_ACCRUAL_MODE_LABELS: Record<number, string> = {
   [LEAVE_ACCRUAL_MODE.FULL_YEAR]: 'Đủ hạn mức đầu năm',
   [LEAVE_ACCRUAL_MODE.PRORATA_HIRE]: 'Theo tỷ lệ tháng làm việc (người vào làm trong năm)',
   [LEAVE_ACCRUAL_MODE.MONTHLY]: 'Cộng dần theo tháng',
+  [LEAVE_ACCRUAL_MODE.MONTHLY_AFTER]: 'Cộng dần sau mỗi tháng làm đủ',
+}
+
+/**
+ * Tình trạng tích phép của MỘT người ở loại `MONTHLY_AFTER` (duoc-CR-762) — khớp `constants.LeaveAccrualStatus`
+ * ở backend. Dẫn xuất, không lưu cột; loại nghỉ chế độ khác thì backend trả `null`.
+ *
+ * ⚠️ CHỈ mã số, KHÔNG nhãn: chữ hiển thị đọc từ `accrual_status_label` backend trả kèm. Mã ở đây chỉ để chọn màu /
+ * chọn chỗ hiện (`utils/leave-accrual-status.ts`).
+ */
+export const LEAVE_ACCRUAL_STATUS = {
+  ACCRUING: 1,
+  PROBATION: 2,
+  MISSING_CONTRACT: 3,
+  INCOMPLETE_HISTORY: 4,
+  SERVICE_CONTRACT: 5,
+  NOT_YET_OFFICIAL: 6,
+} as const
+
+/**
+ * Ba trường tích phép backend trả kèm dòng quỹ / số dư / ô ma trận (duoc-CR-762). Chỉ có giá trị ở loại
+ * `MONTHLY_AFTER`, còn lại `null`; backend cũ thì vắng hẳn — cả hai trường hợp giao diện không vẽ gì.
+ */
+export interface LeaveAccrualInfo {
+  /** Ngày bắt đầu tích (`YYYY-MM-DD`) = ngày làm chính thức; `null` khi đang thử việc. */
+  accrual_start_date?: string | null
+  /** Xem `LEAVE_ACCRUAL_STATUS`. */
+  accrual_status?: number | null
+  accrual_status_label?: string | null
 }
 
 //  Cơ sở của bảng hạn mức theo nhóm — khớp `QUOTA_BASIS_*` ở backend.
@@ -213,7 +243,8 @@ export type LeaveBlockPeriod = {
 /** Một khoảng cấm mà đơn nghỉ đụng phải — backend trả ở `block_conflicts` (đơn + ước lượng ngày). */
 export type LeaveBlockConflict = Pick<LeaveBlockPeriod, 'id' | 'from_date' | 'to_date' | 'reason'>
 
-export interface LeaveBalance {
+/** Kèm ba trường tích phép (duoc-CR-762) — xem `LeaveAccrualInfo`. */
+export interface LeaveBalance extends LeaveAccrualInfo {
   id: number
   employee_id: number
   employee_name?: string
@@ -352,7 +383,8 @@ export interface LeaveRequest {
 }
 
 /** Dữ liệu của ô "số phép còn lại" trên form — ràng buộc §6.1 của kế hoạch. */
-export interface LeaveBalanceHint {
+/** Kèm ba trường tích phép ở gốc (duoc-CR-762) — xem `LeaveAccrualInfo`. */
+export interface LeaveBalanceHint extends LeaveAccrualInfo {
   employee_id: number
   year: number
   leave_type_id: number

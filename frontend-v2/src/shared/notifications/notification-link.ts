@@ -54,6 +54,9 @@ const V2_PREFIXES = [
   '/forum',
   '/hr',
   '/inventory',
+  //  Trang cá nhân (duoc-CR-761): chuông "ca được xếp / đổi" ghi `/me`. Không phải phân hệ nhưng là route v2 thật;
+  //  `quickProps` so ranh giới nên `/media` hay `/members` không lọt vào đây.
+  '/me',
   '/procurement',
   '/production',
   '/project',

@@ -108,6 +108,10 @@
      làm nền vì trắng trên #0284c7 chỉ 4.1:1 (dưới ngưỡng 4.5:1 của chữ nhỏ); L=0.50 cho ≈6:1. */
   --leave-approved: oklch(0.5 0.13 240);
   --leave-approved-foreground: #ffffff;
+  /* Ô CA XẾP THEO NGÀY (duoc-CR-761): ngoại lệ do quản lý đặt, nền tím đậm + chữ trắng (≈6.5:1). Khác hẳn sắc xanh
+     của thẻ nghỉ phép để thẻ nghỉ phủ lên ô ca vẫn đọc ra được. */
+  --shift: oklch(0.47 0.16 300);
+  --shift-foreground: #ffffff;
 
   /* Màu phụ của bộ nhận diện. */
   --navy: #1b2559;
@@ -242,6 +246,8 @@
   --info: #38bdf8;
   --leave-approved: oklch(0.52 0.13 240);
   --leave-approved-foreground: #ffffff;
+  --shift: oklch(0.52 0.16 300);
+  --shift-foreground: #ffffff;
 
   --border: #334155;
   --input: #334155;
@@ -311,6 +317,8 @@
   --color-info: var(--info);
   --color-leave-approved: var(--leave-approved);
   --color-leave-approved-foreground: var(--leave-approved-foreground);
+  --color-shift: var(--shift);
+  --color-shift-foreground: var(--shift-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

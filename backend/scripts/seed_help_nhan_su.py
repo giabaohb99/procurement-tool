@@ -74,6 +74,22 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     trợ lý phép của nhân viên phòng mình. Nhãn đối chiếu bằng đọc `hr/components/employee-work-schedule-card.tsx`,
     `hr/config/work-schedule-assignment-personal-config.tsx`, `hr/utils/work-schedule-assignment-mode.ts` và câu lỗi ở
     `work_schedule/assignment_access.py`.
+  * duoc-CR-761 (16/11/2026): bài mới SHIFT — Trưởng phòng / Nhân sự xếp ca theo tiếng cho từng người từng ngày trên lưới
+    Lịch làm việc (hộp Xếp ca: Khung giờ, Thêm khung giờ, Mẫu nhanh, Áp cho ngày khác…, Về mẫu tuần), Chép tuần trước, lý do ô
+    bị khóa; nhân viên xem thẻ Ca làm việc tuần này ở Trang cá nhân, chuông, hỏi trợ lý; cách tính phép theo ca, nghỉ bù. Thẻ
+    gốc thêm một dòng; bài WORK_SCHEDULE trỏ sang ở phần đếm ngày nghỉ. Nhãn đối chiếu bằng đọc
+    `hr/components/work-shift-{dialog,dialog-footer,segment-rows,presets-bar,note-field,apply-others,copy-week-dialog}.tsx`,
+    `work-roster-shift-actions.tsx`, `work-roster-legend.tsx`, `hr/utils/work-shift-access.ts` (SHIFT_LOCK_HINT),
+    `work-shift-rows.ts`, `my-shift-day.ts`, `app/components/profile/profile-shift-card.tsx`, câu lỗi ở
+    `work_schedule/shift_access.py`, `shift_controller.py`, `leave/comp_request_service.py`, câu chuông ở `shift_notify.py` và
+    ảnh `doc/erp/hrm/plans/261116-xep-ca-theo-tieng-duoc-cr-761/reports/p2-*.png`.
+  * duoc-CR-761 lượt 2 (16/11/2026): bài SHIFT viết lại theo hộp xếp ca làm lại (đầu hộp tên + thứ ngày + nhãn trạng thái,
+    mục Khung giờ làm việc có tóm tắt giờ / công, khung đánh số, ô Từ – Đến, mục gập Áp cùng ca cho ngày / người khác, nút
+    chính Lưu / Lưu cho N ô kèm lý do tắt, câu lý do khóa mới) và thêm mục Ai thấy ai trên màn Lịch làm việc (Q9). Nhãn đối
+    chiếu bằng đọc `hr/components/work-shift-{dialog-header,hours-section,total-stats,segment-rows,apply-others-section,
+    apply-others,dialog-footer,dialog-notices}.tsx`, `hr/utils/work-shift-{access,submit-state,rows}.ts`,
+    `hr/hooks/use-work-shift-{submit,apply-others}.ts`, `hr/utils/work-roster-view-scope.ts`, backend
+    `work_schedule/roster_visibility.py`.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -109,11 +125,12 @@ HR_SETTINGS = "Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ 
 #  Bài thuộc cây Báo cáo Nhân sự (`seed_help_bao_cao_nhan_su.py`) — chỉ để nối liên kết.
 PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nhân"
 WORK_SCHEDULE = "Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ"
+SHIFT = "Nhân sự — Xếp ca theo tiếng cho từng ngày"
 
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
     "icon": "users",
-    "summary": "Sửa hồ sơ, kiêm nhiệm, nhập Excel; in phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; việc duyệt treo khi khóa tài khoản; cài đặt nhân sự; quyền mặc định theo chức vụ; quyền xuất / nhập",
+    "summary": "Sửa hồ sơ, kiêm nhiệm, nhập Excel; in phiếu thông tin; tự đề nghị sửa hồ sơ; lương ở hồ sơ; nhiều số điện thoại; xếp ca theo ngày; sơ đồ tổ chức; việc duyệt treo khi khóa tài khoản; cài đặt nhân sự; quyền mặc định theo chức vụ; quyền xuất / nhập",
     "content": f"""<h2>Nhân sự — Hồ sơ và tổ chức</h2>
 <p>Phân hệ <strong>Nhân sự</strong> giữ hồ sơ nhân viên, phòng ban, chức vụ và (ở bộ hướng dẫn riêng) nghỉ phép, hợp đồng lao động. Bộ hướng dẫn này gom các tính năng về hồ sơ và tổ chức:</p>
 <ul>
@@ -127,6 +144,7 @@ TREE = {
 <li>Một người dùng nhiều số điện thoại (số cá nhân, số công việc, Zalo…) hay cần sửa địa chỉ liên hệ: {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")}.</li>
 <li>Muốn xem ai thuộc phòng nào, ai quản lý ai: {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</li>
 <li>Một phòng làm theo giờ riêng (ví dụ thứ Bảy nghỉ), cần gán lịch làm việc cho phòng đó, hay muốn biết ngày nghỉ phép được đếm theo lịch nào: {ref(WORK_SCHEDULE, "Lịch làm việc của phòng ban và cách đếm ngày nghỉ")}.</li>
+<li>Bạn là Trưởng phòng cần xếp lại ca theo giờ cho nhân viên từng ngày (ca livestream, ca tối, cho nghỉ một ngày), hoặc muốn xem ca của chính mình tuần này: {ref(SHIFT, "Xếp ca theo tiếng cho từng ngày")}.</li>
 <li>Sắp khóa tài khoản hay cho một người nghỉ việc mà người đó còn phiếu cần duyệt: {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}.</li>
 <li>Muốn đổi tiền tố mã nhân sự, giới hạn ai xem sơ đồ tổ chức, chặn đơn nghỉ lùi ngày / tự duyệt, hay đổi số ngày báo HĐLĐ hết hạn: {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
 <li>Bạn là quản trị, muốn người mới có tài khoản là có đủ quyền theo chức vụ: {ref(POSITION_ROLES, "Quyền mặc định theo chức vụ cho tài khoản mới")}.</li>
@@ -763,6 +781,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <li>Loại nghỉ dài liên tục như <strong>thai sản</strong> thì đếm cả ngày nghỉ trong tuần, theo cài đặt của loại nghỉ.</li>
 <li><strong>Đổi lịch không đổi đơn đã gửi duyệt</strong>: đơn giữ số ngày lúc gửi. Đơn còn ở <strong>Nháp</strong> mở lại thì hệ gợi ý theo lịch mới.</li>
 </ul>
+<p>Ngày được <strong>xếp ca riêng</strong> (theo giờ, cho từng ngày) thì tính theo ca của ngày đó, không theo lịch tuần: xem {ref(SHIFT, "Xếp ca theo tiếng cho từng ngày")}.</p>
 <p>Chi tiết cách đếm buổi và các tình huống: {ref("Nộp đơn nghỉ phép", "Nộp đơn nghỉ phép")} · {ref("Mười tình huống nghỉ thường gặp", "Mười tình huống nghỉ thường gặp")}.</p>
 
 <h2>Hỏi Trợ lý AI</h2>
@@ -778,6 +797,112 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 </table>
 <p>Một đơn nghỉ được tính vào năm của <strong>ngày bắt đầu nghỉ</strong>, giống quỹ phép. Đơn nghỉ vắt qua hai năm (ví dụ 30/12 đến 02/01) vì thế nằm trọn ở năm cũ; báo cáo <em>Tình hình nghỉ phép</em> có thể chia khác. Trợ lý không trả lời được thì trả lời <em>không tìm thấy trong phạm vi bạn được xem</em> — không có nghĩa người đó không có. Trợ lý chỉ đọc, không gán hay sửa lịch.</p>
 <p>Liên quan: {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")} · {ref(HR_SETTINGS, "Cài đặt nhân sự")} · {ref("Hiểu số ngày phép còn lại", "Hiểu số ngày phép còn lại")}.</p>""",
+        },
+        {
+            "title": SHIFT,
+            "icon": "clock",
+            "summary": "Nhân sự ▸ Lịch làm việc: ai thấy ai; bấm ô xếp ca theo giờ cho một người một ngày (nhiều khung, mẫu nhanh), áp cùng ca cho ngày / người khác, Chép tuần trước, Về mẫu tuần; nhân viên xem ca ở Trang cá nhân, chuông, trợ lý; tính phép theo ca",
+            "content": f"""<h2>Dùng để làm gì</h2>
+<p>Lịch tuần (ví dụ thứ Hai đến thứ Bảy 08:00–17:00) đúng cho phần lớn ngày, nhưng có việc làm không liền giờ — livestream bán hàng sáng một ca, chiều một ca, tối một ca — hay có ngày cần đổi ca, cho nghỉ. <strong>Xếp ca theo ngày</strong> cho phép Trưởng phòng hoặc phòng Nhân sự đặt ca theo giờ cho <strong>từng người, từng ngày cụ thể</strong>. Ngày đã xếp ca thì theo ca đó; ngày không xếp vẫn theo lịch tuần như cũ.</p>
+<p>Đây chỉ là <strong>xếp ca</strong>, không phải chấm công: hệ thống không ghi ai đã đi làm hay đi trễ.</p>
+
+<h2>Ai xếp được ca</h2>
+<table>
+<thead><tr><th>Ai</th><th>Xếp cho ai</th><th>Ngày nào</th></tr></thead>
+<tbody>
+<tr><td><strong>Trưởng phòng</strong> (quyền <strong>Lịch làm việc riêng (Trưởng phòng gán)</strong>)</td><td>Nhân viên phòng mình</td><td>Từ <strong>hôm nay</strong> trở đi</td></tr>
+<tr><td><strong>Phòng Nhân sự</strong> (quyền sửa lịch làm việc)</td><td>Mọi người trong phạm vi được xem</td><td>Mọi ngày, kể cả ngày đã qua</td></tr>
+</tbody>
+</table>
+<p><strong>Không ai tự xếp ca cho chính mình</strong>, kể cả phòng Nhân sự — ca của bạn do người khác xếp. Người chỉ có quyền xem thì thấy lưới nhưng không bấm được ô.</p>
+
+<h2>Ai thấy ai trên màn Lịch làm việc</h2>
+<table>
+<thead><tr><th>Bạn là</th><th>Thấy lịch của</th><th>Bộ lọc</th></tr></thead>
+<tbody>
+<tr><td><strong>Phòng Nhân sự</strong> (quyền sửa lịch làm việc) hoặc quản trị</td><td>Mọi người trong phạm vi bạn được xem hồ sơ</td><td>Pháp nhân, phòng ban (<em>Tất cả phòng ban</em>), ô tìm theo mã hoặc tên</td></tr>
+<tr><td><strong>Trưởng phòng</strong> (quyền <strong>Lịch làm việc riêng (Trưởng phòng gán)</strong>)</td><td>Chỉ nhân viên phòng mình (kể cả phòng kiêm nhiệm) và chính bạn</td><td>Ô phòng ban chỉ có phòng của bạn, mở sẵn phòng chính; có từ hai phòng thì thêm mục <strong>Các phòng của tôi</strong>. Không có ô pháp nhân</td></tr>
+<tr><td><strong>Nhân viên</strong></td><td>Chỉ chính mình</td><td>Không có bộ lọc, không có ô tìm</td></tr>
+</tbody>
+</table>
+<p>Muốn mở màn <strong>Lịch làm việc</strong> vẫn cần quyền xem hồ sơ nhân sự; không thấy mục này trong menu thì nhờ quản trị kiểm phân quyền. Ca của chính bạn thì luôn xem được ở Trang cá nhân (mục dưới). Thấy được người không có nghĩa là thấy được đơn nghỉ của họ: ô ngày nghỉ chỉ hiện đơn mà bạn được xem.</p>
+
+<h2>Xếp ca cho một người một ngày</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Lịch làm việc</strong>. Chọn <strong>Tuần</strong> (hoặc <strong>Tháng</strong>), chọn phòng hay gõ tên ở ô tìm nếu cần.</li>
+<li>Bấm vào ô của người đó ở ngày cần xếp. Hộp xếp ca mở ra: dòng trên là <strong>tên nhân sự</strong>, dòng dưới là thứ và ngày (ví dụ <em>Thứ Ba, 17/11/2026</em>); góc phải có nhãn cho biết ngày đó đang là <strong>Ca xếp riêng</strong>, <strong>Nghỉ (xếp ca)</strong> hay <strong>Theo mẫu tuần</strong>. Ô chưa có ca riêng được điền sẵn giờ của lịch tuần.</li>
+<li>Mục <strong>Khung giờ làm việc</strong>: mỗi dòng có một số tròn (1, 2, 3…) và ô <strong>Từ – Đến</strong> gồm hai ô chọn giờ. Chọn giờ bắt đầu ở ô bên trái, giờ kết thúc ở ô bên phải (giờ tròn, từ 00:00 tới 24:00; ô bên phải chỉ có giờ sau ô bên trái). Cuối dòng là số giờ của khung và nút thùng rác để xóa khung đó.</li>
+<li>Bấm <strong>Thêm khung giờ</strong> (nút viền nét đứt ở cuối danh sách) để thêm khung. Một ngày có tối đa 12 khung; các khung không được chồng giờ nhau (chạm nhau như 08:00–10:00 và 10:00–12:00 thì được). Dòng sai hiện chữ đỏ ngay bên dưới.</li>
+<li>Bên phải tiêu đề <strong>Khung giờ làm việc</strong> là tóm tắt, ví dụ <em>7 giờ · 1 ngày công</em>; thanh ngang bên dưới tô các khung trên trục 00:00–24:00 để nhìn nhanh.</li>
+<li>Ghi lý do vào <strong>Ghi chú</strong> nếu cần (ví dụ <em>Livestream kênh Shopee</em>, tối đa 255 ký tự).</li>
+<li>Bấm <strong>Lưu</strong> ở chân hộp. Ô trên lưới đổi sang màu tím, ghi đủ khung giờ (ví dụ <em>08:00–12:00</em> và <em>19:00–23:00</em>).</li>
+</ol>
+<p>Nút <strong>Lưu</strong> mờ thì dòng chữ nhỏ cạnh nút nói lý do: <em>Chưa thay đổi gì</em> (ô đang theo mẫu tuần mà bạn chưa sửa gì — tránh bấm nhầm biến cả ngày thành ca riêng), <em>Còn khung giờ bị lỗi</em>, <em>Đang tải lịch tuần…</em>, <em>Đang lưu…</em>.</p>
+<p><strong>Mẫu nhanh</strong> thay cả danh sách khung bằng một bấm:</p>
+<ul>
+<li><strong>Theo lịch tuần</strong>: lấy giờ của lịch tuần ngày đó (giờ lẻ được làm tròn: giờ bắt đầu lùi về giờ chẵn, giờ kết thúc lên giờ chẵn).</li>
+<li><strong>Hành chính 08–17</strong>: hai khung 08:00–12:00 và 13:00–17:00.</li>
+<li><strong>Nghỉ cả ngày</strong>: bỏ hết khung — ngày đó là ngày nghỉ do xếp ca (ô ghi <em>Nghỉ (xếp ca)</em>), tóm tắt ghi <em>Nghỉ cả ngày · không tính công</em>.</li>
+</ul>
+<p>Ví dụ ca livestream ba buổi: khung <strong>1</strong> 08:00 – 10:00, khung <strong>2</strong> 14:00 – 16:00, khung <strong>3</strong> 20:00 – 23:00 — tổng 7 giờ.</p>
+
+<h2>Áp cùng ca cho ngày khác, người khác</h2>
+<ol>
+<li>Trong hộp xếp ca, đặt xong các khung giờ rồi bấm vào dòng <strong>Áp cùng ca cho ngày / người khác</strong> <em>(tùy chọn)</em> để mở phần này ra.</li>
+<li>Ở phần <strong>Thêm ngày</strong>, bấm chọn các ngày trong tuần (hoặc tháng) đang xem; <strong>Chọn hết</strong> / <strong>Bỏ chọn</strong> để chọn nhanh. Ngày mờ là ngày không xếp được (đã qua với Trưởng phòng, hoặc đã có đơn nghỉ).</li>
+<li>Ở phần <strong>Thêm người (trên trang này)</strong>, tick thêm người nếu muốn họ cùng ca; người mang nhãn <strong>Có đơn nghỉ</strong> là người có đơn nghỉ ở một trong các ngày đang chọn — bỏ chọn họ thì mới áp được.</li>
+<li>Dòng tóm tắt dưới tiêu đề cho biết đang áp bao nhiêu ô, ví dụ <em>Thêm 3 ngày · 2 người → tổng 8 ô</em> (vẫn hiện khi bạn gập phần này lại). Nút chính ở chân hộp đổi thành <strong>Lưu cho N ô</strong>. Bấm nút đó. Mỗi lượt tối đa 50 người, 42 ngày, 500 ô.</li>
+</ol>
+<p>Lượt áp là <strong>tất cả hoặc không gì</strong>: chỉ cần một ô không xếp được (người ngoài phòng bạn, chính bạn, ngày đã qua, ngày đã có đơn nghỉ) là không ô nào được lưu; hộp hiện danh sách ô bị từ chối kèm lý do để bạn bỏ bớt rồi áp lại. Ô có đơn nghỉ được báo trước ngay trong phần này (<em>N ô đã có đơn nghỉ — bỏ chọn người / ngày đó rồi mới áp được.</em>) và nút chính tắt kèm <em>Có ô không áp được — xem cảnh báo ở trên</em>.</p>
+
+<h2>Chép ca của tuần trước</h2>
+<ol>
+<li>Ở chế độ <strong>Tuần</strong>, chuyển tới tuần cần xếp (tuần đích).</li>
+<li>Tick ô chọn ở đầu dòng những người cần chép (thanh công cụ hiện <em>Đã chọn N</em>, bấm dấu x để bỏ chọn). Không tick ai thì chép cho mọi người bạn xếp được trên trang đang xem.</li>
+<li>Bấm <strong>Chép tuần trước</strong>. Hộp <strong>Chép tuần trước</strong> nói rõ chép từ tuần nào sang tuần nào, cho bao nhiêu người.</li>
+<li>Muốn thay cả những ngày tuần này đã có ca thì tick <strong>Ghi đè ngày đã có ca ở tuần này</strong>; bỏ trống thì ngày đã xếp ca được giữ nguyên.</li>
+<li>Bấm <strong>Chép ca</strong>. Thông báo cho biết đã thêm, ghi đè, giữ nguyên hay bỏ qua bao nhiêu ngày.</li>
+</ol>
+<p>Chỉ những ngày tuần trước <strong>đã xếp ca riêng</strong> (kể cả ngày nghỉ do xếp ca) mới được chép; ngày theo lịch tuần giữ nguyên. Ngày đã có đơn nghỉ không chép; với Trưởng phòng, ngày đã qua của tuần này được bỏ qua (chép giữa tuần vẫn được cho những ngày còn lại); không chép cho chính bạn. Trên điện thoại không có ô chọn dòng, nút chép áp cho mọi người bạn xếp được trên trang.</p>
+
+<h2>Đưa một ngày về lịch tuần</h2>
+<p>Mở ô đã có ca riêng ▸ bấm <strong>Về mẫu tuần</strong> ở góc trái chân hộp ▸ hộp xác nhận hỏi <em>Gỡ ca xếp riêng ngày … của …?</em> ▸ bấm <strong>Về mẫu tuần</strong>. Ngày đó theo lại lịch tuần. Nút này chỉ dùng được cho ngày <strong>từ ngày mai trở đi</strong>, với mọi người kể cả phòng Nhân sự: ngày hôm nay hay đã qua thì nút mờ kèm câu <em>Ngày đã qua (hoặc hôm nay) không về mẫu tuần được — sửa khung giờ thay vì xóa.</em> — muốn đổi thì sửa khung giờ rồi bấm <strong>Lưu</strong>.</p>
+
+<h2>Vì sao ô bị khóa</h2>
+<p>Mở một ô chỉ xem được (chân hộp chỉ có nút <strong>Đóng</strong>), dòng chữ nhỏ có hình ổ khóa ngay trên chân hộp ghi rõ lý do:</p>
+<ul>
+<li><em>Bạn không có quyền xếp ca.</em> — vai trò của bạn chưa có quyền xếp ca.</li>
+<li><em>Bạn không tự xếp ca cho mình — nhờ người có quyền xếp giúp.</em> — đây là dòng của chính bạn.</li>
+<li><em>Đã có đơn nghỉ — sửa đơn trước.</em> — ngày đó đã có đơn nghỉ chờ duyệt hoặc đã duyệt; số ngày của đơn đã tính theo ca cũ nên phải sửa hay hủy đơn trước rồi mới xếp lại ca. Hộp có dòng <em>Đơn nghỉ NP… (loại nghỉ, chờ duyệt) — xem đơn</em> nếu bạn được xem đơn đó. Trên lưới, ô có đơn nghỉ không bấm được, rê chuột sẽ thấy câu này.</li>
+<li><em>Ngày đã qua: Trưởng phòng chỉ xếp ca từ hôm nay trở đi.</em> — nhờ phòng Nhân sự nếu thật sự cần sửa ca ngày đã qua.</li>
+</ul>
+<p>Lưu mà gặp <em>Ô này vừa được người khác xếp ca, tải lại rồi thử lại</em> thì có người vừa sửa cùng ô: tải lại trang rồi làm lại.</p>
+
+<h2>Nhân viên xem ca của mình</h2>
+<ul>
+<li>Mỗi lần ca của bạn được xếp hay đổi, bạn nhận <strong>một chuông</strong> <em>Ca làm việc của bạn vừa được cập nhật</em>, nêu ngày (hoặc khoảng ngày) và người đã xếp. Bấm chuông là mở Trang cá nhân.</li>
+<li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong>: thẻ <strong>Ca làm việc tuần này</strong> liệt kê từng ngày — khung giờ, số giờ, và nguồn (<em>Ca xếp riêng</em> hoặc tên lịch tuần). Ngày nghỉ ghi <em>Nghỉ</em> hoặc <em>Nghỉ (xếp ca)</em>, ngày lễ ghi <em>Lễ: …</em>; ghi chú của người xếp hiện dưới khung giờ. Dùng hai nút mũi tên để xem tuần trước / tuần sau, <strong>Tuần này</strong> để quay lại.</li>
+<li>Hỏi Trợ lý AI (khung chat, bot hoặc ứng dụng AI đã nối cổng MCP): <em>Ca của tôi tuần này?</em> · <em>Thứ Bảy tôi có ca không?</em> · <em>Tuần sau tôi làm mấy giờ?</em></li>
+</ul>
+<p>Trưởng phòng và phòng Nhân sự hỏi được ca của người khác trong phạm vi được xem: <em>Phòng Kinh doanh tuần này ai làm ca nào?</em> · <em>Chị Lan thứ Bảy làm mấy giờ?</em> (tối đa 14 ngày một lần). Trợ lý chỉ đọc; xếp hay đổi ca làm trên màn Lịch làm việc.</p>
+
+<h2>Ngày có ca tính phép thế nào</h2>
+<p>Ngày đã xếp ca (có ít nhất một khung) tính là <strong>1 ngày công</strong>, ca dài hay ngắn cũng vậy. Khung bắt đầu trước 12:00 thuộc buổi sáng, khung từ 12:00 thuộc buổi chiều. Khi lập đơn nghỉ, ô <strong>Tổng số ngày</strong> tự tính:</p>
+<table>
+<thead><tr><th>Ca của ngày</th><th>Xin nghỉ</th><th>Trừ</th></tr></thead>
+<tbody>
+<tr><td>08–10, 14–16, 20–23 (7 giờ)</td><td>Cả ngày</td><td>1 ngày</td></tr>
+<tr><td>08–10, 14–16, 20–23</td><td>Buổi sáng (hoặc buổi chiều)</td><td>0,5 ngày — ca có ở cả hai buổi</td></tr>
+<tr><td>08–10, 14–16, 20–23</td><td>Theo giờ 14:00–16:00</td><td>2 ÷ 7 = 0,29 ngày</td></tr>
+<tr><td>Chỉ 08–12</td><td>Buổi sáng</td><td>1 ngày — nghỉ hết ca của ngày</td></tr>
+<tr><td>Chỉ 08–12</td><td>Buổi chiều</td><td>0 — buổi chiều không có ca</td></tr>
+<tr><td>Nghỉ (xếp ca)</td><td>Bất kỳ</td><td>0</td></tr>
+<tr><td>Bất kỳ, rơi vào ngày lễ</td><td>Bất kỳ</td><td>0 — ngày lễ không trừ phép dù có ca</td></tr>
+</tbody>
+</table>
+<p>Nghỉ theo giờ chỉ tính phần giờ trùng với khung ca, khoảng trống giữa hai khung không tính. Số trên đơn vẫn là gợi ý, sửa tay được như mọi đơn. Đơn còn ở <strong>Nháp</strong> hay bị <strong>Trả về</strong> mà ca vừa đổi thì mở đơn ra sửa để hệ thống tính lại theo ca mới — gửi duyệt mà không mở lại là gửi số cũ.</p>
+<p><strong>Nghỉ bù:</strong> ngày <em>Nghỉ (xếp ca)</em> mà ca đó được ghi vào đúng ngày đó hoặc sau đó (xếp nghỉ lùi ngày) thì không dùng để lập phiếu nghỉ bù — hệ thống báo <em>Ngày này được xếp nghỉ sau khi đã qua, không dùng để xin nghỉ bù</em>. Muốn nhân viên được nghỉ bù cho một ngày đi làm vào ngày nghỉ thì xếp ngày nghỉ đó <strong>trước</strong>.</p>
+<p>Liên quan: {ref(WORK_SCHEDULE, "Lịch làm việc của phòng ban và cách đếm ngày nghỉ")} · {ref("Nộp đơn nghỉ phép", "Nộp đơn nghỉ phép")}.</p>""",
         },
         {
             "title": SO_DO,

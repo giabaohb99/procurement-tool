@@ -473,7 +473,15 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
     row = balance_service.ensure_balance(db, employee, year, leave_type)
     _ensure_balance_in_scope(db, user, employee, row)
     db.commit()
+    #  duoc-CR-762: ba trường tích phép (chỉ loại MONTHLY_AFTER, còn lại null).
+    from . import accrual_start_service
+    from .balance_accrual_info import NO_ACCRUAL_INFO, fields_of
+    from app.core.vn_time import vn_today
+    from .constants import LeaveAccrualMode
+    is_after_mode = int(leave_type.accrual_mode or 1) == int(LeaveAccrualMode.MONTHLY_AFTER)
+    start = accrual_start_service.official_start(db, employee) if is_after_mode else None
     return success({
+        **(fields_of(start) if start is not None and year >= vn_today().year else NO_ACCRUAL_INFO),
         "employee_id": employee.id,
         "year": year,
         "leave_type_id": leave_type.id,
@@ -481,7 +489,9 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
         "total_days": row.total_days,
         "used_days": row.used_days,
         "pending_days": row.pending_days,
-        "remaining_days": balance_service.available_days(db, row, leave_type=leave_type, hire_date=employee.hire_date),
+        "remaining_days": balance_service.available_days(
+            db, row, leave_type=leave_type, hire_date=employee.hire_date,
+            **({"accrual_start": start} if start is not None else {})),
         #  Hạn "ứng phép" của loại này: còn lại được xuống tới -N — ô gợi ý trên form chỉ cảnh báo khi vượt cả N.
         "max_negative_days": float(leave_type.max_negative_days or 0.0),
         #  Q4 — hồ sơ chưa nhập ngày vào làm thì thâm niên tính bằng 0 và con số

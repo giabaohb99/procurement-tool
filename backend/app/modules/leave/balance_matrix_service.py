@@ -16,6 +16,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from . import balance_matrix_sort, balance_service, carryover_service
+from .balance_accrual_info import accrual_info_map
 from .balance_model import LeaveBalance
 from .balance_report_spec import employee_conds
 from .catalog_model import LeaveType
@@ -52,14 +53,18 @@ def build_matrix(db: Session, user, prof: dict, action: str, year: int, company_
     type_ids = {t.id for t in types}
 
     cells: dict[int, dict[int, float]] = {}
+    accrual: dict[int, dict[int, dict]] = {}    # duoc-CR-762: {employee_id: {leave_type_id: ba trường tích phép}}
     if page and type_ids:
         rows = q.filter(LeaveBalance.employee_id.in_([p.id for p in page]),
                         LeaveBalance.leave_type_id.in_(type_ids)).all()
         if carryover_service.expire_rows(db, rows):    # như màn Quỹ phép: không trưng số của phép mang sang đã quá hạn
             db.commit()
         avail = balance_service.available_days_map(db, rows)
+        info = accrual_info_map(db, rows)
         for r in rows:
             cells.setdefault(r.employee_id, {})[r.leave_type_id] = avail[r.id]
+            if info[r.id]["accrual_status"] is not None:     # chỉ ô của loại MONTHLY_AFTER
+                accrual.setdefault(r.employee_id, {})[str(r.leave_type_id)] = info[r.id]
 
     dept_name = ({d.id: d.name for d in db.query(Department.id, Department.name)
                   .filter(Department.id.in_({p.department_id for p in page if p.department_id})).all()}
@@ -69,5 +74,7 @@ def build_matrix(db: Session, user, prof: dict, action: str, year: int, company_
               "department_name": dept_name.get(p.department_id, ""),
               "policy_name": policy_name.get(p.id, ""),
               "cells": {str(t): v for t, v in cells.get(p.id, {}).items()},
+              #  Khóa `accrual`: chỉ có ở ô của loại MONTHLY_AFTER; ô khác vắng khóa (xem `balance_accrual_info`).
+              "accrual": accrual.get(p.id, {}),
               "total": round(sum(cells.get(p.id, {}).values()), 2)} for p in page]
     return {"year": year, "columns": columns, "items": items, "total": total}

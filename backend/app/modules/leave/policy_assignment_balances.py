@@ -12,9 +12,10 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
 
-from . import balance_service, policy_allocation
+from . import accrual_start_service, balance_service, policy_allocation
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
+from .constants import LeaveAccrualMode
 from .policy_assignment_plan import PlanContext, PlanItem
 from .policy_model import LeavePolicy
 
@@ -62,8 +63,10 @@ def _new_balance(db: Session, employee, year: int, leave_type: LeaveType, alloca
 
 def apply_values(db: Session, employee, values: dict[int, float], types: dict[int, LeaveType],
                  rows: dict, year: int, *, recalc: bool, actor: int, label: str, create_missing: bool,
-                 seniority_cache: dict) -> dict:
-    """Áp `values` ({loại: hạn mức mới}) lên dòng quỹ MỘT người. Không flush — nơi gọi flush một lần cho cả lô."""
+                 seniority_cache: dict, starts: dict | None = None) -> dict:
+    """Áp `values` ({loại: hạn mức mới}) lên dòng quỹ MỘT người. Không flush — nơi gọi flush một lần cho cả lô.
+
+    `starts` = `{employee_id: AccrualStart}` đã nạp gom (loại MONTHLY_AFTER, duoc-CR-762); thiếu thì tra riêng người này."""
     result = empty_balances()
     for tid in sorted(values):
         leave_type = types.get(tid)
@@ -86,8 +89,11 @@ def apply_values(db: Session, employee, values: dict[int, float], types: dict[in
                      f"{label}: hạn mức {leave_type.name} năm {year} {old_value:g} → {new_value:g} ngày",
                      commit=False)
         result["recalculated"].append({"leave_type_id": tid, "before": old_value, "after": new_value})
+        extra = {}
+        if int(leave_type.accrual_mode or 1) == int(LeaveAccrualMode.MONTHLY_AFTER):
+            extra["accrual_start"] = (starts or {}).get(employee.id) or accrual_start_service.official_start(db, employee)
         available = balance_service.available_days(db, row, leave_type=leave_type,
-                                                   hire_date=getattr(employee, "hire_date", None))
+                                                   hire_date=getattr(employee, "hire_date", None), **extra)
         if available < -float(leave_type.max_negative_days or 0.0):
             result["negative_after"].append({"leave_type_id": tid, "available_days": available})
     return result
@@ -99,8 +105,11 @@ def reconcile_plan(db: Session, items: list[PlanItem], ctx: PlanContext, year: i
     type_ids = {t for it in items for t in it.type_ids if t in ctx.leave_types}
     rows = _lock_balance_rows(db, [it.employee.id for it in items], type_ids, year)
     cache: dict = {}
+    starts = (accrual_start_service.official_start_map(db, [it.employee for it in items])
+              if any(int(t.accrual_mode or 1) == int(LeaveAccrualMode.MONTHLY_AFTER)
+                     for t in ctx.leave_types.values()) else None)
     parts = [apply_values(db, it.employee, it.new_values, ctx.leave_types, rows, year, recalc=recalc, actor=actor,
-                          label=label, create_missing=True, seniority_cache=cache) for it in items]
+                          label=label, create_missing=True, seniority_cache=cache, starts=starts) for it in items]
     db.flush()
     return parts
 

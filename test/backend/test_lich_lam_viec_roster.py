@@ -65,6 +65,7 @@ def api(db, cap_quyen):
     db.add(user)
     db.commit()
     cap_quyen(user.id, "employee", scope="all", read=True)
+    cap_quyen(user.id, "work_schedule", scope="all", read=True, write=True)   # Nhân sự: thấy mọi người trong phạm vi employee (duoc-CR-761)
     cap_quyen(user.id, "leave_request", scope="all", read=True)
     app.dependency_overrides[get_db] = lambda: db
     _use(user)
@@ -96,7 +97,8 @@ def test_hinh_dang_hop_dong_va_lich_mac_dinh(api):
     mon, sun = row["cells"][0], row["cells"][6]
     assert mon == {"date": "2026-01-05", "work_kind": 2, "start_time": "08:00", "end_time": "17:00",
                    "schedule_name": mon["schedule_name"], "is_holiday": False, "holiday_name": "",
-                   "leave": None}
+                   "is_shift": False, "shift": None, "leave_hold": False,
+                   "leave": None}   # +is_shift/shift/leave_hold: duoc-CR-761
     assert sun["work_kind"] == 1 and sun["start_time"] is None and sun["leave"] is None
 
 
@@ -216,6 +218,7 @@ def test_don_ngoai_pham_vi_leave_request_khong_ro_dung_khi_thay_nhan_su(api, db,
     db.add(viewer)
     db.commit()
     cap_quyen(viewer.id, "employee", scope="all", read=True)
+    cap_quyen(viewer.id, "work_schedule", scope="all", read=True, write=True)   # Nhân sự: thấy mọi người trong phạm vi employee (duoc-CR-761)
     cap_quyen(viewer.id, "leave_request", scope="own", read=True)
     _use(viewer)
     res = _get(api)
@@ -233,6 +236,7 @@ def test_khong_co_quyen_leave_request_thi_khong_lop_nghi(api, db, cap_quyen):
     db.add(viewer)
     db.commit()
     cap_quyen(viewer.id, "employee", scope="all", read=True)   # không có grant leave_request nào
+    cap_quyen(viewer.id, "work_schedule", scope="all", read=True, write=True)   # Nhân sự: thấy mọi người trong phạm vi employee (duoc-CR-761)
     _use(viewer)
     res = _get(api)
     assert res.status_code == 200 and _row(res, emp)["cells"][0]["leave"] is None
@@ -351,6 +355,7 @@ def _admin(db, cap_quyen, tag):
     db.add(user)
     db.commit()
     cap_quyen(user.id, "employee", scope="all", read=True)
+    cap_quyen(user.id, "work_schedule", scope="all", read=True, write=True)   # Nhân sự: thấy mọi người trong phạm vi employee (duoc-CR-761)
     cap_quyen(user.id, "leave_request", scope="all", read=True)
     return user
 
@@ -370,4 +375,5 @@ def test_so_truy_van_khong_phu_thuoc_so_nguoi_va_so_ngay(db, cap_quyen):
     assert len(small["items"]) == 5 and len(big["items"]) == 50
     assert len(big["items"][0]["cells"]) == 42
     assert len(q_small) == len(q_big), (len(q_small), len(q_big))
-    assert len(q_big) <= 8, [s[:80] for s in q_big]
+    #  8 cũ + 2 của cờ `leave_hold` (đơn giữ ngày + khoảng) + 1 khi có đơn chưa có dòng khoảng = 11, CỐ ĐỊNH theo người × ngày.
+    assert len(q_big) <= 11, [s[:80] for s in q_big]

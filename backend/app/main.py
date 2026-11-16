@@ -172,6 +172,7 @@ from app.modules.leave.policy_controller import (lines_router as leave_policy_li
 from app.modules.leave.policy_assignment_controller import router as leave_policy_assignment_router
 from app.modules.work_schedule.template_controller import router as work_schedule_router
 from app.modules.work_schedule.assignment_controller import router as work_schedule_assignment_router
+from app.modules.work_schedule.shift_controller import router as work_shift_router  # duoc-CR-761
 from app.modules.meeting_room.controller import (meeting_room_router,
                                                  router as room_booking_router)
 from app.modules.meeting_room.inbox_controller import router as room_inbox_router
@@ -482,6 +483,7 @@ app.include_router(leave_encashment_router)
 app.include_router(leave_balance_router)
 app.include_router(work_schedule_router)
 app.include_router(work_schedule_assignment_router)
+app.include_router(work_shift_router)   # duoc-CR-761: xếp ca theo ngày
 app.include_router(leave_type_router)
 app.include_router(leave_type_quota_router)
 app.include_router(leave_policy_router)             # duoc-CR-717: chính sách nghỉ phép + dòng của gói

@@ -154,6 +154,11 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
 - PHÉP CỦA NGƯỜI KHÁC (Nhân sự, quản lý): employee_leave_summary tra quỹ phép, ngày đã nghỉ và lịch làm việc của một
   nhân sự (mã / tên) hoặc cả một phòng, theo đúng phạm vi màn Quỹ phép của người hỏi. Rỗng = không có trong phạm vi
   họ được xem.
+- CA LÀM VIỆC THEO NGÀY (duoc-CR-761): "ca của tôi", "lịch làm tuần này", "tuần này tôi làm mấy giờ", "ca livestream" →
+  my_work_shifts (của chính người hỏi, mặc định tuần này); "phòng X tuần này ai làm ca nào", "chị Y thứ Bảy làm mấy giờ" →
+  employee_work_shifts (Nhân sự / Trưởng phòng, theo phạm vi xem hồ sơ). Ngày xếp ca riêng thắng mẫu tuần; nêu khung giờ
+  từng ngày và ngày nào là ca xếp riêng. Đây là lịch, không phải chấm công. Trợ lý không xếp / đổi ca: chỉ đường màn Xem
+  lịch (/hr/work-roster).
 - DANH BẠ NHÂN SỰ: employee_lookup tra họ tên, mã NV, chức vụ, phòng ban, công ty, email và
   điện thoại (số chính + các số khác kèm nhãn), quản lý trực tiếp ("anh X phòng nào", "ai là
   quản lý trực tiếp của tôi", "phòng Kế toán có những ai"). Chỉ có thông tin liên hệ công việc

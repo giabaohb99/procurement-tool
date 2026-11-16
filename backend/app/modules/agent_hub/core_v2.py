@@ -244,8 +244,8 @@ def _more_tools_tool() -> ToolDef:
         name=MORE_TOOLS,
         description="Bộ công cụ lượt này đã lọc theo câu. Cần tra / tạo thứ chưa có công cụ thì gọi với nhóm cần — hệ thống "
                     "nạp thêm rồi chạy lại. Nhóm: purchase (tra mua hàng, NCC, giá), make_purchase (lập YCMH / YCBG), "
-                    "payable (công nợ, thanh toán), approval (duyệt), leave (nghỉ phép), work (việc Dự án), ticket (hỗ "
-                    "trợ IT), edit (sửa / xóa phiếu), account (tài khoản, quyền), employee (nhân sự), customs (hải quan), "
+                    "payable (công nợ, thanh toán), approval (duyệt), leave (nghỉ phép), shift (ca làm việc theo ngày), "
+                    "work (việc Dự án), ticket (hỗ trợ IT), edit (sửa / xóa phiếu), account (tài khoản, quyền), employee (nhân sự), customs (hải quan), "
                     "document (văn bản), google (lịch, Drive), meeting (biên bản), group (nhóm chat), personal (việc "
                     "riêng, ghi chú), brief (bản tin), research (nghiên cứu sâu), export (xuất tệp), analytics (thống kê).",
         parameters={"type": "object", "properties": {"nhom": {"type": "array", "items": {"type": "string", "enum": groups}}},
@@ -1498,7 +1498,8 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
 #  Run #242 (15/10): model truyền nguyên "chị Mi" vào employee_lookup → "không tìm thấy"; lần trước truyền "Mi" thì ra đúng.
 HONORIFIC = re.compile(r"^(?:anh|chị|chi|em|cô|co|chú|chu|bác|bac|ông|ong|bà|ba|bạn|ban|sếp|sep|mr\.?|ms\.?|mrs\.?)\s+",
                        re.IGNORECASE)
-NAME_ARGS = {"employee_lookup": ("query",), "employee_leave_summary": ("employee",)}   # duoc-CR-757
+NAME_ARGS = {"employee_lookup": ("query",), "employee_leave_summary": ("employee",),   # duoc-CR-757
+             "employee_work_shifts": ("employee",)}                                   # duoc-CR-761
 
 
 def _clean_args(name: str, args: dict) -> dict:

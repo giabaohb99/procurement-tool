@@ -7,6 +7,8 @@ const ITEMS: { label: string; swatch: string }[] = [
   { label: 'Ngày lễ', swatch: 'bg-destructive/10 border-destructive/30' },
   { label: 'Phép đã duyệt', swatch: 'bg-leave-approved border-leave-approved' },
   { label: 'Chờ duyệt', swatch: 'bg-info/10 border-dashed border-info' },
+  //  duoc-CR-761: ô có ca xếp riêng (kể cả nghỉ do xếp ca) — ngoại lệ so với mẫu tuần.
+  { label: 'Ca xếp theo ngày', swatch: 'bg-shift border-shift' },
 ]
 
 export function WorkRosterLegend({ className }: { className?: string }) {

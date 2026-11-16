@@ -5,7 +5,7 @@ thuần. Đường ghi (`policy_assignment_service`) dùng đúng kết quả n�
 đóng, loại nghỉ nào cần cấp / tính lại — nên màn xem trước và lúc bấm lưu không thể nói hai điều khác nhau.
 
 Số truy vấn CỐ ĐỊNH với mọi số người: phân bổ (1) + gói (1) + dòng gói (1) + loại nghỉ (1) + luật hạn mức (1) +
-dòng quỹ năm nay (1). Hồ sơ nhân sự do nơi gọi nạp.
+dòng quỹ năm nay (1) + HĐLĐ (1, chỉ khi có loại MONTHLY_AFTER). Hồ sơ nhân sự do nơi gọi nạp.
 """
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
-from . import accrual_service, policy_allocation
+from . import accrual_service, accrual_start_service, policy_allocation
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType, LeaveTypeQuota
-from .constants import LeavePolicyAssignmentState
+from .constants import LeaveAccrualMode, LeavePolicyAssignmentState
 from .policy_allocation_math import AssignmentSpan, compute_allocated, overlaps_year
 from .policy_model import LeavePolicy, LeavePolicyAssignment
 
@@ -103,6 +103,9 @@ def plan_change(db: Session, employees: list, policy: LeavePolicy, from_date: da
         LeaveBalance.year == year, LeaveBalance.employee_id.in_(ids or {0}),
         LeaveBalance.leave_type_id.in_(types or {0})).all()}
     new_quotas = lines.get(policy.id, {})
+    #  duoc-CR-762: MONTHLY_AFTER tính từ ngày làm chính thức — nạp gom một lượt (thêm 1 truy vấn, chỉ khi có loại đó).
+    starts = (accrual_start_service.official_start_map(db, employees)
+              if any(int(t.accrual_mode or 1) == int(LeaveAccrualMode.MONTHLY_AFTER) for t in types.values()) else {})
 
     items: list[PlanItem] = []
     for emp in employees:
@@ -139,7 +142,8 @@ def plan_change(db: Session, employees: list, policy: LeavePolicy, from_date: da
         for tid in sorted(candidates & set(types)):
             lt = types[tid]
             base = accrual_service.pick_quota(rules.get(tid, []), lt, emp)
-            mode, hire = int(lt.accrual_mode or 1), getattr(emp, "hire_date", None)
+            mode = int(lt.accrual_mode or 1)
+            hire = policy_allocation.accrual_date(db, mode, emp, starts)
             old_value = compute_allocated(base, mode, hire, year, before, tid)
             new_value = compute_allocated(base, mode, hire, year, after, tid)
             item.type_ids.append(tid)

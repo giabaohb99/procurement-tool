@@ -15,6 +15,7 @@ Chạy trong container api:
     docker compose exec -T api python scripts/publish_handbook_update.py            # làm thật
     docker compose exec -T api python scripts/publish_handbook_update.py --note "… (duoc-CR-676)"  # ghi số CR
     docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep,nhan-su-ho-so  # chỉ vài skill
+    docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep --sync-summary  # cả tóm tắt
 
 Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mới nhất", không sinh phiên bản):
   - nội dung xuất bản hiện hành == tệp                         → bỏ qua (đã mới nhất);
@@ -25,6 +26,10 @@ Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mớ
   - `--force`: đè cả ca vừa nói (phiên bản cũ vẫn còn trong lịch sử, lùi lại được ở màn Bộ skill).
   - skill CHƯA có trong bộ (cẩm nang mới thêm vào `SKILLS`, ai-CR-235) → TẠO skill, xuất bản phiên bản 1. Chỉ thêm:
     skill quản trị đã xóa mềm vẫn còn dòng nên rơi vào ca "KHÔNG ĐÈ" ở trên, không bị hồi sinh; không xóa skill nào.
+  - `--sync-summary` (duoc-CR-761): xét thêm câu TÓM TẮT trong `handbook_seed.SKILLS` (AI chọn skill bằng câu này). Mặc định
+    script giữ nguyên tóm tắt trên DB, nên sửa tóm tắt mà nội dung không đổi thì không bao giờ tới được hệ đang chạy.
+    Bật cờ: tóm tắt của bản hiện hành khác tệp → cập nhật dòng skill + xuất bản phiên bản mới, cùng chốt "không đè bản
+    sửa tay" ở trên, cộng một chốt riêng: tóm tắt trên dòng skill lệch tóm tắt bản xuất bản = quản trị đang sửa dở.
 Bộ SYS-HANDBOOK không tồn tại → không làm gì (để `seed` gieo bản đầu).
 """
 import argparse
@@ -59,6 +64,25 @@ def why_hand_edited(skill: AiSkill, versions: list[AiSkillVersion], current_body
     if (skill.draft_body_md or "").strip() != current_body:
         return "bản nháp đang lệch bản xuất bản (quản trị đang soạn dở)"
     return ""
+
+
+def decide_update(skill: AiSkill, versions: list[AiSkillVersion], body: str, summary: str,
+                  sync_summary: bool = False) -> tuple[str, str, bool]:
+    """`(việc, lý do sửa tay, có đổi tóm tắt)` cho MỘT skill đã có — việc: "latest" (đã mới nhất) hoặc "publish".
+
+    "publish" kèm lý do khác rỗng = quản trị đã sửa tay: chỉ làm khi có `--force`. Không bật `sync_summary` thì tóm tắt
+    không được xét (hành vi cũ)."""
+    current = next((v for v in versions if v.id == skill.current_version_id), None)
+    current_body = (current.body_md if current else "").strip()
+    current_summary = ((current.summary if current else "") or skill.summary or "").strip()
+    summary_changed = sync_summary and current_summary != summary.strip()
+    if current_body == body and skill.deleted_at is None and not summary_changed:
+        return "latest", "", False
+    reason = why_hand_edited(skill, versions, current_body)
+    if not reason and summary_changed and current is not None and current.summary \
+            and (skill.summary or "").strip() != current.summary.strip():
+        reason = "tóm tắt trên skill đang lệch bản xuất bản (quản trị đang soạn dở)"
+    return "publish", reason, summary_changed
 
 
 def publish_new_version(db, skill: AiSkill, versions: list[AiSkillVersion], body: str, title: str,
@@ -100,6 +124,8 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="Đè cả skill quản trị đã sửa tay")
     parser.add_argument("--note", default=CHANGE_NOTE,
                         help="Ghi chú thay đổi của phiên bản mới (nên ghi số CR của đợt cập nhật)")
+    parser.add_argument("--sync-summary", action="store_true",
+                        help="Xét cả câu tóm tắt trong handbook_seed.SKILLS: lệch bản hiện hành thì xuất bản phiên bản mới")
     parser.add_argument("--only", default="",
                         help="Chỉ xét các slug này (cách nhau dấu phẩy) — để ghi chú CR không dính sang skill khác")
     args = parser.parse_args()
@@ -126,19 +152,22 @@ def main() -> int:
             versions = db.query(AiSkillVersion).filter(AiSkillVersion.skill_id == skill.id).all()
             current = next((v for v in versions if v.id == skill.current_version_id), None)
             current_body = (current.body_md if current else "").strip()
-            if current_body == body and skill.deleted_at is None:
+            action, reason, summary_changed = decide_update(skill, versions, body, summary, args.sync_summary)
+            if action == "latest":
                 print(f"[đã mới nhất] {slug}: phiên bản hiện hành trùng tệp.")
                 continue
-            reason = why_hand_edited(skill, versions, current_body)
             if reason and not args.force:
                 print(f"[KHÔNG ĐÈ] {slug}: {reason} — tự hợp nhất tay ở màn Bộ skill, hoặc chạy lại với --force.")
                 skipped += 1
                 continue
             if args.dry_run:
                 print(f"[sẽ xuất bản] {slug}: phiên bản {max((v.version_no for v in versions), default=0) + 1}"
-                      f" ({len(current_body)} → {len(body)} ký tự){' (--force, đè bản sửa tay)' if reason else ''}.")
+                      f" ({len(current_body)} → {len(body)} ký tự){' + tóm tắt mới' if summary_changed else ''}"
+                      f"{' (--force, đè bản sửa tay)' if reason else ''}.")
                 published += 1
                 continue
+            if summary_changed:
+                skill.summary = summary   # publish_new_version chép tóm tắt của dòng skill sang phiên bản mới
             version_no = publish_new_version(db, skill, versions, body, title, args.note)
             db.commit()
             try:

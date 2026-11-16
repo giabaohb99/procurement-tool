@@ -1,10 +1,10 @@
 """BỘ PHÂN GIẢI LỊCH — "ngày D của nhân sự X làm theo lịch nào?".
 
-Thứ tự thắng: NHÂN SỰ > PHÒNG BAN > PHÁP NHÂN > HỆ THỐNG > `FALLBACK_WEEK`
+Thứ tự thắng: CA XẾP THEO NGÀY (duoc-CR-761, `tab_work_shift_day`) > NHÂN SỰ > PHÒNG BAN > PHÁP NHÂN > HỆ THỐNG > `FALLBACK_WEEK`
 (`LEVEL_PRECEDENCE`). Phòng ban/pháp nhân là phòng CHÍNH và pháp nhân HIỆN TẠI
 của hồ sơ (chốt 05/10/2026) — không tra quá trình công tác, phòng kiêm nhiệm bỏ qua.
 
-⚠️ Số truy vấn CỐ ĐỊNH (tối đa 2: dòng gán + ngày của các mẫu được trỏ) bất kể
+⚠️ Số truy vấn CỐ ĐỊNH (tối đa 3: dòng gán + ngày của các mẫu được trỏ + ca xếp theo ngày) bất kể
 khoảng 1 hay 400 ngày — báo cáo/form gọi liên tục, không được N+1.
 """
 import logging
@@ -21,6 +21,7 @@ from app.core.work_schedule_codes import (LEVEL_PRECEDENCE, WORK_DAY_KIND_LABELS
 
 from .day_rules import FALLBACK_NAME, FALLBACK_WEEK, DaySpec, weekly_workdays
 from .model import WorkSchedule, WorkScheduleAssignment, WorkScheduleDay
+from .shift_loader import SHIFT_SCHEDULE_NAME, load_shift_records, load_shift_specs
 
 logger = logging.getLogger("app.work_schedule")
 
@@ -92,8 +93,12 @@ def load_day_plans(db: Session, *, employee_id: int = 0, department_id: int = 0,
                       from_date, to_date)
     by_level = _group(rows)
     weeks = _load_days(db, {a.schedule_id for a in rows})
+    shifts = {day: spec for (_emp, day), spec in load_shift_specs(db, [employee_id], from_date, to_date).items()}
 
     def plan(day: date) -> DaySpec:
+        shift = shifts.get(day)   # ca xếp riêng cho ngày này thắng mọi cấp gán
+        if shift is not None:
+            return shift
         hit = _pick(by_level, day)
         if hit is None:
             return FALLBACK_WEEK[day.weekday()]
@@ -108,7 +113,9 @@ def load_day_plans(db: Session, *, employee_id: int = 0, department_id: int = 0,
 
 
 def schedule_name_on(db: Session, employee, on_date: date) -> str:
-    """Tên mẫu lịch áp cho nhân sự vào một ngày (fallback → `FALLBACK_NAME`)."""
+    """Tên mẫu lịch áp cho nhân sự vào một ngày (fallback → `FALLBACK_NAME`; ngày xếp ca → `SHIFT_SCHEDULE_NAME`)."""
+    if load_shift_records(db, [int(employee.id or 0)], on_date, on_date):
+        return SHIFT_SCHEDULE_NAME
     hit = _winner(db, employee, on_date)
     if hit is None:
         return FALLBACK_NAME

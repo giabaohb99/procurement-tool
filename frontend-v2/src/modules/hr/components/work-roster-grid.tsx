@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import type { WorkRosterDay, WorkRosterItem } from '../types/work-roster'
+import type { WorkRosterDay, WorkRosterInteraction, WorkRosterItem } from '../types/work-roster'
 import { describeRosterCell, indexCellsByDate } from '../utils/work-roster-cell'
 import { groupByDepartment, pickLeaveRowIds, summarizeRosterDay } from '../utils/work-roster-summary'
 import type { WorkRosterMode } from '../utils/work-roster-range'
@@ -13,6 +13,8 @@ interface WorkRosterGridProps {
   items: WorkRosterItem[]
   mode: WorkRosterMode
   todayISO: string
+  /** Xếp ca (duoc-CR-761): bấm ô / chọn dòng. Vắng = chỉ xem. */
+  interaction?: WorkRosterInteraction
 }
 
 /**
@@ -22,7 +24,7 @@ interface WorkRosterGridProps {
  *
  * Dựng bằng `div` + vai trò ARIA của bảng, không bằng `<table>` — lý do ở `work-roster-grid-layout.ts`.
  */
-export function WorkRosterGrid({ days, items, mode, todayISO }: WorkRosterGridProps) {
+export function WorkRosterGrid({ days, items, mode, todayISO, interaction }: WorkRosterGridProps) {
   const compact = mode === 'month'
   const groups = useMemo(() => groupByDepartment(items), [items])
   const cellMaps = useMemo(() => items.map(indexCellsByDate), [items])
@@ -53,6 +55,7 @@ export function WorkRosterGrid({ days, items, mode, todayISO }: WorkRosterGridPr
           rowHeight={rosterRowHeight(mode)}
           todayISO={todayISO}
           leaveIds={leaveIds}
+          interaction={interaction}
         />
       </div>
     </div>

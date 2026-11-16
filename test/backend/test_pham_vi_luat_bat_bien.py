@@ -210,6 +210,10 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 #  Giá trị của bài kiểm này KHÔNG nằm ở 40 dòng đang có, mà ở dòng thứ 41: ai
 #  thêm controller mới buộc phải trả lời "màn này có phải lọc phạm vi không".
 BB4_CONTROLLER_MIEN_TRU = {
+    "work_schedule/shift_controller.py": "duoc-CR-761: phạm vi nằm ở hai hàm dùng chung — đường ĐỌC qua "
+                                          "`roster_visibility.apply_visible_employees` (→ `scope_condition` theo bậc Nhân sự / "
+                                          "Trưởng phòng / chỉ mình), đường GHI qua `shift_access.check_cells` (→ `apply_scope` "
+                                          "trên hồ sơ nhân sự đích, từng ô); `/me` chỉ đọc hồ sơ CỦA CHÍNH người đăng nhập",
     "notification/email_log_controller.py": "bao-CR-721: nhật ký email CHỈ ĐỌC, gác `require('audit', 'read')` — khóa "
                                               "Nhật ký hệ thống là khóa toàn hệ, không có phạm vi phòng / người",
     "release_info/controller.py": "bao-CR-722: phiên bản + ghi chú phát hành đọc từ TỆP trong mã nguồn, không có dữ liệu "

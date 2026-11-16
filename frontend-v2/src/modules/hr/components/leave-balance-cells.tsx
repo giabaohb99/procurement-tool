@@ -2,6 +2,8 @@ import { ChevronRight } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
 import type { LeaveBalanceRow } from '../utils/group-leave-balances'
+import { pickAccrualInfo } from '../utils/leave-accrual-status'
+import { AccrualStartTooltip, LeaveAccrualStatusBadge } from './leave-accrual-status-badge'
 
 /**
  * Ô ĐỊNH DANH — chỗ duy nhất phân biệt ba dạng hàng.
@@ -15,17 +17,23 @@ export function NameCell({
   row,
   expanded,
   onToggle,
+  hideNoContract = false,
 }: {
   row: LeaveBalanceRow
   expanded: ReadonlySet<number>
   onToggle: (employeeId: number) => void
+  /** Ẩn nhãn *Chưa có HĐLĐ* trên dòng (quá nửa số người thiếu — duoc-CR-762 phương án B). */
+  hideNoContract?: boolean
 }) {
   if (row.kind === 'child') {
     return (
       //  Thụt lề bằng đúng bề rộng ô mũi tên của hàng cha, để tên loại nghỉ
       //  thẳng hàng với tên người phía trên nó.
       <span className="flex items-center gap-2 pl-7 text-muted-foreground">
-        <span className="truncate">{row.balance.leave_type_name || `#${row.balance.leave_type_id}`}</span>
+        <AccrualStartTooltip info={row.balance}>
+          <span className="truncate">{row.balance.leave_type_name || `#${row.balance.leave_type_id}`}</span>
+        </AccrualStartTooltip>
+        <LeaveAccrualStatusBadge info={row.balance} hideContractWarning={hideNoContract} />
       </span>
     )
   }
@@ -34,9 +42,13 @@ export function NameCell({
     return (
       <span className="flex items-center gap-2 pl-7">
         <span className="truncate font-medium">{row.group.employeeName}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          · {row.balance.leave_type_name || `#${row.balance.leave_type_id}`}
-        </span>
+        <AccrualStartTooltip info={row.balance}>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            · {row.balance.leave_type_name || `#${row.balance.leave_type_id}`}
+          </span>
+        </AccrualStartTooltip>
+        {/*  duoc-CR-762: thử việc / chưa có HĐLĐ của loại cộng dần sau mỗi tháng làm đủ. */}
+        <LeaveAccrualStatusBadge info={row.balance} hideContractWarning={hideNoContract} />
       </span>
     )
   }
@@ -62,6 +74,11 @@ export function NameCell({
       <span className="shrink-0 text-xs text-muted-foreground">
         · {row.group.balances.length} loại nghỉ
       </span>
+      {/*  Hàng NHÓM nói ra tình trạng cần chú ý nhất của các dòng con — thu gọn mà vẫn thấy ai thiếu HĐLĐ. */}
+      <LeaveAccrualStatusBadge
+        info={pickAccrualInfo(row.group.balances, hideNoContract)}
+        hideContractWarning={hideNoContract}
+      />
     </span>
   )
 }

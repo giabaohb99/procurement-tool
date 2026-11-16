@@ -27,11 +27,14 @@ interface BuildOptions {
   /** Id nhân sự của những nhóm đang bung. */
   expanded: ReadonlySet<number>
   onToggle: (employeeId: number) => void
+  /** Ẩn nhãn *Chưa có HĐLĐ* trên từng dòng — xem `summarizeMissingContract` (duoc-CR-762). */
+  hideNoContract?: boolean
 }
 
 export function buildLeaveBalanceColumns({
   expanded,
   onToggle,
+  hideNoContract = false,
 }: BuildOptions): DataTableColumn<LeaveBalanceRow>[] {
   //  duoc-CR-748: mọi cột đều bấm tiêu đề để xếp được — xếp NHÓM NGƯỜI ở trình duyệt, luật ở
   //  `utils/sort-leave-balance-groups.ts`. Bật `sortable` theo đúng bộ khóa hàm xếp hiểu, để không có cột nào
@@ -40,7 +43,9 @@ export function buildLeaveBalanceColumns({
     {
       key: 'employee_name',
       header: 'Nhân sự',
-      cell: (row) => <NameCell row={row} expanded={expanded} onToggle={onToggle} />,
+      cell: (row) => (
+        <NameCell row={row} expanded={expanded} onToggle={onToggle} hideNoContract={hideNoContract} />
+      ),
       //  ⚠️ CỐ Ý không khai `width`: cột này nuốt trọn chỗ thừa (xem
       //  `DataTableColumn.width`). Khai số cứng thì khi chỉ còn năm cột bày sẵn,
       //  phần dư được chia ĐỀU cho cả năm — mỗi cột số phình lên gần 190px và

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LeaveBalanceHintBox } from './leave-balance-hint-box'
 import type { LeaveBalanceHint } from '../types/leave'
+import { accrualFixture } from './leave-accrual-fixture'
 
 /**
  * Ô "số phép còn lại" — ràng buộc §6.1 của kế hoạch Nghỉ phép (CR-259) và lý do
@@ -20,6 +21,10 @@ const hookResult = vi.hoisted(() => ({
 vi.mock('../hooks/use-leave', () => ({
   useLeaveBalanceHint: () => hookResult.current,
 }))
+
+//  Người đang đăng nhập — câu thử việc xưng "Bạn" chỉ khi quỹ là của chính họ (duoc-CR-762).
+const authUser = vi.hoisted(() => ({ current: { id: 9, employee_id: 1 } as { id: number; employee_id?: number } | null }))
+vi.mock('@/core/auth/use-auth', () => ({ useAuth: () => ({ user: authUser.current }) }))
 
 function hint(overrides: Partial<LeaveBalanceHint> = {}): LeaveBalanceHint {
   return {
@@ -162,5 +167,58 @@ describe('LeaveBalanceHintBox', () => {
     setHint(hint({ remaining_days: 1, max_negative_days: 2 }))
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={3.5} />)
     expect(screen.getByText(/vượt quỹ/)).toBeInTheDocument()
+  })
+
+  //  duoc-CR-762: loại cộng dần sau mỗi tháng làm đủ không tích lúc thử việc.
+  it('tells a probation employee filing for THEMSELF that annual leave is not accruing yet', () => {
+    authUser.current = { id: 9, employee_id: 1 }
+    setHint(hint({ employee_id: 1, total_days: 12, remaining_days: 0, ...accrualFixture(2) }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={0} />)
+    expect(screen.getByText('Bạn đang thử việc — chưa tích phép năm.')).toBeInTheDocument()
+  })
+
+  it('says "Nhân sự này" when filing on behalf of someone else, or when the session has no employee', () => {
+    for (const user of [{ id: 9, employee_id: 77 }, { id: 9 }, null]) {
+      authUser.current = user
+      setHint(hint({ employee_id: 1, ...accrualFixture(2) }))
+      const { unmount } = render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} employeeId={1} requestedDays={0} />)
+      expect(screen.getByText('Nhân sự này đang thử việc — chưa tích phép năm.')).toBeInTheDocument()
+      expect(screen.queryByText(/^Bạn/)).not.toBeInTheDocument()
+      unmount()
+    }
+    authUser.current = { id: 9, employee_id: 1 }
+  })
+
+  it('service contract / not yet official: shows the API label, not hand-typed text', () => {
+    for (const status of [5, 6]) {
+      const info = accrualFixture(status)
+      setHint(hint(info))
+      const { unmount } = render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={0} />)
+      expect(screen.getByText(`${info.accrual_status_label}.`)).toBeInTheDocument()
+      unmount()
+    }
+  })
+
+  it('shows no "not accruing" line for accruing, missing-contract, incomplete-history or legacy payloads', () => {
+    for (const extra of [
+      accrualFixture(1, '2026-02-01'),
+      accrualFixture(3, '2026-03-01'),
+      accrualFixture(4),
+      { accrual_status: null, accrual_start_date: null },
+      { accrual_status: 5, accrual_status_label: null },
+      {},
+    ]) {
+      setHint(hint(extra))
+      const { unmount } = render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={1} />)
+      expect(screen.queryByText(/thử việc|không tích|chính thức|HĐLĐ/)).not.toBeInTheDocument()
+      unmount()
+    }
+  })
+
+  it('probation with a negative balance still keeps the over-quota warning', () => {
+    setHint(hint({ remaining_days: -1, ...accrualFixture(2) }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={1} />)
+    expect(screen.getByText(/vượt quỹ/)).toBeInTheDocument()
+    expect(screen.getByText(/Bạn đang thử việc/)).toBeInTheDocument()
   })
 })

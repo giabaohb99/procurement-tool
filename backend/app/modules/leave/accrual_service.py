@@ -5,6 +5,8 @@ Hàm thuần (không đụng CSDL) ở nửa đầu để test được trực t
 (phần chưa tới tháng của loại cộng dần).
 
 Quy ước tháng: vào làm ngày 1–15 tính CẢ tháng đó, từ ngày 16 tính từ tháng sau; làm tròn tới 0.5 ngày (half up).
+Chế độ MONTHLY_AFTER (duoc-CR-762) dùng cùng quy ước nhưng mốc là NGÀY LÀM CHÍNH THỨC chứ không phải `hire_date`
+(`accrual_start_service`) và chỉ tính tháng đã làm xong.
 """
 from __future__ import annotations
 
@@ -15,8 +17,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .catalog_model import LeaveType, LeaveTypeQuota
-from .constants import (QUOTA_BASIS_EMPLOYMENT_TYPE, QUOTA_BASIS_JOB_LEVEL,
-                        LeaveAccrualMode)
+from .constants import (ACCRUAL_HOLDBACK_MODES, QUOTA_BASIS_EMPLOYMENT_TYPE,
+                        QUOTA_BASIS_JOB_LEVEL, LeaveAccrualMode)
 
 #  Ngày cuối cùng của nửa đầu tháng — vào làm tới ngày này vẫn tính trọn tháng.
 HALF_MONTH_DAY = 15
@@ -68,21 +70,28 @@ def prorate_allocation(quota: float, mode: int, hire_date: date | None, year: in
 
 def accrual_holdback(allocated: float, mode: int, hire_date: date | None, year: int,
                      today: date) -> float:
-    """Phần `allocated_days` CHƯA tới tháng (chỉ chế độ MONTHLY) — `remaining()` trừ ra.
+    """Phần `allocated_days` CHƯA tới hạn dùng (chế độ MONTHLY / MONTHLY_AFTER) — `remaining()` trừ ra.
 
-    Số dùng được tới hôm nay = `allocated × số tháng đã tới / số tháng của kỳ`, làm tròn xuống 0.5; năm đã qua → đủ,
-    năm chưa tới → chưa có tháng nào.
+    MONTHLY: số dùng được tới hôm nay = `allocated × số tháng đã TỚI / số tháng của kỳ` (tháng hiện tại tính), làm tròn
+    xuống 0.5; năm đã qua → đủ, năm chưa tới → chưa có tháng nào.
+
+    MONTHLY_AFTER (duoc-CR-762): chỉ tháng đã LÀM XONG mới tính (tháng hiện tại chưa tính): hết tháng 1 → từ 01/02 có 1/12.
+    `hire_date` ở đây là NGÀY LÀM CHÍNH THỨC (`accrual_start_service`; `NOT_STARTED` = chưa tích → giữ lại cả hạn mức).
     """
-    if mode != LeaveAccrualMode.MONTHLY or allocated <= 0:
+    if int(mode) not in ACCRUAL_HOLDBACK_MODES or allocated <= 0:
         return 0.0
     period = months_in_period(hire_date, year)
-    if period <= 0 or year < today.year:
+    after = int(mode) == int(LeaveAccrualMode.MONTHLY_AFTER)
+    if year < today.year or (period <= 0 and not after):
         return 0.0
+    if period <= 0:
+        return round(float(allocated), 2)     # MONTHLY_AFTER, chưa tới ngày làm chính thức: chưa dùng được gì
     if year > today.year:
         reached = 0
     else:
         start = first_month_in_year(hire_date, year)
-        reached = min(period, max(0, today.month - start + 1))
+        completed = today.month - start if after else today.month - start + 1
+        reached = min(period, max(0, completed))
     accrued = round_down_half(allocated * reached / period)
     return round(max(0.0, allocated - accrued), 2)
 

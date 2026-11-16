@@ -2,22 +2,33 @@ import type {
   LeaveBalanceMatrixColumn,
   LeaveBalanceMatrixRow,
 } from '../api/leave-balance-matrix-api'
+import { pickAccrualInfo } from '../utils/leave-accrual-status'
+import { LeaveAccrualStatusBadge } from './leave-accrual-status-badge'
 import { MatrixDayCell } from './leave-balance-matrix-day-cell'
 
 /** Thẻ khổ hẹp: tên + mã + phòng, rồi từng loại nghỉ người đó CÓ quỹ, cuối cùng là tổng. */
 export function LeaveBalanceMatrixCard({
   row,
   columns,
+  hideNoContract = false,
 }: {
   row: LeaveBalanceMatrixRow
   columns: LeaveBalanceMatrixColumn[]
+  /** Ẩn nhãn *Chưa có HĐLĐ* (duoc-CR-762 phương án B). */
+  hideNoContract?: boolean
 }) {
   const owned = columns.filter((c) => row.cells[String(c.leave_type_id)] !== undefined)
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium">{row.name}</p>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate font-medium">{row.name}</p>
+            <LeaveAccrualStatusBadge
+              info={pickAccrualInfo(Object.values(row.accrual ?? {}), hideNoContract)}
+              hideContractWarning={hideNoContract}
+            />
+          </div>
           <p className="truncate text-xs text-muted-foreground">
             {row.code}
             {row.department_name ? ` · ${row.department_name}` : ''}

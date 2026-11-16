@@ -40,8 +40,11 @@ GROUPS: tuple[ToolGroup, ...] = (
         "my_approval_tasks", "my_requests_status", "my_procurement_requests", "my_documents", "my_tickets",
         "my_work_tasks", "pending_procurement_approvals", "search_chat_history"})),
     #  duoc-CR-715 C: phiếu nghỉ bù; duoc-CR-757: tra phép nhân sự khác (tool tự gác leave_balance.read + phạm vi).
-    ToolGroup("leave", "Nghỉ phép", True, frozenset({"my_leave_summary", "draft_leave_request",
-                                                    "draft_leave_comp_request", "employee_leave_summary"})),
+    #  duoc-CR-761: ca làm việc theo ngày — cùng mức nhạy cảm với lịch làm việc đã ở nhóm này (không lương), nên gộp vào
+    #  đây thay vì mở nhóm mới (khóa nhóm cũ giữ nguyên, cấu hình G7 đã lưu không lệch).
+    ToolGroup("leave", "Nghỉ phép và ca làm việc", True, frozenset({
+        "my_leave_summary", "draft_leave_request", "draft_leave_comp_request", "employee_leave_summary",
+        "my_work_shifts", "employee_work_shifts"})),
     ToolGroup("directory", "Danh bạ, thuật ngữ, hướng dẫn sử dụng", True, frozenset({
         "employee_lookup", "glossary_lookup", "search_docs"})),
     ToolGroup("reports", "Báo cáo gom sẵn và bảng số tổng hợp", True, frozenset({"report_summary", "dataset_query"})),

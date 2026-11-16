@@ -42,10 +42,13 @@ SKILLS: tuple[tuple[str, str, str], ...] = (
     ("30-du-an-cong-viec.md", "du-an-cong-viec",
      "Phân hệ Dự án: giao việc, việc cha / con, giai đoạn, kanban, hạn chót, nhắc việc. Đọc khi hỏi về công việc, dự án "
      "hay trước khi soạn việc."),
+    #  duoc-CR-761: ca làm việc / xếp ca đứng ĐẦU câu — danh mục skill trong lời nhắc chỉ giữ 160 ký tự đầu
+    #  (`assistant/knowledge.SUMMARY_MAX_CHARS`), để sau là AI không thấy để chọn đúng cẩm nang này.
     ("40-nghi-phep.md", "nghi-phep",
-     "Nghỉ phép: loại nghỉ, quỹ phép (cộng dần, ứng phép), nộp đơn, duyệt, hủy đơn, phiếu xin nghỉ bù, thanh toán nghỉ phép (đổi ngày phép "
-     "chưa nghỉ ra tiền), ngày cấm nghỉ, chặn đơn lùi ngày / tự duyệt. Đọc khi hỏi về nghỉ phép, nghỉ bù, thanh toán nghỉ phép "
-     "hay trước khi soạn đơn nghỉ / phiếu nghỉ bù."),
+     "Nghỉ phép và ca làm việc: lịch làm việc, xếp ca theo ngày (ca của tôi, ca theo tiếng, livestream), loại nghỉ, quỹ "
+     "phép (cộng dần, ứng phép), nộp đơn, duyệt, hủy đơn, phiếu xin nghỉ bù, thanh toán nghỉ phép (đổi ngày phép chưa nghỉ "
+     "ra tiền), ngày cấm nghỉ, chặn đơn lùi ngày / tự duyệt. Đọc khi hỏi về nghỉ phép, lịch làm việc, ca làm việc / xếp ca, "
+     "nghỉ bù, thanh toán nghỉ phép hay trước khi soạn đơn nghỉ / phiếu nghỉ bù."),
     ("50-dat-phong-hop.md", "dat-phong-hop",
      "Đặt phòng họp: xem phòng trống, lập phiếu đặt, gửi duyệt, đổi / hủy. Đọc khi hỏi về phòng họp."),
     ("60-nhan-su-ho-so.md", "nhan-su-ho-so",

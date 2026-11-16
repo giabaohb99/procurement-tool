@@ -59,6 +59,15 @@ duoc-CR-754 (12/11/2026): đổi đường menu theo menu mới. Menu Nghỉ ph�
 tab phẳng (Cài đặt nhân sự · Phân bổ chính sách · Gói chính sách · Loại nghỉ · Lịch ngày lễ · Ngày cấm nghỉ · ...),
 không còn tab con lồng bên trong. Địa chỉ trang và quyền không đổi.
 
+Bản 9 (16/11/2026, duoc-CR-762): bài mới *Phép năm cộng sau mỗi tháng làm đủ* (luật làm xong tháng nào mới có phần của tháng
+đó, tính từ ngày làm chính thức, thử việc không tích, sáu tình trạng tích và việc Nhân sự phải làm, nhãn và dải *chưa đủ HĐLĐ*
+trên Quỹ phép năm, tự tính lại quỹ khi ký HĐLĐ / đổi hình thức / đổi ngày vào làm, số âm). Bài Số phép còn lại, Quỹ phép của
+Nhân sự và Loại nghỉ thêm chế độ *Cộng dần sau mỗi tháng làm đủ*. Nhãn đối chiếu bằng đọc
+`hr/utils/leave-accrual-status.ts`, `hr/components/leave-accrual-status-{badge,note}.tsx`,
+`hr/components/leave-balance-missing-contract-strip.tsx`, `hr/components/leave-balance-hint-box.tsx`,
+`hr/config/leave-type-crud.tsx`, nhãn tình trạng ở `leave/constants.py` (`LEAVE_ACCRUAL_STATUS_LABELS`). Chạy LOCAL / dev;
+prod theo đợt đồng bộ Help Center riêng.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
     # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
@@ -124,6 +133,7 @@ TINH_HUONG = "Mười tình huống nghỉ thường gặp"
 BAO_LOI = "Gặp câu báo lỗi thì làm gì"
 NGHI_BU = "Xin nghỉ bù"
 THANH_TOAN = "Thanh toán nghỉ phép"
+PHEP_THANG = "Phép năm cộng sau mỗi tháng làm đủ"
 NS_QUY = "Nhân sự — Cấp và điều chỉnh quỹ phép"
 NS_CHINH_SACH = "Nhân sự — Chính sách nghỉ phép"
 NS_PHAN_BO = "Nhân sự — Phân bổ chính sách nghỉ phép cho từng người và hàng loạt"
@@ -190,6 +200,7 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Ba câu hay hỏi nhất</h2>
 <ul>
+<li><strong>Sao Phép năm của tôi chỉ còn 10 ngày?</strong> — từ 16/11/2026 Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức. Xem {ref(PHEP_THANG, "Phép năm cộng sau mỗi tháng làm đủ")}.</li>
 <li><strong>Vừa nộp đơn xong sao phép còn lại hụt luôn?</strong> — đúng như vậy, và là cố ý. Xem {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</li>
 <li><strong>Nộp rồi sửa được không?</strong> — không. Chỉ sửa được lúc <em>Nháp</em> và <em>Trả về chỉnh sửa</em>. Xem {ref(THEO_DOI, "Theo dõi, sửa và hủy đơn")}.</li>
 <li><strong>Không thấy menu Nghỉ phép</strong> — gần như luôn là phân quyền, xem {ref(NS_QUYEN, "bài Phân quyền")}.</li>
@@ -197,9 +208,9 @@ Nháp  ─────────────────────►  Chờ
 </ul>
 
 <h2>Đọc theo việc bạn cần làm</h2>
-<p><strong>Người đi nghỉ:</strong> {ref(NOP_DON, "Nộp đơn")} · {ref(QUY_PHEP, "hiểu quỹ phép")} · {ref(THEO_DOI, "theo dõi, sửa, hủy")} · {ref(NGHI_BU, "xin nghỉ bù")} · {ref(THANH_TOAN, "thanh toán nghỉ phép")} · {ref(TINH_HUONG, "tình huống thường gặp")} · {ref(BAO_LOI, "câu báo lỗi")}.</p>
+<p><strong>Người đi nghỉ:</strong> {ref(NOP_DON, "Nộp đơn")} · {ref(QUY_PHEP, "hiểu quỹ phép")} · {ref(PHEP_THANG, "phép năm cộng theo tháng làm đủ")} · {ref(THEO_DOI, "theo dõi, sửa, hủy")} · {ref(NGHI_BU, "xin nghỉ bù")} · {ref(THANH_TOAN, "thanh toán nghỉ phép")} · {ref(TINH_HUONG, "tình huống thường gặp")} · {ref(BAO_LOI, "câu báo lỗi")}.</p>
 <p><strong>Người duyệt:</strong> {ref(DUYET, "Duyệt đơn nghỉ phép")} · {ref(NGHI_BU, "duyệt phiếu nghỉ bù")} · {ref(THANH_TOAN, "duyệt phiếu thanh toán nghỉ phép")} · {ref(LICH_NGHI, "xem Lịch nghỉ")}.</p>
-<p><strong>Phòng Nhân sự:</strong> {ref(NS_QUY, "cấp và điều chỉnh quỹ")} · {ref(NS_CHINH_SACH, "chính sách nghỉ phép")} · {ref(NS_PHAN_BO, "phân bổ chính sách")} · {ref(NS_DANH_MUC, "loại nghỉ, ngày lễ và ngày cấm nghỉ")} · {ref(NS_QUYEN, "phân quyền và luồng duyệt")}. Các công tắc chặn đơn lùi ngày, chặn tự duyệt và vai trò được duyệt qua ngày cấm nghỉ nằm ở <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Cài đặt nhân sự</strong>, rồi tab <strong>Nghỉ phép</strong> trong màn.</p>""",
+<p><strong>Phòng Nhân sự:</strong> {ref(NS_QUY, "cấp và điều chỉnh quỹ")} · {ref(PHEP_THANG, "người chưa đủ hợp đồng lao động")} · {ref(NS_CHINH_SACH, "chính sách nghỉ phép")} · {ref(NS_PHAN_BO, "phân bổ chính sách")} · {ref(NS_DANH_MUC, "loại nghỉ, ngày lễ và ngày cấm nghỉ")} · {ref(NS_QUYEN, "phân quyền và luồng duyệt")}. Các công tắc chặn đơn lùi ngày, chặn tự duyệt và vai trò được duyệt qua ngày cấm nghỉ nằm ở <strong>Nhân sự ▸ Thiết lập</strong>, tab <strong>Cài đặt nhân sự</strong>, rồi tab <strong>Nghỉ phép</strong> trong màn.</p>""",
     "children": [
         {
             "title": NOP_DON,
@@ -326,6 +337,7 @@ Nháp  ─────────────────────►  Chờ
           − đã nghỉ − đang chờ duyệt − đã thanh toán ra tiền</pre>
 <p><strong>Số còn lại không được lưu thành cột nào cả</strong> — nó luôn được tính lại. Lưu thêm thì có hai nguồn sự thật, và cái thứ hai chắc chắn sẽ lệch.</p>
 <p>Với loại nghỉ cấu hình <strong>Cộng dần theo tháng</strong>, phần hạn mức <em>chưa tới tháng</em> bị trừ khỏi số còn lại: hạn mức 12 ngày, đang tháng 5 thì mới dùng được 5 ngày (làm tròn xuống nửa ngày), sang tháng 6 là 6 ngày. Thâm niên, phép chuyển năm trước, điều chỉnh tay và ngày nghỉ bù không bị cộng dần. Số này giống nhau ở form nộp đơn, bảng Quỹ phép năm và báo cáo Quỹ phép năm.</p>
+<p><strong>Phép năm</strong> (từ 16/11/2026) dùng cách <strong>Cộng dần sau mỗi tháng làm đủ</strong>: chỉ tháng đã <strong>làm xong</strong> mới có phần của tháng đó, tính từ <strong>ngày làm chính thức</strong> chứ không phải ngày vào làm, thời gian thử việc không tích. Hạn mức 12 ngày thì ngày 15/01 là 0, ngày 01/02 là 1, ngày 16/11 là 10. Đủ luật và các nhãn tình trạng: {ref(PHEP_THANG, "Phép năm cộng sau mỗi tháng làm đủ")}.</p>
 <p>Loại nghỉ được phòng Nhân sự bật <strong>Cho ứng phép tối đa</strong> thì số còn lại được xuống thấp hơn 0 tới mức đã khai (ví dụ tới âm 3 ngày). Khi đó cột <strong>Còn lại</strong> hiện số âm, nghĩa là bạn đã dùng trước bấy nhiêu ngày.</p>
 
 <h2>Tám con số cấu thành</h2>
@@ -374,6 +386,84 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Thấy số sai thì hỏi ai</h2>
 <p>Số không khớp thực tế (thiếu ngày thâm niên, quên chuyển phép tồn, cấp nhầm) là việc của {ref(NS_QUY, "phòng Nhân sự")} — họ điều chỉnh tay được và mọi lần điều chỉnh đều lưu vết kèm lý do.</p>""",
+        },
+        {
+            "title": PHEP_THANG,
+            "icon": "calendar-clock",
+            "summary": "Làm xong tháng nào mới có phần phép năm của tháng đó, tính từ ngày làm chính thức; thử việc chưa tích; nhãn tình trạng và dải chưa đủ HĐLĐ ở Quỹ phép năm; tự tính lại khi ký hợp đồng; số âm",
+            "content": f"""<h2>Luật mới của Phép năm</h2>
+<p>Từ <strong>16/11/2026</strong>, loại <strong>Phép năm</strong> dùng cách cấp quỹ <strong>Cộng dần sau mỗi tháng làm đủ</strong>: <em>làm đủ một tháng thì được một ngày phép</em> (với hạn mức 12 ngày một năm). Áp cho mọi người, cho cả năm 2026.</p>
+<ul>
+<li><strong>Làm XONG tháng nào mới có phần của tháng đó.</strong> Tháng đang làm dở chưa tính. Hết tháng 1 thì từ ngày 01/02 có 1 ngày.</li>
+<li><strong>Tính theo tháng lịch, mốc ngày 15.</strong> Bắt đầu làm chính thức từ ngày 1 đến ngày 15 thì tính cả tháng đó; từ ngày 16 thì tính từ tháng sau.</li>
+<li>Số được làm tròn <strong>xuống</strong> nửa ngày.</li>
+<li><strong>Thâm niên</strong>, <strong>phép năm trước chuyển sang</strong>, <strong>điều chỉnh tay</strong> và <strong>ngày nghỉ bù</strong> không bị cộng dần — có là dùng được ngay.</li>
+</ul>
+<table>
+<thead><tr><th>Ngày xem (hạn mức 12, làm chính thức từ năm trước)</th><th>Tháng đã làm xong</th><th>Phép năm dùng được từ hạn mức</th></tr></thead>
+<tbody>
+<tr><td>15/01/2026</td><td>0</td><td><strong>0</strong></td></tr>
+<tr><td>01/02/2026</td><td>1</td><td><strong>1</strong></td></tr>
+<tr><td>16/11/2026</td><td>10</td><td><strong>10</strong></td></tr>
+</tbody>
+</table>
+<p>Người bắt đầu làm chính thức giữa năm: chính thức ngày <strong>10/03/2026</strong> thì hạn mức năm nay là 10 ngày (tháng 3 đến tháng 12), tới 16/11 đã xong 8 tháng nên dùng được 8 ngày. Chính thức ngày <strong>20/03/2026</strong> thì tính từ tháng 4: hạn mức 9 ngày, tới 16/11 dùng được 7 ngày.</p>
+<p>Số này hiện giống nhau ở dải số dư khi lập {ref(NOP_DON, "đơn nghỉ phép")}, cột <strong>Còn lại</strong> của <strong>Quỹ phép năm</strong>, báo cáo Quỹ phép năm và câu trả lời của Trợ lý AI. Cách đọc các con số còn lại: {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</p>
+
+<h2>Tính từ ngày nào</h2>
+<p>Phép năm tính từ <strong>ngày làm chính thức</strong>: ngày bắt đầu của <strong>hợp đồng lao động chính thức đầu tiên đã ký</strong>. Hợp đồng Thử việc, hợp đồng Dịch vụ, hợp đồng Cộng tác viên không tính; hợp đồng còn ở Nháp hay đã hủy cũng không tính.</p>
+<table>
+<thead><tr><th>Hồ sơ của bạn</th><th>Phép năm</th></tr></thead>
+<tbody>
+<tr><td>Đã có hợp đồng lao động chính thức đã ký</td><td>Tích từ ngày bắt đầu của hợp đồng chính thức sớm nhất</td></tr>
+<tr><td>Đang thử việc (chỉ có hợp đồng Thử việc, hoặc hồ sơ để hình thức <em>Thử việc</em>)</td><td><strong>Chưa tích.</strong> Ký hợp đồng chính thức xong mới bắt đầu tích</td></tr>
+<tr><td>Chỉ có hợp đồng Dịch vụ / Cộng tác viên</td><td>Không có phép năm</td></tr>
+<tr><td>Chưa có hợp đồng nào trên hệ thống</td><td>Tính tạm từ <strong>ngày vào làm</strong>, chờ phòng Nhân sự nhập hợp đồng</td></tr>
+<tr><td>Hợp đồng chính thức đầu tiên trên hệ thống bắt đầu muộn hơn ngày vào làm quá một tháng (và không có hợp đồng Thử việc)</td><td>Tính tạm từ <strong>ngày vào làm</strong> — hệ thống coi là còn thiếu hợp đồng cũ</td></tr>
+</tbody>
+</table>
+<p>Đang thử việc mà cần nghỉ thì chọn loại <strong>Nghỉ không lương</strong> khi lập đơn. Dải số dư dưới ô Loại nghỉ nói thẳng <em>Bạn đang thử việc — chưa tích phép năm.</em></p>
+
+<h2>Sáu tình trạng tích phép</h2>
+<p>Mỗi người có một tình trạng tích phép cho loại Phép năm. Nhãn hiện cạnh tên người ở màn <strong>Quỹ phép năm</strong>; người <strong>Đang tích</strong> không có nhãn nào, chỉ rê chuột lên tên là thấy <em>Tích từ dd/mm/yyyy</em> (trên điện thoại dòng này in mờ ngay dưới tên).</p>
+<table>
+<thead><tr><th>Nhãn</th><th>Nghĩa là</th><th>Phòng Nhân sự làm gì</th></tr></thead>
+<tbody>
+<tr><td><em>Đang tích</em> (không có nhãn)</td><td>Có ngày làm chính thức, đang tích bình thường</td><td>Không cần làm gì</td></tr>
+<tr><td><strong>Đang thử việc — chưa tích</strong> (nhãn mờ)</td><td>Chỉ có hợp đồng Thử việc, hoặc hồ sơ để hình thức Thử việc</td><td>Hết thử việc thì lập và <strong>Đánh dấu đã ký</strong> hợp đồng chính thức; quỹ tự tính lại</td></tr>
+<tr><td><strong>Chưa có HĐLĐ trên hệ thống</strong> (nhãn vàng)</td><td>Chưa có hợp đồng đã ký nào, đang tính tạm từ ngày vào làm</td><td><strong>Nhập hợp đồng lao động</strong> của người đó (cả hợp đồng Thử việc cũ nếu có) rồi đánh dấu đã ký</td></tr>
+<tr><td><strong>Lịch sử HĐLĐ chưa đủ — đang tính từ ngày vào làm</strong> (nhãn vàng)</td><td>Hợp đồng đầu tiên trên hệ thống bắt đầu muộn hơn ngày vào làm quá một tháng</td><td><strong>Nhập bù</strong> các hợp đồng trước đó; nếu ngày vào làm trên hồ sơ sai thì sửa ô <strong>Ngày vào làm</strong></td></tr>
+<tr><td><strong>Hợp đồng dịch vụ / cộng tác viên — không tích phép năm</strong> (nhãn mờ)</td><td>Chỉ có hợp đồng không phải hợp đồng lao động</td><td>Đúng thì không làm gì; nhập sai loại hợp đồng thì sửa</td></tr>
+<tr><td><strong>Chưa tới ngày làm chính thức</strong> (nhãn mờ)</td><td>Hợp đồng chính thức đã ký nhưng bắt đầu sau hôm nay</td><td>Không cần làm gì — tới ngày thì tự sang Đang tích</td></tr>
+</tbody>
+</table>
+<p>Rê chuột lên nhãn vàng để đọc việc cần làm (<em>Đang tính từ ngày vào làm — nhập hợp đồng lao động để tính đúng</em>). Mở một dòng quỹ ra, ngay trên các con số có câu đủ, ví dụ <em>Chưa có HĐLĐ trên hệ thống — phép đang tính từ ngày vào làm 05/03/2024. Nhập hợp đồng lao động để tính đúng.</em> hoặc <em>Tích từ 01/06/2026 — làm xong tháng nào được cộng phần của tháng đó.</em></p>
+
+<h2>Nhân sự — tìm người chưa đủ hợp đồng lao động</h2>
+<p>Vào <strong>Nhân sự ▸ Nghỉ phép ▸ Quỹ phép năm</strong>. Có người mang nhãn vàng thì đầu bảng hiện một <strong>dải vàng</strong> đếm số người <em>chưa đủ HĐLĐ</em> (gồm cả hai nhãn vàng):</p>
+<ul>
+<li>Số người thiếu <strong>không quá một nửa</strong>: nhãn vàng hiện trên từng dòng, dải ghi <em>N nhân sự chưa đủ HĐLĐ trên hệ thống — phép năm đang tính từ ngày vào làm. Nhập hợp đồng lao động để tính đúng.</em></li>
+<li>Số người thiếu <strong>quá một nửa</strong>: nhãn vàng trên dòng được ẩn đi cho bảng đỡ rối (nhãn mờ vẫn hiện), dải ghi <em>N/M người chưa đủ HĐLĐ …</em>. Ở thẻ <strong>Theo dòng quỹ</strong> dải có nút <strong>Chỉ hiện người chưa đủ HĐLĐ</strong> để lọc ra đúng những người đó; bấm <strong>Hiện tất cả</strong> để trở lại.</li>
+<li>Ở thẻ <strong>Theo nhân sự</strong>, dải đếm <em>… trên trang đang xem</em> (bảng chia trang) và không có nút lọc; cột Họ tên chỉ hiện biểu tượng, rê chuột để đọc nhãn.</li>
+</ul>
+<p>Nhập hợp đồng ở {ref("Hợp đồng lao động — Lập hợp đồng cho một nhân sự", "bài Lập hợp đồng lao động")}, rồi bấm <strong>Đánh dấu đã ký</strong> ở {ref("Hợp đồng lao động — Sinh tệp, ký, hủy và chấm dứt bằng menu Thao tác", "menu Thao tác của hợp đồng")}.</p>
+
+<h2>Quỹ tự tính lại khi nào</h2>
+<p>Không phải bấm gì thêm. Quỹ Phép năm của <strong>năm nay</strong> (và năm sau nếu đã cấp) của một người được tính lại ngay khi:</p>
+<ul>
+<li>một hợp đồng lao động của người đó được <strong>Đánh dấu đã ký</strong>;</li>
+<li>hồ sơ đổi <strong>Hình thức nhân viên</strong> từ <em>Thử việc</em> sang hình thức khác hoặc ngược lại, hoặc đổi <strong>Ngày vào làm</strong> (lưu hồ sơ, nhập Excel ghi thật, áp quá trình công tác);</li>
+<li>phòng Nhân sự đổi ô <strong>Cách cấp quỹ</strong> của một loại nghỉ sang <strong>Cộng dần sau mỗi tháng làm đủ</strong> — khi đó mọi người có quỹ loại đó được tính lại.</li>
+</ul>
+<p>Chỉ người có <strong>ngày bắt đầu tích đổi thật</strong> mới bị tính lại: sửa số điện thoại hay ký thêm một phụ lục không đổi ngày làm chính thức thì quỹ giữ nguyên. Chỉ ô <strong>Hạn mức</strong> đổi; thâm niên, phép chuyển sang, điều chỉnh tay, đã nghỉ, đang chờ duyệt giữ nguyên. Quỹ năm đã qua không bao giờ bị tính lại. Mỗi lần tính lại có một dòng ở <strong>Lịch sử thao tác</strong> của dòng quỹ ghi số cũ → số mới, ví dụ <em>Ký hợp đồng lao động …</em>.</p>
+
+<h2>Vì sao số của tôi âm</h2>
+<p>Luật mới áp cho cả năm 2026. Ai đã nghỉ (gồm cả đơn đang chờ duyệt) nhiều hơn số đã tích tới hôm nay thì cột <strong>Còn lại</strong> ra <strong>số âm</strong>, tô đỏ. Không có ngày nào bị trừ thêm và không đơn nào bị hủy: chỉ là bạn đã nghỉ trước phần của những tháng chưa làm xong. Trong lúc còn âm thì chưa xin thêm Phép năm được (trừ phần ứng phép nếu loại nghỉ cho ứng); mỗi tháng làm xong lại cộng phần của tháng đó cho tới khi dương lại.</p>
+<p><strong>Tháng 1 hằng năm</strong> phần từ hạn mức của năm mới là <strong>0</strong> (tháng 1 chưa xong); lúc đó chỉ còn thâm niên, phép năm trước chuyển sang (nếu có), điều chỉnh tay và nghỉ bù.</p>
+
+<h2>Hỏi Trợ lý AI</h2>
+<p>Hỏi <em>Sao tôi chỉ còn 10 ngày phép?</em>, <em>Khi nào tôi có phép năm?</em>, <em>Tôi tích phép từ ngày nào?</em> — Trợ lý đọc đúng số và tình trạng tích của bạn. Phòng Nhân sự hỏi được tình trạng tích của nhân sự trong phạm vi Quỹ phép năm của mình.</p>
+<p>Liên quan: {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")} · {ref(NS_QUY, "Nhân sự — Cấp và điều chỉnh quỹ phép")} · {ref(NS_DANH_MUC, "Loại nghỉ")}.</p>""",
         },
         {
             "title": THEO_DOI,
@@ -877,7 +967,7 @@ Nghỉ việc:
 <tr><td><strong>Tổng cấp</strong></td><td>Tổng các phần cộng: hạn mức, thâm niên, chuyển năm trước, điều chỉnh tay, nghỉ bù cộng thêm.</td></tr>
 <tr><td><strong>Đã nghỉ</strong></td><td>Cộng dồn đơn đã duyệt.</td></tr>
 <tr><td><strong>Chờ duyệt</strong></td><td>Ngày đang giữ chỗ cho đơn đã gửi duyệt.</td></tr>
-<tr><td><strong>Còn lại</strong></td><td>Số còn <strong>dùng được hôm nay</strong>: với loại <em>Cộng dần theo tháng</em> đã trừ phần chưa tới tháng. <strong>Hết phép thì tô đỏ</strong>. Báo cáo <em>Quỹ phép năm</em> ở phân hệ Báo cáo cho ra đúng số này.</td></tr>
+<tr><td><strong>Còn lại</strong></td><td>Số còn <strong>dùng được hôm nay</strong>: với loại <em>Cộng dần theo tháng</em> đã trừ phần chưa tới tháng; với loại <em>Cộng dần sau mỗi tháng làm đủ</em> (Phép năm) đã trừ phần của tháng chưa làm xong. <strong>Hết phép thì tô đỏ</strong>. Báo cáo <em>Quỹ phép năm</em> ở phân hệ Báo cáo cho ra đúng số này.</td></tr>
 <tr><td><strong>Hạn mức</strong> <em>(ẩn sẵn)</em></td><td>Chép tại lúc cấp phát theo thứ tự: chính sách nghỉ phép đang phân bổ cho người đó → tab <em>Hạn mức theo nhóm</em> của loại nghỉ (hình thức nhân viên trước, cấp bậc sau) → <em>Hạn mức mỗi năm</em> của loại nghỉ; đã nhân tỷ lệ nếu loại nghỉ cấp <em>theo tỷ lệ tháng làm việc</em>.</td></tr>
 <tr><td><strong>Thâm niên</strong>, <strong>Chuyển năm trước</strong>, <strong>Đã chuyển đi</strong>, <strong>Hết hạn</strong> <em>(ẩn sẵn)</em></td><td>Cộng thêm theo bậc tính tại 01/01; phép tồn mang sang; phần đã chuyển đi khi kết sổ; phần phép mang sang đã quá hạn dùng.</td></tr>
 <tr><td><strong>Điều chỉnh tay</strong> <em>(ẩn sẵn)</em></td><td>Cột duy nhất nhận <strong>số âm</strong>; số dương hiện kèm dấu <code>+</code>.</td></tr>
@@ -886,6 +976,7 @@ Nghỉ việc:
 </tbody>
 </table>
 <p>Bộ lọc: ô tìm theo <strong>tên hoặc mã nhân sự</strong>, ô chọn <strong>loại nghỉ</strong>, ô chọn <strong>năm</strong>.</p>
+<p>Cạnh tên người có thể có <strong>nhãn tình trạng tích phép</strong> của Phép năm (<em>Đang thử việc — chưa tích</em>, <em>Chưa có HĐLĐ trên hệ thống</em>…) và đầu bảng có <strong>dải vàng</strong> đếm người chưa đủ hợp đồng lao động, kèm nút <strong>Chỉ hiện người chưa đủ HĐLĐ</strong> khi số đó quá một nửa. Xem {ref(PHEP_THANG, "bài Phép năm cộng sau mỗi tháng làm đủ")}.</p>
 
 <h2>Đọc thẻ Theo nhân sự</h2>
 <p>Mỗi người một dòng, mỗi loại nghỉ có trừ quỹ một cột, ô là <strong>số còn dùng được hôm nay</strong> của loại đó; cột cuối <strong>Tổng còn lại</strong> cộng các ô của người đó. Cột đầu là <strong>Mã NV</strong> · <strong>Họ tên</strong> · <strong>Phòng ban</strong> · <strong>Chính sách</strong> (chính sách áp trong năm đang xem, hoặc <em>Theo loại nghỉ</em>). Tệp Excel xuất ra có cùng cột đó.</p>
@@ -913,7 +1004,7 @@ Nghỉ việc:
 <li><strong>Không bấm thì nhân viên vẫn nộp đơn được</strong>: mở form nộp đơn, chọn loại nghỉ là hệ tự mở dòng quỹ còn thiếu cho riêng người đó, cùng cách tính. Nút này để Nhân sự mở sổ cho cả công ty một lượt.</li>
 <li>Thêm người giữa năm thì <strong>bấm lại</strong> là họ có quỹ, không phải tạo tay.</li>
 <li>Cấp <strong>một lần đầu năm</strong>; thâm niên tính tại 01/01, không cộng dần theo tháng.</li>
-<li>Số ngày mỗi người nhận theo <strong>Cách cấp quỹ</strong> của loại nghỉ: <em>Đủ hạn mức đầu năm</em> thì ai cũng đủ; <em>Theo tỷ lệ tháng làm việc</em> thì người vào làm trong năm nhận theo số tháng còn lại (vào làm ngày 1–15 tính cả tháng, từ ngày 16 tính từ tháng sau, làm tròn tới nửa ngày; ví dụ hạn mức 12, vào làm 10/03 được 10 ngày, vào làm 20/03 được 9 ngày); <em>Cộng dần theo tháng</em> thì dòng quỹ ghi đủ cả năm nhưng mỗi tháng mới mở thêm một phần mười hai. Xem {ref(NS_DANH_MUC, "bài Loại nghỉ")}.</li>
+<li>Số ngày mỗi người nhận theo <strong>Cách cấp quỹ</strong> của loại nghỉ: <em>Đủ hạn mức đầu năm</em> thì ai cũng đủ; <em>Theo tỷ lệ tháng làm việc</em> thì người vào làm trong năm nhận theo số tháng còn lại (vào làm ngày 1–15 tính cả tháng, từ ngày 16 tính từ tháng sau, làm tròn tới nửa ngày; ví dụ hạn mức 12, vào làm 10/03 được 10 ngày, vào làm 20/03 được 9 ngày); <em>Cộng dần theo tháng</em> thì dòng quỹ ghi đủ cả năm nhưng mỗi tháng mới mở thêm một phần mười hai; <em>Cộng dần sau mỗi tháng làm đủ</em> thì tính từ ngày làm chính thức và chỉ mở phần của tháng đã làm xong (người đang thử việc nhận 0). Xem {ref(NS_DANH_MUC, "bài Loại nghỉ")} và {ref(PHEP_THANG, "bài Phép năm cộng sau mỗi tháng làm đủ")}.</li>
 </ul>
 <p>⚠️ Cố ý <strong>không cập nhật dòng đã có</strong> theo hạn mức mới: đổi hạn mức giữa năm thì quỹ đã cấp giữ nguyên, luật mới áp cho lần cấp sau. Muốn áp ngay cho vài người thì dùng <strong>điều chỉnh tay</strong>. Ngoại lệ duy nhất là <strong>phân bổ chính sách</strong>: tạo, kết thúc hay xóa một phân bổ có ô <strong>Tính lại hạn mức năm nay cho quỹ đã cấp</strong> (mặc định bật) — xem {ref(NS_PHAN_BO, "bài Phân bổ chính sách")}.</p>
 <p>⚠️ Cấp quỹ <strong>trước khi</strong> hồ sơ có <strong>ngày vào làm</strong> thì thâm niên ra 0. Nhập bù ngày vào làm rồi phải sửa lại bằng điều chỉnh tay — cấp lại không sửa dòng cũ.</p>
@@ -962,6 +1053,7 @@ Nghỉ việc:
 
 <h2>Người dùng kêu <em>số phép của tôi sai</em></h2>
 <ol>
+<li>Phép năm thấp hơn họ nghĩ: đọc câu tình trạng tích ngay trên các con số (tích từ ngày nào, đang thử việc hay thiếu hợp đồng) — xem {ref(PHEP_THANG, "bài Phép năm cộng sau mỗi tháng làm đủ")}.</li>
 <li>Mở dòng quỹ của họ, đọc <strong>đủ tám số cấu thành</strong> — thường lệch ở <em>thâm niên</em> (thiếu ngày vào làm), <em>chuyển năm trước</em>, hoặc ngày đã <em>thanh toán ra tiền</em> mà người dùng quên. Hạn mức lạ thì đọc dòng <strong>Chính sách đang áp</strong> ngay trên.</li>
 <li>Xem khối <strong>các đơn nghỉ</strong>: phần <em>đang chờ duyệt</em> cũng đã bị trừ, và người dùng hay quên điều này — xem {ref(QUY_PHEP, "bài Hiểu số ngày phép còn lại")}.</li>
 <li>Vẫn sai thì <strong>điều chỉnh tay</strong> kèm lý do nói rõ vì sao.</li>
@@ -1104,7 +1196,7 @@ Nghỉ việc:
 <tr><td><strong>Trừ vào quỹ phép năm</strong></td><td>Tắt thì loại nghỉ đó không giới hạn số ngày, và màn nộp đơn nói thẳng <em>không giới hạn</em> thay vì hiện số 0. Bật thì mở thêm các ô hạn mức, cách cấp quỹ, ứng phép và loại nhận ngày nghỉ bù.</td></tr>
 <tr><td><strong>Có hưởng lương</strong></td><td>Tách khỏi ô trên: nghỉ cưới hỏi vẫn hưởng lương nhưng không ăn vào phép năm.</td></tr>
 <tr><td><strong>Hạn mức mỗi năm (ngày)</strong></td><td>Số ngày cấp cho một năm (Phép năm 12…). Muốn mỗi nhóm nhân viên một mức thì khai thêm ở tab <strong>Hạn mức theo nhóm</strong>.</td></tr>
-<tr><td><strong>Cách cấp quỹ</strong></td><td>Ba lựa chọn: <strong>Đủ hạn mức đầu năm</strong> (như trước đây, ai cũng nhận đủ); <strong>Theo tỷ lệ tháng làm việc (người vào làm trong năm)</strong> (người vào làm trong năm chỉ nhận hạn mức nhân với số tháng làm chia 12); <strong>Cộng dần theo tháng</strong> (mỗi tháng được dùng thêm một phần mười hai). Vào làm từ ngày 1 đến ngày 15 thì tính cả tháng đó, từ ngày 16 thì tính từ tháng sau; kết quả làm tròn tới nửa ngày. Ví dụ hạn mức 12 ngày, vào làm 10/03 được 10 ngày, vào làm 20/03 được 9 ngày.</td></tr>
+<tr><td><strong>Cách cấp quỹ</strong></td><td>Bốn lựa chọn: <strong>Đủ hạn mức đầu năm</strong> (như trước đây, ai cũng nhận đủ); <strong>Theo tỷ lệ tháng làm việc (người vào làm trong năm)</strong> (người vào làm trong năm chỉ nhận hạn mức nhân với số tháng làm chia 12); <strong>Cộng dần theo tháng</strong> (mỗi tháng được dùng thêm một phần mười hai, tính cả tháng đang làm); <strong>Cộng dần sau mỗi tháng làm đủ</strong> (làm xong một tháng mới được cộng phần của tháng đó, tính từ ngày làm chính thức, thử việc không tích — loại Phép năm dùng cách này từ 16/11/2026, xem {ref(PHEP_THANG, "bài Phép năm cộng sau mỗi tháng làm đủ")}). Vào làm từ ngày 1 đến ngày 15 thì tính cả tháng đó, từ ngày 16 thì tính từ tháng sau; kết quả làm tròn tới nửa ngày. Ví dụ hạn mức 12 ngày, vào làm 10/03 được 10 ngày, vào làm 20/03 được 9 ngày.</td></tr>
 <tr><td><strong>Cho ứng phép tối đa (ngày)</strong></td><td>Mặc định <strong>0</strong> là không cho nghỉ quá số còn lại. Điền 3 thì người dùng được xin nghỉ đến khi số còn lại xuống tới âm 3 ngày. Tối đa 30.</td></tr>
 <tr><td><strong>Loại nhận ngày nghỉ bù</strong></td><td>Bật cho loại (thường là Phép năm) sẽ được cộng thêm ngày khi phiếu nghỉ bù được duyệt. Cần có đúng một loại bật; nhiều loại cùng bật thì hệ lấy loại xếp trước. Chưa loại nào bật thì không ai lập được phiếu nghỉ bù — xem {ref(NGHI_BU, "bài Xin nghỉ bù")}.</td></tr>
 <tr><td><strong>Áp dụng cho giới tính</strong></td><td>Thai sản → nữ. Hồ sơ <strong>chưa khai giới tính vẫn nộp được</strong> — chặn là khóa cả công ty tới khi nhập bù.</td></tr>
@@ -1137,7 +1229,7 @@ Nghỉ việc:
 </table>
 <p>⚠️ Hệ chỉ chặn <strong>trần mỗi lần</strong>: máy không biết tuổi thai, tuổi con hay ca phẫu thuật, nên người duyệt đối chiếu giấy tờ đính kèm với mức luật ở cột ghi chú của từng loại nghỉ. Bốn loại đầu <strong>bắt buộc đính kèm</strong> giấy của cơ sở y tế.</p>
 
-<p>⚠️ <strong>Đổi cách cấp quỹ hay hạn mức không tính lại quỹ đã cấp.</strong> Chỉ người được cấp quỹ sau khi bạn lưu mới theo luật mới. Ngoại lệ là <strong>Cộng dần theo tháng</strong>: phần chưa tới tháng được trừ ngay khi xem số còn lại, nên đổi sang cách này là có hiệu lực luôn với quỹ năm nay. Số ngày thâm niên, phép mang sang và điều chỉnh tay không bao giờ bị tính theo tỷ lệ hay cộng dần.</p>
+<p>⚠️ <strong>Đổi cách cấp quỹ hay hạn mức không tính lại quỹ đã cấp.</strong> Chỉ người được cấp quỹ sau khi bạn lưu mới theo luật mới. Ngoại lệ là <strong>Cộng dần theo tháng</strong>: phần chưa tới tháng được trừ ngay khi xem số còn lại, nên đổi sang cách này là có hiệu lực luôn với quỹ năm nay. Đổi sang <strong>Cộng dần sau mỗi tháng làm đủ</strong> thì hệ thống <strong>tính lại ngay</strong> ô Hạn mức của quỹ năm nay (và năm sau nếu đã cấp) theo ngày làm chính thức của từng người, mỗi dòng đổi có một dòng ở Lịch sử thao tác. Số ngày thâm niên, phép mang sang và điều chỉnh tay không bao giờ bị tính theo tỷ lệ hay cộng dần.</p>
 
 <h2>Tab Hạn mức theo nhóm</h2>
 <p>Tab thứ ba của trang một loại nghỉ (cạnh tab Bậc thâm niên). Mỗi dòng là <em>nhóm nào được bao nhiêu ngày mỗi năm</em>. Cách thêm:</p>

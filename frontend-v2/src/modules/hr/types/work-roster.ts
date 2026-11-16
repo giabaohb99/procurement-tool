@@ -18,6 +18,18 @@ export interface WorkRosterLeave {
   afternoon: boolean
 }
 
+/**
+ * Ca xếp theo ngày của MỘT ô (duoc-CR-761). `segments` là nhãn "HH:MM–HH:MM", `ranges` là cặp giờ tròn
+ * `[đầu, cuối)` cho hộp xếp ca; không khung nào = nghỉ cả ngày do xếp ca.
+ */
+export interface WorkRosterShift {
+  segments: string[]
+  ranges: number[][]
+  hours: number
+  note: string
+  is_day_off: boolean
+}
+
 export interface WorkRosterCell {
   /** `YYYY-MM-DD`. */
   date: string
@@ -31,6 +43,17 @@ export interface WorkRosterCell {
   /** Tên ngày lễ áp cho pháp nhân CỦA NGƯỜI NÀY (chung hoặc riêng); rỗng khi không lễ. */
   holiday_name: string
   leave: WorkRosterLeave | null
+  /**
+   * Ngày này có ca xếp riêng (thắng mẫu tuần), `schedule_name` = "Xếp ca theo ngày". Vắng (backend trước
+   * duoc-CR-761) = coi như không.
+   */
+  is_shift?: boolean
+  shift?: WorkRosterShift | null
+  /**
+   * Ngày đó đang có đơn nghỉ chờ duyệt / đã duyệt GIỮ NGÀY (kể cả ngày lễ, ngày nghỉ, theo giờ, và đơn người xem không
+   * đọc được) → không xếp / đổi ca được, backend 409. Vắng = `false`.
+   */
+  leave_hold?: boolean
 }
 
 export interface WorkRosterDay {
@@ -56,6 +79,21 @@ export interface WorkRoster {
   days: WorkRosterDay[]
   total: number
   items: WorkRosterItem[]
+}
+
+/**
+ * Thao tác trên lưới khi người xem XẾP CA được (duoc-CR-761). Cả hai vắng = lưới chỉ xem như trước.
+ */
+export interface WorkRosterInteraction {
+  /** Bấm ô (người × ngày) → mở hộp xếp ca. */
+  onEditCell?: (item: WorkRosterItem, date: string) => void
+  /** Ô chọn dòng cho Chép tuần trước. */
+  selection?: {
+    selectedIds: ReadonlySet<number>
+    /** Dòng được phép chọn (Trưởng phòng không chọn được chính mình). */
+    canSelect: (employeeId: number) => boolean
+    onToggle: (employeeId: number) => void
+  }
 }
 
 /** Tham số hỏi lưới. `0` ở `company_id` / `department_id` = mọi. */

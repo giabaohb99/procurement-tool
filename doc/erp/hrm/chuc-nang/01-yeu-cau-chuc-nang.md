@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 0.4 (13/11/2026: thêm CN-HRM-04 Trưởng phòng gán lịch riêng cho nhân viên; CN-HRM-03 thêm Trưởng phòng tra phép nhân viên phòng mình — duoc-CR-757 lượt 2) · 0.3 (13/11/2026: thêm CN-HRM-02 Lịch làm việc của phòng ban, CN-HRM-03 Trợ lý AI tra lịch làm việc và ngày nghỉ — duoc-CR-757) · 0.2 (13/11/2026: CN-HRM-01 sửa theo hai loại dòng Phòng ban / Công ty — duoc-CR-756) · 0.1 |
-| Ngày | 13/11/2026 |
+| Bản | 0.6 (16/11/2026: thêm CN-HRM-06 Phép năm cộng sau mỗi tháng làm đủ — duoc-CR-762) · 0.5 (16/11/2026: thêm CN-HRM-05 Xếp ca theo ngày — duoc-CR-761) · 0.4 (13/11/2026: thêm CN-HRM-04 Trưởng phòng gán lịch riêng cho nhân viên; CN-HRM-03 thêm Trưởng phòng tra phép nhân viên phòng mình — duoc-CR-757 lượt 2) · 0.3 (13/11/2026: thêm CN-HRM-02 Lịch làm việc của phòng ban, CN-HRM-03 Trợ lý AI tra lịch làm việc và ngày nghỉ — duoc-CR-757) · 0.2 (13/11/2026: CN-HRM-01 sửa theo hai loại dòng Phòng ban / Công ty — duoc-CR-756) · 0.1 |
+| Ngày | 16/11/2026 |
 | Người phụ trách | tai-lieu-kiem-thu (Agent 2) |
-| Trạng thái | Nháp — mới viết CN-HRM-01 Kiêm nhiệm, CN-HRM-02 … CN-HRM-04; các chức năng khác của phân hệ chưa chép về khuôn này, đang nằm ở các tệp chức năng `01`…`06` của thư mục cha (bảng §2 của [`../README.md`](../README.md)) |
-| CR liên quan | duoc-CR-755, duoc-CR-756, duoc-CR-757 |
+| Trạng thái | Nháp — mới viết CN-HRM-01 Kiêm nhiệm, CN-HRM-02 … CN-HRM-06; các chức năng khác của phân hệ chưa chép về khuôn này, đang nằm ở các tệp chức năng `01`…`06` của thư mục cha (bảng §2 của [`../README.md`](../README.md)) |
+| CR liên quan | duoc-CR-755, duoc-CR-756, duoc-CR-757, duoc-CR-761, duoc-CR-762 |
 
 ## 1. Người dùng và vai trò
 
@@ -29,6 +29,8 @@ Mỗi chức năng một mã cố định `CN-HRM-NN` (không tái dùng số kh
 | CN-HRM-02 | Lịch làm việc của phòng ban (xem lịch đang áp + nguồn kế thừa, gán lịch riêng cho phòng) | Nhân sự, trưởng phòng, ai xem được phòng ban | `/hr/departments/:id?tab=work-schedule` · hộp **Thêm dòng gán lịch** điền sẵn ở `/hr/work-schedule-assignments` | Đang làm (mã xong ở local, chưa lên dev) | duoc-CR-757 (nền duoc-CR-589) |
 | CN-HRM-03 | Trợ lý AI / cổng MCP tra lịch làm việc, quỹ phép và số ngày đã nghỉ (của mình; của nhân sự khác theo quyền) | Mọi nhân viên; Nhân sự, Trưởng phòng (người phòng mình) | Trợ lý web, bot Telegram, cổng MCP (`my_leave_summary`, `employee_leave_summary`) | Đang làm (mã xong ở local, chưa lên dev) | duoc-CR-757 |
 | CN-HRM-04 | Trưởng phòng gán lịch làm việc riêng cho nhân viên phòng mình | Trưởng phòng | Nút **Đổi lịch riêng** ở khung Lịch làm việc của hồ sơ · *Nhân sự ▸ Thiết lập* ▸ tab **Gán lịch** | Đang làm (mã xong ở local, chưa lên dev) | duoc-CR-757 lượt 2 |
+| CN-HRM-05 | Xếp ca theo ngày: ca theo tiếng cho từng nhân viên từng ngày, nhiều khung rời, chép nhanh, tính phép theo ca, nhân viên xem ca của mình | Trưởng phòng, Nhân sự, mọi nhân viên | Lưới **Xem lịch** `/hr/work-roster` (hộp **Xếp ca**, nút **Chép tuần trước**) · thẻ **Ca làm việc tuần này** ở Trang cá nhân `/me` · chuông · trợ lý `my_work_shifts`, `employee_work_shifts` | Đang làm (mã xong ở local, chưa lên dev) | duoc-CR-761 |
+| CN-HRM-06 | Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức; tình trạng tích của từng người; tự tính lại quỹ khi ký HĐLĐ / đổi thử việc / đổi ngày vào làm | Mọi nhân viên, Nhân sự | *Nghỉ phép ▸ Quỹ phép năm* (nhãn tình trạng, dải *chưa đủ HĐLĐ*, trang chi tiết dòng quỹ) · dải số dư của đơn nghỉ · form *Thiết lập ▸ Loại nghỉ* (ô **Cách cấp quỹ**) · trợ lý `my_leave_summary`, `employee_leave_summary` | Đang làm (mã xong ở local, chưa lên dev) | duoc-CR-762 |
 
 ## 3. Chi tiết từng chức năng
 
@@ -120,9 +122,62 @@ Mỗi chức năng một mã cố định `CN-HRM-NN` (không tái dùng số kh
 - **Liên quan:** CN-HRM-02, `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` §4d. Bài HDSD: *Nhân sự — Lịch làm việc
   của phòng ban và cách đếm ngày nghỉ* (mục Trưởng phòng đổi lịch riêng). Hệ đang chạy phải tick tay — `03-lich-lam-viec.md` §21.
 
+### CN-HRM-05 — Xếp ca theo ngày
+
+- **Mục đích:** Trưởng phòng xếp lại ca theo tiếng cho từng nhân viên phòng mình từng ngày (việc làm không liền như livestream
+  bán hàng chia nhiều khung giờ); nhân viên biết ca của mình; số ngày nghỉ phép tính đúng theo ca. Chỉ xếp ca, không chấm công.
+- **Luồng chính:** *Nhân sự ▸ Lịch làm việc* ▸ bấm ô (người × ngày) ▸ hộp xếp ca (tên + thứ ngày + nhãn **Ca xếp riêng** /
+  **Nghỉ (xếp ca)** / **Theo mẫu tuần**): mục **Khung giờ làm việc** (tóm tắt *7 giờ · 1 ngày công*, khung đánh số với ô **Từ – Đến**
+  giờ tròn, **Thêm khung giờ**) hoặc **Mẫu nhanh** (**Theo lịch tuần**, **Hành chính 08–17**, **Nghỉ cả ngày**), **Ghi chú** ▸
+  **Lưu**. Áp cùng bộ khung cho thêm ngày / người: mở mục gập **Áp cùng ca cho ngày / người khác** ▸ chọn **Thêm ngày**, **Thêm
+  người (trên trang này)** ▸ nút chính đổi thành **Lưu cho N ô**. Gỡ về mẫu tuần: **Về mẫu tuần**. Chép cả tuần: **Chép tuần trước** ▸ (tick **Ghi đè ngày đã có ca ở tuần này** nếu cần) ▸
+  **Chép ca**. Nhân viên nhận chuông, xem thẻ **Ca làm việc tuần này** ở Trang cá nhân hoặc hỏi trợ lý *ca của tôi tuần này*.
+- **Luật nghiệp vụ:** ca theo ngày THẮNG mọi mẫu tuần; ngày không xếp theo mẫu tuần. Khung giờ tròn 00:00–24:00, không chồng, tối
+  đa 12 khung / ngày; không khung = nghỉ do xếp ca. Tính phép: ngày có ca = 1 ngày công; nửa ngày theo khung trước / từ 12:00 (ca ở
+  cả hai buổi 0,5, cả ca nằm trong buổi nghỉ 1, buổi không có khung 0); theo giờ = giờ nghỉ ∩ khung ÷ tổng giờ ca; ngày lễ 0. Không
+  đổi / gỡ ca ngày đã có đơn chờ duyệt / đã duyệt; không gỡ ca ngày hôm nay hoặc đã qua; phiếu nghỉ bù không nhận ngày nghỉ do xếp ca
+  ghi lùi. Áp hàng loạt tất cả hoặc không gì; chép tuần bỏ qua ngày đã qua (Trưởng phòng) và ngày có đơn nghỉ. Bảng đủ:
+  [`../03-lich-lam-viec.md` §22](../03-lich-lam-viec.md).
+- **Dữ liệu:** `tab_work_shift_day` (người, ngày, ghi chú; UNIQUE người × ngày) + `tab_work_shift_segment` (giờ bắt đầu, giờ kết
+  thúc SMALLINT); migration `wshift758`.
+- **Quyền:** Nhân sự `work_schedule.write` / `.delete` — mọi người trong phạm vi hồ sơ, mọi ngày; Trưởng phòng
+  `work_schedule_personal.write` / `.delete` — người trong phạm vi khóa, từ hôm nay. Không ai tự xếp ca cho chính mình. Xem lưới:
+  `employee.read`, hàng người theo Q9 — Nhân sự (`work_schedule.write`) / quản trị theo phạm vi hồ sơ, Trưởng phòng
+  (`work_schedule_personal.read`) chỉ phòng mình (gồm kiêm nhiệm) + bản thân, còn lại chỉ bản thân (`roster_visibility`, áp cho cả
+  `GET /api/work-shifts` và trợ lý); ca của chính mình: ai đăng nhập cũng xem được.
+- **Ngoại lệ / lỗi người dùng gặp:** mục 3 của [`../tai-lieu-ky-thuat/api.md`](../tai-lieu-ky-thuat/api.md) (*Bạn không được tự xếp
+  ca cho chính mình*, *Chỉ xếp ca từ hôm nay trở đi*, *Ngày dd/mm đã có đơn nghỉ …*, *Ô này vừa được người khác xếp ca, tải lại rồi
+  thử lại*…).
+- **Liên quan:** CN-HRM-04 (cùng khóa của Trưởng phòng), [`../02-nghi-phep.md` §18](../02-nghi-phep.md). Bài HDSD: *Nhân sự — Xếp
+  ca theo tiếng cho từng ngày*. Hạn chế đã biết: §22.10 của tài liệu lịch.
+
+### CN-HRM-06 — Phép năm cộng sau mỗi tháng làm đủ
+
+- **Mục đích:** *nhân viên làm đủ 1 tháng thì tính 1 ngày phép*: phép năm chỉ dùng được phần của các tháng ĐÃ LÀM XONG, tính từ
+  ngày làm chính thức (thời gian thử việc không tích); Nhân sự thấy ngay ai đang tính tạm vì thiếu HĐLĐ trên hệ thống.
+- **Luồng chính:** Nhân sự chạy script chuyển loại Phép năm sang *Cộng dần sau mỗi tháng làm đủ* một lần (hoặc đổi ô **Cách cấp
+  quỹ** trên form Loại nghỉ) ▸ hệ tính lại quỹ năm nay + năm sau ▸ màn *Quỹ phép năm* hiện số dùng được hôm nay, nhãn tình trạng
+  cạnh tên người, dải *chưa đủ HĐLĐ* kèm nút **Chỉ hiện người chưa đủ HĐLĐ** ▸ Nhân sự nhập bù HĐLĐ / ký HĐ chính thức / sửa ngày
+  vào làm ▸ quỹ của người đó tự tính lại. Nhân viên xem số ở dải số dư khi lập đơn, Trang cá nhân, hoặc hỏi trợ lý.
+- **Luật nghiệp vụ:** dùng được = hạn mức × số tháng đã làm xong / số tháng của kỳ, làm tròn xuống 0,5; tháng lịch, bắt đầu ngày
+  1–15 tính cả tháng, từ ngày 16 tính tháng sau (15/01 → 0, 01/02 → 1, 16/11 → 10 với hạn mức 12). Mốc = ngày bắt đầu HĐLĐ chính
+  thức đã ký sớm nhất; chỉ Thử việc / hồ sơ Thử việc → chưa tích; chỉ HĐ dịch vụ / cộng tác viên → không tích; chưa có HĐ → ngày
+  vào làm (tạm); HĐ chính thức đầu tiên muộn hơn ngày vào làm quá một tháng, không có Thử việc → ngày vào làm (lịch sử chưa đủ).
+  Áp ngay cả năm 2026; đã nghỉ quá số đã tích thì âm, không xin thêm được tới khi tích đủ. Thâm niên, mang sang, điều chỉnh, nghỉ
+  bù không cộng dần. Tự tính lại chỉ dòng có mốc đổi thật, chỉ năm nay và năm sau. Bảng đủ:
+  [`../02-nghi-phep.md` §19](../02-nghi-phep.md).
+- **Dữ liệu:** không thêm bảng, không migration — giá trị mới `4` của `tab_leave_type.accrual_mode`; tình trạng tích (1–6) dẫn
+  xuất, không lưu.
+- **Quyền:** không khóa mới. Xem như cũ (`leave_balance.read`, `leave_request.read` cho số dư của chính mình); đổi cách cấp quỹ
+  cần `leave_type.write`; ký HĐLĐ / sửa hồ sơ theo quyền của phân hệ đó.
+- **Ngoại lệ / lỗi người dùng gặp:** không có câu lỗi mới; xin vượt số đã tích bị chặn bằng câu thiếu quỹ cũ. Lỗi khi tự tính
+  lại hủy cả lần ký HĐ / lưu hồ sơ / sửa loại nghỉ.
+- **Liên quan:** CN-HRM-03 (trợ lý trả ba trường tích phép), hợp đồng lao động (`04-hop-dong-lao-dong.md`), chính sách nghỉ phép
+  (`02-nghi-phep.md` §15). Bài HDSD: *Phép năm cộng sau mỗi tháng làm đủ*. Sổ việc deploy: §19.8 của tài liệu nghỉ phép.
+
 ## 4. Luồng trạng thái chứng từ (nếu có)
 
-Không áp dụng cho kiêm nhiệm: trạng thái tính từ ngày, không có duyệt. CN-HRM-02 và CN-HRM-03 không có chứng từ riêng.
+Không áp dụng cho kiêm nhiệm: trạng thái tính từ ngày, không có duyệt. CN-HRM-02, CN-HRM-03, CN-HRM-05 và CN-HRM-06 không có chứng từ riêng (ca xếp không qua duyệt; tình trạng tích phép dẫn xuất từ HĐLĐ).
 
 ## 5. Câu hỏi còn mở
 

@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| Bản | 1.2 — 13/11/2026 (duoc-CR-757 lượt 2: **Trưởng phòng gán lịch riêng** cho nhân viên — khóa `work_schedule_personal`, §20 mới; sổ việc trước khi deploy §21 mới; §3 · §10 · §11 sửa) · 1.1 — 13/11/2026 (duoc-CR-757: tab **Lịch làm việc** ở trang phòng ban, đường `/tools/effective-department`, trợ lý AI đọc lịch làm việc và ngày đã nghỉ — §19 mới; §3 · §5 · §11 · §13 · §15 sửa, §5 sửa mã cấp cho khớp `WorkScheduleLevel`) · 1.0 — 05/10/2026 (duoc-CR-589) |
-| Ngày | 13/11/2026 |
+| Bản | 1.4 — 16/11/2026 (duoc-CR-761 lượt 2: **ai thấy ai trên Lịch làm việc** (Q9) — §22.4a mới; hộp Xếp ca làm lại — §22.8; cờ `leave_hold` của ô lưới — §22.9; dòng kiểm vai trò trước deploy — §22.11) · 1.3 — 16/11/2026 (duoc-CR-761: **Xếp ca theo ngày** — ca theo tiếng cho từng người từng ngày, nhiều khung rời, thắng mẫu tuần; tính phép theo ca; Trang cá nhân + chuông + trợ lý — §22 mới; §2 · §3 · §11 sửa) · 1.2 — 13/11/2026 (duoc-CR-757 lượt 2: **Trưởng phòng gán lịch riêng** cho nhân viên — khóa `work_schedule_personal`, §20 mới; sổ việc trước khi deploy §21 mới; §3 · §10 · §11 sửa) · 1.1 — 13/11/2026 (duoc-CR-757: tab **Lịch làm việc** ở trang phòng ban, đường `/tools/effective-department`, trợ lý AI đọc lịch làm việc và ngày đã nghỉ — §19 mới; §3 · §5 · §11 · §13 · §15 sửa, §5 sửa mã cấp cho khớp `WorkScheduleLevel`) · 1.0 — 05/10/2026 (duoc-CR-589) |
+| Ngày | 16/11/2026 |
 | Người phụ trách | Anh Được |
 | Trạng thái | Hiệu lực |
-| CR | **duoc-CR-589** · **duoc-CR-757** |
+| CR | **duoc-CR-589** · **duoc-CR-757** · **duoc-CR-761** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Lịch làm việc* |
-| Kế hoạch gốc | `plans/261005-0925-hr-lich-lam-viec/plan.md` · CR-757: [`plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md`](plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md) |
-| Bài Help Center | `backend/scripts/seed_help_nhan_su.py` — bài **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** (duoc-CR-757) |
+| Kế hoạch gốc | `plans/261005-0925-hr-lich-lam-viec/plan.md` · CR-757: [`plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md`](plans/261113-lich-lam-viec-phong-ban-tro-ly-tra-phep-duoc-cr-757/plan.md) · CR-761: [`plans/261116-xep-ca-theo-tieng-duoc-cr-761/plan.md`](plans/261116-xep-ca-theo-tieng-duoc-cr-761/plan.md) |
+| Bài Help Center | `backend/scripts/seed_help_nhan_su.py` — bài **Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ** (duoc-CR-757) · bài **Nhân sự — Xếp ca theo tiếng cho từng ngày** (duoc-CR-761) |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/01-nhan-su.md` · [`02-nghi-phep.md`](02-nghi-phep.md) |
 
 ---
@@ -35,6 +35,7 @@ Quản lý lịch làm việc hàng tuần: một mẫu lịch 7 ngày với lo�
 | **Gán lịch** | `tab_work_schedule_assignment` | Gán mẫu A cho (người/phòng/pháp nhân/hệ thống) B từ ngày T1 đến T2 — **có giá trị ngân hạng**. |
 | **Loại ngày** | `WorkDayKind` (bộ mã) | OFF / FULL / MORNING / AFTERNOON — quy tắc `(0,) / (8h) / (4h sáng) / (4h chiều)`. |
 | **Hiệu lực lịch** | `effective_from` / `effective_to` | Gán từ ngày này đến ngày kia. Từ ngày = **bắt buộc**; đến ngày = **NULL nếu không thời hạn**. |
+| **Ca xếp theo ngày** (duoc-CR-761) | `tab_work_shift_day` + `tab_work_shift_segment` | Ca RIÊNG của một người vào một ngày cụ thể: các khung giờ tròn rời nhau, **thắng** mọi mẫu tuần đã gán. Có dòng mà không khung = nghỉ do xếp ca. Xem §22. |
 
 ---
 
@@ -48,6 +49,8 @@ Quản lý lịch làm việc hàng tuần: một mẫu lịch 7 ngày với lo�
 | Thẻ lịch trên hồ sơ | Khung **Lịch làm việc** trong tab **Quỹ phép** của `/hr/employees/:id` (`?tab=leave`) | `employee.read` | xem cùng nhân sự |
 | Gán lịch RIÊNG cho nhân viên phòng mình (duoc-CR-757 lượt 2) | Nút **Đổi lịch riêng** ở khung Lịch làm việc của hồ sơ → `/hr/work-schedule-assignments` (hộp Thêm điền sẵn) | `work_schedule_personal.create` / `.write` / `.delete` (Trưởng phòng, bậc Phòng ban) | Trưởng phòng — xem §20 |
 | Tab **Lịch làm việc** của phòng ban (duoc-CR-757) | `/hr/departments/:id?tab=work-schedule` | `department.read` (xem); nút **Gán lịch cho phòng** cần `work_schedule.create`, nút **Xem gán lịch** cần `work_schedule.read` | ai xem được phòng ban — xem §19 |
+| Xếp ca theo ngày (duoc-CR-761) | Bấm ô trên lưới Xem lịch `/hr/work-roster` (chế độ **Tuần** hoặc **Tháng**) → hộp **Xếp ca**; nút **Chép tuần trước** ở chế độ Tuần | `work_schedule.write` / `.delete` (Nhân sự, mọi ngày) hoặc `work_schedule_personal.write` / `.delete` (Trưởng phòng, từ hôm nay) | Nhân sự, Trưởng phòng — xem §22 |
+| Thẻ **Ca làm việc tuần này** (duoc-CR-761) | Trang cá nhân `/me` | không cần khóa (chỉ lịch của chính mình) | mọi nhân viên — xem §22.8 |
 
 Đường menu (duoc-CR-754): **Mẫu lịch tuần** và **Gán lịch** là hai tab của *Nhân sự ▸ Thiết lập*; *Nhân sự ▸ Lịch làm việc* mở màn Xem lịch; trang phòng ban mở từ *Nhân sự ▸ Danh mục ▸ Phòng ban*.
 
@@ -252,6 +255,10 @@ Gác `employee.read` (xem nhân sự) — **không đòi** `work_schedule.read` 
 | `/api/work-schedule-assignments` (POST / PATCH / DELETE) | — | `work_schedule.<hành động>` **hoặc** `work_schedule_personal.<hành động>` (duoc-CR-757 lượt 2) | Đường Trưởng phòng chịu thêm các chốt §20.2; đọc (GET) vẫn `work_schedule.read` |
 | `/api/work-schedule-assignments/tools/assignable-employees` | GET | `work_schedule.create` hoặc `work_schedule_personal.create` | **Công cụ** (lượt 2): nhân sự ĐANG LÀM gán được lịch riêng — nguồn ô **Đối tượng áp dụng** ở cấp Nhân sự; `q` tìm mã / họ tên không dấu |
 | `/api/work-schedules/tools/effective-department` | GET | `department.read` + `get_scoped` phòng ban | **Công cụ** (duoc-CR-757): lịch hiệu lực của cả phòng + cấp nguồn + các dòng gán cấp phòng ban — xem §19.2 |
+| `/api/work-shifts` | GET | `employee.read` (phạm vi hồ sơ, hợp chính mình) | (duoc-CR-761) Ngày xếp ca trong khoảng ≤ 42 ngày, lọc phòng / người — §22.9 |
+| `/api/work-shifts/me` | GET | đăng nhập | Ca của chính mình từng ngày (mẫu tuần + ca xếp đã gộp) |
+| `/api/work-shifts/{employee_id}/{work_date}` | PUT / DELETE | `work_schedule.write` / `.delete` **hoặc** `work_schedule_personal.write` / `.delete` | Đặt ca một ô (thay cả danh sách khung) / gỡ về mẫu tuần (ngày ≤ hôm nay không gỡ được) |
+| `/api/work-shifts/bulk` · `/api/work-shifts/copy-week` | POST | như PUT | Áp một bộ khung cho nhiều người × nhiều ngày (tất cả hoặc không gì) · chép tuần trước (bỏ qua ngày đã qua / có đơn nghỉ) |
 
 Bảng đủ mọi đường của phân hệ (dựng bằng máy) và hợp đồng dữ liệu: [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
 
@@ -586,3 +593,245 @@ tự:
    docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep,nhan-su-ho-so --note "duoc-CR-757"
    docker compose exec -T api python scripts/reindex_help_rag.py
    ```
+
+---
+
+## 22. Xếp ca theo ngày (duoc-CR-761, 16/11/2026)
+
+Yêu cầu: Trưởng phòng xem lịch làm việc của cả phòng và xếp lại ca **theo tiếng** cho từng nhân viên; có việc làm không liền
+(livestream bán hàng) nên một ngày chia nhiều khung giờ. **Chỉ xếp ca, không chấm công** (chốt 16/10/2026 vẫn giữ). Chín câu chốt
+Q1–Q9 của người chủ ở [`plans/261116-xep-ca-theo-tieng-duoc-cr-761/plan.md`](plans/261116-xep-ca-theo-tieng-duoc-cr-761/plan.md).
+Mã: `work_schedule/shift_*.py`, `day_rules.py`, `resolver.py`, `resolver_many.py`, `roster_*.py`, `leave/workday_service.py`,
+`leave/comp_request_service.py`, `assistant/tools/work_shift_*.py`.
+
+### 22.1. Dữ liệu
+
+| Bảng | Cột | Luật |
+|---|---|---|
+| `tab_work_shift_day` | `employee_id`, `work_date`, `note` (String 255), AuditMixin | `UNIQUE(employee_id, work_date)` — một người một ngày một dòng. Có dòng mà KHÔNG khung = **nghỉ do xếp ca**; muốn về mẫu tuần thì XÓA dòng |
+| `tab_work_shift_segment` | `shift_day_id`, `start_hour` SMALLINT 0–23, `end_hour` SMALLINT 1–24, `sort_order` | Khung tròn bán mở `[start, end)`, 24 = hết ngày. `start < end`, không chồng (chạm nhau như 08–10 và 10–12 hợp lệ), tối đa **12 khung / ngày**. Luật ở MỘT chỗ: `shift_rules.normalize_segments` |
+
+Migration `wshift758` (nối sau `kn756a`). Giờ lưu bằng SỐ NGUYÊN vì `time` không biểu diễn được 24:00.
+
+### 22.2. Thứ tự thắng
+
+**Ca xếp theo ngày > Nhân sự > Phòng ban > Pháp nhân > Toàn hệ thống > mặc định T2–T7.** Ngày không có dòng ca thì theo mẫu
+lịch tuần như cũ (§9.1). `DaySpec.segments`: `None` = ngày theo mẫu tuần (mọi luật cũ giữ nguyên), khác `None` = ngày xếp ca
+(`()` = nghỉ do xếp ca). Với ngày xếp ca, loại ngày là DẪN XUẤT: có giờ trước 12:00 = có buổi sáng, có giờ từ 12:00 = có buổi
+chiều (khung 10–14 chạm cả hai). `resolver.load_day_plans` và `resolver_many` nạp ca theo khoảng ngày bằng số truy vấn cố định;
+lưới `GET /api/work-schedules/tools/roster` trả thêm `is_shift` + `shift` (khung, tổng giờ, ghi chú, ngày nghỉ do xếp ca).
+
+### 22.3. Tính ngày nghỉ phép theo ca (Q3, Q8)
+
+Một công thức cho mọi nơi đếm: `day_rules.leave_credit(spec, mask)` (đếm theo buổi) và `worked_hours` + `day_hours` (đếm theo
+giờ, qua `hourly_window`). Ngày theo mẫu tuần tính y như trước.
+
+| Ngày xếp ca | Nghỉ | Trừ |
+|---|---|---|
+| Có khung (bao nhiêu giờ cũng được) | Cả ngày | **1** ngày công |
+| Khung ở cả hai buổi | Nửa ngày sáng hoặc chiều | **0,5** |
+| Mọi khung nằm trong buổi xin nghỉ (Q8) | Nửa ngày đúng buổi đó | **1** (nghỉ hết ca = nghỉ cả ngày công) |
+| Không khung nào trong buổi xin nghỉ | Nửa ngày buổi đó | **0** |
+| Nghỉ do xếp ca (không khung) | Bất kỳ | **0** |
+| Có khung | Theo giờ | giờ nghỉ trùng khung ÷ tổng giờ ca ngày đó (khe giữa các khung không tính) |
+| Ngày lễ | Bất kỳ | **0** — ngày lễ vẫn bỏ qua dù có ca |
+
+Ví dụ:
+
+- Ca livestream **08–10, 14–16, 20–23** (tổng 7 giờ). Xin nghỉ theo giờ **14:00–16:00** → 2 ÷ 7 = **0,29** ngày. Xin nghỉ buổi
+  sáng → **0,5** (ca có ở cả hai buổi). Xin nghỉ cả ngày → **1**.
+- Ca chỉ buổi sáng **08–12**: xin nghỉ buổi sáng → **1** (Q8); xin nghỉ buổi chiều → **0**.
+- Ca **08–12, 13–17** vào ngày lễ: không trừ ngày nào.
+- Đơn theo giờ vắt nhiều ngày: ngày đầu từ giờ bắt đầu, ngày cuối tới giờ kết thúc, ngày giữa trọn ngày; phần ngoài khung ca tự
+  không tính (`hourly_window`).
+
+Số ngày trên đơn vẫn là **gợi ý** (`total_days` sửa đè được) như §12.
+
+### 22.4. Quyền xếp ca
+
+Không thêm khóa mới — dùng lại hai khóa của §20. Mã: `shift_access.py` (`require_shift_action` + `check_cells`, kiểm TỪNG ô
+người × ngày).
+
+| Đường | Khóa | Ai | Ngày |
+|---|---|---|---|
+| Nhân sự | `work_schedule.write` / `.delete` | mọi người trong phạm vi `employee.read` | mọi ngày, kể cả đã qua |
+| Trưởng phòng (chỉ khi thiếu khóa Nhân sự ở hành động đó) | `work_schedule_personal.write` / `.delete` | người trong phạm vi khóa đó, đo trên hồ sơ nhân sự đích (cùng luật §20.1) | chỉ từ **hôm nay** (`vn_today()`) |
+
+- **Không ai tự xếp ca cho chính mình** (Q7), kể cả Nhân sự — 403 *Bạn không được tự xếp ca cho chính mình*. Ngoại lệ duy nhất
+  ở backend là quản trị hệ thống (`is_system_admin`, cùng quy ước các chốt tự xử lý khác); giao diện vẫn khóa ô của chính mình
+  với mọi người.
+- Ngoài phạm vi và không tồn tại trả CÙNG một câu (400 *Nhân sự được xếp ca không tồn tại hoặc ngoài phạm vi của bạn*).
+- **Gỡ ca về mẫu tuần (DELETE) bị chặn cho ngày hôm nay và ngày đã qua với MỌI người**, kể cả Nhân sự (422): gỡ là viết lại ngày
+  đã / đang diễn ra (ngày nghỉ do xếp ca thành ngày làm hoặc ngược lại). Muốn sửa thì đặt lại khung giờ.
+- Xem: xem §22.4a — đường vẫn gác `employee.read`, nhưng HÀNG người trả về theo luật ai thấy ai (Q9); ca của chính mình thì ai
+  đăng nhập cũng xem được (`GET /api/work-shifts/me`, Trang cá nhân, `my_work_shifts`).
+
+### 22.4a. Ai thấy ai trên màn Lịch làm việc (Q9, chốt 16/11/2026)
+
+MỘT chỗ duy nhất: `work_schedule/roster_visibility.py` (`visible_employee_condition` / `apply_visible_employees`), áp cho lưới
+**Xem lịch** (`GET /api/work-schedules/tools/roster`), danh sách ca `GET /api/work-shifts` và công cụ trợ lý
+`employee_work_shifts`. Bậc tính theo quyền của NGƯỜI XEM, không theo bậc `employee.read` của họ:
+
+| Người xem | Điều kiện | Thấy |
+|---|---|---|
+| Nhân sự | có `work_schedule.write` (hoặc quản trị hệ thống) | Mọi người trong phạm vi đọc hồ sơ `employee` (như trước) |
+| Trưởng phòng | không có khóa trên nhưng có `work_schedule_personal.read` (+ `.write` để xếp ca) | CHỈ người trong phạm vi khóa đó (đo trên hồ sơ nhân sự đích, gồm phòng kiêm nhiệm và ô *Phòng ban được xem* cùng công ty) CỘNG chính mình |
+| Giám đốc (Q10) | `work_schedule_personal` CHỈ XEM, bậc Công ty (seed: `company_head`) | Cả pháp nhân của mình (gồm công ty kiêm nhiệm), không sửa; giao diện chế độ *chỉ xem*: ô lọc phòng ban có *Tất cả phòng ban*, không ô tick / Chép tuần / hộp xếp ca |
+| Còn lại | — | CHỈ chính mình (`employee_id` của tài khoản; chưa gắn hồ sơ = không thấy ai) |
+
+- Đường vẫn đòi `employee.read` — thiếu khóa đó thì không mở được màn (403), kể cả người chỉ xem mình. Luật trên chỉ THU HẸP hàng.
+- Bộ lọc phòng / pháp nhân / mã người AND thêm BÊN TRONG tập này: chọn người ngoài tập thì ra rỗng, không lộ người đó có thật không.
+- Lớp nghỉ phép trên ô vẫn theo phạm vi `leave_request.read` riêng (thấy người không có nghĩa là thấy đơn).
+- Giao diện (`hr/utils/work-roster-view-scope.ts`, khớp backend): Nhân sự đủ bộ lọc pháp nhân + phòng ban + ô tìm; Trưởng phòng
+  không có ô pháp nhân, ô phòng ban chỉ liệt kê phòng của mình (chính + kiêm nhiệm có bật phạm vi), mặc định mở phòng CHÍNH, có
+  mục **Các phòng của tôi** khi có từ hai phòng (ghi `department=0` lên URL); người còn lại chỉ thấy dòng của mình, ẩn bộ lọc và ô tìm.
+- ⚠️ Hệ đang chạy: vai trò nào có `employee.read` rộng mà KHÔNG có `work_schedule.write` (ví dụ quản lý xem hồ sơ cả công ty, kế
+  toán, giám đốc chỉ đọc) sẽ HẸP lại sau deploy — chỉ còn thấy chính mình (hoặc phòng mình nếu có `work_schedule_personal.read`).
+  Kiểm trước khi deploy (§22.11 bước 2).
+
+### 22.5. Chốt đơn nghỉ đang giữ ngày (Q6)
+
+Ngày đã có đơn nghỉ **chờ duyệt** hoặc **đã duyệt** thì KHÔNG đổi / gỡ ca được (409), vì số ngày của đơn đã tính trên ca cũ
+(đơn đã duyệt đã trừ quỹ). Muốn xếp lại phải sửa / hủy đơn trước. Mã: `shift_leave_conflicts.find_leave_conflicts`.
+
+- Đọc **từng khoảng** của đơn qua `leave/period_spans` (ngày khe giữa hai khoảng vẫn xếp được); đơn theo giờ cũng giữ ngày.
+- **Luật giấu mã đơn:** câu báo chỉ kèm mã đơn + trạng thái (*Ngày 18/11 đã có đơn nghỉ NP012 (chờ duyệt) — sửa / hủy đơn
+  trước rồi xếp ca.*) khi người xếp xem được đơn đó theo phạm vi `leave_request.read`; không thì chỉ *Ngày 18/11 đã có đơn nghỉ
+  của nhân viên này — liên hệ Nhân sự để sửa đơn trước.* Chốt đơn nghỉ chỉ chạy SAU khi quyền đã qua, nên người không có quyền
+  xếp ca không dò được ai có đơn.
+- Ô có đơn trên lưới không bấm được, rê chuột hiện *Đã có đơn nghỉ — sửa đơn trước*.
+- Số truy vấn cố định: một truy vấn đơn + khoảng, một truy vấn phạm vi `leave_request`, bất kể bao nhiêu ô.
+
+### 22.6. Nghỉ bù và ngày nghỉ do xếp ca (Q7)
+
+Phiếu nghỉ bù nhận ngày làm vào ngày nghỉ. Ngày nghỉ **do xếp ca** (dòng ca không khung) mà dòng ca đó được ghi **vào hoặc sau
+chính ngày đó** (so ngày VN của `updated_at`, chưa sửa thì `created_at`) thì KHÔNG dùng để xin nghỉ bù — 422 *Ngày này được xếp
+nghỉ sau khi đã qua, không dùng để xin nghỉ bù* (`comp_request_service._block_retroactive_shift_off`). Không thì xếp nghỉ lùi
+ngày là cách biến một ngày đã đi làm thành ngày được bù. Ngày nghỉ theo mẫu tuần và ngày lễ giữ luật cũ (ngày lễ vẫn qua kể cả
+khi có ca nghỉ).
+
+### 22.7. Ghi hàng loạt, chép tuần, thông báo
+
+| Thao tác | Đường | Khi có ô sai |
+|---|---|---|
+| Đặt ca một ô | `PUT /{employee_id}/{work_date}` | Lỗi của ô đó |
+| **Áp cùng ca cho ngày / người khác** → **Lưu cho N ô** (cùng bộ khung cho nhiều người × nhiều ngày) | `POST /bulk` | **TẤT CẢ hoặc KHÔNG GÌ**: kiểm hết các ô trước, sai một ô (tự xếp, ngoài phạm vi, ngày quá khứ, có đơn nghỉ) là không ghi ô nào; lỗi `shift_rejected` kèm danh sách ô bị từ chối |
+| **Chép tuần trước** | `POST /copy-week` | Tự xếp / ngoài phạm vi vẫn từ chối cả lượt; nhưng ngày đích **có đơn nghỉ** thì BỎ QUA (liệt kê), đường Trưởng phòng **bỏ qua ngày đích đã qua**; ngày đích đã có ca giữ nguyên trừ khi tick **Ghi đè ngày đã có ca ở tuần này** |
+
+Chép tuần chỉ chép ngày ĐÃ có ca riêng ở tuần nguồn (kể cả ngày nghỉ do xếp ca); ngày theo mẫu tuần không chép. Trần mỗi lượt:
+**50 người, 42 ngày, 500 ô**; khoảng xem ≤ 42 ngày.
+
+**Đồng thời:** hàng ca đã có bị khóa `FOR UPDATE` khi nạp và luôn được cập nhật khi đổi khung; hai lượt cùng tạo một ô mới đụng
+`UNIQUE` hoặc deadlock / hết chờ khóa → cả lượt hoàn tác, trả 409 *Ô này vừa được người khác xếp ca, tải lại rồi thử lại*.
+
+**Nhật ký + chuông (Q4):** mỗi lượt lưu ghi MỘT dòng nhật ký (`work_shift`, cùng giao dịch) và MỘT chuông cho mỗi nhân viên bị đổi:
+tiêu đề *Ca làm việc của bạn vừa được cập nhật*, nội dung *Ca làm việc của bạn ngày 18/11–20/11 vừa được cập nhật bởi …*, liên
+kết `/me` (Trang cá nhân). Không chuông cho chính người bấm; chỉ tài khoản đang hoạt động; lỗi chuông chỉ ghi log, không làm
+hỏng việc xếp ca. Lượt không đổi ô nào thì không nhật ký, không chuông.
+
+### 22.8. Giao diện (Q5)
+
+- **Lưới Xem lịch** (*Nhân sự ▸ Lịch làm việc*): hàng người theo §22.4a; ô có ca xếp riêng là NGOẠI LỆ nên nổi màu tím (chữ trắng); chế độ **Tuần** hiện
+  khung giờ đủ *HH:MM–HH:MM* (1–2 dòng), ngày nghỉ do xếp ca ghi *Nghỉ (xếp ca)*; chế độ **Tháng** hiện ký hiệu số giờ (*7h*) hoặc
+  *N*. Chú giải thêm mục **Ca xếp theo ngày**. Người có khóa xếp ca bấm ô là mở hộp; trên điện thoại bấm dòng ở danh sách ngày.
+- **Hộp Xếp ca** (bản làm lại 16/11/2026): đầu hộp căn trái — dòng 1 tên nhân sự, dòng 2 thứ + ngày (*Thứ Ba, 17/11/2026*); bên
+  phải một nhãn trạng thái ô: **Ca xếp riêng** (màu ca) · **Nghỉ (xếp ca)** · **Theo mẫu tuần**. Thân hộp:
+  - Mục **Khung giờ làm việc**: hàng tiêu đề bên phải là tóm tắt *7 giờ · 1 ngày công* (không khung: *Nghỉ cả ngày · không tính
+    công*; có dòng lỗi: *— giờ*); thanh ngày 00:00–24:00 tô các khung kèm số thứ tự; danh sách khung đánh số tròn **1, 2, 3…**,
+    mỗi dòng [số] [ô ghép **Từ – Đến** gồm hai ô chọn giờ tròn HH:MM, ô Đến chỉ có giờ sau ô Từ, tới 24:00] [*x giờ*] [nút thùng
+    rác, gợi ý **Xóa khung**]; điện thoại thì *x giờ* xuống dưới ô ghép. Lỗi (Đến ≤ Từ, trùng giờ khung khác) hiện ngay dưới dòng
+    sai. Cuối danh sách nút nét đứt **Thêm khung giờ** (tắt kèm lý do *Đã đủ 12 khung giờ — tối đa một ngày.* / *Không còn giờ
+    trống trong ngày để thêm khung.*). Không khung nào: *Chưa có khung giờ nào — thêm khung hoặc chọn mẫu nhanh.*
+  - **Mẫu nhanh:** **Theo lịch tuần** · **Hành chính 08–17** (08–12, 13–17) · **Nghỉ cả ngày**. Mẫu tuần có giờ lẻ thì điền sẵn đã
+    làm tròn (lùi giờ bắt đầu, lên giờ kết thúc) kèm câu nhắc.
+  - Ô **Ghi chú** (≤ 255 ký tự, có bộ đếm).
+  - Mục gập **Áp cùng ca cho ngày / người khác** *(tùy chọn)*, mặc định gập: bên trong **Thêm ngày** và **Thêm người (trên trang
+    này)**, mỗi phần có **Chọn hết** / **Bỏ chọn**; ngày mờ là ngày không xếp được (*Không xếp được ngày này (đã qua hoặc đã có đơn
+    nghỉ)*), người có đơn nghỉ ở ngày đang chọn mang nhãn **Có đơn nghỉ**. Có chọn thêm thì dòng tóm tắt *Thêm 3 ngày · 2 người →
+    tổng 8 ô* hiện cả khi gập; ô bị đơn nghỉ giữ thì cảnh báo *N ô đã có đơn nghỉ — bỏ chọn người / ngày đó rồi mới áp được.*
+  - Lý do khóa (chữ mờ có ổ khóa, ngay trên chân hộp) và đơn nghỉ đang phủ ngày đó (*Đơn nghỉ NP… (loại, chờ duyệt / đã duyệt) —
+    xem đơn*).
+- **Chân hộp** — một bố cục: trái **Về mẫu tuần** (chỉ khi ô có ca riêng và có quyền gỡ; ngày hôm nay / đã qua thì tắt kèm *Ngày
+  đã qua (hoặc hôm nay) không về mẫu tuần được — sửa khung giờ thay vì xóa.*; bấm thì hỏi xác nhận *Gỡ ca xếp riêng ngày … của …?*);
+  phải [lý do tắt] **Hủy** · nút chính **Lưu** (chỉ ô này) hoặc **Lưu cho N ô** (có chọn thêm ngày / người). Nút chính tắt luôn kèm
+  lý do: *Đang lưu…* · *Đang tải lịch tuần…* · *Còn khung giờ bị lỗi* · *Có ô không áp được — xem cảnh báo ở trên* · *Chưa thay đổi
+  gì* (ô chưa có ca mà chưa sửa gì — tránh bấm nhầm biến mẫu tuần thành ca riêng). Điện thoại (tấm trượt): lý do trên cùng, rồi nút
+  chính, **Hủy**, **Về mẫu tuần** xếp chồng hết bề ngang. Ô chỉ xem: khung giờ là danh sách chữ thường, một nút **Đóng**; lý do khóa:
+  *Bạn không có quyền xếp ca.* · *Bạn không tự xếp ca cho mình — nhờ người có quyền xếp giúp.* · *Đã có đơn nghỉ — sửa đơn trước.* ·
+  *Ngày đã qua: Trưởng phòng chỉ xếp ca từ hôm nay trở đi.*
+- **Chép tuần trước** (thanh công cụ, chỉ chế độ Tuần): tick ô chọn ở đầu dòng (máy tính) để chọn người, *Đã chọn N* + nút bỏ
+  chọn; không chọn ai thì chép cho mọi dòng sửa được trên trang. Hộp xác nhận nêu tuần nguồn → tuần đích, bốn ý (chỉ chép ngày đã
+  xếp ca riêng; ngày đã qua bỏ qua — chỉ Trưởng phòng; ngày có đơn nghỉ không chép; không chép cho chính bạn), ô **Ghi đè ngày đã
+  có ca ở tuần này**, nút **Chép ca**.
+- **Trang cá nhân**: thẻ **Ca làm việc tuần này** (đổi tuần bằng nút mũi tên + **Tuần này**): mỗi ngày một dòng — khung giờ (nổi
+  màu khi là ca xếp riêng), số giờ, nguồn (*Ca xếp riêng* hoặc tên mẫu lịch), *Nghỉ* / *Nghỉ (xếp ca)* / *Lễ: …*, ghi chú. Chuông
+  báo ca mở về đây.
+- **Trợ lý AI / bot / cổng MCP**: `my_work_shifts` (ca của tôi, ≤ 42 ngày, mặc định tuần này) và `employee_work_shifts` (ca của
+  người khác cho người có `employee.read`, theo mã / tên / phòng, ≤ 14 ngày, trần 210 ô người × ngày). Chỉ đọc, không lương; nằm
+  trong nhóm **Nghỉ phép và ca làm việc** của cấu hình MCP. Chi tiết: `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/02-danh-sach-api-tool.md`.
+
+### 22.9. API
+
+| Đường | Quyền | Ghi chú |
+|---|---|---|
+| `GET /api/work-schedules/tools/roster` | `employee.read` | (có từ CR-589) Hàng theo §22.4a. Mỗi ô thêm `is_shift` + `shift` (ngày xếp ca) và cờ **`leave_hold`**: ngày đó đang có đơn nghỉ chờ duyệt / đã duyệt của người này nên KHÔNG xếp / đổi ca được — cùng luật `shift_leave_conflicts`, kể cả ngày lễ / ngày nghỉ, không lọc phạm vi `leave_request` và không lộ mã đơn (thêm 2 truy vấn cố định). Giao diện khóa ô theo cờ này |
+| `GET /api/work-shifts` | `employee.read` | `from_date`, `to_date` (≤ 42 ngày), `department_id`, `employee_id`; chỉ ngày có ca riêng; hàng theo §22.4a |
+| `GET /api/work-shifts/me` | đăng nhập | Lịch của mình từng ngày, mẫu tuần + ca xếp đã gộp |
+| `PUT /api/work-shifts/{employee_id}/{work_date}` | `work_schedule.write` hoặc `work_schedule_personal.write` | Thay cả danh sách khung; rỗng = nghỉ do xếp ca |
+| `DELETE /api/work-shifts/{employee_id}/{work_date}` | `work_schedule.delete` hoặc `work_schedule_personal.delete` | Về mẫu tuần; ngày ≤ hôm nay → 422 với mọi người |
+| `POST /api/work-shifts/bulk` | như PUT | Tất cả hoặc không gì, `error.details.rejected[]` |
+| `POST /api/work-shifts/copy-week` | như PUT | Trả `created`, `updated`, `skipped`, `skipped_past`, `skipped_leave`, `leave_conflicts[]`, `changed` |
+
+Hợp đồng dữ liệu và câu lỗi đủ: mục 2–3 của [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md).
+
+### 22.10. Hạn chế đã biết
+
+- **Đơn Nháp / Trả về giữ số ngày cũ.** Chốt Q6 chỉ chặn đơn chờ duyệt / đã duyệt; đơn Nháp hoặc bị Trả về không chặn xếp ca, và số
+  ngày đã lưu trên đơn KHÔNG tự tính lại. Người nộp mở đơn ra sửa thì form gợi ý lại theo ca mới; gửi duyệt mà không mở lại là gửi
+  số cũ.
+- **Sửa ghi chú làm chốt nghỉ bù báo nhầm.** Chốt §22.6 so `updated_at` của dòng ca; Nhân sự sửa CHỈ ghi chú của một ngày nghỉ do
+  xếp ca sau ngày đó cũng đẩy `updated_at` lên, nên phiếu nghỉ bù cho ngày đó bị chặn dù ngày nghỉ đã xếp từ trước. Cách tránh: đừng
+  sửa ca của ngày đã qua nếu ngày đó còn có thể được xin nghỉ bù.
+- Giao diện đọc kết quả chép tuần ở khóa `skipped_leave_items` trong khi máy chủ trả `leave_conflicts`, nên thông báo chỉ nêu SỐ
+  ngày bỏ qua vì đơn nghỉ, chưa liệt kê tên người và mã đơn (đã báo chủ khu giao diện, 16/11/2026).
+- Không chấm công, không ca qua đêm (khung kết thúc tối đa 24:00; ca 22:00–06:00 phải chia hai ngày).
+
+### 22.11. Sổ việc deploy duoc-CR-761 (dev / prod)
+
+1. Deploy mã; migration **`wshift758`** chạy cùng `alembic upgrade head` (tạo hai bảng, không đụng dữ liệu cũ). Khởi động lại api.
+   Dịch vụ AI chạy chế độ `service` phải dựng lại cùng đợt để có hai công cụ mới.
+2. **Kiểm trước deploy — ai sẽ HẸP lại (Q9, §22.4a):** liệt kê vai trò có `employee.read` mà KHÔNG có `work_schedule.write`; người
+   giữ các vai trò đó (trừ quản trị) sau deploy chỉ còn thấy chính mình trên *Lịch làm việc*, hoặc phòng mình nếu vai trò có
+   `work_schedule_personal.read`. Báo người chủ danh sách trước khi lên; ai cần xem rộng thì tick `work_schedule.write` (lưu ý khóa
+   này cho xếp ca mọi người) hoặc `work_schedule_personal.read` đúng bậc. Câu SQL đọc (chỉ đọc):
+
+   ```sql
+   SELECT r.code, r.name,
+          MAX(p.entity = 'employee' AND p.can_read) AS employee_read,
+          MAX(p.entity = 'work_schedule' AND p.can_write) AS hr_write,
+          MAX(p.entity = 'work_schedule_personal' AND p.can_read) AS personal_read
+   FROM tab_role r JOIN tab_permission p ON p.role_id = r.id
+   GROUP BY r.id, r.code, r.name HAVING employee_read = 1 AND hr_write = 0;
+   ```
+3. **Quyền (D-018, seed không ghi đè):** không có khóa mới. Kiểm vai trò Nhân sự (`hr_leave`, `hr_profile` hoặc vai trò thật đang
+   dùng) có `work_schedule.write` và `work_schedule.delete` — thiếu thì tick tay ở *Quản trị ▸ Phân quyền tài khoản*. Trưởng phòng
+   dùng `work_schedule_personal.write` / `.delete` đã tick ở bước 4 §21 (chưa làm §21 thì làm trước). Giám đốc (Q10): tick
+   **Nhân sự › Lịch làm việc riêng** CHỈ ô *Xem*, phạm vi **Công ty** cho `company_head` và mọi vai trò giám đốc tự tạo trên hệ
+   (vd `MANAGER` — không có trong seed). Người đang đăng nhập phải đăng xuất / đăng nhập lại.
+4. Cẩm nang trợ lý và bài hướng dẫn trên đúng môi trường đích:
+
+   ```bash
+   docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep --sync-summary --note "duoc-CR-761"
+   docker compose exec -T api python scripts/seed_help_nhan_su.py
+   docker compose exec -T api python scripts/reindex_help_rag.py
+   ```
+
+   RAG local đang tắt (`AI_RAG_ENABLED`) nên chưa nạp lại chỉ mục ở local — bước `reindex_help_rag.py` phải chạy trên dev ngay
+   sau khi lên bản.
+5. Thử nhanh: Trưởng phòng mở *Nhân sự ▸ Lịch làm việc*, chỉ thấy người phòng mình + bản thân; bấm một ô ngày mai của nhân
+   viên, bấm **Thêm khung giờ** hai lần, **Lưu**; nhân viên thường mở màn chỉ thấy dòng của mình; nhân viên đó
+   thấy chuông và thẻ **Ca làm việc tuần này** ở Trang cá nhân; hỏi trợ lý *ca của tôi tuần này*.
+
+Bài kiểm: `test/backend/test_xep_ca_theo_tieng_cr761.py`, `test_tro_ly_ca_lam_viec_cr761.py` (cùng các bài lịch làm việc cũ đã sửa:
+`test_lich_lam_viec_phan_giai.py`, `test_lich_lam_viec_roster.py`, `test_lich_lam_viec_tinh_ngay_nghi.py`); vitest
+`src/modules/hr` (`work-shift-*`, `my-shift-day`), `src/app/components/profile/profile-shift-card.test.tsx`.

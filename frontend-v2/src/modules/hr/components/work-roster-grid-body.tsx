@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 
 import { cn } from '@/shared/utils/cn'
-import type { WorkRosterDay, WorkRosterItem } from '../types/work-roster'
+import type { WorkRosterDay, WorkRosterInteraction, WorkRosterItem } from '../types/work-roster'
 import type { WorkRosterDepartmentGroup } from '../utils/work-roster-summary'
 import { ROSTER_HEADER_HEIGHT, ROSTER_ROW_GRID, STICKY_LEAVE_SLOTS } from './work-roster-grid-layout'
 import { WorkRosterRow } from './work-roster-grid-row'
@@ -13,6 +13,7 @@ interface WorkRosterGridBodyProps {
   rowHeight: number
   todayISO: string
   leaveIds: ReadonlySet<number>
+  interaction?: WorkRosterInteraction
 }
 
 type Entry =
@@ -53,7 +54,15 @@ function splitIntoBatches(groups: WorkRosterDepartmentGroup[], leaveIds: Readonl
  * Đại ca chốt 05/10/2026: "3 row thì từ row 4 5 6 đẩy lên 1 lượt". Mọi bản dùng JS theo dõi cuộn trước đó
  * (chồng cuốn chiếu, chồng 3 ô) đều bị chê giật/loạn vì JS chạy SAU khi trình duyệt đã cuộn.
  */
-export function WorkRosterGridBody({ groups, days, compact, rowHeight, todayISO, leaveIds }: WorkRosterGridBodyProps) {
+export function WorkRosterGridBody({
+  groups,
+  days,
+  compact,
+  rowHeight,
+  todayISO,
+  leaveIds,
+  interaction,
+}: WorkRosterGridBodyProps) {
   const batches = splitIntoBatches(groups, leaveIds)
   return (
     <>
@@ -73,7 +82,16 @@ export function WorkRosterGridBody({ groups, days, compact, rowHeight, todayISO,
             }
             const { item, slot } = entry
             if (slot === null) {
-              return <WorkRosterRow key={item.employee_id} item={item} days={days} compact={compact} todayISO={todayISO} />
+              return (
+                <WorkRosterRow
+                  key={item.employee_id}
+                  item={item}
+                  days={days}
+                  compact={compact}
+                  todayISO={todayISO}
+                  interaction={interaction}
+                />
+              )
             }
             const pad = (STICKY_LEAVE_SLOTS - 1 - slot) * rowHeight
             return (
@@ -83,6 +101,7 @@ export function WorkRosterGridBody({ groups, days, compact, rowHeight, todayISO,
                   days={days}
                   compact={compact}
                   todayISO={todayISO}
+                  interaction={interaction}
                   stickyStyle={{ top: ROSTER_HEADER_HEIGHT + slot * rowHeight, marginBottom: pad }}
                 />
                 {pad > 0 && <div aria-hidden style={{ marginTop: -pad }} />}

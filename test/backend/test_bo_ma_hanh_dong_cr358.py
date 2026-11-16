@@ -68,6 +68,8 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     #  `f"tool:{name}"` của công cụ trợ lý (HỌ mã) + thao tác chủ khóa kết nối AI (ai-CR-221).
     "modules/agent_hub/erp.py::audit": ("tool:list_purchase_orders", "key_reveal", "key_enable", "key_disable"),
     "modules/category_assignee/service.py::bulk_upsert": ("create", "update"),
+    #  duoc-CR-761: xếp ca theo ngày — đặt / áp hàng loạt / chép tuần ghi `update`, gỡ ca về mẫu tuần ghi `delete`.
+    "modules/work_schedule/shift_controller.py::_finish": ("update", "delete"),
     #  bao-CR-621: nhập gói skill — tạo mới hay thay gói cho skill trùng tên.
     "modules/ai_skill/service.py::import_package": ("create", "update"),
     #  ai-CR-207: tải tệp báo cáo qua đường dùng một lần — `download_tokens.AUDIT_ACTION` = "export".

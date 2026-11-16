@@ -292,7 +292,8 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
         with db.begin_nested():
             if existing:
                 out = service.update_employee_core(db, existing, payload, ctx.user.id,
-                                                   lock_users=ctx.apply, import_mode=True)
+                                                   lock_users=ctx.apply, import_mode=True,
+                                                   refresh_quota=ctx.apply)
                 obj = existing
             else:
                 obj = service.create_employee_core(db, payload, ctx.user.id)

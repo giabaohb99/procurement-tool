@@ -22,10 +22,10 @@ from sqlalchemy.orm import Session
 from app.core.vn_time import vn_today
 from app.modules.employee.model import Employee
 
-from . import accrual_service, policy_allocation
+from . import accrual_service, accrual_start_service, policy_allocation
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType, LeaveTypeSeniority
-from .constants import LeaveAccrualMode
+from .constants import ACCRUAL_HOLDBACK_MODES, LeaveAccrualMode
 
 
 def seniority_years(hire_date: date | None, at: date | None = None) -> int:
@@ -94,12 +94,15 @@ def get_balance(db: Session, employee_id: int, year: int, leave_type_id: int,
 
 
 def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
-                   actor: int = 0, *, for_update: bool = False) -> LeaveBalance:
+                   actor: int = 0, *, for_update: bool = False, starts: dict | None = None) -> LeaveBalance:
     """Lấy dòng quỹ, tự cấp phát nếu chưa có. Không commit — nơi gọi tự chốt.
 
     Cấp phát tự động lúc chạm tới, thay vì một công việc nền chạy đêm 31/12:
     hệ này không có bộ chạy nền, và một công việc nền hỏng lặng lẽ thì tới tháng
     Hai mới có người phát hiện. Cấp lúc chạm thì sai cũng lộ ngay tại chỗ.
+
+    `starts` = `{employee_id: AccrualStart}` nạp gom (đường cấp quỹ hàng loạt, loại MONTHLY_AFTER) để khỏi truy vấn HĐLĐ
+    từng người.
 
     Q1 của kế hoạch: cấp **một lần đầu năm**, cấn thâm niên tính tại 01/01 —
     không cộng dần theo tháng làm việc. Đổi được sau vì nằm gọn trong hàm này.
@@ -126,7 +129,7 @@ def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
     row = LeaveBalance(
         employee_id=employee.id, year=year, leave_type_id=leave_type.id,
         company_id=getattr(employee, "company_id", 0) or 0,
-        allocated_days=policy_allocation.allocated_days(db, leave_type, employee, year),
+        allocated_days=policy_allocation.allocated_days(db, leave_type, employee, year, starts=starts),
         seniority_days=seniority_days(db, leave_type.id, years),
         created_by=actor, updated_by=actor,
     )
@@ -150,36 +153,55 @@ _UNSET = object()
 
 
 def available_days(db: Session, row: LeaveBalance, today: date | None = None, *,
-                   leave_type: LeaveType | None = None, hire_date=_UNSET) -> float:
-    """`row.remaining_days` trừ phần CHƯA TỚI THÁNG của loại cộng dần (duoc-CR-715).
+                   leave_type: LeaveType | None = None, hire_date=_UNSET, accrual_start=_UNSET) -> float:
+    """`row.remaining_days` trừ phần CHƯA TỚI HẠN của loại cộng dần (duoc-CR-715, 759).
 
-    Chế độ khác MONTHLY thì không trừ gì — kết quả y hệt `row.remaining_days`. Thâm niên / mang sang / điều
-    chỉnh không bị cộng dần: chỉ `allocated_days` bị giữ lại một phần.
+    Chế độ khác MONTHLY / MONTHLY_AFTER thì không trừ gì — kết quả y hệt `row.remaining_days`. Thâm niên / mang sang /
+    điều chỉnh không bị cộng dần: chỉ `allocated_days` bị giữ lại một phần.
 
-    Gọi trong VÒNG LẶP thì truyền sẵn `leave_type` và `hire_date` (đã nạp một lượt) để khỏi tra lại từng dòng;
-    không truyền thì tra qua `db.get` (có bản nhớ của phiên).
+    MONTHLY_AFTER tính từ NGÀY LÀM CHÍNH THỨC (`accrual_start_service`), KHÔNG dùng `hire_date`.
+
+    Gọi trong VÒNG LẶP thì truyền sẵn `leave_type`, `hire_date` (MONTHLY) và `accrual_start` (MONTHLY_AFTER) đã nạp một
+    lượt để khỏi tra lại từng dòng; không truyền thì tra qua `db.get` / một truy vấn HĐLĐ.
     """
     leave_type = leave_type or db.get(LeaveType, row.leave_type_id)
-    if leave_type is None or int(leave_type.accrual_mode or 1) != int(LeaveAccrualMode.MONTHLY):
+    mode = int(leave_type.accrual_mode or 1) if leave_type is not None else 1
+    if mode not in ACCRUAL_HOLDBACK_MODES:
         return row.remaining_days
-    if hire_date is _UNSET:
-        employee = db.get(Employee, row.employee_id)
-        hire_date = getattr(employee, "hire_date", None) if employee else None
-    held = accrual_service.accrual_holdback(
-        row.allocated_days, int(leave_type.accrual_mode), hire_date, row.year, today or vn_today())
+    if mode == int(LeaveAccrualMode.MONTHLY_AFTER):
+        if accrual_start is _UNSET:
+            employee = db.get(Employee, row.employee_id)
+            accrual_start = (accrual_start_service.official_start(db, employee) if employee is not None
+                             else accrual_start_service.AccrualStart(None, True, True))
+        start_date = accrual_start.math_date
+    else:
+        if hire_date is _UNSET:
+            employee = db.get(Employee, row.employee_id)
+            hire_date = getattr(employee, "hire_date", None) if employee else None
+        start_date = hire_date
+    held = accrual_service.accrual_holdback(row.allocated_days, mode, start_date, row.year, today or vn_today())
     return round(row.remaining_days - held, 2)
 
 
 def available_days_map(db: Session, rows: list[LeaveBalance], today: date | None = None) -> dict[int, float]:
-    """`available_days` cho NHIỀU dòng quỹ với số truy vấn CỐ ĐỊNH (loại nghỉ + ngày vào làm nạp một lượt)."""
+    """`available_days` cho NHIỀU dòng quỹ với số truy vấn CỐ ĐỊNH.
+
+    Loại nghỉ (1) + hồ sơ nhân sự (1) + HĐLĐ (1, chỉ khi có loại MONTHLY_AFTER) — không phụ thuộc số dòng.
+    """
     if not rows:
         return {}
     types = {t.id: t for t in db.query(LeaveType).filter(
         LeaveType.id.in_({r.leave_type_id for r in rows})).all()}
-    hires = {i: h for i, h in db.query(Employee.id, Employee.hire_date).filter(
+    emps = {i: (h, et) for i, h, et in db.query(Employee.id, Employee.hire_date, Employee.employment_type).filter(
         Employee.id.in_({r.employee_id for r in rows})).all()}
+    starts: dict = {}
+    if any(t.accrual_mode == int(LeaveAccrualMode.MONTHLY_AFTER) for t in types.values()):
+        facts = accrual_start_service.contract_facts(db, emps, {i: h for i, (h, _) in emps.items()})
+        starts = {i: accrual_start_service.resolve(h, et, facts.get(i)) for i, (h, et) in emps.items()}
+    unknown = accrual_start_service.AccrualStart(None, True, True)    # dòng quỹ mồ côi (không còn hồ sơ)
     return {r.id: available_days(db, r, today, leave_type=types.get(r.leave_type_id),
-                                 hire_date=hires.get(r.employee_id)) for r in rows}
+                                 hire_date=emps.get(r.employee_id, (None, 0))[0],
+                                 accrual_start=starts.get(r.employee_id, unknown)) for r in rows}
 
 
 def check_enough(db: Session, employee, year: int, leave_type: LeaveType,

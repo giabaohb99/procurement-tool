@@ -1,6 +1,7 @@
 """LỊCH LÀM VIỆC — mẫu lịch tuần + gán theo hệ thống / pháp nhân / phòng ban / nhân sự.
 
-Ba bảng; FK MỀM (không `ForeignKey`) theo quy ước `department_id`/`manager_id` của
+Ba bảng mẫu / gán + hai bảng XẾP CA THEO NGÀY (duoc-CR-761: `tab_work_shift_day` / `tab_work_shift_segment`);
+FK MỀM (không `ForeignKey`) theo quy ước `department_id`/`manager_id` của
 repo — id có thật được kiểm ở service. Bộ mã: `app/core/work_schedule_codes.py`.
 """
 from datetime import date, time
@@ -59,3 +60,29 @@ class WorkScheduleAssignment(Base, AuditMixin):
     note: Mapped[str] = mapped_column(String(500), default="")
     #  Dòng gán GỐC đã kích hoạt việc tự đóng / tự nối dòng này (xóa dòng gốc thì mở lại, M4).
     linked_assignment_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class WorkShiftDay(Base, AuditMixin):
+    """Ca xếp RIÊNG cho một nhân sự vào một ngày (duoc-CR-761) — THẮNG mọi cấp gán lịch của ngày đó.
+
+    Có dòng này mà KHÔNG có khung giờ nào (`WorkShiftSegment`) = ngày NGHỈ do xếp ca. Muốn về mẫu lịch tuần thì XÓA dòng.
+    """
+
+    __tablename__ = "tab_work_shift_day"
+    __table_args__ = (UniqueConstraint("employee_id", "work_date", name="uq_work_shift_day"),)
+
+    employee_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    work_date: Mapped[date] = mapped_column(Date)
+    note: Mapped[str] = mapped_column(String(255), default="")
+
+
+class WorkShiftSegment(Base):
+    """Một khung giờ TRÒN của ngày xếp ca: `[start_hour, end_hour)`, 0 ≤ start < end ≤ 24 (24 = hết ngày)."""
+
+    __tablename__ = "tab_work_shift_segment"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    shift_day_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    start_hour: Mapped[int] = mapped_column(SmallInteger)
+    end_hour: Mapped[int] = mapped_column(SmallInteger)
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)

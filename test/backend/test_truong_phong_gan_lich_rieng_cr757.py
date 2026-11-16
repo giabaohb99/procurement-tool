@@ -308,7 +308,9 @@ def test_khoa_moi_khai_cot_cua_ho_so_nhan_su_va_seed_dung_vai_tro():
     assert STD_ROLES["dept_head"]["perms"]["work_schedule_personal"] == (["read", "create", "write", "delete"], "dept")
     assert STD_ROLES["dept_head"]["perms"]["leave_balance"] == (["read"], "dept")
     holders = [code for code, info in STD_ROLES.items() if "work_schedule_personal" in info["perms"]]
-    assert holders == ["dept_head"]
+    #  duoc-CR-761: Quản lý công ty có thêm quyền ĐỌC (bậc công ty) để xem lịch / ca cả công ty — không ghi.
+    assert holders == ["dept_head", "company_head"]
+    assert STD_ROLES["company_head"]["perms"]["work_schedule_personal"] == (["read"], "company")
 
 
 # ── Q2: quỹ phép bậc phòng ────────────────────────────────────────────────────────────

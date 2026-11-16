@@ -1,7 +1,10 @@
 import { AlertTriangle, Info } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
+import { useAuth } from '@/core/auth/use-auth'
 import { useLeaveBalanceHint } from '../hooks/use-leave'
+import { LEAVE_ACCRUAL_STATUS } from '../types/leave'
+import { getAccrualTone } from '../utils/leave-accrual-status'
 
 interface LeaveBalanceHintBoxProps {
   leaveTypeId: number
@@ -31,6 +34,7 @@ export function LeaveBalanceHintBox({
   requestedDays,
 }: LeaveBalanceHintBoxProps) {
   const { data, isLoading } = useLeaveBalanceHint(leaveTypeId, year, employeeId)
+  const { user } = useAuth()
 
   if (!leaveTypeId) {
     return (
@@ -56,6 +60,16 @@ export function LeaveBalanceHintBox({
       </div>
     )
   }
+
+  //  duoc-CR-762: câu "chưa tích". Thử việc giữ câu người chủ chốt, xưng "Bạn" CHỈ khi quỹ là của chính người đang
+  //  lập (lập hộ thì "Nhân sự này"); mã 5 / 6 đọc nhãn của API, không gõ nhãn ở đây.
+  const isSelf = Boolean(user?.employee_id) && data.employee_id === user?.employee_id
+  const notAccruingHint =
+    data.accrual_status === LEAVE_ACCRUAL_STATUS.PROBATION
+      ? `${isSelf ? 'Bạn' : 'Nhân sự này'} đang thử việc — chưa tích phép năm.`
+      : getAccrualTone(data.accrual_status) === 'muted' && data.accrual_status_label
+        ? `${data.accrual_status_label}.`
+        : null
 
   //  CR-715: loại cho ứng phép (`max_negative_days` = N) chỉ chặn khi vượt cả N — khớp `check_enough` ở backend.
   const allowedOverrun = Math.max(0, data.max_negative_days ?? 0)
@@ -109,6 +123,12 @@ export function LeaveBalanceHintBox({
           Đơn này xin {requestedDays} ngày — vượt quỹ nên sẽ bị chặn lúc gửi duyệt. Muốn nghỉ
           tiếp thì chọn loại <strong>Nghỉ không lương</strong>.
         </p>
+      )}
+
+      {notAccruingHint && (
+        //  duoc-CR-762: loại cộng dần sau mỗi tháng làm đủ không tích lúc thử việc / HĐ dịch vụ / chưa tới ngày
+        //  chính thức — nói ra để người nộp hiểu vì sao quỹ đang 0, khỏi gọi phòng Nhân sự hỏi.
+        <p className="mt-1 text-xs text-muted-foreground">{notAccruingHint}</p>
       )}
 
       {data.missing_hire_date && (

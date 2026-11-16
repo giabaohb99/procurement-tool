@@ -193,6 +193,58 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-762 | Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức, tự tính lại khi ký hợp đồng
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** đã chốt luật **nhân viên làm đủ 1 tháng thì tính 1 ngày phép**. Loại Phép năm đang cấp đủ hạn mức từ đầu năm; chế độ cộng dần theo tháng sẵn có lại cho dùng phần của tháng đang làm dở và tính từ ngày vào làm, nên không khớp. Sáu câu chốt: làm xong tháng mới cộng, tháng lịch mốc ngày 15, áp cho mọi người, thời gian thử việc không tích, chưa có hợp đồng thì lấy ngày vào làm, hiệu lực ngay cả năm 2026.
+
+**Đã làm**
+- Thêm cách cấp quỹ thứ tư **Cộng dần sau mỗi tháng làm đủ**: chỉ tháng đã làm xong mới có phần của tháng đó, làm tròn xuống nửa ngày; với hạn mức 12 ngày thì ngày 15/01 là 0, ngày 01/02 là 1, ngày 16/11 là 10. Thâm niên, phép mang sang, điều chỉnh tay và nghỉ bù vẫn dùng được ngay. Cách cộng dần theo tháng cũ giữ nguyên.
+- Mốc tích là ngày bắt đầu của hợp đồng lao động chính thức đầu tiên đã ký, không tính hợp đồng thử việc, dịch vụ, cộng tác viên. Chỉ có hợp đồng thử việc hoặc hồ sơ để hình thức thử việc thì chưa tích; chỉ có hợp đồng dịch vụ hoặc cộng tác viên thì không có phép năm; chưa có hợp đồng thì tính tạm từ ngày vào làm; hợp đồng chính thức đầu tiên bắt đầu muộn hơn ngày vào làm quá một tháng mà không có hợp đồng thử việc thì coi là thiếu lịch sử hợp đồng và tính từ ngày vào làm.
+- Mỗi người có một trong sáu tình trạng tích phép (đang tích, đang thử việc, chưa có hợp đồng, lịch sử hợp đồng chưa đủ, hợp đồng dịch vụ hoặc cộng tác viên, chưa tới ngày làm chính thức), trả kèm từng dòng quỹ cùng ngày bắt đầu tích qua các đường API quỹ phép, số dư khi lập đơn và hai công cụ trợ lý tra phép.
+- Màn **Quỹ phép năm** có nhãn tình trạng cạnh tên người, dải vàng đếm người chưa đủ hợp đồng lao động; quá một nửa số người thiếu thì ẩn nhãn trên dòng và có nút **Chỉ hiện người chưa đủ HĐLĐ**. Trang chi tiết dòng quỹ có câu giải thích đủ; dải số dư của đơn nghỉ báo người đang thử việc chưa tích phép năm; form Loại nghỉ có lựa chọn mới kèm lời giải thích.
+- Quỹ phép năm nay và năm sau tự tính lại khi hợp đồng lao động được đánh dấu đã ký, khi hồ sơ đổi vào hoặc ra hình thức thử việc hay đổi ngày vào làm, và khi loại nghỉ được đổi sang cách cấp mới; chỉ dòng có mốc tích đổi thật mới bị tính lại, chỉ ô hạn mức đổi, mỗi lần đổi ghi một dòng lịch sử thao tác. Ai đã nghỉ quá số đã tích thì số còn lại âm và chưa xin thêm được tới khi tích đủ.
+- Thêm script chuyển loại Phép năm sang cách cấp mới và tính lại quỹ năm nay, có chế độ chạy thử in bảng so sánh từng người kèm dòng âm, dòng thiếu hợp đồng.
+- Viết tài liệu: mục 19 của tài liệu Nghỉ phép (luật, mốc tích, sáu tình trạng và việc Nhân sự phải làm, giao diện, tự tính lại, số âm, API, sổ việc deploy), bảng cách cấp quỹ ở mục 13.1, chức năng CN-HRM-06 và ba yêu cầu phi chức năng mới, dữ liệu vào ra ở tài liệu API Nhân sự, luật nghỉ phép cho người viết mã, sổ việc deploy trong kế hoạch.
+- Thêm bài hướng dẫn **Phép năm cộng sau mỗi tháng làm đủ** cho nhân viên và phòng Nhân sự; bài Hiểu số ngày phép còn lại, bài Cấp và điều chỉnh quỹ phép, bài Loại nghỉ nói thêm cách cấp mới. Cẩm nang Nghỉ phép của trợ lý thêm mục trả lời các câu **sao tôi chỉ còn 10 ngày**, **khi nào tôi có phép** theo từng tình trạng.
+
+**Kết quả:** mã, tài liệu, bài hướng dẫn và cẩm nang xong ở máy local; cây hướng dẫn Nghỉ phép đã nạp lại vào cơ sở dữ liệu local (16 bài), cẩm nang Nghỉ phép đã xuất bản phiên bản mới ở local. Kho tìm kiếm của trợ lý ở local đang tắt nên chưa nạp lại chỉ mục. Cổng kiểm tài liệu không có lỗi mới.
+
+**Còn lại:** lên dev và prod theo sổ việc deploy ở mục 19.8 của tài liệu Nghỉ phép: chạy thử script trên bản sao dữ liệu prod để phòng Nhân sự soát người thiếu hợp đồng và dòng âm, chạy thật ngoài giờ làm việc, đẩy cẩm nang, chạy lại bài hướng dẫn, nạp lại chỉ mục tìm kiếm và báo nhân viên số phép dùng được đã đổi.
+
+Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_refresh_service.py` · `accrual_service.py` · `balance_accrual_info.py` · `constants.py` · `catalog_controller.py` · `labor_contract/service.py` · `employee/service.py` · `core/crud.py` · `scripts/apply_monthly_after_annual_leave.py` · `frontend-v2/src/modules/hr/utils/leave-accrual-status.ts` · `hr/components/leave-accrual-status-badge.tsx` · `leave-balance-missing-contract-strip.tsx` · `doc/erp/hrm/02-nghi-phep.md` · `backend/scripts/seed_help_nghi_phep.py` · `test/backend/test_phep_nam_cong_sau_thang_cr762.py`
+
+## duoc-CR-761 | Trưởng phòng xếp ca theo tiếng cho từng nhân viên từng ngày, tính phép theo ca, nhân viên xem ca của mình
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** người quản lý một phòng cần xem lịch làm việc của cả phòng và xếp lại ca theo tiếng cho từng nhân viên, vì có việc làm không liền giờ như livestream bán hàng. Đã chốt: xếp theo từng ngày cụ thể kèm chép nhanh, đơn vị một tiếng từ 00:00 đến 24:00, ngày có ca tính một ngày công khi nghỉ phép, nhân viên thấy ca của mình và nhận chuông khi ca đổi. Chỉ xếp ca, không chấm công.
+
+**Đã làm**
+- Thêm hai bảng lưu ca riêng của một người vào một ngày, mỗi ngày tối đa 12 khung giờ tròn không chồng nhau; ngày có ca mà không khung là ngày nghỉ do xếp ca. Ca theo ngày thắng mọi lịch tuần đã gán; ngày không xếp vẫn theo lịch tuần.
+- Thêm sáu đường API: đọc ca theo khoảng ngày, ca của chính mình, đặt hoặc gỡ ca một ô, áp cùng một bộ khung cho nhiều người nhiều ngày (sai một ô thì không ghi ô nào), chép ca tuần trước (bỏ qua ngày đã có đơn nghỉ và, với Trưởng phòng, ngày đã qua).
+- Phòng Nhân sự xếp ca mọi ngày cho người trong phạm vi; Trưởng phòng dùng khóa lịch riêng đã có, chỉ cho nhân viên phòng mình và từ hôm nay. Không ai tự xếp ca cho chính mình. Ngày hôm nay hoặc đã qua không gỡ ca về lịch tuần được. Hai người cùng sửa một ô thì người sau được báo tải lại thay vì lỗi hệ thống.
+- Ngày đã có đơn nghỉ chờ duyệt hoặc đã duyệt thì không đổi hay gỡ ca được, câu báo kèm mã đơn chỉ khi người xếp được xem đơn đó. Phiếu nghỉ bù không nhận ngày nghỉ do xếp ca được ghi vào hoặc sau chính ngày đó.
+- Đếm ngày nghỉ phép theo ca: ngày có ca là một ngày công; nghỉ nửa ngày tính theo khung trước hoặc từ 12:00 (ca chỉ một buổi mà nghỉ đúng buổi đó thì trừ một ngày); nghỉ theo giờ chia cho tổng giờ ca của ngày; ngày lễ không trừ. Ví dụ ca livestream 08–10, 14–16, 20–23 nghỉ theo giờ 14:00–16:00 trừ 0,29 ngày.
+- Mỗi lượt lưu ghi một dòng nhật ký và gửi một chuông cho mỗi nhân viên bị đổi ca, mở về Trang cá nhân.
+- Giao diện: bấm ô ở màn Lịch làm việc mở hộp xếp ca (làm lại sau lượt góp ý: mục **Khung giờ làm việc** có tóm tắt giờ và công, khung đánh số với ô từ giờ đến giờ, mẫu nhanh, mục gập **Áp cùng ca cho ngày / người khác**, nút chính **Lưu** hoặc **Lưu cho N ô** luôn kèm lý do khi tắt, **Về mẫu tuần**), nút **Chép tuần trước**, ô có ca nổi màu tím, ô có đơn nghỉ bị khóa theo cờ do máy chủ gửi; Trang cá nhân có thẻ **Ca làm việc tuần này**.
+- Chốt luật ai thấy ai trên màn Lịch làm việc: phòng Nhân sự và quản trị thấy mọi người trong phạm vi xem hồ sơ, Trưởng phòng chỉ thấy nhân viên phòng mình (kể cả phòng kiêm nhiệm) và chính mình, nhân viên thường chỉ thấy chính mình; áp cho lưới, danh sách ca và công cụ trợ lý. Bộ lọc của Trưởng phòng chỉ còn phòng của mình, của nhân viên thường thì ẩn.
+- Trợ lý AI, bot và cổng MCP có hai công cụ chỉ đọc: ca của chính người hỏi và ca của nhân sự khác theo quyền xem hồ sơ (tối đa 210 ô người nhân ngày một lượt); nhóm cấu hình MCP đổi tên thành **Nghỉ phép và ca làm việc**; cẩm nang Nghỉ phép thêm mục ca làm việc.
+- Sửa kèm nhãn hành động **Gửi lại email** còn thiếu trong sổ hành động của nhật ký thao tác (bài kiểm sổ hành động đỏ từ bao-CR-727).
+- Viết tài liệu: mục 22 của tài liệu Lịch làm việc (dữ liệu, thứ tự thắng, cách tính phép, quyền, chốt đơn nghỉ, nghỉ bù, ghi hàng loạt, giao diện, hạn chế đã biết, sổ việc deploy), mục 18 của tài liệu Nghỉ phép, luật nghỉ phép cho người viết mã, bảng API Nhân sự dựng lại bằng máy cùng dữ liệu vào ra và câu lỗi mới, chức năng CN-HRM-05 và bốn yêu cầu phi chức năng mới, tài liệu công cụ Trợ lý AI và tài liệu cổng MCP.
+- Thêm bài hướng dẫn **Nhân sự — Xếp ca theo tiếng cho từng ngày** (Trưởng phòng xếp ca, mẫu nhanh, áp cho ngày khác, chép tuần trước, vì sao ô bị khóa, nhân viên xem ca, ví dụ tính phép, nghỉ bù) và nối từ thẻ Nhân sự cùng bài Lịch làm việc của phòng ban.
+
+**Kết quả:** mã, tài liệu và bài hướng dẫn xong ở máy local; cây hướng dẫn Nhân sự đã nạp lại vào cơ sở dữ liệu local (16 bài). Kho tìm kiếm của trợ lý ở local đang tắt nên chưa nạp lại chỉ mục. Cổng kiểm tài liệu không có lỗi mới.
+
+**Còn lại:** lên dev thì làm theo sổ việc deploy ở mục 22.11 của tài liệu Lịch làm việc: chạy migration, khởi động lại API, liệt kê vai trò có quyền xem hồ sơ mà không có quyền sửa lịch (người giữ các vai trò đó sẽ chỉ còn thấy chính mình hoặc phòng mình trên màn Lịch làm việc), kiểm quyền sửa lịch của vai trò Nhân sự, đẩy cẩm nang Nghỉ phép kèm câu tóm tắt, chạy lại bài hướng dẫn và nạp lại chỉ mục tìm kiếm. Giao diện chép tuần chưa liệt kê tên người và mã đơn của ngày bị bỏ qua vì đơn nghỉ (đọc sai khóa trả về), đã báo người làm giao diện.
+
+Mã nguồn: `backend/app/modules/work_schedule/shift_controller.py` · `shift_access.py` · `shift_service.py` · `shift_leave_conflicts.py` · `shift_notify.py` · `day_rules.py` · `resolver.py` · `leave/workday_service.py` · `leave/comp_request_service.py` · `assistant/tools/work_shift_tool.py` · `migrations/versions/wshift758_xep_ca_theo_ngay.py` · `frontend-v2/src/modules/hr/components/work-shift-dialog.tsx` · `app/components/profile/profile-shift-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `test/backend/test_xep_ca_theo_tieng_cr761.py` · `test_tro_ly_ca_lam_viec_cr761.py`
+
 ## duoc-CR-757b | Trưởng phòng gán lịch làm việc riêng cho nhân viên, quỹ phép bậc phòng ban đúng phòng, trợ lý không bao giờ nói lương người khác
 - status: xong
 - date: 2026-11-13

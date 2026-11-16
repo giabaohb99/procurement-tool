@@ -2,7 +2,9 @@ import { ChevronRight } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
 import type { LeaveBalance } from '../types/leave'
+import { getAccrualStartHint } from '../utils/leave-accrual-status'
 import { hasQuota } from '../utils/leave-balance-quota'
+import { LeaveAccrualStatusBadge } from './leave-accrual-status-badge'
 
 interface LeaveBalanceCardProps {
   balance: LeaveBalance
@@ -12,6 +14,8 @@ interface LeaveBalanceCardProps {
    * thứ phân biệt tám thẻ với nhau (loại nghỉ) bị đẩy xuống hàng hai.
    */
   hideEmployeeName?: boolean
+  /** Ẩn nhãn *Chưa có HĐLĐ* (duoc-CR-762 phương án B). */
+  hideNoContract?: boolean
 }
 
 /**
@@ -30,7 +34,8 @@ interface LeaveBalanceCardProps {
  * dấu gạch mờ. Riêng "Còn lại" thì luôn hiện — ở đó số 0 nghĩa là **hết phép**,
  * đúng thứ phải đập vào mắt.
  */
-export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCardProps) {
+export function LeaveBalanceCard({ balance, hideEmployeeName, hideNoContract = false }: LeaveBalanceCardProps) {
+  const accrualStartHint = getAccrualStartHint(balance)
   const extras: string[] = []
   if (balance.seniority_days) extras.push(`+${balance.seniority_days} thâm niên`)
   if (balance.carried_days) extras.push(`+${balance.carried_days} chuyển năm trước`)
@@ -54,9 +59,15 @@ export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCard
 
         {/*  Loại nghỉ có KHUNG: nó nằm giữa tên người và một dòng chữ số cùng cỡ,
              để trần thì ba dòng đọc thành một đoạn văn không phân vai. */}
-        <span className="inline-block rounded border px-1.5 py-0.5 text-xs text-foreground">
-          {balance.leave_type_name || `#${balance.leave_type_id}`}
-        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-block rounded border px-1.5 py-0.5 text-xs text-foreground">
+            {balance.leave_type_name || `#${balance.leave_type_id}`}
+          </span>
+          {/*  duoc-CR-762: thử việc / chưa có HĐLĐ. Máy cảm ứng không rê chuột được nên ngày bắt đầu tích (người
+               đang tích) in thành chữ mờ ngay đây thay cho gợi ý rê chuột của bảng. */}
+          <LeaveAccrualStatusBadge info={balance} hideContractWarning={hideNoContract} />
+          {accrualStartHint && <span className="text-xs text-muted-foreground">{accrualStartHint}</span>}
+        </div>
 
         {/*  ⚠️ Cả dòng này ẨN khi mọi số đều 0 — "Hạn mức 0 · Đã nghỉ 0" không
              nói thêm được gì mà con số lớn bên phải chưa nói. Một người có tám

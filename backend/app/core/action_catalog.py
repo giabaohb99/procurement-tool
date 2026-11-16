@@ -123,6 +123,8 @@ _EDIT = (
     ActionCode("catalog_merge", "Cập nhật danh mục từ tệp theo trang", ACTION_GROUP_EDIT),
     # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
     ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
+    # bao-CR-727 — nút "Gửi lại" ở màn Nhật ký email (`notification/email_log_controller.py`)
+    ActionCode("resend", "Gửi lại email", ACTION_GROUP_EDIT),
 )
 
 #  ---------------------------------------------------------------------

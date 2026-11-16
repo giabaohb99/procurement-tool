@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkRosterCell, WorkRosterItem, WorkRosterLeave } from '../types/work-roster'
-import { describeRosterCell, formatHour, indexCellsByDate } from './work-roster-cell'
+import { describeRosterCell, formatHour, indexCellsByDate, shiftCellLines } from './work-roster-cell'
 
 const leave = (over: Partial<WorkRosterLeave> = {}): WorkRosterLeave => ({
   request_id: 12,
@@ -151,5 +151,60 @@ describe('indexCellsByDate', () => {
     const map = indexCellsByDate(item)
     expect(map.size).toBe(1)
     expect(map.get('2026-10-05')?.schedule_name).toBe('b')
+  })
+})
+
+describe('describeRosterCell — shifts by day (duoc-CR-761)', () => {
+  const shift = (segments: string[], ranges: number[][], hours: number, note = '') => ({
+    is_shift: true,
+    shift: { segments, ranges, hours, note, is_day_off: segments.length === 0 },
+    schedule_name: 'Xếp ca theo ngày',
+  })
+
+  it('a shift day is an exception: full HH:MM segments, hours glyph for the month view', () => {
+    const view = describeRosterCell(cell({ ...shift(['08:00–10:00', '14:00–16:00'], [[8, 10], [14, 16]], 4), end_time: '16:00' }))
+    expect(view).toMatchObject({
+      state: 'working',
+      isShift: true,
+      isWorking: true,
+      shortLabel: '08:00–10:00 · 14:00–16:00',
+      glyph: '4h',
+      shiftLines: ['08:00–10:00', '14:00–16:00'],
+    })
+    expect(view.description).toBe('Ca xếp theo ngày: 08:00–10:00 · 14:00–16:00 (4 giờ)')
+  })
+
+  it('a day off set by shift is still "off" for the counters but flagged as a shift exception', () => {
+    const view = describeRosterCell(cell({ work_kind: 1, start_time: null, end_time: null, ...shift([], [], 0, 'Đổi ca') }))
+    expect(view).toMatchObject({ state: 'off', isShift: true, isWorking: false, shortLabel: 'Nghỉ (xếp ca)', glyph: 'N' })
+    expect(view.description).toBe('Nghỉ cả ngày do xếp ca — Đổi ca')
+  })
+
+  it('leave keeps priority on a shift day and the tooltip still names the shift', () => {
+    const view = describeRosterCell(
+      cell({ work_kind: 2, ...shift(['08:00–10:00', '14:00–16:00'], [[8, 10], [14, 16]], 4), leave: leave({ morning: true, afternoon: false }) }),
+    )
+    expect(view.state).toBe('partial')
+    expect(view.isShift).toBe(true)
+    expect(view.description).toContain('Ca xếp theo ngày: 08:00–10:00 · 14:00–16:00')
+  })
+
+  it('a holiday stays a holiday even with a shift, and the shift is mentioned', () => {
+    const view = describeRosterCell(cell({ is_holiday: true, holiday_name: 'Quốc khánh', ...shift(['08:00–12:00'], [[8, 12]], 4) }))
+    expect(view.state).toBe('holiday')
+    expect(view.description).toBe('Ngày lễ: Quốc khánh · Ca xếp theo ngày: 08:00–12:00 (4 giờ)')
+  })
+
+  it('is_shift without a shift block (or an old backend) behaves exactly like before', () => {
+    expect(describeRosterCell(cell({ is_shift: true, shift: null }))).toMatchObject({ isShift: false, shortLabel: '08:00 – 17:00' })
+    expect(describeRosterCell(cell())).toMatchObject({ isShift: false, shiftLines: [] })
+  })
+})
+
+describe('shiftCellLines', () => {
+  it('one or two segments: one per line; three or more: first + count and hours', () => {
+    expect(shiftCellLines([], 0)).toEqual([])
+    expect(shiftCellLines(['08:00–10:00'], 2)).toEqual(['08:00–10:00'])
+    expect(shiftCellLines(['06:00–07:00', '12:00–13:00', '20:00–24:00'], 6)).toEqual(['06:00–07:00 …', '3 khung · 6 giờ'])
   })
 })

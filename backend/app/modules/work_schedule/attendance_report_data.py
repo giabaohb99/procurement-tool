@@ -27,7 +27,8 @@ from app.modules.leave.holiday_calendar import date_range, holiday_names_many
 from app.modules.leave.period_spans import periods_by_request
 from app.modules.leave.request_model import LeaveRequest
 from app.modules.leave.workday_service import leave_mask
-from app.modules.work_schedule.day_rules import AM, PM, day_capacity, day_hours, work_mask, worked_hours
+from app.modules.work_schedule.day_rules import (AM, PM, day_capacity, day_hours, hourly_window,
+                                                 leave_credit, work_mask, worked_hours)
 from app.modules.work_schedule.resolver_many import load_day_plans_many
 
 MAX_PERIOD_DAYS = 92
@@ -60,8 +61,10 @@ def _session_label(mask: int) -> str:
 
 
 def _leave_by_day(db: Session, leave_q, emp_ids_q, d_from: date, d_to: date) -> dict:
-    """`{(employee_id, ngày): [(loại nghỉ, mask nửa buổi, (từ giờ, đến giờ) | None)]}` — 1 truy vấn đơn
-    + 1-2 truy vấn khoảng. Đơn nhiều khoảng đọc theo TỪNG KHOẢNG (khe giữa các khoảng không nghỉ)."""
+    """`{(employee_id, ngày): [(loại nghỉ, mask nửa buổi, (giờ đầu, giờ cuối trong NGÀY ĐÓ, từ giờ của đơn, đến giờ của
+    đơn) | None)]}` — 1 truy vấn đơn + 1-2 truy vấn khoảng. Đơn nhiều khoảng đọc theo TỪNG KHOẢNG (khe giữa các khoảng
+    không nghỉ). Đơn THEO GIỜ nhiều ngày: khoảng giờ của từng ngày qua `hourly_window` (cùng luật `count_hourly_days`),
+    không áp một cặp giờ cho mọi ngày."""
     reqs = (leave_q.filter(LeaveRequest.status == LR_APPROVED, LeaveRequest.from_date <= d_to,
                            LeaveRequest.to_date >= d_from, LeaveRequest.employee_id.in_(emp_ids_q))
             .with_entities(LeaveRequest.id, LeaveRequest.employee_id, LeaveRequest.leave_type_id,
@@ -73,8 +76,9 @@ def _leave_by_day(db: Session, leave_q, emp_ids_q, d_from: date, d_to: date) -> 
             hourly = p.from_session == SESSION_HOURLY and r.from_time and r.to_time
             for day in date_range(max(p.from_date, d_from), min(p.to_date, d_to)):
                 mask = leave_mask(day, p.from_date, p.to_date, p.from_session, p.to_session)
-                out.setdefault((r.employee_id, day), []).append(
-                    (r.leave_type_id or 0, mask, (r.from_time, r.to_time) if hourly else None))
+                window = (*hourly_window(day, p.from_date, p.to_date, r.from_time, r.to_time),
+                          r.from_time, r.to_time) if hourly else None
+                out.setdefault((r.employee_id, day), []).append((r.leave_type_id or 0, mask, window))
     return out
 
 
@@ -84,15 +88,15 @@ def _on_leave(entries, spec) -> tuple[float, tuple]:
     mask, hours, labels = 0, 0.0, []
     for type_id, m, hr in entries:
         if hr is None:
-            mask |= m & wmask
+            mask |= m
             labels.append((type_id, _session_label(m & wmask)))
         else:
             whole = day_hours(spec)
             if whole > 0:
                 part = worked_hours(spec, hr[0], hr[1]) / whole * cap
                 hours += part
-                labels.append((type_id, f"Theo giờ {hr[0]:%H:%M}–{hr[1]:%H:%M}"))
-    return min(0.5 * bin(mask).count("1") + hours, cap), tuple(l for l in labels if l[1])
+                labels.append((type_id, f"Theo giờ {hr[2]:%H:%M}–{hr[3]:%H:%M}"))
+    return min(leave_credit(spec, mask) + hours, cap), tuple(l for l in labels if l[1])
 
 
 def load_day_rows(db: Session, emp_q, leave_q, d_from: date, d_to: date, *, with_leave: bool = True

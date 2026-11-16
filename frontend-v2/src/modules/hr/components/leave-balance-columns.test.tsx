@@ -9,6 +9,7 @@ import {
   groupLeaveBalances,
   type LeaveBalanceRow,
 } from '../utils/group-leave-balances'
+import { accrualFixture } from './leave-accrual-fixture'
 import { buildLeaveBalanceColumns } from './leave-balance-columns'
 
 function makeBalance(overrides: Partial<LeaveBalance> = {}): LeaveBalance {
@@ -161,5 +162,57 @@ describe('buildLeaveBalanceColumns', () => {
 
     rerender(<>{column(columns, 'remaining_days').cell(row)}</>)
     expect(container.textContent).toBe('0')
+  })
+
+  //  duoc-CR-762: tình trạng tích phép của loại cộng dần sau mỗi tháng làm đủ.
+  it('single row: missing contract shows the amber label, probation the muted one, accruing / null nothing', () => {
+    const nameCell = column(buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() }), 'employee_name')
+    const rowOf = (extra: Partial<LeaveBalance>) =>
+      flattenLeaveBalanceGroups(groupLeaveBalances([makeBalance(extra)]), new Set())[0]
+
+    const { rerender, container } = render(<>{nameCell.cell(rowOf(accrualFixture(3)))}</>)
+    expect(screen.getByText('Chưa có HĐLĐ trên hệ thống')).toBeTruthy()
+
+    rerender(<>{nameCell.cell(rowOf(accrualFixture(2)))}</>)
+    expect(screen.getByText('Đang thử việc — chưa tích')).toBeTruthy()
+
+    for (const extra of [
+      accrualFixture(1, '2026-02-01'),
+      { accrual_status: null, accrual_start_date: null, accrual_status_label: null },
+      {},
+    ]) {
+      rerender(<>{nameCell.cell(rowOf(extra))}</>)
+      expect(container.textContent).toBe('Trần Chí Dũng· Phép năm')
+    }
+  })
+
+  it('collapsed group row surfaces the most urgent child status so HR sees it without expanding', () => {
+    const groups = groupLeaveBalances([
+      makeBalance({ id: 1, ...accrualFixture(1, '2026-01-01') }),
+      makeBalance({ id: 2, leave_type_id: 7, leave_type_name: 'Phép năm (khối B)', ...accrualFixture(3) }),
+      makeBalance({ id: 3, leave_type_id: 8, leave_type_name: 'Nghỉ bù' }),
+    ])
+    const [groupRow] = flattenLeaveBalanceGroups(groups, new Set())
+    const nameCell = column(buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() }), 'employee_name')
+    render(<>{nameCell.cell(groupRow)}</>)
+    expect(screen.getByText('Chưa có HĐLĐ trên hệ thống')).toBeTruthy()
+  })
+
+  it('hideNoContract (option B): no amber label on any row, but a probation child still surfaces on the group', () => {
+    const groups = groupLeaveBalances([
+      makeBalance({ id: 1, ...accrualFixture(4) }),
+      makeBalance({ id: 2, leave_type_id: 7, leave_type_name: 'Phép năm (khối B)', ...accrualFixture(2) }),
+    ])
+    const rows = flattenLeaveBalanceGroups(groups, new Set([1]))
+    const nameCell = column(
+      buildLeaveBalanceColumns({ expanded: new Set([1]), onToggle: vi.fn(), hideNoContract: true }),
+      'employee_name',
+    )
+    const { rerender } = render(<>{nameCell.cell(rows[0])}</>)
+    expect(screen.queryByText(/Lịch sử HĐLĐ/)).toBeNull()
+    expect(screen.getByText('Đang thử việc — chưa tích')).toBeTruthy()
+
+    rerender(<>{nameCell.cell(rows[1])}</>)
+    expect(screen.queryByText(/Lịch sử HĐLĐ/)).toBeNull()
   })
 })

@@ -57,6 +57,11 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"|lam bu|(di )?lam (ngay )?(le|chu nhat|cn|thu bay|t7)\b|truc (le|tet|chu nhat)|ung phep|ngay cam nghi"
      r"|lich lam viec|gio (lam|vao lam|tan lam)|ca lam|da nghi (bao nhieu|may|duoc|het|\d)|nghi (bao nhieu|may) ngay"
      r"|nghi bao nhieu|ngay da nghi|so ngay nghi|nghi (it|nhieu) nhat"),
+    #  duoc-CR-761: ca làm việc theo TỪNG NGÀY (xếp ca theo tiếng, livestream) — của tôi / của nhân sự khác. Nhóm riêng, không
+    #  nhét vào "leave": câu "phòng X tuần này ai làm ca nào" không có chữ nghỉ phép nào.
+    ("shift", frozenset({"my_work_shifts", "employee_work_shifts"}),
+     r"\bca (cua|lam|truc|livestream|live|sang|chieu|toi|dem|nao)\b|xep ca|doi ca|co ca\b|lich lam (tuan|thang|hom|ngay"
+     r"|thu|cua|viec)|lam (may|bao nhieu) (gio|tieng)|gio lam|livestream|ai lam ca|lam ca nao|lich (truc|ca)\b"),
     ("work", frozenset({"my_work_tasks", "draft_work_task", "draft_work_plan"}),
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào "work" (lõi bot coi nhóm thiếu công cụ là

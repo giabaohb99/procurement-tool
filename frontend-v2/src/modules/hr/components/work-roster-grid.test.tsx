@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ROSTER_DAYS, rosterCell, rosterItem, rosterLeave } from './work-roster-fixture'
 import { WorkRosterGrid } from './work-roster-grid'
@@ -161,5 +161,40 @@ describe('WorkRosterGrid', () => {
       const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-leave-row]'))
       expect(rows.map((r) => r.style.top)).toEqual(['76px', '108px'])
     })
+  })
+  //  duoc-CR-761 — xếp ca theo ngày.
+  it('an arranger gets a button per cell, except cells with a leave request which keep the leave link and say why', () => {
+    const onEditCell = vi.fn()
+    render(
+      <MemoryRouter>
+        <WorkRosterGrid
+          days={ROSTER_DAYS}
+          items={[rosterItem(1, 'An', IT, cellsFor({ '2026-10-05': { leave: rosterLeave({ request_id: 77 }) } }))]}
+          mode="week"
+          todayISO="2026-10-05"
+          interaction={{ onEditCell }}
+        />
+      </MemoryRouter>,
+    )
+    const leaveLink = screen.getByRole('link')
+    expect(leaveLink).toHaveAttribute('href', '/hr/leave-requests/77')
+    expect(leaveLink.getAttribute('title')).toMatch(/^Đã có đơn nghỉ — sửa đơn trước · An · 2026-10-05/)
+    const cellButton = screen.getByTitle(/^An · 2026-10-06/)
+    cellButton.click()
+    expect(onEditCell).toHaveBeenCalledWith(expect.objectContaining({ employee_id: 1 }), '2026-10-06')
+  })
+
+  it('a shift cell shows its segments in full HH:MM as an exception', () => {
+    renderGrid([
+      rosterItem(1, 'An', IT, cellsFor({
+        '2026-10-05': {
+          is_shift: true,
+          end_time: '16:00',
+          shift: { segments: ['08:00–10:00', '14:00–16:00'], ranges: [[8, 10], [14, 16]], hours: 4, note: '', is_day_off: false },
+        },
+      })),
+    ])
+    expect(screen.getByText('08:00–10:00')).toBeInTheDocument()
+    expect(screen.getByText('14:00–16:00')).toBeInTheDocument()
   })
 })

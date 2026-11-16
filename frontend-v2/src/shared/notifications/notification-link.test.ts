@@ -42,6 +42,19 @@ describe('toAppPath', () => {
     expect(toAppPath('/survey-requests/2927')).toBe('/procurement/survey-requests/2927')
   })
 
+  it('opens the personal page for the shift bell (duoc-CR-761), with or without a tab', () => {
+    //  Chuông "ca được xếp / đổi" ghi `/me`. Trước khi khai `/me` vào V2_PREFIXES hàm trả null → bấm chuông
+    //  chỉ đánh dấu đã đọc, không mở Trang cá nhân nơi có thẻ Ca làm việc.
+    expect(toAppPath('/me')).toBe('/me')
+    expect(toAppPath('/me?tab=notifications')).toBe('/me?tab=notifications')
+    //  Ranh giới tiền tố: đường bắt đầu bằng chữ "me" khác không được lọt vào.
+    expect(toAppPath('/meeting-rooms/3')).toBeNull()
+    expect(toAppPath('/members')).toBeNull()
+    //  Link khác vẫn đi như cũ.
+    expect(toAppPath('/forum/me')).toBe('/forum/me')
+    expect(toAppPath('/employees/5')).toBe('/hr/employees/5')
+  })
+
   it('giữ nguyên link đã ở dạng phân hệ, không dịch lần hai', () => {
     expect(toAppPath('/procurement/purchase-orders/12')).toBe(
       '/procurement/purchase-orders/12',

@@ -248,15 +248,15 @@ def test_khoang_nguoc_la_0_khong_no(db, sat_half):
                                              employee=emp) == 0.0
 
 
-def test_so_truy_van_count_leave_days_400_ngay_toi_da_3(db, sat_half):
+def test_so_truy_van_count_leave_days_400_ngay_toi_da_4(db, sat_half):
     _, _, emp, _ = sat_half
     db.commit()
     db.refresh(emp)
     got, sql = count_queries(db, lambda: _days(db, emp, MON, MON + timedelta(days=399)))
-    assert got > 0 and len(sql) <= 3
+    assert got > 0 and len(sql) <= 4   # +1 truy vấn ca xếp theo ngày (duoc-CR-761)
     _, sql_h = count_queries(db, lambda: workday_service.count_hourly_days(
         db, MON, MON + timedelta(days=399), time(9), time(10), employee=emp))
-    assert len(sql_h) <= 3
+    assert len(sql_h) <= 4
 
 
 def test_schedule_name_on_cho_estimate_days(db, sat_half):

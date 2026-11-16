@@ -39,6 +39,7 @@ from app.core.vn_time import vn_today
 from app.modules.employee.model import Employee
 from app.modules.leave import balance_service, policy_allocation
 from app.modules.leave.policy_model import LeavePolicy
+from app.modules.leave.balance_accrual_info import NO_ACCRUAL_INFO, accrual_info_map
 from app.modules.leave.balance_model import LeaveBalance
 from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import (LEAVE_ACCRUAL_MODE_LABELS, LEAVE_REQUEST_STATUS_LABELS,
@@ -173,6 +174,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: d
             .filter(LeaveBalance.employee_id == employee_id, LeaveBalance.year == year)
             .all())
     available = balance_service.available_days_map(db, rows)    # một lượt, không tra từng dòng
+    accrual = accrual_info_map(db, rows)    # duoc-CR-762: ngày bắt đầu tích + tình trạng (loại cộng dần sau tháng)
     items = []
     for r in rows:
         info = types.get(r.leave_type_id) or {}
@@ -192,6 +194,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: d
             "encashed_days": float(r.encashed_days or 0.0),
             #  Phần hạn mức CHƯA TỚI THÁNG của loại cộng dần — có trong `total_days` nhưng chưa nghỉ được.
             "not_yet_accrued_days": round(r.remaining_days - available[r.id], 2),
+            **accrual[r.id],
             **_rules(info),
             **_policy_fields(policy, r.leave_type_id),
             #  Nguồn DUY NHẤT của con số này là `balance_service.available_days` (property của model trừ phần chưa tới
@@ -215,6 +218,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: d
             "comp_days": 0.0,
             "encashed_days": 0.0,
             "not_yet_accrued_days": 0.0,
+            **NO_ACCRUAL_INFO,
             **_rules(info),
             **_policy_fields(policy, tid),
             "remaining_days": 0.0,
@@ -344,8 +348,14 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             "max_negative_days": "Lớn hơn 0 = loại này cho ỨNG PHÉP: được xin vượt số còn lại tối đa chừng đó ngày "
                                  "(còn lại thành số âm). Bằng 0 = không cho ứng, vượt phải chọn Nghỉ không lương.",
             "applicable_after_days": "Lớn hơn 0 = loại này chỉ dùng được sau chừng đó ngày kể từ ngày vào làm.",
+            "accrual_start_date": "Ngày bắt đầu tích phép của loại 'cộng dần sau mỗi tháng làm đủ' (ngày làm chính thức theo "
+                                  "HĐLĐ, hoặc ngày vào làm nếu chưa có HĐ); null = không áp dụng hoặc đang thử việc.",
+            "accrual_status_label": "Tình trạng tích phép của loại 'cộng dần sau mỗi tháng làm đủ': Đang tích / Đang thử việc "
+                                    "— chưa tích / Chưa có HĐLĐ trên hệ thống. Thử việc thì CHƯA có ngày phép nào; chưa có "
+                                    "HĐ thì số ngày đang tính từ ngày vào làm, nhờ Nhân sự bổ sung HĐLĐ.",
             "accrual_mode_label": "Cách cấp quỹ: đủ hạn mức đầu năm / theo tỷ lệ tháng làm việc (người vào làm trong "
-                                  "năm) / cộng dần theo tháng.",
+                                  "năm) / cộng dần theo tháng / cộng dần sau mỗi tháng làm đủ (làm xong tháng nào mới có ngày của tháng đó; "
+                                  "tính từ ngày làm chính thức, đang thử việc thì chưa tích).",
             "encashed_days": "Ngày phép ĐÃ thanh toán ra tiền (phiếu thanh toán nghỉ phép đã duyệt) — đã trừ khỏi "
                              "remaining_days, không nghỉ được nữa. Chỉ có số ngày; trợ lý KHÔNG biết và KHÔNG nói số tiền.",
             "allow_encashment": "true = loại nghỉ này cho đổi ngày phép chưa nghỉ ra tiền (cuối năm hoặc khi nghỉ việc). "

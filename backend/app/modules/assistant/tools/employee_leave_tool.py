@@ -27,6 +27,7 @@ from app.core.vn_time import vn_today
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.leave import balance_service
+from app.modules.leave.balance_accrual_info import accrual_info_map
 from app.modules.leave.balance_model import LeaveBalance
 from app.modules.leave.request_model import LeaveRequest
 from app.modules.work_schedule.resolver_many import load_day_plans_many
@@ -109,7 +110,12 @@ def _visible_employees(ctx: ToolContext, keyword: str, dept_ids: list[int] | Non
         if not dept_ids:   # tên phòng không khớp phòng nào → rỗng (`IN [0]` sẽ trúng người chưa gắn phòng)
             return []
         q = q.filter(Employee.department_id.in_(dept_ids), Employee.is_active.is_(True))
-    rows = q.order_by(Employee.full_name, Employee.id).all()
+    return match_keyword(q.order_by(Employee.full_name, Employee.id).all(), keyword)
+
+
+def match_keyword(rows: list, keyword: str) -> list:
+    """Lọc hàng nhân sự theo từ khóa: trùng ĐÚNG mã thì chỉ người đó; không thì một phần tên / mã, bỏ dấu.
+    Dùng chung với `employee_work_shifts` (duoc-CR-761) để hai tool khớp người cùng một kiểu."""
     if not keyword:
         return rows
     exact = [r for r in rows if (r.code or "").lower() == keyword.lower()]
@@ -123,13 +129,14 @@ def _balances_by_employee(ctx: ToolContext, ids: list[int], year: int, types: di
     rows = ctx.db.query(LeaveBalance).filter(LeaveBalance.employee_id.in_(ids), LeaveBalance.year == year)
     rows = apply_scope(rows, LeaveBalance, "leave_balance", ctx.user, ctx.profile).all()
     available = balance_service.available_days_map(ctx.db, rows)   # một lượt cho cả danh sách
+    accrual = accrual_info_map(ctx.db, rows)    # duoc-CR-762: ngày bắt đầu tích + tình trạng (loại cộng dần sau tháng)
     out: dict[int, list] = {}
     for r in rows:
         info = types.get(r.leave_type_id) or {}
         out.setdefault(r.employee_id, []).append({
             "leave_type": info.get("name", ""), "leave_type_code": info.get("code", ""),
             "allocated_days": r.allocated_days, "total_days": r.total_days, "used_days": r.used_days,
-            "pending_days": r.pending_days, "remaining_days": available[r.id]})
+            "pending_days": r.pending_days, "remaining_days": available[r.id], **accrual[r.id]})
     for items in out.values():
         items.sort(key=lambda x: x["leave_type"])
     return out

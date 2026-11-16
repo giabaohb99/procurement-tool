@@ -9,8 +9,9 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from . import accrual_service
+from . import accrual_service, accrual_start_service
 from .catalog_model import LeaveType
+from .constants import LeaveAccrualMode
 from .policy_allocation_math import AssignmentSpan, compute_allocated
 from .policy_model import LeavePolicyAssignment, LeavePolicyLine
 
@@ -65,13 +66,24 @@ def load_assignments(db: Session, employee_ids: list[int], year: int | None = No
     return out
 
 
-def allocated_days(db: Session, leave_type: LeaveType, employee, year: int, *, lock: bool = False) -> float:
+def accrual_date(db: Session, mode: int, employee, starts: dict | None = None) -> date | None:
+    """Mốc tháng để tính hạn mức: `hire_date`, riêng MONTHLY_AFTER là NGÀY LÀM CHÍNH THỨC (duoc-CR-762, `NOT_STARTED`
+    khi chưa tích). `starts` = `{employee_id: AccrualStart}` đã nạp gom (không có thì tra một truy vấn)."""
+    if int(mode) != int(LeaveAccrualMode.MONTHLY_AFTER):
+        return getattr(employee, "hire_date", None)
+    found = (starts or {}).get(employee.id) or accrual_start_service.official_start(db, employee)
+    return found.math_date
+
+
+def allocated_days(db: Session, leave_type: LeaveType, employee, year: int, *, lock: bool = False,
+                   starts: dict | None = None) -> float:
     """Hạn mức `allocated_days` để cấp quỹ năm `year` cho người này, đã tính phân bổ chính sách (nếu có).
 
-    `lock=True` (đường GHI phân bổ) đọc phân bổ + dòng gói có khóa — xem `with_row_lock`."""
+    `lock=True` (đường GHI phân bổ) đọc phân bổ + dòng gói có khóa — xem `with_row_lock`.
+    `starts` = `{employee_id: AccrualStart}` đã nạp gom (loại MONTHLY_AFTER) — có thì khỏi truy vấn HĐLĐ từng người."""
     base = accrual_service.resolve_quota(db, leave_type, employee)
     mode = int(leave_type.accrual_mode or 1)
-    hire = getattr(employee, "hire_date", None)
+    hire = accrual_date(db, mode, employee, starts)
     assignments = load_assignments(db, [employee.id], year, lock=lock)[employee.id]
     spans = build_spans(assignments, load_lines(db, {a.policy_id for a in assignments}, lock=lock)) \
         if assignments else []

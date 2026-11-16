@@ -153,6 +153,8 @@ TARGETS.update({
     **_same("work_schedule", "WorkSchedule", "ScheduleCreate", "ScheduleUpdate"),       # duoc-CR-589
     **_same("work_schedule", "WorkScheduleDay", "DayIn"),
     **_same("work_schedule", "WorkScheduleAssignment", "AssignmentCreate", "AssignmentUpdate", "_Fields"),
+    #  duoc-CR-761: xếp ca theo ngày — `note` 255 ghi vào `tab_work_shift_day.note`
+    **_same("work_schedule", "WorkShiftDay", "ShiftPut", "ShiftBulk", "_ShiftBody"),
     #  duoc-CR-606 (07/10) — Hợp đồng lao động: mẫu Word + chuyển trạng thái (`reason` → `terminate_reason`)
     **_same("labor_contract", "LaborContractTemplate", "TemplateCreateIn", "TemplateUpdate"),
     #  bao-CR-621 Kho skill AI: bộ / skill / phiên bản / tệp / ai được đọc
@@ -170,6 +172,8 @@ TARGETS.update({
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
 NO_TARGET = {
+    #  duoc-CR-761: khung giờ tròn (số, ràng 0..24 ở schema) + chép tuần (chỉ id người / ngày / cờ ghi đè) — không có cột chữ
+    "work_schedule.SegmentIn", "work_schedule.ShiftCopyWeek",
     #  duoc-CR-694: một phần tử của cột JSON `extra_phones` — độ dài (20/50) ràng thẳng ở schema, không có cột chữ riêng
     "employee.PhoneEntry",
     #  duoc-CR-606: chỉ mang id mẫu / nội dung HTML soạn mẫu (lưu vào tệp Word, không vào cột chữ)

@@ -267,6 +267,19 @@ Nhóm `leave` (bật mặc định).
   khớp trong phạm vi, không có nghĩa người đó không tồn tại.
 - Luật và hợp đồng dữ liệu đủ: `doc/erp/hrm/03-lich-lam-viec.md` §19.3, mục 2 của `doc/erp/hrm/tai-lieu-ky-thuat/api.md`.
 
+### 3.7a Ca làm việc theo ngày (duoc-CR-761, 16/11/2026)
+
+Nhóm `leave` đổi nhãn thành **Nghỉ phép và ca làm việc** (bật mặc định), thêm hai tool CHỈ ĐỌC, đã khai vào `READ_TOOLS` nên khóa
+mức **Chỉ đọc** cũng gọi được:
+
+- `my_work_shifts(from_date?, to_date?)` — ca từng ngày của chính chủ khóa (mẫu tuần + ca xếp riêng đã gộp, ca xếp thắng), mặc
+  định tuần này, tối đa 42 ngày; không cần khóa quyền.
+- `employee_work_shifts(employee?, department?, from_date?, to_date?, limit?)` — ca từng ngày của nhân sự KHÁC, gác `employee.read`
+  + phạm vi xem hồ sơ; tối đa 14 ngày, trần **210 ô** người × ngày một lượt; nằm trong `ROW_BUDGET_TOOLS` (đếm dòng theo khóa
+  `employees`, tính vào `AGENT_MCP_ROW_BUDGET_PER_MIN`).
+- Xếp / đổi ca không có qua MCP (chỉ trên màn Xem lịch). Không lương. Luật và hợp đồng dữ liệu: `doc/erp/hrm/03-lich-lam-viec.md`
+  §22, mục 2 của `doc/erp/hrm/tai-lieu-ky-thuat/api.md`.
+
 ### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)
 
 Cổng MCP **không bao giờ** là cuộc trò chuyện riêng (hội thoại nằm ở máy chủ của ứng dụng AI bên ngoài và có thể được chia
@@ -290,7 +303,7 @@ gọi thẳng thì `denied` kèm tên nhóm. `report_issue`, `confirm_draft` lu�
 
 | Mặc định | Nhóm |
 |---|---|
-| **Bật** (Q4 + Agent 1 17/10) | `mine` tra cứu phiếu / việc của chính mình · `leave` nghỉ phép (gồm `employee_leave_summary` tra phép người khác theo quyền, duoc-CR-757) · `directory` danh bạ, thuật ngữ, HDSD · `reports` báo cáo gom sẵn + bảng số · `skills` Kho skill |
+| **Bật** (Q4 + Agent 1 17/10) | `mine` tra cứu phiếu / việc của chính mình · `leave` **Nghỉ phép và ca làm việc** (gồm `employee_leave_summary` tra phép người khác theo quyền, duoc-CR-757; `my_work_shifts`, `employee_work_shifts` ca theo ngày, duoc-CR-761) · `directory` danh bạ, thuật ngữ, HDSD · `reports` báo cáo gom sẵn + bảng số · `skills` Kho skill |
 | **Tắt** | `purchase` thu mua (gồm `erp_read`) · `finance` công nợ và thanh toán (kéo theo bộ `payable` / `payment_request` của `dataset_query`) · `document` văn thư · `work` soạn việc / kế hoạch · `customs` tra cứu thị trường · `google` lịch / Drive · `personal` sổ nhớ, ghi chú, nhóm chat, biên bản · `ticket` tạo phiếu hỗ trợ · `research` nghiên cứu sâu (tốn phí) · `export` xuất tệp |
 
 Cấu hình lưu MỘT dòng JSON ở `tab_setting.agent_mcp_settings` của ERP (đi qua cổng B `/settings/raw` ở chế độ tách dịch

@@ -170,13 +170,41 @@ class LeaveAccrualMode(IntEnum):
     FULL_YEAR = 1      # Đủ quota cả năm cho mọi người
     PRORATA_HIRE = 2   # Người vào làm trong năm: quota × số tháng làm / 12 (Điều 113 BLLĐ)
     MONTHLY = 3        # Cộng dần theo tháng: phần chưa tới tháng bị trừ ở `remaining()`
+    #  duoc-CR-762: làm XONG tháng nào mới có ngày của tháng đó; tính từ ngày làm chính thức (không phải ngày vào làm).
+    MONTHLY_AFTER = 4
 
 
 LEAVE_ACCRUAL_MODE_LABELS = {
     LeaveAccrualMode.FULL_YEAR: "Đủ hạn mức đầu năm",
     LeaveAccrualMode.PRORATA_HIRE: "Theo tỷ lệ tháng làm việc (người vào làm trong năm)",
     LeaveAccrualMode.MONTHLY: "Cộng dần theo tháng",
+    LeaveAccrualMode.MONTHLY_AFTER: "Cộng dần sau mỗi tháng làm đủ",
 }
+
+
+
+class LeaveAccrualStatus(IntEnum):
+    """Tình trạng tích phép của MỘT người ở loại MONTHLY_AFTER (duoc-CR-762): dẫn xuất, không lưu cột."""
+
+    ACCRUING = 1             # Đang tích (có ngày làm chính thức, hoặc lấy ngày vào làm)
+    PROBATION = 2            # Đang thử việc — chưa tích
+    MISSING_CONTRACT = 3     # Chưa có HĐLĐ trên hệ thống (đang tính từ ngày vào làm)
+    INCOMPLETE_HISTORY = 4   # Có HĐLĐ nhưng lịch sử chưa đủ (HĐ đầu tiên bắt đầu muộn hơn 1 tháng sau ngày vào làm)
+    SERVICE_CONTRACT = 5     # Chỉ có HĐ dịch vụ / cộng tác viên — không tích phép năm
+    NOT_YET_OFFICIAL = 6     # Ngày làm chính thức còn ở tương lai — chưa tích
+
+
+LEAVE_ACCRUAL_STATUS_LABELS = {
+    LeaveAccrualStatus.ACCRUING: "Đang tích",
+    LeaveAccrualStatus.PROBATION: "Đang thử việc — chưa tích",
+    LeaveAccrualStatus.MISSING_CONTRACT: "Chưa có HĐLĐ trên hệ thống",
+    LeaveAccrualStatus.INCOMPLETE_HISTORY: "Lịch sử HĐLĐ chưa đủ — đang tính từ ngày vào làm",
+    LeaveAccrualStatus.SERVICE_CONTRACT: "Hợp đồng dịch vụ / cộng tác viên — không tích phép năm",
+    LeaveAccrualStatus.NOT_YET_OFFICIAL: "Chưa tới ngày làm chính thức",
+}
+
+#  Hai chế độ GIỮ LẠI phần hạn mức chưa tới hạn ở `balance_service.available_days`.
+ACCRUAL_HOLDBACK_MODES = (int(LeaveAccrualMode.MONTHLY), int(LeaveAccrualMode.MONTHLY_AFTER))
 
 #  Cơ sở của bảng hạn mức theo nhóm `tab_leave_type_quota`.
 QUOTA_BASIS_EMPLOYMENT_TYPE = 1  # khớp `Employee.employment_type`
