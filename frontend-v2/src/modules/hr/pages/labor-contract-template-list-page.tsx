@@ -2,6 +2,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { LaborContractTemplateCatalog } from '../components/labor-contract-template-catalog'
 import { LaborContractTemplateHeaderActions } from '../components/labor-contract-template-header-actions'
+import { HrSetupTabs } from '../components/hr-setup-tabs'
 
 /**
  * Trang "Mẫu hợp đồng" NGAY TRONG phân hệ Nhân sự (`/hr/labor-contract-templates`, duoc-CR-643).
@@ -15,6 +16,8 @@ export function LaborContractTemplateListPage() {
   return (
     //  `fill` để bảng chiếm phần cao còn lại (như trang Thiết lập văn bản); khổ hẹp thì cả trang cuộn.
     <PageContainer fill className="max-md:h-auto">
+      {/*  duoc-CR-773: Danh mục gom vào Thiết lập — dải tab chung của các màn cấu hình Nhân sự. */}
+      <HrSetupTabs />
       <PageHeader
         title="Mẫu hợp đồng"
         description="Mẫu Word (.docx) lập hợp đồng lao động của từng pháp nhân."

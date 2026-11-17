@@ -21,26 +21,35 @@ describe('bố cục menu Nhân sự (duoc-CR-754)', () => {
       'Tổng quan',
       'Nhân sự',
       'Duyệt sửa hồ sơ',
-      'Sơ đồ tổ chức',
+      //  duoc-CR-773: Sơ đồ tổ chức ẩn khỏi menu, cụm Danh mục gom vào Thiết lập (anh Được chốt 17/11/2026).
       'Nghỉ phép',
       'Lịch làm việc',
       'Đặt phòng họp',
-      'Danh mục',
       'Thiết lập',
     ])
+  })
+
+  it('keeps the org chart route reachable for readers although it left the menu (duoc-CR-773)', () => {
+    expect(canAccessRoute(hrModule, '/hr/org-chart', makeCan({ employee: ['read'] }))).toBe(true)
+    expect(canAccessRoute(hrModule, '/hr/org-chart', makeCan({}))).toBe(false)
   })
 
   it('no longer shows the English word Master anywhere in the menu', () => {
     const labels = hrModule.nav.flatMap((i) => [i.label, ...(i.children ?? []).map((c) => c.label)])
     expect(labels.some((l) => /master/i.test(l))).toBe(false)
-    expect(labels).toContain('Danh mục')
+    //  duoc-CR-773: không còn dòng Danh mục riêng — hai dòng Danh mục / Thiết lập na ná nhau.
+    expect(labels).not.toContain('Danh mục')
   })
 
-  it('collects all six setup screens under one Thiết lập item shown as tabs, Cài đặt nhân sự first', () => {
+  it('collects the catalogs first, then every setup screen, under one Thiết lập item shown as tabs', () => {
     const setup = visibleNavItems(hrModule, allowEverything).find((i) => i.label === 'Thiết lập')
     //  Anh Được chốt 12/11/2026: một mục menu, vào trong chia tab — không sổ xuống.
     expect(setup?.childrenAsTabs).toBe(true)
     expect(setup?.children?.map((c) => c.label)).toEqual([
+      'Phòng ban',
+      'Công ty',
+      'Chức vụ',
+      'Mẫu hợp đồng',
       'Cài đặt nhân sự',
       'Chính sách nghỉ phép',
       'Loại nghỉ và ngày lễ',
@@ -53,7 +62,7 @@ describe('bố cục menu Nhân sự (duoc-CR-754)', () => {
   it('keeps setup screens out of the operational items so they do not show twice', () => {
     const items = visibleNavItems(hrModule, allowEverything)
     const childrenOf = (label: string) => items.find((i) => i.label === label)?.children?.map((c) => c.label) ?? []
-    expect(childrenOf('Danh mục')).toEqual(['Phòng ban', 'Công ty', 'Chức vụ', 'Mẫu hợp đồng'])
+    expect(items.find((i) => i.label === 'Danh mục')).toBeUndefined()
     expect(childrenOf('Đặt phòng họp')).toEqual(['Lịch phòng họp', 'Phiếu đặt phòng'])
     expect(childrenOf('Nghỉ phép')).not.toContain('Chính sách nghỉ phép')
     expect(items.find((i) => i.label === 'Lịch làm việc')?.children).toBeUndefined()

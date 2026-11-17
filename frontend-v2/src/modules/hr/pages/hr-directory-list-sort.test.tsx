@@ -38,6 +38,8 @@ vi.mock('../hooks/use-departments', () => ({
 }))
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: () => true, canAccess: () => true }),
+  //  duoc-CR-773: trang Phòng ban / Công ty nay dựng dải tab Thiết lập, dải đó đọc ngữ cảnh menu.
+  useNavContext: () => ({}),
 }))
 vi.mock('@/core/telemetry/use-search-telemetry', () => ({ useSearchTelemetry: () => undefined }))
 //  Hộp thoại và nút nhập có hook riêng (mạng, form) — không liên quan tới sắp xếp.

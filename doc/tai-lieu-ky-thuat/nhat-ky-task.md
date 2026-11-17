@@ -20444,3 +20444,55 @@ Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `f
 **Kiểm:** vitest Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt ở khổ 1440px và 390px, không tràn ngang.
 
 Mã nguồn: `frontend-v2/src/app/components/profile/profile-info-section.tsx`, `frontend-v2/src/app/components/profile/profile-record-card.tsx`, `frontend-v2/src/app/components/profile/profile-field-group.tsx`, `frontend-v2/src/app/components/profile/profile-info-card.tsx`, `frontend-v2/src/app/pages/profile-page.tsx`.
+
+## duoc-CR-772 | Trang cá nhân: mỗi thẻ gập / mở được bằng nút chevron, nhớ trạng thái
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi bố trí lại mục Thông tin cá nhân ở Trang cá nhân, trang vẫn dài; người dùng muốn từng thẻ đóng mở được bằng nút mũi tên lên xuống để chỉ để lại thẻ mình cần xem.
+
+**Đã làm**
+- Cả mười thẻ của mục Thông tin cá nhân (Quỹ phép, Lương, Hồ sơ nhân sự, Ca làm việc, Tài khoản, Chữ ký, Email thông báo, Người báo tin, Đề nghị sửa hồ sơ, Lịch sử thao tác) có nút ở góc phải tiêu đề: đang mở là mũi tên lên, bấm thì gập lại còn dòng tiêu đề và mũi tên đổi thành xuống. Trạng thái gập nhớ theo từng thẻ trên trình duyệt, mở lại trang vẫn giữ.
+- Thêm một phạm vi gập dùng chung cho ba khung thẻ của hệ (thẻ biểu mẫu, khung danh sách người báo tin, Lịch sử thao tác). Chỉ thẻ nằm trong phạm vi đó mới có nút; mọi màn khác dùng chung các khung này không đổi gì. Gập chỉ ẩn phần thân chứ không bỏ dựng, nên dòng người báo tin đang gõ dở không mất.
+- Gom phần nhớ trạng thái gập vào một chỗ dùng chung với khối gập sẵn có của biểu mẫu.
+
+**Kiểm:** bài kiểm mới cho thẻ gập (ngoài phạm vi không có nút, gập mở đổi mũi tên, nhớ sau khi mở lại trang, thân vẫn dựng khi gập) cùng các bài của giao diện dùng chung, Lịch sử thao tác, nhân sự và Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt trên local.
+
+Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/utils/section-open-storage.ts`, `frontend-v2/src/shared/ui/form-card.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, `frontend-v2/src/modules/hr/components/employee-people-editor.tsx`, `frontend-v2/src/app/components/profile/profile-info-section.tsx`.
+Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`.
+
+## duoc-CR-766-luot-3 | Trợ lý AI trả lời được đơn của tôi duyệt xong thì tới tay ai
+- status: xong
+- date: 2026-11-17
+- list: Công cụ Ai
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn chi tiết đơn nghỉ phép đã hiện người duyệt dự kiến của các chặng sau, nhưng công cụ của Trợ lý web, bot và cổng MCP trả lời câu đơn của tôi tới đâu chỉ nêu người đang giữ việc, nên hỏi tiếp duyệt xong thì tới ai thì trợ lý không trả lời được.
+
+**Đã làm**
+- Công cụ tra trạng thái phiếu do chính mình trình nay trả thêm các chặng chưa tới lượt của phiếu đang chạy: số chặng, tên chặng, người duyệt dự kiến và ghi chú khi chặng không tìm được ai hoặc sẽ tự qua vì trùng người. Phép tính dùng chung với màn chi tiết nên hai nơi luôn nói giống nhau; mỗi lượt gọi tính tối đa năm phiếu đang chạy để không kéo dài thời gian trả lời. Tên công cụ và tham số giữ nguyên nên không phải khai lại ở cổng MCP hay nhóm cấu hình.
+- Bộ lọc công cụ đã nạp đúng nhóm phê duyệt cho các câu hỏi kiểu duyệt xong thì tới ai, còn mấy người duyệt nữa.
+
+**Kiểm:** hai bài kiểm mới (phiếu đang chạy trả người duyệt dự kiến các chặng sau, phiếu đã xong không có phần đó) cùng các bài canh cửa công cụ trợ lý và phạm vi bộ máy duyệt xanh; ruff sạch.
+
+Mã nguồn: `backend/app/modules/assistant/tools/approval_tool.py`.
+Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`.
+
+## duoc-CR-773 | Menu Nhân sự: ẩn Sơ đồ tổ chức, gom Danh mục vào Thiết lập
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** menu phân hệ Nhân sự có hai dòng Danh mục và Thiết lập na ná nhau, người dùng không biết màn cấu hình nằm ở dòng nào; mục Sơ đồ tổ chức không cần đứng trên menu.
+
+**Đã làm**
+- Ẩn mục Sơ đồ tổ chức khỏi menu. Đường dẫn vẫn mở cho người có quyền đọc hồ sơ nhân sự như cũ, và khi đang xem sơ đồ thì dòng Nhân sự trên menu sáng lên.
+- Bỏ dòng Danh mục: Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng thành bốn tab đầu trong dải tab của Thiết lập, sau đó là Cài đặt nhân sự, chính sách nghỉ phép, loại nghỉ và ngày lễ, lịch làm việc, phòng họp. Bốn trang danh mục có dải tab Thiết lập ở đầu. Quyền vào từng màn giữ nguyên như lúc còn ở cụm Danh mục; bấm Thiết lập mở tab đầu tiên người dùng được phép.
+
+**Kiểm:** bài kiểm bố cục menu Nhân sự và bộ định tuyến sửa theo bố cục mới, thêm bài canh đường dẫn sơ đồ tổ chức vẫn mở cho người có quyền đọc; toàn bộ vitest phân hệ Nhân sự và bộ định tuyến xanh; typecheck, lint sạch.
+
+Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `frontend-v2/src/modules/hr/config/hr-setup-nav-item.tsx`, bốn trang danh sách phòng ban, công ty, chức vụ, mẫu hợp đồng.
+Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.

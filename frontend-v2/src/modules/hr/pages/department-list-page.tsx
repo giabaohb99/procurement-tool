@@ -36,6 +36,7 @@ import { useCompanies } from '../hooks/use-companies'
 import { useDepartments } from '../hooks/use-departments'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import { DEPARTMENT_KIND_LABELS, DEPARTMENT_KIND_OPTIONS, type Department } from '../types/department'
+import { HrSetupTabs } from '../components/hr-setup-tabs'
 
 const ALL = 'all'
 
@@ -178,6 +179,8 @@ function DepartmentListContent() {
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi thành danh sách thẻ dài, mà
     //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG.
     <PageContainer fill className="max-md:h-auto">
+      {/*  duoc-CR-773: Danh mục gom vào Thiết lập — dải tab chung của các màn cấu hình Nhân sự. */}
+      <HrSetupTabs />
       <PageHeader
         title="Phòng ban"
         //  Dòng mô tả ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi,
