@@ -44,6 +44,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import {
   Select,
@@ -432,36 +433,41 @@ function PurchaseRequestListContent() {
   //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
   //  `payment-request-list-page`, không phải trùng lặp cần dọn.
 
+  //  duoc-CR-778: bốn ô lấy danh sách từ DỮ LIỆU (Công ty · Bộ phận · Phân loại · NSTM) đổi
+  //  sang `SearchSelect` có ô tìm. Chỉ đổi cái vỏ: mục "Tất cả …" vẫn mang mốc `ALL` nên tham
+  //  số gửi API giữ nguyên. Không bật `clearable` — nút xóa trả chuỗi rỗng, `Number('')` = 0
+  //  là id THẬT (bẫy bảng có bộ lọc, duoc-CR-322).
   const companySelect = (
-    <Select value={companyId} onValueChange={setCompanyId}>
-      <SelectTrigger className="w-full md:w-36 text-xs h-9">
-        <SelectValue placeholder="Công ty" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-        {(companies?.items ?? []).map((company) => (
-          <SelectItem key={company.id} value={String(company.id)}>
-            {company.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={companyId}
+      onChange={setCompanyId}
+      options={[
+        { value: ALL, label: 'Tất cả công ty' },
+        ...(companies?.items ?? []).map((company) => ({
+          value: String(company.id),
+          label: company.name,
+        })),
+      ]}
+      placeholder="Công ty"
+      searchPlaceholder="Tìm công ty…"
+      emptyMessage="Không tìm thấy công ty nào."
+      className="h-9 w-full text-xs md:w-36"
+    />
   )
 
   const departmentSelect = (
-    <Select value={departmentId} onValueChange={setDepartmentId}>
-      <SelectTrigger className="w-full md:w-36 text-xs h-9">
-        <SelectValue placeholder="Bộ phận yêu cầu" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả bộ phận</SelectItem>
-        {(departments?.items ?? []).map((dept) => (
-          <SelectItem key={dept.id} value={String(dept.id)}>
-            {dept.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={departmentId}
+      onChange={setDepartmentId}
+      options={[
+        { value: ALL, label: 'Tất cả bộ phận' },
+        ...(departments?.items ?? []).map((dept) => ({ value: String(dept.id), label: dept.name })),
+      ]}
+      placeholder="Bộ phận yêu cầu"
+      searchPlaceholder="Tìm bộ phận…"
+      emptyMessage="Không tìm thấy bộ phận nào."
+      className="h-9 w-full text-xs md:w-36"
+    />
   )
 
   const statusSelect = (
@@ -481,39 +487,42 @@ function PurchaseRequestListContent() {
   )
 
   const itemGroupSelect = (
-    <Select value={itemGroup} onValueChange={setItemGroup}>
-      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo phân loại">
-        <SelectValue placeholder="Phân loại" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả phân loại</SelectItem>
-        {(itemGroups?.items ?? []).map((group) => (
-          <SelectItem key={group.id} value={group.name}>
-            {group.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={itemGroup}
+      onChange={setItemGroup}
+      options={[
+        { value: ALL, label: 'Tất cả phân loại' },
+        ...(itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
+      ]}
+      placeholder="Phân loại"
+      searchPlaceholder="Tìm phân loại…"
+      emptyMessage="Không tìm thấy phân loại nào."
+      ariaLabel="Lọc theo phân loại"
+      className="h-9 w-full text-xs md:w-36"
+    />
   )
 
   const assigneeSelect = (
-    <Select value={assignee} onValueChange={setAssignee}>
-      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo NSTM phụ trách">
-        <SelectValue placeholder="NSTM phụ trách" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả NSTM</SelectItem>
-        {(employees?.items ?? [])
+    <SearchSelect
+      value={assignee}
+      onChange={setAssignee}
+      options={[
+        { value: ALL, label: 'Tất cả NSTM' },
+        ...(employees?.items ?? [])
           //  Nhân sự chưa có mã thì không lọc được — bỏ khỏi danh sách chứ đừng
           //  để một dòng bấm vào là bảng rỗng.
           .filter((employee) => Boolean(employee.code))
-          .map((employee) => (
-            <SelectItem key={employee.id} value={employee.code}>
-              {employee.full_name} ({employee.code})
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
+          .map((employee) => ({
+            value: employee.code,
+            label: `${employee.full_name} (${employee.code})`,
+          })),
+      ]}
+      placeholder="NSTM phụ trách"
+      searchPlaceholder="Tìm tên hoặc mã nhân sự…"
+      emptyMessage="Không tìm thấy nhân sự nào."
+      ariaLabel="Lọc theo NSTM phụ trách"
+      className="h-9 w-full text-xs md:w-36"
+    />
   )
 
   const needDateInput = (

@@ -72,10 +72,17 @@ export function ValueInput({ rowId, field, operator, value }: ValueInputProps) {
     )
   }
 
+  //  duoc-CR-778: trường chỉ khai `fetchOptions` (không có `options` tĩnh) thì danh sách
+  //  phải NẠP ĐỘNG — trước bản vá này nó rơi vào `field.options ?? []` và ra hộp rỗng.
+  const isChoiceField =
+    field.type === 'select' || field.type === 'multiselect' || field.type === 'combobox'
+  const fetchOnly = isChoiceField && !field.options ? field.fetchOptions : undefined
+
   if (operator === 'in' || operator === 'not_in') {
     return (
       <MultiSelectValue
         options={field.options ?? []}
+        fetchOptions={fetchOnly}
         selected={Array.isArray(value) ? value.map(String) : []}
         onChange={(values) => change(values)}
       />
@@ -116,7 +123,12 @@ export function ValueInput({ rowId, field, operator, value }: ValueInputProps) {
     )
   }
 
-  if (field.type === 'combobox' && field.fetchOptions) {
+  //  duoc-CR-778: kiểu `select` chỉ khai `fetchOptions` (Loại văn bản, Phòng chủ trì,
+  //  Chức vụ…) trước đây trượt xuống ô gõ chữ cuối hàm: người dùng gõ "Hành chính" vào
+  //  ô lọc `department_id`, URL thành `department_id__eq=Hành chính`, backend lặng lẽ bỏ
+  //  qua và bảng vẫn ra đủ mọi dòng. Giờ đi chung đường ô chọn có tìm của `combobox`,
+  //  giá trị gửi đi vẫn là ID dạng chuỗi như cũ.
+  if ((field.type === 'combobox' && field.fetchOptions) || fetchOnly) {
     return <ComboboxValue field={field} value={String(value ?? '')} onChange={change} />
   }
 

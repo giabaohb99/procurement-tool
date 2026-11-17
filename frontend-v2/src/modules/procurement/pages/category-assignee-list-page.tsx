@@ -15,6 +15,7 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import type { CategoryAssignee } from '../types/category-assignee'
@@ -406,31 +407,36 @@ export function CategoryAssigneeListPage() {
                 className="h-9 w-full sm:w-72"
               />
 
-              <select
+              {/*  duoc-CR-778: hai ô `<select>` gốc của trình duyệt đổi sang `SearchSelect`
+                   có ô tìm. Mục "Tất cả …" vẫn mang mốc 'all' như cũ nên tham số `cat` /
+                   `dept` trên URL và cách lọc tại trình duyệt giữ nguyên. */}
+              <SearchSelect
                 value={catFilter}
-                onChange={(e) => updateParam('cat', e.target.value)}
-                className="h-9 w-full sm:w-56 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-md:w-auto max-md:min-w-0 max-md:flex-1"
-              >
-                <option value="all">Tất cả phân loại</option>
-                {itemGroups.map((g) => (
-                  <option key={g.id} value={String(g.id)}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(next) => updateParam('cat', next)}
+                options={[
+                  { value: 'all', label: 'Tất cả phân loại' },
+                  ...itemGroups.map((g) => ({ value: String(g.id), label: g.name })),
+                ]}
+                placeholder="Phân loại"
+                searchPlaceholder="Tìm phân loại…"
+                emptyMessage="Không tìm thấy phân loại nào."
+                ariaLabel="Lọc theo phân loại"
+                className="h-9 w-full sm:w-56 max-md:w-auto max-md:min-w-0 max-md:flex-1"
+              />
 
-              <select
+              <SearchSelect
                 value={deptFilter}
-                onChange={(e) => updateParam('dept', e.target.value)}
-                className="h-9 w-full sm:w-48 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-md:w-auto max-md:min-w-0 max-md:flex-1"
-              >
-                <option value="all">Tất cả phòng</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={String(d.id)}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(next) => updateParam('dept', next)}
+                options={[
+                  { value: 'all', label: 'Tất cả phòng' },
+                  ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+                ]}
+                placeholder="Phòng"
+                searchPlaceholder="Tìm phòng…"
+                emptyMessage="Không tìm thấy phòng nào."
+                ariaLabel="Lọc theo phòng"
+                className="h-9 w-full sm:w-48 max-md:w-auto max-md:min-w-0 max-md:flex-1"
+              />
             </div>
           }
         />

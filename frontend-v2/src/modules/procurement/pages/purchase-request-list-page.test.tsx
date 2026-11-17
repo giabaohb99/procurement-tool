@@ -105,6 +105,28 @@ describe('PurchaseRequestListPage — hai ô lọc của bao-CR-443', () => {
     expect(screen.getAllByLabelText('Lọc theo phân loại').length).toBeGreaterThan(0)
     expect(screen.getAllByLabelText('Lọc theo NSTM phụ trách').length).toBeGreaterThan(0)
   })
+
+  //  duoc-CR-778: ô NSTM đổi từ `Select` sang ô chọn CÓ TÌM — tham số gửi đi phải y hệt.
+  it('lets the NSTM box be searched, then sends the picked employee CODE', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getAllByLabelText('Lọc theo NSTM phụ trách')[0])
+    await user.type(screen.getByPlaceholderText('Tìm tên hoặc mã nhân sự…'), 'tran bao')
+    await user.click(screen.getByRole('button', { name: 'Trần Bảo (NSU209)' }))
+
+    expect(lastCall().assignee).toBe('NSU209')
+  })
+
+  it('picking "Tất cả NSTM" again drops the param instead of sending an empty / 0 value', async () => {
+    const user = userEvent.setup()
+    build('/procurement/purchase-requests?assignee=NSU209')
+
+    await user.click(screen.getAllByLabelText('Lọc theo NSTM phụ trách')[0])
+    await user.click(screen.getByRole('button', { name: 'Tất cả NSTM' }))
+
+    expect(lastCall().assignee).toBeUndefined()
+  })
 })
 
 /**

@@ -2,9 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { SelectOption } from '../types'
 
-/** Nạp options động cho trường `combobox`, có debounce 300ms. */
+/**
+ * Nạp options động cho trường có `fetchOptions` (kiểu `combobox` hoặc `select` không khai
+ * `options` tĩnh), có debounce 300ms.
+ *
+ * duoc-CR-778: trả thêm `labels` — sổ nhãn của MỌI mục đã từng nạp về trong phiên. Lọc do
+ * server làm nên mỗi lần gõ là danh sách thay hẳn; mục đã chọn trước đó rơi khỏi danh sách
+ * mới thì ô chọn chỉ còn biết mỗi cái id ("12") nếu không giữ lại nhãn của nó.
+ */
 export function useFilterOptions(fetchFn?: (search: string) => Promise<SelectOption[]>) {
   const [options, setOptions] = useState<SelectOption[]>([])
+  const [labels, setLabels] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -16,7 +24,13 @@ export function useFilterOptions(fetchFn?: (search: string) => Promise<SelectOpt
       setLoading(true)
       timerRef.current = setTimeout(async () => {
         try {
-          setOptions(await fetchFn(query))
+          const next = await fetchFn(query)
+          setOptions(next)
+          setLabels((prev) => {
+            const merged = { ...prev }
+            for (const option of next) merged[option.value] = option.label
+            return merged
+          })
         } catch {
           // Nạp hỏng thì để danh sách rỗng — ô lọc vẫn dùng được, không vỡ trang.
           setOptions([])
@@ -40,5 +54,5 @@ export function useFilterOptions(fetchFn?: (search: string) => Promise<SelectOpt
     }
   }, [fetchFn, search])
 
-  return { options, loading, search }
+  return { options, labels, loading, search }
 }

@@ -20607,3 +20607,21 @@ Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.
 
 Mã nguồn: `backend/app/modules/purchase_order/purchasing_print.py`, `backend/app/modules/purchase_order/controller.py`, `frontend/src/pages/PrintPurchaseRequest.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page.tsx`, `frontend-v2/src/modules/procurement/utils/purchasing-print-sheet.ts`, `backend/scripts/seed_help_thu_mua_mau_in_cr777.py`.
 Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+
+## duoc-CR-778 | Ô lọc ở các màn danh sách Mua hàng gõ tìm được, sửa lỗi bộ lọc nâng cao bắt gõ chữ
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** trên giao diện ERP mới, nhiều ô lọc chọn từ danh sách dài (nhà cung cấp, nhân sự, phân loại, bộ phận, công ty) ở các màn danh sách Mua hàng không có ô tìm, phải cuộn tìm từng dòng; khi rà còn thấy ở bộ lọc nâng cao, các trường chọn theo danh mục nạp từ máy chủ lại hiện ô gõ chữ nên lọc không có tác dụng.
+
+**Đã làm**
+- Thanh lọc các màn danh sách Đơn mua hàng, Yêu cầu mua hàng, Yêu cầu báo giá, Phân công phụ trách và Tiến độ đơn mua hàng đổi các ô chọn từ danh sách dữ liệu sang ô có tìm kiếm không dấu; cách nạp danh sách, mục Tất cả và tham số gửi lên máy chủ giữ y như cũ, các ô danh sách ngắn giữ nguyên.
+- Bộ lọc nâng cao dùng chung: trường chọn chỉ khai nguồn nạp từ máy chủ nay hiện ô chọn có tìm kiếm cho cả điều kiện bằng lẫn thuộc danh sách, giữ đúng tên mục đã chọn và vẫn lưu theo id; áp cho các trường Loại văn bản, Pháp nhân ban hành, Phòng chủ trì, Người chịu trách nhiệm, Sổ văn bản của Văn bản và Vị trí chức vụ của Nhân sự.
+- Bài hướng dẫn Gõ tìm trong ô lọc ở các màn danh sách Mua hàng dưới thẻ Dành cho Nhân viên Mua hàng.
+
+**Kiểm:** bài kiểm mới 14 bài cho bộ lọc nâng cao và 2 bài cho màn Yêu cầu mua hàng; bài kiểm các trang Mua hàng, bộ lọc dùng chung và các khu lân cận xanh; typecheck, lint sạch; thử trên trình duyệt từng màn, so tham số gửi lên trước và sau khi sửa trùng khớp; tái hiện lỗi bộ lọc nâng cao trước khi sửa (lọc phòng bằng chữ ra cả 25 văn bản, sau khi sửa chọn phòng ra đúng 11).
+
+Mã nguồn: `frontend-v2/src/shared/conditional-filter/ui/value-input.tsx`, `frontend-v2/src/shared/ui/search-select.tsx`, năm trang danh sách trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_o_loc_co_tim_cr778.py`.
+Kiểm: `frontend-v2/src/shared/conditional-filter/ui/value-input.test.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-list-page.test.tsx`.
