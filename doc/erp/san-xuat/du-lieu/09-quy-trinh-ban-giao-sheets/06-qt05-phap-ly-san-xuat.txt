@@ -1,0 +1,30 @@
+# SHEET: 5. QT PHÁP LÝ SẢN XUẤT
+R1: QUY TRÌNH PHÁP LÝ SẢN XUẤT / Thương hiệu: Dego holding
+R2: Duyệt pháp lý đơn hàng TP, còn duyệt pháp lý dơn hàng BTP, đơn hàng xử lý lại, sự cố, mua/khảo sát NL/BTP? | Số, ký hiệu
+R4: I | MỤC TIÊU
+R5: Đảm bảo đơn hàng đủ điều kiện pháp lý để sản xuất, mua bán
+R7: II | THỜI ĐIỂM THỰC HIỆN
+R8: Tiếp nhận đơn đặt hàng từ Điều phối thành phẩm cập nhật
+R10: III | LƯU ĐỒ
+R13: QUY TRÌNH CHI TIẾT
+R14: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI DUYỆT | GHI CHÚ
+R15: I | Pháp lý đơn hàng
+R16: 1.0 | Tiếp nhận thông tin đơn đặt hàng | Sau khi Điều phối TP tiếp nhận đơn đặt hàng từ Kinh doanh và cập nhật đầy đủ thông tin vào drive / Kiểm tra hình ảnh mockup hàng hóa | Khi tiếp nhận đơn đặt hàng | Drive | Pháp lý SX | Điều phối TP
+R17: 2.0 | Kiểm tra pháp lý cho đơn hàng | Khi tiếp nhận đơn đặt hàng
+R18: 2026-01-02 00:00:00 | Các đơn hàng cần tạm ngưng do sự cố trước đó | NSPL tiếp nhận thông tin các đơn hàng đang gặp sự cố cần tạm ngưng sản xuất, xác định rõ VTBB/NL/BTP cấu thành mã hàng liên quan để cảnh báo sớm vật tư, nguyên liệu có nguy cơ phát sinh lỗi | Drive | Pháp lý SX | Sự cố
+R19: 2026-02-02 00:00:00 | Nguồn gốc sản phẩm | 1. Đơn vị sở hữu: Kiểm tra tên đơn vị trên Giấy đăng ký thuốc/Giấy chứng nhận đăng ký hoặc Quyết định công nhận lưu hành phân bón còn hiệu lực. / 2. Đơn vị cấu thành: Là đơn vị sở hữu hoặc đơn vị được đơn vị sở hữu ủy quyền thực hiện việc cấu thành sản phẩm. Trường hợp là đơn vị khác với đơn vị sở hữu, phải có Giấy ủy quyền/thỏa thuận hợp pháp về quyền sở hữu, sử dụng hoặc cấu thành sản phẩm.  / 3. Giấy đăng ký thuốc/Quyết định công nhận lưu hành phân bón: Kiểm tra còn hiệu lực. / 4. Thông báo tiếp nhận hồ sơ công bố hợp quy: Kiểm tra còn hiệu lực. Lưu ý: Tên đơn vị trên hồ sơ phải thuộc một trong các chủ thể phù hợp gồm đơn vị sở hữu, đơn vị cấu thành hoặc đơn vị sản xuất/gia công theo hồ sơ pháp lý của sản phẩm. | Drive | Pháp lý SX | Pháp lý chung
+R20: 2026-03-02 00:00:00 | Điều kiện sản xuất | 1. Đơn vị sản xuất/gia công: Kiểm tra tên và địa chỉ cơ sở sản xuất/gia công được thể hiện trên nhãn hàng hóa và đối chiếu với hồ sơ pháp lý của sản phẩm. Trường hợp đơn vị cấu thành khác với đơn vị sản xuất/gia công phải có Hợp đồng gia công/sản xuất / 2. Điều kiện sản xuất phân bón/thuốc BVTV: Kiểm tra Giấy phép/Giấy chứng nhận đủ điều kiện sản xuất còn hiệu lực và phạm vi được phép sản xuất phù hợp với sản phẩm. / 3. Trường hợp mua bán phân bón/thuốc BVTV: Kiểm tra Giấy chứng nhận đủ điều kiện mua bán còn hiệu lực và phù hợp với hoạt động kinh doanh. | Drive | Pháp lý SX | NCC GC
+R21: 2026-04-02 00:00:00 | Điều kiện mua bán | 1. Đơn vị mua bán: Là đơn vị mua sản phẩm từ đơn vị cấu thành/đơn vị sản xuất hoặc đơn vị bán để kinh doanh, phân phối. Quan hệ mua bán phải được xác lập bằng Hợp đồng/Phụ lục hợp đồng mua bán. Thông tin tên và địa chỉ của đơn vị có trách nhiệm thể hiện trên nhãn phải được kiểm tra, đối chiếu với nhãn và hồ sơ pháp lý của sản phẩm. / 2. Điều kiện mua bán phân bón/thuốc BVTV: Kiểm tra Giấy chứng nhận đủ điều kiện mua bán còn hiệu lực và phù hợp với phạm vi kinh doanh. | Drive | Pháp lý SX | Pháp lý chung
+R22: 2026-05-02 00:00:00 | Dòng hóa đơn | Căn cứ vào đơn vị sở hữu/đơn vị cấu thành, đơn vị sản xuất/gia công, đơn vị mua/bán ở trên làm căn cứ để xác định dòng hóa đơn phù hợp | Drive | Pháp lý SX
+R23: 3.0 | Cập nhật thông tin | Ghi nhận các thông tin kiểm tra ở nội dung trên và cập nhật vào drive quản lý pháp lý đơn hàng / (chia sẻ thông tin cho các bộ phận liên quan để thực hiện nghiệp vụ) | Khi hoàn thành kiểm tra các thông tin trên | Drive | Pháp lý SX
+R24: II | Pháp lý sản xuất
+R25: 1.0 | Tiếp nhận thông tin pháp lý | Nhận thông tin pháp lý sản phẩm hoặc pháp lý NCC GC từ QLDL | Khi có mới/bổ sung gia hạn | Drive | Pháp lý SX | QLDL
+R26: 2.0 | Rà soát & cập nhật thông tin pháp lý | - Kiểm tra lại thông tin pháp lý có bị trùng lập với dữ liệu trước đó. / - Nhập liệu thông tin mới vào Drive pháp lý | Drive | Pháp lý SX
+R27: 3.0 | Theo dõi các thời hạn của pháp lý | - Định kỳ kiểm tra lại các thời hạn pháp lý như hợp quy, ủy quyền, thuê tên,... / - Thông báo đến các bộ phận liên quan để cập nhật, bổ sung, gia hạn mới  / - Khi các bộ phận phản hồi lại thông tin thì quay lại bước 1.II thực hiện quy trình | Drive | Pháp lý SX | QLDL / Pháp lý chung
+R28: 4.0 | Báo cáo & lưu trữ | - Thực hiện lưu trữ dữ liệu thông tin pháp lý trên Drive / - Thực hiện báo cáo theo quy định hoặc yêu cầu của cấp trên | Drive | Pháp lý SX
+R31: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R34: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R35: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R36: ĐIỀU PHỐI THÀNH PHẨM | SX-ĐIỀU PHỐI THÀNH PHẨM
+R38: VII. DANH SÁCH NHÓM ZALO LÀM VIỆC
+R39: STT | TÊN NHÓM ZALO

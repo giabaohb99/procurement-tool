@@ -1,0 +1,76 @@
+# SHEET: 2. QT KHAI BÁO SX
+R1: Xem lại quy tắc đặt mã đơn đặt hàng, mã đơn xử lý lại, mã đơn sự cố, mã các BĐM
+R2: QUY TRÌNH KHAI BÁO DỮ LIỆU SẢN XUẤT
+R3: Số, ký hiệu
+R5: I | MỤC TIÊU
+R6: Đảm bảo đồng bộ hệ thống quản lý dữ liệu sản xuất
+R7: Thống nhất cách đặt mã, tên
+R8: Lưu trữ khoa học, thuận tiện cho tìm kiếm và sử dụng thông tin
+R10: II | THỜI ĐIỂM THỰC HIỆN
+R11: Khi phát sinh dữ liệu mới cần được quản lý
+R13: III | LƯU ĐỒ
+R16: IV | QUY TRÌNH CHI TIẾT
+R17: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R18: 1.0 | Nhận/xác định thông tin khai báo | Khi phát sinh mã mới
+R19: 2026-01-01 00:00:00 | Nguyên liệu | - Bao gồm: nguyên liệu nhập khẩu, nguyên liệu kỹ thuật / - Tiếp nhận thông tin từ Lab, ĐP NL/BTP khi phát sinh loại nguyên liệu mới hoặc nguyên liệu đã được khai báo thay đổi về hàm lượng / - Nhập thông tin khai báo theo mẫu | MẪU KHAI BÁO | Nhóm: / - TM - KHAI BÁO NỘI BỘ | Thu mua / ĐP NL/BTP | Lab / ĐP NL/BTP / QLDL
+R20: 2026-02-01 00:00:00 | Bán thành phẩm ruột | - Là bán thành phẩm mua từ NCC thu mua. BTPR có thể được tạo thành từ BTPNK + Chi phí nhập khẩu hoặc NLT + phí phối chế  / - Tiếp nhận thông tin từ ĐP NL/BTP, Lab khi phát sinh Bán thành phẩm ruột mới hoặc thay đổi dạng, dòng V, màu sắc, hàm lượng NL / - Nhập thông tin khai báo theo mẫu | MẪU KHAI BÁO | Nhóm: / - TM - KHAI BÁO NỘI BỘ | Thu mua | Lab / ĐP NL/BTP
+R21: 2026-03-01 00:00:00 | Bán thành phẩm mua | - Là bán thành phẩm mua từ NCC GC (ruột sản phẩm) / - Tiếp nhận thông tin từ Giá vốn/QLDL khi phát sinh Bán thành phẩm mua mới hoặc có thay đổi về dạng, dòng V, màu sắc / - Thông tin cần có để khai báo: tên pháp lý, thành phần, hàm lượng, đơn vị tính hàm lượng, dòng, dạng, màu / - Nhập thông tin khai báo theo mẫu | MẪU KHAI BÁO | Nhóm: / - TM - KHAI BÁO NỘI BỘ | ĐP NL/BTP | QLDL
+R22: 2026-04-01 00:00:00 | Bán thành phẩm nhập khẩu | - Dùng để ghi nhận công nợ NCC nước ngoài đối với bán thành phẩm / - Chưa gồm các chi phí phát sinh trong nhập khẩu: VAT, phí dịch vụ, phí thuế khác phát sinh / - Tiếp nhận thông tin từ ĐP NL/BTP khi phát sinh nhập khẩu BTP mới  / - Nhập thông tin khai báo theo mẫu | Thu mua | ĐP NL/BTP
+R23: 2026-05-01 00:00:00 | Bán thành phẩm cấu thành | - Là Công nợ NCC GC trong nước (bao gồm ruột + 1 phần mà NCC GC không tách ra như thùng, chai, phí đóng gói...) / - Dùng để cấu thành giá vốn thành phẩm / - Dựa trên thông tin đơn hàng, nhập thông tin khai báo theo mẫu nếu chưa có mã | MẪU KHAI BÁO | Nhóm: / - TM - KHAI BÁO NỘI BỘ | QLDL
+R24: 2026-06-01 00:00:00 | Bán thành phẩm từ R&D | - Dùng làm bảng định mức và lệnh sản xuất gửi NCC GC / - Áp dụng riêng cho bán thành phẩm phân bón do Lab phối / - Nhận thông tin mã, tên, đơn vị tính từ lab | Drive .... | Lab
+R25: 2026-07-01 00:00:00 | Vật tư bao bì | - Bao gồm: chai, túi/gói, xô, can, lon, hộp, thùng, nhãn dán thùng, cốc, seal... / - Tiếp nhận thông tin từ Thu mua khi phát sinh VTBB mới hoặc có sự thay đổi về chất liệu, kích thước, màu sắc, hình dạng... | 1. DATA DỮ LIỆU ĐẦU VÀO SX / Nhóm: / - TM - KHAI BÁO NỘI BỘ | ĐP VTBB
+R26: 2026-08-01 00:00:00 | Chi phí
+R27: 1.8.1 | Chi phí nhập khẩu | - Là tổng chi phí trên 1 đơn hàng nhập khẩu / - Dùng để xuất cấu thành giá vốn bán thành phẩm và nguyên liệu khi nhập khẩu / - Thu mua tự xác định chi phí trên đơn hàng nhập khẩu và thực hiện khai báo, thường bao gồm: VAT, phí dịch vụ, phí thuế khác phát sinh | Thu mua
+R28: 1.8.2 | Phí gia công phối trộn | - Là phí gia công phối trộn nguyên liệu (NLT) thành bán thành phẩm (BTPR) / - Phí phối khai báo trên từng lần NCC GC báo giá hoặc khi có phát sinh | QLDL | NCC GC
+R29: 1.8.3 | Phí gia công sang chai đóng gói | - Là phí gia công sang chai đóng gói Bán thành phẩm ruột (BTPR) vào VTBB chứa thành THÀNH PHẨM (HH) / - Phí gia công khai báo trên từng lần NCC GC báo giá hoặc khi có phát sinh | QLDL | NCC GC
+R30: 1.9 | Hàng hóa | - Khi phát sinh Hàng hóa mới hoặc thay đổi về BĐM, VTBB (dung tích, chất liệu) / - Thông tin cần có để khai báo: Tên thương hiệu, Tên khách hàng, Tên nhãn hiệu, quy cách sản phẩm, quy cách thùng / - Nhận thông tin gồm: mã, tên, tên pháp lý, đơn vị tính | QUẢN LÝ NHÃN MÁC IDA GROUP | Thiết kế | Pháp lý chung / ĐP VTBB
+R31: 2026-10-01 00:00:00 | NCC GC | - Khi phát sinh đơn vị mới / - Thông tin cần khai báo: Tên đơn vị, mã số thuế, địa chỉ, tên công ty trên phần mềm Misa. | Nhóm: / - TM - KHAI BÁO NỘI BỘ | QLDL
+R32: 2026-11-01 00:00:00 | NCC thu mua, đơn vị vận chuyển | - Khi phát sinh đơn vị mới / - Thông tin cần khai báo: Tên đơn vị, mã số thuế, địa chỉ, tên công ty trên phần mềm Misa. | Nhóm: / - TM - KHAI BÁO NỘI BỘ | Thu mua
+R33: 2026-12-01 00:00:00 | Kho, công ty nội bộ | - Khi phát sinh đơn vị mới / - Thông tin cần khai báo: Tên đơn vị, mã số thuế, địa chỉ, tên công ty trên phần mềm Misa. | Nhóm: / - TM - KHAI BÁO NỘI BỘ | ĐP TP
+R34: 2.0 | Kiểm tra thông tin, trình duyệt, gửi thông tin khai báo trên phần mềm Misa và cập nhật kết quả Drive | Khi nhận thông tin | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R35: 2026-01-02 00:00:00 | Kiểm tra | - Kiểm tra nếu cùng thông tin với các mã đã khai báo trước đó ---> Không thực hiện khai báo ---> phản hồi kết quả / + Thu mua kiểm tra và khai báo: NCC thu mua, đơn vị vận chuyển, NL, BTPR, BTP NK, chi phí NK / + ĐP TP kiểm tra và khai báo: kho, công ty nội bộ, khoản mục chi phí / + QLDL kiểm tra và khai báo: NCC GC, công nợ NCC SX GC (BTPCT), phí phối trộn, phí đóng gói / + ĐP NL/BTP kiểm tra và khai báo: BTPM / + ĐP VTBB kiểm tra và khai báo: VTBB | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | TM / QLDL / ĐP VTBB / ĐP TP / ĐP NL/BTP
+R36: 2026-02-02 00:00:00 | Trình duyệt | - Thu mua khai báo trình duyệt QL thu mua / - QLDL, ĐP VTBB, ĐP TP, ĐP NL/BTP khai báo trình duyệt QL sản xuất | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | TM / QLDL / ĐP VTBB / ĐP TP / ĐP NL/BTP | QLTM / QLSX
+R37: 2026-03-02 00:00:00 | Gửi thông tin khai báo | Sau khi được duyệt, gửi thông tin file khai báo vào nhóm zalo | MẪU KHAI BÁO | Khi được duyệt | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | TM / QLDL / ĐP VTBB / ĐP TP / ĐP NL/BTP | PTCKT
+R38: 2026-04-02 00:00:00 | Nhận phản hồi, cập nhật dữ liệu quản lý và phản hồi thông tin cho các BP liên quan | Nhận phản hồi từ kế toán, cập nhật vào drive Data sản xuất  / Gửi thông tin đã khai báo vào nhóm nội bộ để các bộ phận nắm thông tin | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | PTCKT | TM / QLDL / ĐP VTBB / ĐP TP / ĐP NL/BTP
+R39: 2026-05-02 00:00:00 | Bổ sung Drive | Lấy thông tin đã khai báo từ Misa vào Drive / Cập nhật thêm thông tin chi tiết khác vào Drive theo mẫu | 1. DATA DỮ LIỆU ĐẦU VÀO SX | TM / QLDL / ĐP VTBB / ĐP TP / ĐP NL/BTP
+R40: 3.0 | Quy tắc khai báo | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R41: 2026-01-03 00:00:00 | Nguyên liệu | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | Thu mua / ĐP NL/BTP
+R42: 3.1.1 | Nguyên liệu nhập khẩu | Mã: "NLNK" + số thứ tự tăng dần (4 số) / Tên nội bộ: "Nguyên liệu" + Tên nguyên liệu + hàm lượng + đơn vị hàm lượng / Tên trên hóa đơn: 7"Nguyên liệu" + Tên nguyên liệu + hàm lượng + đơn vị hàm lượng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R43: 3.1.2 | Nguyên liệu kỹ thuật | Mã: "NLT" + số thứ tự tăng dần (4 số) / Tên nội bộ: "Nguyên liệu" + Tên nguyên liệu + hàm lượng + đơn vị hàm lượng / Tên trên hóa đơn: "Nguyên liệu" + Tên nguyên liệu + hàm lượng + đơn vị hàm lượng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R44: 3.1.3 | Nguyên liệu mã hóa | Mã: "NA" + số thứ tự tăng dần (4 số) / Tên nội bộ: "Phụ gia" + Mã NL | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R45: 2026-02-03 00:00:00 | Bán thành phẩm | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | Thu mua / ĐP NL/BTP
+R46: 3.2.1 | Bán thành phẩm ruột | Mã: "BTPR" + số thứ tự tăng dần (4 số) / Tên nội bộ: "BTPR" + Loại + Tên pháp lý +Dòng V + Dạng + Màu + Thành phần / Tên trên hóa đơn: Tên pháp lý | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R47: 3.2.2 | Bán thành phẩm mua | Mã: "BTPM" + số thứ tự tăng dần (4 số)         / Tên nội bộ: "BTPM" + Loại + Tên pháp lý +Dòng V + Dạng + Màu + Thành phần / Tên trên hóa đơn: Tên pháp lý | Dự kiến bỏ năm 2027 | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R48: 3.2.3 | Bán thành phẩm nhập khẩu | Mã: "BTPNK" + số thứ tự tăng dần (4 số) / Tên nội bộ: Tên pháp lý + thành phần hoạt chất + hàm lượng + ĐVT hàm lượng / Tên trên hóa đơn: Tên pháp lý + thành phần hoạt chất + hàm lượng + ĐVT hàm lượng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R49: 3.2.4 | Bán thành phẩm cấu thành | Mã: "BTPCT" + 4 số cuối mã hàng hóa (trường hợp không phân định được các chi phí chi tiết công nợ NCC)         / Tên nội bộ: "BTPCT" + TÊN HH  + NCC / Tên trên hóa đơn: "Tên pháp lý" + quy cách sản phẩm + quy cách thùng + (gia công) | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R50: 3.2.5 | Bán thành phẩm R&D | Mã: Theo quy tắc Lab / Tên nội bộ: Mã BTP + Tên pháp lý / Tên trên hóa đơn: Tên pháp lý | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R51: 2026-03-03 00:00:00 | Vật tư bao bì | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | ĐP VTBB
+R52: 3.3.1 | Túi/ Nhãn | Mã:  / "N" + Mã chất liệu + 4 số cuối Mã hàng hóa / Trong đó Mã chất liệu: / - TG: Túi giấy / - TN: Túi nhôm / - HD: Nhãn Decal / - HG: Nhãn giấy"        / Tên nội bộ: "Nhãn" + Tên hàng hóa thành phẩm đầy đủ      / Tên trên hóa đơn:  Túi/Nhãn + Tên pháp lý "-" quy cách sản phẩm | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R53: 3.3.2 | Chai | Mã: "C" + Mã chất liệu + Hình dạng + STT tăng dần (4 số) / Tên nội bộ: "Chai" + Mã chất liệu + Hình dạng + "Cổ" + Size cổ + Thể tích chứa tối đa + (trọng lượng + "g") + Màu sắc + (Nhận diện riêng) / Tên trên hóa đơn: "Chai" + chất liệu + thể tích | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R54: 3.3.3 | Nắp (Chai, can, xô) | Mã: "NAP" + STT tăng dần (4 số)  / Tên nội bộ: "Nắp" + chất liệu + "Cổ" + Size cổ + (trọng lượng + "g") + màu sắc + "Logo" (nếu có) + chữ trên logo (nếu có) + "Granty" (nếu có)  / Tên trên hóa đơn: Đồng bộ với chai | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R55: 3.3.4 | Cốc | Mã: "COC" + STT tăng dần (4 số) / Tên nội bộ: "Cốc đong" + "Cổ" + size cổ + thể tích chứa của cốc + màu+ (nhận diện riêng) / Tên trên hóa đơn: Cốc đong + thể tích | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R56: 3.3.5 | Seal | Mã: "SEAL" + STT tăng dần (4 số) / Tên nội bộ: "Seal nhiệt" + chất liệu chai + "cổ" + size cổ chai/ can - "có in" (nếu có) / Tên trên hóa đơn: Không có | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R57: 3.3.6 | Hộp | Mã: "HOP" + 4 số cuối của mã hàng hóa thành phẩm/ mã gợi ý / Tên nội bộ: / + Hộp dùng riêng / "Hộp" + Tên hàng hóa + ""-"" +  Quy cách hộp / + Hộp dùng chung / "Hộp dùng chung" + (Mã hàng gợi ý) + Tên đại diện trên hộp (nếu có) + thể tích + "-" + quy cách hộp / Tên trên hóa đơn: Hộp + Tên pháp lý "-" quy cách sản phẩm | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R58: 3.3.7 | Xô | Mã: "XO" + từ đầu tiên của màu + số thứ tự tăng dần (4 số) / Tên nội bộ: "Xô" + Chất liệu + Hình dạng + Thể tích chứa + "L/ml" + (Trọng lượng + "g") + Màu + Nhận diện riêng / Tên trên hóa đơn: "Xô" + Chất liệu + thể tích | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R59: 3.3.8 | Can | Mã: "CAN" + số thứ tự tăng dần (4 số) / Tên nội bộ: "Can" + Chất liệu + Hình dạng + Thể tích chứa + "L/ml" + (Trọng lượng + "g") + Màu + Nhận diện riêng / Tên trên hóa đơn: "Can" + Chất liệu + thể tích / trọng lượng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R60: 3.3.9 | Lon | Mã: "LON" + số thứ tự tăng dần (4 số) / Tên nội bộ: "Lon" + Chất liệu + Hình dạng + Thể tích chứa + "L/ml" + (Trọng lượng + "g") + Màu + Nhận diện riêng / Tên trên hóa đơn: "Hũ" + Chất liệu + thể tích/ trọng lượng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R61: 3.3.10 | Thùng | Mã: "TH" + chữ viết tắt tên thương hiệu + STT tăng dần (4 số) / Tên nội bộ:  / Thùng dùng chung: / "Thùng dùng chung" + "chai/túi gói" + chất liệu chai (nếu có) + hình dạng chai (nếu có) + thể tích/ trọng lượng thành phẩm x quy cách thùng + (D x R x C x độ dày của giấy + "cm") + màu / Thùng của IDA: / "Thùng IDA" + "chai/túi gói" + chất liệu chai (nếu có) + hình dạng chai (nếu có) + thể tích/ trọng lượng thành phẩm x quy cách thùng + (D x R x C x độ dày của giấy + "cm)" + màu / Trong đó: D x R x C: là kích thước phủ bì, đơn vị tính cm / Tên trên hóa đơn: "Thùng carton" + số lớp + "lớp" | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R62: 3.3.11 | Nhãn dán thùng | Mã: "NDT" + 4 số cuối của mã hàng hóa thành phẩm / Tên nội bộ: "Nhãn thùng"+ Tên hàng hóa+ "-" + số lượng nhãn cần dán trên thùng / Tên trên hóa đơn: "Nhãn dán thùng" + Kích thước | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R63: 2026-04-03 00:00:00 | Chi phí | QLDL
+R64: 3.4.1 | Chi phí nhập khẩu | Mã: "CPNK" + 4 STT tăng dần / Tên nội bộ: Tổng chi phí nhập khẩu / Tên trên hóa đơn: không có | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC
+R65: 3.4.2 | Phí gia công phối trộn | Mã: "PPT" + 4 STT tăng dần  / Tên nội bộ: "Phí gia công phối trộn " + tên NCC + phân loại thuốc/phân + tên pháp lý + dòng V + màu / Tên trên hóa đơn: phí gia công + phụ gia phối trộn + tên pháp lý + dòng V tùy sản phẩm | SX&KT - NB KHAI BÁO XNK NL, BTP, PHÍ GC MỚI
+R66: 3.4.3 | Phí gia công sang chai đóng gói | Mã: "PĐG" + 4 STT tăng dần / Tên nội bộ: Phí sang chai đóng gói " +tên NCC + loại VTBB + quy cách theo bảng giá NCC / Tên trên hóa đơn: phí sang chai + pháp lý + quy cách | SX&KT - NB KHAI BÁO XNK NL, BTP, PHÍ GC MỚI
+R67: 2026-05-03 00:00:00 | Hàng hóa | Mã: "HH" + 4 STT tăng dần / Tên nội bộ: Tên thương hiệu - Mã đơn vị xuất hóa đơn - Mã hàng - Tên khách hàng (nếu có) - Tên nhãn hiệu - Quy cách sản phẩm - Quy cách thùng / Trong đó:  / - Tên thương hiệu: IDA GLOBAL/LOT IDA/GC (ABA)/AGC/BAMBOO/ N2SBIOSBIO / - Mã đơn vị xuất hóa đơn bán ra cho khách:  / I: IDA Global / II: Agricare / IV: ABA / V: Dego Holding / VI: Bamboo / VII: Nông nghiệp DEGO / VIII: Dr xanh / IX: N2SBIOSbio / Tên trên hóa đơn: Tên pháp lý - quy cách sản phẩm - quy cách thùng | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | Thiết kế
+R68: 2026-06-03 00:00:00 | NCC GC, NCC thu mua, Đơn vị vận chuyển | Mã: Mã số thuế / Tên: Tên đơn vị trên Giấy chứng nhận đăng ký kinh doanh | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | QLDL / ĐP TP
+R69: 2026-07-03 00:00:00 | Kho | Tên:"KHO NCC_ Tên viết tắt NCC" và "KHO NCCXL _ Tên viết tắt NCC" / Địa chỉ: Địa chỉ chi tiết kho. Đối với kho xử lý không có thực tế địa điểm không cần khai báo địa chỉ / Người liên hệ: Tên - SĐT | SX&P TCKT - XUẤT NHẬP KHO NL & CÔNG NỢ NCC | ĐP TP / ĐP VTBB / ĐP NL/BTP
+R71: V | DANH SÁCH BIỂU MẪU
+R72: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R73: 1.0
+R75: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R76: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R77: 1.0
+R79: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R80: STT | TÊN NHÓM ZALO
+R81: 1.0
+R82: 2.0
+R83: 3.0

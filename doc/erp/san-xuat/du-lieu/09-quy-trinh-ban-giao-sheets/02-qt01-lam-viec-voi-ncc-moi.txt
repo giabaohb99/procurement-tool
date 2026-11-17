@@ -1,0 +1,64 @@
+# SHEET: 1. QT LÀM VIỆC VỚI NCC MỚI
+R2: QUY TRÌNH LÀM VIỆC VỚI NCC MỚI
+R5: I | MỤC TIÊU
+R6: - Đáp ứng nhu cầu cho KD khi phát sinh sản phẩm mới  / - Tìm thêm NCC mở rộng hệ thống đối tác/NCC hiện tại không đáp ứng được nhu cầu kinh doanh
+R7: II | THỜI ĐIỂM THỰC HIỆN
+R8: - Nhu cầu sản xuất với NCC GC hiện tại không còn phù hợp (năng lực, chất lượng, giá...) cần tìm NCC GC thay thế; / - Phát sinh sản phẩm mới mà NCC GC hiện tại không sản xuất được.
+R9: III | LƯU ĐỒ
+R12: IV | QUY TRÌNH CHI TIẾT
+R13: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R14: 1.0 | Tiếp nhận yêu cầu | - Tiếp nhận từ Ban lãnh đạo hoặc bộ phận khác, xác định mục tiêu và nhu cầu: / + Nhu cầu sản xuất với NCC hiện tại không còn phù hợp, cần tìm NCC thay thế. / + Phát sinh sản phẩm mới mà NCC hiện tại không sản xuất được. /  *Tiếp nhận gợi ý NCC GC nếu có. | Khi nhận yêu cầu | Zalo Nội bộ - Thảo luận sản xuất | QLSX | BPYC | chưa có thời gian tiếp nhận và phản hồi.
+R15: 2.0 | Tìm NCC | - Dựa vào mối quan hệ sẵn có để tìm đối tác phù hợp. / - Tìm thông tin trên các nguồn công khai (web) có danh mục sản phẩm cần sản xuất. | Khi tiếp nhận yêu cầu | QLSX | QLDL, Thu mua
+R16: 3.0 | So sánh, đánh giá sơ bộ | - Lập danh sách các NCC GC tiềm năng kèm lý do phù hợp. / - Tham vấn ý kiến các bên liên quan nếu cần. | Khi có thông tin các NCC GC | QLDL, Thu mua, Nhà máy, BGĐ
+R17: 4.0 | Liên hệ NCC, thu thập thông tin & thỏa thuận hình thức làm việc | - Liên hệ NCC GC, làm việc với nhân sự phụ trách. / - Tạo nhóm Zalo riêng với NCC. / - Tổng hợp và thu thập thông tin NCC GC. | Khi xác định NCC GC phù hợp ban đầu | Zalo "Tên NCC" - Dego hợp tác | QLSX | QLDL, NCC GC, ĐP NL/BTP
+R18: 2026-01-04 00:00:00 | Check pháp lý | - Kiểm tra: Giấy chứng nhận đủ điều kiện sản xuất thuốc BVTV (còn hiệu lực); Giấy chứng nhận đủ điều kiện buôn bán thuốc BVTV (còn hiệu lực); Giấy chứng nhận đăng ký doanh nghiệp. / - Hồ sơ hỗ trợ marketing/quảng cáo theo yêu cầu cơ quan nhà nước (VD: giấy ủy quyền quảng cáo sản phẩm). / - Danh mục sản phẩm NCC GC được sản xuất/thương mại/đã sở hữu — gửi KD lên danh mục sản phẩm hợp tác theo mẫu (sản phẩm/năm, nguyên nhân tìm NCC mới). / * Không đạt ngưng hợp tác và tìm NCC GC khác | CHECKLIST NCC GC MỚI.xlsx – Mẫu 01 | Khi bắt đầu tiến hành hợp tác | Zalo "Tên NCC" - Dego hợp tác; Drive Checklist NCC GC mới | QLDL | NCC | Checklist yêu cầu giấy phép ngành thuốc BVTV — cần xác nhận áp dụng đúng cho mọi NCC hay chỉ nhóm sản phẩm BVTV, tránh áp sai checklist cho NCC ngành khác.
+R19: 2026-02-04 00:00:00 | Xác định danh mục dự kiến hợp tác | - KD lập danh mục sản phẩm hợp tác → gửi QLDL → QLDL gửi QLSX → QLSX trình Giám đốc duyệt. / + Không duyệt NCC: quay lại bước 2 (tìm NCC khác). / + Không duyệt danh mục: bổ sung/điều chỉnh danh mục với NCC GC. / - QLDL thông báo ĐP NL/BTP thực hiện tiếp quy trình test mẫu. | Khi bắt đầu tiến hành hợp tác | Zalo QLDL - Thảo luận nội bộ; Drive Checklist hợp tác | KD | QLSX, QLDL | Giám đốc
+R20: 2026-03-04 00:00:00 | Kiểm tra pháp lý danh mục đã chốt | - Lấy GĐK, Bản công bố hợp quy / thông báo hợp quy cho từng sản phẩm để kiểm tra | QLDL | NCC
+R21: 5.0 | Lấy mẫu và kiểm tra mẫu | Kiểm tra ruột phù hợp với VTBB và công nghệ sản xuất tại NCC GC phù hợp với VTBB
+R22: 5.1 | Lấy mẫu của NCC (theo danh mục của NCC)
+R23: 5.1.1 | ĐP NL/BTP liên hệ Lab | - Dựa trên danh mục đã duyệt, liên hệ Lab để xác định lượng mẫu tối thiểu cần kiểm tra . / - Lập đề nghị mua gửi QLDL để mua/lấy mẫu, trình QLSX ký. | Phiếu yêu cầu đề nghị mua hàng hóa dịch vụ | Khi xác định danh mục hợp tác | Trực tiếp; Zalo SX - Yêu cầu QLDL đặt NL, BTP | ĐP NL/BTP | Lab, QLDL | QLSX
+R24: 5.1.2 | Lấy mẫu / mua mẫu | - Liên hệ NCC để lấy mẫu hoặc mua mẫu. / - Thanh toán chi phí cho NCC nếu là mua mẫu. / - Nhận mẫu và chuyển cho ĐP NL/BTP. | Phiếu đề nghị thanh toán | Khi Lab xác định số lượng mẫu | Zalo "Tên NCC" - Dego hợp tác | QLDL | NCC, KD, ĐP NL/BTP, P TCKT
+R25: 5.1.3 | Kiểm tra mẫu | - Gửi yêu cầu test mẫu cho Lab, giao mẫu và nhận thời hạn phản hồi. / - Lab test theo quy trình test mẫu riêng của Lab, trả kết quả. / - Yêu cầu Lab lưu mẫu đối chứng. | Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | Khi nhận mẫu từ NCC GC | Zalo Lab/SX - Tiếp nhận yêu cầu mẫu SP | ĐP NL/BTP | KD, Lab, NCC
+R26: 5.1.4 | Báo cáo kết quả | - Lab gửi kết quả cho ĐP NL/BTP / - ĐP NL/BTP lập báo cáo, trình QLSX duyệt, gửi báo cáo cho NCC trên Zalo. | Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | Khi Lab trả kết quả | Zalo "Tên NCC" - Dego hợp tác | ĐP NL/BTP | Lab | QLSX
+R27: 5.1.5 | Đàm phán lại | - QLSX làm việc với NCC để xác định hướng xử lý, báo lại BPYC. / - Không đạt: báo cáo và phối lại mẫu, tối đa 2 lần phối, có trao đổi thông báo với Giám đốc và BPYC. / - Đạt: hoàn thiện và ký hợp đồng theo quy trình. | Khi QLSX duyệt đàm phán với NCC GC | Zalo "Tên NCC" - Dego hợp tác; Zalo Nội bộ - Thảo luận sản xuất | QLSX | NCC GC, Giám đốc, BPYC
+R28: 5.1.6 | Chốt công thức sản xuất | - Thống nhất công thức sản xuất phù hợp. / - ĐP NL/BTP xác định cấu thành, lập BDM trình QLSX duyệt. | Khi đã trao đổi và chốt với NCC GC | Zalo "Tên NCC" - Dego hợp tác; Zalo Nội bộ - Thảo luận sản xuất | ĐP NL/BTP | QLSX, NCC GC | QLSX
+R29: 5.2 | Gửi công thức & mẫu cho NCC GC phối (theo danh mục của Dego)
+R30: 5.2.1 | Xác định số lượng mẫu cần kiểm tra | Dựa trên danh mục đã duyệt, liên hệ NCC để xác định số lượng mẫu tối thiểu cần kiểm tra | Khi xác định danh mục hợp tác với NCC GC | Zalo "Tên NCC" - Dego hợp tác | ĐP NL/BTP | NCC GC
+R31: 5.2.2 | Gửi yêu cầu Lab phối mẫu | - Gửi yêu cầu phối mẫu cho Lab, nhận thời hạn phản hồi và giao mẫu. / - Yêu cầu Lab lưu mẫu đối chứng. | Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | Khi xác định danh mục hợp tác với NCC GC | Zalo Lab/SX - Tiếp nhận yêu cầu mẫu SP | ĐP NL/BTP | Lab
+R32: 5.2.3 | Gửi mẫu cho NCC GC | - Khi nhận mẫu từ Lab, gửi mẫu cho NCC GC theo địa chỉ và số điện thoại người nhận. / - Yêu cầu NCC GC lưu mẫu đối chứng theo quy định (tối thiểu 2 năm). | Khi Lab gửi mẫu | Zalo "Tên NCC" - Dego hợp tác; Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | ĐP NL/BTP | NCC GC
+R33: 5.2.4 | NCC GC phối mẫu | - Theo dõi tiến độ phối mẫu. / - Nếu NCC không có nguyên liệu để phối: ĐP NL/BTP kiểm tra tồn kho — có thì chuyển kho, không có thì lập phiếu đề nghị mua gửi Thu mua/QLDL mua theo quy trình. / - NCC GC xác nhận khả năng phối, thời gian phối và thời gian có thể nhận mẫu. | Khi ĐP NL/BTP gửi mẫu | Zalo "Tên NCC" - Dego hợp tác; Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | ĐP NL/BTP | NCC GC | QLSX
+R34: 5.2.5 | NCC gửi mẫu về | - Nhận mẫu từ NCC GC gửi về, chuyển cho Lab test theo quy trình test mẫu. | Khi NCC GC đã thực hiện phối mẫu xong | Zalo "Tên NCC" - Dego hợp tác; Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | ĐP NL/BTP | NCC GC, Lab
+R35: 5.2.6 | Theo dõi kết quả | - Lab gửi kết quả cho ĐP NL/BTP / - ĐP NL/BTP lập báo cáo, trình QLSX duyệt, gửi báo cáo cho NCC trên Zalo. | Khi Lab trả kết quả | Zalo "Tên NCC" - Dego hợp tác; Drive Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | ĐP NL/BTP | NCC GC | QLSX
+R36: 5.2.7 | Đàm phán lại | - QLSX làm việc với NCC để xác định hướng xử lý, báo lại BPYC. / - Không đạt: trao đổi với Giám đốc và BPYC; Lab phối hợp với NCC GC để điều chỉnh công thức phù hợp, tối đa 2 lần phối. / - Đạt: hoàn thiện và ký hợp đồng theo quy trình. | Khi QLSX duyệt đàm phán với NCC GC | Zalo "Tên NCC" - Dego hợp tác | QLSX | BPYC, Giám đốc, Lab, NCC GC
+R37: 5.2.8 | Chốt công thức sản xuất | - ĐP NL/BTP xác định cấu thành, lập BDM trình QLSX duyệt. / - Thống nhất công thức sản xuất phù hợp. | Khi đã trao đổi và chốt với NCC GC | Zalo "Tên NCC" - Dego hợp tác; Zalo Nội bộ - Thảo luận sản xuất | ĐP NL/BTP | QLSX, NCC GC | QLSX
+R38: 6.0 | Soạn thảo Hợp đồng, bảng giá
+R39: 6.1 | Bảng giá NCC GC
+R40: 6.1.1 | Nhận bảng giá | - Nhận từ NCC: phí sang chai đóng gói, phí phối chế và giá BTP/VPBB/TP theo danh mục đã thỏa thuận ban đầu. | Khi NCC GC gửi báo giá | Zalo "Tên NCC" - Dego hợp tác | QLDL | NCC GC
+R41: 6.1.2 | So sánh, đánh giá | - Phí sang chai đóng gói: sản phẩm cũ so sánh với NCC đã hợp tác; sản phẩm mới so sánh với NCC có sản phẩm tương ứng. / - Phí phối chế: sản phẩm cũ so sánh với NCC đã hợp tác; sản phẩm mới trình Giám đốc duyệt. / - Giá BTP/TP: sản phẩm cũ so sánh với NCC đã hợp tác; sản phẩm mới so sánh với giá NL + phí phối chế tham khảo + VTBB (nếu là thành phẩm) → trình QLSX duyệt giá. / - Đàm phán lại với NCC GC nếu cần. | Khi có giá NCC GC | Zalo "Tên NCC" - Dego hợp tác | QLDL | NCC GC, Giám đốc, Thu mua | QLSX
+R42: 6.1.3 | Chốt bảng giá | - QLDL thống nhất bảng giá với NCC GC, trình QLSX duyệt và ký trên bảng giá. / - Bảng giá được đưa vào hợp đồng/phụ lục (tên pháp lý + quy cách + dòng sản phẩm + giá). | CHECKLIST NCC GC MỚI.xlsx – Mẫu 4 | Khi đã chốt giá với NCC GC | Zalo "Tên NCC" - Dego hợp tác; Drive Checklist NCC GC mới | QLDL | NCC GC | QLSX
+R43: 6.2 | Soạn thảo hợp đồng & phụ lục
+R44: 6.2.1 | Checklist | - Lập checklist thông tin cần thể hiện trên hợp đồng và ngoài hợp đồng. | CHECKLIST NCC GC MỚI.xlsx – Mẫu 02 | Trước khi dự thảo hợp đồng | Zalo "Tên NCC" - Dego hợp tác;  / Drive Checklist NCC GC mới | QLDL
+R45: 6.2.2 | Hoàn thiện checklist | - Trao đổi với NCC về chi tiết checklist, thống nhất các đề mục. / - QLSX duyệt checklist đủ thông tin khi làm việc với NCC GC. | Mẫu bảng giá | Khi chốt nội dung với NCC GC | Zalo "Tên NCC" - Dego hợp tác | QLDL | NCC GC | QLSX
+R46: 6.2.3 | Soạn hồ sơ | - Chuyển nội dung checklist thành các văn bản: Hợp đồng, Phụ lục, Bảng giá, Biên bản thỏa thuận khác. / - Một bên soạn thảo và gửi bên còn lại. | Khi chốt nội dung với NCC GC | Zalo "Tên NCC" - Dego hợp tác | QLDL | NCC GC
+R47: 6.2.4 | Tham vấn ý kiến | - Trình duyệt lần lượt từng bộ phận: Pháp lý duyệt → P TCKT duyệt → Giám đốc duyệt qua mail. / - QLDL tổng hợp và trình QLSX duyệt. Tối đa 1 ngày cho mỗi bộ phận tham vấn. / - Nếu có điều chỉnh: QLDL gửi lại NCC GC để điều chỉnh và thống nhất hợp đồng. | Khi đã có bản dự thảo Hợp đồng | Zalo "Tên NCC" - Dego hợp tác | QLDL | P TCKT, P.PL, Giám đốc | QLSX
+R48: 6.2.5 | Duyệt & hoàn thiện hợp đồng, phụ lục | - Sau khi QLSX ký nháy, trình ký Giám đốc và gửi hợp đồng/phụ lục hoàn thiện cho NCC GC ký. / - Nhận lại hợp đồng, trích lục thông tin cần thiết gửi KD. / - Bàn giao P TCKT hồ sơ: hợp đồng (các loại), phụ lục, bảng giá, biên bản thỏa thuận khác. / - Bộ phận Sản xuất chỉ lưu bản scan (bản gốc gửi P TCKT). | Khi chốt với NCC GC | Zalo "Tên NCC" - Dego hợp tác; Folder lưu trữ | QLDL | NCC GC, P TCKT | QLSX
+R49: 7.0 | Hoàn thiện quy trình làm việc NCC GC mới | - Tạo folder lưu trữ thông tin NCC, tạo nhóm làm việc. / - Lập biên bản bàn giao nội bộ có chữ ký hai bên. / - Triển khai thông tin cho các bộ phận liên quan: Thu mua, KD, P TCKT, Pháp lý, Nội bộ sản xuất. | CHECKLIST NCC GC MỚI.xlsx – Mẫu 05; bổ sung cấu trúc lưu trữ | Trước khi đặt đơn hàng đầu tiên | Zalo Nội bộ - Thảo luận sản xuất; Drive Checklist NCC GC mới | QLDL | NCC GC, ĐP NL/BTP, ĐP TP | QLSX
+R53: V | DANH SÁCH BIỂU MẪU
+R54: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R55: 1.0 | Mẫu 01 – Danh mục sản phẩm hợp tác | CHECKLIST NCC GC MỚI.xlsx mẫu 01
+R56: 2.0 | Phiếu yêu cầu đề nghị mua hàng hóa dịch vụ
+R57: 3.0 | Phiếu đề nghị thanh toán
+R58: 6.0 | Mẫu 02 – Checklist hợp đồng, phụ lục | CHECKLIST NCC GC MỚI.xlsx mẫu 02
+R59: 7.0 | Mẫu 03 – Checklist quy trình làm việc với NCC GC | CHECKLIST NCC GC MỚI.xlsx mẫu 03
+R61: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R62: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R63: 1.0 | Checklist NCC GC mới | CHECKLIST NCC GC MỚI.xlsx
+R64: 2.0 | Form_VTBB Khảo sát - Cọc nhãn - Mẫu.xlsx | Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx
+R65: 3.0 | Folder lưu trữ hợp đồng, phụ lục (bản scan)
+R67: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R68: STT | TÊN NHÓM ZALO
+R69: 1.0 | 1. NỘI BỘ - THẢO LUẬN SẢN XUẤT
+R70: 2.0 | Tên NCC - DEGO HỢP TÁC /  (đặt tên riêng theo từng NCC GC)
+R71: 3.0 | QLDL - THẢO LUẬN QLDL NỘI BỘ
+R72: 4.0 | SX - YÊU CẦU QLDL ĐẶT NL, BTP
+R73: 5.0 | 4. Lab/SX - TIẾP NHẬN YÊU CẦU MẪU SP

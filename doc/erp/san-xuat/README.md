@@ -72,6 +72,13 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 | [`nghien-cuu/05-san-xuat-van-ban-thong-nhat.md`](nghien-cuu/05-san-xuat-van-ban-thong-nhat.md) | Văn bản thống nhất: thuật ngữ, 108 câu hỏi và trả lời, 17 câu chưa thống nhất | chưa ghi (cập nhật 26/10/2026) |
 | [`nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md`](nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md) | Tổng hợp khảo sát cả phòng trả lời chung 26/10/2026 | chưa ghi |
 | [`nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md`](nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md) | Các câu trả lời lấy được từ khảo sát trả lời chung | chưa ghi |
+| [`nghien-cuu/09-tai-lieu-gop-phong-san-xuat.md`](nghien-cuu/09-tai-lieu-gop-phong-san-xuat.md) | **Bản gộp chi tiết**: khảo sát MIC cùng tệp quy trình bàn giao Phòng Sản xuất | chưa ghi (06/11/2026) |
+| [`nghien-cuu/10-giai-thich-quy-trinh-san-xuat.md`](nghien-cuu/10-giai-thich-quy-trinh-san-xuat.md) | Giải thích từng quy trình của Phòng Sản xuất | chưa ghi (06/11/2026) |
+| [`nghien-cuu/11-tom-tat-khao-sat-san-xuat.md`](nghien-cuu/11-tom-tat-khao-sat-san-xuat.md) | Hiện trạng qua khảo sát MIC, bản tóm gọn đủ ý | chưa ghi (06/11/2026) |
+| [`nghien-cuu/12-cau-hoi-tra-loi-khao-sat-san-xuat.md`](nghien-cuu/12-cau-hoi-tra-loi-khao-sat-san-xuat.md) | Toàn bộ câu hỏi và câu trả lời khảo sát MIC (trả lời chung 24/10) | chưa ghi (06/11/2026) |
+| [`nghien-cuu/13-hieu-nhanh-phong-san-xuat.md`](nghien-cuu/13-hieu-nhanh-phong-san-xuat.md) | Hiểu nhanh Phòng Sản xuất | chưa ghi (06/11/2026) |
+| [`nghien-cuu/14-danh-gia-quy-trinh-ban-giao.md`](nghien-cuu/14-danh-gia-quy-trinh-ban-giao.md) | Đánh giá tệp quy trình bàn giao, đối chiếu với khảo sát MIC | chưa ghi (06/11/2026) |
+| [`du-lieu/09-quy-trinh-ban-giao-sheets/`](du-lieu/09-quy-trinh-ban-giao-sheets/) | 20 sheet của tệp quy trình bàn giao (mục lục, tiến độ, QT 1–20) xuất ra văn bản | dữ liệu gốc |
 | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) | Bảng đường API (dựng tự động; chưa có mã backend) | Nháp |
 
 ## Liên quan tới đâu

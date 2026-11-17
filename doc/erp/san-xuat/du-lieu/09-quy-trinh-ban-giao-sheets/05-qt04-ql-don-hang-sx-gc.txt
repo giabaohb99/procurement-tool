@@ -1,0 +1,80 @@
+# SHEET: 4. QT QL ĐƠN HÀNG SX GC
+R2: QUY TRÌNH QUẢN LÝ ĐƠN HÀNG SẢN XUẤT GIA CÔNG
+R4: Số, ký hiệu
+R6: I | MỤC TIÊU
+R7: - Đơn hàng được tiếp nhận đầy đủ thông tin và đảm bảo các điều kiện để gửi đơn đặt hàng cho NCC GC / - Được theo dõi tiến độ sản xuất và cập nhật kịp thời đến các bộ phận liên quan khi phát sinh sự cố  / - Chuẩn bị và cập nhật đầy đủ chứng từ theo quy định Công ty
+R8: II | THỜI ĐIỂM THỰC HIỆN
+R9: - Từ khi tiếp nhận đơn đặt hàng từ Kinh doanh đến khi có hàng tại NCC GC và đem về kho quản lý thành phẩm
+R10: III | LƯU ĐỒ
+R13: IV | QUY TRÌNH CHI TIẾT
+R14: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R15: A | QUY TRÌNH ĐIỀU PHỐI ĐƠN HÀNG SẢN XUẤT
+R16: 1.0 | Tiếp nhận và xử lý dữ liệu | - KD nhập thông tin đơn hàng vào Drive "Yêu cầu đặt hàng TP" và thông báo lên nhóm Zalo "Dự trù hàng hóa".  /  - ĐP TP kiểm tra thông tin đơn hàng, phản hồi xác nhận đã tiếp nhận trên nhóm Zalo; nếu thiếu thông tin thì yêu cầu KD bổ sung. /  - ĐP TP copy thông tin đơn hàng vào Drive "SX-ĐIỀU PHỐI THÀNH PHẨM": sheet "PYC" (tổng hợp đơn hàng), sheet "Pháp lý" (kiểm tra, duyệt pháp lý), sheet "Điều phối" (theo dõi tiến độ). / * Lưu ý: chậm nhất 3 ngày sau khi nhận đơn phải cập nhật tiến độ xử lý, nếu chậm phải nêu rõ nguyên nhân và đề xuất phương án. Riêng đơn hàng NCC Thu Loan: cập nhật thêm vào Drive "Đơn đặt hàng Thu Loan". | Khi phát sinh đơn đặt hàng | Nhóm "Tên thương hiệu - Dự trù hàng hóa";  / Drive SX-ĐIỀU PHỐI THÀNH PHẨM, Yêu cầu đặt hàng TP, Điều phối thành phẩm, Đơn đặt hàng Thu Loan | ĐP TP | KD | -
+R17: 2.0 | Kiểm tra các thông tin cho đơn hàng:  / - Pháp lý / - XLSC / - ĐP NL/BTP: công thức, BĐM cấu thành, tồn kho, giá / - ĐP VTBB: / - QLDL / - Giá vốn / - QLSX
+R18: 2.1 | Pháp lý | - Thực hiện chi tiết theo QUY TRÌNH DUYỆT PHÁP LÝ. / - Xác nhận pháp lý trên Drive Điều phối thành phẩm, sheet Điều phối. | Khi tiếp nhận đơn hàng từ ĐP TP | Drive Điều phối thành phẩm, Đơn đặt hàng Thu Loan | NSPL | BP XLSC / Pháp lý chung
+R19: 2.2 | BĐM BTP và dòng công thức gửi NCC | 1. Kiểm tra dòng công thức: xem lại nếu chưa có / - ĐP NL/BTP kiểm tra dòng công thức KD đã đặt, đối chiếu theo nguyên tắc tại Drive "Xuất nhập tồn NL, BTP". / 2. Kiểm tra Bảng định mức: / - Thực hiện theo QUY TRÌNH QUẢN LÝ NGUYÊN LIỆU/BÁN THÀNH PHẨM / Kiểm tra BĐM, nếu chưa có thông tin liên hệ KD xác nhận bổ sung; sản phẩm mới thì KD phối hợp trực tiếp với QLSX.thì liên hệ để thực hiện  / ---> Xác nhận dòng công thức và BĐM BTP  trên Drive Điều phối thành phẩm, sheet Điều phối. | Khi tiếp nhận đơn hàng từ ĐP TP | Drive SX-ĐIỀU PHỐI THÀNH PHẨM, Đơn đặt hàng Thu Loan, Xuất nhập tồn NL-BTP | ĐP NL/BTP | KD, NCC
+R20: 2.3 | BĐM VTBB | - ĐP VTBB cập nhật hình ảnh mockup gần nhất và cấu thành VTBB (nội bộ và gửi NCC) cho đơn hàng. /  - Kiểm tra khả năng đóng nhãn/sản phẩm của các NCC gia công, đề xuất đổi NCC nếu tối ưu được giá. / - Thực hiện theo QUY TRÌNH QUẢN LÝ VTBB /  - Xác nhận cấu thành trên Drive Điều phối thành phẩm, sheet Điều phối. | Khi tiếp nhận đơn hàng từ ĐP TP | Drive SX-ĐIỀU PHỐI THÀNH PHẨM, Đơn đặt hàng Thu Loan; Nhóm SX - Quản lý điều phối | ĐP VTBB | KD, NCC
+R21: 2.4 | Duyệt giá thành phẩm (tạm) | - Nhân sự phụ trách giá vốn copy mã công thức vào sheet Điều phối của Drive Điều phối thành phẩm. /  - Thực hiện chi tiết theo QUY TRÌNH KHẢO SÁT VÀ TÍNH GIÁ VỐN , mục 2.B - Check giá đơn hàng sản xuất. | Khi xác định được BĐM BTP, BĐM VTBB và phí NCC GC | Drive SX-ĐIỀU PHỐI THÀNH PHẨM, Đơn đặt hàng Thu Loan; Nhóm cập nhật giá vốn ABA+AGC, IDA Global, N2SBIOSBIO, Dr.Xanh | Giá vốn | ĐP NL/BTP / ĐP VTBB / QLDL / | QLSX
+R22: 2.5 | Kiểm tồn, chuyển / mua | - Căn cứ cấu thành đã duyệt, ĐP NL/BTP và ĐP VTBB kiểm tra tồn kho, thực hiện chuyển kho/mua bổ sung (nếu thiếu) tại các kho liên quan theo quy trình tương ứng: / + QUY TRÌNH QUẢN LÝ VTBB / + QUY TRÌNH QUẢN LÝ NGUYÊN LIỆU/BÁN THÀNH PHẨM /  - Cập nhật kết quả/tiến độ vào Drive Điều phối thành phẩm. /  * Lưu ý: lấy mẫu thành phẩm với số lượng 2 đơn vị tính nhỏ nhất cho mỗi đơn hàng. | Khi xác định BĐM | Drive SX-ĐIỀU PHỐI THÀNH PHẨM | ĐP VTBB / ĐP NL/BTP | Thu mua
+R23: 2.6 | Bảng định mức TP (nội bộ và thuế) | - Thực hiện theo QUY TRÌNH QUẢN LÝ NCC GC  /  - Thực hiện theo Quy trình BDM Thuế. | Khi chốt BĐM BTP & BĐM VTBB và trước khi gửi đơn NCC GC | 6. QT QUẢN LÝ NCC GC / 7. QT BĐM THUẾ | QLDL | QLSX
+R24: 2.7 | Duyệt giá đơn hàng | - Nhân sự phụ trách giá vốn tiếp nhận đơn hàng (ĐP TP) và bảng định mức TP (QLDL), nhập mã đơn hàng vào bảng định mức TP. /  - Lập "Phiếu duyệt giá" gồm 3 mức giá (giá vốn nội bộ, giá vốn tính thuế, giá KD bán), trình QLSX ký duyệt. /  - QLDL lưu bản gốc phiếu duyệt giá (để đối chiếu công nợ); cập nhật giá vốn đã duyệt vào Drive Điều phối thành phẩm. /  / Thực hiện theo quy trình Tính giá vốn / Trình duyệt và cập nhật thông tin "Đã duyệt giá" vào Drive điều phối thành phẩm | Phiếu duyệt giá (form mới có giá) | Khi xác định giá và các phí cấu thành HH | Drive SX-ĐIỀU PHỐI THÀNH PHẨM, BDM TP (QLDL), Phiếu duyệt giá; Nhóm SX - Giá NL, BTP NCC GC | Giá vốn | ĐP TP, QLDL | QLSX
+R25: 3.0 | Gửi đơn đặt hàng NCC
+R26: 3.1 | Gửi đơn đặt hàng cho NCC | * Yamato, Thu Loan bắt buộc phải đủ VTBB, NL thì mới được gửi đơn đặt hàng cho NCC Drive : SX-ĐIỀU PHỐI THÀNH PHẨM / - Dán mã đơn hàng vào sheet GỬI ĐƠN NCC / - Gửi thông tin lên Nhóm:'TÊN NCC- ĐẶT HÀNG SẢN XUẤT' / + Mockup / + Thông tin yêu cầu của đơn hàng (Yamato gửi file PDF theo mẫu NCC, các NCC còn lại chụp màn hình gửi) /  * Lưu ý:  / - Đối với lần đầu tiên phát sinh giao dịch với NCC thì QLSX phải duyệt thông tin đặt hàng trước khi gửi NCC / - Đơn hàng bao gồm mẫu thành phẩm với số lượng 2 đơn vị tính nhỏ nhất cho mỗi đơn hàng. | Đơn đặt hàng | Khi đơn hàng được QLSX duyệt | Drive : SX-ĐIỀU PHỐI THÀNH PHẨM / Nhóm  'TÊN NCC- ĐẶT HÀNG SẢN XUẤT' | ĐP TP | NCC | QLSX | Mẫu gửi đơn NCC.jpg / ĐẶT THÀNG YAMATO 03.02.2026.pdf
+R27: 3.2 | Cập nhật tiến độ đơn sản xuất | - Sau 2 ngày làm việc kể từ ngày gửi đơn, kiểm tra tiến độ với NCC  / - Nếu chưa nhận được phản hồi hoặc thời gian có hàng trễ hơn yêu cầu (tìm hiểu nguyên nhân, giải pháp) và cập nhật vào link Drive SX- ĐIỀU PHỐI THÀNH PHẨM, Nhóm: 'TÊN NCC- TIẾN ĐỘ SẢN XUẤT') / - Xác nhận lại với BPYC về phương án sản xuất tối ưu nhất / - ĐP TP thực hiện gửi báo cáo vào trước 16h30 hằng ngày: Hàng sẵn kho, Hàng chờ nhận hóa đơn, Hàng đã có lịch sản xuất | Tiến độ ngày 28.04.2026 | Sau 2 ngày gửi đơn NCC sản xuất/hằng ngày | Drive SX-ĐIỀU PHỐI THÀNH PHẨM / Nhóm / - 'TÊN NCC- TIẾN ĐỘ SẢN XUẤT' / - "SX&KHO - LỊCH GIAO NHẬN HÀNG TP" | ĐP TP | NCC / KD / BP KHO | QLSX
+R28: 4.0 | Nhập kho & nhận hóa đơn từ NCC GC
+R29: 4.1 | Nhận thông tin có hàng từ NCC GC & đề nghị nhập kho | - Nhập số lượng thực tế sản xuất được lên Drive (riêng Yamato, Hà Long báo số lượng cụ thể; các NCC khác chỉ báo có hàng trên Zalo, không kèm số lượng). /  - Hà Long: có tin nhắn tự động báo có hàng kèm công nợ gửi zalo cố định (QLDL tiếp nhận), kèm app theo dõi tiến độ đơn hàng. /  - Trường hợp số lượng đúng yêu cầu: cập nhật số lượng hàng sẵn kho, trạng thái "Chưa lấy hóa đơn" trên sheet Điều phối; lập đề nghị nhập kho thành phẩm, gửi QLDL. /  - Trường hợp số lượng khác yêu cầu: xác nhận lại với KD; nếu thiếu thì yêu cầu NCC sản xuất đủ hoặc hủy phần còn lại; nếu dư thì nhận hoặc yêu cầu NCC xử lý (báo BP XLSC); cập nhật số lượng thực tế, trạng thái "Chưa lấy hóa đơn"; thông báo QLDL và BP XLSC; BP XLSC lập phương án hướng dẫn QLDL lấy hóa đơn, trình ký; QLDL gửi đề nghị nhập kho kèm hóa đơn qua kế toán. | Phiếu đề nghị nhập kho TP | Theo lịch SX NCC GC | Drive SX-ĐIỀU PHỐI THÀNH PHẨM sheet Điều phối; Nhóm "Tiến độ SX hàng hóa", "Xử lý sự cố, hàng lỗi, pháp lý" | ĐP TP | NCC, QLDL, KD, BP XLSC | QLSX
+R30: 4.2 | Nhận hóa đơn từ NCC GC | - QLDL thực hiện theo Quy trình quản lý NCC GC | Khi nhận Phiếu nhập kho TP và liên hệ NCC GC | QLDL | P TCKT
+R31: 5.0 | Theo dõi nhận hàng từ NCC GC | - BP Kho gửi danh sách hàng cần nhận + thông tin tài xế + biển số xe +  thời gian nhận hàng lên Nhóm "SX&KHO - LỊCH GIAO NHẬN HÀNG TP" / - ĐP TP lập "Danh sách hàng hóa nhận" của từng NCC gửi lại kho (thông tin người giao hàng) và gửi danh sách cho từng NCC trên nhóm Zalo / - Khi hàng về BP Kho tiến hành kiểm tra số lượng thùng và ngoại dạng, sau đó ký xác nhận vào Phiếu đề nghị xuất kho của NCC in / - BP Kho chụp phiếu giao nhận, Phiếu đề nghị xuất kho NCC đã có đủ chữ ký gửi lên Nhóm zalo "CHỨNG TỪ XUẤT NHẬP KHO NCC" / - ĐP TP nhập lên Drive ĐP TP và chuyển trạng thái "Đã nhận hàng" nếu đã đủ số lượng theo đơn hàng / - Nếu phát hiện sai lệch hoặc có sự cố hàng hóa, BP Kho phối hợp ĐP TP để tiến hành đối chiếu và xử lý kịp thời nhóm zalo "SX&KHO - LỊCH GIAO NHẬN HÀNG TP" | danh sách nhận hàng.jpg | Cập nhật liên tục khi có thông tin | Nhóm zalo  / - "SX&KHO - LỊCH GIAO NHẬN HÀNG TP" / - "TÊN NCC ĐẶT HÀNG SẢN XUẤT" / - "CHỨNG TỪ XUẤT NHẬP KHO NCC" /  /  / Drive / ĐIỀU PHỐI THÀNH PHẨM / Đơn đặt hàng Thu Loan / Form_VTBB Khảo sát-Cọc nhãn-Mẫu.xlsx | ĐP TP / BP KHO | - BP KHO / - NCC  / - QLDL | danh sách nhận hàng.jpg
+R32: 6.0 | Kiểm tra mẫu (gửi Lab) | - Lập đề nghị xuất kho mẫu, trình QLSX duyệt; gửi phiếu đã ký cho KD lên nhóm "Misa xuất mẫu + Tên TH" để KD xuất trên Misa. /  - Sau khi KD xuất Misa, ĐP TP gửi lại BP Kho nhóm "SX & Kho xuất hàng". /  - ĐP TP liên hệ đơn vị dịch vụ vận chuyển lấy mẫu gửi qua BP R&D (nhóm "Đặt hàng + NCC"), chụp phiếu xuất kho gửi nhóm "Lab + Tên TH + Trả kết quả mẫu". /  - BP R&D trả kết quả chậm nhất 2 ngày; không đạt thì xử lý theo Quy trình xử lý sự cố và cập nhật trạng thái TEST KHÔNG ĐẠT; đạt thì chuyển trạng thái hoàn thành đơn hàng. /  * Lưu ý: áp dụng nguyên tắc lấy mẫu test như bước Nhận hàng đối với trường hợp mẫu thiếu VTBB hoặc chiết mẫu từ thành phẩm lớn. / - BTP của công ty mang sang và sản xuất/gia công tại NCC --> thực hiện chuyển kho và xuất để kiểm tra mẫu (chi phí) / - BTP/TP NCC cho --> nhập drive theo dõi và tự xuất để kiểm tra mẫu  / - BTP/TP NCC bán ---> thực hiện mua + nhập kho & xuất để kiểm tra mẫu (chi phí) / - Thời gian trả kết quả test, test ngoại dạng(1-2 ngày), test hàm lượng(14 ngày) | Giấy đề nghị xuất vật tư.jpg | Khi hàng nhận về kho | Nhóm "Đặt hàng + NCC", "Vận chuyển Grab", "Misa xuất mẫu + Tên TH", "SX & Kho xuất hàng", "Lab + Tên TH + Trả kết quả mẫu"; Drive Điều phối thành phẩm, "Phiếu yêu cầu + Tên TH" | ĐP TP, KD, BP Kho | KD, NCC | QLSX
+R33: 7.0 | Lập chứng từ cấu thành và đối chiếu, thanh toán | - QLDL thực hiện theo Quy trình Quản lý NCC GC để hoàn thiện chứng từ cấu thành, xuất - nhập liên quan đơn hàng và thực hiện đối chiếu công nợ, thanh toán cho NCC GC | Sau khi NCC báo có hàng và định kỳ hàng tháng | QLDL | P TCKT | QLSX
+R34: B | QUY TRÌNH HỦY ĐƠN ĐẶT HÀNG NCC GC (áp dụng khi hủy đơn theo yêu cầu/phát sinh hủy đơn trong quá trình duyệt đơn hàng sản xuất
+R35: 1.0 | Tiếp nhận yêu cầu hủy | - Tiếp nhận yêu cầu hủy đơn đặt hàng thành phẩm từ Bộ phận đặt hàng qua các nhóm Zalo, trình duyệt. /  - Chuyển sang Quy trình xử lý sự cố khi: NCC GC phản hồi VTBB/NL/BTP lỗi không thể sử dụng; hoặc phát sinh vấn đề pháp lý/không đủ điều kiện tiếp tục đơn hàng. | Khi nhận yêu cầu | Nhóm Zalo "Tên thương hiệu / Lab - Dự trù hàng hóa" | ĐP TP | KD, Lab
+R36: 2.0 | Xác định trạng thái đơn hàng | - Tùy thời điểm phát sinh yêu cầu hủy, nhân sự phụ trách thực hiện theo 2 trường hợp bên dưới (2.1 và 2.2). | Khi tiếp nhận yêu cầu
+R37: 2026-01-02 00:00:00 | Trường hợp: Chưa gửi đơn NCC | - Thông báo ngay cho nhân sự nội bộ liên quan để dừng quy trình. /  - Xử lý VTBB: xem xét ngưng mua/điều chuyển, kiểm tra xử lý hóa đơn (nếu có), cập nhật tồn kho; cập nhật ghi chú VTBB và ghi nhận chi phí cho bộ phận yêu cầu hủy (nếu có). /  - Xử lý NL/BTP: kiểm tra đã phối BTP chưa để dừng/hủy kịp thời; xem xét ngưng mua/điều chuyển; kiểm tra xử lý hóa đơn; cập nhật tồn kho; cập nhật trạng thái hủy đơn kèm thông tin xử lý giá vốn, ghi nhận chi phí (nếu có). /  - Kiểm tra hiện trạng thực hiện BĐM và lệnh sản xuất, cập nhật vào cột theo dõi. /  - Sau khi tổng hợp thông tin từ ĐP NL, ĐP VTBB, QLDL: ĐP TP gửi thông tin lên nhóm Zalo, trình duyệt. /  - Sau duyệt: ĐP TP cập nhật trạng thái hủy đơn trên Drive theo dõi, chuyển dữ liệu sang sheet Hoàn thành, phản hồi cho bộ phận yêu cầu qua Zalo. | Nhóm Zalo "Quản lý điều phối", "Tên thương hiệu/Lab - Dự trù hàng hóa";  / Drive Điều phối thành phẩm | ĐP VTBB, ĐP NL, QLDL, ĐP TP | NCC, KD | QLSX
+R38: 2026-02-02 00:00:00 | Trường hợp: Đã gửi đơn NCC | - ĐP TP tổng hợp hiện trạng liên quan VTBB, NL, BTP, trình duyệt. /  - Sau duyệt, liên hệ ngay NCC để dừng đơn và báo cáo nhân sự nội bộ liên quan. | ĐP TP | NCC | QLSX
+R39: 2.2.1 | NCC chấp nhận hủy | - Thực hiện các bước còn lại tương tự trường hợp 2.1 (xử lý VTBB, NL/BTP, cập nhật trạng thái, phản hồi bộ phận yêu cầu). | ĐP TP | NCC, KD | QLSX
+R40: 2.2.2 | NCC không chấp nhận hủy | - Trình duyệt; thông báo KD trên nhóm Zalo. / - Cập nhật số lượng thực sản xuất, chuyển trạng thái "Chờ thông tin từ KD". / - Trường hợp KD nhận hàng: thực hiện theo Quy trình điều phối (từ Bước 4 - Nhập kho + Lấy hóa đơn trở đi). / - Trường hợp KD không nhận hàng: chuyển qua Quy trình xử lý sự cố. | Nhóm Zalo "Quản lý điều phối", "Dự trù hàng hóa", "Xử lý sự cố hằng ngày", "Xử lý sự cố, hàng lỗi, pháp lý";  / Drive Điều phối thành phẩm, Theo dõi sự cố | ĐP TP | NCC, KD, XLSC | QLSX
+R41: 3.0 | Thanh toán và lưu trữ | - Thực hiện thanh toán theo quy định công ty (nếu có). | Khi phát sinh chứng từ/chi phí | ĐP VTBB, ĐP NL, QLDL, ĐP TP | P TCKT | QLSX
+R43: V. DANH SÁCH BIỂU MẪU
+R44: STT | TÊN MẪU BIỂU | ĐÍNH KÈM / GHI CHÚ
+R45: 1.0 | Đơn đặt hàng/Mẫu gửi đơn NCC
+R46: 2.0 | Phiếu đề nghị nhập kho
+R47: 3.0 | Phiếu đề nghị xuất kho (NCC)
+R48: 4.0 | Phiếu duyệt giá (form mới có giá)
+R49: 5.0 | Bảng định mức BTP (nội bộ & thuế)
+R50: 6.0 | Bảng định mức TP (nội bộ & thuế)
+R51: 7.0 | Danh sách nhận hàng
+R52: 8.0 | Giấy đề nghị xuất vật tư (mẫu test)
+R53: 9.0 | Mẫu báo cáo tiến độ (theo ngày)
+R55: VI. DANH SÁCH LINK, FILE, DRIVE ĐÍNH KÈM
+R56: STT | TÊN DRIVE / FILE | ĐÍNH KÈM / GHI CHÚ
+R57: 1.0 | SX-ĐIỀU PHỐI THÀNH PHẨM
+R58: 2.0 | Tên thương hiệu - YÊU CẦU ĐẶT HÀNG TP
+R59: 3.0 | ĐIỀU PHỐI THÀNH PHẨM
+R60: 4.0 | Đơn đặt hàng Thu Loan
+R61: 5.0 | Xuất nhập tồn NL, BTP
+R62: 6.0 | BDM TP (QLDL)
+R63: 7.0 | Phiếu duyệt giá
+R64: 8.0 | Theo dõi sự cố
+R66: VII. DANH SÁCH NHÓM ZALO LÀM VIỆC
+R67: STT | TÊN NHÓM ZALO
+R68: 1.0 | Tên thương hiệu - Dự trù hàng hóa
+R69: 2.0 | SX - Quản lý điều phối
+R70: 3.0 | SX - Cập nhật giá vốn ABA + AGC
+R71: 4.0 | SX - Cập nhật giá vốn IDA Global
+R72: 5.0 | N2SBIOSBIO - Giá vốn hàng hóa
+R73: 6.0 | Dr.Xanh - Giá vốn hàng hóa
+R74: 7.0 | SX - Giá NL, BTP NCC GC
+R75: 8.0 | Tên NCC - Đặt hàng sản xuất
+R76: 9.0 | Tên NCC - Tiến độ sản xuất
+R77: 10.0 | SX&KHO - Lịch giao nhận hàng TP
+R78: 11.0 | Chứng từ xuất nhập kho NCC
+R79: 12.0 | Misa xuất mẫu + Tên TH
+R80: 13.0 | SX & Kho xuất hàng
+R81: 14.0 | Đặt hàng + NCC
+R82: 15.0 | Vận chuyển Grab
+R83: 16.0 | Lab + Tên TH + Trả kết quả mẫu
+R84: 17.0 | Thương hiệu - Tiến độ SX hàng hóa
+R85: 18.0 | 1. SX - Xử lý sự cố, hàng lỗi, pháp lý
+R86: 19.0 | Quản lý điều phối
+R87: 20.0 | Tên thương hiệu - Xử lý sự cố hằng ngày

@@ -1,0 +1,47 @@
+# SHEET: 3. QT KHẢO SÁT VÀ TÍNH GIÁ VỐN
+R2: QUY TRÌNH KHẢO SÁT & TÍNH GIÁ VỐN SẢN XUẤT
+R3: Số, ký hiệu
+R5: I | MỤC TIÊU
+R6: - Kiểm soát giá vốn sản xuất từ khâu khảo sát, duyệt giá đến khi đối chiếu giá vốn thực tế, đảm bảo số liệu khớp, tính giá kịp thời
+R7: - Tìm kiếm, đánh giá và xác định được Nhà cung cấp gia công tiềm năng với mức giá cạnh tranh của sản phẩm khi đưa ra thị trường.
+R10: II | THỜI ĐIỂM THỰC HIỆN
+R11: - Khi cần khảo sát giá và cập nhật giá khi có thay đổi
+R12: - Khi có đơn hàng
+R13: - Khi đã sản xuất xong và hàng hóa về kho
+R15: III | LƯU ĐỒ
+R18: IV | QUY TRÌNH CHI TIẾT
+R19: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R20: A | TIẾP NHẬN YÊU CẦU
+R21: 1.0 | Tiếp nhận yêu cầu | - Nhận yêu cầu khảo sát giá/cập nhật giá thị trường thay đổi từ KD/Giám đốc qua Zalo. / - Nhận yêu cầu duyệt giá phát sinh từ đơn hàng. / - Nhận giá từ NCC GC thực hiện check giá và đối chiếu (QLDL tiếp nhận) / * Lưu ý: Giá vốn sẽ phụ trách tính GVSX và GVKD, báo cáo theo nhu cầu và giữ bảo mật giữa các bộ phận | Form 1 | Khi phát sinh yêu cầu / đơn hàng | Zalo / Drive | Giá vốn | KD / Giám đốc
+R22: B | XỬ LÝ VÀ TRẢ KẾT QUẢ
+R23: 1.0 | Khảo sát giá : Nhận yêu cầu khảo sát giá/cập nhật giá thị trường thay đổi từ KD/Giám đốc qua Zalo.
+R24: 2026-01-01 00:00:00 | Kiểm tra pháp lý sản phẩm | - Kiểm tra pháp lý phù hợp với sản phẩm cần tìm giá (danh mục, giấy chứng nhận, giấy phép KD...). | Khi xác định sản phẩm cần khảo sát | Nhóm zalo từng Thương hiệu / - "SX - CẬP NHẬT GIÁ VỐN ABA + AGC" / - "SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL" / - "N2SBIOSBIO - GIÁ VỐN HÀNG HÓA" / - "DR.XANH - GIÁ VỐN HÀNG HÓA" / Drive thống kê: / QLDL - THỐNG KÊ HỢP ĐỒNG | Pháp lý SX | NCC  / KD
+R25: 2026-02-01 00:00:00 | Kiểm tra cấu thành sản phẩm | - Kiểm tra cấu thành sản phẩm để xác định đơn vị cung cấp NL/BTP/VTBB: /   + NCC đã từng SX: dựa trên lịch sử giao dịch và giá vốn đã lập trước đó. /   + NCC có giao dịch nhưng chưa SX SP này: lấy giá gia công toàn bộ, hoặc giá khi Công ty tự cung cấp NL và VTBB. /   + NCC mới: theo quy trình khảo sát NCC GC mới / => Gửi lên nhóm Zalo trình QLSX duyệt trực tiếp. | Khi xác định sản phẩm cần khảo sát | Nhóm zalo từng Thương hiệu / - "SX - CẬP NHẬT GIÁ VỐN ABA + AGC" / - "SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL" / - "N2SBIOSBIO - GIÁ VỐN HÀNG HÓA" / - "DR.XANH - GIÁ VỐN HÀNG HÓA" / Drive thống kê: / QLDL - THỐNG KÊ HỢP ĐỒNG | Giá vốn | NCC  / KD | QLSX
+R26: 2026-03-01 00:00:00 | Gửi thông tin cho bộ phận liên quan | - Gửi QLDL để liên hệ nhận giá NCC GC / - Gửi ĐP VTBB để nhận giá VTBB (ĐP VTBB làm việc với Thu mua để lấy thông tin) / - Gửi ĐP NL/BTP để nhận giá BTP (ĐP NL/BTP làm việc với Thu mua và QLDL để lấy thông tin về giá mua NL + phí phối NCC GC) / - Gửi thu mua để nhận giá mua BTP từ NCC thu mua / * Lưu ý: / - Tên pháp lý trùng khớp với tên thể hiện trên hóa đơn khi mua / - Ruột SP phù hợp với VTBB chứa / - Công nghệ sản xuất của NCC GC phù hợp với VTBB | Form 2 | Khi xác định được bộ phận liên quan | Trực tiếp/Nhóm zalo SX- GIÁ NL, BTP NCC GC | Giá vốn | QLDL / ĐP NL/BTP / ĐP VTBB / Thu mua
+R27: 2026-04-01 00:00:00 | Lập bảng cấu thành giá & trình duyệt | - GVKD nhận các báo giá và tổng hợp báo giá, thực hiện bảng cấu thành giá, so sánh / - Gửi lên nhóm Zalo trình QLSX duyệt trực tiếp. | Form 3 | Khi có giá khảo sát | Nhóm zalo  / "SX - GIÁ NL, BTP NCC GC" / " SX- KIỂM TRA GVKD" / | Giá vốn | QLDL / ĐP NL/BTP / ĐP VTBB / Thu mua | QLSX
+R28: 2026-05-01 00:00:00 | Trả kết quả & nhận phản hồi KD | - Sau khi duyệt, gửi giá vốn kinh doanh lên nhóm Zalo của KD theo từng thương hiệu. / - Kèm lưu ý về chiết khấu, công nợ, chi phí giao hàng, lưu kho... / - KD phản hồi: đồng ý khảo sát, hoặc đề xuất nguồn giá tốt hơn để thương lượng lại. | Form 4 | Nhóm zalo từng Thương hiệu / - "SX - CẬP NHẬT GIÁ VỐN ABA + AGC" / - "SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL" / - "N2SBIOSBIO - GIÁ VỐN HÀNG HÓA" / - "DR.XANH - GIÁ VỐN HÀNG HÓA" | Giá vốn | KD/Giám đốc | KD/Giám đốc
+R29: 2.0 | Check giá đơn hàng sản xuất:
+R30: 2026-01-02 00:00:00 | Xác định cấu thành sản phẩm | - Khi có thông tin NCC, BTP ,Tên Pháp Lý, dòng V, màu BTP theo đơn hàng sản xuất / - Chuyển đổi mã BTP Kinh doanh sang mã BTP Sản xuất (theo file quy đổi). / - Xem cấu thành nội bộ: xác định chi phí đóng gói, bên chuẩn bị VTBB, NL, BTP,... / - Kiểm tra lại hàng hóa của đơn sản xuất đã có dự trù kế hoạch sản xuất. | Form 5 | DriveSX-ĐIỀU PHỐI THÀNH PHẨM / Nhóm zalo từng Thương hiệu / - SX - CẬP NHẬT GIÁ VỐN ABA + AGC / - SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL / - N2SBIOSBIO - GIÁ VỐN HÀNG HÓA / - DR.XANH - GIÁ VỐN HÀNG HÓA | Giá vốn | ĐP TP
+R31: 2026-02-02 00:00:00 | Tiếp nhận thông tin tồn kho | - Đủ tồn -> qua bước kế tiếp / - Ngoài dự trù phải thêm thời gian 3 ngày để thực hiện quy trình khảo sát giá / Lưu ý: / + ĐP NL/BTP, ĐP VTBB, QLDL đề xuất chuyển/mua hoặc thay thế NCC GC ---> có thể thay đổi giá / + ĐP NL/BTP, ĐP VTBB, QLDL đề xuất thay thế ----> thay đổi Bảng định mức & có thể thay đổi giá | DriveSX-ĐIỀU PHỐI THÀNH PHẨM / Nhóm zalo từng Thương hiệu / - SX - CẬP NHẬT GIÁ VỐN ABA + AGC / - SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL / - N2SBIOSBIO - GIÁ VỐN HÀNG HÓA / - DR.XANH - GIÁ VỐN HÀNG HÓA | Giá vốn | Thu mua/QLDL / ĐP NL/BTP / ĐP VTBB | KD
+R32: 2026-03-02 00:00:00 | Duyệt giá | - Cập nhật giá thành phẩm theo đơn hàng => Trình duyệt / - Trường hợp không đạt (âm biên/biên thấp hơn yêu cầu): gửi KD kiểm tra lại giá bán — KD đồng ý thì cho đi đơn, không đồng ý thì ngưng/huỷ. / ---> Sau khi chốt cập nhật thông tin vào Drive ĐP TP để cho đơn hàng tiếp tục được xử lý | DriveSX-ĐIỀU PHỐI THÀNH PHẨM / Nhóm zalo từng Thương hiệu / - SX - CẬP NHẬT GIÁ VỐN ABA + AGC / - SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL / - N2SBIOSBIO - GIÁ VỐN HÀNG HÓA / - DR.XANH - GIÁ VỐN HÀNG HÓA | Giá vốn | KD/ QLSX
+R33: 3.0 | Check giá Thành phẩm: Xác nhận lại giá sau sản xuất
+R34: 2026-01-03 00:00:00 | Xác nhận giá trên đơn hàng thành phẩm | Cấu thành giá của NCC GC gửi: / - Khi NCC báo tính tiền đơn hàng, QLDL kiểm tra giá có khớp với giá ban đầu đã báo. / - Nếu chênh lệch, QLDL phản hồi và yêu cầu NCC điều chỉnh.=> NCC không điều chỉnh báo lại GV làm việc KD để chốt giá và cập nhật lại QLDL thực hiện lấy hoá đơn /  / Cấu thành giá của bên mình mang qua: / - Nếu được tiếp nhận thông tin thay đổi BDM hoặc thay đổi giá cấu thành trên BDM thì cập nhật thông tin cho Giá vốn để tính lại giá thành phẩm kèm nguyên nhân -> Trình duyệt QLSX -> Trình duyệt KD / | Khi đã xác nhận giá với NCC | Nhóm Zalo NCC: / - CÔNG NỢ/KẾ TOÁN+TÊN NCC GC / - Giá Nhập Kho + NCC | QLDL/Thu mua | NCC / KD | Giá vốn | QLSX
+R35: 2026-02-03 00:00:00 | Lập hồ sơ giá vốn gửi P TCKT | - Tiếp nhận LSX từ QLDL, Giá vốn thực hiện tính giá vốn và gửi P TCKT trong ngày vào nhóm Signal / - Trường hợp nhận hàng thực tế có thay đổi Bảng định mức ---> Thực hiện tính lại Giá vốn, trình QLSX duyệt và gửi P TCKT | Trong ngày nhận LSX | Drive / Signal: GROUP GIÁ VỐN KINH DOANH | Giá vốn | QLDL / P TCKT | QLSX
+R36: C | LƯU TRỮ & BÁO CÁO
+R37: 1.0 | Lưu hồ sơ giá vào Drive | - Cập nhật giá GVSX, GVKD đã duyệt và giá thực tế vào Drive giá vốn / - Làm căn cứ đối chiếu nhanh cho lần khảo sát giá kế tiếp. | Sau khi chốt đơn | Giá vốn | QLDL/Thu mua | QLSX
+R38: 2.0 | Báo cáo KD | - Báo cáo sản lượng, tiến độ , phí phạt, lãi suất quá hạn theo hợp đồng / - Yêu cầu kinh doanh cung cấp nguyên nhân không đạt tiến độ, sản lượng, phí phạt, lãi suất quá hạn  / => Trình duyệt QLSX, QLSX thương lượng NCC GC (nếu có) | Định kỳ/theo yêu cầu | 5. GIÁ VỐN KINH DOANH NĂM 2024 - TRÌNH AD DUYỆT | Giá vốn | KD | QLSX
+R40: V | DANH SÁCH BIỂU MẪU
+R41: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R44: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R45: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R46: 1.0 | SX-ĐIỀU PHỐI THÀNH PHẨM | SX-ĐIỀU PHỐI THÀNH PHẨM
+R47: 2.0 | 5. GIÁ VỐN KINH DOANH NĂM 2024 - TRÌNH AD DUYỆT
+R49: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R50: STT | TÊN NHÓM ZALO
+R51: 1.0 | SX - CẬP NHẬT GIÁ VỐN ABA + AGC
+R52: 2.0 | SX - CẬP NHẬT GIÁ VỐN IDA GLOBAL
+R53: 3.0 | N2SBIOSBIO - GIÁ VỐN HÀNG HÓA
+R54: 4.0 | DR.XANH - GIÁ VỐN HÀNG HÓA
+R55: 5.0 | CÔNG NỢ/KẾ TOÁN+TÊN NCC GC
+R56: 6.0 | Giá Nhập Kho + NCC
+R57: 7.0 | SX - GIÁ NL, BTP NCC GIA CÔNG
