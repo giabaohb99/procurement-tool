@@ -20588,3 +20588,22 @@ Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/vat-price.ts`, `frontend/src/utils/vatPrice.ts`, bảng dòng và hộp chi tiết dòng của YCMH, ĐMH ở hai giao diện, `backend/app/modules/assistant/tools/po_update.py`, `backend/scripts/seed_help_thu_mua_gia_sau_vat_cr776.py`.
 Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.
+
+## duoc-CR-777 | In phiếu đề xuất mua hàng từ đơn mua hàng có thêm Mẫu thu mua có chữ ký và không chữ ký
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** khi in phiếu đề xuất mua hàng từ đơn mua hàng, mẫu thường lấy người đề xuất, trưởng phòng, nhà cung cấp và giá theo phiếu yêu cầu mua hàng, trong khi người thu mua cần một tờ phiếu đứng tên chính mình, trưởng phòng là quản lý trực tiếp, nhà cung cấp và giá theo đơn mua hàng đã chốt.
+
+**Đã làm**
+- Thêm đường API chỉ đọc trả dữ liệu cho Mẫu thu mua: người đề xuất là người đang đăng nhập kèm chữ ký, quản lý trực tiếp của người đó kèm chữ ký, nhà cung cấp và các dòng hàng của đơn mua hàng (số lượng đặt, đơn giá, VAT, bỏ dòng đã hủy). Đường này gác bằng quyền đọc đơn mua hàng và đơn phải nằm trong phạm vi đọc; nhà cung cấp che khi thiếu quyền xem nhà cung cấp.
+- Màn in phiếu đề xuất từ đơn mua hàng ở cả giao diện cũ và giao diện ERP mới có thêm Mẫu thu mua có chữ ký và không chữ ký, chỉ hiện với người đọc được đơn đó; màn in phiếu yêu cầu thường và nhóm in tách theo nhà cung cấp không đổi. Ô Người lập là chữ ký người in, ô trưởng phòng bộ phận đề xuất là chữ ký quản lý trực tiếp, hai ô còn lại như mẫu thường; cột thành tiền từng dòng trước VAT, tiền VAT và tổng thanh toán ở dòng riêng.
+- Khi dùng được Mẫu thu mua, hai mẫu này đứng đầu ô Mẫu in và Mẫu thu mua có chữ ký được chọn sẵn lúc mở màn; người không đủ quyền vẫn mở ra Mẫu thường có chữ ký như cũ.
+- Bài hướng dẫn Mẫu thu mua khi in phiếu đề xuất dưới thẻ Dành cho Nhân viên Mua hàng, cẩm nang Quy trình thu mua, tài liệu chức năng Yêu cầu mua hàng và tài liệu API ghi đủ.
+
+**Kiểm:** bài kiểm backend mới 6 bài (người đề xuất và quản lý trực tiếp kèm chữ ký, dòng theo đơn bỏ dòng hủy, che nhà cung cấp, chưa gán quản lý để trống, ngoài phạm vi trả 404, chỉ có quyền in mà không có quyền đọc bị chặn) cùng bài cũ màn in và bài canh phạm vi xanh; giao diện mới typecheck, eslint, vitest màn in và bộ định tuyến xanh; giao diện cũ không thêm lỗi kiểu; thử trên trình duyệt PO00362 và PO363.
+
+Mã nguồn: `backend/app/modules/purchase_order/purchasing_print.py`, `backend/app/modules/purchase_order/controller.py`, `frontend/src/pages/PrintPurchaseRequest.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page.tsx`, `frontend-v2/src/modules/procurement/utils/purchasing-print-sheet.ts`, `backend/scripts/seed_help_thu_mua_mau_in_cr777.py`.
+Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.

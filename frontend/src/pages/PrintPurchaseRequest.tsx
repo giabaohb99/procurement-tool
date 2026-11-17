@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { tenFileIn, usePrintTitle } from "../hooks/usePrintTitle";
 
 const fmt = (n: any) => Number(n || 0).toLocaleString("vi-VN");
@@ -60,8 +61,16 @@ function getClosestNeedDate(items: any[]) {
 }
 
 // bao-CR-546 — ba mẫu in cố định của ô chọn "Mẫu in" (khớp v2 `purchase-request-print-template.ts`).
-type PrintTemplate = "normal-signed" | "normal-unsigned" | "tax";
-const PRINT_TEMPLATES: { value: PrintTemplate; label: string; taxMode: boolean; showSign: boolean }[] = [
+// duoc-CR-777: thêm hai mẫu thu mua — CHỈ hiện khi mở từ ĐMH (`fromPo`) và gọi được
+// `/api/purchase-orders/{id}/purchasing-print`; `purchasing` đánh dấu mẫu dùng dữ liệu thu mua.
+type PrintTemplate =
+  | "normal-signed" | "normal-unsigned" | "tax" | "purchasing-signed" | "purchasing-unsigned";
+const PRINT_TEMPLATES: {
+  value: PrintTemplate; label: string; taxMode: boolean; showSign: boolean; purchasing?: boolean;
+}[] = [
+  // duoc-CR-777 (anh Được chốt 17/11/2026): hai mẫu thu mua đứng ĐẦU danh sách — cùng thứ tự với bản v2.
+  { value: "purchasing-signed", label: "Mẫu thu mua – có chữ ký", taxMode: false, showSign: true, purchasing: true },
+  { value: "purchasing-unsigned", label: "Mẫu thu mua – không chữ ký", taxMode: false, showSign: false, purchasing: true },
   { value: "normal-signed", label: "Mẫu thường – có chữ ký", taxMode: false, showSign: true },
   { value: "normal-unsigned", label: "Mẫu thường – không chữ ký", taxMode: false, showSign: false },
   { value: "tax", label: "Mẫu thuế", taxMode: true, showSign: false },
@@ -78,7 +87,11 @@ const PRINT_TEMPLATES: { value: PrintTemplate; label: string; taxMode: boolean; 
  */
 export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: boolean }) {
   const { id } = useParams();
+  const { can } = useAuth();
   const [pr, setPr] = useState<any>(null);
+  // duoc-CR-777: dữ liệu Mẫu thu mua; null = chưa có / không gọi được (403, 404) → ẩn hai mẫu thu mua.
+  const [purchasing, setPurchasing] = useState<any>(null);
+  const canReadPo = can("purchase_order", "read");
   const [company, setCompany] = useState("");
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([]);
   const [notFound, setNotFound] = useState(false);
@@ -87,8 +100,15 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   // nút nhảy. Mỗi mẫu quy về hai cờ cũ: taxMode (để trống thông tin người yêu cầu + mọi ô ký) và
   // showSign (bỏ ảnh chữ ký số, bản ký tay vẫn giữ họ tên). Bản v2:
   // `utils/purchase-request-print-template.ts` — giữ hai bản cùng ba mẫu.
-  const [template, setTemplate] = useState<PrintTemplate>("normal-signed");
-  const { taxMode, showSign } = PRINT_TEMPLATES.find((t) => t.value === template) || PRINT_TEMPLATES[0];
+  // duoc-CR-777: null = người dùng CHƯA chọn mẫu → chọn sẵn Mẫu thu mua – có chữ ký khi dữ liệu thu mua về (dữ liệu
+  // nạp sau trang), còn lại là Mẫu thường – có chữ ký như cũ.
+  const [template, setTemplate] = useState<PrintTemplate | null>(null);
+  // duoc-CR-777: danh sách mẫu hiện ra — hai mẫu thu mua chỉ khi đã có dữ liệu thu mua.
+  const templates = PRINT_TEMPLATES.filter((t) => !t.purchasing || (fromPo && purchasing));
+  const chosen = template ?? (templates.some((t) => t.purchasing) ? "purchasing-signed" : "normal-signed");
+  const current = templates.find((t) => t.value === chosen) || templates.find((t) => t.value === "normal-signed")!;
+  const { taxMode, showSign } = current;
+  const pt = current.purchasing ? purchasing : null;
   // bao-CR-544 → bao-CR-546: ô tick "Ẩn nơi giao" GIỮ cột "Nơi giao" (khuôn mẫu không đổi), chỉ để
   // trống chữ trong ô — bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn.
   const [hidePlace, setHidePlace] = useState(false);
@@ -124,6 +144,19 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
       )
       .catch(() => {});
   }, [id, fromPo]);
+
+  // duoc-CR-777: dữ liệu Mẫu thu mua — lệnh phụ, lỗi (403 không đủ quyền / 404 ngoài phạm vi) thì
+  // lặng lẽ ẩn hai mẫu, không báo lỗi (GET lỗi vốn không bật toast).
+  useEffect(() => {
+    setPurchasing(null);
+    if (!fromPo || !canReadPo) return;
+    let alive = true;
+    api
+      .get(`/api/purchase-orders/${id}/purchasing-print`)
+      .then((r) => { if (alive) setPurchasing(r.data.data); })
+      .catch(() => { if (alive) setPurchasing(null); });
+    return () => { alive = false; };
+  }, [id, fromPo, canReadPo]);
   // Tên file gợi ý khi lưu PDF = Mã YCMH + ngày yêu cầu (xem chú thích ở usePrintTitle).
   usePrintTitle(pr ? tenFileIn(pr.code, pr.request_date) : "");
 
@@ -158,6 +191,30 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   } as const;
   // Khối thông tin dưới mỗi tiêu đề — giãn dòng cho dễ đọc (vẫn vừa 1 trang)
   const info = { fontSize: 12, padding: "6px 4px", lineHeight: 1.75 } as const;
+
+  // duoc-CR-777: Mẫu thu mua — người đề xuất = người đang bấm in, trưởng phòng = quản lý trực tiếp
+  // của họ, bảng hàng + tổng lấy từ ĐMH. Mẫu thường (pt = null) giữ nguyên dữ liệu phiếu YCMH.
+  const requesterName = pt ? pt.proposer?.name : pr.requester;
+  const requesterPosition = pt ? pt.proposer?.position : pr.requester_position;
+  const requesterDept = pt ? pt.proposer?.department : pr.department;
+  const headOfDept = pt ? pt.manager?.name : pr.head_of_dept;
+  // Nơi giao / ghi chú không có trên dòng ĐMH → lấy theo mã hàng từ phiếu YCMH.
+  const prLineByCode = new Map<string, any>((pr.items || []).map((x: any) => [x.product_code, x]));
+  // Tiền ngoại tệ giữ 2 số lẻ; VND làm tròn về đồng như bản thường.
+  const poCurrency: string = pt?.currency || "VND";
+  const fmtMoney = (n: any) =>
+    poCurrency === "VND"
+      ? fmtVND(n)
+      : Number(n || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+  const rows: any[] = pt
+    ? (pt.items || []).map((it: any) => {
+        const src = prLineByCode.get(it.product_code);
+        return { ...it, warehouse: src?.warehouse || "", note: src?.note || "" };
+      })
+    : pr.items;
+  const subtotalShown = pt ? pt.subtotal : pr.subtotal;
+  const vatShown = pt ? pt.vat : pr.vat;
+  const totalShown = pt ? pt.total : pr.total;
 
   return (
     <div className="print-wrap" style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
@@ -216,14 +273,14 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           Mẫu in:
           {/* Bề rộng CỐ ĐỊNH: đổi mẫu không làm cả thanh xê dịch. */}
           <select
-            value={template}
+            value={current.value}
             onChange={(e) => setTemplate(e.target.value as PrintTemplate)}
             style={{
               width: 220, padding: "6px 10px", fontSize: 13, border: "1px solid #d9e0ea",
               borderRadius: 8, background: "#fff", color: "#0f172a",
             }}
           >
-            {PRINT_TEMPLATES.map((t) => (
+            {templates.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
@@ -314,16 +371,16 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
         <div style={SH}>THÔNG TIN CHUNG</div>
         <div style={info}>
           <div>
-            <b>Người đề xuất:</b> {taxMode ? "" : pr.requester}
+            <b>Người đề xuất:</b> {taxMode ? "" : requesterName}
           </div>
           <div>
-            <b>Chức vụ:</b> {taxMode ? "" : pr.requester_position || "............"}
+            <b>Chức vụ:</b> {taxMode ? "" : requesterPosition || "............"}
           </div>
           <div>
-            <b>Hiện công tác tại bộ phận:</b> {taxMode ? "" : pr.department || "............"}
+            <b>Hiện công tác tại bộ phận:</b> {taxMode ? "" : requesterDept || "............"}
           </div>
           <div>
-            <b>Trưởng phòng ban/bộ phận:</b> {taxMode ? "" : pr.head_of_dept || "............"}
+            <b>Trưởng phòng ban/bộ phận:</b> {taxMode ? "" : headOfDept || "............"}
           </div>
         </div>
 
@@ -362,7 +419,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
             </tr>
           </thead>
           <tbody>
-            {pr.items.map((it: any, i: number) => (
+            {rows.map((it: any, i: number) => (
               <tr key={i}>
                 <td style={cell}>{i + 1}</td>
                 <td style={cell}>{it.product_name}</td>
@@ -371,7 +428,9 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 <td style={{ ...cell, textAlign: "right" }}>{fmt(it.qty)}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmtPrice(it.price)}</td>
                 <td style={{ ...cell, textAlign: "right" }}>
-                  {fmtVND((Number(it.qty) || 0) * (Number(it.price) || 0))}
+                  {/* Thành tiền TRƯỚC VAT (SL × đơn giá) để cộng các dòng ra đúng "Tổng cộng";
+                      VAT nằm ở dòng tổng bên dưới, như mẫu 003/BM/PKT. */}
+                  {fmtMoney((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
                 <td style={cell}>{hidePlace ? "" : whCode(it.warehouse)}</td>
                 <td style={cell}>{it.note}</td>
@@ -379,10 +438,10 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
             ))}
             <tr>
               <td style={{ ...cell, fontWeight: 700 }} colSpan={6}>
-                Tổng cộng
+                Tổng cộng{pt && poCurrency !== "VND" ? ` (${poCurrency})` : ""}
               </td>
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
-                {fmtVND(pr.subtotal)}
+                {fmtMoney(subtotalShown)}
               </td>
               <td style={cell} colSpan={2} />
             </tr>
@@ -391,7 +450,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 Tiền VAT:
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
-                {Number(pr.vat) ? fmtVND(pr.vat) : "0"}
+                {Number(vatShown) ? fmtMoney(vatShown) : "0"}
               </td>
               <td style={{ border: "none" }} colSpan={2} />
             </tr>
@@ -400,7 +459,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 Tổng cộng thanh toán (gồm VAT):
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
-                {fmtVND(pr.total)}
+                {fmtMoney(totalShown)}
               </td>
               <td style={{ border: "none" }} colSpan={2} />
             </tr>
@@ -415,9 +474,16 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               - Không có quyền  -> BE trả rỗng, tự lùi về NCC do bộ phận đề xuất ghi.
             Không kiểm tra quyền ở FE: cứ có dữ liệu là in, BE đã lọc. */}
         {(() => {
-          const sup = (pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact)
+          const supNormal = (pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact)
             ? pr.supplier_pur
             : pr.supplier_req;
+          // duoc-CR-777: Mẫu thu mua in NCC của ĐMH (rỗng khi thiếu quyền xem NCC → như mẫu thường
+          // không có NCC). MST / liên hệ chỉ giữ khi đúng là NCC trên phiếu, tránh in nhầm của NCC khác.
+          const sup = pt
+            ? (pt.supplier?.name && pt.supplier.name === supNormal?.name
+                ? supNormal
+                : { name: pt.supplier?.name || "", tax_code: "", contact: "" })
+            : supNormal;
           const hasQuote = Boolean(pr.has_quote_file ?? pr.quote_file_url);
           return (
             <>
@@ -483,6 +549,17 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                       { key: "proposer", role: "TP/BP đề xuất", name: pr.approver_name, signature: pr.approver_signature },
                       { key: "preparer", role: "Người lập", name: pr.requester, signature: pr.requester_signature },
                     ];
+              // duoc-CR-777: Mẫu thu mua — "Người lập" = người đang in, "TP/BP đề xuất" = quản lý
+              // trực tiếp của họ; hai ô còn lại giữ như mẫu thường.
+              if (pt) {
+                return cells.map((c) =>
+                  c.key === "preparer"
+                    ? { ...c, name: pt.proposer?.name || "", signature: pt.proposer?.signature || "" }
+                    : c.key === "proposer"
+                      ? { ...c, name: pt.manager?.name || "", signature: pt.manager?.signature || "" }
+                      : c,
+                );
+              }
               return cells;
             })().map(
               (cell) => {

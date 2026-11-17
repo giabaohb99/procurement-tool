@@ -22,6 +22,19 @@ export function usePurchaseOrderPrintData(id: number) {
   })
 }
 
+/**
+ * duoc-CR-777 — dữ liệu "Mẫu thu mua" cho bản in YCMH mở từ đơn. Lệnh gọi PHỤ: hỏng (403/404 khi
+ * ngoài quyền / phạm vi) thì trang chỉ giấu hai mẫu thu mua, không báo lỗi — GET vốn không toast,
+ * và 4xx không thử lại (cấu hình chung của `queryClient`).
+ */
+export function usePurchaseOrderPurchasingPrint(id: number, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.procurement.purchaseOrderPurchasingPrint(id),
+    queryFn: () => purchaseOrderApi.getPurchasingPrint(id),
+    enabled: enabled && id > 0,
+  })
+}
+
 /** Tạo mới HOẶC cập nhật — hai màn dùng chung một form nên gộp một hook. */
 export function useSavePurchaseOrder() {
   const queryClient = useQueryClient()

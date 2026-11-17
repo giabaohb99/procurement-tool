@@ -5,6 +5,7 @@ import type {
   PurchaseOrderImportCost,
   PurchaseOrderItem,
 } from '../types/purchase-order-detail'
+import type { PurchasingPrintData } from '../types/purchasing-print'
 
 const BASE_URL = '/api/purchase-orders'
 
@@ -160,6 +161,10 @@ export const purchaseOrderApi = {
   getById: (id: number) => apiGet<PurchaseOrderDetail>(`${BASE_URL}/${id}`),
 
   getPrintData: (id: number) => apiGet<PurchaseOrderPrintData>(`${BASE_URL}/${id}/print`),
+
+  /** duoc-CR-777 — dữ liệu "Mẫu thu mua" của bản in YCMH mở từ đơn (403/404 khi ngoài quyền / phạm vi). */
+  getPurchasingPrint: (id: number) =>
+    apiGet<PurchasingPrintData>(`${BASE_URL}/${id}/purchasing-print`),
 
   create: (payload: PurchaseOrderPayload) =>
     apiPost<PurchaseOrderDetail>(BASE_URL, payload),

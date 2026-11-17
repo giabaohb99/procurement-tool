@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.bulk_delete import ensure_all_draft
-from app.core.auth import get_perm_profile, require
+from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.base_controller import apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -195,6 +195,22 @@ def get_po_purchase_request(pid: int, db: Session = Depends(get_db),
     data = service.pr_items_for_po(pr_out(db, pr, user), service.items_of(db, po.id))
     data["po_code"] = po.code
     return success(data)
+
+
+@router.get("/{pid}/purchasing-print")
+def get_po_purchasing_print(pid: int, db: Session = Depends(get_db),
+                            user=Depends(require("purchase_order", "read"))):
+    """Dữ liệu "Mẫu thu mua" của màn In YCMH từ ĐMH: người đề xuất, quản lý trực tiếp, NCC và dòng hàng theo ĐMH.
+
+    duoc-CR-777. Gác bằng quyền ĐỌC đơn mua hàng và đơn phải nằm trong phạm vi ĐỌC của người gọi (anh Được chốt:
+    nhân sự thu mua đọc được đơn đó mới thấy mẫu); ngoài phạm vi trả 404 như các nhánh khác của đơn. NCC che khi
+    thiếu `supplier.read`. Không ghi gì.
+    """
+    from .purchasing_print import build_purchasing_print
+
+    po = _in_scope(db, pid, user, "read")
+    show_supplier = user_has_permission(db, user, "supplier", "read")
+    return success(build_purchasing_print(db, po, service.items_of(db, po.id), user, show_supplier))
 
 
 @router.post("")

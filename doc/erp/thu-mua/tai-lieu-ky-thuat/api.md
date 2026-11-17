@@ -104,6 +104,7 @@ Mã backend: `purchase_request`, `survey_request`, `survey`, `survey_progress`, 
 | POST | `/api/purchase-orders/{pid}/items/{item_id}/progress` | Người phụ trách cập nhật trạng thái tiến độ 1 dòng (có gate điều kiện) + đồng bộ sang YCMH. | `purchase_order.write` |  | tự dò: v2 `procurement` |
 | GET | `/api/purchase-orders/{pid}/print` | Dữ liệu in một ĐMH (người ký, công ty, dòng hàng). | `purchase_order.print` |  | tự dò: v2 `procurement` |
 | GET | `/api/purchase-orders/{pid}/purchase-request` | Phiếu YCMH nguồn của đơn, đã cắt còn đúng các dòng hàng có trên đơn — bao-CR-314. | `purchase_order.print` | `apply_scope` | tự dò: v2 `procurement` |
+| GET | `/api/purchase-orders/{pid}/purchasing-print` | Dữ liệu "Mẫu thu mua" của màn In YCMH từ ĐMH: người đề xuất, quản lý trực tiếp, NCC và dòng hàng theo ĐMH. | `purchase_order.read` | `_in_scope` (đọc, ngoài phạm vi 404); NCC che khi thiếu `supplier.read` | v1 `PrintPurchaseRequest`, v2 `procurement` (duoc-CR-777) |
 | POST | `/api/purchase-orders/{pid}/reject` | Từ chối ĐMH đang chờ duyệt (đơn chuyển Đã hủy) kèm lý do, báo người tạo. | `purchase_order.approve` |  | tự dò: v2 `procurement` |
 | POST | `/api/purchase-orders/{pid}/reopen` | Mở lại ĐMH đã hoàn thành để xử lý tiếp. | `purchase_order.write` |  | tự dò: v2 `procurement` |
 | POST | `/api/purchase-orders/{pid}/return` | Trả ĐMH đang chờ duyệt về người tạo để sửa, kèm lý do. | `purchase_order.approve` |  | tự dò: v2 `procurement` |

@@ -23,12 +23,14 @@ import {
   usePurchaseRequest,
   usePurchaseRequestOfPurchaseOrder,
 } from '../hooks/use-purchase-request'
+import { usePurchaseOrderPurchasingPrint } from '../hooks/use-purchase-order'
 import { usePurchaseRequestPrintWarehouses } from '../hooks/use-purchase-request-support'
 import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
   SupplierCluster,
 } from '../types/purchase-request-detail'
+import type { PurchasingPrintData } from '../types/purchasing-print'
 import {
   resolvePrintSignatureCells,
   type PrintSignatureSource,
@@ -36,20 +38,34 @@ import {
 import {
   buildSupplierPrintPlan,
   formatVietnameseLongDate,
-  printLineValues,
-  printedTotals,
 } from '../utils/purchase-request-print-options'
+import {
+  buildPurchasingItemTable,
+  buildRequestItemTable,
+  type PrintItemTable,
+} from '../utils/purchase-request-print-rows'
 import {
   PRINT_LAYOUTS,
   PRINT_TEMPLATES,
   PRINT_TEMPLATE_PARAM,
   decodePrintChoice,
   encodePrintChoice,
+  isPurchasingPrintTemplate,
+  listPrintTemplates,
   readPrintTemplateParam,
+  defaultPrintTemplate,
+  resolveAvailablePrintTemplate,
   resolvePrintTemplate,
   type PrintLayout,
+  type PrintTemplateOption,
   type PrintTemplateValue,
 } from '../utils/purchase-request-print-template'
+import {
+  buildPurchasingGeneralInfo,
+  buildPurchasingSignatureSource,
+  buildPurchasingSupplier,
+  buildRequestGeneralInfo,
+} from '../utils/purchasing-print-sheet'
 
 /**
  * Mẫu in 003/BM/PKT của Phiếu đề xuất mua hàng hóa/dịch vụ.
@@ -64,6 +80,9 @@ import {
  *
  * Bản in giữ NGUYÊN khuôn: vẫn mã phiếu gốc, vẫn cụm chữ ký duyệt, không thêm dòng chữ
  * nào báo đây là bản trích (khách chốt 08/09/2026). Hai mẫu thường/thuế cũng giữ y như cũ.
+ *
+ * duoc-CR-777 — riêng chế độ `fromPo`, ô "Mẫu in" có thêm hai MẪU THU MUA khi người in đọc được đơn
+ * (`purchase_order.read` VÀ đường `purchasing-print` trả dữ liệu; 403/404 thì lặng lẽ giấu, không báo).
  */
 export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean }) {
   const { id } = useParams()
@@ -77,14 +96,28 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { data: purchaseRequest, isLoading, isError } = fromPo ? byOrder : byRequest
   const unmatchedLines = fromPo ? (byOrder.data?.po_lines_unmatched ?? 0) : 0
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
+  //  duoc-CR-777: lệnh gọi phụ, chỉ chạy khi mở từ đơn + có quyền đọc đơn.
+  const canReadOrder = can('purchase_order', 'read')
+  const purchasingQuery = usePurchaseOrderPurchasingPrint(routeId, fromPo && canReadOrder)
+  const purchasing: PurchasingPrintData | undefined =
+    fromPo && canReadOrder && purchasingQuery.isSuccess ? purchasingQuery.data : undefined
   //  bao-CR-546: MỘT ô chọn "Mẫu in" thay hai nhóm nút chữ ký / thường-thuế; ô tick ẩn nơi giao riêng.
   //  bao-CR-574: mẫu đi theo `?mau=` để đổi qua lại với bản tách theo NCC không mất lựa chọn.
   const [searchParams] = useSearchParams()
-  const [template, setTemplate] = useState<PrintTemplateValue>(() =>
-    readPrintTemplateParam(searchParams.get(PRINT_TEMPLATE_PARAM)),
-  )
+  //  duoc-CR-777: `null` = người dùng CHƯA chọn mẫu (URL không có `?mau=`, chưa đổi ô chọn) — khi đó mẫu chọn sẵn đi
+  //  theo `defaultPrintTemplate`, tức Mẫu thu mua – có chữ ký ngay khi dữ liệu thu mua về (dữ liệu nạp sau trang).
+  const [template, setTemplate] = useState<PrintTemplateValue | null>(() => {
+    const fromUrl = searchParams.get(PRINT_TEMPLATE_PARAM)
+    return fromUrl ? readPrintTemplateParam(fromUrl, { allowPurchasing: fromPo }) : null
+  })
   const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
-  const { taxMode, showSignature } = resolvePrintTemplate(template)
+  //  duoc-CR-777: chọn mẫu thu mua mà dữ liệu thu mua chưa có / bị chặn thì áp mẫu mặc định.
+  const activeTemplate = resolveAvailablePrintTemplate(
+    template ?? defaultPrintTemplate(Boolean(purchasing)),
+    Boolean(purchasing),
+  )
+  const { taxMode, showSignature } = resolvePrintTemplate(activeTemplate)
+  const activePurchasing = isPurchasingPrintTemplate(activeTemplate) ? purchasing : undefined
 
   useEffect(() => {
     if (!purchaseRequest?.code) return
@@ -172,7 +205,8 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
             này: `id` trên URL lúc đó là id của đơn, bắc sang sẽ ra nhầm phiếu. */}
         <PurchaseRequestPrintOptions
           layout="common"
-          template={template}
+          template={activeTemplate}
+          templates={listPrintTemplates(Boolean(purchasing))}
           onTemplateChange={setTemplate}
           supplierLayout={
             !fromPo && canSeeSupplier
@@ -192,11 +226,12 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
       <PurchaseRequestPrintSheet
         purchaseRequest={purchaseRequest}
         items={purchaseRequest.items}
-        supplier={supplier}
+        supplier={activePurchasing ? buildPurchasingSupplier(activePurchasing, supplier) : supplier}
         warehouseCode={(name) => warehouseCodes.get(name) || name}
         taxMode={taxMode}
         showSignature={showSignature}
         hideDeliveryPlace={hideDeliveryPlace}
+        purchasing={activePurchasing}
       />
     </main>
   )
@@ -210,6 +245,10 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
  * yêu cầu có điền sẵn thông tin NCC. Hai chỗ khác nhau duy nhất giữa hai bản in nằm ở
  * tham số: `items` (bản B lọc còn dòng của NCC đó) và `supplier` (bản B đổ NCC theo
  * phương án đã chọn thay vì cụm NCC nhập trên phiếu).
+ *
+ * duoc-CR-777 — `purchasing` có mặt (mẫu thu mua) thì thay bốn chỗ: THÔNG TIN CHUNG (người đang in +
+ * quản lý trực tiếp), bảng hàng + tổng (dòng của ĐƠN), hai ô ký "TP/BP đề xuất" / "Người lập". NCC do
+ * trang truyền sẵn qua `supplier`. Còn lại giữ theo phiếu.
  */
 export function PurchaseRequestPrintSheet({
   purchaseRequest,
@@ -220,6 +259,7 @@ export function PurchaseRequestPrintSheet({
   taxMode,
   showSignature,
   hideDeliveryPlace = false,
+  purchasing,
 }: {
   purchaseRequest: PurchaseRequestDetail
   items: PurchaseRequestItem[]
@@ -230,7 +270,16 @@ export function PurchaseRequestPrintSheet({
   showSignature: boolean
   /** bao-CR-546 — tick "Ẩn nơi giao" thì GIỮ cột "Nơi giao", chỉ để trống chữ trong ô từng dòng. */
   hideDeliveryPlace?: boolean
+  /** duoc-CR-777 — dữ liệu mẫu thu mua; thiếu = mẫu thường / thuế như cũ. */
+  purchasing?: PurchasingPrintData
 }) {
+  const info = purchasing
+    ? buildPurchasingGeneralInfo(purchasing)
+    : buildRequestGeneralInfo(purchaseRequest)
+  const table = purchasing ? buildPurchasingItemTable(purchasing, items) : buildRequestItemTable(items)
+  const signatureSource = purchasing
+    ? buildPurchasingSignatureSource(purchaseRequest, purchasing)
+    : purchaseRequest
   return (
     <article className="pr-print-doc">
       <header className="pr-print-document-header">
@@ -249,19 +298,10 @@ export function PurchaseRequestPrintSheet({
       </p>
 
       <PrintSection title="THÔNG TIN CHUNG">
-        <PrintLine label="Người đề xuất" value={taxMode ? '' : purchaseRequest.requester} />
-        <PrintLine
-          label="Chức vụ"
-          value={taxMode ? '' : purchaseRequest.requester_position || '............'}
-        />
-        <PrintLine
-          label="Hiện công tác tại bộ phận"
-          value={taxMode ? '' : purchaseRequest.department || '............'}
-        />
-        <PrintLine
-          label="Trưởng phòng ban/bộ phận"
-          value={taxMode ? '' : purchaseRequest.head_of_dept || '............'}
-        />
+        <PrintLine label="Người đề xuất" value={taxMode ? '' : info.requester} />
+        <PrintLine label="Chức vụ" value={taxMode ? '' : info.position} />
+        <PrintLine label="Hiện công tác tại bộ phận" value={taxMode ? '' : info.department} />
+        <PrintLine label="Trưởng phòng ban/bộ phận" value={taxMode ? '' : info.headOfDept} />
       </PrintSection>
 
       <PrintSection title="MỤC ĐÍCH & NỘI DUNG ĐỀ XUẤT">
@@ -277,7 +317,7 @@ export function PurchaseRequestPrintSheet({
       </PrintSection>
 
       <PurchaseRequestPrintItems
-        items={items}
+        table={table}
         warehouseCode={warehouseCode}
         hideDeliveryPlace={hideDeliveryPlace}
       />
@@ -304,7 +344,7 @@ export function PurchaseRequestPrintSheet({
       </PrintSection>
 
       <SignatureSection
-        purchaseRequest={purchaseRequest}
+        purchaseRequest={signatureSource}
         taxMode={taxMode}
         showSignature={showSignature}
       />
@@ -363,18 +403,20 @@ export function PrintLine({ label, value }: { label: string; value?: React.React
   )
 }
 
-/* Nhận thẳng DANH SÁCH DÒNG chứ không nhận cả phiếu: bản in theo NCC đưa vào bộ dòng
-   đã lọc, và tổng tiền phải tính trên đúng những dòng đang in. */
+/* Nhận BẢNG ĐÃ TÍNH chứ không nhận cả phiếu: bản in theo NCC đưa vào bộ dòng đã lọc, mẫu thu
+   mua (duoc-CR-777) đưa dòng của ĐƠN — tổng tiền phải là của đúng những dòng đang in. */
 function PurchaseRequestPrintItems({
-  items,
+  table,
   warehouseCode,
   hideDeliveryPlace,
 }: {
-  items: PurchaseRequestItem[]
+  table: PrintItemTable
   warehouseCode: (name: string) => string
   hideDeliveryPlace: boolean
 }) {
-  const totals = printedTotals(items)
+  const { rows, totals } = table
+  //  Ngoại tệ (chỉ mẫu thu mua) giữ số lẻ; VND làm tròn tới đồng như cũ.
+  const money = table.fractionalMoney ? formatUnitPrice : formatMoney
   return (
     <table className="pr-print-items">
       <colgroup>
@@ -405,39 +447,32 @@ function PurchaseRequestPrintItems({
         {/* bao-CR-310 đợt 4 (H.6 bản A): giá / VAT theo phương án ĐÃ CHỌN của từng
             dòng, dòng chưa chọn giữ giá đề xuất; tổng tiền tính lại theo giá đang in.
             Phương án 0 chụp đúng giá dòng gốc nên phiếu chưa ai đụng in y như cũ. */}
-        {items.map((item, index) => {
-          const line = printLineValues(item)
-          return (
-            <tr key={item.id ?? `${item.product_code}-${index}`}>
-              <td className="text-center">{index + 1}</td>
-              <td>{item.product_name}</td>
-              <td>{item.product_code}</td>
-              <td>
-                {item.unit}
-                {/* H.4: đơn vị báo giá lệch đơn vị dòng thì in cả hai, không tự quy đổi. */}
-                {line.quoteUnit && (
-                  <span className="text-[9px]"> (báo giá: {line.quoteUnit})</span>
-                )}
-              </td>
-              <td className="text-right tabular-nums">{formatQuantity(item.qty)}</td>
-              <td className="text-right tabular-nums">{formatUnitPrice(line.price)}</td>
-              <td className="text-right tabular-nums">
-                {formatMoney(item.qty * line.price)}
-              </td>
-              {/* bao-CR-546: "Ẩn nơi giao" giữ cột (khuôn mẫu không đổi), chỉ để trống chữ —
-                  bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn. */}
-              <td>{hideDeliveryPlace ? '' : warehouseCode(item.warehouse)}</td>
-              <td>{item.note}</td>
-            </tr>
-          )
-        })}
+        {rows.map((row, index) => (
+          <tr key={row.key}>
+            <td className="text-center">{index + 1}</td>
+            <td>{row.productName}</td>
+            <td>{row.productCode}</td>
+            <td>
+              {row.unit}
+              {/* H.4: đơn vị báo giá lệch đơn vị dòng thì in cả hai, không tự quy đổi. */}
+              {row.quoteUnit && <span className="text-[9px]"> (báo giá: {row.quoteUnit})</span>}
+            </td>
+            <td className="text-right tabular-nums">{formatQuantity(row.qty)}</td>
+            <td className="text-right tabular-nums">{formatUnitPrice(row.price)}</td>
+            <td className="text-right tabular-nums">{money(row.amount)}</td>
+            {/* bao-CR-546: "Ẩn nơi giao" giữ cột (khuôn mẫu không đổi), chỉ để trống chữ —
+                bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn. */}
+            <td>{hideDeliveryPlace ? '' : warehouseCode(row.warehouse)}</td>
+            <td>{row.note}</td>
+          </tr>
+        ))}
         <tr>
           <td className="font-bold" colSpan={6}>
             Tổng cộng
           </td>
           {/* Ô kế bên trống nên cho tràn thay vì gãy số tiền làm hai dòng (>= 100 triệu). */}
           <td className="whitespace-nowrap text-right font-bold tabular-nums">
-            {formatMoney(totals.subtotal)}
+            {money(totals.subtotal)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -446,7 +481,7 @@ function PurchaseRequestPrintItems({
             Tiền VAT:
           </td>
           <td className="whitespace-nowrap pt-2 text-right text-[13px] font-bold tabular-nums">
-            {formatMoney(totals.vat)}
+            {money(totals.vat)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -455,7 +490,7 @@ function PurchaseRequestPrintItems({
             Tổng cộng thanh toán (gồm VAT):
           </td>
           <td className="whitespace-nowrap pb-2 pt-1 text-right text-[13px] font-bold tabular-nums">
-            {formatMoney(totals.total)}
+            {money(totals.total)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -534,6 +569,7 @@ export function SignatureSection({
 export function PurchaseRequestPrintOptions({
   layout = 'common',
   template,
+  templates = PRINT_TEMPLATES,
   onTemplateChange,
   supplierLayout,
   onLayoutChange,
@@ -542,6 +578,11 @@ export function PurchaseRequestPrintOptions({
 }: {
   layout?: PrintLayout
   template: PrintTemplateValue
+  /**
+   * duoc-CR-777 — danh sách mẫu của ô chọn KHÔNG chia nhóm (bản in mở từ đơn truyền thêm hai mẫu thu
+   * mua). Nhóm "Tách theo NCC" luôn dùng đúng ba mẫu chung, không đọc tham số này.
+   */
+  templates?: readonly PrintTemplateOption[]
   onTemplateChange: (value: PrintTemplateValue) => void
   supplierLayout?: { enabled: boolean }
   onLayoutChange?: (layout: PrintLayout, template: PrintTemplateValue) => void
@@ -587,7 +628,7 @@ export function PurchaseRequestPrintOptions({
                     </SelectGroup>
                   )
                 })
-              : PRINT_TEMPLATES.map((option) => (
+              : templates.map((option) => (
                   <SelectItem key={option.value} value={encodePrintChoice(layout, option.value)}>
                     {option.label}
                   </SelectItem>

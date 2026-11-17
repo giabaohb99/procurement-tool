@@ -120,6 +120,9 @@ export const queryKeys = {
     purchaseOrders: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-orders', params ?? {}] as const,
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,
+    /** duoc-CR-777 — dữ liệu "Mẫu thu mua" của bản in YCMH mở từ đơn (người đề xuất = người đang in). */
+    purchaseOrderPurchasingPrint: (purchaseOrderId: number) =>
+      ['procurement', 'purchase-orders', purchaseOrderId, 'purchasing-print'] as const,
     surveys: (params?: Record<string, unknown>) =>
       ['procurement', 'surveys', params ?? {}] as const,
     survey: (id: number) => ['procurement', 'surveys', id] as const,

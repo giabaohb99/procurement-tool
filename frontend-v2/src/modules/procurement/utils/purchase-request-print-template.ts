@@ -12,21 +12,76 @@ export const PRINT_TEMPLATES = [
   { value: 'tax', label: 'Mẫu thuế', taxMode: true, showSignature: false },
 ] as const
 
-export type PrintTemplateValue = (typeof PRINT_TEMPLATES)[number]['value']
+/**
+ * duoc-CR-777 (anh Được chốt 17/11/2026) — hai mẫu THU MUA, CHỈ có ở bản in YCMH mở từ ĐƠN MUA HÀNG
+ * (`fromPo`), và chỉ khi người in đọc được đơn đó (đường `purchasing-print` trả dữ liệu). Người đề
+ * xuất = người đang in, trưởng phòng = quản lý trực tiếp của họ, bảng hàng = dòng của đơn. Cố ý tách
+ * khỏi `PRINT_TEMPLATES`: danh sách kia còn dùng cho nhóm "Tách theo NCC" và trang in theo NCC —
+ * hai mẫu này không được lọt sang đó.
+ */
+export const PURCHASING_PRINT_TEMPLATES = [
+  { value: 'purchasing-signed', label: 'Mẫu thu mua – có chữ ký', taxMode: false, showSignature: true },
+  { value: 'purchasing-unsigned', label: 'Mẫu thu mua – không chữ ký', taxMode: false, showSignature: false },
+] as const
+
+const ALL_PRINT_TEMPLATES = [...PRINT_TEMPLATES, ...PURCHASING_PRINT_TEMPLATES]
+
+export type PrintTemplateValue = (typeof ALL_PRINT_TEMPLATES)[number]['value']
+
+export interface PrintTemplateOption {
+  value: PrintTemplateValue
+  label: string
+  taxMode: boolean
+  showSignature: boolean
+}
 
 export const DEFAULT_PRINT_TEMPLATE: PrintTemplateValue = 'normal-signed'
 
 /** Mẫu in → hai cờ của tờ phiếu. Giá trị lạ (ô chọn trả chuỗi) thì về mẫu mặc định. */
 export function resolvePrintTemplate(value: string): { taxMode: boolean; showSignature: boolean } {
   const found =
-    PRINT_TEMPLATES.find((template) => template.value === value) ??
-    PRINT_TEMPLATES.find((template) => template.value === DEFAULT_PRINT_TEMPLATE)
+    ALL_PRINT_TEMPLATES.find((template) => template.value === value) ??
+    ALL_PRINT_TEMPLATES.find((template) => template.value === DEFAULT_PRINT_TEMPLATE)
   return { taxMode: Boolean(found?.taxMode), showSignature: Boolean(found?.showSignature) }
 }
 
-/** Ô chọn trả chuỗi — chỉ nhận đúng ba giá trị khai ở trên. */
+/** Ô chọn trả chuỗi — chỉ nhận đúng các giá trị khai ở trên (ba mẫu chung + hai mẫu thu mua). */
 export function isPrintTemplateValue(value: string): value is PrintTemplateValue {
-  return PRINT_TEMPLATES.some((template) => template.value === value)
+  return ALL_PRINT_TEMPLATES.some((template) => template.value === value)
+}
+
+/** duoc-CR-777 — mẫu đang chọn có phải một trong hai mẫu thu mua không. */
+export function isPurchasingPrintTemplate(value: string): boolean {
+  return PURCHASING_PRINT_TEMPLATES.some((template) => template.value === value)
+}
+
+/**
+ * duoc-CR-777 — danh sách mẫu của ô chọn: ba mẫu chung, thêm hai mẫu thu mua khi `purchasing`
+ * (bản in mở từ đơn + có quyền đọc đơn + lệnh `purchasing-print` đã trả dữ liệu).
+ */
+export function listPrintTemplates(purchasing: boolean): readonly PrintTemplateOption[] {
+  //  duoc-CR-777 (anh Được chốt 17/11/2026): in từ ĐMH mà dùng được Mẫu thu mua thì hai mẫu đó đứng ĐẦU danh sách.
+  return purchasing ? [...PURCHASING_PRINT_TEMPLATES, ...PRINT_TEMPLATES] : PRINT_TEMPLATES
+}
+
+/**
+ * Mẫu chọn sẵn khi người dùng CHƯA chọn gì (không có `?mau=` trên URL, chưa đổi ô chọn): dùng được Mẫu thu mua thì
+ * chọn sẵn *Mẫu thu mua – có chữ ký* (anh Được chốt 17/11/2026), còn lại là mẫu mặc định cũ.
+ */
+export function defaultPrintTemplate(purchasingAvailable: boolean): PrintTemplateValue {
+  return purchasingAvailable ? 'purchasing-signed' : DEFAULT_PRINT_TEMPLATE
+}
+
+/**
+ * duoc-CR-777 — mẫu THỰC áp: đang chọn mẫu thu mua (vd `?mau=purchasing-signed` trên URL) mà dữ liệu
+ * thu mua không có (đang nạp, 403/404, không có quyền) thì về mẫu mặc định, để ô chọn không trống
+ * và tờ phiếu không in nửa nọ nửa kia.
+ */
+export function resolveAvailablePrintTemplate(
+  value: PrintTemplateValue,
+  purchasingAvailable: boolean,
+): PrintTemplateValue {
+  return isPurchasingPrintTemplate(value) && !purchasingAvailable ? DEFAULT_PRINT_TEMPLATE : value
 }
 
 /**
@@ -64,7 +119,16 @@ export function decodePrintChoice(
   return { layout: layout as PrintLayout, template }
 }
 
-/** Mẫu đọc từ URL (`?mau=`); thiếu hoặc lạ thì về mẫu mặc định. */
-export function readPrintTemplateParam(value: string | null): PrintTemplateValue {
-  return value && isPrintTemplateValue(value) ? value : DEFAULT_PRINT_TEMPLATE
+/**
+ * Mẫu đọc từ URL (`?mau=`); thiếu hoặc lạ thì về mẫu mặc định. duoc-CR-777: hai mẫu thu mua CHỈ
+ * nhận khi `allowPurchasing` (bản in mở từ đơn) — trang in YCMH thường và trang in theo NCC coi
+ * chúng là giá trị lạ.
+ */
+export function readPrintTemplateParam(
+  value: string | null,
+  { allowPurchasing = false }: { allowPurchasing?: boolean } = {},
+): PrintTemplateValue {
+  if (!value || !isPrintTemplateValue(value)) return DEFAULT_PRINT_TEMPLATE
+  if (!allowPurchasing && isPurchasingPrintTemplate(value)) return DEFAULT_PRINT_TEMPLATE
+  return value
 }

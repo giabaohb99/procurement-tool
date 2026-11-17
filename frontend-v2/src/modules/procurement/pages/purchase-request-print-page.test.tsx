@@ -7,6 +7,8 @@ import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
+import type { PurchasingPrintData } from '../types/purchasing-print'
+import { listPrintTemplates } from '../utils/purchase-request-print-template'
 import type { PrintSignatureSource } from '../utils/purchase-request-signature-cells'
 import {
   PurchaseRequestPrintOptions,
@@ -136,7 +138,10 @@ function makeItem(id: number, warehouse: string): PurchaseRequestItem {
   } as unknown as PurchaseRequestItem
 }
 
-function renderSheet(hideDeliveryPlace?: boolean) {
+function renderSheet(
+  hideDeliveryPlace?: boolean,
+  extra: { purchasing?: PurchasingPrintData; showSignature?: boolean } = {},
+) {
   const items = [makeItem(1, 'Kho Bình Dương'), makeItem(2, 'Kho Long An')]
   //  why: như trên — tờ phiếu chỉ cần phần đầu phiếu + nguồn chữ ký.
   const purchaseRequest = {
@@ -144,6 +149,10 @@ function renderSheet(hideDeliveryPlace?: boolean) {
     code: 'PYC01',
     company_name: 'DEGO',
     request_date: '2026-10-01',
+    requester: 'Nguoi Lap',
+    requester_position: 'Nhân viên',
+    department: 'Phòng Kỹ thuật',
+    head_of_dept: 'Truong Phong YCMH',
     items,
   } as unknown as PurchaseRequestDetail
   const view = render(
@@ -153,8 +162,9 @@ function renderSheet(hideDeliveryPlace?: boolean) {
       supplier={{ name: '', tax_code: '', contact: '' }}
       warehouseCode={(name) => (name === 'Kho Bình Dương' ? 'KBD' : 'KLA')}
       taxMode={false}
-      showSignature
+      showSignature={extra.showSignature ?? true}
       hideDeliveryPlace={hideDeliveryPlace}
+      purchasing={extra.purchasing}
     />,
   )
   const table = view.container.querySelector('.pr-print-items') as HTMLTableElement
@@ -194,6 +204,92 @@ describe('PurchaseRequestPrintSheet — hide delivery place (bao-CR-546)', () =>
     expect(placeIndex).toBe(7)
     expect(firstLine.cells[placeIndex].textContent).toBe('')
     expect(firstLine.cells).toHaveLength(9)
+  })
+})
+
+// duoc-CR-777 — mẫu thu mua: người đang in + quản lý trực tiếp, bảng hàng + tổng theo ĐƠN.
+const purchasingData: PurchasingPrintData = {
+  po_id: 9,
+  po_code: 'DMH01',
+  order_date: '2026-11-17',
+  currency: 'VND',
+  proposer: {
+    employee_id: 7,
+    name: 'Nguyen Thu Mua',
+    position: 'Nhân viên thu mua',
+    department: 'Phòng Thu mua',
+    signature: 'https://cdn/ky-thu-mua.png',
+  },
+  manager: { employee_id: 8, name: 'Tran Quan Ly', position: 'Trưởng phòng', signature: 'https://cdn/ky-quan-ly.png' },
+  supplier: { code: 'S1', name: 'NCC Don' },
+  supplier_hidden: false,
+  items: [
+    {
+      line_id: 31,
+      product_code: 'MH2',
+      product_name: 'Hàng trên đơn',
+      invoice_name: '',
+      spec: '',
+      item_group: '',
+      unit: 'Thùng',
+      qty: 5,
+      price: 30000,
+      vat: 10,
+      amount: 165000,
+    },
+  ],
+  subtotal: 150000,
+  vat: 15000,
+  total: 165000,
+}
+
+describe('PurchaseRequestPrintSheet — purchasing template (duoc-CR-777)', () => {
+  it('general info shows the person printing and their direct manager', () => {
+    const { container } = renderSheet(false, { purchasing: purchasingData })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Người đề xuất: Nguyen Thu Mua')
+    expect(text).toContain('Chức vụ: Nhân viên thu mua')
+    expect(text).toContain('Hiện công tác tại bộ phận: Phòng Thu mua')
+    expect(text).toContain('Trưởng phòng ban/bộ phận: Tran Quan Ly')
+    expect(text).not.toContain('Truong Phong YCMH')
+  })
+
+  it('the items table is the order lines with pre-VAT amounts and the server totals', () => {
+    const { table } = renderSheet(false, { purchasing: purchasingData })
+    const body = table.tBodies[0]
+    //  Một dòng hàng + ba dòng tổng; dòng YCMH (Hàng 1, Hàng 2) không còn.
+    expect(body.rows).toHaveLength(4)
+    expect(within(table).queryByText('Hàng 1')).toBeNull()
+    const cells = Array.from(body.rows[0].cells).map((cell) => cell.textContent)
+    expect(cells.slice(0, 7)).toEqual(['1', 'Hàng trên đơn', 'MH2', 'Thùng', '5', '30.000', '150.000'])
+    //  Nơi giao mượn của dòng YCMH cùng mã MH2 (Kho Long An -> KLA).
+    expect(cells[7]).toBe('KLA')
+    expect(body.rows[1].textContent).toContain('150.000')
+    expect(body.rows[2].textContent).toContain('15.000')
+    expect(body.rows[3].textContent).toContain('165.000')
+  })
+
+  it('signed: "Người lập" and "TP/BP đề xuất" carry the new people with their signatures', () => {
+    renderSheet(false, { purchasing: purchasingData })
+    expect(screen.getByAltText('Chữ ký Người lập')).toHaveAttribute('src', 'https://cdn/ky-thu-mua.png')
+    expect(screen.getByAltText('Chữ ký TP/BP đề xuất')).toHaveAttribute('src', 'https://cdn/ky-quan-ly.png')
+    expect(screen.queryByText('Le Phuoc Huu')).toBeNull()
+    //  Ô "TP/BP mua hàng" giữ như mẫu thường.
+    expect(screen.getByText('Pham Khanh Ngan')).toBeInTheDocument()
+  })
+
+  it('unsigned: no signature image and no name in any cell', () => {
+    const { container } = renderSheet(false, { purchasing: purchasingData, showSignature: false })
+    expect(screen.queryByRole('img')).toBeNull()
+    const grid = container.querySelector('.pr-print-signature-grid') as HTMLElement
+    expect(within(grid).queryByText('Nguyen Thu Mua')).toBeNull()
+    expect(within(grid).queryByText('Tran Quan Ly')).toBeNull()
+  })
+
+  it('without purchasing data the sheet stays on the request data', () => {
+    const { container, table } = renderSheet()
+    expect(container.textContent).toContain('Trưởng phòng ban/bộ phận: Truong Phong YCMH')
+    expect(within(table).getByText('Hàng 1')).toBeInTheDocument()
   })
 })
 
@@ -277,6 +373,28 @@ describe('PurchaseRequestPrintOptions — supplier layout group (bao-CR-574)', (
     expect(screen.getAllByRole('option')).toHaveLength(3)
     expect(screen.queryByText('Tách theo nhà cung cấp')).toBeNull()
     expect(screen.queryByRole('option', { name: /Theo NCC/ })).toBeNull()
+  })
+
+  //  duoc-CR-777: bản in mở từ đơn truyền thêm hai mẫu thu mua — năm lựa chọn, hai mẫu thu mua đứng đầu.
+  it('from a purchase order with purchasing data shows five templates', async () => {
+    const { onTemplateChange } = renderOptions({ templates: listPrintTemplates(true) })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Mẫu thu mua – có chữ ký',
+      'Mẫu thu mua – không chữ ký',
+      'Mẫu thường – có chữ ký',
+      'Mẫu thường – không chữ ký',
+      'Mẫu thuế',
+    ])
+    await userEvent.click(screen.getByRole('option', { name: 'Mẫu thu mua – không chữ ký' }))
+    expect(onTemplateChange).toHaveBeenCalledWith('purchasing-unsigned')
+  })
+
+  it('the supplier group never offers purchasing templates', async () => {
+    renderOptions({ supplierLayout: { enabled: true }, templates: listPrintTemplates(true) })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    expect(screen.getAllByRole('option')).toHaveLength(6)
+    expect(screen.queryByRole('option', { name: /thu mua/ })).toBeNull()
   })
 
   it('with permission shows both groups, three templates each', async () => {
