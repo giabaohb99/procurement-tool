@@ -272,3 +272,29 @@ def test_nhan_trang_thai_phu_moi_ma_backend_sinh_ra(db, seed):
     for entity, codes in ma_theo_entity.items():
         for code in codes:
             assert _label(entity, code) != code, f"{entity}.{code} chưa có nhãn tiếng Việt"
+
+
+# ── duoc-CR-775: NSPT nói "Mã · Tên" theo hồ sơ, khớp màn Tiến độ ─────────────────────────
+
+def test_doc_read_buyer_is_code_and_current_name_when_linked(db, seed, ho_so, cap_quyen):
+    """Đơn có liên kết hồ sơ: trợ lý nói mã kèm tên HIỆN HÀNH, không đọc lại chữ cũ / mã trần đã lưu."""
+    from app.modules.employee.model import Employee
+
+    emp = Employee(code="NSU775T", full_name="Nguyễn Thu Mua", company_id=seed.company_id, is_active=True)
+    db.add(emp)
+    db.flush()
+    ho_so["po"].nspt_id = emp.id
+    ho_so["po"].nspt = "NM_NV"
+    db.commit()
+    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True)
+    user = db.get(User, seed.u_nstm_id)
+
+    out = T.run_tool(db, user, "procurement_doc_read", {"entity": "purchase_order", "code": "PO-K1"})
+    assert out["header"]["buyer"] == "NSU775T · Nguyễn Thu Mua"
+
+
+def test_doc_read_buyer_keeps_saved_text_when_not_linked(db, seed, ho_so, cap_quyen):
+    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True)
+    user = db.get(User, seed.u_nstm_id)
+    out = T.run_tool(db, user, "procurement_doc_read", {"entity": "purchase_order", "code": "PO-K1"})
+    assert out["header"]["buyer"] == "NV Mua"

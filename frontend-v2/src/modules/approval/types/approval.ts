@@ -263,6 +263,33 @@ export interface ApprovalTrail {
   tasks: ApprovalTask[]
 }
 
+/** Người duyệt DỰ KIẾN của một chặng chưa mở. */
+export interface ApprovalUpcomingApprover {
+  employee_id: number
+  name: string
+  /** Chức vụ — rỗng nếu hồ sơ chưa khai. */
+  position: string
+}
+
+/**
+ * Một chặng CHƯA TỚI LƯỢT của phiên đang chạy (`GET /api/approvals/{id}/upcoming`).
+ * Backend tính bằng cùng vòng lặp với màn xem trước người duyệt dự kiến
+ * (`preview_service.walk_stages`), nên vẫn chỉ là DỰ KIẾN tới lúc chặng mở thật.
+ */
+export interface ApprovalUpcomingStage {
+  seq: number
+  name: string
+  /** Câu quy tắc khai trong luồng, vd "Theo vai trò: Trưởng phòng Nhân sự". */
+  rule_label: string
+  approvers: ApprovalUpcomingApprover[]
+  /** `true` = `approvers` là người DỰ PHÒNG vì quy tắc gốc không ra ai. */
+  fallback_used: boolean
+  /** Ghi chú thêm, vd chặng sẽ tự qua vì trùng người ở chặng trước. */
+  note: string
+  /** Khác rỗng = chặng không có ai duyệt, phiếu sẽ DỪNG ở đó. */
+  unresolved_reason: string
+}
+
 export interface ApprovalSwitch {
   entity: string
   is_enabled: boolean

@@ -56,6 +56,12 @@ import {
   resolveLineCurrency,
 } from '../utils/purchase-order-import-cost'
 import type { LineReportProgress } from '../utils/survey-report-helpers'
+import {
+  applyPriceAfterVatInput,
+  applyPriceBeforeVatInput,
+  repriceOnVatChange,
+  resolveLinePriceAfterVat,
+} from '../utils/vat-price'
 
 /** Thành tiền theo SL ĐẶT — hiện ngay khi gõ, không chờ backend tính lại. */
 export function orderLineAmount(item: PurchaseOrderItem): number {
@@ -165,9 +171,10 @@ function buildColumns(): LinesTableColumn[] {
 /**
  * Đơn giá sau VAT làm tròn 2 số lẻ (bao-CR-307) — 166.666,67 × 1,08 phải ra 180.000 chứ
  * không phải 180.000,0036. Ô hiển thị và cột xếp dùng chung để hai nơi không lệch.
+ * duoc-CR-776: dòng vừa gõ giá sau VAT thì hiện đúng số đã gõ (`utils/vat-price.ts`).
  */
 function priceAfterVat(item: PurchaseOrderItem): number {
-  return Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) / 100
+  return resolveLinePriceAfterVat(item, item.vat)
 }
 
 /** Lịch sử có ghi thì lấy, không thì giữ nguyên thứ đang có trên dòng. */
@@ -220,7 +227,9 @@ const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
  * `PurchaseOrderItemCard`). Thêm ô sửa tại chỗ mới vào bảng mà hộp không có thì
  * thêm khóa vào đây; cột không có trong bộ cột (VAT ở đơn nhập khẩu) tự bị bỏ.
  */
-const CARD_INLINE_EDIT_KEYS = ['code', 'qty', 'price', 'vat'] as const
+//  duoc-CR-776: thêm ô sau VAT đứng cạnh Đơn giá / VAT — hộp chi tiết cũng có, nhưng ba ô tính
+//  qua lại lẫn nhau thì phải đứng chung một chỗ mới thấy được ô kia tự đổi.
+const CARD_INLINE_EDIT_KEYS = ['code', 'qty', 'price', 'vat', 'price_after_vat'] as const
 
 /**
  * Bảng dòng hàng của ĐMH hỗ trợ:
@@ -303,7 +312,8 @@ export function PurchaseOrderItemsTable({
     patch(index, {
       unit: history.unit || current.unit,
       qty_order: Number(history.qty_order) || 0,
-      price: Number(history.price) || 0,
+      //  duoc-CR-776: giá lấy từ lịch sử là giá trước thuế — bỏ số sau VAT đã gõ.
+      ...applyPriceBeforeVatInput(Number(history.price) || 0),
       // VAT ngoài danh sách chọn thì giữ mức cũ, không thì ô VAT hiện trống trơn.
       // Đơn nhập khẩu giữ VAT dòng = 0 (thuế GTGT nằm ở chi phí lô hàng).
       vat: importMode ? 0 : PO_VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat,
@@ -506,9 +516,11 @@ export function PurchaseOrderItemsTable({
           <NumberCell
             value={item.price}
             editable={cellEditable}
-            onChange={(value) => patch(index, { price: value })}
+            // duoc-CR-776: gõ trước thuế thì ô sau VAT tự tính lại theo đơn giá này.
+            onChange={(value) => patch(index, applyPriceBeforeVatInput(value))}
             format={formatUnitPrice}
             maxDecimals={PRICE_MAX_DECIMALS}
+            ariaLabel={`Đơn giá dòng ${index + 1}`}
           />
         )
 
@@ -516,9 +528,15 @@ export function PurchaseOrderItemsTable({
         return cellEditable ? (
           <Select
             value={String(item.vat ?? 0)}
-            onValueChange={(value) => patch(index, { vat: Number(value) })}
+            // duoc-CR-776: đổi VAT giữ ô gõ gần nhất — vừa gõ sau VAT thì tính lại đơn giá.
+            onValueChange={(value) =>
+              patch(index, {
+                vat: Number(value),
+                ...repriceOnVatChange(item, item.vat, Number(value)),
+              })
+            }
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" aria-label={`VAT dòng ${index + 1}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -535,8 +553,18 @@ export function PurchaseOrderItemsTable({
 
       // bao-CR-307: đơn giá sau VAT làm tròn 2 số lẻ — 166.666,67 × 1,08 phải ra
       // 180.000 chứ không phải 180.000,0036
+      // duoc-CR-776: ô sửa được — gõ giá sau VAT thì tính ngược đơn giá trước thuế.
       case 'price_after_vat':
-        return (
+        return cellEditable ? (
+          <NumberCell
+            value={priceAfterVat(item)}
+            editable
+            onChange={(value) => patch(index, applyPriceAfterVatInput(value, item.vat))}
+            format={formatUnitPrice}
+            maxDecimals={2}
+            ariaLabel={`Đơn giá sau VAT dòng ${index + 1}`}
+          />
+        ) : (
           <span className="tabular-nums font-semibold">
             {formatUnitPrice(priceAfterVat(item))}
           </span>
@@ -824,12 +852,15 @@ function NumberCell({
   onChange,
   format,
   maxDecimals,
+  ariaLabel,
 }: {
   value: number
   editable: boolean
   onChange: (value: number) => void
   format: (value: number) => string
   maxDecimals?: number
+  /** Tên đọc của ô (ô trong bảng không có nhãn riêng) — hai ô giá cạnh nhau phải phân biệt được. */
+  ariaLabel?: string
 }) {
   if (!editable) return <span className="tabular-nums">{format(value || 0)}</span>
 
@@ -839,6 +870,7 @@ function NumberCell({
       value={value ?? 0}
       maxDecimals={maxDecimals}
       onChange={onChange}
+      aria-label={ariaLabel}
     />
   )
 }

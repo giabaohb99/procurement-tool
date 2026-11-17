@@ -193,12 +193,13 @@ function renderPage(initialEntry: string | { pathname: string; state: unknown })
   return { ...view, queryClient }
 }
 
+/**
+ * Ô ĐƠN GIÁ (trước thuế) của từng dòng, theo tên đọc của ô. duoc-CR-776 thêm ô *Đơn giá sau VAT*
+ * sửa được trên cùng hàng, nên cách cũ (lấy ô số thứ hai của mỗi cặp SL / giá) trỏ nhầm ô.
+ */
 function priceInputs(): HTMLInputElement[] {
   const table = screen.getByRole('table')
-  return within(table)
-    .getAllByRole('textbox')
-    .filter((input) => (input as HTMLInputElement).inputMode === 'decimal')
-    .filter((_, index) => index % 2 === 1) as HTMLInputElement[]
+  return within(table).getAllByRole('textbox', { name: /^Đơn giá dòng \d+$/ }) as HTMLInputElement[]
 }
 
 function lastPayload() {

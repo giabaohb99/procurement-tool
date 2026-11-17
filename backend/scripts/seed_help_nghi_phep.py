@@ -68,6 +68,14 @@ Nhân sự và Loại nghỉ thêm chế độ *Cộng dần sau mỗi tháng l�
 `hr/config/leave-type-crud.tsx`, nhãn tình trạng ở `leave/constants.py` (`LEAVE_ACCRUAL_STATUS_LABELS`). Chạy LOCAL / dev;
 prod theo đợt đồng bộ Help Center riêng.
 
+Bản 10 (17/11/2026, duoc-CR-766): thẻ *Lịch sử phê duyệt* ở chi tiết đơn nghỉ / phiếu nghỉ bù / phiếu thanh toán nghỉ phép có
+khối *Chặng tiếp theo (dự kiến)* khi đơn còn chạy trong luồng (mỗi chặng một dòng *người duyệt dự kiến · Chặng N: tên chặng*,
+*Chưa xác định người duyệt* kèm lý do, *Tự động qua*), mốc *đã bắt đầu trình duyệt* ghi tên luồng in đậm, Trợ lý AI trả lời
+được câu *duyệt xong thì tới ai*. Bài Theo dõi thêm mục *Đơn đang ở chặng nào, duyệt xong thì tới ai*; bài Nộp đơn, Duyệt, Nghỉ
+bù, Thanh toán nghỉ phép và Phân quyền thêm câu trỏ sang. Nhãn đối chiếu bằng đọc
+`approval/components/approval-trail-{card,upcoming-event}.tsx`, `approval/helpers/split-quoted-name.ts`, câu ghi chú ở
+`approval/preview_service.py` và màn thật localhost:8083 (đơn NP001).
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
     # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
@@ -321,6 +329,7 @@ Nháp  ─────────────────────►  Chờ
 <li>Số ngày bị <strong>giữ chỗ</strong> ngay, trừ khỏi <strong>còn lại</strong>.</li>
 <li>Đơn khóa, không sửa được nữa.</li>
 <li>Việc rơi vào hộp <em>Cần tôi duyệt</em> của người ký chặng 1, kèm thông báo chuông.</li>
+<li>Thẻ <strong>Lịch sử phê duyệt</strong> trên trang chi tiết đơn cho biết ai đang giữ đơn, và khối <strong>Chặng tiếp theo (dự kiến)</strong> cho biết duyệt xong thì đơn sẽ tới ai.</li>
 <li>Ký hết các chặng thì đơn thành <strong>Đã duyệt</strong>: quỹ trừ thật, và hệ <strong>tự sinh Giấy nghỉ phép</strong> bên Văn thư.</li>
 </ol>
 <p>Theo dõi tiếp ở {ref(THEO_DOI, "Theo dõi, sửa và hủy đơn nghỉ")}. Bị chặn không gửi được thì tra câu báo lỗi ở {ref(BAO_LOI, "bài Gặp câu báo lỗi")}.</p>""",
@@ -468,7 +477,7 @@ Nháp  ─────────────────────►  Chờ
         {
             "title": THEO_DOI,
             "icon": "clipboard-list",
-            "summary": "Ba tab, sáu trạng thái, bảng làm-được-gì, khác nhau giữa xóa và hủy",
+            "summary": "Ba tab, sáu trạng thái, đơn đang ở chặng nào và duyệt xong thì tới ai, bảng làm-được-gì, khác nhau giữa xóa và hủy",
             "content": f"""<h2>Theo dõi, sửa và hủy đơn nghỉ</h2>
 
 <h2>Ba tab trong màn Đơn nghỉ phép</h2>
@@ -503,6 +512,25 @@ Nháp  ─────────────────────►  Chờ
 </tbody>
 </table>
 <p>⚠️ <strong>Từ chối khác Trả về chỉnh sửa</strong> — một cái là dẹp, một cái là mời sửa. Hai chữ giống nhau về cảm giác nhưng khác hẳn về việc bạn phải làm tiếp. Đọc kỹ ô lý do người duyệt ghi; lý do luôn hiện trên dòng thời gian của đơn.</p>
+
+<h2>Đơn đang ở chặng nào, duyệt xong thì tới ai</h2>
+<p>Mở đơn ra, kéo xuống thẻ <strong>Lịch sử phê duyệt</strong>. Dòng thời gian xếp <strong>mới nhất trước</strong>, nên khi đơn còn chạy trong luồng (nhãn <strong>Đang chạy</strong> cạnh tên thẻ) bạn đọc từ trên xuống như sau:</p>
+<ol>
+<li><strong>Chặng tiếp theo (dự kiến)</strong> — các chặng chưa tới lượt, mỗi chặng một dòng dạng <em>Nguyễn Văn A · Chặng 2: Trưởng phòng Nhân sự duyệt</em>: tên người sẽ duyệt, rồi số chặng và tên chặng.</li>
+<li><strong>Đang chờ phản hồi</strong> — người đang giữ đơn, chặng hiện tại và <strong>Hạn xử lý</strong>.</li>
+<li>Các mốc đã qua: ai đã duyệt chặng nào, lúc mấy giờ, ghi ý kiến gì. Gần cuối thẻ, ngay trên dòng <em>… đã lập đơn</em>, là mốc <em>… đã bắt đầu trình duyệt</em>, kèm dòng <em>Trình duyệt theo luồng</em> và tên luồng <strong>in đậm</strong>, ví dụ <em>Trình duyệt theo luồng <strong>Duyệt đơn nghỉ phép</strong> bản 3</em>.</li>
+</ol>
+<p>Một dòng trong khối <strong>Chặng tiếp theo (dự kiến)</strong> có thể ghi:</p>
+<table>
+<thead><tr><th>Dòng ghi</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td>Tên một hay vài người</td><td>Theo luồng hiện tại, chặng đó sẽ giao cho những người này. Có dòng chữ nhỏ <em>Không tìm được người duyệt theo quy tắc — sẽ chuyển cho người dự phòng.</em> thì tên đang hiện là <strong>người dự phòng</strong> của chặng.</td><td>Không cần làm gì.</td></tr>
+<tr><td><strong>Tự động qua</strong></td><td>Mọi người của chặng đó đã duyệt ở chặng trước, nên chặng tự qua, không ai phải bấm thêm.</td><td>Không cần làm gì.</td></tr>
+<tr><td><strong>Chưa xác định người duyệt</strong> kèm một dòng đỏ, ví dụ <em>Không tìm được người duyệt cho chặng … — phiếu sẽ DỪNG LẠI ở đây và cần quản trị sửa luồng.</em></td><td>Luồng không tìm ra ai cho chặng đó (thường do thiếu trưởng bộ phận hoặc thiếu người dự phòng).</td><td>Báo phòng Nhân sự hoặc quản trị ngay, <strong>trước khi</strong> đơn tới chặng đó, để họ bổ sung người còn thiếu và đơn khỏi kẹt.</td></tr>
+</tbody>
+</table>
+<p>⚠️ Đây chỉ là <strong>dự kiến</strong>. Người thật được chốt lúc chặng mở: nếu giữa chừng đổi trưởng bộ phận, đổi vai trò hay chuyển việc thì người nhận có thể khác tên đang hiện. Đơn đã xong (đã duyệt, từ chối, trả về hay đã hủy) thì không còn khối này.</p>
+<p>Phiếu nghỉ bù và phiếu thanh toán nghỉ phép có cùng thẻ <strong>Lịch sử phê duyệt</strong> và cùng khối này. Bạn cũng có thể hỏi Trợ lý AI <em>đơn nghỉ của tôi duyệt xong thì tới ai</em>: trợ lý trả lời người đang giữ đơn và người duyệt dự kiến của các chặng sau.</p>
 
 <h2>Ở trạng thái nào thì làm được gì</h2>
 <table>
@@ -557,7 +585,7 @@ Nháp  ─────────────────────►  Chờ
 <li><strong>Bàn giao công việc</strong> — mục này <strong>luôn hiện, kể cả khi trống</strong>, và khi trống thì nói thẳng <em>Người nộp chưa khai ai nhận bàn giao trong thời gian nghỉ.</em></li>
 </ol>
 <p>⚠️ Mục bàn giao luôn hiện là <strong>cố ý</strong>: người duyệt phải phân biệt được <em>"người nộp chưa khai ai"</em> với <em>"màn hình thiếu mục đó"</em>. Mà thiếu người bàn giao chính là <strong>lý do trả đơn phổ biến nhất</strong> — nó phải nói thành lời, không để suy ra từ một khoảng trống.</p>
-<p>Bên dưới là <strong>dòng thời gian duyệt</strong>: ai đã ký chặng nào, lúc mấy giờ, ghi ý kiến gì.</p>
+<p>Bên dưới là thẻ <strong>Lịch sử phê duyệt</strong>: ai đã ký chặng nào, lúc mấy giờ, ghi ý kiến gì. Đầu thẻ có khối <strong>Chặng tiếp theo (dự kiến)</strong> cho biết bạn duyệt xong thì đơn sẽ tới ai; cách đọc khối này ở {ref(THEO_DOI, "bài Theo dõi, sửa và hủy đơn nghỉ")}.</p>
 
 <h2>Ba nút</h2>
 <table>
@@ -651,7 +679,7 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Ai duyệt và duyệt thế nào</h2>
 <ul>
-<li>Công ty đã khai <strong>luồng duyệt</strong> cho <em>Phiếu nghỉ bù</em> ở phân hệ Phê duyệt thì phiếu đi qua luồng đó; người được giao mở phiếu (từ thông báo chuông hoặc <em>Cần tôi duyệt</em>) và bấm <strong>Duyệt phiếu</strong>, <strong>Trả về</strong> hoặc <strong>Từ chối</strong>. Trả về và Từ chối bắt ghi lý do.</li>
+<li>Công ty đã khai <strong>luồng duyệt</strong> cho <em>Phiếu nghỉ bù</em> ở phân hệ Phê duyệt thì phiếu đi qua luồng đó; người được giao mở phiếu (từ thông báo chuông hoặc <em>Cần tôi duyệt</em>) và bấm <strong>Duyệt phiếu</strong>, <strong>Trả về</strong> hoặc <strong>Từ chối</strong>. Trả về và Từ chối bắt ghi lý do. Thẻ <strong>Lịch sử phê duyệt</strong> trên trang chi tiết phiếu có khối <strong>Chặng tiếp theo (dự kiến)</strong> cho biết duyệt xong chặng này thì phiếu tới ai, đọc như ở {ref(THEO_DOI, "đơn nghỉ phép")}.</li>
 <li>Chưa khai luồng thì người có quyền duyệt Phiếu nghỉ bù bấm thẳng <strong>Duyệt phiếu</strong> hoặc <strong>Từ chối</strong> trên trang chi tiết.</li>
 <li>⚠️ <strong>Không ai tự duyệt được phiếu nghỉ bù của chính mình</strong>, bất kể công tắc ở Cài đặt nhân sự, vì phiếu này tạo ra ngày phép mới. Trong luồng, bước chỉ có chính người nghỉ sẽ chuyển cho người dự phòng của bước (không có người dự phòng thì phiếu dừng lại chờ quản trị sửa luồng); khi duyệt thẳng, người nghỉ bấm duyệt sẽ nhận câu <em>Bạn không được tự duyệt phiếu nghỉ bù của chính mình.</em></li>
 </ul>
@@ -766,7 +794,7 @@ Nghỉ việc:
 <h2>Gửi duyệt và duyệt</h2>
 <ul>
 <li><strong>Gửi duyệt</strong>: số ngày bị <strong>giữ chỗ</strong> ngay (vào cột Chờ duyệt của quỹ, trừ khỏi số còn lại), phiếu khóa không sửa được.</li>
-<li>Công ty đã khai <strong>luồng duyệt</strong> cho <em>Thanh toán nghỉ phép</em> ở phân hệ Phê duyệt thì người được giao mở phiếu (từ thông báo chuông hoặc phạm vi <em>Cần tôi duyệt</em>) và bấm <strong>Duyệt phiếu</strong>, <strong>Trả về</strong> hoặc <strong>Từ chối</strong>.</li>
+<li>Công ty đã khai <strong>luồng duyệt</strong> cho <em>Thanh toán nghỉ phép</em> ở phân hệ Phê duyệt thì người được giao mở phiếu (từ thông báo chuông hoặc phạm vi <em>Cần tôi duyệt</em>) và bấm <strong>Duyệt phiếu</strong>, <strong>Trả về</strong> hoặc <strong>Từ chối</strong>. Thẻ <strong>Lịch sử phê duyệt</strong> trên trang chi tiết phiếu có khối <strong>Chặng tiếp theo (dự kiến)</strong> cho biết duyệt xong chặng này thì phiếu tới ai, đọc như ở {ref(THEO_DOI, "đơn nghỉ phép")}.</li>
 <li>Chưa khai luồng thì người có quyền duyệt (phòng Nhân sự) bấm thẳng <strong>Duyệt phiếu</strong> hoặc <strong>Từ chối</strong> trên trang chi tiết. Từ chối bắt ghi lý do (tối đa 500 ký tự).</li>
 <li><strong>Từ chối</strong>, <strong>Trả về</strong> hay hủy phiếu đang chờ duyệt đều <strong>trả lại</strong> số ngày đang giữ chỗ. Trả về thì sửa rồi gửi lại, vẫn số phiếu cũ; từ chối thì phiếu đóng hẳn, muốn làm lại thì lập phiếu mới.</li>
 </ul>
@@ -1331,6 +1359,7 @@ Nghỉ việc:
 <p>Khai ở phân hệ <strong>Phê duyệt</strong> cho loại chứng từ <em>Đơn nghỉ phép</em> (và riêng cho <em>Phiếu nghỉ bù</em>, <em>Thanh toán nghỉ phép</em> nếu muốn phiếu đi luồng; chưa khai thì phòng Nhân sự duyệt thẳng). Luồng mẫu: <strong>trưởng bộ phận của người xin nghỉ → trưởng phòng Nhân sự</strong>.</p>
 <ul>
 <li>⚠️ <strong>Mỗi chặng PHẢI khai người dự phòng.</strong> Hệ loại người nộp khỏi danh sách người ký, nên trưởng phòng tự xin nghỉ thì chặng đó rỗng và <strong>đơn kẹt vĩnh viễn</strong> — mà quản lý thì cũng phải nghỉ phép. Bật <strong>Chặn tự duyệt đơn nghỉ</strong> ở Cài đặt nhân sự thì cả bước khai đích danh cũng né người nghỉ, nên người dự phòng càng cần.</li>
+<li>Đơn đang chạy hiện khối <strong>Chặng tiếp theo (dự kiến)</strong> ở thẻ <strong>Lịch sử phê duyệt</strong>. Có người báo một chặng ghi <strong>Chưa xác định người duyệt</strong> thì bổ sung người còn thiếu (ví dụ khai trưởng bộ phận cho phòng của người nghỉ) <strong>trước khi</strong> đơn tới chặng đó: người duyệt của một chặng chỉ chốt lúc chặng mở, nên bổ sung kịp là đơn không kẹt. Đơn đã gửi chạy theo bản luồng lúc gửi, nên thêm người dự phòng vào luồng chỉ có tác dụng với đơn gửi sau.</li>
 <li><strong>Chưa khai luồng nào thì vẫn nộp được</strong>: lúc đó người có quyền duyệt bấm <strong>Duyệt đơn</strong> thẳng ở màn chi tiết. Không có đường lùi này thì cài mới xong là không ai nghỉ nổi.</li>
 <li>Đơn <em>đang</em> chạy trong luồng thì đường duyệt thẳng <strong>bị chặn</strong> — nếu không thì đó là lối đi vòng qua cả luồng.</li>
 </ul>

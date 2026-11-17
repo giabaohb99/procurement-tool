@@ -15,7 +15,8 @@ interface ComboboxValueProps {
 }
 
 /**
- * Ô chọn một giá trị từ danh sách nạp động (`field.fetchOptions`).
+ * Ô chọn một giá trị từ danh sách nạp động (`field.fetchOptions`) — dùng cho cả kiểu
+ * `combobox` lẫn kiểu `select` chỉ khai `fetchOptions` (duoc-CR-778).
  *
  * FilterCN gốc dùng `cmdk`; ở đây dựng lại bằng Popover + Input + danh sách
  * nút bấm để khỏi thêm phụ thuộc. Lọc do SERVER làm — mỗi lần gõ là một lần
@@ -23,15 +24,22 @@ interface ComboboxValueProps {
  */
 export function ComboboxValue({ field, value, onChange }: ComboboxValueProps) {
   const [open, setOpen] = useState(false)
-  const { options, loading, search } = useFilterOptions(field.fetchOptions)
+  const { options, labels, loading, search } = useFilterOptions(field.fetchOptions)
 
-  const selectedLabel =
-    options.find((option) => option.value === value)?.label || value || 'Chọn giá trị…'
+  //  duoc-CR-778: tra nhãn trong sổ đã nạp chứ không chỉ trong lượt tìm hiện tại — gõ tìm
+  //  một chữ khác là mục đang chọn rơi khỏi `options` và ô chỉ còn hiện cái id.
+  const selectedLabel = labels[value] || value || 'Chọn giá trị…'
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="min-w-40 flex-1 justify-between font-normal">
+        <Button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          variant="outline"
+          className="min-w-40 flex-1 justify-between font-normal"
+        >
           <span className="truncate">{selectedLabel}</span>
           <ChevronsUpDown className="opacity-50" />
         </Button>

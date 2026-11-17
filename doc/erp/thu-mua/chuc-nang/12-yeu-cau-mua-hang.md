@@ -288,6 +288,11 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Dùng trong công thức tính Thành tiền cùng với `vat_pct`.
+- Nhập bằng giá sau VAT (duoc-CR-776, 17/11/2026): dòng hàng có thêm ô **Đơn giá sau VAT** sửa được ngay cạnh (bảng dòng và hộp chi
+  tiết dòng, cả giao diện cũ lẫn mới). Gõ ô nào ô kia tự tính: sau VAT = làm tròn 2 số lẻ của `price × (100 + VAT) / 100`;
+  `price` = làm tròn 4 số lẻ của `sau VAT × 100 / (100 + VAT)`. Đổi VAT %: vừa gõ ô sau VAT thì giữ giá sau VAT, còn lại
+  giữ `price`. Máy chủ chỉ lưu `price`; ô sau VAT là cách nhập, không có cột riêng. Kế hoạch:
+  [`plans/261117-nhap-gia-sau-vat-duoc-cr-776`](../plans/261117-nhap-gia-sau-vat-duoc-cr-776/plan.md).
 
 ### 8. % VAT theo dòng (`vat_pct`)
 
@@ -499,6 +504,15 @@ Hai mẫu chọn bằng nút gạt ở đầu trang:
 Riêng **Mẫu thường** có thêm nút **Có chữ ký / Không chữ ký** (CR-036): "Không chữ ký" bỏ ảnh chữ ký số
 nhưng **vẫn in họ tên** dưới ô — dành cho bản đem đi ký tay, đúng nghĩa dòng *"(Ký, ghi rõ họ tên)"*.
 Mẫu thuế không có nút này vì vốn để trống toàn bộ.
+
+**Mẫu thu mua – có chữ ký / không chữ ký** (duoc-CR-777, 17/11/2026) — CHỈ khi in phiếu **từ Đơn mua hàng**
+(`/print/purchase-request-from-po/:id`), và chỉ hiện với người **đọc được đơn đó**. Người đề xuất (kèm chức vụ, bộ phận) =
+người đang in; Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó; NCC do bộ phận đề xuất và bảng hàng theo
+**ĐMH** (SL đặt, đơn giá; Thành tiền dòng trước VAT, tiền VAT và tổng thanh toán dòng riêng); ô *Người lập* = chữ ký người
+in, ô *TP/BP đề xuất* = chữ ký quản lý trực tiếp, hai ô còn lại như mẫu thường. Hai mẫu đứng đầu ô Mẫu in nhưng mở màn
+vẫn chọn sẵn *Mẫu thường – có chữ ký* (bao-CR-779). Dữ liệu từ
+`GET /api/purchase-orders/{pid}/purchasing-print`; kế hoạch
+[`plans/261117-mau-in-thu-mua-duoc-cr-777`](../plans/261117-mau-in-thu-mua-duoc-cr-777/plan.md).
 
 **Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã PYC>-DDMMYYYY`** (ví dụ `PYC07082601-31072026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), không lấy ngày bấm in. Không phụ thuộc `show_code_on_print`: cờ đó chỉ chi phối việc **in mã lên giấy**, còn tên file thì luôn cần mã để phân biệt. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](13-don-mua-hang.md).
 

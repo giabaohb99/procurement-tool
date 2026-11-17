@@ -97,6 +97,10 @@ def sync_employee_ref(db: Session, obj, id_field: str, name_field: str) -> None:
 
     Có id thì TÊN chạy theo id (đổi tên nhân sự là phiếu in ra tên mới). Chỉ có tên thì suy
     ngược ra id. Không suy ra được thì giữ tên, `id = 0` — phần lùi nằm ở `scoping._emp_match`.
+
+    duoc-CR-775: ô tên nhận phải MÃ nhân sự (giao diện gửi `assignee` của YCMH, tệp Excel ghi mã) thì
+    tra theo mã — mã là duy nhất nên không nhập nhằng — rồi thay chữ bằng họ tên đầy đủ. Chỉ thử khi tra
+    theo tên không ra, để một họ tên thật không bao giờ bị đọc nhầm thành mã.
     """
     eid = int(getattr(obj, id_field, 0) or 0)
     if eid:
@@ -105,8 +109,14 @@ def sync_employee_ref(db: Session, obj, id_field: str, name_field: str) -> None:
             setattr(obj, name_field, emp.full_name or "")
             return
         setattr(obj, id_field, 0)
-    setattr(obj, id_field, emp_id_by_name(db, getattr(obj, name_field, "") or "",
-                                          int(getattr(obj, "company_id", 0) or 0)))
+    text = getattr(obj, name_field, "") or ""
+    eid = emp_id_by_name(db, text, int(getattr(obj, "company_id", 0) or 0))
+    if not eid:
+        eid = emp_id_by_code(db, text)
+        emp = db.get(Employee, eid) if eid else None
+        if emp:
+            setattr(obj, name_field, emp.full_name or "")
+    setattr(obj, id_field, eid)
 
 
 def list_employees(db: Session, base_query, pg: dict):

@@ -49,6 +49,21 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 - ***Tên trên hóa đơn*** của dòng ĐMH: để **trống** thì hệ **tự điền từ danh mục Sản phẩm** (theo mã hàng) lúc lưu, lúc sao
   chép ĐMH và lúc nhập Excel. Đã gõ tên thì giữ nguyên; sản phẩm chưa khai tên trên hóa đơn thì ô vẫn trống (hệ không đoán từ tên hàng).
 - **Báo cáo mua hàng gom theo phòng hiện hành**: phòng đổi tên thì báo cáo hiện tên mới, không tách thành hai dòng.
+- **Nhập đơn giá sau VAT** (từ 17/11/2026): dòng hàng **Yêu cầu mua hàng** và **Đơn mua hàng** (cả giao diện cũ và mới)
+  có hai ô cùng sửa được — *Đơn giá* (chưa VAT) và *Đơn giá sau VAT* (ĐMH ghi *Đơn giá (Sau VAT)*). Gõ ô nào ô kia tự tính;
+  đơn giá chưa VAT tính ngược giữ 4 số lẻ. Đổi VAT %: vừa gõ ô sau VAT thì giữ giá sau VAT, còn lại giữ đơn giá chưa VAT.
+  Hệ thống vẫn LƯU đơn giá chưa VAT; công nợ, bản in không đổi. Yêu cầu báo giá / phiếu khảo sát chưa có ô này.
+  Người dùng nhờ trợ lý **sửa giá dòng ĐMH bằng giá đã gồm VAT** → gửi `price_after_vat` (không gửi `price`) trong `po_lines`
+  của `propose_document_update`; máy tự tính đơn giá chưa VAT. **Không tự chia nhẩm** rồi gửi `price`.
+- **Mẫu thu mua khi in phiếu đề xuất từ Đơn mua hàng** (từ 17/11/2026): màn in YCMH từ ĐMH có thêm *Mẫu thu mua – có
+  chữ ký* / *không chữ ký*. Người đề xuất = người đang in, Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó
+  (ký ô TP/BP đề xuất), NCC và bảng hàng theo **ĐMH** (SL đặt, đơn giá). Chỉ người **đọc được đơn đó** mới thấy hai mẫu;
+  khi thấy thì hai mẫu này đứng đầu ô Mẫu in, nhưng mở màn vẫn chọn sẵn *Mẫu thường – có chữ ký* (muốn in mẫu thu mua thì tự chọn).
+  Hỏi *"sao không có ô trưởng phòng / chữ ký"* → hồ sơ chưa gán quản lý trực tiếp hoặc người đó chưa tải chữ ký.
+- **NSPT (nhân sự phụ trách mua) nói dạng *Mã · Tên*** (từ 17/11/2026): màn Tiến độ mua hàng và trường `buyer` của
+  `procurement_doc_read` / `pending_procurement_approvals` trả mã nhân sự kèm tên **hiện hành** theo hồ sơ (vd *NSU209 ·
+  Nguyễn Văn A*). Đơn cũ chưa gắn hồ sơ chỉ có chữ đã lưu (vd *Mr Tiên*) — đọc nguyên chữ đó, **đừng đoán** là ai. Hỏi
+  *"vì sao đơn hiện mã trần / tên lạ"* thì nói: đó là đơn cũ chưa gắn hồ sơ, mở đơn chọn lại NSPT rồi lưu là xong.
 
 ## Tên nút trên màn Thu mua (từ 09/11/2026, giao diện mới và cũ ghi giống nhau)
 

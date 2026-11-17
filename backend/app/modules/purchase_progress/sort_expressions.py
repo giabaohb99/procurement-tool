@@ -11,6 +11,7 @@ from sqlalchemy import case, func, select
 from app.core.code_rank_sql import build_code_rank_expression
 from app.core.status_codes import PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.modules.company.model import Company
+from app.modules.employee.model import Employee
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
 
@@ -50,4 +51,10 @@ def get_computed_sort_expression(key: str):
         #  Ô bày tên NCC, thiếu tên thì lùi về mã NCC — xếp theo đúng chữ đang hiện.
         return func.coalesce(func.nullif(PurchaseOrder.supplier_name, ""),
                              PurchaseOrder.supplier_code)
+    if key == "nspt":
+        #  duoc-CR-775: ô NSPT bày "MÃ · Tên" (mã tra theo `nspt_id`), nên xếp theo MÃ nhân sự; đơn chưa liên kết
+        #  hồ sơ bày chữ đã lưu nên lùi về chữ đó. Ô trống vẫn xuống cuối nhờ `build_blank_last_order`.
+        code = (select(Employee.code).where(Employee.id == PurchaseOrder.nspt_id)
+                .limit(1).scalar_subquery())
+        return func.coalesce(func.nullif(code, ""), func.nullif(PurchaseOrder.nspt, ""))
     return None

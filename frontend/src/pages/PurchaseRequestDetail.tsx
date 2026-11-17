@@ -14,6 +14,7 @@ import SearchSelect from '../components/SearchSelect'
 import { loadApproverCandidates } from '../components/approverCandidates'
 import NumberInput from '../components/NumberInput'
 import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
+import { POST_VAT_DECIMALS, getPostVatDisplay, patchOnPreVatEdit, patchOnPostVatEdit, patchOnVatChange, stripVatPriceClientFields } from '../utils/vatPrice'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
@@ -420,6 +421,13 @@ export default function PurchaseRequestDetail() {
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
     setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
+  // duoc-CR-776: nhập đơn giá theo hai chiều. Gõ trước thuế -> giữ trước thuế; gõ sau VAT -> tính ngược
+  // `price`; đổi VAT % -> giữ ô vừa gõ gần nhất. `_postVat` / `_lastPriceField` chỉ ở giao diện (bóc khi lưu).
+  const patchItemFn = (i: number, fn: (it: any) => any) =>
+    setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...fn(it) } : it) }))
+  const setItemPrice = (i: number, v: number) => patchItemFn(i, (it) => patchOnPreVatEdit(it, v))
+  const setItemPostVat = (i: number, v: number) => patchItemFn(i, (it) => patchOnPostVatEdit(it, v, it.vat_pct ?? 8))
+  const setItemVat = (i: number, v: number) => patchItemFn(i, (it) => ({ vat_pct: v, ...patchOnVatChange(it, it.vat_pct ?? 8, v) }))
   /** bao-CR-759: chọn kho -> ghi cả TÊN lẫn MÃ kho (đổi tên kho trong danh mục không làm dòng mất liên kết).
    *  Trùng tên thì lấy kho đứng trước trong danh mục — cùng luật máy chủ dùng khi suy mã từ tên. */
   const setWarehouse = (i: number, name: string) =>
@@ -694,7 +702,7 @@ export default function PurchaseRequestDetail() {
       supplier_pur: { name: pr.supplier_pur?.name || '', tax_code: pr.supplier_pur?.tax_code || '', contact: pr.supplier_pur?.contact || '' },
       // `_pendingImgs` là File giữ ở client (ảnh đối chiếu của dòng chưa lưu) — không phải
       // dữ liệu phiếu, phải bỏ khỏi body rồi upload riêng sau khi có id dòng.
-      items: guiItems.map((it: any) => { const { _pendingImgs, ...rest } = it; return rest }),
+      items: guiItems.map((it: any) => { const { _pendingImgs, ...rest } = it; return stripVatPriceClientFields(rest) }),   // duoc-CR-776: bóc cả _postVat / _lastPriceField
     }
     try {
       if (isNew) {
@@ -1222,7 +1230,7 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: (showAssigneeCol ? 1697 : 1537) + (bulkRemovable ? 36 : 0), tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: (showAssigneeCol ? 1832 : 1672) + (bulkRemovable ? 36 : 0), tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     {bulkRemovable && (
@@ -1239,6 +1247,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 70, textAlign: 'right' }}>SL</th>
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 64, textAlign: 'right' }} title="% VAT theo dòng">VAT%</th>
+                    <th style={{ width: 135, textAlign: 'right' }} title="Gõ giá đã gồm VAT, hệ thống tự tính đơn giá chưa VAT">Đơn giá sau VAT</th>
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
                     {/* CR-078: cột đủ chỗ cho nhãn dài nhất "Chưa tạo đơn mua hàng" (CR-074) — hẹp hơn thì pill tràn đè cột Tiến độ */}
                     <th style={{ width: 195, textAlign: 'center' }}>Trạng thái</th>
@@ -1339,13 +1348,19 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <NumberInput value={it.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItem(i, 'price', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
+                          <NumberInput value={it.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItemPrice(i, v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
                         ) : fmtPriceBlank(it.price)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <NumberInput value={it.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} onChange={(v) => setItem(i, 'vat_pct', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="% VAT" />
+                          <NumberInput value={it.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} onChange={(v) => setItemVat(i, v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="% VAT" />
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {/* duoc-CR-776: ô nhập sau VAT -> tự tính đơn giá chưa VAT ở ô bên trái */}
+                        {editable ? (
+                          <NumberInput value={getPostVatDisplay(it, it.vat_pct ?? 8)} maxDecimals={POST_VAT_DECIMALS} onChange={(v) => setItemPostVat(i, v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
+                        ) : fmtBlank(getPostVatDisplay(it, it.vat_pct ?? 8))}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
                       <td style={{ textAlign: 'center' }} title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
@@ -1382,7 +1397,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={(showAssigneeCol ? 15 : 14) + (bulkRemovable ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={(showAssigneeCol ? 16 : 15) + (bulkRemovable ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1566,11 +1581,15 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Giá đề xuất (chưa VAT)</label>
-                <NumberInput value={edit.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItem(editIdx, 'price', v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
+                <NumberInput value={edit.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItemPrice(editIdx, v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
               </div>
               <div className="form-row">
                 <label title="% VAT theo dòng">VAT (%)</label>
-                <NumberInput value={edit.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!editable} onChange={(v) => setItem(editIdx, 'vat_pct', v)} placeholder="Nhập % VAT (0 – 99,99)" />
+                <NumberInput value={edit.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!editable} onChange={(v) => setItemVat(editIdx, v)} placeholder="Nhập % VAT (0 – 99,99)" />
+              </div>
+              <div className="form-row">
+                <label title="Gõ giá đã gồm VAT, hệ thống tự tính đơn giá chưa VAT">Đơn giá sau VAT</label>
+                <NumberInput value={getPostVatDisplay(edit, edit.vat_pct ?? 8)} maxDecimals={POST_VAT_DECIMALS} disabled={!editable} onChange={(v) => setItemPostVat(editIdx, v)} placeholder="Để trống nếu chưa có giá" />
               </div>
               <div className="form-row">
                 <label>ĐVT</label>

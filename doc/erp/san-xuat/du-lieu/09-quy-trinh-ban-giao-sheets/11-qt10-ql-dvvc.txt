@@ -1,0 +1,27 @@
+# SHEET: 10. QT QL DVVC
+R2: QUY TRÌNH ĐẶT DỊCH VỤ VẬN CHUYỂN (GRAB)
+R3: Số, ký hiệu
+R5: I | MỤC TIÊU
+R6: - Quản lý được chi phí vận chuyển và kiểm soát chi phí theo thương hiệu.
+R7: - Quản lý việc giao nhận giữa các bên và kiểm soát được hàng hóa trong quá trình giao nhận.
+R9: II | THỜI ĐIỂM THỰC HIỆN
+R10: - Khi có nhu cầu gửi hàng cho khách/đối tác/nội bộ
+R12: III | LƯU ĐỒ
+R19: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R20: 1.0 | Tạm ứng | - Thực hiện tạm ứng cá nhân định kỳ theo quy trình tạm ứng kế toán | Đề nghị tạm ứng | ĐP TP (Grab) | P TCKT | QLSX
+R21: 2.0 | Tiếp nhận yêu cầu | 1. Test mẫu TP: / Thực hiện tiếp bước 3 / 2. Tiếp nhận yêu cầu trong BPSX/TM: Thông tin cần cung cấp nhóm zalo 3 / + Kho nhận: Địa chỉ, thông tin người giao nhận / + Kho gửi: Địa chỉ, thông tin người giao nhận / + Nội dung vận chuyển (vận chuyển gì, số lượng bao nhiêu, lưu ý về hàng hóa) / + TH Phân bổ chi phí / + Ngày yêu cầu / + Yêu cầu kho xuất ghi rõ thông tin: Tên mẫu, khối lượng, Công ty: DEGO / => Thực hiện tiếp bước 4 | Nhóm: Đặt hàng + NCC1: /  "VẬN CHUYỂN GRAB" | ĐP TP (Grab) | BPSX / TM
+R22: 3.0 | Lập phiếu đề nghị xuất kho | 1. BPSX có lấy mẫu: / - Đối với NCC GC ĐP TP (Grab) phụ trách --> lập phiếu "Giấy đề nghị xuất vật tư", trình QLSX ký => ĐP TP gửi nhóm zalo 1, và trong ngày gửi bản cứng lên Kế toán / + KD thực hiện trên Misa xuất kho => KD gửi lại hình "Đơn đặt hàng" trên Misa / + ĐP TP gửi hình giấy đề nghị xuất vật tư lên Nhóm: Đặt hàng + NCC / + BP Kho Dr.Xanh tiếp nhận và phản hồi trên nhóm đã có thể xuất hàng / - Đối với NCC GC ĐP TP (Grab) không phụ trách: Tiếp nhận phiếu /  / 2. BPSX không lấy mẫu chỉ thực hiện bước 4 | Giấy đề nghị xuất vật tư | Nhóm zalo 9 /  "MISA XUẤT MẪU + TÊN TH" / Nhóm zalo 18 /  "SX & KHO XUẤT HÀNG" / | ĐP TP (Grab) | P TCKT / KD / BP Kho | QLSX
+R23: 4.0 | Thực hiện thao tác đặt xe & xác nhận shipper | - Thực hiện thao tác đặt dịch vụ vận chuyển (book Grab) trên APP. / Lưu ý: / - Thông báo Shipper ko cung cấp thông tin và chứng từ của bên giao - bên nhận, chỉ chụp gửi người đặt / - Báo grab chụp hình mẫu gửi người đặt / - Xác nhận từ Shipper và thanh toán (từ tài khoản đã tạm ứng) khi hoàn tất giao nhận hàng hóa.  / - Thông tin tới người yêu cầu/ kho nhận về thời gian giao / - ĐP TP thực hiện thao tác yêu cầu xuất hóa đơn trên App (gửi tự động về email của kế toán) | App Grab | ĐP TP (Grab) | BP Kho / Grab | Bổ sung email của BP nhận hóa đơn để bỏ bớt bước đối chiếu
+R24: 5.0 | Đề nghị thanh toán | - Tổng hợp hồ sơ thanh toán, bao gồm: / + Giấy đề nghị thanh toán: (tài khoản App Dego đứng tên) /  * 1 bộ nội bộ phân bổ chi phí theo thương hiệu /  * 1 bộ thuế lấy về Dego / + Toàn bộ hóa đơn trong kỳ (nhận từ Kế toán) / + Bảng kê tổng các lần vận đơn / - Thực hiện đối chiếu hóa đơn với app / - Trình QLSX ký => nộp hồ sơ về kế toán=> kế toán thanh toán lại cá nhân | - Giấy đề nghị thanh toán | THEO DÕI CHI PHÍ / App Grab | ĐP TP (Grab) | P TCKT | QLSX | Trao đổi với kế toán lấy chi phí thuế của grab chia đều cho các Thương hiệu
+R26: V | DANH SÁCH BIỂU MẪU
+R27: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R28: 1.0 | Giấy đề nghị xuất vật tư | Quy trình kế toán
+R29: 2.0 | Giấy đề nghị thanh toán | Quy trình kế toán
+R31: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R32: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R33: 1.0 | THEO DÕI CHI PHÍ | THEO DÕI CHI PHÍ
+R35: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R36: STT | TÊN NHÓM ZALO
+R37: 1.0 | VẬN CHUYỂN GRAB
+R38: 2.0 | MISA XUẤT MẪU - "TÊN THƯƠNG HIỆU"- Lab
+R39: 3.0 | SX & KHO-XUẤT HÀNG

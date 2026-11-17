@@ -1,0 +1,62 @@
+# SHEET: 16. THUẬT NGỮ, VIẾT TẮT
+R1: STT | THUẬT NGỮ/VIẾT TẮT | DIỄN GIẢI | GHI CHÚ
+R2: 1 | BPSX | Bộ phận Sản xuất
+R3: 2 | QLSX | Quản lý sản xuất
+R4: 3 | ĐP | Điều phối
+R5: 4 | GV | Giá vốn
+R6: 5 | GVKD | Giá vốn kinh doanh
+R7: 6 | GVSX | Giá vốn sản xuất
+R8: 7 | NSPL | Nhân sự pháp lý
+R9: 8 | NSPT | Nhân sự phụ trách
+R10: 9 | QLDL | Quản lý dữ liệu
+R11: 10 | XLSC | Xử lý sự cố (NV XLSC: Nhân viên Xử lý sự cố)
+R12: 11 | QLTM | Quản lý Thu mua
+R13: 12 | TM | Thu mua
+R14: 13 | NS | Nhân sự
+R15: 14 | NV | Nhân viên
+R16: 15 | BGĐ | Ban Giám đốc
+R17: 16 | QLTH | Quản lý thương hiệu
+R18: 17 | P TCKT | Phòng Tài chính Kế toán
+R19: 18 | BPTK | Bộ phận Thiết kế
+R20: 19 | R&D/Lab | Research & Development — Nghiên cứu & Phát triển
+R21: 20 | KD | Kinh doanh
+R22: 21 | BPYC | Bộ phận yêu cầu
+R23: 22 | NTV | Nhà máy Niềm Tin Việt
+R24: 23 | NCC GC | Nhà cung cấp gia công
+R25: 24 | APP | Ứng dụng (VD: App Grab)
+R26: 25 | BVTV | Bảo vệ thực vật (VD: Thuốc BVTV)
+R27: 26 | DSQL | Danh sách quản lý (VD: DSQL BTP)
+R28: 27 | BĐM | Bảng định mức
+R29: 28 | BTP | Bán thành phẩm
+R30: 29 | NL/BTP | Nguyên liệu/Bán thành phẩm
+R31: 30 | VTBB | Vật tư bao bì
+R32: 31 | TP | Thành phẩm
+R33: 32 | NK | Nhập khẩu
+R34: 33 | NL | Nguyên liệu
+R35: 34 | ĐVT | Đơn vị tính
+R36: 35 | DVVC | Dịch vụ vận chuyển
+R37: 36 | ĐKBB | Điều kiện Buôn bán
+R38: 37 | ĐKKD | Đăng ký Kinh doanh
+R39: 38 | ĐKSP | Đăng ký Sản phẩm
+R40: 39 | ĐKSX | Điều kiện Sản xuất
+R41: 40 | GCN | Giấy chứng nhận
+R42: 41 | GĐK | Giấy đăng ký
+R43: 42 | HSD | Hạn sử dụng
+R44: 43 | LSX | Lệnh sản xuất
+R45: 44 | Misa | Phần mềm kế toán MISA
+R46: 45 | MOQ | Minimum Order Quantity — Sản lượng đặt hàng tối thiểu
+R47: 46 | MST | Mã số thuế
+R48: 47 | NB | Nội bộ (đối lập với Thuế)
+R49: 48 | NSX | Ngày sản xuất
+R50: 49 | PYC | Phiếu yêu cầu
+R51: 50 | QT | Quy trình
+R52: 51 | SĐT | Số điện thoại
+R53: 52 | STT | Số thứ tự
+R54: 53 | T/H | Trường hợp
+R55: 54 | TH | Thương hiệu
+R56: 55 | TT SP | Thông tin sản phẩm
+R57: 56 | UNC | Ủy nhiệm chi
+R58: 57 | VAT | Value Added Tax — Thuế giá trị gia tăng
+R59: 58 | VD | Ví dụ
+R60: 59 | HH | Hàng hóa
+R61: 60 | TN | Trưởng nhóm

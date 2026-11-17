@@ -1,0 +1,56 @@
+# SHEET: 12. QT XL SỰ CỐ SAU SX
+R1: Đang gộp QT xử lý sự cố, các trường hợp và câu hỏi XLSC, cần xem lại
+R2: QUY TRÌNH XỬ LÝ SỰ CỐ SAU SẢN XUẤT
+R3: Số, ký hiệu
+R5: I | MỤC TIÊU
+R6: Tiếp nhận và đề xuất phương án xử lý phù hợp các sự cố sản xuất phát sinh
+R7: Tối ưu nguồn lực, chi phí và hợp lý thủ tục, chứng từ theo quy định
+R8: Kiểm soát tiến độ xử lý và lưu trữ thông tin, đảm bảo được cập nhật kịp thời và tránh những sự cố tương tự phát sinh về sau
+R10: II | THỜI ĐIỂM THỰC HIỆN
+R11: Khi tiếp nhận thông tin/phát hiện sự cố sản xuất
+R12: Phạm vi quản lý và thực hiện là những sự cố phát sinh sau sản xuất: Hàng hóa thành phẩm tại NCC, tại kho Dr Xanh, hàng đã bán tại khách hàng, hàng hóa trong quá trình vận chuyển...
+R14: III | LƯU ĐỒ
+R20: IV | QUY TRÌNH CHI TIẾT
+R21: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | GHI CHÚ
+R22: 1.0 | Tiếp nhận thông tin | - Tiếp nhận thông tin qua nhóm zalo của các Bộ phận / - Thông tin cần có gồm: / + Hình ảnh & video clip / + Mã hàng, số lượng, NSX / + Chi tiết: Ghi rõ tình trạng, phát hiện tại đâu / + Số lượng đã bán, thời gian giao hàng, số lượng tồn kho tại khách, số lượng tồn tại các kho khác / + Yêu cầu khác: hàng xử lý lại trả khách, giao hàng mới trước - xử lý sau, hàng xử lý lại lưu kho/dùng bán lẻ, ... / - Cập nhật thông tin vào Drive để xử lý và báo cáo phương án, tiến độ xử lý / - Kiểm tra lịch sử hàng lỗi có liên quan | Khi phát sinh | Nhóm zalo | NV XLSC
+R23: 2.0 | Xác định và phân loại sự cố | Dựa vào các đặc điểm dưới đây để phân loại tạm và có phương án xử lý tiếp theo | Khi tiếp nhận thông tin | Drive | NV XLSC
+R24: 2026-01-02 00:00:00 | Pháp lý | - Chưa có hoặc hết hạn các loại:  / + Giấy phép đủ điều kiện sản xuất/mua bán Phân/Thuốc BVTV / + Giấy đăng ký sản phẩm/QĐ công nhận lưu hành / + Hợp chuẩn hợp quy / + Giấy ủy quyền sản phẩm / + Các hợp đồng giao dịch / + Hóa đơn / - Các thông tin về hạn sử dụng: hết hạn, trôi mất thông tin / - Sai thông tin trên nhãn theo quy định
+R25: 2026-02-02 00:00:00 | Hàm lượng, chất lượng | - Thay đổi về màu sắc, mùi, độ nhũ, lắng cặn, lẫn tạp chất, thạch lợn cợn, vón cục, bị đặc, cứng, kết tinh, tách lớp, không tan, phình chai,... / - Sử dụng không hiệu quả, cháy lá, rũ bông, trái méo, kết quả sau sử dụng không giống thông tin ghi trên nhãn... / - Đóng thiếu thể tích
+R26: 2026-03-02 00:00:00 | Vật tư bao bì | - Móp chai, thấm chai/túi, bể chai, đóng sai quy cách chai, nhầm chai/túi / - Bể nắp, xì seal, thiếu cốc đong/ phụ kiện khác / - Dán nhãn lỏng, rách nhãn, nhầm nhãn, dán ngược nhãn, lỗi màu nhãn / - Thùng dơ, thùng rách, thùng rộng/chật, nhầm thùng...
+R27: 2026-04-02 00:00:00 | Vận hành | Giao thiếu số lượng, hàng hư hỏng do vận chuyển,...
+R28: 3.0 | Kiểm tra hóa đơn, dòng pháp lý | - Kiểm tra dòng pháp lý có liên quan đến đơn hàng / - Kiểm tra hóa đơn đầu vào, đầu ra liên quan đến hàng hóa gặp sự cố. Tham vấn P TCKT để thực hiện hủy, điều chỉnh, xuất bổ sung hóa đơn phù hợp với phương án xử lý | Pháp lý sản xuất / Pháp lý chung | P TCKT / ĐP NL/BTP / ĐP VTBB / QLDL / Giá vốn | NV XLSC
+R29: 4.0 | Lập phương án xử lý | - Xác định tính cấp thiết của sự cố, nhu cầu của kinh doanh/khách hàng và điều kiện cho phương án (pháp lý, lượng tồn kho, tiến độ xử lý, chi phí...) / - Trao đổi, thống nhất phương án xử lý với bộ phận yêu cầu (Kinh doanh, kho, NCC GC, QLSX, Lab) / - Thực hiện kiểm tra/đánh giá lại, thu hồi hàng hóa, trả hàng, xử lý và tổng hợp chứng từ, xử lý hàng hóa, ... Tùy sự cố mà áp dụng các biện pháp phù hợp | NV XLSC | NCC GC / Kinh doanh / Lab / Kho / QLSX / Pháp lý SX / BP có liên quan thuộc SX
+R30: 4.1 | Pháp lý | - Giấy tờ pháp lý: Liên hệ đơn vị/bộ phận phụ trách yêu cầu bổ sung đầy đủ các giấy tờ còn thiếu hoặc hết hạn và cảnh bảo cho các bộ phận để tạm ngưng hoạt động sản xuất, gia công, mua bán hàng hóa đến khi được cung cấp đầy đủ giấy tờ / - Hạn sử dụng: Liên hệ NCC GC cho xử lý lại thay nhãn đối với hàng mất HSD và xử lý lại bán thành phẩm nếu hết HSD ---> Thực hiện thu hồi hàng và lên đơn hàng xử lý lại cho ĐP TP / - Sai thông tin trên nhãn:  / + Yêu cầu đơn vị phụ trách điều chỉnh thông tin đúng theo quy định Nhà nước / + Thu hồi hàng và lên đơn đặt hàng xử lý lại để thực hiện bỏ nhãn cũ và dán nhãn mới | NV XLSC | NCC GC / Kinh doanh / Pháp ý chung / Pháp lý SX / ĐP TP /
+R31: 4.2 | Hàm lượng, chất lượng | - Lấy mẫu gửi yêu cầu lab kiểm tra, đánh giá và phản hồi kết quả / + Nếu đạt: Hướng dẫn lại cách sử dụng của khách hàng và thông báo lại các bộ phận có liên quan / + Nếu không đạt: Tiếp tục lập phương án xử lý ở bước tiếp theo / - Kiểm đếm số lượng và thu hồi hàng lỗi / - Liên hệ Lab/NCC GC xác định lỗi từ nguyên liệu, kỹ thuật phối, bảo quản,.....  / - Lập kế hoạch xử lý lại bán thành phẩm ---> Lên đơn hàng xử lý lại cho ĐP TP | NV XLSC | NCC GC / Lab / Kinh doanh / Kho / ĐP NL/BTP / QLDL / ĐP TP /
+R32: 4.3 | Vật tư bao bì | - Xác định đơn vị phụ trách VTBB (NCC GC hay Công ty) / - Liên hệ và thống nhất phương án xử lý lại/thay mới VTBB ---> Thực hiện thu hồi hàng và lên đơn hàng xử lý lại cho ĐP TP | NV XLSC | NCC GC / Kinh doanh / Kho / ĐP VTBB / QLDL / ĐP TP
+R33: 4.4 | Vận hành | - Lập Biên bản sự việc và điều phối bổ sung hàng nếu giao khách / - Liên hệ NCC GC xử lý lại hàng bị hỏng | NV XLSC | NCC GC / Kinh doanh / Kho / QLDL / ĐP TP
+R34: 5.0 | Xử lý dòng pháp lý, hóa đơn và chứng từ có liên quan
+R35: 2026-01-05 00:00:00 | Thủ tục thuế
+R36: 5.1.1 | Xử lý dòng pháp lý và hóa đơn đầu vào, đầu ra | - Thực hiện các văn bản đảm bảo theo dòng pháp lý (Hợp đồng/phụ lục, Giấy ủy quyền) / - Tham vấn P TCKT để thực hiện hủy, điều chỉnh, xuất bổ sung hóa đơn phù hợp với phương án xử lý / - Cập nhật thông tin cho nội bộ sản xuất để quản lý tồn kho, đối chiếu công nợ NCC GC và báo cáo kinh doanh | Pháp lý sản xuất / Pháp lý chung | P TCKT / ĐP NL/BTP / ĐP VTBB / QLDL / Giá vốn | NV XLSC
+R37: 5.1.2 | Phiếu đề nghị xuất kho (sản xuất) | - Thực hiện Phiếu đề nghị xuất kho sản xuất cho các trường hợp cần xuất Nguyên liệu, bán thành phẩm, vật tư bao bì xử lý lại hàng hóa hoặc xuất kho hàng thành phẩm lỗi để xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R38: 5.1.3 | Phiếu đề nghị xuất hóa đơn | - Phiếu đề nghị xuất hóa đơn cho các trường hợp xuất bán từ Công ty này sang Công ty khác thuộc hệ thống nội bộ / - Gửi bản chụp cho P TCKT thông qua nhóm zalo để thực hiện nghiệp vụ xuất hóa đơn và phản hồi kết quả cho SX | ĐP NL/BTP / ĐP VTBB | P TCKT | NV XLSC
+R39: 5.1.4 | Phiếu đề nghị nhập/chuyển kho | - Phiếu đề nghị nhập/chuyển kho cho các trường hợp cần nhập/chuyển Nguyên liệu, bán thành phẩm, vật tư bao bì, thành phẩm lỗi để xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R40: 5.1.5 | Phiếu đề nghị hủy NL/BTP/VTBB/HH | - Phiếu đề nghị hủy nguyên liệu, bán thành phẩm, vật tư bao bì, hàng hóa hư hỏng/lỗi vì không có phương án xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R41: 5.1.6 | Bảng định mức | - Bảng định mức: Thực hiện mới khi có thay đổi so với BĐM ban đầu / - Cập nhật lại thông tin cho P TCKT, QLDL và Giá vốn | ĐP NL/BTP / ĐP VTBB / QLDL | P TCKT / Giá vốn | NV XLSC
+R42: 2026-02-05 00:00:00 | Thủ tục nội bộ | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R43: 5.2.1 | Phiếu đề nghị xuất kho (sản xuất) | - Thực hiện Phiếu đề nghị xuất kho sản xuất cho các trường hợp cần xuất Nguyên liệu, bán thành phẩm, vật tư bao bì xử lý lại hàng hóa hoặc xuất kho hàng thành phẩm lỗi để xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB | P TCKT | NV XLSC
+R44: 5.2.2 | Phiếu đề nghị chuyển kho | - Phiếu đề nghị chuyển kho dùng cho các trường hợp chuyển từ kho này sang kho khác của cùng 1 thương hiệu / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R45: 5.2.3 | Phiếu đề nghị nhập kho | - Phiếu đề nghị nhập kho cho các trường hợp cần nhập Nguyên liệu, bán thành phẩm, vật tư bao bì, thành phẩm lỗi để xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB | P TCKT | NV XLSC
+R46: 5.2.4 | Phiếu đề nghị xuất bán hàng nội bộ | - Phiếu đề nghị xuất bán hàng nội bộ dùng cho các trường hợp chuyển từ thương hiệu này sang thương hiệu khác thuộc hệ thống nội bộ  / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB | P TCKT | NV XLSC
+R47: 5.2.5 | Phiếu đề nghị hủy NL/BTP/VTBB/HH | - Phiếu đề nghị hủy nguyên liệu, bán thành phẩm, vật tư bao bì, hàng hóa hư hỏng/lỗi vì không có phương án xử lý lại / - Gửi bản chính P TCKT | ĐP NL/BTP / ĐP VTBB / NV XLSC | P TCKT | NV XLSC
+R48: 5.2.6 | Bảng định mức | - Bảng định mức: Thực hiện mới khi có thay đổi so với BĐM ban đầu / - Cập nhật lại thông tin cho P TCKT, QLDL và Giá vốn | ĐP NL/BTP / ĐP VTBB / QLDL | P TCKT / Giá vốn | NV XLSC
+R49: 6.0 | Theo dõi tiến độ thực hiện | Theo dõi tiến độ thực hiện và cập nhật thông tin về phương án và tiến độ xử lý đến các bộ phận có liên quan | NV XLSC
+R50: 7.0 | Thống kê và thanh toán chi phí | - Thống kê các loại chi phí phát sinh  / - Xác định bộ phận chịu chi phí / - Lập chứng từ thanh toán / + Giấy đề nghị thanh toán - Công ty / + Biên bản cấn trừ công nợ - NCC GC / - Trình duyệt và gửi bản gốc P TCKT | Mẫu thống kê chi phí / Biên bản cấn trừ công nợ | NV XLSC | NCC GC / KD / QLSX / QLDL
+R51: 8.0 | Cập nhật thông tin và lưu trữ | - Cập nhật thông tin vào Drive Xử lý sự cố về tiến độ và phương án / - Lưu ý các hạng mục cấu thành như: Nguyên liệu, bán thành phẩm, vật tư bao bì, pháp lý... đến các bộ phận liên quan để lưu ý cho các đơn hàng tiếp theo | Drive | NV XLSC | KD / ĐP NL/BTP / ĐP VTBB / ĐP TP / QLDL / Giá vốn
+R53: V | DANH SÁCH BIỂU MẪU
+R54: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R55: 1.0 | Đề nghị thanh toán
+R56: 2.0 | Biên bản thu hồi khoản tiền phát sinh
+R57: 3.0 | Biên bản cấn trừ công nợ
+R59: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R60: STT | TÊN DRIVE/FILE | ĐÍNH KÈM
+R61: 1.0 | Drive "THEO DÕI SỰ CỐ" | DRIVE THEO DÕI SỰ CỐ
+R63: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R64: STT | TÊN NHÓM ZALO
+R65: 1.0 | "Tên Thương Hiệu-Xử Lý Sự Cố Hằng Ngày"
+R66: 2.0 | 1. SX - XỬ LÝ SỰ CỐ, HÀNG LỖI, PHÁP LÝ

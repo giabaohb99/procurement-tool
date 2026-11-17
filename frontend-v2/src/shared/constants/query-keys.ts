@@ -120,6 +120,9 @@ export const queryKeys = {
     purchaseOrders: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-orders', params ?? {}] as const,
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,
+    /** duoc-CR-777 — dữ liệu "Mẫu thu mua" của bản in YCMH mở từ đơn (người đề xuất = người đang in). */
+    purchaseOrderPurchasingPrint: (purchaseOrderId: number) =>
+      ['procurement', 'purchase-orders', purchaseOrderId, 'purchasing-print'] as const,
     surveys: (params?: Record<string, unknown>) =>
       ['procurement', 'surveys', params ?? {}] as const,
     survey: (id: number) => ['procurement', 'surveys', id] as const,
@@ -533,6 +536,11 @@ export const queryKeys = {
     flows: (entity: string) => ['approval', 'flows', entity] as const,
     flow: (id: number) => ['approval', 'flows', 'detail', id] as const,
     trail: (instanceId: number) => ['approval', 'trail', instanceId] as const,
+    /**
+     * Các chặng CHƯA MỞ kèm người duyệt dự kiến. Nằm DƯỚI khóa `trail` của cùng phiên
+     * để chỗ nào làm mới dấu vết (duyệt, trả lại, rút) cũng làm mới luôn phần này.
+     */
+    upcoming: (instanceId: number) => ['approval', 'trail', instanceId, 'upcoming'] as const,
     /** Phiên duyệt của MỘT chứng từ — trang chi tiết chứng từ hỏi bằng key này. */
     ofEntity: (entity: string, entityId: number) =>
       ['approval', 'of-entity', entity, entityId] as const,

@@ -64,6 +64,12 @@ interface SearchSelectProps {
    * `typecheck` xanh, ô chọn không có tên, nhãn bên trên trỏ vào hư không.
    */
   id?: string
+  /**
+   * Tên đọc cho trình đọc màn hình khi ô KHÔNG có `<Label>` đi kèm (ô lọc trên thanh công
+   * cụ danh sách). duoc-CR-778: thay `SelectTrigger aria-label="Lọc theo …"` ở thanh lọc thu
+   * mua — thiếu prop này thì tên ô rơi mất mà `tsc` vẫn xanh (xem cảnh báo ở `id`).
+   */
+  ariaLabel?: string
   className?: string
 }
 
@@ -95,6 +101,7 @@ export function SearchSelect({
   searchInTrigger,
   onSearchChange,
   id,
+  ariaLabel,
   className,
 }: SearchSelectProps) {
   const [open, setOpen] = useState(false)
@@ -183,6 +190,7 @@ export function SearchSelect({
             <input
               ref={inputRef}
               id={id}
+              aria-label={ariaLabel}
               type="text"
               role="combobox"
               aria-expanded={open}
@@ -258,6 +266,7 @@ export function SearchSelect({
         <Button
           type="button"
           id={id}
+          aria-label={ariaLabel}
           variant="outline"
           role="combobox"
           aria-expanded={open}

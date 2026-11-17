@@ -24,6 +24,7 @@ from app.core.status_codes import (PO_DOCUMENT_STATUS, PO_ITEM_LINE_STATUS,
 from app.modules.payable.model import Payable
 from app.modules.payment_request.model import PaymentRequest
 from app.modules.purchase_order.model import POItem, PurchaseOrder
+from app.modules.purchase_progress.nspt_people import load_nspt_people, nspt_label
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.survey.model import Survey
 from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
@@ -158,7 +159,8 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
         "status_label": _label("purchase_order", po.status),
         "document_status_label": PO_DOCUMENT_STATUS.label_of(po.document_status,
                                                              po.document_status),
-        "buyer": po.nspt,               # NSPT phụ trách mua
+        #  NSPT phụ trách mua: "Mã · Tên" tra theo hồ sơ (duoc-CR-775), khớp màn Tiến độ; đơn chưa liên kết thì chữ đã lưu.
+        "buyer": nspt_label(po, load_nspt_people(ctx.db, [po])),
         "department": po.department,
         **_handler_dept_fields(ctx, po),
         "is_urgent": bool(po.is_urgent),
@@ -496,11 +498,14 @@ def _run_pending(ctx: ToolContext, args: dict) -> dict:
         pending = q.count()
         #  Phiếu trình SỚM NHẤT lên đầu — người chờ lâu nhất được duyệt trước.
         rows = q.order_by(model.id.asc()).limit(limit).all()
+        #  duoc-CR-775: NSPT của ĐMH nói "Mã · Tên" theo hồ sơ — một truy vấn cho cả nhóm.
+        people = load_nspt_people(ctx.db, rows) if model is PurchaseOrder else {}
         group = {
             "entity": entity,
             "entity_label": _ENTITY_LABELS[entity],
             "pending": pending,
-            "items": [_hide_salary_money(ctx, r, {**builder(r, see_supplier), "url": _detail_url(entity, r.id)})
+            "items": [_hide_salary_money(ctx, r, {**builder(r, see_supplier), "url": _detail_url(entity, r.id),
+                                                  **({"buyer": nspt_label(r, people)} if model is PurchaseOrder else {})})
                       for r in rows],
         }
         if pending > limit:

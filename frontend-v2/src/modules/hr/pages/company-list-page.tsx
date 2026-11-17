@@ -34,6 +34,7 @@ import { COMPANY_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useCompanies } from '../hooks/use-companies'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import { COMPANY_LEVEL_OPTIONS, type Company } from '../types/company'
+import { HrSetupTabs } from '../components/hr-setup-tabs'
 
 const ALL = 'all'
 
@@ -144,6 +145,8 @@ function CompanyListContent() {
     //  trúng mép ngoài khe thì trang không nhúc nhích. Cùng bài học với
     //  `CrudListPage` và `leave-balance-page`.
     <PageContainer fill className="max-md:h-auto">
+      {/*  duoc-CR-773: Danh mục gom vào Thiết lập — dải tab chung của các màn cấu hình Nhân sự. */}
+      <HrSetupTabs />
       <PageHeader
         title="Công ty"
         //  Dòng mô tả ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi,

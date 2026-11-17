@@ -54,9 +54,20 @@ import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseRequestLineCard } from './purchase-request-line-card'
 import { resolveWarehouseByName } from '../utils/warehouse-ref'
+import {
+  applyPriceAfterVatInput,
+  applyPriceBeforeVatInput,
+  repriceOnVatChange,
+  resolveLinePriceAfterVat,
+} from '../utils/vat-price'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
-const TABLE_STORAGE_KEY = 'purchase-request-items'
+/**
+ * Hậu tố `-v2`: duoc-CR-776 thêm cột *Đơn giá sau VAT* ngay sau VAT %. `useTableLayout` ưu tiên
+ * bố cục đã lưu và nối cột lạ xuống CUỐI bảng (sau cả cột Thao tác), nên phải đổi khóa để cột
+ * mới đứng đúng chỗ. Đổi bộ cột lần sau thì tăng số.
+ */
+const TABLE_STORAGE_KEY = 'purchase-request-items-v2'
 
 //  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
 function purchaseRequestRowKey(item: PurchaseRequestItem, index: number): string | number {
@@ -239,6 +250,15 @@ export function PurchaseRequestItemsTable({
       align: 'right',
       compactHidden: true,
     },
+    // duoc-CR-776: gõ giá sau VAT thì tự tính ngược đơn giá trước thuế (cột Đơn giá).
+    {
+      key: 'price_after_vat',
+      header: 'Đơn giá sau VAT',
+      width: 132,
+      minWidth: 80,
+      align: 'right',
+      compactHidden: true,
+    },
     { key: 'amount', header: 'Thành tiền', width: 130, minWidth: 80, align: 'right' },
     {
       // QA 29/08: ngày cần hàng trước đây chỉ nằm trong popup Chi tiết dòng,
@@ -341,7 +361,8 @@ export function PurchaseRequestItemsTable({
     patch(index, {
       unit: history.unit || current.unit,
       qty: Number(history.qty_order) || 0,
-      price: Number(history.price) || 0,
+      //  duoc-CR-776: giá lấy từ lịch sử là giá trước thuế — bỏ số sau VAT đã gõ.
+      ...applyPriceBeforeVatInput(Number(history.price) || 0),
       vat_pct: VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat_pct,
       item_group: itemGroup,
       group_desc: groupDescription(itemGroup),
@@ -388,6 +409,8 @@ export function PurchaseRequestItemsTable({
         return item.price
       case 'vat':
         return item.vat_pct ?? 0
+      case 'price_after_vat':
+        return resolveLinePriceAfterVat(item, item.vat_pct)
       case 'amount':
         return lineTotal(item)
       case 'status':
@@ -546,19 +569,46 @@ export function PurchaseRequestItemsTable({
             min={0}
             step="0.0001"
             value={item.price || ''}
-            onChange={(e) => patch(index, { price: Number(e.target.value) })}
+            aria-label={`Đơn giá dòng ${index + 1}`}
+            // duoc-CR-776: gõ trước thuế thì ô sau VAT tự tính lại theo đơn giá này.
+            onChange={(e) => patch(index, applyPriceBeforeVatInput(Number(e.target.value)))}
           />
         ) : (
           <span className="tabular-nums">{formatUnitPrice(item.price)}</span>
+        )
+
+      case 'price_after_vat':
+        return editing ? (
+          <Input
+            className="text-right"
+            type="number"
+            min={0}
+            step="0.01"
+            value={resolveLinePriceAfterVat(item, item.vat_pct) || ''}
+            aria-label={`Đơn giá sau VAT dòng ${index + 1}`}
+            onChange={(e) =>
+              patch(index, applyPriceAfterVatInput(Number(e.target.value), item.vat_pct))
+            }
+          />
+        ) : (
+          <span className="tabular-nums">
+            {formatUnitPrice(resolveLinePriceAfterVat(item, item.vat_pct))}
+          </span>
         )
 
       case 'vat':
         return editing ? (
           <Select
             value={String(item.vat_pct ?? 8)}
-            onValueChange={(value) => patch(index, { vat_pct: Number(value) })}
+            // duoc-CR-776: đổi VAT giữ ô gõ gần nhất — vừa gõ sau VAT thì tính lại đơn giá.
+            onValueChange={(value) =>
+              patch(index, {
+                vat_pct: Number(value),
+                ...repriceOnVatChange(item, item.vat_pct, Number(value)),
+              })
+            }
           >
-            <SelectTrigger size="sm" className="w-full">
+            <SelectTrigger size="sm" className="w-full" aria-label={`VAT dòng ${index + 1}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" align="end">

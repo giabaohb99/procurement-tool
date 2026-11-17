@@ -87,7 +87,10 @@ function renderPage(initialPath = '/me') {
 
 /** Nút của các mục trong thanh bên trái (khổ máy tính). */
 function navButtons() {
-  return within(screen.getByRole('navigation', { name: 'Các mục trang cá nhân' })).getAllByRole('button')
+  //  duoc-CR-774: tiêu đề nhóm cũng là nút (gập / mở nhóm, có `aria-expanded`) — chỉ lấy nút MỤC.
+  return within(screen.getByRole('navigation', { name: 'Các mục trang cá nhân' }))
+    .getAllByRole('button')
+    .filter((button) => !button.hasAttribute('aria-expanded'))
 }
 
 beforeEach(() => {

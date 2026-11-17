@@ -67,15 +67,32 @@ def preview_flow(db: Session, entity: str, subject: dict,
                 "flow_name": "", "steps": [], "cc": []}
 
     raw_snapshot = flow_service.snapshot(db, flow)
+    steps, cc = walk_stages(db, entity, raw_snapshot, flow_service.stages(raw_snapshot),
+                            subject, submitter_employee_id, set(), set())
 
+    return {"mode": MODE_FLOW, "engine_enabled": engine_enabled, "flow_name": flow.name,
+            "steps": steps, "cc": cc}
+
+
+def walk_stages(db: Session, entity: str, raw_snapshot: str, seqs: list[int], subject: dict,
+                submitter_employee_id: int | None, approved_prev_stage: set[int],
+                approved_any_stage: set[int]) -> tuple[list[dict], list[dict]]:
+    """Đi qua các chặng `seqs` của bản chụp luồng, trả `(steps, cc)`.
+
+    Dùng chung cho xem trước lúc soạn (`preview_flow`, đi từ chặng đầu với hai tập
+    rỗng) và cho các chặng CHƯA MỞ của một phiên đang chạy
+    (`upcoming_stages_service`, hai tập nạp sẵn từ việc đã giao).
+
+    Hai tập "coi như đã duyệt" đúng hai phạm vi mà `skip_duplicate` phân biệt —
+    xem `instance_service.split_duplicate_approvers`. Hàm nhận bản sao, không sửa
+    tập của người gọi.
+    """
     steps: list[dict] = []
     cc: list[dict] = []
-    #  Hai tập "coi như đã duyệt", đúng hai phạm vi mà `skip_duplicate` phân
-    #  biệt — xem `instance_service.split_duplicate_approvers`.
-    approved_prev_stage: set[int] = set()
-    approved_any_stage: set[int] = set()
+    approved_prev_stage = set(approved_prev_stage)
+    approved_any_stage = set(approved_any_stage)
 
-    for seq in flow_service.stages(raw_snapshot):
+    for seq in seqs:
         node = flow_service.step_of_stage(raw_snapshot, seq, subject)
 
         if node is None:
@@ -114,8 +131,7 @@ def preview_flow(db: Session, entity: str, subject: dict,
         approved_prev_stage = newly_covered
         approved_any_stage |= newly_covered
 
-    return {"mode": MODE_FLOW, "engine_enabled": engine_enabled, "flow_name": flow.name,
-            "steps": steps, "cc": cc}
+    return steps, cc
 
 
 def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | None,

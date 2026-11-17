@@ -1495,3 +1495,28 @@ phải chạy script ở bước 2.
 5. Thử nhanh: mở *Quỹ phép năm* thấy cột **Còn lại** đã giảm, nhãn / dải *chưa đủ HĐLĐ* đúng người; ký một HĐLĐ chính thức cho
    một người đang thử việc → dòng quỹ Phép năm của họ có số mới và một dòng **Lịch sử thao tác**; hỏi trợ lý *sao tôi chỉ còn 10
    ngày phép*.
+
+## 20. Chặng tiếp theo (dự kiến) trên dòng thời gian duyệt (duoc-CR-766, 16/11/2026)
+
+Thẻ **Lịch sử phê duyệt** ở chi tiết đơn nghỉ phép, phiếu nghỉ bù và phiếu thanh toán nghỉ phép trước đây chỉ nêu tên
+người đang giữ việc (bảng việc chỉ có chặng đã mở). Nay khi phiên còn **Đang chạy**, đầu dòng thời gian có thêm khối
+**Chặng tiếp theo (dự kiến)**: mỗi chặng sau chặng hiện tại một dòng, *tên người duyệt · Chặng N: tên chặng*.
+
+- Đường API `GET /api/approvals/{instance_id}/upcoming` (gác đọc như `/trail`), tính ở
+  `approval/upcoming_stages_service.list_upcoming_stages` bằng đúng vòng lặp của màn xem trước người duyệt
+  (`preview_service.walk_stages`) trên bản chụp luồng của chính phiếu: áp luật người nộp không tự duyệt (kể cả công tắc
+  chặn tự duyệt), bỏ qua khi trùng người (người đang giữ việc chặng hiện tại coi như sẽ duyệt), người dự phòng.
+- Chỉ là **dự kiến**: chặng chưa mở thì người duyệt còn đổi được (đổi trưởng bộ phận, gán lại vai trò, chuyển việc).
+  Người thật chốt lúc chặng mở. Chặng không ra ai thì dòng ghi **Chưa xác định người duyệt** kèm lý do; chặng sẽ tự qua
+  vì trùng người thì ghi **Tự động qua**.
+- Bật theo từng chứng từ bằng prop `showUpcoming` của `ApprovalTrailCard`; các phân hệ khác (văn bản, duyệt dấu, đặt xe)
+  chưa bật. Khóa truy vấn nằm dưới khóa `trail` nên duyệt / trả lại / rút là làm mới cả hai.
+- Bài kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`; vitest
+  `modules/approval/components/approval-trail-card.test.tsx`.
+- Mốc *đã bắt đầu trình duyệt* hiện tên luồng **in đậm** thay cho ngoặc kép (`approval/helpers/split-quoted-name.ts`, nhận cả
+  dữ liệu cũ lưu ngoặc kép góc lẫn dữ liệu mới lưu nháy thẳng).
+- Trợ lý AI: `my_requests_status` trả thêm `next_steps` (số chặng, tên chặng, `expected_approvers`, `note`) cho tối đa 5 phiếu
+  đang chạy mỗi lượt, cùng phép tính với khối trên màn; cẩm nang `seed_handbook/40-nghi-phep.md` mục *Đơn của tôi đang tới
+  đâu, duyệt xong thì tới ai* dặn trợ lý luôn nói là dự kiến.
+- Bài HDSD (`seed_help_nghi_phep.py` bản 10): mục *Đơn đang ở chặng nào, duyệt xong thì tới ai* ở bài *Theo dõi, sửa và hủy
+  đơn nghỉ*, các bài Nộp đơn, Duyệt, Nghỉ bù, Thanh toán nghỉ phép, Phân quyền trỏ sang. Nội dung ở đây và ở seed phải khớp nhau.

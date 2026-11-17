@@ -49,6 +49,7 @@ Mã backend: `approval`, `notification`, `comment`, `ticket`, `attachment`, `imp
 | POST | `/api/approvals/{instance_id}/reject` | reject | đăng nhập |  | tự dò: v2 `approval`, v2 `hr` |
 | POST | `/api/approvals/{instance_id}/return` | return | đăng nhập |  | tự dò: v2 `approval`, v2 `hr` |
 | GET | `/api/approvals/{instance_id}/trail` | I20 — bản in dấu vết duyệt. | đăng nhập |  | tự dò: v2 `approval` |
+| GET | `/api/approvals/{instance_id}/upcoming` | Các chặng chưa tới lượt của phiên đang chạy, kèm người duyệt dự kiến (duoc-CR-766). Phiên đã xong trả `[]`. | đăng nhập, gác đọc như `/trail` |  | v2 `approval-trail-card` (`showUpcoming`) |
 | POST | `/api/approvals/{instance_id}/withdraw` | withdraw | đăng nhập |  | tự dò: v2 `approval` |
 | GET | `/api/attachments` | list attachments | đăng nhập |  | tự dò: v2 `dossier`, v2 `forum`, v2 `hr`, v2 `procurement`, v2 `support`, v2 `work` |
 | POST | `/api/attachments` | Upload + gắn luôn (record đã có id) — tương thích FE cũ. | đăng nhập |  | tự dò: v2 `dossier`, v2 `forum`, v2 `hr`, v2 `procurement`, v2 `support`, v2 `work` |

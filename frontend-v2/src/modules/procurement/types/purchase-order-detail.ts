@@ -77,6 +77,12 @@ export interface PurchaseOrderItem {
   price: number
   /** % VAT theo TỪNG DÒNG (header còn `vat_rate` làm mặc định). */
   vat: number
+  /**
+   * duoc-CR-776 — số ĐƠN GIÁ SAU VAT người dùng vừa gõ trên dòng (chỉ ở bản nháp giao diện,
+   * KHÔNG gửi lên máy chủ). Có mặt = ô gõ gần nhất là ô sau VAT, nên đổi VAT thì giữ số này và
+   * tính lại `price`. Xem `utils/vat-price.ts`.
+   */
+  price_after_vat_input?: number
   warehouse_code: string
   note: string
   /**

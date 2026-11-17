@@ -1,7 +1,7 @@
 # Hồ sơ nhân sự và danh mục Chức vụ (phân hệ Nhân sự)
 
 Hồ sơ nhân viên ở menu **Nhân sự ▸ Nhân sự** (`/hr/employees`), danh mục chức
-danh ở **Nhân sự ▸ Danh mục ▸ Chức vụ** (`/hr/job-positions`).
+danh ở **Nhân sự ▸ Thiết lập** ▸ tab ***Chức vụ*** (`/hr/job-positions`).
 
 ## Điều CẤM nói
 
@@ -174,7 +174,7 @@ khác thì trả lời đúng câu chính sách ở mục *Điều CẤM nói*.
 | Sinh tệp Word, ký, hủy, chấm dứt | Nút ***…*** cuối dòng HĐ (menu Thao tác): ***Sinh tệp hợp đồng*** · ***Tải lên bản đã ký*** · ***Đánh dấu đã ký*** · ***Hủy hợp đồng*** (Nháp) · ***Chấm dứt / thanh lý*** (Đã ký) · ***Xóa hợp đồng*** (Nháp / Đã hủy). Hủy và chấm dứt **không hoàn tác được** |
 | Sửa HĐ đã ký | Không sửa được nữa; cần đổi nội dung thì chấm dứt rồi lập HĐ mới. Sửa HĐ nháp sau khi đã sinh tệp thì **tệp bị gỡ**, phải sinh lại |
 | HĐ hết hạn có phải bấm gì không | Không. Trạng thái **Hết hạn** tự suy ra khi qua ngày kết thúc |
-| Tải lên / soạn mẫu, thêm biến | **Nhân sự ▸ Danh mục ▸ Mẫu hợp đồng** (văn thư: **Văn bản ▸ Thiết lập văn bản** ▸ ***Thư viện văn bản mẫu***, cùng dữ liệu). Biến ở nút ***Danh sách biến*** |
+| Tải lên / soạn mẫu, thêm biến | **Nhân sự ▸ Thiết lập** ▸ tab ***Mẫu hợp đồng*** (văn thư: **Văn bản ▸ Thiết lập văn bản** ▸ ***Thư viện văn bản mẫu***, cùng dữ liệu). Biến ở nút ***Danh sách biến*** |
 | HĐ sắp hết hạn của ai | Ba chỗ: chuông, **Trang cá nhân ▸ Việc cần làm** (loại ***HĐ lao động hết hạn***), thẻ ***Hợp đồng lao động sắp hết hạn*** ở **Nhân sự ▸ Tổng quan**. Danh sách toàn công ty: báo cáo ***Hợp đồng lao động*** (`/report/labor-contract`) |
 | Có bao nhiêu HĐ sắp hết / quá hạn / chưa có HĐ | `report_summary` với `report_key` = `labor_contract` (mục dưới) |
 | Xem lại HĐ của chính mình | **Trang cá nhân** ▸ nhóm ***Hồ sơ*** ▸ ***Hợp đồng của tôi***: chỉ HĐ đã ký / đã chấm dứt, nút ***Tải bản mềm (.docx)*** và ***Xem / tải bản đã ký***. Không cần quyền gì thêm |
@@ -255,7 +255,7 @@ Luật hay bị hỏi, nói sai là làm hỏng hồ sơ thật:
 
 ## Quyền mặc định theo chức vụ (từ 20/10/2026)
 
-**Nhân sự ▸ Danh mục ▸ Chức vụ** ▸ mở một chức vụ ▸ tab ***Quyền mặc định***: khai một **gói vai trò**, ***Thêm*** từng vai trò rồi
+**Nhân sự ▸ Thiết lập** ▸ tab ***Chức vụ*** ▸ mở một chức vụ ▸ tab ***Quyền mặc định***: khai một **gói vai trò**, ***Thêm*** từng vai trò rồi
 ***Lưu***. Tài khoản của người giữ chức vụ đó được hệ **tự cấp gói** khi cấp tài khoản, khi đổi chức vụ (lưu hồ sơ, nhập Excel,
 hoàn tác lô, áp quá trình công tác) và khi mở khóa lại tài khoản.
 
@@ -287,7 +287,9 @@ hoàn tác lô, áp quá trình công tác) và khi mở khóa lại tài khoả
 
 ## Sơ đồ tổ chức (từ 22/10/2026)
 
-Menu **Nhân sự ▸ Sơ đồ tổ chức**. Không có bản vẽ nào lưu sẵn: màn **tự dựng từ dữ liệu**
+Từ 17/11/2026 sơ đồ **không còn trên menu** Nhân sự: mở bằng đường dẫn `/hr/org-chart` (gõ sau tên miền
+hệ thống, ví dụ `https://erp.degoholding.vn/hr/org-chart`); quyền xem giữ nguyên. Menu Nhân sự cũng không còn dòng
+**Danh mục**: Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng nằm ở bốn tab đầu của **Nhân sự ▸ Thiết lập**. Không có bản vẽ nào lưu sẵn: màn **tự dựng từ dữ liệu**
 phòng ban, trưởng phòng và **Người quản lý trực tiếp** — đổi phòng hay đổi người quản lý xong, sơ đồ
 tự đúng. Cấu trúc: **pháp nhân › phòng ban (phòng con thụt vào) › người** (cấp dưới thụt dưới người quản lý cùng
 phòng). Bấm tên phòng để mở / thu gọn (hai tầng đầu mở sẵn); đầu mỗi phòng có **Trưởng phòng** và **số người**; bấm

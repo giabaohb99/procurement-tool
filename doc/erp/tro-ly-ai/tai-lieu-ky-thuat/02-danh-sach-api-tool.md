@@ -213,6 +213,11 @@ chọn nằm trong enum khai sẵn, bot KHÔNG sinh SQL, không chọn được 
 ### T19. my_requests_status - Phiếu do CHÍNH MÌNH trình đang ở bước nào
 - Mục đích: "phiếu của tôi tới đâu rồi, ai đang giữ"; phiếu bị trả lại có lý do.
 - Quyền: tự giới hạn vào người hỏi.
+- [SỬA 17/11/2026, duoc-CR-766] Phiếu ĐANG CHẠY trả thêm `next_steps`: các chặng chưa tới lượt (`seq`, `name`,
+  `expected_approvers` = người duyệt DỰ KIẾN, `note` khi chặng không ra ai hoặc tự qua vì trùng người) — trả lời câu
+  "duyệt xong thì tới ai". Tính bằng `approval/upcoming_stages_service.list_upcoming_stages`, cùng phép tính với khối
+  *Chặng tiếp theo (dự kiến)* trên màn chi tiết đơn nghỉ phép. Tối đa 5 phiếu đang chạy mỗi lượt gọi
+  (`MAX_NEXT_STEP_ROWS`, mỗi phiếu tốn chừng chục truy vấn).
 
 ---
 
@@ -344,6 +349,9 @@ chi tiết, con người tự bấm Duyệt ở đó.
   YCKS chỉ ĐẾM số phương án mỗi dòng - bảng option chứa NCC thuộc cơ chế ẩn nên không trả
   chi tiết. Muốn so giá: lấy `product_code` từng dòng gọi tiếp T5/T6 (product_best_price /
   suppliers_for_product).
+- [SỬA 17/11/2026, duoc-CR-775] Trường `buyer` (NSPT) của ĐMH — ở tool này lẫn ở `pending_procurement_approvals` — là
+  `"Mã · Tên"` tra theo hồ sơ nhân sự (`nspt_id`, `purchase_progress/nspt_people.py`), khớp cột NSPT của màn Tiến độ;
+  đơn chưa liên kết hồ sơ thì là chữ đã lưu trên đơn.
 - Quyền: `entity` + `read`, lấy phiếu qua `apply_scope` (mã đúng nhưng ngoài phạm vi =
   "không tìm thấy", không lộ tồn tại); thiếu `supplier.read` thì ẩn NCC kèm ghi chú
   (kể cả `suggested_supplier` của YCMH); YCMH đã xóa mềm coi như không tồn tại.
@@ -399,6 +407,9 @@ an toàn xem mục "Đợt CR-218" cuối tài liệu.
   / `print_transfer` (ánh xạ vào `print_texts`, tái dùng khe PATCH CR-149 nên
   submitted/approved vẫn sửa được đúng luật form). Trường ngoài whitelist -> error kèm
   danh sách hợp lệ; giá trị mới trùng giá trị cũ bị loại khỏi đề xuất.
+- [SỬA 17/11/2026, duoc-CR-776] Dòng ĐMH (`po_lines`) nhận thêm `price_after_vat` = đơn giá ĐÃ GỒM VAT: máy tính đơn
+  giá trước VAT theo VAT của dòng (hoặc `vat` gửi kèm), nhân / chia theo 100 + VAT, giữ 4 số lẻ — cùng công thức hai
+  giao diện (`assistant/tools/po_update.price_before_vat`). Không gửi cùng `price`; không dùng với `all_lines`.
 - Đề xuất kèm `confirm_token` (Fernet, khóa dẫn xuất từ `JWT_SECRET`): gắn user + entity +
   id phiếu + đúng map thay đổi, hạn dùng 15 phút. Lúc xác nhận backend KIỂM LẠI TOÀN BỘ
   (không tin đề xuất cũ): token đúng chủ (sai chủ = 403) -> `require(entity, write)` +

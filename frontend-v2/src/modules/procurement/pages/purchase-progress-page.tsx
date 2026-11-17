@@ -34,6 +34,7 @@ import { MultiPicker } from '@/shared/ui/multi-picker'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -305,7 +306,24 @@ function PurchaseProgressContent() {
         wrap: true,
         cell: (r) => r.supplier_name || r.supplier_code || '',
       },
-      { key: 'nspt', header: 'NSPT', sortable: true, width: 160, wrap: true, cell: (r) => r.nspt || '' },
+      {
+        //  duoc-CR-775: mã + tên hiện hành do backend tra theo hồ sơ — không còn hiện mã trần thay tên. Mã đi
+        //  trước (anh Được chốt 17/11/2026), máy chủ xếp cột theo mã. Đơn chưa liên kết thì chỉ hiện chữ đã lưu.
+        key: 'nspt',
+        header: 'NSPT',
+        sortable: true,
+        width: 180,
+        wrap: true,
+        cell: (r) =>
+          r.nspt_code ? (
+            <>
+              <span className="text-muted-foreground">{r.nspt_code} · </span>
+              {r.nspt_name}
+            </>
+          ) : (
+            r.nspt_name ?? r.nspt ?? ''
+          ),
+      },
       { key: 'order_date', header: 'Ngày ĐH', sortable: true, sortDescFirst: true, width: 110, cell: (r) => formatDate(r.order_date) || '' },
       { key: 'product_code', header: 'Mã SP', sortable: true, width: 150, wrap: true, cell: (r) => r.product_code || '' },
       {
@@ -470,20 +488,23 @@ function PurchaseProgressContent() {
     </div>
   )
 
+  //  duoc-CR-778: ô Bộ phận lấy danh sách từ DỮ LIỆU nên đổi sang `SearchSelect` có ô tìm.
+  //  Mục "Tất cả bộ phận" vẫn mang mốc `ALL` — tham số gửi API giữ nguyên. Không bật
+  //  `clearable`: nút xóa trả chuỗi rỗng mà `Number('')` = 0 là id THẬT (duoc-CR-322).
   const departmentSelect = (
-    <Select value={departmentId} onValueChange={setDepartmentId}>
-      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo bộ phận">
-        <SelectValue placeholder="Bộ phận" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả bộ phận</SelectItem>
-        {(departments?.items ?? []).map((item) => (
-          <SelectItem key={item.id} value={String(item.id)}>
-            {item.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={departmentId}
+      onChange={setDepartmentId}
+      options={[
+        { value: ALL, label: 'Tất cả bộ phận' },
+        ...(departments?.items ?? []).map((item) => ({ value: String(item.id), label: item.name })),
+      ]}
+      placeholder="Bộ phận"
+      searchPlaceholder="Tìm bộ phận…"
+      emptyMessage="Không tìm thấy bộ phận nào."
+      ariaLabel="Lọc theo bộ phận"
+      className="w-48 max-md:w-full"
+    />
   )
 
   const statusSelect = (

@@ -1,0 +1,40 @@
+# SHEET: 14. MẪU BIỂU
+R1: MẪU BIỂU SẢN XUẤT | Gom 1 Folder mẫu
+R2: STT | TÊN CHỨNG TỪ / BIỂU MẪU | PHÂN LOẠI | NGƯỜI LẬP | THỜI ĐIỂM LẬP | NƠI DUYỆT | NƠI NHẬN | NƠI LƯU TRỮ | Link mẫu biểu
+R3: 1 | BĐM BTP | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh BĐM mới/ Trước khi gửi đơn NCC GC | TNĐP | QLDL, Giá vốn | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 3. XUẤT NHẬP TỒN NL, BTP
+R4: 2 | Phiếu đề nghị phối BTP | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh nhu cầu phối BTP | TNĐP | QLDL | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R5: 3 | Phiếu đề nghị nhập kho NL | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh NL cần nhập kho quản lý | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R6: 4 | Phiếu đề nghị nhập kho BTP | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh BTP cần nhập kho quản lý | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R7: 5 | Phiếu đề nghị chuyển kho NL | Nội bộ | ĐP NL/BTP | Khi phát sinh chuyển kho NL từ địa điểm này sang địa điểm khác | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R8: 6 | Phiếu đề nghị chuyển kho BTP | Nội bộ | ĐP NL/BTP | Khi phát sinh chuyển kho BTP từ địa điểm này sang địa điểm khác | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R9: 7 | Phiếu đề nghị xuất kho NL | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh xuất kho NL dùng trong sản xuất hoặc khác/ Khi có thông tin hàng đã sản xuất xong | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R10: 8 | Phiếu đề nghị xuất kho BTP | Nội bộ & thuế | ĐP NL/BTP | Khi phát sinh xuất kho BTP dùng trong sản xuất hoặc khác/Khi có thông tin hàng đã sản xuất xong | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R11: 9 | Phiếu đề nghị xuất bán NL | Thuế | ĐP NL/BTP | Khi phát sinh bán NL từ công ty này sang công ty khác thuộc hệ thống nội bộ | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R12: 10 | Phiếu đề nghị xuất bán BTP | Thuế | ĐP NL/BTP | Khi phát sinh bán BTP từ công ty này sang công ty khác thuộc hệ thống nội bộ | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R13: 11 | Phiếu đề nghị xuất hóa đơn NL | Thuế | ĐP NL/BTP | Khi phát sinh bán NL từ công ty nội bộ cho NCC GC | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R14: 12 | Phiếu đề nghị xuất hóa đơn BTP | Thuế | ĐP NL/BTP | Khi phát sinh bán BTP từ công ty nội bộ cho NCC GC | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | 8. TẤT CẢ CÁC PHIẾU LIÊN QUAN X-N-T
+R15: 13 | BĐM VTBB | Nội bộ & thuế | ĐP VTBB | Khi phát sinh BĐM mới/ Trước khi gửi đơn NCC GC | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R16: 14 | Phiếu đề nghị nhập kho VTBB | Nội bộ & thuế | ĐP VTBB | Khi phát sinh VTBB cần nhập kho quản lý | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R17: 15 | Phiếu đề nghị chuyển kho VTBB | Nội bộ | ĐP VTBB | Khi phát sinh chuyển kho VTBB từ địa điểm này sang địa điểm khác | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R18: 16 | Phiếu đề nghị xuất kho VTBB | Nội bộ & thuế | ĐP VTBB | Khi phát sinh xuất kho VTBB dùng trong sản xuất hoặc khác/ Khi có thông tin hàng đã sản xuất xong | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R19: 17 | Phiếu đề nghị xuất bán VTBB | Thuế | ĐP VTBB | Khi phát sinh bán VTBB từ công ty này sang công ty khác thuộc hệ thống nội bộ | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R20: 18 | Phiếu đề nghị xuất hóa đơn VTBB | Thuế | ĐP VTBB | Khi phát sinh bán VTBB từ công ty nội bộ cho NCC GC | TNĐP | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | BIỂU MẪU VTBB
+R21: 19 | BĐM TP | Nội bộ & thuế | QLDL | Khi nhận BĐM BTP và BĐM VTBB & Trước khi gửi đơn đặt hàng cho NCC GC | QLSX | Trình duyệt QLSX; gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R22: 20 | Phiếu đề nghị nhập kho TP | Nội bộ & thuế | ĐP TP | Khi NCC GC báo có hàng sẵn kho | TNĐP | QLDL tổng hợp, gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive | DRIVE CẬP NHẬT THÔNG TIN GIÁ VỐN TỪ ĐIỀU PHỐI
+R23: 21 | Phiếu đề nghị xuất bán TP | Thuế | QLDL | Sau khi nhận hàng và phát sinh mua bán giữa các công ty thuộc hệ thống nội bộ | QLDL | P TCKT, Pháp lý ABA | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R24: 22 | Phiếu đề nghị xuất hóa đơn TP | Thuế | QLDL | Khi bán hàng là thành phẩm giữa các công ty thuộc hệ thống nội bộ
+R25: 23 | Phiếu đề nghị chuyển kho TP | Nội bộ & thuế | Kho Dr Xanh | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R26: 24 | Lệnh sản xuất | Nội bộ & thuế | QLDL | Khi có thông tin hàng đã sản xuất xong /  (căn cứ hình ảnh chứng từ giao nhận hàng do kho gửi qua nhóm Zalo) | QLDL | Tổng hợp gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R27: 25 | Nhận hóa đơn từ NCC GC | Thuế | QLDL | Khi có thông tin hàng đã sản xuất xong | P TC.KT | Gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R28: 26 | Phiếu đề nghị nhập kho công nợ NCC GC | Nội bộ & thuế | QLDL | Khi có thông tin hàng đã sản xuất xong | QLDL | Tổng hợp gửi P TCKT | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R29: 27 | Biên bản đối chiếu tồn kho | Nội bộ & thuế | QLDL | Khi có số liệu tồn kho từ NCC GC (hằng tháng) | QLSX | P TCKT, NCC GC, ĐP VTBB, ĐP NL/BTP, ĐP TP, XLSC | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R30: 28 | Biên bản đối chiếu công nợ | Nội bộ & thuế | QLDL | Khi có số liệu công nợ từ NCC GC (hằng tháng); /  hạn chót trước ngày 20 của tháng kế tiếp | QLSX | P TCKT, NCC GC | Bản gốc: P TCKT / Bản scan: lưu trữ trên Drive
+R31: 29 | Bảng giá vốn sản xuất | Nội bộ | Giá vốn | - Khi phát sinh mua BTP mới. / - NCC GC báo giá BTP giá mới (có thay đổi giá). | QLSX | QLSX | Bản gốc: Giá vốn và Xử lý dữ liệu / Lưu trữ trên drive thực hiện. | Gửi duyệt qua Zalo "SX - TEAM ĐIỀU PHỐI NL, BTP"
+R32: 30 | Bảng giá vốn kinh doanh | Nội bộ | Giá vốn | - Khi phát sinh mua BTP mới. / - NCC GC báo giá BTP giá mới (có thay đổi giá). | QLSX | QLSX | Bản gốc: Giá vốn và Xử lý dữ liệu / Lưu trữ trên drive thực hiện. | Gửi duyệt qua Zalo " SX - KIỂM TRA GVKD"
+R33: 31 | Phiếu duyệt đơn hàng | Nội bộ | Giá vốn | - Có đơn hàng cần thực hiện → duyệt theo từng đơn hàng. / - Khi nhập kho đơn hàng → ghi nhận theo giá thực tế của đơn hàng. | QLSX | QLSX | Bản gốc: Giá vốn và Xử lý dữ liệu / Lưu trữ trên drive thực hiện. | mẫu duyệt giá theo đơn hàng
+R34: 32 | Giấy đề nghị tạm ứng | Nội bộ & thuế | QLDL | Trước hạn thanh toán 7 ngày | TN QLDL | P TCKT, NCC GC | Bản gốc: P TCKT
+R35: 33 | Giấy đề nghị thanh toán | Nội bộ & thuế | QLDL | Trước hạn thanh toán 7 ngày | TN QLDL | P TCKT, NCC GC | Bản gốc: P TCKT
+R36: Đơn đặt hàng
+R37: Biên bản giao nhận/Phiếu giao nhận
+R38: Biên bản hàng lỗi và phương án xử lý hàng lỗi
+R39: CHECKLIST KIỂM TRA HÀNG THÀNH PHẨM NHẬN TỪ NCC GC | Nội bộ | ĐP TP | Khi nhận hàng TP về kho | QLSX | ĐP TP | Bản gốc: TP | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP) Sheet 4.1CHECKLIST - TP NHẬN HÀNG

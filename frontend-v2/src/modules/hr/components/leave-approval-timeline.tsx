@@ -60,6 +60,8 @@ export function LeaveApprovalTimeline({ request }: LeaveApprovalTimelineProps) {
         //  Đơn nghỉ phép có nút "In đơn" riêng ở đầu trang — nút "In" của thẻ này
         //  chỉ in lại cả màn hình, bỏ đi cho khỏi bấm nhầm (bao-CR-506).
         hidePrint
+        //  Người nộp hỏi "duyệt xong chặng này thì tới ai": hiện các chặng sau kèm tên người dự kiến.
+        showUpcoming
       />
     )
   }

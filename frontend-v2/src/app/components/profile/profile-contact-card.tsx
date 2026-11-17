@@ -1,7 +1,7 @@
 import { Home, Info, MapPin, Phone, PhoneCall } from 'lucide-react'
 
 import type { Employee } from '@/modules/hr/types/employee'
-import { FormCard } from '@/shared/ui/form-card'
+import { ProfileFieldGroup } from './profile-field-group'
 import { ProfileFieldRow } from './profile-field-row'
 import { SelfContactDialog } from './self-contact-dialog'
 
@@ -22,12 +22,7 @@ interface ProfileContactCardProps {
  */
 export function ProfileContactCard({ employee }: ProfileContactCardProps) {
   return (
-    <FormCard
-      title="Liên hệ"
-      icon={PhoneCall}
-      iconClassName="text-muted-foreground"
-      actions={<SelfContactDialog employee={employee} />}
-    >
+    <ProfileFieldGroup title="Liên hệ" icon={PhoneCall} actions={<SelfContactDialog employee={employee} />}>
       <ProfileFieldRow
         icon={Phone}
         label={employee.phone_label ? `Số điện thoại · ${employee.phone_label}` : 'Số điện thoại'}
@@ -56,6 +51,6 @@ export function ProfileContactCard({ employee }: ProfileContactCardProps) {
           được ghi vào lịch sử hồ sơ.
         </span>
       </p>
-    </FormCard>
+    </ProfileFieldGroup>
   )
 }

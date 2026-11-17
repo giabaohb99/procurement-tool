@@ -39,6 +39,7 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from . import export as ex
 from . import summary_service as prog_summary
 from .sort_expressions import get_computed_sort_expression
+from .nspt_people import load_nspt_people, nspt_fields, nspt_label
 
 router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
@@ -282,7 +283,11 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
 @router.get("")
 def list_progress(request: Request, pg: dict = Depends(pagination),
                   db: Session = Depends(get_db), user=Depends(_require_progress)):
-    """Bảng tiến độ đơn mua hàng theo từng dòng, có lọc và phân trang; cột NCC ẩn với người không được xem."""
+    """Bảng tiến độ đơn mua hàng theo từng dòng, có lọc và phân trang; cột NCC ẩn với người không được xem.
+
+    NSPT trả thêm `nspt_code` + `nspt_name` tra theo hồ sơ nhân sự (`nspt_id`, duoc-CR-775); đơn chưa liên kết hồ sơ
+    thì `nspt_code` rỗng và `nspt_name` là chữ đã lưu trên đơn.
+    """
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
     q = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
@@ -291,7 +296,10 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
     # STT liên tục theo trang
     base = pg["offset"]
     pr_ids = _pr_ids_by_code(db, {po.pr_code for po, _, _ in rows if po.pr_code})
-    out = [{"stt": base + i + 1, **_row(po, it, dl, show_supplier), "pr_id": pr_ids.get(po.pr_code)}
+    #  duoc-CR-775: NSPT trả MÃ kèm TÊN tra từ hồ sơ (một truy vấn cho cả trang) — xem `nspt_people.py`.
+    people = load_nspt_people(db, (po for po, _, _ in rows))
+    out = [{"stt": base + i + 1, **_row(po, it, dl, show_supplier), **nspt_fields(po, people),
+            "pr_id": pr_ids.get(po.pr_code)}
            for i, (po, it, dl) in enumerate(rows)]
     return success({"total": total, "items": out, "show_supplier": show_supplier})
 
@@ -333,10 +341,13 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
     check_row_limit(q.count())
     company_name = {c.id: c.name for c in db.query(Company).all()}
     rows = []
-    for i, (po, it, dl) in enumerate(q.all(), start=1):
+    found = q.all()
+    people = load_nspt_people(db, (po for po, _, _ in found))   # duoc-CR-775
+    for i, (po, it, dl) in enumerate(found, start=1):
         r = _row(po, it, dl, show_supplier)
         r["stt"] = i
         r["company"] = company_name.get(po.company_id, "")
+        r["nspt"] = nspt_label(po, people)
         rows.append(ex.translate_codes(r))   # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ
     columns = pick_columns(ex.columns_for(show_supplier), cols, ex.ALWAYS_COLS)
     return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)

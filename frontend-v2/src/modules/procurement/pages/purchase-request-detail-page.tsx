@@ -122,6 +122,7 @@ import {
   type PurchaseAssistantDraft,
 } from '../utils/assistant-draft'
 import { purchaseRequestApi } from '../api/purchase-request-api'
+import { stripPriceAfterVatInput } from '../utils/vat-price'
 import {
   isClosed,
   isDispatched,
@@ -501,7 +502,10 @@ export function PurchaseRequestDetailPage() {
         quote_file_url: loadedDraft.quote_file_url,
         supplier_req: loadedDraft.supplier_req,
         supplier_pur: loadedDraft.supplier_pur,
-        items: loadedDraft.items.filter((item) => item.product_name.trim()),
+        //  duoc-CR-776: số sau VAT người dùng gõ chỉ sống ở giao diện — bóc ra, máy chủ chỉ nhận `price`.
+        items: loadedDraft.items
+          .filter((item) => item.product_name.trim())
+          .map(stripPriceAfterVatInput),
       },
     })
     markSubmitted()

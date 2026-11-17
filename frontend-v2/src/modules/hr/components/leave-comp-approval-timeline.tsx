@@ -70,6 +70,8 @@ export function LeaveCompApprovalTimeline({ request }: LeaveCompApprovalTimeline
         extraEvents={extra.length ? extra : undefined}
         trailingEvents={[createdEvent(request)]}
         hidePrint
+        //  Người nộp hỏi "duyệt xong chặng này thì tới ai": hiện các chặng sau kèm tên người dự kiến.
+        showUpcoming
       />
     )
   }

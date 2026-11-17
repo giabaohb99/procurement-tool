@@ -1,0 +1,24 @@
+# SHEET: MỤC LỤC
+R1: STT | TÊN QUY TRÌNH | CHI TIẾT | GẮN LINK | UPDATE 14/8/2026
+R2: 1 | QUY TRÌNH LÀM VIỆC VỚI NCC MỚI | Kiểm tra pháp lý, danh mục hợp tác, kiểm tra mẫu sản phẩm, chính sách hợp tác (Bảng giá, Hợp đồng...), quy trình hợp tác | 1. QT LÀM VIỆC VỚI NCC MỚI | Hoàn thành
+R3: 2 | QUY TRÌNH KHAI BÁO SẢN XUẤT | Khai báo các mã (NL, BTP, VTBB, HH) của Công ty / Đồng bộ được mã với NCC GC / Khai báo tạo Data quản lý chung cho Sản xuất | 2. QT KHAI BÁO SX | Cần Kiểm tra lại
+R4: 3 | QUY TRÌNH KHẢO SÁT VÀ TÍNH GIÁ VỐN | Khảo sát và tính giá vốn theo yêu cầu khi chưa có đơn đặt hàng hoặc cập nhật khi có thay đổi / Kiểm tra và tính giá khi kinh doanh lên đơn đặt hàng - trước sản xuất / Kiểm tra/điều chỉnh  giá khi NCC GC hoàn thành đơn hàng sản xuất (có Lệnh sản xuất)- sau sản xuất và gửi P TCKT | 3. QT KHẢO SÁT VÀ TÍNH GIÁ VỐN | Hoàn thành
+R5: 4 | QUY TRÌNH QUẢN LÝ ĐƠN HÀNG SẢN XUẤT GIA CÔNG | Tiếp nhận và xử lý dữ liệu / Kiểm tra và duyệt đơn hàng: pháp lý, giá, dòng công thức, bản định mức, kiểm tra tồn kho (xuất, nhập, chuyển, mua) / Gửi đơn đặt hàng NCC GC & cập nhật tiến độ / Nhập kho + liên hệ lấy hóa đơn / Tiến độ nhận hàng / Gửi Lab kiểm tra mẫu  / Hoàn thiện chứng từ cho đơn hàng / QT Hủy đơn đặt hàng NCC GC (hủy theo yêu cầu/phát sinh trong quá trình duyệt đơn hàng sản xuất | 4. QT QL ĐƠN HÀNG SX GC | Hoàn thành
+R6: 5 | QUY TRÌNH DUYỆT PHÁP LÝ ĐƠN HÀNG | Kiểm tra dòng hóa đơn, pháp lý cho đơn hàng: Nguồn gốc sản phẩm, điều kiện sản xuất, điều kiện mua bán | 5. QT PHÁP LÝ SẢN XUẤT | Hoàn thành
+R7: 6 | QUẢN LÝ NHÀ CUNG CẤP GIA CÔNG | Lập BĐM TP, lấy hóa đơn, Lập Lệnh sản xuất, Phiếu xuất/nhập kho, đối chiếu, thanh toán / Cập nhật và lưu trữ Hợp đồng, Phụ lục với NCC GC / Cập nhật và lưu trữ hồ sơ pháp lý NCC GC / Dự chi NCC GC / Chưa bao gồm đánh giá NCC GC (lỗi, hao hụt, thời gian phản hồi, giá, năng lực sản xuất...) | 6. QT QUẢN LÝ NCC GC | Hoàn thành
+R8: 7 | QUY TRÌNH THỰC HIỆN BẢNG ĐỊNH MỨC THUẾ | Thực hiện BĐM thuế BTP, VTBB, TP | 7. QT BĐM THUẾ | Hoàn thành
+R9: 8 | QUY TRÌNH QUẢN LÝ NGUYÊN LIỆU/BÁN THÀNH PHẨM | Khảo sát, bản định mức, dự trù, xuất, nhập, chuyển, tồn, kiểm soát hao hụt, quản lý mẫu cho tặng / Tiếp nhận yêu cầu, xử lý và gửi Phiếu đề xuất phối BTP cho QLDL và theo dõi tiến độ đơn hàng / Thực hiện BĐM BTP  / Tính giá sản xuất BTP (tiếp nhận phí phối trộn và cung cấp giá sx BTP cho Giá vốn) | 8. QT QL NL/BTP | Hoàn thành
+R10: 9 | QUY TRÌNH QUẢN LÝ VẬT TƯ BAO BÌ | Khảo sát, bản định mức, dự trù, xuất, nhập, chuyển, tồn, công nghệ sản xuất, cọc nhãn, kiểm soát hao hụt, quản lý mẫu cho tặng / Cập nhật giá VTBB cung cấp cho Giá vốn và Kinh doanh / Thực hiện BĐM VTBB nội bộ và thuế gửi QLDL | 9. QT QL VTBB | Hoàn thành
+R11: 10 | QUY TRÌNH QUẢN LÝ DỊCH VỤ VẬN CHUYỂN | Thanh toán dịch vụ vận chuyển dựa trên bảng kê trên app mỗi tháng | 10. QT QL DVVC | Hoàn thành
+R12: 11 | QUY TRÌNH XỬ LÝ SỰ CỐ TRONG SẢN XUẤT | Các bước tiếp nhận, xử lý và theo dõi tiến độ cho các sự cố phát sinh trong sản xuất | 11. QT XL SỰ CỐ TRONG SX | Cần Kiểm tra lại
+R13: 12 | QUY TRÌNH XỬ LÝ SỰ CỐ SAU SẢN XUẤT | Các bước tiếp nhận, xử lý và theo dõi tiến độ cho các sự cố phát sinh sau sản xuất và giao hàng | 12. QT XL SỰ CỐ SAU SX | Cần Kiểm tra lại
+R14: 13.0 | NGƯNG HỢP TÁC VỚI NCC
+R16: FORM KHÁC
+R17: 16 | MẪU BIỂU | Các mẫu, biểu sử dụng trong toàn bộ quy trình | 14. MẪU BIỂU | Cần Kiểm tra lại
+R18: 17 | THUẬT NGỮ VIẾT TẮT | Giải thích các từ ngữ viết tắt, các thuật ngữ được sử dụng trong quy trình | 16. THUẬT NGỮ, VIẾT TẮT | Hoàn thành
+R19: 18 | THÔNG TIN NCC GC | Thống kê các dữ liệu liên quan NCC GC | 17. TT NCC GC | Đang thực hiện
+R20: 19 | THÔNG TIN SẢN PHẨM | Thống kê các dữ liệu liên quan đến sản phẩm sản xuất tại các NCC GC | 18. TT SP | Đang thực hiện
+R21: 20 | TIÊU CHÍ ĐÁNH GIÁ NCC GC | Thông kê tiêu chí đánh giá NCC GC và thang điểm lựa chọn NCC GC trên năng lực và đáp ứng yêu cầu của NCC GC | 19. TIÊU CHÍ ĐÁNH GIÁ NCC GC | Cần Kiểm tra lại
+R22: 21 | NGUYÊN TẮC LƯU TRỮ | Xây nguyên tắc đặt tên và cách lưu trữ file, folder | 20. LƯU TRỮ | Đang thực hiện
+R23: 22 | SƠ ĐỒ SX VÀ MÔ TẢ CÔNG VIỆC | Sơ đồ nhân sự và mô tả công việc theo vị trí hiện tại | SƠ ĐỒ SX & MTCV | Cần Kiểm tra lại
+R24: 23.0 | PHÂN BỔ QUYỀN KÝ HỒ SƠ | Chưa có | Cần Kiểm tra lại

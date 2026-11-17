@@ -46,6 +46,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -582,52 +583,63 @@ function PurchaseOrderListContent() {
   //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
   //  `payment-request-list-page`, không phải trùng lặp cần dọn.
 
+  //  duoc-CR-778: bốn ô lấy danh sách từ DỮ LIỆU (Công ty · NCC · NSPT · Phân loại) đổi từ
+  //  `Select` sang `SearchSelect` có ô tìm — NCC và nhân sự lên tới hàng trăm dòng, cuộn tay
+  //  không nổi. Chỉ đổi cái vỏ: mục "Tất cả …" vẫn mang đúng mốc `ALL` như cũ nên tham số
+  //  gửi lên API giữ nguyên từng byte. Không bật `clearable`: nút xóa trả về chuỗi rỗng,
+  //  mà `Number('')` = 0 là một id THẬT (bẫy bảng có bộ lọc, duoc-CR-322).
   const companySelect = (
-    <Select value={companyId} onValueChange={setCompanyId}>
-      <SelectTrigger className="w-full md:w-44 text-xs h-9">
-        <SelectValue placeholder="Công ty" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-        {(companies?.items ?? []).map((company) => (
-          <SelectItem key={company.id} value={String(company.id)}>
-            {company.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={companyId}
+      onChange={setCompanyId}
+      options={[
+        { value: ALL, label: 'Tất cả công ty' },
+        ...(companies?.items ?? []).map((company) => ({
+          value: String(company.id),
+          label: company.name,
+        })),
+      ]}
+      placeholder="Công ty"
+      searchPlaceholder="Tìm công ty…"
+      emptyMessage="Không tìm thấy công ty nào."
+      className="h-9 w-full text-xs md:w-44"
+    />
   )
 
   const supplierSelect = (
-    <Select value={supplierCode} onValueChange={setSupplierCode}>
-      <SelectTrigger className="w-full md:w-48 text-xs h-9">
-        <SelectValue placeholder="Nhà cung cấp" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả nhà cung cấp</SelectItem>
-        {(suppliers?.items ?? []).map((sup) => (
-          <SelectItem key={sup.code} value={sup.code}>
-            {sup.name} ({sup.code})
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={supplierCode}
+      onChange={setSupplierCode}
+      options={[
+        { value: ALL, label: 'Tất cả nhà cung cấp' },
+        ...(suppliers?.items ?? []).map((sup) => ({
+          value: sup.code,
+          label: `${sup.name} (${sup.code})`,
+        })),
+      ]}
+      placeholder="Nhà cung cấp"
+      searchPlaceholder="Tìm tên hoặc mã NCC…"
+      emptyMessage="Không tìm thấy nhà cung cấp nào."
+      className="h-9 w-full text-xs md:w-48"
+    />
   )
 
   const nsptSelect = (
-    <Select value={nsptId} onValueChange={setNsptId}>
-      <SelectTrigger className="w-full md:w-40 text-xs h-9">
-        <SelectValue placeholder="NSPT" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả NSPT</SelectItem>
-        {(employees?.items ?? []).map((emp) => (
-          <SelectItem key={emp.id} value={String(emp.id)}>
-            {emp.full_name} ({emp.code})
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={nsptId}
+      onChange={setNsptId}
+      options={[
+        { value: ALL, label: 'Tất cả NSPT' },
+        ...(employees?.items ?? []).map((emp) => ({
+          value: String(emp.id),
+          label: `${emp.full_name} (${emp.code})`,
+        })),
+      ]}
+      placeholder="NSPT"
+      searchPlaceholder="Tìm tên hoặc mã nhân sự…"
+      emptyMessage="Không tìm thấy nhân sự nào."
+      className="h-9 w-full text-xs md:w-40"
+    />
   )
 
   const docStatusSelect = (
@@ -679,19 +691,19 @@ function PurchaseOrderListContent() {
   )
 
   const itemGroupSelect = (
-    <Select value={itemGroup} onValueChange={setItemGroup}>
-      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo phân loại">
-        <SelectValue placeholder="Phân loại" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả phân loại</SelectItem>
-        {(itemGroups?.items ?? []).map((group) => (
-          <SelectItem key={group.id} value={group.name}>
-            {group.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      value={itemGroup}
+      onChange={setItemGroup}
+      options={[
+        { value: ALL, label: 'Tất cả phân loại' },
+        ...(itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
+      ]}
+      placeholder="Phân loại"
+      searchPlaceholder="Tìm phân loại…"
+      emptyMessage="Không tìm thấy phân loại nào."
+      ariaLabel="Lọc theo phân loại"
+      className="h-9 w-full text-xs md:w-36"
+    />
   )
 
   //  Ô NHẬP chứ không phải ô chọn: số hóa đơn là chuỗi tự do do kế toán gõ, và

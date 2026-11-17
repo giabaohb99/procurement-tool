@@ -114,6 +114,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** duoc-CR-777 thêm Mẫu thu mua có chữ ký / không chữ ký và chọn sẵn **Mẫu thu mua – có chữ ký** khi mở màn.
+Mẫu này in chữ ký của quản lý trực tiếp người bấm in vào ô trưởng phòng đề xuất, dù người quản lý chưa duyệt gì trên
+phiếu. Ban điều hành chốt giữ hai mẫu thu mua nhưng mặc định về mẫu thường.
+
+**Đã làm**
+- Màn in phiếu đề xuất từ đơn mua hàng ở cả giao diện cũ và mới: hai mẫu thu mua vẫn đứng đầu ô **Mẫu in**, nhưng mở
+  màn luôn chọn sẵn **Mẫu thường – có chữ ký**; muốn in mẫu thu mua thì tự chọn. Đường dẫn có `?mau=purchasing-signed`
+  vẫn mở thẳng mẫu thu mua.
+- Sửa bài hướng dẫn Mẫu thu mua, cẩm nang trợ lý phần thu mua và tài liệu chức năng yêu cầu mua hàng cho khớp.
+
+**Kiểm:** typecheck sạch, lint không lỗi; bài kiểm mẫu in (5 tệp, 79 bài) xanh, bài mở màn đổi sang Mẫu thường.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `frontend/src/pages/PrintPurchaseRequest.tsx`.
+Kiểm: `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+
 ## bao-CR-770 | Trợ lý đọc dòng đơn mua hàng trên hệ khi hỏi N đơn gần nhất của một mã hàng
 - status: xong
 - date: 2026-11-16
@@ -133,6 +153,8 @@ tên, trong khi trên hệ có PO01187, PO01143, PO01027 tháng 11.
 **Kết quả:** 100 bài kiểm (công cụ trợ lý, canh phạm vi, cổng MCP) đạt; ruff sạch. Không đổi DB.
 
 Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `test/backend/test_assistant_tools.py`
+Deploy: prod 16/11/2026 bản 2.23.4 (main 924b6ca6, dump `prod_truoc_release_20261116_1719.sql.gz`, dựng lại api + dịch vụ AI); thử CPT0234 trên prod ra PO01187, PO01143, PO01027 đúng tên trên hóa đơn
+
 
 ## bao-CR-769 | Trợ lý trả tên trên hóa đơn khi tra lịch sử mua theo mã hàng
 - status: xong
@@ -151,6 +173,8 @@ mua theo mã hàng chưa trả **Tên trên hóa đơn**, nên trợ lý phải 
 
 Mã nguồn: `backend/app/modules/assistant/tools/catalog.py` · `backend/app/modules/purchase_history/service.py` ·
 `purchase_history/controller.py` · `test/backend/test_assistant_tools.py` · `test_lich_su_ten_hoa_don_cr522.py`
+Deploy: prod 16/11/2026 bản 2.23.3 (main aadfa26e, dump trước, dựng lại api + dịch vụ AI; thử trên prod trả đúng tên trên hóa đơn)
+
 
 ## bao-CR-768 | Dịch vụ giữ phiên Zalo ký và kiểm chữ ký theo khuôn mới của cổng ERP
 - status: xong
@@ -181,6 +205,8 @@ Kiểm: `zalo-listener/index.test.mjs`.
 Tài liệu: `doc/agent-hub/14-cong-erp-api.md`, `doc/agent-hub/16-kien-truc-ky-thuat.md`.
 
 ---
+Deploy: mã đã vào main 2.23.2 (13cb9806); Zalo đang tắt nên chưa dựng ảnh zalo-listener — khi bật lại thì dựng ảnh và chạy lại npm test
+
 
 ## bao-CR-767 | Trưởng phòng không sửa được lịch làm việc riêng đã kết thúc
 - status: xong
@@ -211,6 +237,8 @@ Kiểm: `test/backend/test_truong_phong_gan_lich_rieng_cr757.py`.
 Tài liệu: `doc/erp/hrm/03-lich-lam-viec.md` mục 20.2.
 
 ---
+Deploy: prod 16/11/2026 bản 2.23.2 (main 13cb9806, dump `prod_truoc_release_20261116_1633.sql.gz`, chỉ dựng lại api)
+
 
 ## bao-CR-765 | Cổng MCP trả lời server/discover để ChatGPT trang Plugins nối được
 - status: xong
@@ -234,6 +262,8 @@ vẫn chạy vì đi đường bắt tay **initialize** cũ.
 **Kết quả:** 20 bài kiểm cổng MCP và màn Kết nối AI đạt. Cần người dùng thử nối lại ChatGPT trên dev rồi mới lên prod.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
+Deploy: dev 16/11/2026; prod 16/11/2026 bản 2.23.1 (main 95a11ef2, dump `prod_truoc_release_20261116_1606.sql.gz`, dựng lại api + dịch vụ AI; bài HDSD Cách 1 đã seed prod lúc 15:30)
+
 
 ## bao-CR-764 | Sửa hướng dẫn nối ChatGPT theo giao diện Plugins mới
 - status: xong
@@ -256,6 +286,8 @@ Mã nguồn: `backend/app/modules/agent_hub/mcp.py` · `test/backend/test_agent_
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` · `backend/scripts/seed_help_ket_noi_ai_cach_1.py` ·
 `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md` · `test/backend/test_agent_hub_ai_cua_toi_cr213.py`
+Deploy: dev 16/11/2026; prod 16/11/2026 bản 2.23.1 (main 95a11ef2, dump `prod_truoc_release_20261116_1606.sql.gz`, dựng lại api + dịch vụ AI; bài HDSD Cách 1 đã seed prod lúc 15:30)
+
 
 ## duoc-CR-762 | Phép năm cộng sau mỗi tháng làm đủ, tính từ ngày làm chính thức, tự tính lại khi ký hợp đồng
 - status: xong
@@ -281,6 +313,7 @@ Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` · `backend/scripts/se
 
 Mã nguồn: `backend/app/modules/leave/accrual_start_service.py` · `accrual_refresh_service.py` · `accrual_service.py` · `balance_accrual_info.py` · `constants.py` · `catalog_controller.py` · `labor_contract/service.py` · `employee/service.py` · `core/crud.py` · `scripts/apply_monthly_after_annual_leave.py` · `frontend-v2/src/modules/hr/utils/leave-accrual-status.ts` · `hr/components/leave-accrual-status-badge.tsx` · `leave-balance-missing-contract-strip.tsx` · `doc/erp/hrm/02-nghi-phep.md` · `backend/scripts/seed_help_nghi_phep.py` · `test/backend/test_phep_nam_cong_sau_thang_cr762.py`
 Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ phép, xuất bản cẩm nang nghi-phep, nạp lại kho tìm kiếm trợ lý; chạy script chuyển Phép năm sang cách cấp mới: 274 dòng quỹ, 1 dòng đổi hạn mức, 1 dòng âm là tài khoản thử; tick quyền dev cho Trưởng phòng và Quản lý công ty); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9; chạy script chuyển Phép năm sang cách cấp mới: 264 dòng quỹ, không dòng âm, cả 264 người chưa có HĐLĐ nên tính từ ngày vào làm; seed hướng dẫn nghỉ phép)
 
 ## duoc-CR-761 | Trưởng phòng xếp ca theo tiếng cho từng nhân viên từng ngày, tính phép theo ca, nhân viên xem ca của mình
 - status: xong
@@ -310,6 +343,7 @@ Deploy: dev 16/11/2026, commit 8f2bf458 (seed hướng dẫn sử dụng nghỉ 
 
 Mã nguồn: `backend/app/modules/work_schedule/shift_controller.py` · `shift_access.py` · `shift_service.py` · `shift_leave_conflicts.py` · `shift_notify.py` · `day_rules.py` · `resolver.py` · `leave/workday_service.py` · `leave/comp_request_service.py` · `assistant/tools/work_shift_tool.py` · `migrations/versions/wshift758_xep_ca_theo_ngay.py` · `frontend-v2/src/modules/hr/components/work-shift-dialog.tsx` · `app/components/profile/profile-shift-card.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `test/backend/test_xep_ca_theo_tieng_cr761.py` · `test_tro_ly_ca_lam_viec_cr761.py`
 Deploy: dev 16/11/2026, commit 8f2bf458 (migration wshift758 + mrg761a, seed hướng dẫn sử dụng nhân sự, xuất bản cẩm nang nghi-phep có tóm tắt mới, nạp lại kho tìm kiếm trợ lý 185/185 bài, dựng lại dịch vụ AI); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9; diễn tập migration trên bản sao prod trước; migration wshift758 + mrg761a; tick quyền Trưởng phòng, Quản lý công ty, HR cấp công ty; seed hướng dẫn nhân sự; kho tìm kiếm 167/167 bài)
 ## bao-CR-760 | Sửa 30 bài kiểm backend đỏ sẵn trên nhánh phát triển
 - status: xong
 - date: 2026-11-16
@@ -534,6 +568,7 @@ Mã nguồn: `backend/app/modules/work_schedule/assignment_access.py` · `assign
 
 Mã nguồn: `backend/app/modules/work_schedule/resolver.py` · `template_controller.py` · `assistant/tools/leave_tool.py` · `leave_taken_schedule.py` · `employee_leave_tool.py` · `agent_hub/mcp.py` · `mcp_settings.py` · `frontend-v2/src/modules/hr/components/department-work-schedule-tab.tsx` · `hr/pages/department-detail-page.tsx` · `hr/pages/work-schedule-assignment-list-page.tsx` · `doc/erp/hrm/03-lich-lam-viec.md` · `backend/scripts/seed_help_nhan_su.py` · `ai_skill/seed_handbook/40-nghi-phep.md` · `test/backend/test_tro_ly_tra_phep_lich_lam_viec_cr757.py`
 Deploy: dev 16/11/2026 cùng đợt duoc-CR-761, commit 8f2bf458 (xuất bản cẩm nang nghi-phep và nhan-su-ho-so, nạp lại kho tìm kiếm trợ lý); prod chưa
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9, cẩm nang nghi-phep bản 8 và nhan-su-ho-so bản 5, tick quyền Trưởng phòng)
 
 ## duoc-CR-756 | Sửa kiêm nhiệm thành hai loại độc lập: kiêm nhiệm phòng ban của công ty hiện tại và kiêm nhiệm cả một công ty khác
 - status: xong
@@ -20376,4 +20411,238 @@ Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
 **Kiểm:** bài kiểm mới 19 bài xanh (đối chiếu thẳng với hàm của màn Dự án, dự án người khác không lộ, dự án lưu trữ chỉ hiện khi xin, vai trò khớp hàm vai trò hiệu lực, tiến độ 1/8 ra 13 phần trăm như màn, đếm việc đang mở, bộ lọc công cụ cho cả hai câu, sổ khai cổng MCP, 2 và 20 dự án cùng số truy vấn); các bài canh cửa sổ công cụ xanh; ruff sạch.
 
 Mã nguồn: `backend/app/modules/assistant/tools/my_projects_tool.py`, `backend/app/modules/assistant/tool_router.py`, `backend/app/modules/agent_hub/mcp.py`, `backend/app/modules/agent_hub/mcp_settings.py`, `backend/app/modules/ai_skill/seed_handbook/30-du-an-cong-viec.md`.
+Deploy: prod 16/11/2026 bản 2.23.0 (commit 3633d3f9, cẩm nang du-an-cong-viec bản 4, dịch vụ AI dựng lại cùng đợt)
 Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.
+
+## duoc-CR-766 | Đơn nghỉ phép hiện tên người duyệt dự kiến của các chặng sau trên dòng thời gian duyệt
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** ở chi tiết đơn nghỉ phép, thẻ Lịch sử phê duyệt chỉ nêu tên người đang giữ việc ở chặng hiện tại; các chặng phía sau không hiện gì nên người nộp không biết duyệt xong chặng này thì đơn tới tay ai.
+
+**Đã làm**
+- Thêm đường API chỉ đọc trả các chặng chưa tới lượt của một phiên duyệt đang chạy kèm người duyệt dự kiến, gác đọc giống đường xem dấu vết duyệt. Người duyệt được tính bằng đúng vòng lặp của màn xem trước người duyệt bên Văn bản trên bản chụp luồng của chính phiếu, nên luật người nộp không tự duyệt, luật bỏ qua khi trùng người và người dự phòng khớp với lúc chặng mở thật.
+- Thẻ Lịch sử phê duyệt của đơn nghỉ phép, phiếu nghỉ bù và phiếu thanh toán nghỉ phép có thêm khối **Chặng tiếp theo (dự kiến)** ở đầu dòng thời gian, mỗi chặng một dòng gồm tên người duyệt, số chặng và tên chặng. Chặng không tìm được ai ghi rõ là chưa xác định người duyệt kèm lý do; chặng sẽ tự qua vì trùng người thì ghi tự động qua. Phiên đã xong thì không hỏi thêm gì.
+
+**Kiểm:** bài kiểm backend mới 6 bài xanh (chỉ liệt kê chặng sau chặng hiện tại, danh sách ngắn lại khi duyệt xong một chặng, chặng cuối và phiên đã duyệt không còn gì phía trước, chặng trùng người được báo tự động qua, chặng hiện tại nhiều người theo chế độ một người là đủ thì không coi cả nhóm là đã ký); rà mã độc lập không có lỗi chặn, hai điểm nên sửa đã sửa cùng các bài xem trước người duyệt cũ; vitest phân hệ Phê duyệt và các thẻ Nghỉ phép xanh; typecheck, lint, ruff sạch; xem tận mắt đơn NP001 trên local.
+
+Mã nguồn: `backend/app/modules/approval/upcoming_stages_service.py`, `backend/app/modules/approval/preview_service.py`, `backend/app/modules/approval/instance_controller.py`, `frontend-v2/src/modules/approval/components/approval-trail-upcoming-event.tsx`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
+Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+
+## duoc-CR-766-luot-2 | Câu trình duyệt trên dòng thời gian hiện tên luồng in đậm, bỏ ngoặc kép góc
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** mốc bắt đầu trình duyệt trên thẻ Lịch sử phê duyệt ghi tên luồng trong ngoặc kép góc, người dùng không muốn thấy dấu đó. Mã hiện tại đã ghi bằng nháy thẳng, nhưng câu của các phiếu cũ đã nằm trong cơ sở dữ liệu với ngoặc kép góc.
+
+**Đã làm**
+- Ở mốc bắt đầu trình duyệt, tên luồng nằm trong ngoặc (ngoặc kép góc của dữ liệu cũ hoặc nháy thẳng của dữ liệu mới) được bỏ ngoặc và hiện in đậm. Ý kiến người dùng tự gõ ở các mốc khác giữ nguyên từng ký tự.
+
+**Kiểm:** bài kiểm hàm tách tên luồng (dữ liệu cũ, dữ liệu mới, ngoặc không đóng, ngoặc rỗng, chuỗi rỗng) và hai bài trên thẻ Lịch sử phê duyệt xanh; typecheck, lint sạch; xem tận mắt đơn NP003 trên local.
+
+Mã nguồn: `frontend-v2/src/modules/approval/helpers/split-quoted-name.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
+Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+
+## duoc-CR-771 | Bố trí lại mục Thông tin cá nhân ở Trang cá nhân: tóm tắt ở đầu, hồ sơ gom một thẻ
+- status: xong
+- date: 2026-11-16
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** mục Thông tin cá nhân của Trang cá nhân dồn khoảng mười thẻ thành hai cột cao thấp lệch nhau nên chừa khoảng trống lớn; thẻ Hồ sơ nhân sự và thẻ Thông tin cá nhân lặp ý nhau, nút in phiếu thông tin nằm lơ lửng giữa trang. Thanh bên trái giữ nguyên, chỉ bố trí lại phần bên phải.
+
+**Đã làm**
+- Hàng đầu là hai thẻ ngắn cao bằng nhau: Quỹ phép và Lương của tôi.
+- Gom tổ chức, liên hệ, thông tin cá nhân, công việc, căn cước, ngân hàng, bảo hiểm vào MỘT thẻ Hồ sơ nhân sự; các nhóm chảy theo hai cột nên không còn lỗ trống, nút in phiếu thông tin nằm ở tiêu đề thẻ, nhóm Liên hệ tự sửa được đứng ngay sau nhóm Tổ chức với nút Sửa ở tiêu đề nhóm.
+- Ca làm việc tuần này bên trái, Tài khoản và Chữ ký bên phải; Email thông báo, Người báo tin, Đề nghị sửa hồ sơ, Lịch sử thao tác chạy hết bề ngang. Tài khoản chưa gắn hồ sơ nhân sự chỉ thấy nhóm Tổ chức, Tài khoản, Chữ ký, Email thông báo.
+- Tách phần bố cục ra tệp riêng nên tệp trang còn khoảng 200 dòng. Chỉ đổi giao diện, không đổi API hay dữ liệu.
+
+**Kiểm:** vitest Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt ở khổ 1440px và 390px, không tràn ngang.
+
+Mã nguồn: `frontend-v2/src/app/components/profile/profile-info-section.tsx`, `frontend-v2/src/app/components/profile/profile-record-card.tsx`, `frontend-v2/src/app/components/profile/profile-field-group.tsx`, `frontend-v2/src/app/components/profile/profile-info-card.tsx`, `frontend-v2/src/app/pages/profile-page.tsx`.
+
+## duoc-CR-772 | Trang cá nhân: mỗi thẻ gập / mở được bằng nút chevron, nhớ trạng thái
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi bố trí lại mục Thông tin cá nhân ở Trang cá nhân, trang vẫn dài; người dùng muốn từng thẻ đóng mở được bằng nút mũi tên lên xuống để chỉ để lại thẻ mình cần xem.
+
+**Đã làm**
+- Cả mười thẻ của mục Thông tin cá nhân (Quỹ phép, Lương, Hồ sơ nhân sự, Ca làm việc, Tài khoản, Chữ ký, Email thông báo, Người báo tin, Đề nghị sửa hồ sơ, Lịch sử thao tác) có nút ở góc phải tiêu đề: đang mở là mũi tên lên, bấm thì gập lại còn dòng tiêu đề và mũi tên đổi thành xuống. Trạng thái gập nhớ theo từng thẻ trên trình duyệt, mở lại trang vẫn giữ.
+- Thêm một phạm vi gập dùng chung cho ba khung thẻ của hệ (thẻ biểu mẫu, khung danh sách người báo tin, Lịch sử thao tác). Chỉ thẻ nằm trong phạm vi đó mới có nút; mọi màn khác dùng chung các khung này không đổi gì. Gập chỉ ẩn phần thân chứ không bỏ dựng, nên dòng người báo tin đang gõ dở không mất.
+- Gom phần nhớ trạng thái gập vào một chỗ dùng chung với khối gập sẵn có của biểu mẫu.
+
+**Kiểm:** bài kiểm mới cho thẻ gập (ngoài phạm vi không có nút, gập mở đổi mũi tên, nhớ sau khi mở lại trang, thân vẫn dựng khi gập) cùng các bài của giao diện dùng chung, Lịch sử thao tác, nhân sự và Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt trên local.
+
+Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/utils/section-open-storage.ts`, `frontend-v2/src/shared/ui/form-card.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, `frontend-v2/src/modules/hr/components/employee-people-editor.tsx`, `frontend-v2/src/app/components/profile/profile-info-section.tsx`.
+Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`.
+
+## duoc-CR-766-luot-3 | Trợ lý AI trả lời được đơn của tôi duyệt xong thì tới tay ai
+- status: xong
+- date: 2026-11-17
+- list: Công cụ Ai
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn chi tiết đơn nghỉ phép đã hiện người duyệt dự kiến của các chặng sau, nhưng công cụ của Trợ lý web, bot và cổng MCP trả lời câu đơn của tôi tới đâu chỉ nêu người đang giữ việc, nên hỏi tiếp duyệt xong thì tới ai thì trợ lý không trả lời được.
+
+**Đã làm**
+- Công cụ tra trạng thái phiếu do chính mình trình nay trả thêm các chặng chưa tới lượt của phiếu đang chạy: số chặng, tên chặng, người duyệt dự kiến và ghi chú khi chặng không tìm được ai hoặc sẽ tự qua vì trùng người. Phép tính dùng chung với màn chi tiết nên hai nơi luôn nói giống nhau; mỗi lượt gọi tính tối đa năm phiếu đang chạy để không kéo dài thời gian trả lời. Tên công cụ và tham số giữ nguyên nên không phải khai lại ở cổng MCP hay nhóm cấu hình.
+- Bộ lọc công cụ đã nạp đúng nhóm phê duyệt cho các câu hỏi kiểu duyệt xong thì tới ai, còn mấy người duyệt nữa.
+
+**Kiểm:** hai bài kiểm mới (phiếu đang chạy trả người duyệt dự kiến các chặng sau, phiếu đã xong không có phần đó) cùng các bài canh cửa công cụ trợ lý và phạm vi bộ máy duyệt xanh; ruff sạch.
+
+Mã nguồn: `backend/app/modules/assistant/tools/approval_tool.py`.
+Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`.
+
+## duoc-CR-773 | Menu Nhân sự: ẩn Sơ đồ tổ chức, gom Danh mục vào Thiết lập
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** menu phân hệ Nhân sự có hai dòng Danh mục và Thiết lập na ná nhau, người dùng không biết màn cấu hình nằm ở dòng nào; mục Sơ đồ tổ chức không cần đứng trên menu.
+
+**Đã làm**
+- Ẩn mục Sơ đồ tổ chức khỏi menu. Đường dẫn vẫn mở cho người có quyền đọc hồ sơ nhân sự như cũ, và khi đang xem sơ đồ thì dòng Nhân sự trên menu sáng lên.
+- Bỏ dòng Danh mục: Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng thành bốn tab đầu trong dải tab của Thiết lập, sau đó là Cài đặt nhân sự, chính sách nghỉ phép, loại nghỉ và ngày lễ, lịch làm việc, phòng họp. Bốn trang danh mục có dải tab Thiết lập ở đầu. Quyền vào từng màn giữ nguyên như lúc còn ở cụm Danh mục; bấm Thiết lập mở tab đầu tiên người dùng được phép.
+
+**Kiểm:** bài kiểm bố cục menu Nhân sự và bộ định tuyến sửa theo bố cục mới, thêm bài canh đường dẫn sơ đồ tổ chức vẫn mở cho người có quyền đọc; toàn bộ vitest phân hệ Nhân sự và bộ định tuyến xanh; typecheck, lint sạch.
+
+Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `frontend-v2/src/modules/hr/config/hr-setup-nav-item.tsx`, bốn trang danh sách phòng ban, công ty, chức vụ, mẫu hợp đồng.
+Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.
+
+## duoc-CR-774 | Trang cá nhân: các nhóm trên thanh bên trái gập / mở được
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** thanh bên trái của Trang cá nhân có bốn nhóm với mười sáu mục, luôn bày hết; người dùng muốn thu gọn các nhóm ít dùng giống cách gập thẻ ở mục Thông tin cá nhân.
+
+**Đã làm**
+- Bốn nhóm Hồ sơ, Việc của tôi, Trợ lý AI của tôi, Bảo mật và hiển thị gập / mở được bằng cách bấm tiêu đề nhóm: đang mở là mũi tên lên, gập lại là mũi tên xuống; trình duyệt nhớ nhóm nào đang gập.
+- Nhóm chứa mục đang xem luôn mở và tiêu đề nhóm đó không bấm được, kể cả khi mở trang thẳng vào một mục thuộc nhóm đã gập, để thanh bên luôn chỉ ra mình đang ở đâu.
+- Nhóm đang gập hiện tổng số đếm của các mục bên trong (việc cần làm, thông báo chưa đọc, yêu cầu hỗ trợ) ngay ở tiêu đề, để gập không làm mất tín hiệu có việc chờ. Ô chọn mục trên điện thoại giữ nguyên.
+
+**Kiểm:** bài kiểm mới cho thanh bên (gập nhóm và hiện tổng số đếm, nhớ sau khi mở lại trang, nhóm chứa mục đang xem luôn mở) cùng các bài của Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt trên local.
+
+Mã nguồn: `frontend-v2/src/app/components/profile/profile-settings-nav.tsx`.
+Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
+
+## duoc-CR-774-hdsd | Cập nhật hướng dẫn sử dụng, cẩm nang trợ lý và RAG cho đợt duoc-CR-766, 771, 772, 773, 774
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** năm thay đổi giao diện từ 16 đến 17/11/2026 (người duyệt dự kiến các chặng sau, bố cục và gập thẻ Trang cá nhân, gom Danh mục vào Thiết lập, ẩn Sơ đồ tổ chức, gập nhóm thanh bên) chưa có trong Trung tâm trợ giúp, cẩm nang của trợ lý và kho tìm kiếm RAG.
+
+**Đã làm**
+- Bài Nghỉ phép có mục mới đơn đang ở chặng nào, duyệt xong thì tới ai, kèm cách đọc khối Chặng tiếp theo (dự kiến) và câu hỏi Trợ lý; các bài nộp đơn, duyệt đơn, nghỉ bù, thanh toán nghỉ phép, phân quyền trỏ sang mục đó.
+- Bộ Nhân sự có bài mới đọc và gập các thẻ ở Trang cá nhân, gồm cả gập nhóm trên thanh bên trái; mục menu Nhân sự viết lại theo menu mới (Danh mục gom vào bốn tab đầu của Thiết lập, Sơ đồ tổ chức ẩn khỏi menu và mở bằng đường dẫn); mọi đường đi cũ qua Danh mục ở bộ Nhân sự, Hợp đồng lao động và hai bài lập bộ tài khoản đổi sang Thiết lập.
+- Cẩm nang trợ lý Nghỉ phép lên phiên bản 24 (thêm cách trả lời duyệt xong thì tới ai bằng người duyệt dự kiến), Hồ sơ nhân sự lên phiên bản 12 (menu mới); nạp lại kho tìm kiếm RAG và dọn phần của bài cũ.
+- Tài liệu chức năng Nghỉ phép §20 và Hồ sơ nhân sự §7.19 ghi đủ các thay đổi.
+
+**Kiểm:** chạy lại các phần nạp bài trên local không lỗi, nạp RAG 27 nguồn 194 đoạn không lỗi, cổng kiểm tài liệu không có lỗi mới.
+
+Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_help_nhan_su.py`, `backend/scripts/seed_help_hop_dong_lao_dong.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`, `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`.
+
+## duoc-CR-775 | Tiến độ đơn mua hàng hiện mã kèm tên nhân sự phụ trách, không còn hiện mã trần thay tên
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn Tiến độ đơn mua hàng ở cả hai giao diện in thẳng chữ NSPT đã lưu trên đơn. Đơn tạo từ yêu cầu mua hàng có lúc lưu mã nhân sự thay cho tên (dev có hai đơn lưu NM_NV), vì giao diện gửi mã vào ô tên và máy chủ chỉ tìm người theo tên; đổi tên nhân sự thì màn vẫn hiện tên cũ.
+
+**Đã làm**
+- Đường API của màn Tiến độ trả thêm mã nhân sự và tên hiện hành, tra theo liên kết hồ sơ của đơn bằng một truy vấn cho cả trang. Đơn chưa liên kết hồ sơ (dữ liệu cũ kiểu Mr Tiên) giữ nguyên chữ đã lưu, không đoán người.
+- Giao diện cũ và giao diện ERP mới hiện cột NSPT dạng mã trước, tên sau; cột xếp theo mã cho khớp chữ đang hiện, ô trống vẫn xuống cuối. Tệp Excel xuất ra ghi cùng dạng mã trước tên sau.
+- Lúc lưu chứng từ, ô nhân sự nhận được mã thay cho tên thì máy chủ tra theo mã, gắn đúng người và thay bằng họ tên đầy đủ; họ tên thật vẫn tra theo tên như cũ.
+
+**Kiểm:** bài kiểm mới 7 bài (trả mã và tên hiện hành, giữ chữ cũ khi chưa liên kết, nhãn tệp xuất, một truy vấn cho cả trang, xếp theo mã, lưu mã thì gắn đúng người, chữ lạ vẫn không gắn) cùng các bài Tiến độ, đơn mua hàng, nhân sự theo id xanh; typecheck giao diện mới sạch, giao diện cũ không thêm lỗi; ruff sạch.
+
+Mã nguồn: `backend/app/modules/purchase_progress/nspt_people.py`, `backend/app/modules/purchase_progress/controller.py`, `backend/app/modules/purchase_progress/sort_expressions.py`, `backend/app/modules/employee/service.py`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx`.
+Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.
+
+## duoc-CR-775-hdsd | Hướng dẫn sử dụng, Trợ lý AI và cẩm nang Thu mua nói NSPT dạng mã kèm tên
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi màn Tiến độ đơn mua hàng hiện NSPT dạng mã kèm tên, Trợ lý AI và cổng MCP vẫn đọc lại chữ đã lưu trên đơn (có đơn là mã trần NM_NV), và Trung tâm trợ giúp chưa có bài nào giải thích cột này.
+
+**Đã làm**
+- Công cụ tra một chứng từ thu mua và công cụ liệt kê phiếu chờ duyệt của trợ lý trả người phụ trách đơn mua hàng dạng mã kèm tên theo hồ sơ, giống màn Tiến độ; đơn chưa gắn hồ sơ thì giữ chữ đã lưu.
+- Thêm bài hướng dẫn Cột NSPT ở màn Tiến độ mua hàng dưới thẻ Dành cho Nhân viên Mua hàng (tên lấy từ đâu, đơn cũ hiện chữ lạ thì làm gì, xếp cột và xuất Excel, lưu bằng mã, hỏi trợ lý). Script chỉ thêm đúng một bài, không dựng lại cây trợ giúp Thu mua dựng tay.
+- Cẩm nang Quy trình thu mua lên phiên bản mới với đoạn hướng dẫn trợ lý đọc NSPT, không đoán người cho đơn cũ.
+
+**Kiểm:** hai bài kiểm mới cho công cụ trợ lý cùng các bài canh quyền đọc của trợ lý xanh; chạy thử và chạy thật bài hướng dẫn, xuất bản cẩm nang trên local không lỗi. Nạp kho tìm kiếm RAG cho bài mới chưa được vì khóa Gemini hết hạn mức, chạy lại khi hạn mức hồi.
+
+Mã nguồn: `backend/app/modules/assistant/tools/procurement_doc_tool.py`, `backend/scripts/seed_help_thu_mua_nspt_cr775.py`, `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`.
+Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.
+
+## duoc-CR-776 | Yêu cầu mua hàng và Đơn mua hàng nhập được đơn giá sau VAT, tự tính giá trước thuế
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** nhà cung cấp thường báo giá đã gồm VAT, người mua phải tự chia ra giá chưa VAT rồi mới gõ vào phiếu; các màn Thu mua chỉ cho nhập giá trước thuế và tự tính sau thuế, không có chiều ngược lại.
+
+**Đã làm**
+- Dòng hàng Yêu cầu mua hàng và Đơn mua hàng ở cả giao diện cũ và giao diện ERP mới, trên bảng dòng lẫn hộp chi tiết dòng, có hai ô cùng sửa được: đơn giá chưa VAT và đơn giá sau VAT. Gõ ô nào thì ô kia tự tính; đơn giá chưa VAT tính ngược giữ bốn số lẻ, giá sau VAT làm tròn hai số lẻ. Nhãn hai giao diện khớp nhau từng chữ.
+- Đổi VAT phần trăm khi đã có giá thì giữ ô vừa gõ gần nhất: vừa gõ giá sau VAT thì giữ nó và tính lại giá trước thuế, còn lại giữ giá trước thuế như trước nay. Số sau VAT người dùng gõ chỉ nằm trên màn hình, không gửi lên máy chủ.
+- Máy chủ vẫn lưu đơn giá chưa VAT; công nợ, bản in, yêu cầu báo giá và phiếu khảo sát không đổi. Hai giao diện dùng cùng một cách tính nhân chia theo 100 cộng VAT để ra đúng từng số lẻ, kể cả số rất lớn.
+- Bài hướng dẫn Nhập đơn giá sau VAT dưới thẻ Dành cho Nhân viên Mua hàng và cẩm nang Quy trình thu mua ghi cách dùng.
+- Công cụ trợ lý đề xuất sửa đơn mua hàng (Trợ lý web, bot, cổng MCP) nhận thêm giá đã gồm VAT cho từng dòng: máy tự tính đơn giá chưa VAT theo VAT của dòng bằng cùng công thức hai giao diện, không để trợ lý tự chia nhẩm; không gửi cùng đơn giá chưa VAT, không áp một lượt cho mọi dòng. Tài liệu chức năng Yêu cầu mua hàng, Đơn mua hàng và tài liệu công cụ trợ lý ghi đủ.
+
+**Kiểm:** bốn bài kiểm mới cho công cụ trợ lý sửa đơn mua hàng (tính ngược đúng bốn số lẻ, dùng VAT gửi kèm, chặn gửi cả hai giá và áp mọi dòng, đơn nhập khẩu); bài kiểm hàm tính của giao diện mới 22 bài cùng các bài bảng dòng, hộp chi tiết dòng và trang chi tiết đơn xanh; typecheck giao diện mới sạch, giao diện cũ không thêm lỗi; thử trên trình duyệt cả hai giao diện (gõ sau VAT, đổi VAT, lưu thật không kèm trường phụ).
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/vat-price.ts`, `frontend/src/utils/vatPrice.ts`, bảng dòng và hộp chi tiết dòng của YCMH, ĐMH ở hai giao diện, `backend/app/modules/assistant/tools/po_update.py`, `backend/scripts/seed_help_thu_mua_gia_sau_vat_cr776.py`.
+Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.
+
+## duoc-CR-777 | In phiếu đề xuất mua hàng từ đơn mua hàng có thêm Mẫu thu mua có chữ ký và không chữ ký
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** khi in phiếu đề xuất mua hàng từ đơn mua hàng, mẫu thường lấy người đề xuất, trưởng phòng, nhà cung cấp và giá theo phiếu yêu cầu mua hàng, trong khi người thu mua cần một tờ phiếu đứng tên chính mình, trưởng phòng là quản lý trực tiếp, nhà cung cấp và giá theo đơn mua hàng đã chốt.
+
+**Đã làm**
+- Thêm đường API chỉ đọc trả dữ liệu cho Mẫu thu mua: người đề xuất là người đang đăng nhập kèm chữ ký, quản lý trực tiếp của người đó kèm chữ ký, nhà cung cấp và các dòng hàng của đơn mua hàng (số lượng đặt, đơn giá, VAT, bỏ dòng đã hủy). Đường này gác bằng quyền đọc đơn mua hàng và đơn phải nằm trong phạm vi đọc; nhà cung cấp che khi thiếu quyền xem nhà cung cấp.
+- Màn in phiếu đề xuất từ đơn mua hàng ở cả giao diện cũ và giao diện ERP mới có thêm Mẫu thu mua có chữ ký và không chữ ký, chỉ hiện với người đọc được đơn đó; màn in phiếu yêu cầu thường và nhóm in tách theo nhà cung cấp không đổi. Ô Người lập là chữ ký người in, ô trưởng phòng bộ phận đề xuất là chữ ký quản lý trực tiếp, hai ô còn lại như mẫu thường; cột thành tiền từng dòng trước VAT, tiền VAT và tổng thanh toán ở dòng riêng.
+- Khi dùng được Mẫu thu mua, hai mẫu này đứng đầu ô Mẫu in và Mẫu thu mua có chữ ký được chọn sẵn lúc mở màn; người không đủ quyền vẫn mở ra Mẫu thường có chữ ký như cũ.
+- Bài hướng dẫn Mẫu thu mua khi in phiếu đề xuất dưới thẻ Dành cho Nhân viên Mua hàng, cẩm nang Quy trình thu mua, tài liệu chức năng Yêu cầu mua hàng và tài liệu API ghi đủ.
+
+**Kiểm:** bài kiểm backend mới 6 bài (người đề xuất và quản lý trực tiếp kèm chữ ký, dòng theo đơn bỏ dòng hủy, che nhà cung cấp, chưa gán quản lý để trống, ngoài phạm vi trả 404, chỉ có quyền in mà không có quyền đọc bị chặn) cùng bài cũ màn in và bài canh phạm vi xanh; giao diện mới typecheck, eslint, vitest màn in và bộ định tuyến xanh; giao diện cũ không thêm lỗi kiểu; thử trên trình duyệt PO00362 và PO363.
+
+Mã nguồn: `backend/app/modules/purchase_order/purchasing_print.py`, `backend/app/modules/purchase_order/controller.py`, `frontend/src/pages/PrintPurchaseRequest.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page.tsx`, `frontend-v2/src/modules/procurement/utils/purchasing-print-sheet.ts`, `backend/scripts/seed_help_thu_mua_mau_in_cr777.py`.
+Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+
+## duoc-CR-778 | Ô lọc ở các màn danh sách Mua hàng gõ tìm được, sửa lỗi bộ lọc nâng cao bắt gõ chữ
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** trên giao diện ERP mới, nhiều ô lọc chọn từ danh sách dài (nhà cung cấp, nhân sự, phân loại, bộ phận, công ty) ở các màn danh sách Mua hàng không có ô tìm, phải cuộn tìm từng dòng; khi rà còn thấy ở bộ lọc nâng cao, các trường chọn theo danh mục nạp từ máy chủ lại hiện ô gõ chữ nên lọc không có tác dụng.
+
+**Đã làm**
+- Thanh lọc các màn danh sách Đơn mua hàng, Yêu cầu mua hàng, Yêu cầu báo giá, Phân công phụ trách và Tiến độ đơn mua hàng đổi các ô chọn từ danh sách dữ liệu sang ô có tìm kiếm không dấu; cách nạp danh sách, mục Tất cả và tham số gửi lên máy chủ giữ y như cũ, các ô danh sách ngắn giữ nguyên.
+- Bộ lọc nâng cao dùng chung: trường chọn chỉ khai nguồn nạp từ máy chủ nay hiện ô chọn có tìm kiếm cho cả điều kiện bằng lẫn thuộc danh sách, giữ đúng tên mục đã chọn và vẫn lưu theo id; áp cho các trường Loại văn bản, Pháp nhân ban hành, Phòng chủ trì, Người chịu trách nhiệm, Sổ văn bản của Văn bản và Vị trí chức vụ của Nhân sự.
+- Bài hướng dẫn Gõ tìm trong ô lọc ở các màn danh sách Mua hàng dưới thẻ Dành cho Nhân viên Mua hàng.
+
+**Kiểm:** bài kiểm mới 14 bài cho bộ lọc nâng cao và 2 bài cho màn Yêu cầu mua hàng; bài kiểm các trang Mua hàng, bộ lọc dùng chung và các khu lân cận xanh; typecheck, lint sạch; thử trên trình duyệt từng màn, so tham số gửi lên trước và sau khi sửa trùng khớp; tái hiện lỗi bộ lọc nâng cao trước khi sửa (lọc phòng bằng chữ ra cả 25 văn bản, sau khi sửa chọn phòng ra đúng 11).
+
+Mã nguồn: `frontend-v2/src/shared/conditional-filter/ui/value-input.tsx`, `frontend-v2/src/shared/ui/search-select.tsx`, năm trang danh sách trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_o_loc_co_tim_cr778.py`.
+Kiểm: `frontend-v2/src/shared/conditional-filter/ui/value-input.test.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-list-page.test.tsx`.
+Deploy: dev 17/11/2026 (erp-v2 e9216729: dựng api + giao diện ERP, seed bài HDSD #741, nạp lại chỉ mục trợ lý).

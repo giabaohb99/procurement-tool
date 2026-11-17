@@ -1,16 +1,11 @@
 import {
   Banknote,
-  BriefcaseBusiness,
-  Building,
-  Building2,
   CalendarDays,
   DoorOpen,
   FilePen,
-  FileSignature,
   CalendarOff,
   CalendarPlus,
   CalendarRange,
-  Database,
   IdCard,
   LayoutDashboard,
   Network,
@@ -58,6 +53,8 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.employees,
       icon: IdCard,
       entity: 'employee',
+      //  duoc-CR-773: Sơ đồ tổ chức ẩn khỏi menu — đang ở sơ đồ thì tô sáng dòng Nhân sự.
+      matchPaths: [appRoutes.hr.orgChart],
     },
     {
       //  duoc-CR-676: duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai ở Trang cá nhân. ⚠️ `entity` +
@@ -77,6 +74,9 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.orgChart,
       icon: Network,
       entity: 'employee',
+      //  duoc-CR-773: anh Được chốt 17/11/2026 ẩn khỏi menu. Mục vẫn giữ để làm hàng rào route — link cũ và các chỗ trỏ
+      //  tới sơ đồ vẫn mở được với người có `employee.read`.
+      hidden: true,
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Submenu chỉ còn các màn NGHIỆP VỤ: đơn nghỉ, nghỉ bù, thanh toán nghỉ phép, lịch nghỉ, quỹ phép năm.
@@ -197,58 +197,8 @@ export const hrModule: ErpModule = {
         },
       ],
     },
-    //  ── Danh mục (duoc-CR-712, đổi tên từ "Master" ở duoc-CR-754) ─────────────
-    //  Gom các danh mục nền (phòng ban, công ty, chức vụ, mẫu HĐLĐ) vào một cụm sổ xuống cho menu gọn.
-    //  ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `manage` của mình: bộ gác route (`canAccessRoute`) duyệt cả
-    //  mục con và khớp theo đường dẫn dài nhất, mục con xét trước mục cha — nên dời vào cụm không đổi
-    //  quyền của màn nào. Mục cha hiện khi có ít nhất một mục con được phép. Cài đặt nhân sự đã dời sang
-    //  cụm Thiết lập (`config/hr-setup-nav-item.tsx`).
-    {
-      label: 'Danh mục',
-      path: appRoutes.hr.departments,
-      icon: Database,
-      entities: ['department', 'company', 'job_position', 'labor_contract_template'],
-      matchPaths: [appRoutes.hr.companies, appRoutes.hr.jobPositions, appRoutes.hr.laborContractTemplates],
-      children: [
-        {
-          label: 'Phòng ban',
-          path: appRoutes.hr.departments,
-          icon: Building,
-          entity: 'department',
-        },
-        {
-          label: 'Công ty',
-          path: appRoutes.hr.companies,
-          icon: Building2,
-          entity: 'company',
-        },
-        {
-          //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
-          //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
-          //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
-          //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
-          //  nhìn, mọi nút đều xám.
-          label: 'Chức vụ',
-          path: appRoutes.hr.jobPositions,
-          icon: BriefcaseBusiness,
-          entity: 'job_position',
-          manage: true,
-        },
-        {
-          //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
-          //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
-          //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
-          label: 'Mẫu hợp đồng',
-          //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
-          //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
-          //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
-          path: appRoutes.hr.laborContractTemplates,
-          icon: FileSignature,
-          entity: 'labor_contract_template',
-        },
-      ],
-    },
-    //  ── Thiết lập (duoc-CR-754): mọi màn cấu hình nền gom một mục sổ xuống — xem `config/hr-setup-nav-item.tsx`.
+    //  ── Thiết lập (duoc-CR-754): mọi màn cấu hình nền gom một dòng, mục con thành dải tab — xem `config/hr-setup-nav-item.tsx`.
+    //  Cụm Danh mục (phòng ban, công ty, chức vụ, mẫu hợp đồng) đã gom vào đây ở duoc-CR-773.
     hrSetupNavItem,
     //  "Phân quyền tài khoản" đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
     //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.
