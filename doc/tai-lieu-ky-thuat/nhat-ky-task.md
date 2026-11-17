@@ -20625,3 +20625,4 @@ Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/pr
 
 Mã nguồn: `frontend-v2/src/shared/conditional-filter/ui/value-input.tsx`, `frontend-v2/src/shared/ui/search-select.tsx`, năm trang danh sách trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_o_loc_co_tim_cr778.py`.
 Kiểm: `frontend-v2/src/shared/conditional-filter/ui/value-input.test.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-list-page.test.tsx`.
+Deploy: dev 17/11/2026 (erp-v2 e9216729: dựng api + giao diện ERP, seed bài HDSD #741, nạp lại chỉ mục trợ lý).
