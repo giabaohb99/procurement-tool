@@ -20496,3 +20496,21 @@ Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`.
 
 Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `frontend-v2/src/modules/hr/config/hr-setup-nav-item.tsx`, bốn trang danh sách phòng ban, công ty, chức vụ, mẫu hợp đồng.
 Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.
+
+## duoc-CR-774 | Trang cá nhân: các nhóm trên thanh bên trái gập / mở được
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** thanh bên trái của Trang cá nhân có bốn nhóm với mười sáu mục, luôn bày hết; người dùng muốn thu gọn các nhóm ít dùng giống cách gập thẻ ở mục Thông tin cá nhân.
+
+**Đã làm**
+- Bốn nhóm Hồ sơ, Việc của tôi, Trợ lý AI của tôi, Bảo mật và hiển thị gập / mở được bằng cách bấm tiêu đề nhóm: đang mở là mũi tên lên, gập lại là mũi tên xuống; trình duyệt nhớ nhóm nào đang gập.
+- Nhóm chứa mục đang xem luôn mở và tiêu đề nhóm đó không bấm được, kể cả khi mở trang thẳng vào một mục thuộc nhóm đã gập, để thanh bên luôn chỉ ra mình đang ở đâu.
+- Nhóm đang gập hiện tổng số đếm của các mục bên trong (việc cần làm, thông báo chưa đọc, yêu cầu hỗ trợ) ngay ở tiêu đề, để gập không làm mất tín hiệu có việc chờ. Ô chọn mục trên điện thoại giữ nguyên.
+
+**Kiểm:** bài kiểm mới cho thanh bên (gập nhóm và hiện tổng số đếm, nhớ sau khi mở lại trang, nhóm chứa mục đang xem luôn mở) cùng các bài của Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt trên local.
+
+Mã nguồn: `frontend-v2/src/app/components/profile/profile-settings-nav.tsx`.
+Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
