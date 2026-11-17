@@ -5,7 +5,9 @@ import { Link } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
@@ -58,6 +60,8 @@ export function AuditTimeline({
   renderEntryAction,
 }: AuditTimelineProps) {
   const [visible, setVisible] = useState(PAGE_STEP)
+  //  Gập được CHỈ khi nằm trong `CardCollapseScope` (Trang cá nhân, duoc-CR-772).
+  const collapse = useCardCollapse('Lịch sử thao tác')
   const { data: logs, isLoading } = useAuditLogs(entity, entityId)
   const { can } = usePermission()
 
@@ -83,9 +87,19 @@ export function AuditTimeline({
           <History className="size-4 text-muted-foreground" />
           Lịch sử thao tác
         </CardTitle>
+        {/*  `CardAction`: đầu thẻ bản thường là LƯỚI (nút tự sang cột phải), bản `dense` là flex (`ml-auto`). */}
+        {collapse.collapsible && (
+          <CardAction className="ml-auto">
+            <CardCollapseToggle
+              title="Lịch sử thao tác"
+              open={collapse.open}
+              onToggle={collapse.toggle}
+            />
+          </CardAction>
+        )}
       </CardHeader>
 
-      <CardContent className={cn(dense && 'px-4')}>
+      <CardContent hidden={!collapse.open} className={cn(dense && 'px-4')}>
         {isLoading && <Skeleton className="h-24 w-full" />}
 
         {!isLoading && total === 0 && (

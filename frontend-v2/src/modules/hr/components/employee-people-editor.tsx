@@ -1,8 +1,10 @@
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import { useId, useState } from 'react'
 
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { SectionHeading } from '@/shared/ui/section-heading'
@@ -108,6 +110,8 @@ export function EmployeePeopleEditor<T extends { id: number }>({
   }
 
   const showSaveButton = canWrite && !onDraftChange
+  //  Gập được CHỈ khi nằm trong `CardCollapseScope` (Trang cá nhân, duoc-CR-772); màn hồ sơ nhân sự luôn mở.
+  const collapse = useCardCollapse(title)
 
   if (isLoading) {
     return (
@@ -123,24 +127,31 @@ export function EmployeePeopleEditor<T extends { id: number }>({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <SectionHeading>{title}</SectionHeading>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          {collapse.open && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
         </div>
 
-        {showSaveButton && (
-          <Button type="button" size="sm" onClick={() => onSave(draft)} disabled={isSaving}>
-            {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-            Lưu danh sách
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {showSaveButton && collapse.open && (
+            <Button type="button" size="sm" onClick={() => onSave(draft)} disabled={isSaving}>
+              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+              Lưu danh sách
+            </Button>
+          )}
+          {collapse.collapsible && (
+            <CardCollapseToggle title={title} open={collapse.open} onToggle={collapse.toggle} />
+          )}
+        </div>
       </div>
 
-      {draft.length === 0 && (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Chưa khai ai.
-        </p>
-      )}
+      {/*  Gập = thuộc tính `hidden`, vẫn dựng thân: bản nháp đang gõ dở không mất khi gập. */}
+      <div hidden={!collapse.open} className="flex flex-col gap-4">
+        {draft.length === 0 && (
+          <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+            Chưa khai ai.
+          </p>
+        )}
 
-      {/*  ⚠️ CHẶN "gửi biểu mẫu ngầm" của trình duyệt.
+        {/*  ⚠️ CHẶN "gửi biểu mẫu ngầm" của trình duyệt.
 
            Bảng này nằm BÊN TRONG `<form>` của màn hồ sơ. Gõ tên người báo tin
            rồi quen tay nhấn Enter là trình duyệt tự bấm nút submit đầu tiên —
@@ -158,72 +169,73 @@ export function EmployeePeopleEditor<T extends { id: number }>({
            Không chặn cho `<textarea>`: ở đó Enter là xuống dòng, trình duyệt
            vốn không submit. Bảng này chưa có ô nào như vậy, nhưng khai sẵn để
            lần sau thêm cột không phải nhớ lại. */}
-      <div
-        className="flex flex-col gap-3"
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter') return
-          if (event.target instanceof HTMLTextAreaElement) return
-          event.preventDefault()
-        }}
-      >
-        {draft.map((row, index) => (
-          <div
-            key={row.id || `moi-${index}`}
-            className="grid items-end gap-3 rounded-md border p-3 md:grid-cols-12"
-          >
-            {columns.map((col) => (
-              <PeopleField
-                key={col.key}
-                column={col}
-                value={row[col.key]}
-                disabled={!canWrite}
-                onChange={(v) => updateCell(index, col.key, v)}
-              />
-            ))}
+        <div
+          className="flex flex-col gap-3"
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return
+            if (event.target instanceof HTMLTextAreaElement) return
+            event.preventDefault()
+          }}
+        >
+          {draft.map((row, index) => (
+            <div
+              key={row.id || `moi-${index}`}
+              className="grid items-end gap-3 rounded-md border p-3 md:grid-cols-12"
+            >
+              {columns.map((col) => (
+                <PeopleField
+                  key={col.key}
+                  column={col}
+                  value={row[col.key]}
+                  disabled={!canWrite}
+                  onChange={(v) => updateCell(index, col.key, v)}
+                />
+              ))}
 
-            {canWrite && (
-              <div className="md:col-span-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Xóa dòng ${index + 1}`}
-                  onClick={() => commitDraft(draft.filter((_, i) => i !== index))}
-                >
-                  <Trash2 className="text-destructive" />
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              {canWrite && (
+                <div className="md:col-span-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Xóa dòng ${index + 1}`}
+                    onClick={() => commitDraft(draft.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="text-destructive" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
-      {canWrite && (
-        <div className="flex flex-wrap items-center gap-3">
-          {/*  ⚠️ Chặn NGAY Ở NÚT, không đợi backend.
+        {canWrite && (
+          <div className="flex flex-wrap items-center gap-3">
+            {/*  ⚠️ Chặn NGAY Ở NÚT, không đợi backend.
 
                Backend có trần `MAX_PEOPLE_ROWS`, nhưng nó chỉ nói ra lúc bấm
                Lưu — và nói bằng tiếng Anh (`List should have at most 30 items
                after validation, not 35`). Dựng lại được 08/09/2026: thêm 35
                dòng, gõ hết, bấm Lưu, mất trắng công gõ. Trần phải nhìn thấy
                TRƯỚC khi gõ, không phải sau. */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={draft.length >= MAX_PEOPLE_ROWS}
-            onClick={() => commitDraft([...draft, emptyRow()])}
-          >
-            <Plus />
-            Thêm dòng
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            {draft.length >= MAX_PEOPLE_ROWS
-              ? `Đã đủ ${MAX_PEOPLE_ROWS} dòng, không thêm được nữa.`
-              : `Dòng chưa có họ tên sẽ không được lưu. Tối đa ${MAX_PEOPLE_ROWS} dòng.`}
-          </p>
-        </div>
-      )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={draft.length >= MAX_PEOPLE_ROWS}
+              onClick={() => commitDraft([...draft, emptyRow()])}
+            >
+              <Plus />
+              Thêm dòng
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {draft.length >= MAX_PEOPLE_ROWS
+                ? `Đã đủ ${MAX_PEOPLE_ROWS} dòng, không thêm được nữa.`
+                : `Dòng chưa có họ tên sẽ không được lưu. Tối đa ${MAX_PEOPLE_ROWS} dòng.`}
+            </p>
+          </div>
+        )}
+      </div>
     </Card>
   )
 }

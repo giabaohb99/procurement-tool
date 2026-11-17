@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { cn } from '@/shared/utils/cn'
 
 interface FormCardProps {
@@ -39,17 +41,34 @@ export function FormCard({
   className,
   contentClassName,
 }: FormCardProps) {
+  //  Gập được CHỈ khi nằm trong `CardCollapseScope` (Trang cá nhân, duoc-CR-772); màn khác luôn mở.
+  const collapse = useCardCollapse(title)
   return (
     <Card className={cn('gap-4 py-4', className)}>
       {/* Vạch ngăn nét ĐỨT: nét liền dễ bị đọc nhầm thành mép trên của bảng dữ
           liệu, còn nét đứt đọc ra ngay là "hết tiêu đề, bắt đầu ô nhập". */}
-      <CardHeader className="flex min-h-9 flex-row items-center gap-2.5 border-b border-dashed px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'flex min-h-9 flex-row items-center gap-2.5 px-4',
+          collapse.open && 'border-b border-dashed pb-3!',
+        )}
+      >
         {Icon && <Icon className={cn('size-4.5 shrink-0', iconClassName)} />}
         <CardTitle className="text-base text-navy dark:text-foreground">{title}</CardTitle>
-        {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
+        {(actions || collapse.collapsible) && (
+          <div className="ml-auto flex items-center gap-2">
+            {actions}
+            {collapse.collapsible && (
+              <CardCollapseToggle title={title} open={collapse.open} onToggle={collapse.toggle} />
+            )}
+          </div>
+        )}
       </CardHeader>
 
+      {/*  Gập = thuộc tính `hidden` (vẫn dựng thân): cùng lý do với `CollapsibleSection` — ô nhập trong thân
+           không bị hủy mount nên luật chặn submit không biến mất. */}
       <CardContent
+        hidden={!collapse.open}
         className={cn(
           'px-4',
           '[&_[data-slot=form-item]]:gap-1.5',

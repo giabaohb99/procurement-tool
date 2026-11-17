@@ -2,22 +2,7 @@ import { ChevronDown } from 'lucide-react'
 import { useCallback, useState, type ReactNode } from 'react'
 
 import { cn } from '@/shared/utils/cn'
-
-const STORAGE_PREFIX = 'erp.section.'
-
-/** Bản lưu của người dùng; `null` = **chưa từng** bấm gập/mở khối này. */
-function readSaved(storageKey: string | undefined): boolean | null {
-  if (!storageKey) return null
-  try {
-    const saved = localStorage.getItem(STORAGE_PREFIX + storageKey)
-    return saved === null ? null : saved === '1'
-  } catch {
-    //  Chế độ riêng tư / bộ nhớ đầy thì `localStorage` NÉM. Nuốt và coi như
-    //  chưa có bản lưu: nhớ trạng thái gập là tiện nghi, không đáng làm trắng
-    //  cả trang.
-    return null
-  }
-}
+import { readSectionOpen, writeSectionOpen } from '@/shared/utils/section-open-storage'
 
 interface CollapsibleSectionProps {
   title: string
@@ -84,19 +69,13 @@ export function CollapsibleSection({
   //  Giữ `null` thì `defaultOpen` còn SỐNG cho tới khi người dùng tự quyết —
   //  đúng luật "bản lưu thắng, không có bản lưu thì theo mặc định" mà bảng dữ
   //  liệu đang dùng cho `defaultHidden`.
-  const [saved, setSaved] = useState<boolean | null>(() => readSaved(storageKey))
+  const [saved, setSaved] = useState<boolean | null>(() => readSectionOpen(storageKey))
   const open = forceOpen || (saved ?? defaultOpen)
 
   const toggle = useCallback(() => {
     setSaved((current) => {
       const next = !(current ?? defaultOpen)
-      if (storageKey) {
-        try {
-          localStorage.setItem(STORAGE_PREFIX + storageKey, next ? '1' : '0')
-        } catch {
-          //  Không ghi được thì thôi — trạng thái vẫn đúng trong phiên này.
-        }
-      }
+      writeSectionOpen(storageKey, next)
       return next
     })
   }, [storageKey, defaultOpen])
