@@ -133,6 +133,7 @@ phiếu. Ban điều hành chốt giữ hai mẫu thu mua nhưng mặc định v
 
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `frontend/src/pages/PrintPurchaseRequest.tsx`.
 Kiểm: `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## bao-CR-770 | Trợ lý đọc dòng đơn mua hàng trên hệ khi hỏi N đơn gần nhất của một mã hàng
 - status: xong
@@ -20430,6 +20431,7 @@ Kiểm: `test/backend/test_tro_ly_du_an_toi_tham_gia_cr763.py`.
 
 Mã nguồn: `backend/app/modules/approval/upcoming_stages_service.py`, `backend/app/modules/approval/preview_service.py`, `backend/app/modules/approval/instance_controller.py`, `frontend-v2/src/modules/approval/components/approval-trail-upcoming-event.tsx`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
 Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-766-luot-2 | Câu trình duyệt trên dòng thời gian hiện tên luồng in đậm, bỏ ngoặc kép góc
 - status: xong
@@ -20446,6 +20448,7 @@ Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`, `fronten
 
 Mã nguồn: `frontend-v2/src/modules/approval/helpers/split-quoted-name.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.tsx`.
 Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `frontend-v2/src/modules/approval/components/approval-trail-card.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-771 | Bố trí lại mục Thông tin cá nhân ở Trang cá nhân: tóm tắt ở đầu, hồ sơ gom một thẻ
 - status: xong
@@ -20464,6 +20467,7 @@ Kiểm: `frontend-v2/src/modules/approval/helpers/split-quoted-name.test.ts`, `f
 **Kiểm:** vitest Trang cá nhân xanh; typecheck, lint sạch; xem tận mắt ở khổ 1440px và 390px, không tràn ngang.
 
 Mã nguồn: `frontend-v2/src/app/components/profile/profile-info-section.tsx`, `frontend-v2/src/app/components/profile/profile-record-card.tsx`, `frontend-v2/src/app/components/profile/profile-field-group.tsx`, `frontend-v2/src/app/components/profile/profile-info-card.tsx`, `frontend-v2/src/app/pages/profile-page.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-772 | Trang cá nhân: mỗi thẻ gập / mở được bằng nút chevron, nhớ trạng thái
 - status: xong
@@ -20482,6 +20486,7 @@ Mã nguồn: `frontend-v2/src/app/components/profile/profile-info-section.tsx`, 
 
 Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/utils/section-open-storage.ts`, `frontend-v2/src/shared/ui/form-card.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, `frontend-v2/src/modules/hr/components/employee-people-editor.tsx`, `frontend-v2/src/app/components/profile/profile-info-section.tsx`.
 Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-766-luot-3 | Trợ lý AI trả lời được đơn của tôi duyệt xong thì tới tay ai
 - status: xong
@@ -20499,6 +20504,7 @@ Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`.
 
 Mã nguồn: `backend/app/modules/assistant/tools/approval_tool.py`.
 Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-773 | Menu Nhân sự: ẩn Sơ đồ tổ chức, gom Danh mục vào Thiết lập
 - status: xong
@@ -20516,6 +20522,7 @@ Kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`.
 
 Mã nguồn: `frontend-v2/src/modules/hr/routes.tsx`, `frontend-v2/src/modules/hr/config/hr-setup-nav-item.tsx`, bốn trang danh sách phòng ban, công ty, chức vụ, mẫu hợp đồng.
 Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-774 | Trang cá nhân: các nhóm trên thanh bên trái gập / mở được
 - status: xong
@@ -20534,6 +20541,7 @@ Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.
 
 Mã nguồn: `frontend-v2/src/app/components/profile/profile-settings-nav.tsx`.
 Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-774-hdsd | Cập nhật hướng dẫn sử dụng, cẩm nang trợ lý và RAG cho đợt duoc-CR-766, 771, 772, 773, 774
 - status: xong
@@ -20552,6 +20560,7 @@ Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
 **Kiểm:** chạy lại các phần nạp bài trên local không lỗi, nạp RAG 27 nguồn 194 đoạn không lỗi, cổng kiểm tài liệu không có lỗi mới.
 
 Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_help_nhan_su.py`, `backend/scripts/seed_help_hop_dong_lao_dong.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`, `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-775 | Tiến độ đơn mua hàng hiện mã kèm tên nhân sự phụ trách, không còn hiện mã trần thay tên
 - status: xong
@@ -20570,6 +20579,7 @@ Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_hel
 
 Mã nguồn: `backend/app/modules/purchase_progress/nspt_people.py`, `backend/app/modules/purchase_progress/controller.py`, `backend/app/modules/purchase_progress/sort_expressions.py`, `backend/app/modules/employee/service.py`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx`.
 Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-775-hdsd | Hướng dẫn sử dụng, Trợ lý AI và cẩm nang Thu mua nói NSPT dạng mã kèm tên
 - status: xong
@@ -20588,6 +20598,7 @@ Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.
 
 Mã nguồn: `backend/app/modules/assistant/tools/procurement_doc_tool.py`, `backend/scripts/seed_help_thu_mua_nspt_cr775.py`, `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`.
 Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-776 | Yêu cầu mua hàng và Đơn mua hàng nhập được đơn giá sau VAT, tự tính giá trước thuế
 - status: xong
@@ -20608,6 +20619,7 @@ Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/vat-price.ts`, `frontend/src/utils/vatPrice.ts`, bảng dòng và hộp chi tiết dòng của YCMH, ĐMH ở hai giao diện, `backend/app/modules/assistant/tools/po_update.py`, `backend/scripts/seed_help_thu_mua_gia_sau_vat_cr776.py`.
 Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-777 | In phiếu đề xuất mua hàng từ đơn mua hàng có thêm Mẫu thu mua có chữ ký và không chữ ký
 - status: xong
@@ -20627,6 +20639,7 @@ Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.
 
 Mã nguồn: `backend/app/modules/purchase_order/purchasing_print.py`, `backend/app/modules/purchase_order/controller.py`, `frontend/src/pages/PrintPurchaseRequest.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page.tsx`, `frontend-v2/src/modules/procurement/utils/purchasing-print-sheet.ts`, `backend/scripts/seed_help_thu_mua_mau_in_cr777.py`.
 Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
 
 ## duoc-CR-778 | Ô lọc ở các màn danh sách Mua hàng gõ tìm được, sửa lỗi bộ lọc nâng cao bắt gõ chữ
 - status: xong
@@ -20646,3 +20659,4 @@ Kiểm: `test/backend/test_mau_in_thu_mua_cr777.py`, `frontend-v2/src/modules/pr
 Mã nguồn: `frontend-v2/src/shared/conditional-filter/ui/value-input.tsx`, `frontend-v2/src/shared/ui/search-select.tsx`, năm trang danh sách trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_o_loc_co_tim_cr778.py`.
 Kiểm: `frontend-v2/src/shared/conditional-filter/ui/value-input.test.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-list-page.test.tsx`.
 Deploy: dev 17/11/2026 (erp-v2 e9216729: dựng api + giao diện ERP, seed bài HDSD #741, nạp lại chỉ mục trợ lý).
+Deploy: prod 17/11/2026 bản 2.24.0 (main a4f25399, dump prod_truoc_release_20261117_1707.sql.gz).
