@@ -95,3 +95,43 @@ describe('PurchaseOrderLineDialog — tiến độ dòng', () => {
     expect(screen.queryByRole('button', { name: 'Tạm ngưng' })).toBeNull()
   })
 })
+
+/** duoc-CR-776 — hộp chi tiết dòng cho gõ cả đơn giá trước thuế lẫn sau VAT. */
+describe('PurchaseOrderLineDialog — nhập giá sau VAT', () => {
+  it('back-computes the pre-VAT price from the typed post-VAT price', async () => {
+    const onChange = vi.fn()
+    renderDialog({ editable: true, item: line({ price: 0, vat: 8 }), onChange })
+
+    await userEvent.type(screen.getByLabelText(/^Đơn giá \(Sau VAT\)/), '108000')
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ price: 100000, price_after_vat_input: 108000 }),
+    )
+  })
+
+  it('typing the pre-VAT price drops any typed post-VAT value', async () => {
+    const onChange = vi.fn()
+    renderDialog({
+      editable: true,
+      item: line({ price: 92592.5926, vat: 8, price_after_vat_input: 100000 }),
+      onChange,
+    })
+
+    expect(screen.getByLabelText(/^Đơn giá \(Sau VAT\)/)).toHaveValue('100.000')
+    const pre = screen.getByLabelText(/^Đơn giá(?! \()/)
+    await userEvent.clear(pre)
+    await userEvent.type(pre, '5')
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ price: 5, price_after_vat_input: undefined }),
+    )
+  })
+
+  it('shows both prices read-only on a locked order, and drops post-VAT on import orders', () => {
+    const { unmount } = renderDialog({ item: line({ price: 100000, vat: 8 }) })
+    expect(screen.queryByLabelText(/^Đơn giá \(Sau VAT\)/)).toBeNull()
+    expect(screen.getByText('108.000 đ')).toBeInTheDocument()
+    unmount()
+
+    renderDialog({ editable: true, order: { order_type: 2, currency: 'USD', exchange_rate: 25_000 } })
+    expect(screen.queryByText(/^Đơn giá \(Sau VAT\)/)).toBeNull()
+  })
+})

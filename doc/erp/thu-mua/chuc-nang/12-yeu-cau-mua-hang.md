@@ -288,6 +288,11 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Dùng trong công thức tính Thành tiền cùng với `vat_pct`.
+- Nhập bằng giá sau VAT (duoc-CR-776, 17/11/2026): dòng hàng có thêm ô **Đơn giá sau VAT** sửa được ngay cạnh (bảng dòng và hộp chi
+  tiết dòng, cả giao diện cũ lẫn mới). Gõ ô nào ô kia tự tính: sau VAT = làm tròn 2 số lẻ của `price × (100 + VAT) / 100`;
+  `price` = làm tròn 4 số lẻ của `sau VAT × 100 / (100 + VAT)`. Đổi VAT %: vừa gõ ô sau VAT thì giữ giá sau VAT, còn lại
+  giữ `price`. Máy chủ chỉ lưu `price`; ô sau VAT là cách nhập, không có cột riêng. Kế hoạch:
+  [`plans/261117-nhap-gia-sau-vat-duoc-cr-776`](../plans/261117-nhap-gia-sau-vat-duoc-cr-776/plan.md).
 
 ### 8. % VAT theo dòng (`vat_pct`)
 

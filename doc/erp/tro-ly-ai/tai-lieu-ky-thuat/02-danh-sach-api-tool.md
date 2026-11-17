@@ -407,6 +407,9 @@ an toàn xem mục "Đợt CR-218" cuối tài liệu.
   / `print_transfer` (ánh xạ vào `print_texts`, tái dùng khe PATCH CR-149 nên
   submitted/approved vẫn sửa được đúng luật form). Trường ngoài whitelist -> error kèm
   danh sách hợp lệ; giá trị mới trùng giá trị cũ bị loại khỏi đề xuất.
+- [SỬA 17/11/2026, duoc-CR-776] Dòng ĐMH (`po_lines`) nhận thêm `price_after_vat` = đơn giá ĐÃ GỒM VAT: máy tính đơn
+  giá trước VAT theo VAT của dòng (hoặc `vat` gửi kèm), nhân / chia theo 100 + VAT, giữ 4 số lẻ — cùng công thức hai
+  giao diện (`assistant/tools/po_update.price_before_vat`). Không gửi cùng `price`; không dùng với `all_lines`.
 - Đề xuất kèm `confirm_token` (Fernet, khóa dẫn xuất từ `JWT_SECRET`): gắn user + entity +
   id phiếu + đúng map thay đổi, hạn dùng 15 phút. Lúc xác nhận backend KIỂM LẠI TOÀN BỘ
   (không tin đề xuất cũ): token đúng chủ (sai chủ = 403) -> `require(entity, write)` +

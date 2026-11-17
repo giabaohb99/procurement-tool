@@ -20568,3 +20568,23 @@ Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.
 
 Mã nguồn: `backend/app/modules/assistant/tools/procurement_doc_tool.py`, `backend/scripts/seed_help_thu_mua_nspt_cr775.py`, `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`.
 Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.
+
+## duoc-CR-776 | Yêu cầu mua hàng và Đơn mua hàng nhập được đơn giá sau VAT, tự tính giá trước thuế
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** nhà cung cấp thường báo giá đã gồm VAT, người mua phải tự chia ra giá chưa VAT rồi mới gõ vào phiếu; các màn Thu mua chỉ cho nhập giá trước thuế và tự tính sau thuế, không có chiều ngược lại.
+
+**Đã làm**
+- Dòng hàng Yêu cầu mua hàng và Đơn mua hàng ở cả giao diện cũ và giao diện ERP mới, trên bảng dòng lẫn hộp chi tiết dòng, có hai ô cùng sửa được: đơn giá chưa VAT và đơn giá sau VAT. Gõ ô nào thì ô kia tự tính; đơn giá chưa VAT tính ngược giữ bốn số lẻ, giá sau VAT làm tròn hai số lẻ. Nhãn hai giao diện khớp nhau từng chữ.
+- Đổi VAT phần trăm khi đã có giá thì giữ ô vừa gõ gần nhất: vừa gõ giá sau VAT thì giữ nó và tính lại giá trước thuế, còn lại giữ giá trước thuế như trước nay. Số sau VAT người dùng gõ chỉ nằm trên màn hình, không gửi lên máy chủ.
+- Máy chủ vẫn lưu đơn giá chưa VAT; công nợ, bản in, yêu cầu báo giá và phiếu khảo sát không đổi. Hai giao diện dùng cùng một cách tính nhân chia theo 100 cộng VAT để ra đúng từng số lẻ, kể cả số rất lớn.
+- Bài hướng dẫn Nhập đơn giá sau VAT dưới thẻ Dành cho Nhân viên Mua hàng và cẩm nang Quy trình thu mua ghi cách dùng.
+- Công cụ trợ lý đề xuất sửa đơn mua hàng (Trợ lý web, bot, cổng MCP) nhận thêm giá đã gồm VAT cho từng dòng: máy tự tính đơn giá chưa VAT theo VAT của dòng bằng cùng công thức hai giao diện, không để trợ lý tự chia nhẩm; không gửi cùng đơn giá chưa VAT, không áp một lượt cho mọi dòng. Tài liệu chức năng Yêu cầu mua hàng, Đơn mua hàng và tài liệu công cụ trợ lý ghi đủ.
+
+**Kiểm:** bốn bài kiểm mới cho công cụ trợ lý sửa đơn mua hàng (tính ngược đúng bốn số lẻ, dùng VAT gửi kèm, chặn gửi cả hai giá và áp mọi dòng, đơn nhập khẩu); bài kiểm hàm tính của giao diện mới 22 bài cùng các bài bảng dòng, hộp chi tiết dòng và trang chi tiết đơn xanh; typecheck giao diện mới sạch, giao diện cũ không thêm lỗi; thử trên trình duyệt cả hai giao diện (gõ sau VAT, đổi VAT, lưu thật không kèm trường phụ).
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/vat-price.ts`, `frontend/src/utils/vatPrice.ts`, bảng dòng và hộp chi tiết dòng của YCMH, ĐMH ở hai giao diện, `backend/app/modules/assistant/tools/po_update.py`, `backend/scripts/seed_help_thu_mua_gia_sau_vat_cr776.py`.
+Kiểm: `frontend-v2/src/modules/procurement/utils/vat-price.test.ts`.

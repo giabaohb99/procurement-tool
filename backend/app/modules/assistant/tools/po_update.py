@@ -57,6 +57,10 @@ PO_LINES_PARAM = {
             "product_code": {"type": "string", "description": "Mã hàng của dòng (khi mã không trùng trên đơn)."},
             "all_lines": {"type": "boolean", "description": "true = áp cho mọi dòng."},
             "price": {"type": "number", "description": "Đơn giá mới TRƯỚC VAT, theo loại tiền của đơn, >= 0."},
+            "price_after_vat": {"type": "number",
+                                "description": "Đơn giá mới ĐÃ GỒM VAT (người dùng nói giá sau thuế) — máy tự tính đơn giá "
+                                               "trước VAT theo VAT của dòng (hoặc `vat` gửi kèm), giữ 4 số lẻ. KHÔNG tự "
+                                               "chia nhẩm; không gửi cùng `price`."},
             "vat": {"type": "number", "description": "% VAT mới, 0 đến dưới 100. Đơn nhập khẩu luôn 0."},
             "qty_order": {"type": "number", "description": "SL đặt NCC mới, >= 0."},
             "warehouse_code": {"type": "string", "description": "Kho nhận: mã HOẶC tên kho trong danh mục."},
@@ -151,6 +155,14 @@ def _pr_prices(db, po) -> dict[str, float]:
     return {(r.product_code or "").strip(): float(r.price or 0) for r in rows if float(r.price or 0) > 0}
 
 
+def price_before_vat(price_after_vat: float, vat) -> float:
+    """Đơn giá trước VAT từ giá đã gồm VAT — nhân / chia theo (100 + VAT), giữ 4 số lẻ, ĐÚNG công thức hai giao diện
+    (`frontend-v2/.../utils/vat-price.ts`, `frontend/src/utils/vatPrice.ts`, duoc-CR-776). VAT âm / rỗng coi như 0."""
+    rate = float(vat or 0)
+    rate = rate if rate > 0 else 0.0
+    return round(float(price_after_vat) * 100 / (100 + rate), 4)
+
+
 # ── Kiểm một giá trị ────────────────────────────────────────────────────────────────────
 
 def _clean_value(db, po, field: str, raw) -> tuple[object, str | None]:
@@ -223,13 +235,24 @@ def clean_po_lines(db, po, raw) -> tuple[list[dict], list[dict], list[str], str 
     for index, op in enumerate(raw, start=1):
         if not isinstance(op, dict):
             return [], [], [], f"Dòng sửa thứ {index} sai định dạng."
-        unknown = [k for k in op if k not in LINE_FIELDS and k not in ("line_id", "product_code", "all_lines")]
+        unknown = [k for k in op if k not in LINE_FIELDS
+                   and k not in ("line_id", "product_code", "all_lines", "price_after_vat")]
         if unknown:
             allowed = ", ".join(LINE_FIELDS)
             return [], [], [], (f"Trường {', '.join(unknown)} KHÔNG sửa được qua trợ lý trên dòng ĐMH (chỉ: {allowed}) — "
                                 "báo người dùng mở đơn sửa tay.")
         fields = [f for f in LINE_FIELDS if f in op]
-        if not fields:
+        post_vat = None
+        if "price_after_vat" in op:
+            #  duoc-CR-776: người dùng nói giá đã gồm VAT — máy tính ngược, cùng công thức màn hình (giữ 4 số lẻ).
+            if "price" in op:
+                return [], [], [], "Chỉ gửi một trong hai: price (trước VAT) hoặc price_after_vat (đã gồm VAT)."
+            if op.get("all_lines") is True:
+                return [], [], [], "price_after_vat phải sửa từng dòng, không áp cho mọi dòng."
+            post_vat, post_error = _clean_value(db, po, "price", op.get("price_after_vat"))
+            if post_error:
+                return [], [], [], post_error
+        if not fields and post_vat is None:
             return [], [], [], f"Dòng sửa thứ {index} không có trường nào để đổi."
         if op.get("all_lines") is True:
             bad = [f for f in fields if f not in ALL_LINES_FIELDS]
@@ -249,7 +272,10 @@ def clean_po_lines(db, po, raw) -> tuple[list[dict], list[dict], list[str], str 
             if (row.progress_status or "") in _DONE:
                 return [], [], [], (f"Dòng {order[row.id]} ({row.product_code}) đã Hoàn thành / Hủy — không sửa được, "
                                     "kể cả trên web.")
-            wanted.setdefault(row.id, {}).update(values)
+            row_values = dict(values)
+            if post_vat is not None:
+                row_values["price"] = price_before_vat(post_vat, values.get("vat", _value(row, "vat")))
+            wanted.setdefault(row.id, {}).update(row_values)
     return _build_view(db, po, rows, order, wanted)
 
 

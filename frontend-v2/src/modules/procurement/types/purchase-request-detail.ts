@@ -28,6 +28,12 @@ export interface PurchaseRequestItem {
   price: number
   /** % VAT theo TỪNG DÒNG (phiếu cũ dùng `vat_rate` chung ở header). */
   vat_pct: number
+  /**
+   * duoc-CR-776 — số ĐƠN GIÁ SAU VAT người dùng vừa gõ trên dòng (chỉ ở bản nháp giao diện,
+   * KHÔNG gửi lên máy chủ). Có mặt = ô gõ gần nhất là ô sau VAT, nên đổi VAT thì giữ số này và
+   * tính lại `price`. Xem `utils/vat-price.ts`.
+   */
+  price_after_vat_input?: number
   /** Backend tự tính = qty × price × (1 + vat_pct). */
   amount: number
   /** TÊN kho nhận — chữ hiển thị. */

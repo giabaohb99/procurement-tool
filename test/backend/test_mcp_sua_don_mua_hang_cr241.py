@@ -282,3 +282,38 @@ def test_qua_mcp_khoa_duoc_ghi_ghi_dung(w, edit_on):
     assert float(_line(w.db, w.draft, "SP1").price) == 1100
     again = _mcp_call(w, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "update", "draft": out["proposal"]})
     assert "Chưa ghi gì" in again["error"]
+
+
+# ── duoc-CR-776: người dùng nói giá ĐÃ GỒM VAT — máy tính ngược, không để trợ lý chia nhẩm ─────
+
+def test_price_after_vat_is_converted_to_pre_vat_price_with_four_decimals(w):
+    out = _propose(w, w.staff, "PO01178", po_lines=[{"product_code": "SP2", "price_after_vat": 100000}])
+    assert any(c["label"] == "Dòng 2 · SP2 · Đơn giá" for c in out["proposal"]["changes"])
+    confirm_update(w.db, w.staff, _token(out))
+    w.db.expire_all()
+    assert float(_line(w.db, w.draft, "SP2").price) == 92592.5926
+
+
+def test_price_after_vat_uses_the_new_vat_sent_with_it(w):
+    out = _propose(w, w.staff, "PO01178", po_lines=[{"product_code": "SP2", "price_after_vat": 110000, "vat": 10}])
+    confirm_update(w.db, w.staff, _token(out))
+    w.db.expire_all()
+    sp2 = _line(w.db, w.draft, "SP2")
+    assert (float(sp2.price), float(sp2.vat)) == (100000, 10)
+
+
+def test_price_after_vat_rejects_both_prices_and_all_lines(w):
+    both = _propose(w, w.staff, "PO01178", po_lines=[{"product_code": "SP2", "price": 1, "price_after_vat": 2}])
+    assert "Chỉ gửi một trong hai" in str(both)
+    every = _propose(w, w.staff, "PO01178", po_lines=[{"all_lines": True, "price_after_vat": 2}])
+    assert "từng dòng" in str(every)
+    negative = _propose(w, w.staff, "PO01178", po_lines=[{"product_code": "SP2", "price_after_vat": -5}])
+    assert negative.get("status") != "ready"
+
+
+def test_price_after_vat_on_import_order_equals_price(w):
+    """Đơn nhập khẩu VAT dòng luôn 0 → giá sau VAT bằng giá trước VAT."""
+    out = _propose(w, w.staff, "PO01180", po_lines=[{"product_code": "SP9", "price_after_vat": 31.5}])
+    confirm_update(w.db, w.staff, _token(out))
+    w.db.expire_all()
+    assert float(_line(w.db, w.imported, "SP9").price) == 31.5

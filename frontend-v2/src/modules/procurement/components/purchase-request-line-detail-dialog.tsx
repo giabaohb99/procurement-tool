@@ -35,6 +35,12 @@ import {
   type CompareImage,
 } from './purchase-request-line-image-compare-dialog'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
+import {
+  applyPriceAfterVatInput,
+  applyPriceBeforeVatInput,
+  repriceOnVatChange,
+  resolveLinePriceAfterVat,
+} from '../utils/vat-price'
 
 interface PurchaseRequestLineDetailDialogProps {
   item: PurchaseRequestItem | null
@@ -274,10 +280,31 @@ export function PurchaseRequestLineDetailDialog({
                   min={0}
                   step="0.0001"
                   value={draft.price || ''}
-                  onChange={(event) => patch({ price: Number(event.target.value) })}
+                  // duoc-CR-776: gõ trước thuế thì ô sau VAT tự tính lại theo đơn giá này.
+                  onChange={(event) =>
+                    patch(applyPriceBeforeVatInput(Number(event.target.value)))
+                  }
                 />
               ) : (
                 <ReadOnlyValue className="tabular-nums">{formatUnitPrice(draft.price)}</ReadOnlyValue>
+              )}
+            </LineField>
+            {/* duoc-CR-776: gõ giá sau VAT thì tự tính ngược giá đề xuất (chưa VAT), 4 số lẻ. */}
+            <LineField label="Đơn giá sau VAT">
+              {editing ? (
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={resolveLinePriceAfterVat(draft, draft.vat_pct) || ''}
+                  onChange={(event) =>
+                    patch(applyPriceAfterVatInput(Number(event.target.value), draft.vat_pct))
+                  }
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">
+                  {formatUnitPrice(resolveLinePriceAfterVat(draft, draft.vat_pct))}
+                </ReadOnlyValue>
               )}
             </LineField>
             <LineField label="VAT (%)">
@@ -286,7 +313,11 @@ export function PurchaseRequestLineDetailDialog({
                   type="number"
                   min={0}
                   value={draft.vat_pct || 0}
-                  onChange={(event) => patch({ vat_pct: Number(event.target.value) })}
+                  // duoc-CR-776: đổi VAT giữ ô gõ gần nhất — vừa gõ sau VAT thì tính lại giá đề xuất.
+                  onChange={(event) => {
+                    const vat = Number(event.target.value)
+                    patch({ vat_pct: vat, ...repriceOnVatChange(draft, draft.vat_pct, vat) })
+                  }}
                 />
               ) : (
                 <ReadOnlyValue className="tabular-nums">{`${draft.vat_pct || 0}%`}</ReadOnlyValue>

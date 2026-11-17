@@ -13,6 +13,7 @@ import CopyText from '../components/CopyText'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import NumberInput from '../components/NumberInput'
 import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
+import { POST_VAT_DECIMALS, getPostVatDisplay, patchOnPreVatEdit, patchOnPostVatEdit, patchOnVatChange } from '../utils/vatPrice'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import NotFound from '../components/NotFound'
@@ -424,6 +425,13 @@ export default function PurchaseOrderDetail() {
   const overCodes = useMemo(() => new Set(overOrders.map((x) => x.code)), [overOrders])
   const setItem = (i: number, patch: any) =>
     setPo((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
+  // duoc-CR-776: nhập đơn giá theo hai chiều (trước thuế <-> sau VAT). `_postVat` / `_lastPriceField` chỉ
+  // nằm ở state giao diện; payload lưu bên dưới liệt kê từng trường nên không bao giờ gửi chúng lên API.
+  const setItemFn = (i: number, fn: (it: any) => any) =>
+    setPo((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...fn(it) } : it) }))
+  const setItemPrice = (i: number, v: number) => setItemFn(i, (it) => patchOnPreVatEdit(it, v))
+  const setItemPostVat = (i: number, v: number) => setItemFn(i, (it) => patchOnPostVatEdit(it, v, it.vat))
+  const setItemVat = (i: number, v: number) => setItemFn(i, (it) => ({ vat: v, ...patchOnVatChange(it, it.vat, v) }))
   const addItems = (n = 1) => setPo((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
   const delItem = (i: number) => setPo((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const dupItem = (i: number) => setPo((s: any) => {
@@ -1075,7 +1083,7 @@ export default function PurchaseOrderDetail() {
           style={{ width: w }}
           value={items[i][k] ?? 0}
           disabled={dis}
-          onChange={(val: number) => setItem(i, { [k]: val })}
+          onChange={(val: number) => setItemPrice(i, val)}
         />
       )
     }
@@ -1407,7 +1415,7 @@ export default function PurchaseOrderDetail() {
                     {/* bao-CR-319: đơn NHẬP KHẨU ẩn VAT dòng hàng (luôn 0, thuế khai ở bảng Chi phí lô hàng) —
                         khách yêu cầu 09/09 để bảng khỏi thừa hai cột vô nghĩa */}
                     {!isImport && <th style={{ width: 64 }}>VAT%</th>}
-                    {!isImport && <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>}
+                    {!isImport && <th style={{ width: 125 }} title="Gõ giá đã gồm VAT, hệ thống tự tính đơn giá chưa VAT">Đơn giá (Sau VAT)</th>}
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
                     {/* bao-CR-602: tiến độ BÁO CÁO THỰC HIỆN của dòng — bấm là cuộn xuống khối báo cáo */}
@@ -1480,7 +1488,9 @@ export default function PurchaseOrderDetail() {
                       )}
                       {!isImport && <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>}
                       {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — 166.666,67 × 1,08 ra 180.000 chứ không phải 180.000,0036 */}
-                      {!isImport && <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)}</td>}
+                      {/* duoc-CR-776: ô sửa được — gõ giá đã gồm VAT thì đơn giá chưa VAT ở cột bên trái tự tính ngược (4 số lẻ) */}
+                      {!isImport && <td><NumberInput className="cell-input" style={{ width: '100%', fontWeight: 600, textAlign: 'right' }} value={getPostVatDisplay(it, it.vat)} maxDecimals={POST_VAT_DECIMALS}
+                        disabled={!headerEditable || lineLocked(it)} onChange={(v: number) => setItemPostVat(i, v)} /></td>}
                       <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 12 }}>
                         <div style={{ color: 'var(--muted)' }}>
@@ -2247,7 +2257,7 @@ export default function PurchaseOrderDetail() {
                     </div>
                     <div className="form-row"><label>SL yêu cầu<Req /></label><NumberInput decimals value={it.qty_request} disabled={de} onChange={(v) => setItem(ii, { qty_request: v })} /></div>
                     <div className="form-row"><label>SL đặt NCC<Req /></label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
-                    <div className="form-row"><label>Đơn giá<Req /></label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
+                    <div className="form-row"><label>Đơn giá<Req /></label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItemPrice(ii, val)} /></div>
                     {/* bao-CR-319: một đơn nhập khẩu vẫn có thể lẫn dòng trả bằng tiền Việt
                         (phí nội địa), nên đồng tiền + tỷ giá đặt ở TỪNG DÒNG chứ không chỉ ở đơn. */}
                     {showCurrency && (
@@ -2282,10 +2292,10 @@ export default function PurchaseOrderDetail() {
                         bảng Chi phí lô hàng; gõ thêm ở đây là cộng thuế hai lần VÀ ghi khoản
                         thuế đó thành nợ của chính NCC nước ngoài. Backend cũng ép 0. */}
                     {!isImport && (
-                      <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} placeholder="Nhập % VAT (0 – 99,99)" onChange={(v) => setItem(ii, { vat: v })} /></div>
+                      <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} placeholder="Nhập % VAT (0 – 99,99)" onChange={(v) => setItemVat(ii, v)} /></div>
                     )}
                     {!isImport && (
-                      <div className="form-row"><label>Đơn giá (Sau VAT)</label><input value={fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)} disabled style={{ fontWeight: 600 }} /></div>
+                      <div className="form-row"><label title="Gõ giá đã gồm VAT, hệ thống tự tính đơn giá chưa VAT">Đơn giá (Sau VAT)</label><NumberInput value={getPostVatDisplay(it, it.vat)} maxDecimals={POST_VAT_DECIMALS} disabled={de} placeholder="Để trống nếu chưa có giá" onChange={(v) => setItemPostVat(ii, v)} /></div>
                     )}
                     <div className="form-row"><label>Tổng tiền đặt hàng{showCurrency ? ` (${lineCurrency(it)})` : ''}</label><input value={fmtAmt(it.order_total ?? orderAmount(it))} disabled /></div>
                     <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>

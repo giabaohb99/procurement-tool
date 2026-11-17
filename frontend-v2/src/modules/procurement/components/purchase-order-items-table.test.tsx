@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PRODUCT_LOCK_HINT, type PurchaseOrderItem } from '../types/purchase-order-detail'
@@ -439,5 +440,84 @@ describe('PurchaseOrderItemsTable — xếp cột khi bấm tiêu đề (duoc-CR
     renderTable({ items: [SORT_ITEMS[0]] })
     await clickHeader(/^Tên hàng/)
     expect(names()).toEqual(['Charlie'])
+  })
+})
+
+/**
+ * duoc-CR-776 — gõ đơn giá SAU VAT ngay trên bảng, máy tự tính ngược đơn giá trước thuế; đổi VAT
+ * thì giữ ô vừa gõ gần nhất. Bảng giữ dòng ở trang nên dựng lại đúng vòng `onChange` -> `items`.
+ */
+describe('PurchaseOrderItemsTable — nhập giá sau VAT (duoc-CR-776)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  function StatefulTable({ initial, onChange }: { initial: PurchaseOrderItem[]; onChange: (items: PurchaseOrderItem[]) => void }) {
+    const [items, setItems] = useState(initial)
+    return (
+      <PurchaseOrderItemsTable
+        items={items}
+        editable
+        progressEditable={false}
+        onChange={(next) => {
+          setItems(next)
+          onChange(next)
+        }}
+      />
+    )
+  }
+
+  it('back-computes the pre-VAT price from a typed post-VAT price', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[item({ price: 0, vat: 8 })]} onChange={onChange} />)
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Đơn giá sau VAT dòng 1' }), '100000')
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ price: 92592.5926, price_after_vat_input: 100000 }),
+    ])
+  })
+
+  it('keeps the typed post-VAT price when VAT changes, and recomputes pre-VAT', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[item({ price: 0, vat: 8 })]} onChange={onChange} />)
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Đơn giá sau VAT dòng 1' }), '110000')
+    await userEvent.click(screen.getByRole('combobox', { name: 'VAT dòng 1' }))
+    await userEvent.click(screen.getByRole('option', { name: '10%' }))
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ vat: 10, price: 100000, price_after_vat_input: 110000 }),
+    ])
+  })
+
+  it('keeps the pre-VAT price on VAT change for a line loaded from the server', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[item({ price: 100000, vat: 8 })]} onChange={onChange} />)
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'VAT dòng 1' }))
+    await userEvent.click(screen.getByRole('option', { name: '10%' }))
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ vat: 10, price: 100000, price_after_vat_input: undefined }),
+    ])
+    expect(screen.getByRole('textbox', { name: 'Đơn giá sau VAT dòng 1' })).toHaveValue('110.000')
+  })
+
+  it('typing pre-VAT after post-VAT switches VAT changes back to keeping pre-VAT', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[item({ price: 0, vat: 8 })]} onChange={onChange} />)
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Đơn giá sau VAT dòng 1' }), '108000')
+    const pre = screen.getByRole('textbox', { name: 'Đơn giá dòng 1' })
+    await userEvent.clear(pre)
+    await userEvent.type(pre, '50000')
+    await userEvent.click(screen.getByRole('combobox', { name: 'VAT dòng 1' }))
+    await userEvent.click(screen.getByRole('option', { name: '10%' }))
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ vat: 10, price: 50000, price_after_vat_input: undefined }),
+    ])
+  })
+
+  it('shows the post-VAT price as plain text on a read-only order', () => {
+    renderTable({ items: [item({ price: 100000, vat: 8 })] })
+    expect(screen.queryByRole('textbox', { name: 'Đơn giá sau VAT dòng 1' })).toBeNull()
+    expect(screen.getByText('108.000')).toBeInTheDocument()
   })
 })

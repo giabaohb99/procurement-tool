@@ -428,3 +428,75 @@ describe('PurchaseRequestItemsTable — dấu tick không trôi khi chèn / bỏ
     expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
   })
 })
+
+/**
+ * duoc-CR-776 — cột *Đơn giá sau VAT* sửa được: gõ vào thì tính ngược đơn giá trước thuế; đổi VAT
+ * giữ ô gõ gần nhất. Bảng giữ dòng ở trang nên dựng lại đúng vòng `onChange` -> `items`.
+ */
+describe('PurchaseRequestItemsTable — nhập giá sau VAT (duoc-CR-776)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  function StatefulTable({
+    initial,
+    onChange,
+  }: {
+    initial: PurchaseRequestItem[]
+    onChange: (items: PurchaseRequestItem[]) => void
+  }) {
+    const [items, setItems] = useState(initial)
+    return (
+      <PurchaseRequestItemsTable
+        items={items}
+        editing
+        onOpenDetail={vi.fn()}
+        onChange={(next) => {
+          setItems(next)
+          onChange(next)
+        }}
+      />
+    )
+  }
+
+  it('shows the column with the exact label and the computed post-VAT price when read-only', () => {
+    renderTable()
+    expect(screen.getByRole('columnheader', { name: /^Đơn giá sau VAT/ })).toBeInTheDocument()
+    //  900 x 1,08 = 972
+    expect(screen.getByText('972')).toBeInTheDocument()
+  })
+
+  it('back-computes the pre-VAT price from a typed post-VAT price', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[{ ...ITEMS[0], price: 0 }]} onChange={onChange} />)
+
+    await userEvent.type(screen.getByRole('spinbutton', { name: 'Đơn giá sau VAT dòng 1' }), '100000')
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ price: 92592.5926, price_after_vat_input: 100000 }),
+    ])
+    expect(screen.getByRole('spinbutton', { name: 'Đơn giá dòng 1' })).toHaveValue(92592.5926)
+  })
+
+  it('keeps the typed post-VAT price when VAT changes, and recomputes pre-VAT', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={[{ ...ITEMS[0], price: 0 }]} onChange={onChange} />)
+
+    await userEvent.type(screen.getByRole('spinbutton', { name: 'Đơn giá sau VAT dòng 1' }), '105000')
+    await userEvent.click(screen.getByRole('combobox', { name: 'VAT dòng 1' }))
+    await userEvent.click(screen.getByRole('option', { name: '5%' }))
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ vat_pct: 5, price: 100000, price_after_vat_input: 105000 }),
+    ])
+  })
+
+  it('keeps the pre-VAT price on VAT change for a line loaded from the server', async () => {
+    const onChange = vi.fn()
+    render(<StatefulTable initial={ITEMS} onChange={onChange} />)
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'VAT dòng 1' }))
+    await userEvent.click(screen.getByRole('option', { name: '10%' }))
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ vat_pct: 10, price: 900, price_after_vat_input: undefined }),
+    ])
+    expect(screen.getByRole('spinbutton', { name: 'Đơn giá sau VAT dòng 1' })).toHaveValue(990)
+  })
+})

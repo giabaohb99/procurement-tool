@@ -486,6 +486,11 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Dùng tính `amount` (SL thực nhận × đơn giá × (1+VAT/100)) và công nợ hàng (`payable.amount = received_qty × price`).
 - Số lẻ: đơn giá lưu và hiển thị **tối đa 4 số thập phân** (đơn giá theo gram / mét hay lẻ tới phần nghìn); ô nhập tự cắt phần lẻ vượt quá 4 số trước khi gửi lên server. **Các cột TIỀN (thành tiền, tổng cộng, công nợ) hiển thị làm tròn về đồng** — kế toán chỉ ghi nhận tới đồng — nhưng giá trị lưu trong CSDL giữ nguyên độ chính xác.
+- Nhập bằng giá sau VAT (duoc-CR-776, 17/11/2026): dòng hàng có thêm ô **Đơn giá (Sau VAT)** sửa được ngay cạnh (bảng dòng và hộp chi
+  tiết dòng, cả giao diện cũ lẫn mới). Gõ ô nào ô kia tự tính: sau VAT = làm tròn 2 số lẻ của `price × (100 + VAT) / 100`;
+  `price` = làm tròn 4 số lẻ của `sau VAT × 100 / (100 + VAT)`. Đổi VAT %: vừa gõ ô sau VAT thì giữ giá sau VAT, còn lại
+  giữ `price`. Máy chủ chỉ lưu `price`; ô sau VAT là cách nhập, không có cột riêng. Kế hoạch:
+  [`plans/261117-nhap-gia-sau-vat-duoc-cr-776`](../plans/261117-nhap-gia-sau-vat-duoc-cr-776/plan.md).
 
 ### 15. VAT % của dòng (`vat`)
 

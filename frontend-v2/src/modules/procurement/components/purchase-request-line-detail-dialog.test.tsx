@@ -95,7 +95,8 @@ describe('PurchaseRequestLineDetailDialog', () => {
     renderDialog()
 
     expect(screen.getByText('2.000')).toBeInTheDocument()
-    expect(screen.getByText('1.200')).toBeInTheDocument()
+    //  duoc-CR-776: VAT 0 nên ô Đơn giá sau VAT cũng hiện đúng 1.200 — hai chỗ, cả hai có ngăn nghìn.
+    expect(screen.getAllByText('1.200')).toHaveLength(2)
   })
 
   it('đang sửa thì vẫn là ô nhập gõ được như cũ', () => {
@@ -210,5 +211,60 @@ describe('PurchaseRequestLineDetailDialog — chữ và hành vi v1 (duoc-CR-741
     await userEvent.click(within(dialog).getByRole('button', { name: 'Đồng ý' }))
 
     expect(attachments.remove).toHaveBeenCalledWith(21)
+  })
+})
+
+/** duoc-CR-776 — popup chi tiết dòng có ô *Đơn giá sau VAT* sửa được, tự tính ngược giá đề xuất. */
+describe('PurchaseRequestLineDetailDialog — nhập giá sau VAT', () => {
+  /** Ô số nằm dưới nhãn `label` (nhãn của popup không gắn `htmlFor`). */
+  function fieldInput(label: string): HTMLElement {
+    const field = screen.getByText(label, { selector: 'label' }).parentElement
+    if (!field) throw new Error(`không thấy ô ${label}`)
+    return within(field).getByRole('spinbutton')
+  }
+
+  async function saveAndGetLine(onChange: ReturnType<typeof vi.fn>) {
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }))
+    return onChange.mock.calls.at(-1)?.[0] as PurchaseRequestItem
+  }
+
+  it('shows the computed post-VAT price read-only when not editing', () => {
+    renderDialog({ item: { ...ITEM, price: 100000, vat_pct: 8 } })
+    expect(screen.getByText('Đơn giá sau VAT', { selector: 'label' })).toBeInTheDocument()
+    expect(screen.getByText('108.000')).toBeInTheDocument()
+  })
+
+  it('typing post-VAT back-computes the pre-VAT price, and a later VAT change keeps post-VAT', async () => {
+    const onChange = vi.fn()
+    renderDialog({ editing: true, item: { ...ITEM, price: 0, vat_pct: 8 }, onChange })
+
+    await userEvent.type(fieldInput('Đơn giá sau VAT'), '100000')
+    expect(fieldInput('Giá đề xuất (chưa VAT)')).toHaveValue(92592.5926)
+
+    const vat = fieldInput('VAT (%)')
+    await userEvent.clear(vat)
+    await userEvent.type(vat, '10')
+    expect(fieldInput('Đơn giá sau VAT')).toHaveValue(100000)
+
+    const saved = await saveAndGetLine(onChange)
+    expect(saved).toMatchObject({ vat_pct: 10, price: 90909.0909, price_after_vat_input: 100000 })
+  })
+
+  it('typing pre-VAT keeps pre-VAT when VAT changes afterwards', async () => {
+    const onChange = vi.fn()
+    renderDialog({ editing: true, item: { ...ITEM, price: 0, vat_pct: 8 }, onChange })
+
+    await userEvent.type(fieldInput('Đơn giá sau VAT'), '108000')
+    const pre = fieldInput('Giá đề xuất (chưa VAT)')
+    await userEvent.clear(pre)
+    await userEvent.type(pre, '50000')
+    const vat = fieldInput('VAT (%)')
+    await userEvent.clear(vat)
+    await userEvent.type(vat, '10')
+    expect(fieldInput('Đơn giá sau VAT')).toHaveValue(55000)
+
+    const saved = await saveAndGetLine(onChange)
+    expect(saved).toMatchObject({ vat_pct: 10, price: 50000 })
+    expect(saved.price_after_vat_input).toBeUndefined()
   })
 })

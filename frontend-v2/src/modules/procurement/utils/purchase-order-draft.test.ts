@@ -6,7 +6,13 @@ import {
   PR_OPTION_SOURCE_MANUAL,
   PR_OPTION_SOURCE_ORIGINAL,
 } from '../types/purchase-request-options'
-import { buildPurchaseOrderLines, toDraftFromRequest } from './purchase-order-draft'
+import type { PurchaseOrderItem } from '../types/purchase-order-detail'
+import {
+  buildPurchaseOrderLines,
+  createEmptyPurchaseOrder,
+  toDraftFromRequest,
+  toPurchaseOrderPayload,
+} from './purchase-order-draft'
 
 function makeOption(overrides: Partial<PurchaseRequestOption> = {}): PurchaseRequestOption {
   return {
@@ -284,5 +290,45 @@ describe('toDraftFromRequest — NCC đầu đơn theo phương án thống nh�
 
   it('handles a request with zero lines without inventing a supplier', () => {
     expect(toDraftFromRequest(makeRequest([]), []).supplier_code).toBe('')
+  })
+})
+
+/**
+ * duoc-CR-776 — số ĐƠN GIÁ SAU VAT người dùng gõ chỉ sống ở bản nháp giao diện. Máy chủ không
+ * biết trường này; lọt vào payload là hợp đồng API đổi ngầm mà không ai chốt.
+ */
+describe('toPurchaseOrderPayload — không gửi số sau VAT đã gõ (duoc-CR-776)', () => {
+  it('sends only the pre-VAT price and VAT, never price_after_vat_input', () => {
+    const line: PurchaseOrderItem = {
+      product_code: 'ABA36',
+      product_name: 'Abamectin',
+      invoice_name: '',
+      item_group: '',
+      spec: '',
+      fg_code: '',
+      fg_name: '',
+      invoice_no: '',
+      invoice_date: '',
+      document_delivery_date: '',
+      supplier_ready: false,
+      required_date: '',
+      expected_date: '',
+      unit: 'Lít',
+      qty_request: 0,
+      qty_order: 1,
+      price: 92592.5926,
+      vat: 8,
+      price_after_vat_input: 100000,
+      warehouse_code: '',
+      note: '',
+      currency: '',
+      exchange_rate: 0,
+      weight_kg: 0,
+      dimension: '',
+      deliveries: [],
+    }
+    const payload = toPurchaseOrderPayload({ ...createEmptyPurchaseOrder(), items: [line] })
+    expect(payload.items[0]).toMatchObject({ price: 92592.5926, vat: 8 })
+    expect(payload.items[0]).not.toHaveProperty('price_after_vat_input')
   })
 })

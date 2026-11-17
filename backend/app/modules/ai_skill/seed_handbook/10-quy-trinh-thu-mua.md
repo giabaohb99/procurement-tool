@@ -49,6 +49,12 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 - ***Tên trên hóa đơn*** của dòng ĐMH: để **trống** thì hệ **tự điền từ danh mục Sản phẩm** (theo mã hàng) lúc lưu, lúc sao
   chép ĐMH và lúc nhập Excel. Đã gõ tên thì giữ nguyên; sản phẩm chưa khai tên trên hóa đơn thì ô vẫn trống (hệ không đoán từ tên hàng).
 - **Báo cáo mua hàng gom theo phòng hiện hành**: phòng đổi tên thì báo cáo hiện tên mới, không tách thành hai dòng.
+- **Nhập đơn giá sau VAT** (từ 17/11/2026): dòng hàng **Yêu cầu mua hàng** và **Đơn mua hàng** (cả giao diện cũ và mới)
+  có hai ô cùng sửa được — *Đơn giá* (chưa VAT) và *Đơn giá sau VAT* (ĐMH ghi *Đơn giá (Sau VAT)*). Gõ ô nào ô kia tự tính;
+  đơn giá chưa VAT tính ngược giữ 4 số lẻ. Đổi VAT %: vừa gõ ô sau VAT thì giữ giá sau VAT, còn lại giữ đơn giá chưa VAT.
+  Hệ thống vẫn LƯU đơn giá chưa VAT; công nợ, bản in không đổi. Yêu cầu báo giá / phiếu khảo sát chưa có ô này.
+  Người dùng nhờ trợ lý **sửa giá dòng ĐMH bằng giá đã gồm VAT** → gửi `price_after_vat` (không gửi `price`) trong `po_lines`
+  của `propose_document_update`; máy tự tính đơn giá chưa VAT. **Không tự chia nhẩm** rồi gửi `price`.
 - **NSPT (nhân sự phụ trách mua) nói dạng *Mã · Tên*** (từ 17/11/2026): màn Tiến độ mua hàng và trường `buyer` của
   `procurement_doc_read` / `pending_procurement_approvals` trả mã nhân sự kèm tên **hiện hành** theo hồ sơ (vd *NSU209 ·
   Nguyễn Văn A*). Đơn cũ chưa gắn hồ sơ chỉ có chữ đã lưu (vd *Mr Tiên*) — đọc nguyên chữ đó, **đừng đoán** là ai. Hỏi

@@ -14,7 +14,7 @@ import {
 } from '@/shared/ui/dialog'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
-import { NumberInput } from '@/shared/ui/number-input'
+import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
@@ -52,6 +52,11 @@ import {
   isMissingExchangeRate,
   resolveLineCurrency,
 } from '../utils/purchase-order-import-cost'
+import {
+  applyPriceAfterVatInput,
+  applyPriceBeforeVatInput,
+  resolveLinePriceAfterVat,
+} from '../utils/vat-price'
 
 /** Giá trị ô chọn đồng tiền nghĩa là "theo đơn" — Radix Select không nhận chuỗi rỗng. */
 const CURRENCY_FOLLOW_ORDER = '__order__'
@@ -522,15 +527,47 @@ export function PurchaseOrderLineDialog({
             </>
           )}
 
+          {/* duoc-CR-776: Đơn giá (trước thuế) và Đơn giá (Sau VAT) cùng sửa được — gõ ô nào ô kia
+              tự tính (`utils/vat-price.ts`); VAT % vẫn chọn ở bảng dòng. Thành tiền tính từ đơn
+              giá trước thuế như cũ. */}
+          <div className="space-y-1.5">
+            <Label htmlFor="po-line-price">
+              Đơn giá
+              <RequiredMark />
+            </Label>
+            {fieldEditable ? (
+              <NumberInput
+                id="po-line-price"
+                value={item.price || 0}
+                maxDecimals={PRICE_MAX_DECIMALS}
+                onChange={(value) => patch(applyPriceBeforeVatInput(value))}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">{formatUnitPrice(item.price || 0)}</ReadOnlyValue>
+            )}
+          </div>
           {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng.
               Đơn nhập khẩu không có VAT dòng nên bỏ ô này. */}
           {!importMode && (
-            <Field label="Đơn giá (Sau VAT)">
-              {formatUnitPrice(
-                Math.round((item.price || 0) * (1 + (item.vat || 0) / 100) * 100) / 100,
-              )}{' '}
-              đ
-            </Field>
+            <div className="space-y-1.5">
+              <Label htmlFor="po-line-price-after-vat">
+                Đơn giá (Sau VAT){' '}
+                {/*  Hộp không có ô VAT (chọn ở bảng dòng) — nói rõ mức đang dùng để tính ngược. */}
+                <span className="font-normal text-muted-foreground">VAT {item.vat || 0}%</span>
+              </Label>
+              {fieldEditable ? (
+                <NumberInput
+                  id="po-line-price-after-vat"
+                  value={resolveLinePriceAfterVat(item, item.vat)}
+                  maxDecimals={2}
+                  onChange={(value) => patch(applyPriceAfterVatInput(value, item.vat))}
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">
+                  {formatUnitPrice(resolveLinePriceAfterVat(item, item.vat))} đ
+                </ReadOnlyValue>
+              )}
+            </div>
           )}
           <Field label="Tổng tiền đặt hàng">
             {formatMoney(
