@@ -90,6 +90,14 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     apply-others,dialog-footer,dialog-notices}.tsx`, `hr/utils/work-shift-{access,submit-state,rows}.ts`,
     `hr/hooks/use-work-shift-{submit,apply-others}.ts`, `hr/utils/work-roster-view-scope.ts`, backend
     `work_schedule/roster_visibility.py`.
+  * duoc-CR-771 + duoc-CR-772 (17/11/2026): bài mới MY_PROFILE — bố cục mới của mục Thông tin cá nhân ở Trang cá nhân (hàng
+    đầu Quỹ phép + Lương của tôi, MỘT thẻ Hồ sơ nhân sự gom bảy nhóm với nút In phiếu thông tin ở tiêu đề và nút Sửa ở nhóm
+    Liên hệ, Ca làm việc tuần này bên trái + Tài khoản và Chữ ký cá nhân bên phải, rồi Email thông báo, Người báo tin, Đề nghị
+    sửa hồ sơ, Lịch sử thao tác) và nút mũi tên gập / mở từng thẻ, trình duyệt nhớ thẻ đang gập. Bài PRINT_INFO, SELF_CHANGE,
+    SALARY, PHONES, SHIFT sửa câu chỉ đường theo bố cục mới. Nhãn đối chiếu bằng đọc
+    `app/components/profile/profile-{info-section,record-card,info-card,contact-card,hr-details,leave-card}.tsx`,
+    `shared/ui/card-collapse.tsx`, `shared/hooks/use-card-collapse.ts`, `shared/utils/section-open-storage.ts` và màn thật
+    localhost:8083/me.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`; Hợp đồng lao động: `seed_help_hop_dong_lao_dong.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -126,6 +134,7 @@ HR_SETTINGS = "Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ 
 PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nhân"
 WORK_SCHEDULE = "Nhân sự — Lịch làm việc của phòng ban và cách đếm ngày nghỉ"
 SHIFT = "Nhân sự — Xếp ca theo tiếng cho từng ngày"
+MY_PROFILE = "Nhân sự — Đọc và gập các thẻ ở mục Thông tin cá nhân của Trang cá nhân"
 
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
@@ -137,6 +146,7 @@ TREE = {
 <li>Cần sửa thông tin trong hồ sơ một người (phòng ban, chức vụ, quản lý trực tiếp…): {ref(EDIT_PROFILE, "Sửa hồ sơ nhân sự ở màn chi tiết")}.</li>
 <li>Một người có quyết định kiêm nhiệm thêm một phòng của công ty mình, hoặc kiêm nhiệm cả một công ty khác trong tập đoàn: {ref(CONCURRENT, "Khai kiêm nhiệm (kể cả ở công ty khác)")}.</li>
 <li>Cần tạo hoặc cập nhật nhiều hồ sơ một lượt: {ref(IMPORT_EXCEL, "Nhập hồ sơ hàng loạt bằng tệp Excel")}.</li>
+<li>Muốn biết Trang cá nhân của mình có những thẻ gì, nằm ở đâu, và cách gập bớt thẻ ít dùng: {ref(MY_PROFILE, "Đọc và gập các thẻ ở mục Thông tin cá nhân")}.</li>
 <li>Cần in tờ khai thông tin của một người (hay của chính mình) để ký nộp: {ref(PRINT_INFO, "In Phiếu thông tin nhân viên")}.</li>
 <li>Bạn thấy hồ sơ của mình sai ngày sinh, đổi tài khoản ngân hàng, làm lại CCCD hay có thêm người trong hộ gia đình: {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}.</li>
 <li>Bạn ở phòng Nhân sự và cần xem, duyệt hay từ chối các đề nghị đó: {ref(REVIEW_CHANGE, "Duyệt đề nghị sửa hồ sơ của nhân viên")}.</li>
@@ -152,21 +162,20 @@ TREE = {
 </ul>
 
 <h2>Các màn trong menu Nhân sự</h2>
-<p>Menu trái của phân hệ Nhân sự là một danh sách xếp từ trên xuống, không chia tiêu đề nhóm: <strong>Tổng quan</strong> · <strong>Nhân sự</strong> (danh sách hồ sơ) · <strong>Duyệt sửa hồ sơ</strong> · <strong>Sơ đồ tổ chức</strong> · <strong>Nghỉ phép</strong> (Đơn nghỉ phép, Nghỉ bù, Thanh toán nghỉ phép, Lịch nghỉ, Quỹ phép năm) · <strong>Lịch làm việc</strong> (một mục bấm vào là xem lịch, không sổ xuống) · <strong>Đặt phòng họp</strong> (Lịch phòng họp, Phiếu đặt phòng) · <strong>Danh mục</strong> · <strong>Thiết lập</strong>. Mục có mục con (Nghỉ phép, Đặt phòng họp, Danh mục) thì bấm vào để sổ xuống; <strong>Thiết lập</strong> là một dòng, không sổ xuống.</p>
-<p>Cụm <strong>Danh mục</strong> gom các danh mục nền:</p>
-<table>
-<thead><tr><th>Mục con của Danh mục</th><th>Dùng để</th></tr></thead>
-<tbody>
-<tr><td><strong>Phòng ban</strong></td><td>Danh mục phòng ban, phòng ban cấp trên, trưởng bộ phận</td></tr>
-<tr><td><strong>Công ty</strong></td><td>Danh mục pháp nhân</td></tr>
-<tr><td><strong>Chức vụ</strong></td><td>Danh sách chức danh dùng ở ô Vị trí / Chức vụ, kèm {ref(POSITION_ROLES, "quyền mặc định theo chức vụ")}</td></tr>
-<tr><td><strong>Mẫu hợp đồng</strong></td><td>Mẫu Word hợp đồng lao động của từng pháp nhân, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
-</tbody>
-</table>
-<p>Mục <strong>Thiết lập</strong> gom mọi màn cấu hình nền của phân hệ, trước đây nằm rải ở Nghỉ phép, Lịch làm việc và Đặt phòng họp. Bấm <strong>Thiết lập</strong> là mở màn đầu tiên bạn có quyền; ở đầu mỗi màn có <strong>một dải tab</strong> nằm ngang để chuyển sang màn khác, không có tab con lồng bên trong. Bạn chỉ thấy tab của màn mình được vào; được vào đúng một màn thì không hiện dải tab.</p>
+<p>Menu trái của phân hệ Nhân sự là một danh sách xếp từ trên xuống, không chia tiêu đề nhóm: <strong>Tổng quan</strong> · <strong>Nhân sự</strong> (danh sách hồ sơ) · <strong>Duyệt sửa hồ sơ</strong> · <strong>Nghỉ phép</strong> (Đơn nghỉ phép, Nghỉ bù, Thanh toán nghỉ phép, Lịch nghỉ, Quỹ phép năm) · <strong>Lịch làm việc</strong> (một mục bấm vào là xem lịch, không sổ xuống) · <strong>Đặt phòng họp</strong> (Lịch phòng họp, Phiếu đặt phòng) · <strong>Thiết lập</strong>. Mục có mục con (Nghỉ phép, Đặt phòng họp) thì bấm vào để sổ xuống; <strong>Thiết lập</strong> là một dòng, không sổ xuống.</p>
+<p>Từ 17/11/2026 menu gọn lại hai chỗ:</p>
+<ul>
+<li>Cụm <strong>Danh mục</strong> cũ (Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng) không còn là một dòng riêng: bốn màn đó thành bốn tab <strong>đầu tiên</strong> của <strong>Thiết lập</strong>, vì hai dòng Danh mục và Thiết lập na ná nhau.</li>
+<li><strong>Sơ đồ tổ chức</strong> không còn trên menu. Màn vẫn mở được bằng đường dẫn <code>/hr/org-chart</code> (thêm vào sau tên miền hệ thống) cho người có quyền xem hồ sơ nhân sự; đang xem sơ đồ thì dòng <strong>Nhân sự</strong> trên menu sáng lên. Xem {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</li>
+</ul>
+<p>Mục <strong>Thiết lập</strong> gom mọi danh mục nền và màn cấu hình của phân hệ. Bấm <strong>Thiết lập</strong> là mở màn đầu tiên bạn có quyền; ở đầu mỗi màn có <strong>một dải tab</strong> nằm ngang để chuyển sang màn khác, không có tab con lồng bên trong. Bạn chỉ thấy tab của màn mình được vào; được vào đúng một màn thì không hiện dải tab.</p>
 <table>
 <thead><tr><th>Tab của Thiết lập</th><th>Dùng để</th></tr></thead>
 <tbody>
+<tr><td><strong>Phòng ban</strong></td><td>Danh mục phòng ban, phòng ban cấp trên, trưởng bộ phận</td></tr>
+<tr><td><strong>Công ty</strong></td><td>Danh mục pháp nhân</td></tr>
+<tr><td><strong>Chức vụ</strong></td><td>Danh sách chức danh dùng ở ô Vị trí / Chức vụ, kèm {ref(POSITION_ROLES, "quyền mặc định theo chức vụ")} (chỉ người sửa được danh mục chức vụ mới thấy tab này)</td></tr>
+<tr><td><strong>Mẫu hợp đồng</strong></td><td>Mẫu Word hợp đồng lao động của từng pháp nhân, xem bộ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}</td></tr>
 <tr><td><strong>Cài đặt nhân sự</strong></td><td>Tiền tố mã nhân sự, ai xem sơ đồ tổ chức, luật chặn đơn nghỉ, ngày báo hợp đồng hết hạn; xem {ref(HR_SETTINGS, "Cài đặt nhân sự")}</td></tr>
 <tr><td><strong>Phân bổ chính sách</strong></td><td>Gán gói chính sách nghỉ phép cho từng người hoặc cả nhóm người trong một khoảng ngày</td></tr>
 <tr><td><strong>Gói chính sách</strong></td><td>Khai gói số ngày nghỉ mỗi năm cho một nhóm người (cấp quản lý, thử việc…)</td></tr>
@@ -178,7 +187,7 @@ TREE = {
 <tr><td><strong>Danh mục phòng họp</strong></td><td>Khai phòng họp, sức chứa, thiết bị (chỉ quản trị phòng họp)</td></tr>
 </tbody>
 </table>
-<p>Thanh đường dẫn ở đầu trang ghi theo cụm, ví dụ <em>Nhân sự › Danh mục › Chức vụ</em> hay <em>Nhân sự › Thiết lập › Cài đặt nhân sự</em>. Dời menu không đổi quyền của màn nào và không đổi địa chỉ trang: mỗi màn vẫn theo quyền của riêng nó, bạn chỉ thấy mục hay tab mình được vào, và <strong>Danh mục</strong> hay <strong>Thiết lập</strong> chỉ hiện khi bạn được vào ít nhất một màn bên trong.</p>
+<p>Dời menu không đổi quyền của màn nào và không đổi địa chỉ trang: mỗi màn vẫn theo quyền của riêng nó, bạn chỉ thấy tab mình được vào, và <strong>Thiết lập</strong> chỉ hiện khi bạn được vào ít nhất một màn bên trong. Ai trước đây thấy dòng Danh mục (vì được xem phòng ban hay công ty) nay thấy dòng <strong>Thiết lập</strong>, bấm vào mở tab Phòng ban.</p>
 <p>Nghỉ phép có bộ hướng dẫn riêng ở thẻ <strong>Hướng dẫn sử dụng Nghỉ phép</strong>; hợp đồng lao động ở thẻ {ref(HDLD_ROOT, "Hướng dẫn sử dụng Hợp đồng lao động")}.</p>""",
     "children": [
         {
@@ -340,8 +349,8 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <h2>Xem người kiêm nhiệm ở đâu</h2>
 <ul>
 <li><strong>Danh sách Nhân sự</strong> (<strong>Nhân sự ▸ Nhân sự</strong>): cột <strong>Kiêm nhiệm</strong> hiện các kiêm nhiệm đang hiệu lực của từng người. Ô chỉ ghi mục đầu (loại Phòng ban trước, rồi loại Công ty) kèm dấu <strong>+N</strong> khi còn N mục nữa; rê chuột vào ô để xem đủ danh sách (biểu tượng tòa nhà là loại Công ty, biểu tượng nhóm người là loại Phòng ban). Trên điện thoại là dòng <em>Kiêm nhiệm: …</em> trong thẻ, chạm vào để xem đủ. Người không kiêm nhiệm thì ô để trống. Cột chỉ để xem, không bấm xếp được; lọc theo công ty hay phòng ban vẫn chỉ ra người làm <strong>chính</strong> ở đó.</li>
-<li><strong>Trang chi tiết phòng ban</strong> (<strong>Nhân sự ▸ Danh mục ▸ Phòng ban</strong>, bấm vào phòng): dưới bảng <strong>Nhân sự thuộc phòng</strong> có khối <strong>Kiêm nhiệm tại phòng này (N)</strong> cho dòng loại Phòng ban: mã NV, họ tên kèm nhãn <strong>Kiêm nhiệm</strong> (thêm nhãn <strong>Sắp tới</strong> nếu chưa bắt đầu), chức vụ kiêm nhiệm, công ty, thời gian hiệu lực và phòng chính của họ.</li>
-<li><strong>Trang chi tiết công ty</strong> (<strong>Nhân sự ▸ Danh mục ▸ Công ty</strong>, bấm vào công ty): khối <strong>Kiêm nhiệm tại công ty này (N)</strong> cho dòng loại Công ty: mã NV, họ tên, chức vụ kiêm nhiệm, thời hạn, trạng thái và nơi làm chính của họ. Không có ai kiêm nhiệm thì không có khối này.</li>
+<li><strong>Trang chi tiết phòng ban</strong> (<strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Phòng ban</strong>, bấm vào phòng): dưới bảng <strong>Nhân sự thuộc phòng</strong> có khối <strong>Kiêm nhiệm tại phòng này (N)</strong> cho dòng loại Phòng ban: mã NV, họ tên kèm nhãn <strong>Kiêm nhiệm</strong> (thêm nhãn <strong>Sắp tới</strong> nếu chưa bắt đầu), chức vụ kiêm nhiệm, công ty, thời gian hiệu lực và phòng chính của họ.</li>
+<li><strong>Trang chi tiết công ty</strong> (<strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Công ty</strong>, bấm vào công ty): khối <strong>Kiêm nhiệm tại công ty này (N)</strong> cho dòng loại Công ty: mã NV, họ tên, chức vụ kiêm nhiệm, thời hạn, trạng thái và nơi làm chính của họ. Không có ai kiêm nhiệm thì không có khối này.</li>
 <li><strong>Sơ đồ tổ chức</strong>: người kiêm nhiệm đang hiệu lực hiện ở khối <strong>Kiêm nhiệm tại các phòng và công ty đang xem</strong> phía dưới cây, thẻ viền nét đứt kèm nhãn <strong>Kiêm nhiệm</strong>, không nối với ai. Dòng loại Công ty gom thành nhóm <em>Kiêm nhiệm tại</em> kèm tên công ty; đang lọc theo một phòng thì nhóm này không hiện. Bấm thẻ để xem họ thuộc phòng chính nào, thời gian hiệu lực, và nút <strong>Mở hồ sơ</strong>.</li>
 <li>Bấm tên mở được <strong>hồ sơ</strong> của người kiêm nhiệm khi dòng đang hiệu lực và bật công tắc phạm vi, nếu phạm vi của bạn phủ nơi họ kiêm nhiệm (thông tin nhạy cảm vẫn theo quyền xem nhạy cảm, lương chỉ chính chủ xem). Dòng tắt công tắc thì chỉ thấy tên (trừ khi bạn vốn xem được hồ sơ đó theo vị trí chính của họ), rê chuột thấy <em>Bạn chỉ xem được dòng kiêm nhiệm này, không mở được hồ sơ</em>.</li>
 <li><strong>Quân số và báo cáo vẫn tính ở công ty và phòng chính</strong> của người kiêm nhiệm: họ không được cộng vào số người của nơi kiêm nhiệm, không đếm hai lần.</li>
@@ -432,11 +441,56 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <tr><td>Không thấy nút <strong>Nhập Excel</strong></td><td>Thiếu một trong các quyền ở mục trên</td><td>Nhờ quản trị cấp</td></tr>
 <tr><td>Cảnh báo cột nhạy cảm bị bỏ qua</td><td>Thiếu quyền ghi thông tin nhạy cảm</td><td>Nhờ người có quyền nhập, hoặc xin quyền</td></tr>
 <tr><td>Dòng lỗi vì mã NV trùng</td><td>Một mã NV xuất hiện hai lần trong tệp</td><td>Gộp hai dòng thành một</td></tr>
-<tr><td>Dòng cảnh báo Rà soát ở cột chức vụ</td><td>Chữ ở cột chức vụ không khớp danh mục Chức vụ, hệ thống giữ nguyên chữ làm chức danh</td><td>Sửa cho khớp tên / mã trong <strong>Danh mục ▸ Chức vụ</strong>, hoặc thêm chức vụ mới</td></tr>
+<tr><td>Dòng cảnh báo Rà soát ở cột chức vụ</td><td>Chữ ở cột chức vụ không khớp danh mục Chức vụ, hệ thống giữ nguyên chữ làm chức danh</td><td>Sửa cho khớp tên / mã trong <strong>Thiết lập ▸ Chức vụ</strong>, hoặc thêm chức vụ mới</td></tr>
 <tr><td>Bấm <strong>Ghi thật</strong> lần hai trên cùng bản chạy thử bị từ chối</td><td>Bản chạy thử đó đã được ghi thật một lần</td><td>Mở lô ghi thật đã có để xem kết quả; cần nhập thêm thì chạy thử một tệp mới</td></tr>
 <tr><td>Lúc lô đang ghi, người khác thêm nhân sự bằng tay phải chờ</td><td>Lô đang giữ bộ sinh mã NV tới khi ghi xong</td><td>Điền sẵn Mã NV trong tệp để lô chạy nhẹ hơn</td></tr>
 </tbody>
 </table>""",
+        },
+        {
+            "title": MY_PROFILE,
+            "icon": "user",
+            "summary": "Trang cá nhân ▸ Thông tin cá nhân: Quỹ phép và Lương của tôi ở đầu, một thẻ Hồ sơ nhân sự bảy nhóm (In phiếu thông tin, Sửa liên hệ), ca tuần này, tài khoản, chữ ký; nút mũi tên gập từng thẻ và gập nhóm trên thanh bên trái",
+            "content": f"""<h2>Đọc và gập các thẻ ở mục Thông tin cá nhân của Trang cá nhân</h2>
+<p>Mở menu tài khoản ở góc phải (bấm vào tên của bạn) ▸ <strong>Trang cá nhân</strong>. Trang mở sẵn mục <strong>Thông tin cá nhân</strong> (dòng đầu của nhóm <strong>Hồ sơ</strong> ở menu trái của trang). Mục này gom mọi thông tin của chính bạn trên một trang, đọc từ trên xuống như sau.</p>
+
+<h2>Các thẻ, từ trên xuống</h2>
+<table>
+<thead><tr><th>Vị trí</th><th>Thẻ</th><th>Có gì, làm được gì</th></tr></thead>
+<tbody>
+<tr><td>Hàng đầu, bên trái</td><td><strong>Quỹ phép</strong> kèm năm (ví dụ <em>Quỹ phép 2026</em>)</td><td>Mỗi loại nghỉ một dòng: số ngày còn lại trên tổng số ngày. Nút <strong>Đơn nghỉ phép</strong> mở màn đơn nghỉ của bạn. Cách tính số còn lại xem {ref("Hiểu số ngày phép còn lại", "Hiểu số ngày phép còn lại")} ở bộ hướng dẫn Nghỉ phép.</td></tr>
+<tr><td>Hàng đầu, bên phải</td><td><strong>Lương của tôi</strong></td><td>Lương, phụ cấp và tổng, che sẵn thành <em>••••</em>; xem {ref(SALARY, "Nhập lương ở hồ sơ và xem lương của mình")}.</td></tr>
+<tr><td>Hết bề ngang</td><td><strong>Hồ sơ nhân sự</strong></td><td>Một thẻ gom bảy nhóm thông tin, chia hai cột: <strong>Tổ chức</strong> (họ tên, mã nhân viên, công ty, phòng ban, chức vụ, kiêm nhiệm, vai trò) · <strong>Liên hệ</strong> · <strong>Thông tin cá nhân</strong> · <strong>Công việc</strong> · <strong>Căn cước công dân</strong> · <strong>Ngân hàng nhận lương</strong> · <strong>Bảo hiểm</strong>. Nút <strong>In phiếu thông tin</strong> nằm ở góc phải tiêu đề thẻ, xem {ref(PRINT_INFO, "In Phiếu thông tin nhân viên")}.</td></tr>
+<tr><td>Dưới thẻ hồ sơ, bên trái</td><td><strong>Ca làm việc tuần này</strong></td><td>Ca của bạn từng ngày trong tuần, xem {ref(SHIFT, "Xếp ca theo tiếng cho từng ngày")}.</td></tr>
+<tr><td>Dưới thẻ hồ sơ, bên phải</td><td><strong>Tài khoản</strong> và <strong>Chữ ký cá nhân</strong></td><td>Tên đăng nhập, email, số điện thoại và nút <strong>Đổi mật khẩu</strong>; ảnh chữ ký dùng khi in phiếu.</td></tr>
+<tr><td>Hết bề ngang, cuối trang</td><td><strong>Email thông báo</strong> · <strong>Người báo tin trong trường hợp cần thiết</strong> · <strong>Đề nghị sửa hồ sơ</strong> · <strong>Lịch sử thao tác</strong></td><td>Công tắc nhận email; người cần báo khi có việc gấp (tự sửa được); gửi đề nghị sửa phần hồ sơ còn lại, xem {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}; nhật ký các thay đổi trên tài khoản của bạn.</td></tr>
+</tbody>
+</table>
+<p>Tài khoản chưa gắn với hồ sơ nhân sự (ví dụ tài khoản quản trị dùng chung) thì không có Quỹ phép, Lương của tôi, Ca làm việc, Người báo tin và Đề nghị sửa hồ sơ; thẻ Hồ sơ nhân sự chỉ còn nhóm Tổ chức.</p>
+
+<h2>Chỗ nào bạn tự sửa được</h2>
+<ul>
+<li><strong>Số điện thoại và địa chỉ:</strong> trong thẻ <strong>Hồ sơ nhân sự</strong>, nhóm <strong>Liên hệ</strong> (ngay dưới nhóm Tổ chức) có nút <strong>Sửa</strong> ở dòng tiêu đề nhóm. Đây là nhóm duy nhất trong thẻ sửa được ngay, xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")}.</li>
+<li><strong>Người báo tin:</strong> sửa ngay ở thẻ <strong>Người báo tin trong trường hợp cần thiết</strong>.</li>
+<li><strong>Các nhóm còn lại</strong> (thông tin cá nhân, căn cước, ngân hàng, hộ gia đình): gửi ở thẻ <strong>Đề nghị sửa hồ sơ</strong>, phòng Nhân sự duyệt rồi mới vào hồ sơ. Nhóm Tổ chức và Công việc do phòng Nhân sự cập nhật.</li>
+</ul>
+
+<h2>Gập bớt thẻ ít dùng</h2>
+<p>Mọi thẻ trong mục Thông tin cá nhân có một nút mũi tên ở góc phải dòng tiêu đề:</p>
+<ol>
+<li>Thẻ đang mở thì mũi tên chỉ <strong>lên</strong>. Bấm vào là thẻ gập lại, chỉ còn dòng tiêu đề, và mũi tên đổi thành chỉ <strong>xuống</strong>.</li>
+<li>Bấm mũi tên chỉ xuống để mở thẻ ra lại.</li>
+<li>Trình duyệt <strong>nhớ</strong> thẻ nào bạn đã gập: tải lại trang hay mở lại hôm sau thì thẻ đó vẫn gập.</li>
+</ol>
+<p>Việc nhớ này lưu trên <strong>trình duyệt của máy đang dùng</strong>, không theo tài khoản: mở Trang cá nhân trên máy khác, trình duyệt khác hay sau khi xóa dữ liệu trình duyệt thì mọi thẻ lại mở như mặc định. Gập thẻ chỉ là ẩn cho gọn, không xóa hay đổi dữ liệu nào. Nút nằm ở tiêu đề thẻ (như <strong>In phiếu thông tin</strong>, <strong>Đơn nghỉ phép</strong>) vẫn hiện và bấm được khi thẻ đang gập.</p>
+
+<h2>Gập nhóm trên thanh bên trái</h2>
+<p>Thanh bên trái của Trang cá nhân có bốn nhóm: <strong>Hồ sơ</strong>, <strong>Việc của tôi</strong>, <strong>Trợ lý AI của tôi</strong>, <strong>Bảo mật &amp; hiển thị</strong>. Bấm vào tên nhóm để gập hoặc mở các mục bên trong; mũi tên cạnh tên nhóm chỉ <strong>lên</strong> khi nhóm đang mở và chỉ <strong>xuống</strong> khi đang gập. Trình duyệt nhớ nhóm nào đang gập, giống cách nhớ thẻ ở trên.</p>
+<ul>
+<li>Nhóm chứa mục bạn <strong>đang xem</strong> luôn mở và không gập được (mũi tên mờ đi), để thanh bên luôn cho biết bạn đang ở đâu — kể cả khi mở thẳng một đường dẫn vào mục nằm trong nhóm đã gập.</li>
+<li>Nhóm đang gập vẫn hiện <strong>tổng số đếm</strong> của các mục bên trong ngay cạnh tên nhóm (ví dụ số việc cần làm cộng số thông báo chưa đọc), nên gập lại không làm bạn bỏ sót việc đang chờ.</li>
+<li>Trên điện thoại, thanh bên là một ô chọn mục ở đầu trang, không có phần gập nhóm.</li>
+</ul>""",
         },
         {
             "title": PRINT_INFO,
@@ -450,7 +504,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <thead><tr><th>Bạn là</th><th>Bấm ở đâu</th><th>Cần quyền gì</th></tr></thead>
 <tbody>
 <tr><td>Phòng Nhân sự, in phiếu của một nhân viên</td><td><strong>Nhân sự ▸ Nhân sự</strong> ▸ mở hồ sơ người đó ▸ nút <strong>In phiếu thông tin</strong> ở góc phải, cạnh nút <strong>Lưu</strong></td><td>Quyền xem hồ sơ nhân sự, và hồ sơ đó nằm trong phạm vi bạn được xem</td></tr>
-<tr><td>Nhân viên, in phiếu của chính mình</td><td>Menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong> ▸ nút <strong>In phiếu thông tin</strong> ngay trên khối hồ sơ nhân sự</td><td>Chỉ cần đăng nhập; tài khoản phải gắn với hồ sơ nhân sự</td></tr>
+<tr><td>Nhân viên, in phiếu của chính mình</td><td>Menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong> ▸ nút <strong>In phiếu thông tin</strong> ở góc phải tiêu đề thẻ <strong>Hồ sơ nhân sự</strong></td><td>Chỉ cần đăng nhập; tài khoản phải gắn với hồ sơ nhân sự</td></tr>
 </tbody>
 </table>
 <p>Bấm nút là mở trang xem trước tờ A4. Ở thanh trên cùng, bấm <strong>In phiếu / Lưu PDF</strong> để mở hộp in của trình duyệt: chọn máy in, hoặc chọn lưu thành tệp PDF. Bấm <strong>Quay lại</strong> để trở về hồ sơ hoặc Trang cá nhân.</p>
@@ -486,7 +540,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <table>
 <thead><tr><th>Nhóm thông tin</th><th>Cách sửa</th></tr></thead>
 <tbody>
-<tr><td>Số điện thoại, địa chỉ thường trú, địa chỉ hiện nay, người báo tin</td><td><strong>Tự sửa và lưu ngay</strong> ở thẻ <strong>Liên hệ</strong> và bảng người báo tin trên Trang cá nhân, như trước đây — không phải chờ duyệt (khai được nhiều số, xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")})</td></tr>
+<tr><td>Số điện thoại, địa chỉ thường trú, địa chỉ hiện nay, người báo tin</td><td><strong>Tự sửa và lưu ngay</strong> ở nhóm <strong>Liên hệ</strong> (trong thẻ <strong>Hồ sơ nhân sự</strong>) và thẻ người báo tin trên Trang cá nhân, như trước đây — không phải chờ duyệt (khai được nhiều số, xem {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")})</td></tr>
 <tr><td>Cá nhân: giới tính, ngày sinh, nơi sinh, dân tộc, tôn giáo, tình trạng hôn nhân, số con, email cá nhân, trình độ học vấn, chuyên ngành</td><td rowspan="4"><strong>Gửi đề nghị</strong>, phòng Nhân sự duyệt rồi mới vào hồ sơ</td></tr>
 <tr><td>Ngân hàng: số tài khoản, tên chủ tài khoản, ngân hàng, chi nhánh</td></tr>
 <tr><td>Giấy tờ: CCCD (số, ngày cấp, nơi cấp, ngày hết hạn), mã số thuế cá nhân, số sổ BHXH, nơi và mã nơi khám chữa bệnh BHYT</td></tr>
@@ -497,7 +551,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 
 <h2>Gửi đề nghị</h2>
 <ol>
-<li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>, cuộn xuống thẻ <strong>Đề nghị sửa hồ sơ</strong> (ngay dưới phần Liên hệ và người báo tin).</li>
+<li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>, cuộn xuống thẻ <strong>Đề nghị sửa hồ sơ</strong> (ngay dưới thẻ <strong>Người báo tin trong trường hợp cần thiết</strong>, gần cuối trang).</li>
 <li>Bấm <strong>Đề nghị sửa thông tin</strong>. Hộp <em>Đề nghị sửa thông tin hồ sơ</em> mở ra với bốn tab <strong>Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình</strong>, mọi ô đã điền sẵn giá trị hồ sơ hiện tại.</li>
 <li>Ô <strong>Quan hệ</strong> ở bảng người thân có ô tìm: bấm vào ô rồi gõ vài chữ (không dấu cũng được) để lọc, khỏi phải cuộn danh sách dài.</li>
 <li>Chỉ sửa những ô cần đổi. Chuyển qua lại giữa các tab không làm mất chữ đã gõ. Ô <strong>Số con</strong> chỉ hiện khi tình trạng hôn nhân là <em>Có gia đình</em>.</li>
@@ -612,7 +666,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <h2>Xem lương của tôi</h2>
 <ol>
 <li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>.</li>
-<li>Ở cột bên phải có thẻ <strong>Lương của tôi</strong> với ba dòng <strong>Lương</strong>, <strong>Phụ cấp</strong> và <strong>Tổng</strong>. Số mặc định bị che thành <em>••••</em>.</li>
+<li>Ở hàng đầu, bên phải thẻ <strong>Quỹ phép</strong>, có thẻ <strong>Lương của tôi</strong> với ba dòng <strong>Lương</strong>, <strong>Phụ cấp</strong> và <strong>Tổng</strong>. Số mặc định bị che thành <em>••••</em>.</li>
 <li>Bấm nút con mắt <strong>Xem số</strong> ở góc thẻ để hiện số. Bấm <strong>Ẩn số</strong> để che lại.</li>
 </ol>
 <p>Số bị che sẵn để bạn không lộ lương khi đang chia sẻ màn hình hay nhờ người khác xem giúp. Mở lại trang là số tự che lại. Thẻ ghi <em>Phòng Nhân sự chưa nhập lương cho bạn.</em> nghĩa là hồ sơ của bạn chưa có lương. Tài khoản chưa gắn với hồ sơ nhân sự thì không có thẻ này.</p>
@@ -663,10 +717,10 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <h2>Nhân viên tự sửa số của mình ở Trang cá nhân</h2>
 <ol>
 <li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong> ▸ mục <strong>Thông tin cá nhân</strong>.</li>
-<li>Ở thẻ <strong>Liên hệ</strong>, bấm nút <strong>Sửa</strong> ở góc thẻ. Hộp <strong>Sửa thông tin liên hệ</strong> mở ra với đúng danh sách số và hai ô địa chỉ như trên.</li>
+<li>Trong thẻ <strong>Hồ sơ nhân sự</strong>, ở nhóm <strong>Liên hệ</strong> (ngay dưới nhóm Tổ chức), bấm nút <strong>Sửa</strong> ở dòng tiêu đề nhóm. Hộp <strong>Sửa thông tin liên hệ</strong> mở ra với đúng danh sách số và hai ô địa chỉ như trên.</li>
 <li>Thêm, sửa, xóa số hay bấm <strong>Đặt làm chính</strong> như ở hồ sơ, rồi bấm <strong>Lưu</strong>. Màn báo <em>Đã cập nhật thông tin liên hệ</em>.</li>
 </ol>
-<p>Thay đổi được áp dụng <strong>ngay</strong>, không phải chờ phòng Nhân sự duyệt, và được ghi vào lịch sử hồ sơ của bạn. Thẻ Liên hệ hiện số chính ở dòng <strong>Số điện thoại</strong>, mỗi số khác một dòng mang tên là nhãn của số đó (số chưa có nhãn hiện là <strong>Số điện thoại khác</strong>). Các thông tin khác như ngân hàng hay CCCD vẫn phải gửi đề nghị: xem {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}.</p>
+<p>Thay đổi được áp dụng <strong>ngay</strong>, không phải chờ phòng Nhân sự duyệt, và được ghi vào lịch sử hồ sơ của bạn. Nhóm Liên hệ hiện số chính ở dòng <strong>Số điện thoại</strong>, mỗi số khác một dòng mang tên là nhãn của số đó (số chưa có nhãn hiện là <strong>Số điện thoại khác</strong>). Các thông tin khác như ngân hàng hay CCCD vẫn phải gửi đề nghị: xem {ref(SELF_CHANGE, "Tự đề nghị sửa hồ sơ ở Trang cá nhân")}.</p>
 
 <h2>Tìm nhân sự theo số điện thoại</h2>
 <p>Ô tìm nhanh <em>Tìm theo tên, mã NV, email, SĐT…</em> trên màn <strong>Nhân sự</strong> tìm được người theo <strong>cả số chính lẫn các số khác</strong>. Để tìm trong số khác, từ khóa phải chỉ gồm chữ số (có thể kèm dấu cách và + . - ( )) và có ít nhất 3 chữ số. Hệ tìm theo đúng cách số được lưu: số lưu là <em>0933 333 333</em> thì gõ <em>0933333333</em> sẽ không ra, hãy gõ một đoạn liền nhau như <em>0933</em> hoặc mấy chữ số cuối. Trợ lý AI tìm người theo số điện thoại cũng khớp cả các số khác.</p>
@@ -698,7 +752,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <tr><td><em>Số này đã nhập ở trên</em> hoặc <em>Có số điện thoại bị nhập trùng (kể cả trùng số chính)</em></td><td>Số đó đã có ở một dòng khác, kể cả khi chỉ khác cách đặt dấu cách</td><td>Xóa dòng trùng</td></tr>
 <tr><td>Bấm <strong>Đặt làm chính</strong> xong thì dòng của số chính cũ báo đỏ</td><td>Số chính cũ được nhập từ trước khi có luật mới và chưa đúng luật</td><td>Sửa lại số đó cho đúng luật, hoặc xóa dòng đó nếu không còn dùng</td></tr>
 <tr><td>Không thấy nút <strong>Thêm số</strong></td><td>Người này đã đủ 5 số</td><td>Xóa bớt một số khác rồi thêm</td></tr>
-<tr><td>Không thấy nút <strong>Sửa</strong> ở thẻ Liên hệ trên Trang cá nhân</td><td>Tài khoản của bạn chưa gắn với hồ sơ nhân sự</td><td>Liên hệ phòng Nhân sự để gắn tài khoản vào hồ sơ</td></tr>
+<tr><td>Không thấy nút <strong>Sửa</strong> ở nhóm Liên hệ trên Trang cá nhân</td><td>Tài khoản của bạn chưa gắn với hồ sơ nhân sự</td><td>Liên hệ phòng Nhân sự để gắn tài khoản vào hồ sơ</td></tr>
 </tbody>
 </table>""",
         },
@@ -711,7 +765,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 
 <h2>Xem phòng đang theo lịch nào</h2>
 <ol>
-<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Phòng ban</strong>, bấm vào phòng cần xem.</li>
+<li>Vào <strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Phòng ban</strong>, bấm vào phòng cần xem.</li>
 <li>Dưới phần thông tin phòng có hai tab: <strong>Pháp nhân &amp; nhân sự</strong> và <strong>Lịch làm việc</strong>. Bấm tab <strong>Lịch làm việc</strong>.</li>
 </ol>
 <p>Khung <strong>Lịch làm việc của phòng</strong> cho thấy:</p>
@@ -881,7 +935,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <h2>Nhân viên xem ca của mình</h2>
 <ul>
 <li>Mỗi lần ca của bạn được xếp hay đổi, bạn nhận <strong>một chuông</strong> <em>Ca làm việc của bạn vừa được cập nhật</em>, nêu ngày (hoặc khoảng ngày) và người đã xếp. Bấm chuông là mở Trang cá nhân.</li>
-<li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong>: thẻ <strong>Ca làm việc tuần này</strong> liệt kê từng ngày — khung giờ, số giờ, và nguồn (<em>Ca xếp riêng</em> hoặc tên lịch tuần). Ngày nghỉ ghi <em>Nghỉ</em> hoặc <em>Nghỉ (xếp ca)</em>, ngày lễ ghi <em>Lễ: …</em>; ghi chú của người xếp hiện dưới khung giờ. Dùng hai nút mũi tên để xem tuần trước / tuần sau, <strong>Tuần này</strong> để quay lại.</li>
+<li>Mở menu tài khoản ở góc phải ▸ <strong>Trang cá nhân</strong>: thẻ <strong>Ca làm việc tuần này</strong> (bên trái, ngay dưới thẻ Hồ sơ nhân sự) liệt kê từng ngày — khung giờ, số giờ, và nguồn (<em>Ca xếp riêng</em> hoặc tên lịch tuần). Ngày nghỉ ghi <em>Nghỉ</em> hoặc <em>Nghỉ (xếp ca)</em>, ngày lễ ghi <em>Lễ: …</em>; ghi chú của người xếp hiện dưới khung giờ. Dùng hai nút mũi tên để xem tuần trước / tuần sau, <strong>Tuần này</strong> để quay lại.</li>
 <li>Hỏi Trợ lý AI (khung chat, bot hoặc ứng dụng AI đã nối cổng MCP): <em>Ca của tôi tuần này?</em> · <em>Thứ Bảy tôi có ca không?</em> · <em>Tuần sau tôi làm mấy giờ?</em></li>
 </ul>
 <p>Trưởng phòng và phòng Nhân sự hỏi được ca của người khác trong phạm vi được xem: <em>Phòng Kinh doanh tuần này ai làm ca nào?</em> · <em>Chị Lan thứ Bảy làm mấy giờ?</em> (tối đa 14 ngày một lần). Trợ lý chỉ đọc; xếp hay đổi ca làm trên màn Lịch làm việc.</p>
@@ -907,9 +961,9 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
         {
             "title": SO_DO,
             "icon": "building",
-            "summary": "Menu Nhân sự > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban, khối người kiêm nhiệm; chỉ hiện người trong phạm vi bạn được xem",
+            "summary": "Sơ đồ tổ chức (đã ẩn khỏi menu từ 17/11/2026, mở bằng đường dẫn /hr/org-chart): khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban, khối người kiêm nhiệm; chỉ hiện người trong phạm vi bạn được xem",
             "content": f"""<h2>Sơ đồ tổ chức</h2>
-<p>Vào <strong>Nhân sự ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
+<p>Từ 17/11/2026 <strong>Sơ đồ tổ chức không còn trên menu</strong> Nhân sự. Muốn mở, gõ thêm <code>/hr/org-chart</code> vào sau tên miền hệ thống trên thanh địa chỉ trình duyệt (ví dụ <code>https://erp.degoholding.vn/hr/org-chart</code>); ai có quyền xem hồ sơ nhân sự vẫn mở được như trước, và lúc đang xem sơ đồ thì dòng <strong>Nhân sự</strong> trên menu sáng lên. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
 
 <h2>Đọc sơ đồ</h2>
 <ul>
@@ -950,7 +1004,7 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
 <tbody>
 <tr><td>Người nằm nhầm phòng</td><td>Hồ sơ nhân sự ▸ ô <strong>Phòng ban</strong></td></tr>
 <tr><td>Người báo cáo nhầm sếp</td><td>Hồ sơ nhân sự ▸ ô <strong>Người quản lý trực tiếp</strong></td></tr>
-<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
+<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Thiết lập ▸ tab <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
 <tr><td>Màn trống</td><td>Chưa có nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này. Trống sau khi chọn phòng ban thì phòng đó chưa có ai: bỏ bớt bộ lọc</td></tr>
 </tbody>
 </table>
@@ -1049,13 +1103,13 @@ Không đủ phạm vi thì nhờ người phụ trách phòng hay công ty đó
         {
             "title": POSITION_ROLES,
             "icon": "key-round",
-            "summary": "Danh mục ▸ Chức vụ ▸ tab Quyền mặc định: khai gói vai trò cho một chức vụ, tài khoản của người giữ chức vụ được tự cấp khi cấp tài khoản và khi đổi chức vụ; nút Áp lại cho người đang giữ chức vụ; nhãn Theo chức vụ ở Phân quyền tài khoản",
+            "summary": "Thiết lập ▸ Chức vụ ▸ tab Quyền mặc định: khai gói vai trò cho một chức vụ, tài khoản của người giữ chức vụ được tự cấp khi cấp tài khoản và khi đổi chức vụ; nút Áp lại cho người đang giữ chức vụ; nhãn Theo chức vụ ở Phân quyền tài khoản",
             "content": f"""<h2>Dùng để làm gì</h2>
 <p>Người mới vào công ty có tài khoản là <strong>làm việc được ngay</strong>, không phải chờ quản trị gán từng vai trò. Mỗi chức vụ khai sẵn một <strong>gói vai trò</strong>; tài khoản của người giữ chức vụ đó được hệ thống tự cấp gói, và đổi chức vụ thì gói tự đổi theo.</p>
 
 <h2>Khai gói vai trò cho một chức vụ</h2>
 <ol>
-<li>Vào <strong>Nhân sự ▸ Danh mục ▸ Chức vụ</strong>, bấm vào chức vụ cần khai.</li>
+<li>Vào <strong>Nhân sự ▸ Thiết lập</strong> ▸ tab <strong>Chức vụ</strong>, bấm vào chức vụ cần khai.</li>
 <li>Chọn tab <strong>Quyền mặc định</strong>. Khung <strong>Quyền mặc định của chức vụ</strong> liệt kê các vai trò đang có trong gói (cột <strong>Vai trò</strong> và <strong>Mã</strong>).</li>
 <li>Ở ô <em>Chọn vai trò để thêm…</em>, gõ để tìm rồi chọn một vai trò, bấm <strong>Thêm</strong>. Lặp lại cho đủ. Bỏ một vai trò bằng biểu tượng thùng rác ở dòng đó.</li>
 <li>Bấm <strong>Lưu</strong>.</li>

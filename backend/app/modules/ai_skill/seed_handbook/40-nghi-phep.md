@@ -43,6 +43,31 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
   Nhưng **chỉ chính người nộp** mới hủy được đơn đang nằm trong luồng duyệt;
   người khác phải dùng *Trả lại* / *Từ chối* ở màn **Phê duyệt**.
 
+### "Đơn của tôi đang tới đâu, duyệt xong thì tới ai" (từ 17/11/2026)
+
+Gọi `my_requests_status` (lọc `entity` = `leave_request`, `leave_comp_request` hay `leave_encashment` nếu người hỏi
+nói rõ loại phiếu; `only_open` = true khi chỉ hỏi đơn đang chạy). Mỗi phiếu đang chạy có:
+
+- `waiting_step` + `waiting_on`: chặng hiện tại và **người đang giữ** đơn — trả lời câu *đơn đang ở đâu*.
+- `next_steps`: các chặng **sau** chặng hiện tại, mỗi chặng có số chặng, tên chặng, `expected_approvers` (tên người
+  duyệt **dự kiến**) và có thể có `note`. Trả lời câu *duyệt xong thì tới ai* bằng chặng đầu của danh sách, kể tiếp
+  các chặng sau nếu người hỏi muốn cả đường đi.
+
+Cách nói cho đúng:
+
+- **Luôn nói là dự kiến.** Người thật chốt lúc chặng mở; đổi trưởng bộ phận, gán lại vai trò hay chuyển việc thì
+  người nhận có thể khác. Ví dụ: *Đơn NP001 đang chờ anh Nguyễn Văn A (chặng 1). Duyệt xong, theo luồng hiện
+  tại đơn sẽ tới chị Trần Thị B (chặng 2: Trưởng phòng Nhân sự duyệt) — đây là dự kiến, có thể đổi khi tới lượt.*
+- `expected_approvers` rỗng mà `note` nói chặng sẽ tự qua → nói chặng đó **tự động qua** vì người duyệt đã ký ở chặng
+  trước. `expected_approvers` rỗng mà `note` báo không tìm được người duyệt → nói rõ chặng đó **chưa xác định người
+  duyệt**, đơn sẽ dừng ở đó, và gợi ý báo phòng Nhân sự / quản trị bổ sung người trước khi đơn tới chặng đó. `note` nói
+  sẽ chuyển cho người dự phòng → tên trong `expected_approvers` là người dự phòng.
+- `next_steps` rỗng hoặc không có: đơn đang ở chặng cuối, hoặc đã xong. Tool chỉ tính `next_steps` cho **5 phiếu đang
+  chạy** đầu tiên mỗi lượt; phiếu thứ sáu trở đi không có trường này — đừng suy là "không còn chặng nào", lọc theo
+  `entity` rồi gọi lại.
+- Người dùng tự xem được cùng thông tin ở thẻ **Lịch sử phê duyệt** trên trang chi tiết đơn, khối **Chặng tiếp theo
+  (dự kiến)** ở đầu dòng thời gian.
+
 ## Quỹ phép — năm con số cộng, ba con số trừ
 
     còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù cộng thêm) − đã nghỉ − đang chờ duyệt
@@ -436,7 +461,7 @@ lẫn hai cái), và không xem được phép của người khác (đó là `e
   tôi tuần sau**): gọi `my_work_shifts` — nó đã gộp mẫu tuần với **ca xếp theo ngày** (mục dưới), còn
   `work_schedule` của `my_leave_summary` chỉ là mẫu tuần, không biết ca xếp riêng.
 - **"Phòng tôi đang theo lịch nào / gán lịch cho phòng ở đâu"**: lịch của một phòng xem ở
-  *Nhân sự ▸ Danh mục ▸ Phòng ban* ▸ bấm vào phòng ▸ tab ***Lịch làm việc***. Người có quyền
+  *Nhân sự ▸ Thiết lập* ▸ tab ***Phòng ban*** ▸ bấm vào phòng ▸ tab ***Lịch làm việc***. Người có quyền
   gán lịch thấy nút ***Gán lịch cho phòng*** (mở sẵn hộp ***Thêm dòng gán lịch*** đã chọn đúng
   phòng); cách khác là *Nhân sự ▸ Thiết lập* ▸ tab ***Gán lịch***.
 - **Thứ tự áp lịch**: lịch gán riêng cho **nhân sự** thắng lịch của **phòng ban**, rồi tới

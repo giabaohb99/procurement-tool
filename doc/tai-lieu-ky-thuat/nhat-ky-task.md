@@ -20514,3 +20514,21 @@ Kiểm: `frontend-v2/src/modules/hr/config/hr-setup-nav-item.test.ts`.
 
 Mã nguồn: `frontend-v2/src/app/components/profile/profile-settings-nav.tsx`.
 Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
+
+## duoc-CR-774-hdsd | Cập nhật hướng dẫn sử dụng, cẩm nang trợ lý và RAG cho đợt duoc-CR-766, 771, 772, 773, 774
+- status: xong
+- date: 2026-11-17
+- list: Nhân sự
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** năm thay đổi giao diện từ 16 đến 17/11/2026 (người duyệt dự kiến các chặng sau, bố cục và gập thẻ Trang cá nhân, gom Danh mục vào Thiết lập, ẩn Sơ đồ tổ chức, gập nhóm thanh bên) chưa có trong Trung tâm trợ giúp, cẩm nang của trợ lý và kho tìm kiếm RAG.
+
+**Đã làm**
+- Bài Nghỉ phép có mục mới đơn đang ở chặng nào, duyệt xong thì tới ai, kèm cách đọc khối Chặng tiếp theo (dự kiến) và câu hỏi Trợ lý; các bài nộp đơn, duyệt đơn, nghỉ bù, thanh toán nghỉ phép, phân quyền trỏ sang mục đó.
+- Bộ Nhân sự có bài mới đọc và gập các thẻ ở Trang cá nhân, gồm cả gập nhóm trên thanh bên trái; mục menu Nhân sự viết lại theo menu mới (Danh mục gom vào bốn tab đầu của Thiết lập, Sơ đồ tổ chức ẩn khỏi menu và mở bằng đường dẫn); mọi đường đi cũ qua Danh mục ở bộ Nhân sự, Hợp đồng lao động và hai bài lập bộ tài khoản đổi sang Thiết lập.
+- Cẩm nang trợ lý Nghỉ phép lên phiên bản 24 (thêm cách trả lời duyệt xong thì tới ai bằng người duyệt dự kiến), Hồ sơ nhân sự lên phiên bản 12 (menu mới); nạp lại kho tìm kiếm RAG và dọn phần của bài cũ.
+- Tài liệu chức năng Nghỉ phép §20 và Hồ sơ nhân sự §7.19 ghi đủ các thay đổi.
+
+**Kiểm:** chạy lại các phần nạp bài trên local không lỗi, nạp RAG 27 nguồn 194 đoạn không lỗi, cổng kiểm tài liệu không có lỗi mới.
+
+Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_help_nhan_su.py`, `backend/scripts/seed_help_hop_dong_lao_dong.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`, `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`.

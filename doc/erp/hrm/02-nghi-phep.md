@@ -1513,3 +1513,10 @@ người đang giữ việc (bảng việc chỉ có chặng đã mở). Nay khi
   chưa bật. Khóa truy vấn nằm dưới khóa `trail` nên duyệt / trả lại / rút là làm mới cả hai.
 - Bài kiểm: `test/backend/test_nghi_phep_chang_tiep_theo_du_kien_cr766.py`; vitest
   `modules/approval/components/approval-trail-card.test.tsx`.
+- Mốc *đã bắt đầu trình duyệt* hiện tên luồng **in đậm** thay cho ngoặc kép (`approval/helpers/split-quoted-name.ts`, nhận cả
+  dữ liệu cũ lưu ngoặc kép góc lẫn dữ liệu mới lưu nháy thẳng).
+- Trợ lý AI: `my_requests_status` trả thêm `next_steps` (số chặng, tên chặng, `expected_approvers`, `note`) cho tối đa 5 phiếu
+  đang chạy mỗi lượt, cùng phép tính với khối trên màn; cẩm nang `seed_handbook/40-nghi-phep.md` mục *Đơn của tôi đang tới
+  đâu, duyệt xong thì tới ai* dặn trợ lý luôn nói là dự kiến.
+- Bài HDSD (`seed_help_nghi_phep.py` bản 10): mục *Đơn đang ở chặng nào, duyệt xong thì tới ai* ở bài *Theo dõi, sửa và hủy
+  đơn nghỉ*, các bài Nộp đơn, Duyệt, Nghỉ bù, Thanh toán nghỉ phép, Phân quyền trỏ sang. Nội dung ở đây và ở seed phải khớp nhau.

@@ -1035,6 +1035,31 @@ Bài kiểm: `test/backend/test_kiem_nhiem_doc_lap_ghi_cr756.py`, `test_kiem_nhi
 `company-concurrent-members-table.test.tsx`, `org-chart-concurrent-section.test.tsx`,
 `hr/utils/concurrent-company-options.test.ts`, `hr/utils/employee-work-history-apply.test.ts`.
 
+### 7.19. Bố cục mục Thông tin cá nhân ở Trang cá nhân và gập từng thẻ (duoc-CR-771 + duoc-CR-772, 17/11/2026)
+
+Mục **Thông tin cá nhân** (mặc định) của Trang cá nhân (`/me`) đọc từ trên xuống:
+
+1. Hàng đầu hai thẻ ngắn: **Quỹ phép** kèm năm (nút **Đơn nghỉ phép**) · **Lương của tôi** (che sẵn, nút **Xem số**).
+2. MỘT thẻ **Hồ sơ nhân sự** (`profile-record-card.tsx`), các nhóm chảy hai cột: **Tổ chức** (đọc từ phiên đăng nhập, có cả
+   với tài khoản chưa gắn hồ sơ) → **Liên hệ** (nhóm duy nhất tự sửa được, nút **Sửa** ở tiêu đề nhóm, §7.9) → **Thông tin cá
+   nhân** → **Công việc** → **Căn cước công dân** → **Ngân hàng nhận lương** → **Bảo hiểm**. Nút **In phiếu thông tin** (§7.14)
+   nằm ở tiêu đề thẻ.
+3. **Ca làm việc tuần này** bên trái; **Tài khoản** (nút **Đổi mật khẩu**) + **Chữ ký cá nhân** bên phải. Tài khoản chưa gắn
+   hồ sơ thì Tài khoản sang trái.
+4. Hết bề ngang: **Email thông báo**, **Người báo tin trong trường hợp cần thiết**, **Đề nghị sửa hồ sơ**, **Lịch sử thao tác**.
+
+Thẻ phụ thuộc hồ sơ nhân sự (quỹ phép, lương, ca, người báo tin, đề nghị sửa) chỉ dựng khi tài khoản gắn hồ sơ.
+
+**Gập từng thẻ (duoc-CR-772).** Mọi thẻ trong mục có nút mũi tên ở góc phải tiêu đề: đang mở là mũi tên lên (nhãn đọc màn
+hình *Thu gọn …*), bấm thì thân thẻ ẩn (thuộc tính `hidden`, vẫn dựng nên không mất chữ đang gõ), mũi tên đổi xuống (*Mở …*).
+Nút ở tiêu đề thẻ vẫn hiện khi gập. Trạng thái nhớ trong `localStorage` của trình duyệt, khóa `erp.section.me.<tiêu đề thẻ>`
+(`shared/utils/section-open-storage.ts`), nên đổi máy / trình duyệt là về mặc định mở. Chỉ áp trong `CardCollapseScope`
+(`shared/ui/card-collapse.tsx`); `FormCard` ở mọi màn khác không đổi.
+
+Bài HDSD: *Nhân sự — Đọc và gập các thẻ ở mục Thông tin cá nhân của Trang cá nhân* (`seed_help_nhan_su.py`); các bài In
+phiếu, Tự đề nghị sửa hồ sơ, Lương, Nhiều số điện thoại, Xếp ca sửa câu chỉ đường theo bố cục này. Nội dung ở đây và ở seed
+phải khớp nhau.
+
 ## Hợp đồng lao động
 
 Hai mục về Hợp đồng lao động từng nằm ở cuối tệp này (bản lưu trữ ở phân hệ Văn bản — duoc-CR-629; danh sách biến của mẫu hợp đồng — duoc-CR-630) đã chuyển sang [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) §A.6, §A.7 ngày 23/10/2026 (duoc-CR-673).
