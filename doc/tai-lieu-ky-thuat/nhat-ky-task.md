@@ -20550,3 +20550,21 @@ Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_hel
 
 Mã nguồn: `backend/app/modules/purchase_progress/nspt_people.py`, `backend/app/modules/purchase_progress/controller.py`, `backend/app/modules/purchase_progress/sort_expressions.py`, `backend/app/modules/employee/service.py`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx`.
 Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.
+
+## duoc-CR-775-hdsd | Hướng dẫn sử dụng, Trợ lý AI và cẩm nang Thu mua nói NSPT dạng mã kèm tên
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi màn Tiến độ đơn mua hàng hiện NSPT dạng mã kèm tên, Trợ lý AI và cổng MCP vẫn đọc lại chữ đã lưu trên đơn (có đơn là mã trần NM_NV), và Trung tâm trợ giúp chưa có bài nào giải thích cột này.
+
+**Đã làm**
+- Công cụ tra một chứng từ thu mua và công cụ liệt kê phiếu chờ duyệt của trợ lý trả người phụ trách đơn mua hàng dạng mã kèm tên theo hồ sơ, giống màn Tiến độ; đơn chưa gắn hồ sơ thì giữ chữ đã lưu.
+- Thêm bài hướng dẫn Cột NSPT ở màn Tiến độ mua hàng dưới thẻ Dành cho Nhân viên Mua hàng (tên lấy từ đâu, đơn cũ hiện chữ lạ thì làm gì, xếp cột và xuất Excel, lưu bằng mã, hỏi trợ lý). Script chỉ thêm đúng một bài, không dựng lại cây trợ giúp Thu mua dựng tay.
+- Cẩm nang Quy trình thu mua lên phiên bản mới với đoạn hướng dẫn trợ lý đọc NSPT, không đoán người cho đơn cũ.
+
+**Kiểm:** hai bài kiểm mới cho công cụ trợ lý cùng các bài canh quyền đọc của trợ lý xanh; chạy thử và chạy thật bài hướng dẫn, xuất bản cẩm nang trên local không lỗi. Nạp kho tìm kiếm RAG cho bài mới chưa được vì khóa Gemini hết hạn mức, chạy lại khi hạn mức hồi.
+
+Mã nguồn: `backend/app/modules/assistant/tools/procurement_doc_tool.py`, `backend/scripts/seed_help_thu_mua_nspt_cr775.py`, `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`.
+Kiểm: `test/backend/test_assistant_procurement_doc_tool.py`.

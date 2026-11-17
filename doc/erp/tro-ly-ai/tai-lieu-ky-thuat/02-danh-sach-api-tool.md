@@ -349,6 +349,9 @@ chi tiết, con người tự bấm Duyệt ở đó.
   YCKS chỉ ĐẾM số phương án mỗi dòng - bảng option chứa NCC thuộc cơ chế ẩn nên không trả
   chi tiết. Muốn so giá: lấy `product_code` từng dòng gọi tiếp T5/T6 (product_best_price /
   suppliers_for_product).
+- [SỬA 17/11/2026, duoc-CR-775] Trường `buyer` (NSPT) của ĐMH — ở tool này lẫn ở `pending_procurement_approvals` — là
+  `"Mã · Tên"` tra theo hồ sơ nhân sự (`nspt_id`, `purchase_progress/nspt_people.py`), khớp cột NSPT của màn Tiến độ;
+  đơn chưa liên kết hồ sơ thì là chữ đã lưu trên đơn.
 - Quyền: `entity` + `read`, lấy phiếu qua `apply_scope` (mã đúng nhưng ngoài phạm vi =
   "không tìm thấy", không lộ tồn tại); thiếu `supplier.read` thì ẩn NCC kèm ghi chú
   (kể cả `suggested_supplier` của YCMH); YCMH đã xóa mềm coi như không tồn tại.
