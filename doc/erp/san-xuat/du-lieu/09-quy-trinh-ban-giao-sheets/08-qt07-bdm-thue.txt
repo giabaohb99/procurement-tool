@@ -1,0 +1,51 @@
+# SHEET: 7. QT BĐM THUẾ
+R2: QUY TRÌNH THỰC HIỆN BẢN ĐỊNH MỨC THUẾ
+R3: Số, ký hiệu
+R5: I | MỤC TIÊU
+R6: - Thực hiện cấu thành trên 1.000 lít/gram đối với BĐM bán thành phẩm và trên 1 đơn vị sản phẩm đối với BĐM VTBB và BĐM thành phẩm (không bao gồm giá) và định mức sử dụng trước khi thực hiện Lệnh sản xuất
+R7: - Kiểm soát lượng tồn kho, thực tế sử dụng và những hao phí phát sinh trong quá trình sản xuất
+R9: II | THỜI ĐIỂM THỰC HIỆN
+R10: - Trước khi đưa vào sản xuất
+R11: - Xác định trước để khảo sát và tính giá vốn
+R13: III | LƯU ĐỒ
+R17: IV | QUY TRÌNH CHI TIẾT
+R18: STT | CÔNG VIỆC | CHI TIẾT / (Chủ ngữ là nhân sự phụ trách cần làm gì) | BIỂU MẪU | THỜI ĐIỂM | THỜI LƯỢNG | HÌNH THỨC | NGƯỜI THỰC HIỆN | NGƯỜI PHỐI HỢP | NGƯỜI KIỂM TRA | NGƯỜI DUYỆT | GHI CHÚ
+R19: A | BẢN ĐỊNH MỨC BÁN THÀNH PHẨM
+R20: 1.0 | Tiếp nhận thông tin | - Yêu cầu từ các bộ phận có liên quan / - Nhận thông tin từ đơn đặt hàng của Kinh doanh mà Điều phối TP cập nhật | Khi phát sinh | Drive / Nhóm | ĐP NL/BTP | Giá vốn / Điều phối TP
+R21: 2.0 | Xác định luồng pháp lý và cấu thành | - Dựa trên thông tin pháp lý sản xuất ghi nhận, xác định đủ các thông tin sau: / + Đơn vị cấu thành / + Đơn vị chuẩn bị các hạng mục tương ứng để cấu thành hàng hóa / - Dựa trên công thức sản xuất xác định cấu thành gồm: loại nguyên liệu, đơn vị tính, số lượng cần sử dụng trên 1.000 ml/gram, hàm lượng đối với thuốc, tỷ trọng đối với Phân, phí phối trộn | Drive | ĐP NL/BTP | Pháp lý sản xuất / Lab/NCC GC
+R22: 3.0 | Kiểm tra tồn kho | Xác định lượng tồn kho phù hợp với cấu thành và số lượng đáp ứng đủ nhu cầu cho sản xuất theo đơn đặt hàng | Drive | ĐP NL/BTP
+R23: 4.0 | Thực hiện BĐM BTP
+R24: 2026-01-04 00:00:00 | Kiểm tra thông tin các BĐM đã thực hiện trước đó | Kiểm tra thông tin các BĐM đã thực hiện trước đó dựa vào tên pháp lý. Nếu đã có trước đó --->  không cần thực hiện  / Thực hiện khi khác nhau về dạng BTP (lỏng, rắn), hàm lượng nguyên liệu thay đổi (Thuốc), tỷ trọng thay đổi (Phân) | Drive | ĐP NL/BTP | Lab / NCC GC
+R25: 2026-02-04 00:00:00 | Thực hiện BĐM BTP Phân bón và Thuốc BVTV | Bổ sung các thông tin cần thiết theo mẫu / Chú ý: / - Phân biệt sự khác nhau giữa dạng BTP / - Đảm bảo thành phần và tỷ trọng của Phân bón (theo thông tin từ Lab hoặc NCC GC) / - Cách tính hàm lượng và thành phần của nguyên liệu đối với Thuốc BVTV (theo thông tin từ Lab hoặc NCC GC) | Mẫu BĐM BTP | Drive | ĐP NL/BTP | Lab / NCC GC
+R26: B | BẢN ĐỊNH MỨC VẬT TƯ BAO BÌ
+R27: 1.0 | Tiếp nhận thông tin | - Yêu cầu từ các bộ phận có liên quan / - Nhận thông tin từ đơn đặt hàng của Kinh doanh mà Điều phối TP cập nhật | Khi phát sinh | Drive / Nhóm | ĐP VTBB
+R28: 2.0 | Xác định luồng pháp lý | Dựa trên thông tin pháp lý sản xuất ghi nhận, xác định đủ các thông tin sau: / - Đơn vị cấu thành / - Đơn vị chuẩn bị các hạng mục tương ứng để cấu thành hàng hóa / - Các hạng mục cấu thành nên hàng hóa - vật tư bao bì như: Phí sang chai, đóng gói, chai/xô/can/túi/gói, nắp, nhãn, nhãn dán thùng, cốc đong, seal, tem, thùng... (bao gồm mã, tên, đơn vị tính, số lượng sử dụng trên 1 đơn vị sản phẩm) / - Đơn vị sản xuất/gia công | Drive | ĐP VTBB | Pháp lý sản xuất
+R29: 3.0 | Kiểm tra tồn kho | Xác định lượng tồn kho phù hợp với cấu thành và số lượng đáp ứng đủ nhu cầu cho sản xuất theo đơn đặt hàng | Drive | ĐP VTBB
+R30: 4.0 | Thực hiện BĐM VTBB
+R31: 2026-01-04 00:00:00 | Kiểm tra thông tin các BĐM đã thực hiện trước đó | Kiểm tra thông tin các BĐM đã thực hiện trước đó dựa vào tên pháp lý. Nếu đã có trước đó --->  không cần thực hiện  / Thực hiện khi khác nhau về quy cách sản phẩm, chất liệu VTBB thay đổi. | Drive | ĐP VTBB | Lab / NCC GC
+R32: 2026-02-04 00:00:00 | Thực hiện BĐM VTBB Phân bón và Thuốc BVTV | Dựa trên mockup sản phẩm do Thiết kế cung cấp, bổ sung các thông tin cần thiết theo mẫu / Chú ý: / - Tên thể hiện trên hóa đơn của VTBB / - Các loại VTBB đang không lấy được hóa đơn | Mẫu BĐM VTBB | Drive | ĐP VTBB | Lab / NCC GC
+R33: C | BẢNG ĐỊNH MỨC THÀNH PHẨM
+R34: 1.0 | Tiếp nhận thông tin | - Yêu cầu từ các bộ phận có liên quan / - Nhận thông tin từ đơn đặt hàng của Kinh doanh mà Điều phối TP cập nhật | Khi phát sinh | Drive | QLDL
+R35: 2.0 | Xác định luồng pháp lý | Dựa trên thông tin pháp lý sản xuất ghi nhận, xác định đủ các thông tin sau: / - Đơn vị cấu thành / - Đơn vị chuẩn bị các hạng mục tương ứng để cấu thành hàng hóa / - Các hạng mục cấu thành nên hàng hóa như: Mã BTP, loại, đơn vị tính và lượng vật tư bao bì, phí gia công sang chai đóng gói | Khi tiếp nhận thông tin | Drive | QLDL | Pháp lý sản xuất
+R36: 3.0 | Tổng hợp thông tin | Tiếp nhận Mã BĐM BTP (do ĐP NL/BTP cung cấp) và BĐM VTBB (do ĐP VTBB cung cấp) / Tổng hợp thông tin và đối chiếu với luồng pháp lý | Khi xác định luồng pháp lý | Drive / Nhóm zalo / Bản cứng | QLDL
+R37: 4.0 | Thực hiện BĐM TP
+R38: 2026-01-04 00:00:00 | Kiểm tra thông tin các BĐM đã thực hiện trước đó | Kiểm tra thông tin các BĐM đã thực hiện trước đó dựa vào tên pháp lý và quy cách sản phẩm. Nếu đã có trước đó --->  không cần thực hiện  / Thực hiện khi khác nhau về quy cách sản phẩm, chất liệu VTBB thay đổi. | Khi có đầy đủ thông tin | Drive | QLDL
+R39: 2026-02-04 00:00:00 | Thực hiện BĐM TP Phân bón và Thuốc BVTV | Bổ sung các thông tin cần thiết theo mẫu / Chú ý phân biệt sự khác nhau giữa quy cách chai và túi/gói và xô/can và sự khác nhau của chuẩn bị toàn bộ và chuẩn bị 1 phần trong các hạng mục cấu thành nên hàng hóa | Mẫu BĐM TP | Khi có đầy đủ thông tin | Drive | QLDL
+R40: D | TRÌNH DUYỆT, LƯU TRỮ
+R41: 1.0 | Trình duyệt | - In Bảng định mức đã thực hiện và trình QLSX ký duyệt: / + BĐM BTP và BĐM VTBB gửi QLDL để tổng hợp và thực hiện BĐM TP / + QLDL tổng hợp các BĐM gửi bản gốc cho P TCKT / - Gửi File BĐM BTP và BĐM TP qua nhóm zalo cho P TCKT | Khi thực hiện xong BĐM | Nhóm / Bản cứng | QLDL | P TCKT | QLSX
+R42: 2.0 | Lưu trữ | QLDL lưu trữ file scan các BĐM | Khi BĐM được duyệt | Folder | QLDL
+R45: V | DANH SÁCH BIỂU MẪU
+R46: STT | TÊN MẪU BIỂU | ĐÍNH KÈM
+R47: 1.0
+R49: VI | DANH SÁCH LINK, FILE ĐÍNH KÈM
+R50: STT | TÊN DRIVE/FILE | ĐÍNH KÈM | NỘI DUNG
+R51: 1.0 | BDM mua hàng THUẾ - Công ty IDA | 1. BDM mua hàng THUẾ - Công ty IDA | Thực hiện BĐM thuế cho IDA
+R52: 2.0 | BDM mua hàng THUẾ - Công ty ABA | 1. BDM mua hàng THUẾ - Công ty ABA | Thực hiện BĐM thuế cho ABA
+R53: 3.0 | BDM mua hàng THUẾ - Công ty DEGO | 1. BDM mua hàng THUẾ - Công ty DEGO | Thực hiện BĐM thuế cho DEGO
+R54: 4.0 | PHÁP LÝ SẢN PHẨM (CHUNG) | PHÁP LÝ SẢN PHẨM (CHUNG) | Kiểm tra hàm lượng nguyên liệu Thuốc BVTV
+R55: 5.0 | PHÁP LÝ CẦN LÀM BĐM THUẾ PHÂN BÓN (sử dụng) | PHÁP LÝ CẦN LÀM BDM THUẾ PHÂN BÓN (sử dụng) | Lấy thông tin làm BĐM BTP Phân bón
+R57: VII | DANH SÁCH NHÓM ZALO LÀM VIỆC
+R58: STT | TÊN NHÓM ZALO | NỘI DUNG
+R59: 1.0 | XỬ LÝ CV P TCKT THUẾ - IDA GLOBAL | Gửi BĐM thuế công ty IDA Global cho kế toán
+R60: 2.0 | XỬ LÝ CV P TCKT THUẾ - DEGO (ĐẤT VIỆT) | Gửi BĐM thuế công ty Dego Holding cho kế toán
+R61: 3.0 | XỬ LÝ CV P TCKT THUẾ - ABA | Gửi BĐM thuế công ty ABA cho kế toán

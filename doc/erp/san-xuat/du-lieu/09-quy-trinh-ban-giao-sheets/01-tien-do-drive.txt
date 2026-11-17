@@ -1,0 +1,201 @@
+# SHEET: TIẾN ĐỘ DRIVE
+R1: Bảng tổng hợp đối chiếu tiến độ hoàn thành Drive
+R2: Mỗi team cập nhật trạng thái, người thực hiện và ngày hoàn thành cho từng sheet phụ trách; người đối chiếu xác nhận ở các cột cuối.
+R3: Nếu đổi Data 1 thì tất cả các Drive chạy lại toàn bộ
+R4: STT | Mẫu Form Drive | Tên Sheet | Nội dung / Mục tiêu | Team phụ trách | Trạng thái | Người thực hiện | Ngày hoàn thành | Người đối chiếu | Ghi chú
+R5: 1.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 1. Data 1 | Data đầu vào của sản xuất - tất cả thông tin danh mục link chọn được tạo để đồng bộ với các bộ phận. | GV | Đang thực hiện | Ms Hương
+R6: 2.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 1. Quy tắc tính GV | Thống nhất cấu trúc và cách tính giá vốn KD, xác định rõ khoản chi phí đưa vào và không đưa vào giá vốn. | GV | Đang thực hiện | Ms Hương
+R7: 3.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 2. Chính sách BTP | Chính sách BTP: NCC cho dự trù/không dự trù; số ngày sản xuất BTP; MOQ BTP/NCC gia công; ngày và lượng mua tối thiểu NL, BTP tại NCC thu mua. | GV | Đang thực hiện | Ms Hương
+R8: 4.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 2.1 Phí phối và phí đóng gói | Nhận thông tin từ QLDL để tính giá BTP. | GV | Đang thực hiện | Ms Hương
+R9: 5.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 2.2 Phí phối và phí đóng gói | Thực hiện tính phí trả kết quả KD. | GV | Đang thực hiện | Ms Hương
+R10: 6.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 3. Chính sách TP NCC GC | Chính sách khác NCC GC: thông tin chung của NCC; số ngày sản xuất TP; MOQ TP tối thiểu; % hao hụt từng nhóm BTP, VTBB; phí lưu kho. | GV | Đang thực hiện | Ms Hương
+R11: 7.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 4. Nhập kho NL/BTP | Nhập kho thực mua NL, BTP mua từ thu mua + QLDL; nhập kho BTP được phối tại NCC GC. Số lượng + giá GVSX. | GV | Đang thực hiện | Ms Hương
+R12: 8.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 5. Giá BTP NCC GC | Giá BTP thuộc pháp lý NCC. | GV | Đang thực hiện | Ms Hương
+R13: 9.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 5.1 Giá BTP NCC | Cộng mục 4 + 5 => GVSX. | GV | Đang thực hiện | Ms Hương
+R14: 10.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 5.2 Giá vốn KD BTP | Từ mục 5.1 => GVKD. | GV | Đang thực hiện | Ms Hương
+R15: 11.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 6. Tồn kho NL/BTP | Thông tin tồn kho NL/BTP được chạy qua từ ĐP NL/BTP. Số lượng + giá GVSX bình quân. | GV | Đang thực hiện | Ms Hương
+R16: 12.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 6.1 Giá tồn kho NL/BTP | Dựa trên sheet 6, cập nhật thêm giá bình quân gia quyền liên hoàn cho KD (cập nhật liên tục). Số lượng + giá GVKD bình quân. | GV | Đang thực hiện | Ms Hương
+R17: 13.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 7. YC MUA NL, BTP (KD) | Kinh doanh lập dự trù mua vào ngày 15 hằng tháng, gồm: tên pháp lý, dòng, màu, số lượng, quy cách và ngày yêu cầu có hàng. | GV | Đang thực hiện | Ms Hương
+R18: 14.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 8. Nhập kho VTBB | Thông tin nhập kho VTBB chạy qua từ ĐP VTBB, có giá của thu mua (giá SX). Số lượng + giá SX. | GV | Đang thực hiện | Ms Hương
+R19: 15.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 9. Tồn kho VTBB | Thông tin tồn kho VTBB chạy qua từ ĐP VTBB (giá SX). Số lượng + giá SX bình quân. | GV | Đang thực hiện | Ms Hương
+R20: 16.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 9.1 Tính giá VTBB | Thông tin tồn kho VTBB chạy qua từ ĐP VTBB (giá SX). Số lượng + giá KD bình quân. | GV | Đang thực hiện | Ms Hương
+R21: 17.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 10. PYC VTBB | Kinh doanh lập dự trù mua vào ngày 15 hằng tháng, gồm: tên VTBB, số lượng, quy cách và ngày yêu cầu có hàng. | GV | Đang thực hiện | Ms Hương
+R22: 18.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 11. Phí Lưu kho (hàng tháng) | Phí lưu kho từng NCC GC hàng tháng: số lượng hàng lưu kho, chi phí lưu kho theo từng NCC, tổng phí lưu kho hàng tháng. | GV | Đang thực hiện | Ms Hương
+R23: 19.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 12. Giá NL (tham khảo thu mua) | Chạy thông tin từ Drive giá thu mua cập nhật cho ĐP NL/BTP: giá NL, thông tin sẵn kho, công nợ... | GV | Đang thực hiện | Ms Hương
+R24: 20.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 13. Giá BTP SX | Chạy thông tin tính giá BTP từ Drive ĐP NL/BTP; dùng để check giá và so sánh giá BTP SX với BTP KD. | GV | Đang thực hiện | Ms Hương
+R25: 21.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 14. Giá BTP KD (khảo sát) | Dùng để khảo sát, tính toán, đối chiếu giá BTP KD dựa trên giá NL, hàm lượng, lượng phối và phí phối; so sánh với giá BTP SX. | GV | Đang thực hiện | Ms Hương
+R26: 22.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 15. Phí thuê tên và phí danh mục | KD muốn nắm thông tin | GV | Đang thực hiện | Ms Hương | Chờ thông tin từ Ms Huỳnh
+R27: 23.0 | Drive 1 - Tổng thông tin chính sách giá vốn (23 sheet) | 16. Hiện trạng thanh toán và công nợ NCC | KD muốn nắm thông tin | GV | Đang thực hiện | Ms Hương | Chờ thông tin từ Ms Huỳnh
+R28: 24.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 0. Quy tắc | Chuẩn hóa nguyên tắc tính phí đóng gói và VTBB theo từng NCC, làm cơ sở tính giá BTP/giá thành phẩm. | GV | Đang thực hiện | Ms Hương
+R29: 25.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 1. Mục lục | Data đầu vào của sản xuất - tất cả thông tin danh mục link chọn được tạo để đồng bộ với các bộ phận. | GV | Đang thực hiện | Ms Hương
+R30: 26.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 2. Tổng ĐP + HT | Lấy thông tin đơn hàng. | GV | Đang thực hiện | Ms Hương
+R31: 27.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 3. Quản lý nhãn mác | Quản lý danh mục nhãn mác, quy cách, số lượng và thông tin sử dụng theo từng sản phẩm. | GV | Đang thực hiện | Ms Hương
+R32: 28.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 4. Chi tiết định mức VTBB | Theo dõi chi tiết định mức VTBB và các vật tư cấu thành sản phẩm. | GV | Đang thực hiện | Ms Hương
+R33: 29.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 5. Phí gia công NCC SX-KD | Quản lý phí phối của từng NCC, thời điểm áp dụng và đơn giá. | GV | Đang thực hiện | Ms Hương
+R34: 30.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 6. Giá Nhập kho MUA BTP SX-KD | Chạy thông tin từ Drive 'Tổng thông tin chính sách giá vốn' để so sánh và tính lượng theo giá cho từng đơn hàng. | GV | Đang thực hiện | Ms Hương
+R35: 31.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 7. GV BTP SX-KD (thuốc + PB) | Chạy thông tin từ Drive 'Tổng thông tin chính sách giá vốn' để lấy giá BTP tính giá cho đơn hàng TP. | GV | Đang thực hiện | Ms Hương
+R36: 32.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 10. Giá VTBB SX+KD | Chạy thông tin từ Drive 'VTBB' để lấy giá VTBB SX và KD tính giá thành phẩm cho đơn hàng. | GV | Đang thực hiện | Ms Hương
+R37: 33.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 9. Tổng BĐM theo đơn QLDL | Chạy thông tin từ Drive '2. QLDL NCC' để lấy BĐM TP, tính giá tạm cho đơn hàng. | GV | Đang thực hiện | Ms Hương
+R38: 34.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 9.1 Tổng hợp LSX theo đơn QLDL | Chạy thông tin từ Drive '2. QLDL NCC' để lấy LSX TP, tính giá thực tế làm báo cáo cho kế toán. | GV | Đang thực hiện | Ms Hương
+R39: 35.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 11. Tổng hợp giá TP SX-KD | Tổng hợp thông tin đơn hàng, BĐM TP, giá VTBB và BTP, phí đóng gói, chi phí khác phát sinh. | GV | Đang thực hiện | Ms Hương
+R40: 36.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 12. Biên giá SX-KD-KH | Tổng hợp giá thành phẩm: giá TP tạm, giá TP thực tế, giá bán khách hàng để tính biên cho từng đơn hàng. | GV | Đang thực hiện | Ms Hương
+R41: 37.0 | Drive 2 - Quản lý giá vốn 2026 Mới (14 sheet) | 13. Báo cáo | Chạy thông tin từ Drive 'Giá vốn kinh doanh năm 2024 - trình AD duyệt' để lấy giá gần nhất so sánh giá. | GV | Đang thực hiện | Ms Hương
+R42: 38.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 1. Danh mục | Hướng dẫn cách xử lý và kết quả giữa các sheet, giúp KD hiểu và sử dụng Drive. | GV | Đang thực hiện | Ms Hương
+R43: 39.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 2. CHÍNH SÁCH BTP | Chính sách BTP: NCC cho dự trù/không dự trù; số ngày sản xuất BTP; MOQ BTP/NCC gia công; mua NL, BTP. | GV | Đang thực hiện | Ms Hương
+R44: 40.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 3. CHÍNH SÁCH TP NCC GC | Chính sách khác NCC GC: phí lưu kho; số ngày sản xuất; % hao hụt từng nhóm BTP, VTBB; thông tin chung NCC; MOQ TP tối thiểu. | GV | Đang thực hiện | Ms Hương
+R45: 41.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 4. Tồn kho NL/BTP (giá) | Theo dõi tồn kho NL/BTP, giá trị tồn và tình trạng nhập-xuất; kiểm soát tồn kho và cảnh báo hàng sắp thiếu. | GV | Đang thực hiện | Ms Hương
+R46: 42.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 5. PYC nguyên liệu, BTP | KD cập nhật lượng dự trù mua NL/BTP; duyệt mua đến khi nhận hàng. | GV | Đang thực hiện | Ms Hương
+R47: 43.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 6. BC TỒN KHO VTBB (giá) | Theo dõi tồn kho VTBB, giá trị tồn và tình trạng nhập-xuất; kiểm soát tồn kho và cảnh báo hàng sắp thiếu. | GV | Đang thực hiện | Ms Hương
+R48: 44.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 7. PYC VTBB | KD cập nhật lượng dự trù mua VTBB; duyệt mua đến khi nhận hàng. | GV | Đang thực hiện | Ms Hương
+R49: 45.0 | Drive 3 - Dự trù kinh doanh (8 sheet) | 8. Phí Lưu kho NCC GC (Hàng Tháng) | Phí lưu kho từng NCC GC hàng tháng: số lượng hàng lưu kho, chi phí lưu kho theo từng NCC, tổng phí lưu kho hàng tháng. | GV | Đang thực hiện | Ms Hương
+R50: Drive 3 - Dự trù kinh doanh (8 sheet) | 5.1 Đặt mua BTP | Đơn phối BTP, duyệt , lệnh phối tương tự ĐP | GV | Đang thực hiện | Ms Hương
+R51: 46.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 1. CÔNG NỢ NCC GC | Theo dõi chính sách và điều kiện đặt hàng của từng NCC, làm cơ sở kiểm soát công nợ, lãi suất, phí lưu kho và đặt đơn hàng. | GV | Đang thực hiện | Ms Hương
+R52: 47.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 2. Phí phối và phí đóng gói | Phí phối trộn và phí đóng gói theo từng NCC, thời gian áp dụng và trạng thái giá để cập nhật giá vốn chính xác. | GV | Đang thực hiện | Ms Hương
+R53: 48.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 3. Giá VTBB | Làm cơ sở tính cho KD và cập nhật giá vốn TP. | GV | Đang thực hiện | Ms Hương
+R54: 49.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 4. Danh sách giá cập nhật liên tục | Theo dõi giá BTP theo từng NCC và tất cả giá BTP đang áp dụng; công thức; hình thức thanh toán và trạng thái. | GV | Đang thực hiện | Ms Hương
+R55: 50.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 5. Thông tin Hợp đồng & Chính sách NCC | Theo dõi và quản lý thông tin hợp đồng, giá, quy cách, MOQ, chiết khấu và các điều khoản NCC. | GV | Đang thực hiện | Ms Hương
+R56: 51.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 6. Bảng giá TP – KD yêu cầu (Tạm) | Bảng tính giá vốn TP tạm cho KD gồm: giá BTP đang áp dụng, giá VTBB, phí đóng gói. | GV | Đang thực hiện | Ms Hương
+R57: 52.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 6.1 Bảng giá TP – KD duyệt (Tạm) | KD thực hiện tính giá tại sheet 6; khi KD bấm duyệt giá, dữ liệu được lưu trữ sang bảng giá đã duyệt. | GV | Đang thực hiện | Ms Hương
+R58: 53.0 | Drive 4 - Báo giá kinh doanh, cập nhật liên tục (8 sheet) | 7. TP theo đơn hàng KD | Khi KD lên đơn hàng, thực hiện tính giá TP theo từng đơn hàng để KD nắm giá duyệt theo đơn. | GV | Đang thực hiện | Ms Hương
+R59: 54.0 | Drive 5 - Thư mục báo cáo (chưa xác định sheet) | (Chưa có quyền truy cập) | Báo cáo cho kế toán | GV | Đang thực hiện | Ms Hương
+R60: 55.0 | Drive - Thống kê hợp đồng NCC GC | Thống kê HĐ | Thống kê HĐ, ngày hết hạn, chính sách, giá, khuyến mãi, thỏa thuận trên HĐ,... | QLDL | Đang thực hiện | Ms Hương
+R61: 56.0 | Drive - Checklist NCC GC mới | Mẫu 01 - Checklist DM hợp tác | Danh mục của Dego làm việc với NCC GC | QLDL | Đang thực hiện | Ms Quyên, Ms Trang
+R62: 57.0 | Drive - Checklist NCC GC mới | Mẫu 02 - Checklist HĐ | Dùng để lập checklist cần trao đổi khi làm việc với NCC GC | QLDL | Đang thực hiện | Ms Quyên, Ms Trang
+R63: 58.0 | Drive - Checklist NCC GC mới | Mẫu 03-Nhóm làm việc NCC GC | Danh mục các nhóm cần chuẩn bị khi ký kết hợp tác với NCC GC | QLDL | Đang thực hiện | Ms Quyên, Ms Trang
+R64: 59.0 | Drive - Checklist NCC GC mới | Mẫu 04-Tổng hợp giá NCC GC | mẫu theo dõi giá của NCC GC hiện là mẫu cũ, chưa chốt/có bổ sung thêm | QLDL | Đang thực hiện | Ms Huỳnh
+R65: 60.0 | Drive - Checklist NCC GC mới | Mẫu 05- BIÊN BẢN NỘI BỘ | Biên bản bàn giao nội bộ từ việc tiếp quản thông tin liên quan NCC GC | QLDL | Đang thực hiện | Ms Quyên, Ms Trang
+R66: 58.0 | Drive 2. QLDL NCC | Data 1 | Dữ liệu đầu vào | QLDL | Đang thực hiện | Ms Liên, Thơ
+R67: 59.0 | Drive 2. QLDL NCC | Data 2 | Dữ liệu đầu vào | QLDL | Đang thực hiện | Ms Liên, Thơ
+R68: 60.0 | Drive 2. QLDL NCC | 1.1 Tổng lập BDM TP (ĐP) | Khi tiếp nhận đơn hàng / Kiểm tra xem đã có BDM TP chưa / Nếu chưa thì lập BDM TP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R69: 61.0 | Drive 2. QLDL NCC | 3.1 chưa có QT - DS BĐMTP | Lập BTP TP cho những TP chưa có BDM hoặc cần tạo BDM mới | QLDL | Đang thực hiện | Ms Liên, Thơ
+R70: 62.0 | Drive 2. QLDL NCC | 3.2 IN BĐMTP | Form in BĐP TP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R71: 63.0 | Drive 2. QLDL NCC | 1.2 SẴN KHO NCC | sẵn kho NCC - dữ liệu chạy từ ĐP TP qua | QLDL | Đang thực hiện | Ms Liên, Thơ
+R72: 64.0 | Drive 2. QLDL NCC | 1.3 XK SX TP VTBB | Xuất kho SX TP VTBB AF-AI dữ liệu từ VTBB chạy qua | QLDL | Đang thực hiện | Ms Liên, Thơ
+R73: 65.0 | Drive 2. QLDL NCC | 1.4 Xuất kho TP ruột | Xuất kho TP ruột AA-AG- dữ liệu từ NL/BTP chạy qua | QLDL | Đang thực hiện | Ms Liên, Thơ
+R74: 66.0 | Drive 2. QLDL NCC | 8. MUA MỚI CN NCC | Thông kê chi phí trả ngay đơn hàng (Công nợ NCC, phí đơn giá, các loại chi phí trả ngay trên hoá đơn) / * BTP Cấu thành(từ 2 loại trở lên ví dụ BTP+ CPGC/CPVTBB) - QLDL quản lý; BTP mua, ruột - Oanh khai báo / *Note: phí lưu kho yêu cầu NCC tách riêng 1 bản | QLDL | Đang thực hiện | Ms Liên, Thơ
+R75: 67.0 | Drive 2. QLDL NCC | 9. TỔNG HỢP LSX | Tổng hợp thông tin liên quan lệnh sản xuất (lấy dữ liệu từ sheet 8. Thống kê CN NCC và 2. BĐM VTBB và 3.BDM BTP) /  => chạy dữ liệu in LSX | QLDL | Đang thực hiện | Ms Liên, Thơ
+R76: 68.0 | Drive 2. QLDL NCC | 9.1 IN LSX | Form in Lệnh sản xuất | QLDL | Đang thực hiện | Ms Liên, Thơ
+R77: 69.0 | Drive 2. QLDL NCC | 9.2 PNKNL | Phiếu đề nhập kho mua mới theo từng đơn hàng. | QLDL | Đang thực hiện | Ms Liên, Thơ
+R78: 70.0 | Drive 2. QLDL NCC | 9.3 PHIẾU XK TP | phiếu xuát kho tương tự phiếu in LSX | QLDL | Đang thực hiện | Ms Liên, Thơ
+R79: 71.0 | Drive 2. QLDL NCC | 9.4 IN XBNB | Lập phiếu xuất kho NB + đề nghị xuất hoá đơn => gom thành 1 chứng từ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R80: 72.0 | Drive 2. QLDL NCC | 7.1 CP KHÁC CỦA NCC | Thống kê chi phí trả sau (tính chi phí chiết khấu, giá,.. theo từng đơn hàng), dùng chung cho các NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R81: 73.0 | Drive 2. QLDL NCC | 7.2 FORM IN CK | form in chiết khấu lấy từ 7.1 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R82: 74.0 | Drive 2. QLDL NCC | 7.3 PHÍ PHẠT | form in phí phạt từ 7.1 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R83: 75.0 | Drive 2. QLDL NCC | 7.4 FORM IN GIẢM CK TĂNG PP | form in giảm trừ khi sự cố (hàng lỗi) từ 7.1 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R84: 76.0 | Drive 2. QLDL NCC | 4. Phí phối | Phí phối trộn từ NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R85: 77.0 | Drive 2. QLDL NCC | 5. Phí đóng gói | Phí đóng gói từ NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R86: 78.0 | Drive 2. QLDL NCC | 2. BĐM VTBB | Lấy từ ĐP VTBB | QLDL | Đang thực hiện | Ms Liên, Thơ
+R87: 79.0 | Drive 2. QLDL NCC | 3. BĐM BTP | Lấy từ ĐP BTP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R88: 80.0 | Drive 2. QLDL NCC | 6. Chính sách NCC | Chính sách từ NCC GC (Giá, phí phạt, chiết khấu theo SP) | QLDL | Đang thực hiện | Ms Liên, Thơ
+R89: 81.0 | Drive 2. QLDL NCC | 11. PXKSX | Phiếu xuất kho sản xuất theo lệnh sản xuất "9. LSX" (bao gồm ruột BTP, VTBB, phí đóng gói) tổng phát sinh của 1 đơn hàng thành phẩm /  / Không phân biệt của NCC hay mình / bỏ do trùng 9.3 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R90: 82.0 | Drive 2. QLDL NCC | 11.1 chưa có QT - PNK TP | Bỏ - ĐP TP bỏ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R91: 83.0 | Drive 2. QLDL NCC | 12. Bảng thông tin giá NCC | Bỏ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R92: 84.0 | Drive 2. QLDL NCC | 3.3 DS BĐMTP - ĐÃ DUYỆT | Bỏ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R93: 85.0 | Drive 2. QLDL NCC | 3.2 chưa có QT - Mã BTPR | Bỏ của ĐP BTP theo dõi | QLDL | Đang thực hiện | Ms Liên, Thơ
+R94: 86.0 | Drive 2. QLDL NCC | 1.7 Nhập kho TP-ĐP | Chi tiết nhập kho Dr.Xanh /  / Sử dụng dò công nợ NCC (do ngày xuất kho mới là ngày ghi nhận công nợ bên NCC, không liên quan đến ngày lấy hoá đơn) / bỏ dời qua Drive Đối chiếu công nợ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R95: 87.0 | Drive 2. QLDL NCC | 13. Đối chiếu giá tiếp nhận đơn NCC | Chỉ dành riêng cho hàng Hà Long sở hữu pháp lý và Hà Long chuẩn bị NL, BTP / +Chạy từ 6. qua	 / +Chạy từ 5. qua / + | QLDL | Đang thực hiện | Ms Liên, Thơ
+R96: 88.0 | Drive 2. QLDL NCC | 14. PHÁP LÝ | Lấy trực tiếp dữ liệu của pháp lý sản xuất / Cơ sở dữ liệu cho Drive 3. HOÁ ĐƠN | QLDL | Đang thực hiện | Ms Liên, Thơ
+R97: 89.0 | Drive 2. QLDL NCC | 15. HÓA ĐƠN | Dữ liệu đi lấy hoá đơn / Cơ sở dữ liệu cho Drive 3. HOÁ ĐƠN | QLDL | Đang thực hiện | Ms Liên, Thơ
+R98: 90.0 | Drive 3. Hóa đơn | 1. HÀNG SẴN KHO TẠI NCC | Hàng sẵn kho NCC => ĐP yêu cầu lấy hóa đơn => có hóa đơn mới báo kho đi nhận hàng / - Thêm thông tin ngày gửi đơn cho NCC thì có thể bỏ sheet 2 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R99: 91.0 | Drive 3. Hóa đơn | 2. DS HOÁ ĐƠN ĐG, TP | lấy từ ĐP TP khi nhập kho (sheet 1) Thông tin lấy hóa đơn, hóa đơn gì số lượng, công ty nào=> trả trạng thái lại ĐP TP đã ký & Ký ngày nào. / => dữ liệu lấy từ sheet 1, 3, 5, 6 | QLDL | Đang thực hiện | Ms Liên, Thơ
+R100: 92.0 | Drive 3. Hóa đơn | 2.1.GIÁ TP | Chỉ dành riêng cho hàng Hà Long sở hữu pháp lý và Hà Long chuẩn bị NL, BTP / Giá NCC add trên group theo từng đơn hàng => lấy giá để lấy hoá đơn | QLDL | Đang thực hiện | Ms Liên, Thơ
+R101: 93.0 | Drive 3. Hóa đơn | 2.2. Phí GC-ĐG | Phí đóng gói từ NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R102: 94.0 | Drive 3. Hóa đơn | 2.3.Phí GC-PT | Phí phối trộn từ NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R103: 95.0 | Drive 3. Hóa đơn | 2.4.PHÁP LÝ | Lấy trực tiếp dữ liệu của pháp lý sản xuất / Cơ sở dữ liệu cho Drive 3. HOÁ ĐƠN | QLDL | Đang thực hiện | Ms Liên, Thơ
+R104: 96.0 | Drive 3. Hóa đơn | 2.5.CHECK VTBB_C.LY | Check đủ điều kiện lấy hóa đơn | QLDL | Đang thực hiện | Ms Liên, Thơ
+R105: 97.0 | Drive 3. Hóa đơn | 2.6.CHECK BTP | Check đủ điều kiện lấy hóa đơn | QLDL | Đang thực hiện | Ms Liên, Thơ
+R106: 98.0 | Drive 3. Hóa đơn | 3.THEO DÕI SL LẤY HĐ | Theo dõi số lượng lấy hóa đơn theo từng lần nhận (Nội bộ). Yêu cầu lấy tổng số lượng theo đơn hàng / => Dữ liệu được lọc trùng từ sheet 2 thành sheet này để theo dõi | QLDL | Đang thực hiện | Ms Liên, Thơ
+R107: 99.0 | Drive 3. Hóa đơn | 4.DATA PHỐI TRỘN | Lấy dữ liệu từ ĐP NL=> imp từ dữ liệu ĐP NL/BTP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R108: 100.0 | Drive 3. Hóa đơn | 5.HÓA ĐƠN | Fomr in 2.DS Hóa đơn ĐG.TP để gửi NCC GC lấy hoá đơn. | QLDL | Đang thực hiện | Ms Liên, Thơ
+R109: 101.0 | Drive 3. Hóa đơn | 6HÓA ĐƠN PHỐI TRỘN | Form in yêu cầu NCC xuất hoá đơn => imp từ dữ liệu ĐP NL/BTP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R110: 102.0 | Drive 4. Công nợ, thanh toán | 1. Data tổng đơn hàng NK DR.XANH(ĐP) | Thông tin nhập kho từ Dr.Xanh / Để lấy số lượng dò công nợ | QLDL | Đang thực hiện | Ms Liên, Thơ
+R111: 103.0 | Drive 4. Công nợ, thanh toán | 2. Tồn kho NCC | Copy paste dữ liệu NCC gửi  / Phân bổ cho các bộ phận trong SX | QLDL | Đang thực hiện | Ms Liên, Thơ
+R112: 104.0 | Drive 4. Công nợ, thanh toán | 2.1So sánh các lần gửi của NCC | NCC GC gửi đối chiếu qua lại | QLDL | Đang thực hiện | Ms Liên, Thơ
+R113: 105.0 | Drive 4. Công nợ, thanh toán | 3. TỒN KHO NB | Lấy từ ĐP VTBB và ĐP BTP / ĐP TP kiểm tra tồn kho thành phẩm sau sản xuất, chuyển các dữ liệu còn lại cho XLSC đối chiếu (bao gồm (1) Hàng trả về chưa có phương án; (2) Hàng trả về đã có phương án nhưng chưa sản xuất hoàn thành | QLDL | Đang thực hiện | Ms Liên, Thơ
+R114: 106.0 | Drive 4. Công nợ, thanh toán | 4. KTRA HÓA ĐƠN | Số hoá đơn hàng hoá kèm phí đóng gói, phí khác | QLDL | Đang thực hiện | Ms Liên, Thơ
+R115: 107.0 | Drive 4. Công nợ, thanh toán | 5. CHI TIẾT CN NCC | Copy paste dữ liệu NCC gửi + dữ liệu sheet 1 + 4 / Lấy thêm dữ liệu số hoá đơn hàng hoá kèm phí đóng gói, phí khác từ sheet 5.2 / Lấy thêm dữ liệu số hoá đơn phí phối trộn từ sheet 5.1 /  / Mục tiêu: so sánh công nợ giữa mình và NCC / => TỔNG HỢP tất cả | QLDL | Đang thực hiện | Ms Liên, Thơ
+R116: 108.0 | Drive 4. Công nợ, thanh toán | 6. ĐC CN MISA - DRIVE | Dữ liệu chi tiết công nợ trích từ Misa / => lấy dữ liệu 4.1, 4.2, 4.3 đối chiếu misa => lấy dữ liệu này đối chiếu với NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R117: 109.0 | Drive 4. Công nợ, thanh toán | 6.1 CN TP, ĐG | Công nợ thành phẩm, đơn giá | QLDL | Đang thực hiện | Ms Liên, Thơ
+R118: 110.0 | Drive 4. Công nợ, thanh toán | 6.2 CN PHỐI TRỘN | Số hoá đơn phí phối trộn => trích từ ĐP NL/BTP | QLDL | Đang thực hiện | Ms Liên, Thơ
+R119: 111.0 | Drive 4. Công nợ, thanh toán | 6.3 DL TRẢ HÀNG | Trả hàng do sự cố trích từ dữ liệu của sự cố | QLDL | Đang thực hiện | Ms Liên, Thơ
+R120: 112.0 | Drive 4. Công nợ, thanh toán | 6.4 THEO DÕI HSTT | Theo dõi chi tiết thanh toán và chưa thanh toán | QLDL | Đang thực hiện | Ms Liên, Thơ
+R121: 113.0 | Drive 4. Công nợ, thanh toán | 6.4.1 CHI TIẾT HSTT | Chi tiết đã thanh toán ntn | QLDL | Đang thực hiện | Ms Liên, Thơ | Check lại giữ giá trên hóa đơn và giá thực tế cao hơn giá trên hóa đơn
+R122: 114.0 | Drive 4. Công nợ, thanh toán | 6.5 CẤN TRỪ KHÁC | các loại cấn trừ khác liên quan đến công nợ như trả hàng, bồi thường hàng lỗi,... | QLDL | Đang thực hiện | Ms Liên, Thơ
+R123: 115.0 | Drive 4. Công nợ, thanh toán | 10. DỰ CHI THEO DDH | Dự chi theo đơn đặt hàng NCC GC | QLDL | Đang thực hiện | Ms Liên, Thơ
+R124: 116.0 | Drive 4. Công nợ, thanh toán | 11. KẾ HOẠCH CHI | Theo dõi dự kiến chi theo từng đơn hàng | QLDL | Đang thực hiện | Ms Liên, Thơ
+R125: 117.0 | Drive 4. Công nợ, thanh toán | 8. THEO DÕI CK,PP | Thống kê chi phí trả sau (tính chi phí chiết khấu, phí phạt,.. theo từng đơn hàng) / Chạy từ sheet 7 drive 2 qua | QLDL | Đang thực hiện | Ms Liên, Thơ
+R126: 118.0 | Drive 4. Công nợ, thanh toán | 9. PHÍ LƯU KHO | Thống kê chi phí lưu kho theo tháng | QLDL | Đang thực hiện | Ms Liên, Thơ
+R127: 119.0 | Drive 4. Công nợ, thanh toán | 10. PHÍ HAO HỤT | Thống kê chi phí hao hụt theo tháng | QLDL | Đang thực hiện | Ms Liên, Thơ
+R128: 120.0 | Drive 5. HSTT | Chưa có (các bản đang làm bản sao chưa) | Thống kê, theo dõi hồ sơ thanh toán NCC GC các loại phí | QLDL | Đang thực hiện | Ms Liên, Thơ
+R129: 121.0 | 1. Data dữ liệu đầu vào SX | 2.1 DS CHAI, NẮP, XÔ, CAN | Nạp các thông số kỹ thuật VTBB | VTBB | Chưa bắt đầu | Ms Ngân
+R130: 122.0 | 1. Data dữ liệu đầu vào SX | 2.2 DS TÚI, NHÃN, BAO | Nạp các thông số kỹ thuật VTBB | VTBB | Chưa bắt đầu | Ms Ngân
+R131: 123.0 | 1. Data dữ liệu đầu vào SX | 2.3 DS THÙNG, HỘP | Nạp các thông số kỹ thuật VTBB | VTBB | Chưa bắt đầu | Ms Ngân
+R132: 124.0 | 1. Data dữ liệu đầu vào SX | 2.4 DS VTBB KHÁC | Nạp các thông số kỹ thuật VTBB | VTBB | Chưa bắt đầu | Ms Ngân
+R133: 125.0 | 1. Data dữ liệu đầu vào SX | DS Nguyên liệu | Nạp các thông số kỹ thuật theo tên NL/BTP | LAB | Chưa bắt đầu | Ms Ngân
+R134: 125.0 | Data dữ liệu đầu vào SX | Data 1 | Update lại data 1 | Đang thực hiện
+R135: 127.0 | Drive ĐP TP | Điều phối | Điều phối nhận thông tin của KD, NCC xử lý nhận hàng  / Trạng thái hoàn thành được khóa lại không cho chỉnh sửa - Xong | TNĐP | Đang thực hiện | Mr Trang
+R136: 127.0 | Drive ĐP TP | Duyệt đơn hàng | Cho các bộ phận duyệt trên đơn hàng | TNĐP | Đang thực hiện | Mr Toàn
+R137: 127.0 | Drive ĐP TP | Báo cáo Kho | Hằng ngày gửi định kỳ báo cáo kho hàng sẵn kho cho kho | TNĐP | Đang thực hiện | Mr Toàn
+R138: 127.0 | Drive ĐP TP | Nhập kho | Chi tiết nhập kho /điều chuyển giữa các kho | TNĐP | Đang thực hiện | Mr Toàn
+R139: 127.0 | Drive ĐP TP | Gửi đơn NCC | Dữ liệu gửi đơn đặt hàng NCC gia công | TNĐP | Đang thực hiện | Mr Toàn
+R140: 127.0 | Drive ĐP TP | Pháp lý | Chạy từ pháp lý qua | TNĐP | Đang thực hiện | Mr Toàn
+R141: 127.0 | Drive ĐP TP | BÁO CÁO TỔNG HỢP | Xem các phần báo cáo trong sheet. xem lại form | TNĐP | Đang thực hiện | Ms Trang | BC ĐP THÀNH PHẨM
+R142: 128.0 | Drive Xuất - nhập -tồn VTBB | BC VTBB | xong tương đối, bổ sung tồn kho có giá và giá được bảo mật giữa các thương hiệu / Xem các loại báo cáo - xem lại form | KSKH | Đang thực hiện | Ms Trang | BC VTBB
+R143: 129.0 | Drive Xuất - nhập -tồn VTBB | HƯỚNG DẪN | Gợi ý họp 23/06: / Cần dữ liệu gì trong các báo cáo này / Các điều kiện lọc theo tháng, NCC, Kho chứa,... | KSKH | Hoàn thành | Ms Trang
+R144: 130.0 | Drive Xuất - nhập -tồn VTBB | DATA 1 | Danh mục, thông tin cố định phục vụ cho các sheet khác của link lấy từ DATA ĐẦU VÀO SX | KSKH | Hoàn thành | Ms Trang
+R145: 131.0 | Drive Xuất - nhập -tồn VTBB | DATA 2 | Mã VTBB, tên VTBB. Data được lấy từ DATA ĐẦU VÀO SX | KSKH | Hoàn thành | Ms Trang
+R146: 132.0 | Drive Xuất - nhập -tồn VTBB | DATA TP HOÀN THÀNH | Data lấy dữ liệu của Thành phẩm đã hoàn thành để lấy thông tin xuất đơn hàng | KSKH | Hoàn thành | Ms Trang
+R147: 133.0 | Drive Xuất - nhập -tồn VTBB | ĐIỀU PHỐI | Data lấy dữ liệu của Điều phối Thành phẩm để lấy thông tin xuất đơn hàng | KSKH | Hoàn thành | Ms Trang
+R148: 134.0 | Drive Xuất - nhập -tồn VTBB | DATA THU MUA TRẢ KẾT QUẢ | Data lấy từ dữ liệu thu mua trả kết qua mua hàng để lấy thông tin cho nhận hàng | KSKH | Hoàn thành | Ms Trang
+R149: 135.0 | Drive Xuất - nhập -tồn VTBB | PYC KD | Dữ liệu từ KD Dự trù/đặt hàng | KSKH | Hoàn thành | Ms Trang
+R150: 136.0 | Drive Xuất - nhập -tồn VTBB | KHAI BÁO VTBB | Tổng hợp từ 3 sheet khai báo lấy từ DATA ĐẦU VÀO SX , Mr Phú tách thông số kỹ thuật (chưa trả deadline) | KSKH | Hoàn thành | Ms Trang
+R151: 137.0 | Drive Xuất - nhập -tồn VTBB | BDM VTBB | Bảng định mức vật tư bao bì | KSKH | Hoàn thành | Ms Trang
+R152: 138.0 | Drive Xuất - nhập -tồn VTBB | THÔNG TIN | Lấy từ DATA ĐẦU VÀO SX / Thông tin MOQ đặt hàng thu mua, tỷ lệ hao hụt NCC gia công-> hỗ trợ cho đối chiếu và cảnh báo tồn kho, đặt hàng thu mua | KSKH | Hoàn thành | Ms Trang
+R153: 139.0 | Drive Xuất - nhập -tồn VTBB | DỮ LIỆU NCC | Dữ liệu NCC gia công gửi đối chiếu tồn kho và số lượng, copy dán đủ trường thông tin | KSKH | Hoàn thành | Ms Trang
+R154: 140.0 | Drive Xuất - nhập -tồn VTBB | NHẬP KHO VTBB | Nhập kho vật tư bao bì | KSKH | Hoàn thành | Ms Trang
+R155: 141.0 | Drive Xuất - nhập -tồn VTBB | XUẤT KHO VTBB SX | Xuất kho vật tư bao bì theo đơn hàng sản xuất / - Nhập Mã đơn thì thông tin đơn hàng từ Điều phối sẽ chạy thông tin tự động qua / - Nhập Mã BDM thì trích các VTBB theo tên BDM | KSKH | Hoàn thành | Ms Trang
+R156: 142.0 | Drive Xuất - nhập -tồn VTBB | XUẤT KHO VTBB NGOÀI SX | Xuất kho VTBB ngoài sản xuất | KSKH | Hoàn thành | Ms Trang
+R157: 143.0 | Drive Xuất - nhập -tồn VTBB | TỐN KHO | Tồn kho tổng của các thương hiệu, kho, vật tư bao bì luôn chạy mới nhất | KSKH | Hoàn thành | Ms Trang
+R158: 144.0 | Drive Xuất - nhập -tồn VTBB | TỒN KHO THEO KỲ | Lựa chọn khoảng thời gian nhất định để xem tồn kho | KSKH | Hoàn thành | Ms Trang
+R159: 145.0 | Drive Xuất - nhập -tồn VTBB | LỊCH SỬ | Lịch sử tất cả các giao dịch từ trước giờ xuất nhập (không có số lượng tồn kho, có thể xem là sổ cái) | KSKH | Hoàn thành | Ms Trang
+R160: 146.0 | Drive Xuất - nhập -tồn VTBB | ĐỐI CHIẾU NCC | Tự động đối chiếu khi đủ dữ liệu của NCC gia công ở sheet" DỮ LIỆU NCC " | KSKH | Hoàn thành | Ms Trang
+R161: 147.0 | Drive Xuất - nhập -tồn VTBB | KD (Nhận và trả KQ) | - Đã chạy dữ liệu tồn kho qua KD -SHEET 5. / - Phiếu Yêu cầu KD điền (họp chốt form)-SHEET 6. / * Có dùng mua, dự trù, khảo sát, yêu cầu phối,... / Cột S-X là lấy từ thu mua để trả về KD | KSKH | Hoàn thành | Ms Trang
+R162: 148.0 | Drive Xuất - nhập -tồn VTBB | Quản lý:  / - Khảo sát / - Cọc nhãn / - Mẫu | Đã chốt form và hoàn thiện | KSKH | Hoàn thành | Ms Trang
+R163: 149.0 | Drive Xuất - nhập -tồn VTBB | Phiếu dề nghị mua hàng hoá dịch vụ | Sử dụng khi TH/BP cần mua hoặc khảo sát | KSKH | Hoàn thành | Ms Trang
+R164: 150.0 | Drive Xuất - nhập -tồn VTBB | Phiếu đề nghị xuất bán nội bộ | Sử dụng khi xuất bán giữ các Thương hiệu | KSKH | Hoàn thành | Ms Trang
+R165: 151.0 | Drive Xuất - nhập -tồn VTBB | Phiếu yêu cầu xuất hoá đơn | Sử dụng khi xuất hóa đơn theo yêu cầu | KSKH | Hoàn thành | Ms Trang
+R166: 152.0 | Drive Xuất - nhập -tồn VTBB | Phiếu đề nghị xuất | Sử dụng khi nhập xuất vật tư bao bì | KSKH | Hoàn thành | Ms Trang
+R167: 153.0 | Drive Xuất - nhập -tồn VTBB | Phiếu đề nghị nhập | Sử dụng khi nhập nhập vật tư bao bì | KSKH | Hoàn thành | Ms Trang
+R168: 154.0 | Drive Xuất - nhập -tồn VTBB | Phiếu đề nghị chuyển kho | Sử dụng khi luân chuyển vật tư bao bì | KSKH | Hoàn thành | Ms Trang
+R169: 155.0 | Drive Xuất - nhập -tồn VTBB | Phiếu đề nghị đưa vào chi phí | Sử dụng khi VTBB cần lấy về chi phí công ty | KSKH | Hoàn thành | Ms Trang
+R170: 156.0 | Drive Xuất - nhập -tồn VTBB | Phiếu ĐNTT | Sử dụng để yêu cầu kế toán thanh toán dời qua form do chỉ thanh toán cọc nhãn | KSKH | Hoàn thành | Ms Trang
+R171: 157.0 | Drive Xuất - nhập -tồn VTBB | Phiếu ký duyệt BĐM | Sử dụng khi lập BDM VTBB thành phẩm | KSKH | Hoàn thành | Ms Trang
+R172: 158.0 | Drive Xuất -nhập tồn NL/BTP | - bổ sung tồn kho có giá và giá được bảo mật giữa các thương hiệu / -QL đơn hàng và Trả KD / -Theo dõi ngày SX -Ngày tồn kho-Số lô / - Tets khi nào, ai test,  tiêu chí test-có rồi cần điền đủ (Phiếu Yêu cầu KD test) / -Cần báo cáo khi có yêu cầu, báo cáo gì? / -Nối dữ liệu khi nhận và trả thông tin / Bổ sung sheet dự trù kinh doanh/yêu cầu phối BTP+ Thêm Pháp lý, QLDL, Giá vốn,  Sự cố, QLXS duyệt trên sheet như ĐP TP  / Bổ sung tồn kho chi tiết có số ngày còn sử dụng được / Bổ sung để theo dõi dự trù KD còn bao nhiêu sau SX- DỰ TRÙ KINH DOANH | ĐP NL/BTP | Hoàn thành | Ms Hương
+R173: 159.0 | Drive Xuất -nhập tồn NL/BTP | 1.Danh mục | Danh mục mã kho, nguyên liệu , bán thành phẩm ,đơn vị tính, nhóm hàng, NCC, màu sắc... Đây là dữ liệu gốc cho toàn bộ file. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R174: 160.0 | Drive Xuất -nhập tồn NL/BTP | 2.MOQ, % hao hụt | Theo dõi MOQ và tỷ lệ hao hụt sản xuất của từng BTP, TP để phục vụ tính nhu cầu SX, phối, mua hàng. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R175: 161.0 | Drive Xuất -nhập tồn NL/BTP | 3.BDM BTP | BDM của BTP. cần những nguyên liệu nào, định mức bao nhiêu để sản xuất 1000 (lít/kg) BTP. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R176: 162.0 | Drive Xuất -nhập tồn NL/BTP | 3.1 Tính lượng NL & giá BTP (Tạm duyệt mua) | Tính nhu cầu nguyên liệu cần mua dựa trên định mức BTP,  / - giá mua NL từng NCC NL / - Lượng BTP cần phối / - Giá BTP tạm cần duyệt mua | ĐP NL/BTP | Hoàn thành | Ms Hương
+R177: 163.0 | Drive Xuất -nhập tồn NL/BTP | 4 DS PHỐI BTP | Danh sách phối liệu BTP. Thể hiện công thức pha trộn hoặc thành phần cấu thành của từng BTP. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R178: 164.0 | Drive Xuất -nhập tồn NL/BTP | 5.LSX BTP | Lệnh sản xuất BTP. Theo dõi kế hoạch và thực tế sản xuất bán thành phẩm theo từng đợt sản xuất. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R179: 165.0 | Drive Xuất -nhập tồn NL/BTP | 6. Xuất kho ngoài sản xuất | Theo dõi các nghiệp vụ xuất kho không dùng cho sản xuất như:  / Xuất sản xuất / Xuất chuyển kho / Xuất cho/tặng / Xuất mẫu thử / Xuất tạm / Xuất xử lý hàng lỗi/hư hỏng / Xuất hao hụt / đổ bỏ / Xuất khác / Xuất NL phối BTP / Xuất bán | ĐP NL/BTP | Hoàn thành | Ms Hương
+R180: 166.0 | Drive Xuất -nhập tồn NL/BTP | 6.1 Xuất kho Theo đơn hàng ĐP | Theo dõi xuất kho BTP theo từng đơn hàng. Dùng để quản lý riêng lượng xuất theo từng đơn cụ thể: / Xuất SX tạm / Xuất hoàn thành / Hủy đơn / Chưa đủ BTP / BTP NCC - không tồn kho / Đơn hàng đã trừ thực tế | ĐP NL/BTP | Hoàn thành | Ms Hương
+R181: 167.0 | Drive Xuất -nhập tồn NL/BTP | 7. Nhập kho | Theo dõi tất cả nghiệp vụ nhập kho: /  Nhập mua / Nhập sau phối / Nhập chuyển kho / Nhập cho/tặng / Nhập tạm / Nhập đổ thu/ dư sau sản xuất / Nhập lỗi/hư hỏng / Nhập khác / Nhập đầu kỳ / Nhập đầu kỳ Lỗi | ĐP NL/BTP | Hoàn thành | Ms Hương
+R182: 168.0 | Drive Xuất -nhập tồn NL/BTP | 8.Tồn kho Tổng | Báo cáo tồn kho tổng hợp theo tổng thương hiệu: / Xuất / Nhập / Tồn | ĐP NL/BTP | Hoàn thành | Ms Hương
+R183: 169.0 | Drive Xuất -nhập tồn NL/BTP | 9.Sổ chi tiết hàng hoá - không cần giá trị | Thẻ kho hoặc sổ chi tiết theo từng mã BTP, NL, chỉ theo dõi số lượng nhập - xuất - tồn, không theo dõi giá trị tiền. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R184: 170.0 | Drive Xuất -nhập tồn NL/BTP | 10.Sổ tổng hợp tồn kho - có giá trị | Báo cáo tồn kho cả số lượng và giá trị.  / Tương tự báo cáo tồn kho trên phần mềm kế toán, phục vụ tính giá vốn và đối chiếu kế toán. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R185: 171.0 | Drive Xuất -nhập tồn NL/BTP | 11.Quản lý tồn kho theo dự trù của KD | Theo dõi nhu cầu tồn kho dự kiến từ phòng Kinh doanh (KD), so sánh tồn thực tế với tồn dự kiến để lập kế hoạch mua hàng và sản xuất. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R186: 172.0 | Drive Xuất -nhập tồn NL/BTP | Các sheet còn lại / NHÁP / Tồn đầu kì Hà Long 1/6 / ĐIỀU PHỐI / TP HOÀN THÀNH / QUẢN LÝ NHÃN MÁC / Sheet Tổng ĐP + HT | Các sheet này dùng để hỗ trợ lấy, xử lý và tổng hợp dữ liệu từ các file khác trên Google Drive, phục vụ cho việc tính toán và lập báo cáo. | ĐP NL/BTP | Hoàn thành | Ms Hương
+R187: 173.0 | Nhóm Zalo làm việc QLDL | Nhóm zalo chưa cập nhật thêm, cần team check lại | QLDL | Đang thực hiện
+R188: 174.0 | Quy trình sự cố trong và sau SX | Đã làm cần check lại | Sự cố | Đang thực hiện | Họp Ms Huỳnh
+R189: 175.0 | Tiêu chí đánh giá NCC | Đã làm cần check lại | Team | Đang thực hiện | Mr Toàn xem
+R190: 176.0 | Quy trình duyệt pháp lý đơn hàng | Còn thiếu pháp lý SX, xem lại chốt hoàn thiện | Team | Đang thực hiện | Ms Trang | Họp Ms Huỳnh
+R191: 177.0 | Sheet 18.TT SP | Thông tin sản phẩm | Team | Đang thực hiện | Họp Ms Huỳnh+ĐP NL/BTP
+R192: 178.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Admin | Quản lý thông tin lick chọn chung cho toàn bộ phận sản xuất / Công ty (nội bộ) / Bộ phận / Kho / Đơn vị tính / Phân loại xuất nhập tồn / Tên gọi các khoản mục chi phí  / Màu sắc / Độ trong suốt / Hình dạng NL, BTP / Hình dạng VTBB | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R193: 179.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data thu mua | Chính sách thu mua MOQ thu mua, thông tin sản phẩm thu mua, NCC thu mua, đơn vị vận chuyển, thờii mua, tiêu chuẩn NL. | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R194: 180.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data pháp lý | Quản lý thông tin pháp lý công ty/chủ cơ sở phục vụ đăng ký, hợp đồng và chứng từ. | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R195: 181.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data Nl/BTP | Quản lý data khai báo mã NL/BTP / - Khai báo mã BTPR/BTPM / - Khai báo mã NLT (nếu có phát sinh) | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R196: 182.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data VTBB | - Bao gồm: chai, túi/gói, xô, can, lon, hộp, thùng, nhãn dán thùng, cốc, seal... / - Tiếp nhận thông tin từ Thu mua khi phát sinh VTBB mới hoặc có sự thay đổi về chất liệu, kích thước, màu sắc, hình dạng.. | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R197: 183.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data đồng bộ NCC GC | Cơ sở đồng bộ và đối chiếu mã, tên nguyên liệu/BTP giữa sxDEGO và nhà cung cấp (NCC), đảm bảo dữ liệu thống nhất. | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R198: 184.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data NCC GC | Chính sách TP/BTP NCC GC | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R199: 185.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data QLDL | Chi phí nhập khẩu / Phí gia công phối trộn / Phí gia công sang chai đóng gói | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1
+R200: 186.0 | Drive Dữ liệu Data 1 - Drive đầu vào Sx | Data HH | Quản lý mã HH được thiết kế khai báo | Team | Hoàn thành | Ms Trang / Ms Hương | Xem lại và chốt Data 1

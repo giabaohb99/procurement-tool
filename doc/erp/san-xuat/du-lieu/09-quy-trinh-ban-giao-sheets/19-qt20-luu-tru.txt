@@ -1,0 +1,16 @@
+# SHEET: 20. LƯU TRỮ
+R1: CẤU TRÚC XÂY FOLDER LƯU TRỮ - THAM KHẢO THU MUA
+R3: CẤP MỤC | FOLDER | HƯỚNG DẪN ĐẶT TÊN | VÍ DỤ
+R4: MỤC CẤP 1 | NHÀ CUNG CẤP | STT-Tên viết tắc NCC /  / STT: 2 số | 01- ĐÔNG TÂY
+R6: MỤC CẤP 2 | PO | PO-Tên viết tắc NCC | PO-ĐÔNG TÂY
+R7: MỤC CẤP 3 | MÃ ĐƠN MUA HÀNG | MÃ ĐƠN MUA HÀNG | DMH0001
+R8: FILE LƯU | 1. PHIẾU ĐỀ NGHỊ NHẬP KHO / 2. COA, PHIẾU KIỂM CHẤT LƯỢNG / 3. ĐƠN MUA HÀNG / 4. HÌNH ẢNH HÀNG / 5. PHIẾU NHẬP KHO KHO NHẬN / 6. PHIẾU XUẤT KHO NCC / 7. HỢP ĐỒNG RIÊNG THEO TỪNG PO | DMH0001-TÊN HỒ SƠ | DMH0001-PDN NHẬP KHO
+R10: MỤC CẤP 2 | BÁO GIÁ | BÁO GIÁ-Tên viết tắc NCC | BÁO GIÁ-ĐÔNG TÂY
+R11: FILE LƯU | CÁC LẦN BÁO GIÁ | BG&STT-dd.mm.yyyy /  / STT: 2 số | BG01-25.03.2026
+R13: MỤC CẤP 2 | BB ĐỐI CHIẾU CÔNG NỢ | BB ĐỐI CHIẾU CÔNG NỢ-Tên viết tắc NCC | BB ĐỐI CHIẾU CÔNG NỢ-ĐÔNG TÂY
+R14: FILE LƯU | CÁC LẦN ĐỐI CHIẾU CÔNG NỢ | CN&STT-dd.mm.yyyy /  / STT: 2 số | CN01-10.03.2026
+R16: MỤC CẤP 2 | HỢP ĐỒNG | HỢP ĐỒNG-Tên viết tắc NCC | HỢP ĐỒNG-ĐÔNG TÂY
+R17: FILE LƯU | CÁC LẦN HỢP ĐỒNG NĂM | HĐ&STT-dd.mm.yyyy /  / STT: 2 số | HĐ01-10.03.2026
+R19: MỤC CẤP 2 | PHÁP LÝ KHÁC | PHÁP LÝ KHÁC-Tên viết tắc NCC | PHÁP LÝ KHÁC-ĐÔNG TÂY
+R20: FILE LƯU | 1. PHIẾU KIỂM SOÁT CHẤT ĐỘC / 2. HỢP ĐỒNG CHIẾT KHẤU / 3........ | 01-TÊN HỒ SƠ | 01-GIẤY ĐỦ ĐIỀU KIỆN / 02-HỢP ĐỒNG CHIẾT KHẤU
+R22: MỤC CẤP 1 | SO SÁNH NCC, SẢN PHẨM | MÃ PHIẾU YÊU CẦU-PHÂN LOẠI-TÊN NHÂN VIÊN | PYC.ABA.01.250326-THÙNG-MR. TIÊN

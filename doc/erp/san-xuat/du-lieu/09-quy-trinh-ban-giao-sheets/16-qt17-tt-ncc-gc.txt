@@ -1,0 +1,19 @@
+# SHEET: 17. TT NCC GC
+R1: TP | TP | TP | TP | TP
+R2: STT | TÊN NCC GC | TÊN VIẾT TẮT NCC GC | NHÓM SP GIAO DỊCH | MÃ SỐ THUẾ | ĐỊA CHỈ TRỤ SỞ | ĐỊA CHỈ KHO | THỜI GIAN LÀM VIỆC | CHÍNH SÁCH LƯU KHO | THỜI GIAN BÁO TRƯỚC KHI NHẬN HÀNG | THỜI GIAN XUẤT HÓA ĐƠN | SỐ LƯỢNG TP TỐI THIỂU/ĐƠN HÀNG | THỜI GIAN SẢN XUẤT KHI ĐỦ VTBB | SỐ LƯỢNG PHỐI BTP TỐI THIỂU/ĐƠN HÀNG | HAO HỤT NẾU CÓ | CÔNG TY CHUẨN BỊ PHỤ GIA ĐEM SANG NCC GC | HÌNH THỨC SẢN XUẤT/GIA CÔNG | HÌNH THỨC GIAO NHẬN HÀNG | HỢP ĐỒNG GIAO DỊCH | THÔNG TIN NHÂN SỰ LIÊN HỆ | LƯU Ý KHI LÀM VIỆC | ĐÁNH GIÁ NCC GC
+R3: Tên trên GCNĐKKD | Tên thường gọi | Phân/Thuốc/Phân & Thuốc | Ghi theo GCNĐKKD | Ghi theo GCNĐKKD | Ghi theo địa chỉ giao dịch | Ghi rõ để thuận tiện liên hệ | Ghi rõ quy định của NCC GC | Thời gian cần báo trước cho NCC GC trước khi nhận hàng | Thời điểm xuất hóa đơn với NCC GC | Sản xuất, gia công / Không nhận NL, VTBB mang qua | NCC GC giao hàng / Công ty  sắp xếp nhận hàng | Xác định trạng thái (Có - còn hạn, Có - hết hạn, Không có, Đang chờ NCC GC ký) | Anh/chị + Tên, công việc phụ trách, sđt/zalo/email | Những lưu ý khi làm việc ghi nhận từ trước đến hiện tại
+R4: 2 | CÔNG TY CỔ PHẦN HÓA CHẤT NÔNG NGHIỆP HÀ LONG | Hà Long | Thuốc BVTV | 1100839224
+R5: 3 | CÔNG TY TNHH THÁI NÔNG | Thái Nông | Thuốc BVTV
+R6: 4 | CÔNG TY CỔ PHẦN PHÂN BÓN QUỐC TẾ ÂU VIỆT | Âu Việt | Phân bón | 6300230407
+R7: 5 | CÔNG TY TNHH ADU VIỆT NAM | ADU | Thuốc BVTV | 108502573
+R8: 6 | 1. CÔNG TY TNHH REAL CHEMICAL  / 2. CÔNG TY TNHH SUSTSINABLE DEVELOPMENT S.U.D / 3. CÔNG TY TNHH PRIMA - PHÁP - CHÂU ÂU | Đại Tâm | Phân & Thuốc
+R9: 7 | CÔNG TY TNHH AGRIFUTURE | Agrifuture | Thuốc BVTV
+R10: 8 | CÔNG TY TNHH SẢN XUẤT - THƯƠNG MẠI - DỊCH VỤ THU LOAN | Thu Loan | Thuốc BVTV
+R11: 9 | CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI YAMATO VN | Yamato | Thuốc BVTV | 1101865347
+R12: 10 | CÔNG TY TNHH BASEL THỤY SĨ | Basel | Phân & Thuốc | 1101742391
+R13: 11 | CÔNG TY TNHH SX TM PHÁT TRIỂN NIỀM TIN VIỆT | Niềm Tin Việt | Phân bón
+R14: 12 | / CÔNG TY TNHH TẬP ĐOÀN AN NÔNG | An Nông | Thuốc BVTV | 1101724106
+R15: 13 | CÔNG TY TNHH HÓA CHẤT PHÂN BÓN, THUỐC BVTV DUBAI | DuBai | Thuốc BVTV | 1101798524
+R16: 14 | CÔNG TY TNHH XUẤT NHẬP KHẨU HÓA CHẤT ATC / | ATC | Thuốc BVTV | 1602181299
+R17: 15 | CÔNG TY CP ĐẦU TƯ & CÔNG NGHỆ THUẬN THÀNH PHÁT | Thành Phát | Thuốc BVTV | 1801685413
+R18: 16 | Công ty TNHH Sàn Giao Dịch Thuốc Bảo Vệ Thực Vật Việt Nam  / PESTICIDEX | Pest | Thuốc BVTV | 1801685413
