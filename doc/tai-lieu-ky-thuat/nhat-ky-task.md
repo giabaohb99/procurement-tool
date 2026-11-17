@@ -114,6 +114,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** duoc-CR-777 thêm Mẫu thu mua có chữ ký / không chữ ký và chọn sẵn **Mẫu thu mua – có chữ ký** khi mở màn.
+Mẫu này in chữ ký của quản lý trực tiếp người bấm in vào ô trưởng phòng đề xuất, dù người quản lý chưa duyệt gì trên
+phiếu. Ban điều hành chốt giữ hai mẫu thu mua nhưng mặc định về mẫu thường.
+
+**Đã làm**
+- Màn in phiếu đề xuất từ đơn mua hàng ở cả giao diện cũ và mới: hai mẫu thu mua vẫn đứng đầu ô **Mẫu in**, nhưng mở
+  màn luôn chọn sẵn **Mẫu thường – có chữ ký**; muốn in mẫu thu mua thì tự chọn. Đường dẫn có `?mau=purchasing-signed`
+  vẫn mở thẳng mẫu thu mua.
+- Sửa bài hướng dẫn Mẫu thu mua, cẩm nang trợ lý phần thu mua và tài liệu chức năng yêu cầu mua hàng cho khớp.
+
+**Kiểm:** typecheck sạch, lint không lỗi; bài kiểm mẫu in (5 tệp, 79 bài) xanh, bài mở màn đổi sang Mẫu thường.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `frontend/src/pages/PrintPurchaseRequest.tsx`.
+Kiểm: `frontend-v2/src/modules/procurement/pages/purchase-request-print-page-purchasing.test.tsx`.
+
 ## bao-CR-770 | Trợ lý đọc dòng đơn mua hàng trên hệ khi hỏi N đơn gần nhất của một mã hàng
 - status: xong
 - date: 2026-11-16

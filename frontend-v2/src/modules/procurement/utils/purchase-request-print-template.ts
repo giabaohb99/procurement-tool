@@ -65,11 +65,12 @@ export function listPrintTemplates(purchasing: boolean): readonly PrintTemplateO
 }
 
 /**
- * Mẫu chọn sẵn khi người dùng CHƯA chọn gì (không có `?mau=` trên URL, chưa đổi ô chọn): dùng được Mẫu thu mua thì
- * chọn sẵn *Mẫu thu mua – có chữ ký* (anh Được chốt 17/11/2026), còn lại là mẫu mặc định cũ.
+ * Mẫu chọn sẵn khi người dùng CHƯA chọn gì (không có `?mau=` trên URL, chưa đổi ô chọn): luôn là *Mẫu thường – có
+ * chữ ký*, kể cả khi dùng được Mẫu thu mua (bao-CR-779, đại ca chốt 17/11/2026: Mẫu thu mua vẫn đứng đầu danh sách
+ * nhưng phải tự chọn, vì mẫu đó in chữ ký quản lý trực tiếp dù người này chưa duyệt gì trên phiếu).
  */
-export function defaultPrintTemplate(purchasingAvailable: boolean): PrintTemplateValue {
-  return purchasingAvailable ? 'purchasing-signed' : DEFAULT_PRINT_TEMPLATE
+export function defaultPrintTemplate(): PrintTemplateValue {
+  return DEFAULT_PRINT_TEMPLATE
 }
 
 /**

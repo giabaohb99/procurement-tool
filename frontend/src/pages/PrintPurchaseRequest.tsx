@@ -100,12 +100,12 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   // nút nhảy. Mỗi mẫu quy về hai cờ cũ: taxMode (để trống thông tin người yêu cầu + mọi ô ký) và
   // showSign (bỏ ảnh chữ ký số, bản ký tay vẫn giữ họ tên). Bản v2:
   // `utils/purchase-request-print-template.ts` — giữ hai bản cùng ba mẫu.
-  // duoc-CR-777: null = người dùng CHƯA chọn mẫu → chọn sẵn Mẫu thu mua – có chữ ký khi dữ liệu thu mua về (dữ liệu
-  // nạp sau trang), còn lại là Mẫu thường – có chữ ký như cũ.
+  // duoc-CR-777: null = người dùng CHƯA chọn mẫu → chọn sẵn Mẫu thường – có chữ ký, kể cả khi dùng được Mẫu thu mua
+  // (bao-CR-779, đại ca chốt 17/11/2026: Mẫu thu mua in chữ ký quản lý trực tiếp nên người in phải tự chọn).
   const [template, setTemplate] = useState<PrintTemplate | null>(null);
   // duoc-CR-777: danh sách mẫu hiện ra — hai mẫu thu mua chỉ khi đã có dữ liệu thu mua.
   const templates = PRINT_TEMPLATES.filter((t) => !t.purchasing || (fromPo && purchasing));
-  const chosen = template ?? (templates.some((t) => t.purchasing) ? "purchasing-signed" : "normal-signed");
+  const chosen = template ?? "normal-signed";
   const current = templates.find((t) => t.value === chosen) || templates.find((t) => t.value === "normal-signed")!;
   const { taxMode, showSign } = current;
   const pt = current.purchasing ? purchasing : null;

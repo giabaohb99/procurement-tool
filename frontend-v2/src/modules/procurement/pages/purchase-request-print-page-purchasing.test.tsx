@@ -95,9 +95,9 @@ describe('PurchaseRequestPrintPage — purchasing templates (duoc-CR-777)', () =
     expect(state.purchasingCalls.at(-1)).toEqual({ id: 9, enabled: true })
   })
 
-  it('opens on the signed purchasing template when nothing was chosen yet', () => {
+  it('opens on the normal signed template even when purchasing data is available (bao-CR-779)', () => {
     renderPage({ fromPo: true })
-    expect(screen.getByRole('combobox', { name: 'Mẫu in' })).toHaveTextContent('Mẫu thu mua – có chữ ký')
+    expect(screen.getByRole('combobox', { name: 'Mẫu in' })).toHaveTextContent('Mẫu thường – có chữ ký')
   })
 
   it('keeps the normal signed template preselected when purchasing data is not available', () => {

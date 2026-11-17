@@ -19,7 +19,7 @@ ARTICLES = [
     (STAFF_ROOT, "Mẫu thu mua khi in phiếu đề xuất mua hàng từ Đơn mua hàng",
      "In phiếu đề xuất từ Đơn mua hàng bằng Mẫu thu mua: người đề xuất là bạn, trưởng phòng là quản lý trực tiếp, NCC và hàng theo đơn.",
      """<h2>Mẫu thu mua khi in phiếu đề xuất mua hàng từ Đơn mua hàng</h2>
-<p>Từ ngày 17/11/2026, khi in <strong>phiếu đề xuất mua hàng từ Đơn mua hàng</strong> (nút in phiếu yêu cầu ở trang chi tiết Đơn mua hàng), ô <strong>Mẫu in</strong> có thêm hai mẫu: <strong>Mẫu thu mua – có chữ ký</strong> và <strong>Mẫu thu mua – không chữ ký</strong>. Áp dụng cho cả giao diện Thu mua cũ lẫn giao diện ERP mới. Hai mẫu này đứng <strong>đầu</strong> danh sách và <strong>Mẫu thu mua – có chữ ký</strong> được chọn sẵn khi mở màn; muốn in mẫu thường thì đổi ở ô Mẫu in.</p>
+<p>Từ ngày 17/11/2026, khi in <strong>phiếu đề xuất mua hàng từ Đơn mua hàng</strong> (nút in phiếu yêu cầu ở trang chi tiết Đơn mua hàng), ô <strong>Mẫu in</strong> có thêm hai mẫu: <strong>Mẫu thu mua – có chữ ký</strong> và <strong>Mẫu thu mua – không chữ ký</strong>. Áp dụng cho cả giao diện Thu mua cũ lẫn giao diện ERP mới. Hai mẫu này đứng <strong>đầu</strong> danh sách, nhưng khi mở màn hệ thống vẫn chọn sẵn <strong>Mẫu thường – có chữ ký</strong>; muốn in mẫu thu mua thì chọn ở ô Mẫu in.</p>
 <h3>1. Khác mẫu thường ở đâu</h3>
 <table>
 <thead><tr><th>Mục trên phiếu</th><th>Mẫu thường</th><th>Mẫu thu mua</th></tr></thead>

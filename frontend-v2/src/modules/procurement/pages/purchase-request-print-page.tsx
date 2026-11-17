@@ -105,7 +105,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   //  bao-CR-574: mẫu đi theo `?mau=` để đổi qua lại với bản tách theo NCC không mất lựa chọn.
   const [searchParams] = useSearchParams()
   //  duoc-CR-777: `null` = người dùng CHƯA chọn mẫu (URL không có `?mau=`, chưa đổi ô chọn) — khi đó mẫu chọn sẵn đi
-  //  theo `defaultPrintTemplate`, tức Mẫu thu mua – có chữ ký ngay khi dữ liệu thu mua về (dữ liệu nạp sau trang).
+  //  theo `defaultPrintTemplate`, tức Mẫu thường – có chữ ký (bao-CR-779).
   const [template, setTemplate] = useState<PrintTemplateValue | null>(() => {
     const fromUrl = searchParams.get(PRINT_TEMPLATE_PARAM)
     return fromUrl ? readPrintTemplateParam(fromUrl, { allowPurchasing: fromPo }) : null
@@ -113,7 +113,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
   //  duoc-CR-777: chọn mẫu thu mua mà dữ liệu thu mua chưa có / bị chặn thì áp mẫu mặc định.
   const activeTemplate = resolveAvailablePrintTemplate(
-    template ?? defaultPrintTemplate(Boolean(purchasing)),
+    template ?? defaultPrintTemplate(),
     Boolean(purchasing),
   )
   const { taxMode, showSignature } = resolvePrintTemplate(activeTemplate)

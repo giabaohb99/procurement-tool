@@ -58,7 +58,7 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 - **Mẫu thu mua khi in phiếu đề xuất từ Đơn mua hàng** (từ 17/11/2026): màn in YCMH từ ĐMH có thêm *Mẫu thu mua – có
   chữ ký* / *không chữ ký*. Người đề xuất = người đang in, Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó
   (ký ô TP/BP đề xuất), NCC và bảng hàng theo **ĐMH** (SL đặt, đơn giá). Chỉ người **đọc được đơn đó** mới thấy hai mẫu;
-  khi thấy thì hai mẫu này đứng đầu ô Mẫu in và *Mẫu thu mua – có chữ ký* được chọn sẵn lúc mở màn.
+  khi thấy thì hai mẫu này đứng đầu ô Mẫu in, nhưng mở màn vẫn chọn sẵn *Mẫu thường – có chữ ký* (muốn in mẫu thu mua thì tự chọn).
   Hỏi *"sao không có ô trưởng phòng / chữ ký"* → hồ sơ chưa gán quản lý trực tiếp hoặc người đó chưa tải chữ ký.
 - **NSPT (nhân sự phụ trách mua) nói dạng *Mã · Tên*** (từ 17/11/2026): màn Tiến độ mua hàng và trường `buyer` của
   `procurement_doc_read` / `pending_procurement_approvals` trả mã nhân sự kèm tên **hiện hành** theo hồ sơ (vd *NSU209 ·

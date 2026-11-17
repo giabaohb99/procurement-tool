@@ -509,7 +509,8 @@ Mẫu thuế không có nút này vì vốn để trống toàn bộ.
 (`/print/purchase-request-from-po/:id`), và chỉ hiện với người **đọc được đơn đó**. Người đề xuất (kèm chức vụ, bộ phận) =
 người đang in; Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó; NCC do bộ phận đề xuất và bảng hàng theo
 **ĐMH** (SL đặt, đơn giá; Thành tiền dòng trước VAT, tiền VAT và tổng thanh toán dòng riêng); ô *Người lập* = chữ ký người
-in, ô *TP/BP đề xuất* = chữ ký quản lý trực tiếp, hai ô còn lại như mẫu thường. Dữ liệu từ
+in, ô *TP/BP đề xuất* = chữ ký quản lý trực tiếp, hai ô còn lại như mẫu thường. Hai mẫu đứng đầu ô Mẫu in nhưng mở màn
+vẫn chọn sẵn *Mẫu thường – có chữ ký* (bao-CR-779). Dữ liệu từ
 `GET /api/purchase-orders/{pid}/purchasing-print`; kế hoạch
 [`plans/261117-mau-in-thu-mua-duoc-cr-777`](../plans/261117-mau-in-thu-mua-duoc-cr-777/plan.md).
 

@@ -104,8 +104,8 @@ describe('purchasing templates (duoc-CR-777)', () => {
   })
 
   it('preselects the signed purchasing template only when purchasing data is available', () => {
-    expect(defaultPrintTemplate(true)).toBe('purchasing-signed')
-    expect(defaultPrintTemplate(false)).toBe('normal-signed')
+    //  bao-CR-779: dùng được Mẫu thu mua thì vẫn chọn sẵn Mẫu thường – có chữ ký.
+    expect(defaultPrintTemplate()).toBe('normal-signed')
   })
 
   it('signed shows signatures, unsigned blanks them like the normal unsigned template', () => {
