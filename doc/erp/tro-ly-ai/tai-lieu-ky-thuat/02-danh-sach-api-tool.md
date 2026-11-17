@@ -213,6 +213,11 @@ chọn nằm trong enum khai sẵn, bot KHÔNG sinh SQL, không chọn được 
 ### T19. my_requests_status - Phiếu do CHÍNH MÌNH trình đang ở bước nào
 - Mục đích: "phiếu của tôi tới đâu rồi, ai đang giữ"; phiếu bị trả lại có lý do.
 - Quyền: tự giới hạn vào người hỏi.
+- [SỬA 17/11/2026, duoc-CR-766] Phiếu ĐANG CHẠY trả thêm `next_steps`: các chặng chưa tới lượt (`seq`, `name`,
+  `expected_approvers` = người duyệt DỰ KIẾN, `note` khi chặng không ra ai hoặc tự qua vì trùng người) — trả lời câu
+  "duyệt xong thì tới ai". Tính bằng `approval/upcoming_stages_service.list_upcoming_stages`, cùng phép tính với khối
+  *Chặng tiếp theo (dự kiến)* trên màn chi tiết đơn nghỉ phép. Tối đa 5 phiếu đang chạy mỗi lượt gọi
+  (`MAX_NEXT_STEP_ROWS`, mỗi phiếu tốn chừng chục truy vấn).
 
 ---
 

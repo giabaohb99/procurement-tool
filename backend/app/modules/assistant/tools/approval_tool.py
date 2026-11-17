@@ -14,15 +14,20 @@ trả rỗng kèm lời giải thích, không phải lỗi.
 """
 from app.modules.approval import task_service
 from app.modules.approval.instance_model import (INSTANCE_OPEN_STATUSES,
+                                                 INSTANCE_RUNNING,
                                                  INSTANCE_STATUS_LABELS,
                                                  TASK_PENDING,
                                                  ApprovalInstance, ApprovalTask)
 from app.modules.approval.serializer import _name_of
 from app.modules.approval.task_notification import ENTITY_LABELS
+from app.modules.approval.upcoming_stages_service import list_upcoming_stages
 
 from .base import ToolContext, ToolSpec
 
 MAX_ROWS = 30
+#  Số phiếu đang chạy được tính "chặng sau ai duyệt" trong một lượt gọi (duoc-CR-766). Mỗi phiếu tốn chừng chục truy
+#  vấn để tra người duyệt theo luồng; người hỏi hiếm khi có nhiều hơn vài phiếu đang chạy.
+MAX_NEXT_STEP_ROWS = 5
 
 #  Đường dẫn CHI TIẾT bên frontend-v2 — để câu trả lời gắn được link Markdown mở đúng
 #  phiếu. ⚠️ KHÔNG tái dùng `task_notification.ENTITY_LINKS`: bảng đó ghi đường KIỂU CŨ
@@ -124,6 +129,16 @@ MY_APPROVAL_TASKS_SPEC = ToolSpec(
 
 # ── my_requests_status ──────────────────────────────────────────────────────────────────
 
+def _next_step_out(step: dict) -> dict:
+    """Một chặng chưa tới lượt, gọn cho trợ lý: số chặng, tên chặng, tên người dự kiến, ghi chú nếu có."""
+    out = {"seq": step["seq"], "name": step["name"],
+           "expected_approvers": [row["name"] for row in step["approvers"]]}
+    note = step["unresolved_reason"] or step["note"]
+    if note:
+        out["note"] = note
+    return out
+
+
 def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
     db, user = ctx.db, ctx.user
     if not getattr(user, "employee_id", None):
@@ -154,6 +169,7 @@ def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
             pending_by_instance.setdefault(task.instance_id, []).append(task)
 
     items = []
+    next_step_budget = MAX_NEXT_STEP_ROWS
     for r in rows:
         item = {
             "entity": r.entity,
@@ -168,6 +184,10 @@ def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
         if waiting:
             item["waiting_step"] = waiting[0].node_name
             item["waiting_on"] = [_name_of(db, t.assignee_employee_id) for t in waiting]
+        if r.status == INSTANCE_RUNNING and next_step_budget > 0:
+            #  "Duyệt xong chặng này thì tới ai" — cùng phép tính với khối Chặng tiếp theo (dự kiến) trên màn chi tiết.
+            next_step_budget -= 1
+            item["next_steps"] = [_next_step_out(step) for step in list_upcoming_stages(db, r)]
         if r.status not in INSTANCE_OPEN_STATUSES:
             item["finished_at"] = _iso(r.finished_at)
             if r.finish_reason:
@@ -191,7 +211,10 @@ MY_REQUESTS_STATUS_SPEC = ToolSpec(
         "Trạng thái các phiếu / văn bản DO CHÍNH NGƯỜI HỎI TRÌNH duyệt — dùng cho câu "
         "'phiếu của tôi đang tới đâu', 'ai đang giữ văn bản tôi gửi', 'đơn của tôi được "
         "duyệt chưa', 'vì sao phiếu tôi bị trả lại'. Phiếu đang chạy trả kèm bước hiện "
-        "tại (`waiting_step`) và tên người đang giữ (`waiting_on`); phiếu bị trả lại / "
+        "tại (`waiting_step`) và tên người đang giữ (`waiting_on`), cùng các chặng sau "
+        "(`next_steps`: số chặng, tên chặng, `expected_approvers` = người duyệt DỰ KIẾN, chốt khi "
+        "tới lượt; tối đa 5 phiếu đang chạy mỗi lượt) — dùng cho câu 'duyệt xong thì tới ai'; "
+        "phiếu bị trả lại / "
         "từ chối có lý do trong `finish_reason`. Mỗi dòng kèm đường dẫn `url` mở thẳng "
         "phiếu. Khác my_approval_tasks: tool kia là việc chờ chính người hỏi KÝ."
     ),

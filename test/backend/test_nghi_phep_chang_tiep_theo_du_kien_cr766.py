@@ -140,3 +140,35 @@ def test_current_stage_with_several_assignees_only_counts_as_signed_when_all_mus
     instance = _submit(db, leave_type, people.submitter)
 
     assert _names(list_upcoming_stages(db, instance)) == [(2, expected)]
+
+
+# ── Trợ lý AI: my_requests_status trả thêm các chặng sau ───────────────────────
+
+def test_assistant_tool_tells_who_approves_the_next_stages(db, people, leave_type):
+    """Câu 'đơn của tôi duyệt xong thì tới ai' — trợ lý phải trả lời cùng phép tính với màn chi tiết."""
+    from app.modules.assistant.tools.approval_tool import _run_my_requests_status
+    from app.modules.assistant.tools.base import ToolContext
+
+    _flow(db, [people.lead.id, people.hr.id, people.ceo.id])
+    _submit(db, leave_type, people.submitter)
+
+    user = SimpleNamespace(id=1, employee_id=people.submitter.id)
+    out = _run_my_requests_status(ToolContext(db=db, user=user, _profile={"grants": []}), {})
+
+    item = out["items"][0]
+    assert item["waiting_on"] == ["Trưởng phòng"]
+    assert [(s["seq"], s["expected_approvers"]) for s in item["next_steps"]] == [
+        (2, ["Trưởng Nhân sự"]), (3, ["Giám đốc"])]
+
+
+def test_assistant_tool_has_no_next_steps_for_finished_requests(db, people, leave_type):
+    from app.modules.assistant.tools.approval_tool import _run_my_requests_status
+    from app.modules.assistant.tools.base import ToolContext
+
+    _flow(db, [people.lead.id])
+    instance = _submit(db, leave_type, people.submitter)
+    action_service.approve(db, instance, people.lead.id, ACTOR, {}, "")
+
+    user = SimpleNamespace(id=1, employee_id=people.submitter.id)
+    out = _run_my_requests_status(ToolContext(db=db, user=user, _profile={"grants": []}), {})
+    assert "next_steps" not in out["items"][0]
