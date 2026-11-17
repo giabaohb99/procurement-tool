@@ -20532,3 +20532,21 @@ Kiểm: `frontend-v2/src/app/components/profile/profile-settings-nav.test.tsx`.
 **Kiểm:** chạy lại các phần nạp bài trên local không lỗi, nạp RAG 27 nguồn 194 đoạn không lỗi, cổng kiểm tài liệu không có lỗi mới.
 
 Mã nguồn: `backend/scripts/seed_help_nghi_phep.py`, `backend/scripts/seed_help_nhan_su.py`, `backend/scripts/seed_help_hop_dong_lao_dong.py`, `backend/app/modules/ai_skill/seed_handbook/40-nghi-phep.md`, `backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md`.
+
+## duoc-CR-775 | Tiến độ đơn mua hàng hiện mã kèm tên nhân sự phụ trách, không còn hiện mã trần thay tên
+- status: xong
+- date: 2026-11-17
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn Tiến độ đơn mua hàng ở cả hai giao diện in thẳng chữ NSPT đã lưu trên đơn. Đơn tạo từ yêu cầu mua hàng có lúc lưu mã nhân sự thay cho tên (dev có hai đơn lưu NM_NV), vì giao diện gửi mã vào ô tên và máy chủ chỉ tìm người theo tên; đổi tên nhân sự thì màn vẫn hiện tên cũ.
+
+**Đã làm**
+- Đường API của màn Tiến độ trả thêm mã nhân sự và tên hiện hành, tra theo liên kết hồ sơ của đơn bằng một truy vấn cho cả trang. Đơn chưa liên kết hồ sơ (dữ liệu cũ kiểu Mr Tiên) giữ nguyên chữ đã lưu, không đoán người.
+- Giao diện cũ và giao diện ERP mới hiện cột NSPT dạng mã trước, tên sau; cột xếp theo mã cho khớp chữ đang hiện, ô trống vẫn xuống cuối. Tệp Excel xuất ra ghi cùng dạng mã trước tên sau.
+- Lúc lưu chứng từ, ô nhân sự nhận được mã thay cho tên thì máy chủ tra theo mã, gắn đúng người và thay bằng họ tên đầy đủ; họ tên thật vẫn tra theo tên như cũ.
+
+**Kiểm:** bài kiểm mới 7 bài (trả mã và tên hiện hành, giữ chữ cũ khi chưa liên kết, nhãn tệp xuất, một truy vấn cho cả trang, xếp theo mã, lưu mã thì gắn đúng người, chữ lạ vẫn không gắn) cùng các bài Tiến độ, đơn mua hàng, nhân sự theo id xanh; typecheck giao diện mới sạch, giao diện cũ không thêm lỗi; ruff sạch.
+
+Mã nguồn: `backend/app/modules/purchase_progress/nspt_people.py`, `backend/app/modules/purchase_progress/controller.py`, `backend/app/modules/purchase_progress/sort_expressions.py`, `backend/app/modules/employee/service.py`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx`.
+Kiểm: `test/backend/test_tien_do_nspt_ma_kem_ten_cr775.py`.

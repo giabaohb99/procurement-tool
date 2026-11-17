@@ -125,7 +125,13 @@ const COLS: Col[] = [
   { key: 'department', label: 'Bộ phận', w: 124, sort: 'department', cell: (r) => r.department },
   { key: 'supplier_code', hide: true, label: 'Mã NCC', w: 130, sort: 'supplier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.supplier_code },
   { key: 'supplier_name', label: 'Nhà cung cấp', w: 230, sort: 'supplier_name', sup: true, cell: (r) => r.supplier_name },
-  { key: 'nspt', label: 'NSPT', w: 150, sort: 'nspt', cell: (r) => r.nspt },
+  // duoc-CR-775: backend trả mã + tên hiện hành tra theo hồ sơ (nspt_code, nspt_name). Mã đi trước (anh Được chốt),
+  // máy chủ xếp cột theo mã. Đơn chưa liên kết hồ sơ (dữ liệu cũ) thì nspt_code rỗng, chỉ hiện chữ đã lưu.
+  { key: 'nspt', label: 'NSPT', w: 170, sort: 'nspt', cell: (r) => (
+    r.nspt_code
+      ? <><span style={MUTED}>{r.nspt_code} · </span>{r.nspt_name}</>
+      : (r.nspt_name ?? r.nspt)
+  ) },
   { key: 'order_date', label: 'Ngày ĐH', w: 88, sort: 'order_date', td: NOWRAP, cell: (r) => fmtDate(r.order_date) },
   { key: 'product_code', label: 'Mã SP', w: 140, sort: 'product_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.product_code },
   { key: 'product_name', label: 'Tên SP', w: 220, sort: 'product_name', td: { fontWeight: 500 }, cell: (r) => r.product_name },

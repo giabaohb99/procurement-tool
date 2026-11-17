@@ -18,6 +18,10 @@ export interface PurchaseProgressRow {
   supplier_code: string
   supplier_name: string
   nspt: string
+  /** duoc-CR-775: mã nhân sự tra theo liên kết hồ sơ (`nspt_id`); rỗng khi đơn chưa liên kết (dữ liệu cũ). */
+  nspt_code?: string
+  /** Tên hiện hành theo hồ sơ; đơn chưa liên kết thì là chữ đã lưu trên đơn. */
+  nspt_name?: string
   order_date: string
   product_code: string
   product_name: string

@@ -305,7 +305,24 @@ function PurchaseProgressContent() {
         wrap: true,
         cell: (r) => r.supplier_name || r.supplier_code || '',
       },
-      { key: 'nspt', header: 'NSPT', sortable: true, width: 160, wrap: true, cell: (r) => r.nspt || '' },
+      {
+        //  duoc-CR-775: mã + tên hiện hành do backend tra theo hồ sơ — không còn hiện mã trần thay tên. Mã đi
+        //  trước (anh Được chốt 17/11/2026), máy chủ xếp cột theo mã. Đơn chưa liên kết thì chỉ hiện chữ đã lưu.
+        key: 'nspt',
+        header: 'NSPT',
+        sortable: true,
+        width: 180,
+        wrap: true,
+        cell: (r) =>
+          r.nspt_code ? (
+            <>
+              <span className="text-muted-foreground">{r.nspt_code} · </span>
+              {r.nspt_name}
+            </>
+          ) : (
+            r.nspt_name ?? r.nspt ?? ''
+          ),
+      },
       { key: 'order_date', header: 'Ngày ĐH', sortable: true, sortDescFirst: true, width: 110, cell: (r) => formatDate(r.order_date) || '' },
       { key: 'product_code', header: 'Mã SP', sortable: true, width: 150, wrap: true, cell: (r) => r.product_code || '' },
       {
