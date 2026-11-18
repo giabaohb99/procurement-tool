@@ -116,7 +116,8 @@ describe('SurveyReportCard — table view with inline editing', () => {
     await openCard()
     expect(screen.getByRole('button', { name: 'Bảng' })).toHaveAttribute('aria-pressed', 'true')
     //  Dạng bảng không có gì để gấp — nút "Mở tất cả" chỉ gây hiểu nhầm.
-    expect(screen.queryByRole('button', { name: /Mở tất cả|Thu gọn/ })).not.toBeInTheDocument()
+    //  Khớp ĐÚNG tên nút gạt giai đoạn: từ duoc-CR-780 thẻ còn nút gập "Thu gọn Báo cáo thực hiện".
+    expect(screen.queryByRole('button', { name: /^(Mở tất cả|Thu gọn)$/ })).not.toBeInTheDocument()
   })
 
   it('respects a stored by-line preference instead of forcing the new table', async () => {

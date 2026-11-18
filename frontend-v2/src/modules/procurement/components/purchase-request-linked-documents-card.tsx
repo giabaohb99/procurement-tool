@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
   Table,
@@ -14,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/table'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { useRelatedPurchaseOrders } from '../hooks/use-purchase-request-support'
@@ -56,17 +59,32 @@ export function PurchaseRequestLinkedDocumentsCard({ data }: { data: LinkedDocum
   } = useRelatedPurchaseOrders(canReadPurchaseOrder ? data.code : '')
   const orders = orderPage?.items ?? []
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Chứng từ liên quan')
   return (
     <Card className="gap-4 py-4">
       {/* Cùng khuôn với các thẻ khác trên trang — xem ghi chú ở thẻ Thông tin chung. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <Link2 className="size-4" />
           Chứng từ liên quan
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Chứng từ liên quan"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-6 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-6 px-4">
         <section className="space-y-2">
           <h3 className="text-sm font-medium">Yêu cầu báo giá nguồn ({surveyRequests.length})</h3>
           {surveyRequests.length === 0 ? (

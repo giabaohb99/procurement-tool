@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { CardCollapseScope, CardCollapseToggle, WithCardCollapse } from '@/shared/ui/card-collapse'
 import { DetailPageHeader, type HeaderActionList } from '@/shared/ui/detail-page-header'
 import { Badge } from '@/shared/ui/badge'
 import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
@@ -67,6 +68,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
 import { DocumentAttachmentsCard } from '../components/document-attachments-card'
@@ -1170,119 +1172,139 @@ export function PurchaseRequestDetailPage() {
       )}
 
       <div className="min-w-0 space-y-4">
-          <PurchaseRequestInfoCard
-            data={loadedDraft}
-            editing={editing}
-            isNew={isNew}
-            companies={companiesData?.items}
-            employees={employeesData?.items}
-            departments={departmentsData?.items}
-            deptHeadCandidates={deptHeadData?.items}
-            approverCandidates={approverData?.items}
-            defaultDeptHead={defaultDeptHead}
-            urgentEditable={!closed && !editing && can('purchase_request', 'write')}
-            onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
-            onChange={patch}
-          />
-
-          <PurchaseRequestItemsTable
-            items={loadedDraft.items}
-            editing={editing}
-            bulkRemovable={isNew || data.status === 'draft'}
-            showAssignee={showAssignee}
-            onChange={(items) => patch({ items })}
-            onOpenDetail={setLineIndex}
-            orderedByCode={progress?.ordered}
-            purchasers={purchasers}
-            canAssign={canAssign}
-            canEditLine={canEditLine}
-            onAssigneeChange={handleAssigneeChange}
-            onExpectedDateCommit={(item, expectedDate, originalDate) =>
-              void handleExpectedDateCommit(item, expectedDate, originalDate)
-            }
-            // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm SP.
-            // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
-            renderFrame={({ headerActions, body }) => (
-              <Card className="gap-4 py-4">
-                <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
-                  <CardTitle className="text-base text-navy dark:text-foreground">
-                    Danh sách Sản phẩm Yêu cầu
-                  </CardTitle>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {headerActions}
-                    {editing ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          patch({
-                            items: [...loadedDraft.items, { ...EMPTY_PURCHASE_REQUEST_ITEM }],
-                          })
-                        }
-                      >
-                        <Plus />
-                        Thêm SP
-                      </Button>
-                    ) : null}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 px-4">
-                  {/* Câu hướng dẫn để trong thân thẻ, không nhét vào tiêu đề: hai
-                      dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
-                  {!editing && (
-                    <p className="text-xs text-muted-foreground">
-                      Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
-                      và ảnh đối chiếu.
-                    </p>
-                  )}
-                  {body}
-                  <DocumentMoneyTotals {...calculatedTotals} />
-                </CardContent>
-              </Card>
-            )}
-          />
-
-          <PurchaseRequestSupplierCard data={loadedDraft} editing={editing} onChange={patch} />
-
-          {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
-              ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
-          {!isNew && !editing && data.options_enabled && (
-            <PurchaseRequestChooseCard purchaseRequest={data} />
-          )}
-
-          {/* bao-CR-422: hai chiều liên kết của phiếu — YCBG nào đẻ ra nó, nó đẻ ra
-              ĐMH nào. Thẻ đứng yên một chỗ kể cả khi chưa có gì để bày, vì "chưa có
-              đơn nào" cũng là câu trả lời người dùng đang đi tìm. */}
-          {!isNew && !editing && <PurchaseRequestLinkedDocumentsCard data={data} />}
-
-          <DocumentAttachmentsCard
-            entity="purchase_request"
-            entityId={purchaseRequestId}
-            canManage={canManageAttachments}
-            v1Wording
-          />
-
-          {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
-              điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
-              (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
-          {DOSSIER_UI_ENABLED && (
-            <RequiredDossiersCard
-              docKind={DOC_KINDS.PURCHASE_REQUEST}
-              docId={purchaseRequestId || undefined}
+        {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
+        <CardCollapseScope scope={isNew ? null : 'procurement.purchase-request'}>
+            <PurchaseRequestInfoCard
+              data={loadedDraft}
+              editing={editing}
+              isNew={isNew}
+              companies={companiesData?.items}
+              employees={employeesData?.items}
+              departments={departmentsData?.items}
+              deptHeadCandidates={deptHeadData?.items}
+              approverCandidates={approverData?.items}
+              defaultDeptHead={defaultDeptHead}
+              urgentEditable={!closed && !editing && can('purchase_request', 'write')}
+              onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
+              onChange={patch}
             />
-          )}
 
-          {!isNew && (
-            <>
-              <DocumentComments entity="purchase_request" entityId={purchaseRequestId} />
-              <AuditTimeline
-                entity="purchase_request"
-                entityId={purchaseRequestId}
-                showMessage
-                dense
+            <PurchaseRequestItemsTable
+              items={loadedDraft.items}
+              editing={editing}
+              bulkRemovable={isNew || data.status === 'draft'}
+              showAssignee={showAssignee}
+              onChange={(items) => patch({ items })}
+              onOpenDetail={setLineIndex}
+              orderedByCode={progress?.ordered}
+              purchasers={purchasers}
+              canAssign={canAssign}
+              canEditLine={canEditLine}
+              onAssigneeChange={handleAssigneeChange}
+              onExpectedDateCommit={(item, expectedDate, originalDate) =>
+                void handleExpectedDateCommit(item, expectedDate, originalDate)
+              }
+              // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm SP.
+              // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
+              // duoc-CR-780: thẻ gập / mở được trong phạm vi gập thẻ của trang.
+              renderFrame={({ headerActions, body }) => (
+                <WithCardCollapse title="Danh sách Sản phẩm Yêu cầu">
+                  {(collapse) => (
+                    <Card className="gap-4 py-4">
+                      <CardHeader
+                        className={cn(
+                          'min-h-9 flex flex-row items-center justify-between gap-3 px-4',
+                          collapse.open && 'border-b pb-3!',
+                        )}
+                      >
+                        <CardTitle className="text-base text-navy dark:text-foreground">
+                          Danh sách Sản phẩm Yêu cầu
+                        </CardTitle>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {headerActions}
+                          {editing ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                patch({
+                                  items: [...loadedDraft.items, { ...EMPTY_PURCHASE_REQUEST_ITEM }],
+                                })
+                              }
+                            >
+                              <Plus />
+                              Thêm SP
+                            </Button>
+                          ) : null}
+                        {collapse.collapsible && (
+                          <CardCollapseToggle
+                            title="Danh sách Sản phẩm Yêu cầu"
+                            open={collapse.open}
+                            onToggle={collapse.toggle}
+                          />
+                        )}
+                        </div>
+                      </CardHeader>
+                      <CardContent hidden={!collapse.open} className="space-y-3 px-4">
+                        {/* Câu hướng dẫn để trong thân thẻ, không nhét vào tiêu đề: hai
+                            dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
+                        {!editing && (
+                          <p className="text-xs text-muted-foreground">
+                            Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
+                            và ảnh đối chiếu.
+                          </p>
+                        )}
+                        {body}
+                        <DocumentMoneyTotals {...calculatedTotals} />
+                      </CardContent>
+                    </Card>
+                  )}
+                </WithCardCollapse>
+              )}
+            />
+
+            <PurchaseRequestSupplierCard data={loadedDraft} editing={editing} onChange={patch} />
+
+            {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
+                ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
+            {!isNew && !editing && data.options_enabled && (
+              <PurchaseRequestChooseCard purchaseRequest={data} />
+            )}
+
+            {/* bao-CR-422: hai chiều liên kết của phiếu — YCBG nào đẻ ra nó, nó đẻ ra
+                ĐMH nào. Thẻ đứng yên một chỗ kể cả khi chưa có gì để bày, vì "chưa có
+                đơn nào" cũng là câu trả lời người dùng đang đi tìm. */}
+            {!isNew && !editing && <PurchaseRequestLinkedDocumentsCard data={data} />}
+
+            <DocumentAttachmentsCard
+              entity="purchase_request"
+              entityId={purchaseRequestId}
+              canManage={canManageAttachments}
+              v1Wording
+            />
+
+            {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+                điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
+                (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
+            {DOSSIER_UI_ENABLED && (
+              <RequiredDossiersCard
+                docKind={DOC_KINDS.PURCHASE_REQUEST}
+                docId={purchaseRequestId || undefined}
               />
-            </>
-          )}
+            )}
+
+            {!isNew && (
+              <>
+                <DocumentComments entity="purchase_request" entityId={purchaseRequestId} />
+                <AuditTimeline
+                  entity="purchase_request"
+                  entityId={purchaseRequestId}
+                  showMessage
+                  dense
+                />
+              </>
+            )}
+        </CardCollapseScope>
       </div>
 
       <PurchaseRequestLineDetailDialog

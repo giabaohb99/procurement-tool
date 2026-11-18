@@ -4,9 +4,11 @@ import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Dialog,
@@ -100,6 +102,8 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
   const doneLines = purchaseRequest.items.filter(
     (item): item is PurchaseRequestItem & { id: number } => !!item.id,
   )
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Phương án — chọn phương án mua')
   if (!isDispatched(purchaseRequest.status) || doneLines.length === 0) return null
 
   // Cùng luật `ensure_own_line` + see-all của backend: thu mua thường chỉ đụng
@@ -125,14 +129,27 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
       {/* bao-CR-310 đợt 4 (rà lại): nút GOM và nút IN THEO NCC dời lên đầu
           trang chi tiết, nhập vào nút "Tạo đơn mua hàng" / "In phiếu" sổ xuống
           — khách góp ý 4 nút rời là quá nhiều. Thẻ này chỉ còn phần chọn. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <ListChecks className="size-4 text-primary" />
           Phương án — chọn phương án mua
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Phương án — chọn phương án mua"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-6 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-6 px-4">
         {canChoose ? (
           <p className="text-xs text-muted-foreground">
             Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất; bấm lại phương án đang chọn để

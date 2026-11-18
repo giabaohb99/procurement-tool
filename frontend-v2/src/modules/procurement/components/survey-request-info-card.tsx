@@ -1,7 +1,9 @@
 import type { Company } from '@/modules/hr/types/company'
 import type { Department } from '@/modules/hr/types/department'
 import type { Employee } from '@/modules/hr/types/employee'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
@@ -136,15 +138,30 @@ export function SurveyRequestInfoCard({
   //  `aria-invalid:border-destructive` của SelectTrigger cũ (QA 29/08).
   const invalidClass = (key: string) => cn(invalid?.has(key) && '[&_input]:border-destructive')
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Thông tin chung', { forceOpen: (invalid?.size ?? 0) > 0 })
   return (
     <Card className="gap-4 py-4">
       {/* Cùng khuôn với các thẻ khác của phân hệ — `pb-3!` là bắt buộc vì
           shadcn đặt `[.border-b]:pb-6` cho CardHeader. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="text-base text-navy dark:text-foreground">Thông tin chung</CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Thông tin chung"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
+      <CardContent hidden={!collapse.open} className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
         {!isNew && <Field label="Mã phiếu">{data.code || '— (phiếu nháp)'}</Field>}
 
         <div className="space-y-1.5">

@@ -6,6 +6,7 @@ import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
+import { CardCollapseScope } from '@/shared/ui/card-collapse'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -383,14 +384,17 @@ export function PurchaseReportPage() {
         </div>
 
         <TabsContent value="overview" className="mt-2">
-          <ReportOverviewTab
-            data={overview.data}
-            months={months}
-            period={period}
-            periodLabel={periodLabel}
-            companyId={company}
-            isLoading={overview.isLoading}
-          />
+          {/*  duoc-CR-780: thẻ biểu đồ của tab Tổng quan gập / mở được, nhớ theo tên thẻ. */}
+          <CardCollapseScope scope="procurement.report">
+            <ReportOverviewTab
+              data={overview.data}
+              months={months}
+              period={period}
+              periodLabel={periodLabel}
+              companyId={company}
+              isLoading={overview.isLoading}
+            />
+          </CardCollapseScope>
         </TabsContent>
 
         <TabsContent value="supplier" className="mt-2">

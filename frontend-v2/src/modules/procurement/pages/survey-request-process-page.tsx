@@ -5,6 +5,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { CardCollapseScope } from '@/shared/ui/card-collapse'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -107,7 +108,9 @@ export function SurveyRequestProcessPage() {
       </p>
 
       {isSurveyRequestProcessable(data.status) ? (
-        <SurveyRequestProcessCard surveyRequestId={data.id} status={data.status} />
+        <CardCollapseScope scope="procurement.survey-request-process">
+          <SurveyRequestProcessCard surveyRequestId={data.id} status={data.status} />
+        </CardCollapseScope>
       ) : (
         <Card className="py-4">
           <CardContent className="px-4 text-sm text-muted-foreground">

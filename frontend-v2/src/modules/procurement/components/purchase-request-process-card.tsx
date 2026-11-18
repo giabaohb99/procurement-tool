@@ -17,10 +17,12 @@ import { toast } from 'sonner'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Dialog,
@@ -32,6 +34,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { SearchSelect } from '@/shared/ui/search-select'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
@@ -143,16 +146,31 @@ export function PurchaseRequestProcessCard({ purchaseRequest }: PurchaseRequestP
     setEmptyDialogOpen(true)
   }
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Xử lý phương án — gắn báo giá cho từng dòng hàng')
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <ClipboardList className="size-4 text-primary" />
           Xử lý phương án — gắn báo giá cho từng dòng hàng
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Xử lý phương án — gắn báo giá cho từng dòng hàng"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-6 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-6 px-4">
         <p className="text-xs text-muted-foreground">
           Với mỗi dòng hàng: lọc kết quả khảo sát đã duyệt (theo NCC / phân loại / từ khóa) rồi
           bấm dấu cộng để gắn làm phương án, hoặc <b>nhập tay</b> báo giá ngoài kho khảo sát —

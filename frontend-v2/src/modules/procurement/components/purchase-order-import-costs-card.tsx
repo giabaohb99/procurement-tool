@@ -22,6 +22,8 @@ import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import type { SortValue } from '@/shared/utils/compare-sort-values'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -1125,12 +1127,20 @@ export function PurchaseOrderImportCostsCard({
     ? [{ ...TICK_COLUMN, headerContent: tickHeader }, ...BASE_COLUMNS]
     : BASE_COLUMNS
 
+  //  duoc-CR-780: hai thẻ gập / mở riêng khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const costsCollapse = useCardCollapse('Chi phí thu mua')
+  const allocationCollapse = useCardCollapse('Chi phí theo dòng hàng')
   return (
     <>
       <Card className="gap-4 py-4">
         {/*  `flex-wrap` + tiêu đề `shrink-0`: ở khổ điện thoại cụm 3-5 nút không vừa một
              hàng, thiếu hai lớp này thì tiêu đề bị ép xuống còn một chữ mỗi dòng. */}
-        <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+        <CardHeader
+          className={cn(
+            'min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 px-4',
+            costsCollapse.open && 'border-b pb-3!',
+          )}
+        >
           <CardTitle className="flex shrink-0 items-center gap-2 text-base text-navy dark:text-foreground">
             <Receipt className="size-4" />
             Chi phí thu mua
@@ -1252,9 +1262,16 @@ export function PurchaseOrderImportCostsCard({
                 Thêm chi phí
               </Button>
             )}
+            {costsCollapse.collapsible && (
+              <CardCollapseToggle
+                title="Chi phí thu mua"
+                open={costsCollapse.open}
+                onToggle={costsCollapse.toggle}
+              />
+            )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 px-4">
+        <CardContent hidden={!costsCollapse.open} className="space-y-4 px-4">
           <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
             VAT ở dòng hàng của đơn nhập khẩu luôn bằng 0 — thuế GTGT hàng nhập nộp ngân sách nhà
             nước theo tờ khai, khai thành một dòng ở bảng này. Chi phí vẫn thêm/sửa được sau khi
@@ -1513,32 +1530,52 @@ export function PurchaseOrderImportCostsCard({
 
       {!isNew && allocation && (
         <Card className="gap-4 py-4">
-          <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
-            <div className="min-w-0 space-y-0.5">
+          <CardHeader
+            className={cn(
+              'min-h-9 flex flex-row items-center justify-between gap-3 px-4',
+              allocationCollapse.open && 'items-start border-b pb-3!',
+            )}
+          >
+            {/*  duoc-CR-780: không xuống dòng — câu mô tả dài tự co, cụm nút (kể cả nút gập) luôn ở góc phải
+                 trên; để `flex-wrap` thì ở điện thoại cụm nút rớt xuống dưới câu mô tả, nằm lệch trái. */}
+            <div className="min-w-0 flex-1 space-y-0.5">
               <CardTitle className="text-base text-navy dark:text-foreground">
                 Chi phí theo dòng hàng
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Số chia lấy từ dữ liệu đã lưu, không ghi vào kho. Khoản chọn &quot;Nhập tay&quot;
-                thì gõ số tiền từng dòng ở đây; sửa xong bấm Lưu mới có hiệu lực.
-              </p>
+              {/*  Gập thì chỉ còn tiêu đề, cao bằng các thẻ gập khác. */}
+              {allocationCollapse.open && (
+                <p className="text-xs text-muted-foreground">
+                  Số chia lấy từ dữ liệu đã lưu, không ghi vào kho. Khoản chọn &quot;Nhập tay&quot;
+                  thì gõ số tiền từng dòng ở đây; sửa xong bấm Lưu mới có hiệu lực.
+                </p>
+              )}
             </div>
-            {allocationLines.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setOpenLineIds(
-                    allLinesOpen ? new Set() : new Set(allocationLines.map((line) => line.item_id)),
-                  )
-                }
-              >
-                {allLinesOpen ? 'Thu gọn' : 'Mở tất cả'}
-              </Button>
-            )}
+            {/*  Nút gạt dòng và nút gập thẻ đứng chung một cụm bên phải. */}
+            <div className="flex shrink-0 items-center gap-2">
+              {allocationCollapse.open && allocationLines.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setOpenLineIds(
+                      allLinesOpen ? new Set() : new Set(allocationLines.map((line) => line.item_id)),
+                    )
+                  }
+                >
+                  {allLinesOpen ? 'Thu gọn' : 'Mở tất cả'}
+                </Button>
+              )}
+              {allocationCollapse.collapsible && (
+                <CardCollapseToggle
+                  title="Chi phí theo dòng hàng"
+                  open={allocationCollapse.open}
+                  onToggle={allocationCollapse.toggle}
+                />
+              )}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3 px-4">
+          <CardContent hidden={!allocationCollapse.open} className="space-y-3 px-4">
             {manualCosts.map((cost) => (
               <ManualAllocationBanner key={cost.id ?? cost.description} cost={cost} />
             ))}

@@ -12,10 +12,12 @@ import {
 import { useCallback, useRef, useState } from 'react'
 
 import { useAuth } from '@/core/auth/use-auth'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import {
@@ -24,6 +26,7 @@ import {
   type MentionPerson,
 } from '@/shared/ui/mention-input'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import {
   purchaseRequestSupportApi,
@@ -79,10 +82,17 @@ export function DocumentComments({ entity, entityId }: DocumentCommentsProps) {
 
   const roots = [...olderRoots, ...(data?.items ?? [])]
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Trao đổi')
   return (
     <Card className="gap-4 py-4">
       {/* Xem ghi chú về `pb-3!` ở `purchase-request-attachments-card.tsx`. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <MessageCircle className="size-4 text-primary" />
           Trao đổi
@@ -92,8 +102,16 @@ export function DocumentComments({ entity, entityId }: DocumentCommentsProps) {
             </span>
           )}
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Trao đổi"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
-      <CardContent className="space-y-4 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-4 px-4">
         {isLoading && <Skeleton className="h-28 w-full" />}
         {isError && <p className="text-sm text-destructive">Không tải được nội dung trao đổi.</p>}
 

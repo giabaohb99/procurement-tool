@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
@@ -80,15 +82,30 @@ export function SurveyInfoCard({
     })
   }
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Thông tin chung')
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="flex min-h-9 flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'flex min-h-9 flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="text-base text-navy dark:text-foreground">
           Thông tin tiếp nhận
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Thông tin chung"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
+      <CardContent hidden={!collapse.open} className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
         <InfoField label="Mã phiếu">
           <ReadOnlyValue value={data.code || '— (tự sinh khi tạo)'} />
         </InfoField>

@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { cn } from '@/shared/utils/cn'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { Skeleton } from './skeleton'
 
 /** Một hạng mục trên biểu đồ: nhãn hiển thị + số đo. */
@@ -65,6 +67,8 @@ export function ChartCard({
   className,
   children,
 }: ChartCardProps) {
+  //  Gập được CHỈ khi nằm trong `CardCollapseScope` (Tổng quan / Báo cáo Thu mua, duoc-CR-780); màn khác luôn mở.
+  const collapse = useCardCollapse(title)
   return (
     // `h-full` + nội dung căn giữa dọc: thẻ cùng hàng luôn cao bằng nhau, biểu
     // đồ ít dòng thì nằm giữa thẻ chứ không dồn lên đầu bỏ trống một mảng dưới.
@@ -75,15 +79,22 @@ export function ChartCard({
     //  ngang tối thiểu. Thiếu chữ này thì trên điện thoại cả lưới bị nong ra
     //  (đo 08/09/2026 ở màn Tổng quan Nhân sự: 544px trong khung 358px) và cả
     //  TRANG sinh thanh cuộn ngang, không riêng cái thẻ chứa biểu đồ.
-    <Card className={cn('h-full min-w-0 gap-4', className)}>
+    //
+    //  Đang GẬP thì bỏ `h-full`: thẻ gập vẫn kéo cao bằng thẻ mở cùng hàng thì chỉ là một khung rỗng.
+    <Card className={cn('min-w-0 gap-4', collapse.open && 'h-full', className)}>
       <CardHeader className="pb-0">
         {/* `dark:text-foreground` vì --navy là màu thương hiệu cố định, để
             nguyên trên nền tối sẽ chìm hẳn. */}
         <CardTitle className="text-base text-navy dark:text-foreground">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+        {description && collapse.open && <CardDescription>{description}</CardDescription>}
+        {collapse.collapsible && (
+          <CardAction>
+            <CardCollapseToggle title={title} open={collapse.open} onToggle={collapse.toggle} />
+          </CardAction>
+        )}
       </CardHeader>
 
-      <CardContent className="flex flex-1 flex-col">
+      <CardContent hidden={!collapse.open} className="flex flex-1 flex-col">
         {loading ? (
           <div className="space-y-3 py-2">
             <Skeleton className="h-4 w-3/4" />

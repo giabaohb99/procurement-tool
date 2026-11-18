@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { CardCollapseScope } from '@/shared/ui/card-collapse'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -97,7 +98,10 @@ export function PurchaseRequestProcessPage() {
               </CardContent>
             </Card>
           )}
-          <PurchaseRequestProcessCard purchaseRequest={data} />
+          {/*  duoc-CR-780: thẻ xử lý gập / mở được như các thẻ khác của Thu mua. */}
+          <CardCollapseScope scope="procurement.purchase-request-process">
+            <PurchaseRequestProcessCard purchaseRequest={data} />
+          </CardCollapseScope>
         </>
       ) : (
         <Card className="py-4">

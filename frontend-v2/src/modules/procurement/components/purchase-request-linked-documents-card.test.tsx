@@ -1,6 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { CardCollapseScope } from '@/shared/ui/card-collapse'
 
 import type { PurchaseOrder } from '../types/purchase-document'
 import type { LinkedSurveyRequest } from '../types/purchase-request-detail'
@@ -206,5 +208,46 @@ describe('PurchaseRequestLinkedDocumentsCard', () => {
     expect(
       screen.getByText('Chưa đọc được danh sách đơn mua hàng, thử tải lại trang.'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('PurchaseRequestLinkedDocumentsCard collapse (duoc-CR-780)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    grantedPermissions = ['survey_request:read', 'purchase_order:read']
+    mockOrders = []
+    mockOrdersLoading = false
+    mockOrdersError = false
+    mobile = false
+  })
+
+  function renderInScope(scope: string | null) {
+    return render(
+      <MemoryRouter>
+        <CardCollapseScope scope={scope}>
+          <PurchaseRequestLinkedDocumentsCard data={{ code: 'PR-2026-012', survey_requests: [] }} />
+        </CardCollapseScope>
+      </MemoryRouter>,
+    )
+  }
+
+  it('collapses on the YCMH detail page and remembers it the next time the page opens', () => {
+    const { unmount } = renderInScope('procurement.purchase-request')
+    const body = screen.getByText('Chưa có đơn mua hàng nào được lập từ phiếu này.')
+    fireEvent.click(screen.getByRole('button', { name: 'Thu gọn Chứng từ liên quan' }))
+    expect(body).not.toBeVisible()
+    unmount()
+
+    renderInScope('procurement.purchase-request')
+    expect(screen.getByRole('button', { name: 'Mở Chứng từ liên quan' })).toBeInTheDocument()
+    expect(screen.getByText('Chưa có đơn mua hàng nào được lập từ phiếu này.')).not.toBeVisible()
+  })
+
+  it('has no toggle on a brand-new document (scope null) and outside Thu mua', () => {
+    //  Màn lập MỚI đặt phạm vi `null`: đã gập ở phiếu cũ cũng không được giấu ô ở phiếu mới.
+    localStorage.setItem('erp.section.procurement.purchase-request.Chứng từ liên quan', '0')
+    renderInScope(null)
+    expect(screen.queryByRole('button', { name: /Thu gọn|Mở Chứng từ/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Chưa có đơn mua hàng nào được lập từ phiếu này.')).toBeVisible()
   })
 })

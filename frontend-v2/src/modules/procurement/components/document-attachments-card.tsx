@@ -24,9 +24,11 @@ import { toast } from 'sonner'
 import { downloadFile } from '@/core/api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import {
   DropdownMenu,
@@ -217,6 +219,8 @@ export function DocumentAttachmentsCard({
     }
   }
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua; màn ngoài Thu mua không đổi.
+  const collapse = useCardCollapse('Chứng từ và tài liệu đính kèm')
   return (
     <Card className="gap-4 py-4">
       {/*
@@ -233,21 +237,38 @@ export function DocumentAttachmentsCard({
         thẻ** (đo 12/09/2026: 374px trong khung 356px). Sửa ở đây là sửa cho cả
         9 màn đang dùng thẻ này.
       */}
-      <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3! max-md:flex-col max-md:items-start max-md:gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Paperclip className="size-4 shrink-0 text-primary" />
-          <CardTitle className="text-base text-navy dark:text-foreground">
-            Chứng từ &amp; Tài liệu đính kèm
-          </CardTitle>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            {files?.length ?? 0} tệp
-          </span>
-          {/*  Màn ngoài Thu mua: huy hiệu chỉ đọc cạnh tiêu đề, giữ nguyên như trước duoc-CR-741. */}
-          {!v1Wording && documentStatus && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {wording.documentStatusLabel}
-              <DocumentStatusBadge status={documentStatus} />
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center justify-between gap-3 px-4 max-md:flex-col max-md:items-start max-md:gap-2',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
+        <div className="flex min-w-0 items-start gap-2 max-md:w-full md:mr-auto">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <Paperclip className="size-4 shrink-0 text-primary" />
+            <CardTitle className="text-base text-navy dark:text-foreground">
+              Chứng từ &amp; Tài liệu đính kèm
+            </CardTitle>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {files?.length ?? 0} tệp
             </span>
+            {/*  Màn ngoài Thu mua: huy hiệu chỉ đọc cạnh tiêu đề, giữ nguyên như trước duoc-CR-741. */}
+            {!v1Wording && documentStatus && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {wording.documentStatusLabel}
+                <DocumentStatusBadge status={documentStatus} />
+              </span>
+            )}
+          </div>
+          {/*  duoc-CR-780: khổ điện thoại cụm nút xếp dọc bên dưới, nên nút gập đứng góc phải hàng tiêu đề
+               (nằm NGOÀI cụm xuống dòng để không rớt dòng); khổ rộng dùng nút ở cuối cụm nút. */}
+          {collapse.collapsible && (
+            <CardCollapseToggle
+              title="Chứng từ và tài liệu đính kèm"
+              open={collapse.open}
+              onToggle={collapse.toggle}
+              className="-my-1 md:hidden"
+            />
           )}
         </div>
 
@@ -338,9 +359,19 @@ export function DocumentAttachmentsCard({
             </>
           )}
         </div>
+        {/*  Khổ rộng: nút gập là phần tử CUỐI của tiêu đề, đứng ngoài cụm nút — để trong cụm thì cụm xuống hàng
+             hai là nút bị cuốn theo, nằm lửng giữa thẻ. Điện thoại dùng nút ở hàng tiêu đề phía trên. */}
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Chứng từ và tài liệu đính kèm"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="max-md:hidden"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-3 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-3 px-4">
         {isNew ? (
           <p className="flex items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 py-5 text-center text-sm text-muted-foreground">
             <Info className="size-4" />

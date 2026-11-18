@@ -40,6 +40,8 @@ import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { CardCollapseScope, CardCollapseToggle, WithCardCollapse } from '@/shared/ui/card-collapse'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -887,271 +889,291 @@ export function PurchaseOrderDetailPage() {
       />
 
       <div className="min-w-0 space-y-4">
-        <PurchaseOrderInfoCard
-          data={data}
-          editable={headerEditable}
-          misaEditable={afterApproveEditable}
-          companies={companiesData?.items}
-          suppliers={(suppliersData?.items ?? []).filter(
-            (supplier) => supplier.supplier_type !== 'transport',
-          )}
-          employees={employeesData?.items}
-          approverCandidates={approverData?.items}
-          canPickNspt={can('purchase_order', 'approve')}
-          purchaseRequestId={purchaseRequestId}
-          onChange={patch}
-        />
+        {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
+        <CardCollapseScope scope={isNew ? null : 'procurement.purchase-order'}>
+          <PurchaseOrderInfoCard
+            data={data}
+            editable={headerEditable}
+            misaEditable={afterApproveEditable}
+            companies={companiesData?.items}
+            suppliers={(suppliersData?.items ?? []).filter(
+              (supplier) => supplier.supplier_type !== 'transport',
+            )}
+            employees={employeesData?.items}
+            approverCandidates={approverData?.items}
+            canPickNspt={can('purchase_order', 'approve')}
+            purchaseRequestId={purchaseRequestId}
+            onChange={patch}
+          />
 
-        <Card className="gap-4 py-4">
-          {/* Cùng khuôn tiêu đề với mọi thẻ khác — xem ghi chú `pb-3!` ở
-              `purchase-request-attachments-card.tsx`. */}
-          <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
-            <CardTitle className="text-base text-navy dark:text-foreground">Dòng hàng</CardTitle>
-            {/*  duoc-CR-737: cụm nút của bảng dòng ở góc phải tiêu đề thẻ như bản v1 —
-                 Xóa đã chọn (n) · Thêm dòng. */}
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {lineSelection.selection && (
-                <BulkDeleteButton
-                  size="sm"
-                  count={lineSelection.selectedIndexes.length}
-                  unitLabel="dòng"
-                  title="Xác nhận"
-                  description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi đơn ngay trên màn hình, bấm Lưu mới ghi xuống.`}
-                  confirmLabel="Đồng ý"
-                  onConfirm={removeSelectedLines}
-                />
-              )}
-              {headerEditable && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    patch({ items: [...data.items, createEmptyPurchaseOrderItem(data.vat_rate)] })
-                  }
+          {/*  duoc-CR-780: gập / mở được trong phạm vi gập thẻ của trang. */}
+          <WithCardCollapse title="Dòng hàng">
+            {(collapse) => (
+              <Card className="gap-4 py-4">
+                {/* Cùng khuôn tiêu đề với mọi thẻ khác — xem ghi chú `pb-3!` ở
+                    `purchase-request-attachments-card.tsx`. */}
+                <CardHeader
+                  className={cn(
+                    'min-h-9 flex flex-row items-center justify-between gap-3 px-4',
+                    collapse.open && 'border-b pb-3!',
+                  )}
                 >
-                  <Plus />
-                  Thêm dòng
-                </Button>
-              )}
-              {headerEditable && (
-                <PurchaseOrderAddManyLinesButton
-                  onAdd={(count) =>
-                    patch({
-                      items: [
-                        ...data.items,
-                        ...Array.from({ length: count }, () =>
-                          createEmptyPurchaseOrderItem(data.vat_rate),
-                        ),
-                      ],
-                    })
-                  }
-                />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 px-4">
-            {/*  bao-CR-758: khung vàng như bản v1 (CR-095) — chỉ khi đơn còn sửa được. */}
-            {headerEditable && (
-              <PurchaseOrderMissingFieldsNotice
-                issues={listPurchaseOrderLineIssues(data)}
-                isMobile={isMobile}
-              />
+                  <CardTitle className="text-base text-navy dark:text-foreground">Dòng hàng</CardTitle>
+                  {/*  duoc-CR-737: cụm nút của bảng dòng ở góc phải tiêu đề thẻ như bản v1 —
+                       Xóa đã chọn (n) · Thêm dòng. */}
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {lineSelection.selection && (
+                      <BulkDeleteButton
+                        size="sm"
+                        count={lineSelection.selectedIndexes.length}
+                        unitLabel="dòng"
+                        title="Xác nhận"
+                        description={`Xóa ${lineSelection.selectedIndexes.length} dòng đã chọn? Dòng bỏ khỏi đơn ngay trên màn hình, bấm Lưu mới ghi xuống.`}
+                        confirmLabel="Đồng ý"
+                        onConfirm={removeSelectedLines}
+                      />
+                    )}
+                    {headerEditable && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          patch({ items: [...data.items, createEmptyPurchaseOrderItem(data.vat_rate)] })
+                        }
+                      >
+                        <Plus />
+                        Thêm dòng
+                      </Button>
+                    )}
+                    {headerEditable && (
+                      <PurchaseOrderAddManyLinesButton
+                        onAdd={(count) =>
+                          patch({
+                            items: [
+                              ...data.items,
+                              ...Array.from({ length: count }, () =>
+                                createEmptyPurchaseOrderItem(data.vat_rate),
+                              ),
+                            ],
+                          })
+                        }
+                      />
+                    )}
+                  {collapse.collapsible && (
+                    <CardCollapseToggle
+                      title="Dòng hàng"
+                      open={collapse.open}
+                      onToggle={collapse.toggle}
+                    />
+                  )}
+                  </div>
+                </CardHeader>
+                <CardContent hidden={!collapse.open} className="space-y-4 px-4">
+                  {/*  bao-CR-758: khung vàng như bản v1 (CR-095) — chỉ khi đơn còn sửa được. */}
+                  {headerEditable && (
+                    <PurchaseOrderMissingFieldsNotice
+                      issues={listPurchaseOrderLineIssues(data)}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {overOrders.length > 0 && (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                      <p className="flex items-center gap-1.5 font-medium">
+                        <AlertTriangle className="size-3.5" />
+                        Số lượng đặt vượt yêu cầu của YCMH {data.pr_code} — chỉ là nhắc, vẫn tạo đơn được
+                      </p>
+                      {overOrders.map((line) => (
+                        <p key={line.code}>
+                          {line.progress.name} ({line.code}): yêu cầu {formatQty(line.progress.requested)} ·{' '}
+                          {describeOrdered(line.progress)} · đơn này {formatQty(line.qty)} →{' '}
+                          <b>tổng vượt {formatQty(line.over)}</b>
+                        </p>
+                      ))}
+                      <p className="text-muted-foreground">
+                        Chỉ cần mua thêm phần thiếu thì sửa lại cột SL đặt NCC trước khi bấm Tạo.
+                      </p>
+                    </div>
+                  )}
+                  {afterApproveEditable && (
+                    <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
+                      {/*  Khổ điện thoại không còn cột Hành động — bảng đã thành thẻ, chạm thẻ mở hộp chi tiết dòng. */}
+                      Đơn đã duyệt — nội dung đã ký khóa lại.{' '}
+                      {isMobile ? 'Chạm vào thẻ dòng hàng' : 'Mở nút bút chì ở cột Hành động'} để sửa:{' '}
+                      {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
+                      {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
+                    </p>
+                  )}
+                  <PurchaseOrderItemsTable
+                    items={data.items}
+                    order={data}
+                    editable={headerEditable}
+                    selection={lineSelection.selection}
+                    progressEditable={progressEditable}
+                    onChange={(items) => patch({ items })}
+                    onOpenDetail={setLineIndex}
+                    //  Dòng chưa lưu khóa tick theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang
+                    //  dòng khác, *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
+                    onLineRemoved={(index) => {
+                      setPendingFiles((current) => shiftPendingAfterLineRemove(current, index))
+                      lineSelection.clear()
+                    }}
+                    onLineDuplicated={(index) => {
+                      setPendingFiles((current) => shiftPendingAfterLineInsert(current, index))
+                      lineSelection.clear()
+                    }}
+                    lineReport={isNew ? undefined : lineReport}
+                    onOpenLineReport={(progress) => reportCardRef.current?.focusItem(progress.itemId)}
+                    onProgressChange={handleProgressChange}
+                  />
+                  <DocumentMoneyTotals
+                    subtotal={orderTotals.subtotal}
+                    vat={orderTotals.vat}
+                    total={orderTotals.total}
+                    subtotalLabel={
+                      !isImportOrder(data)
+                        ? 'Tiền hàng theo SL đặt (chưa VAT)'
+                        : orderTotals.mixed
+                          ? 'Tiền hàng theo SL đặt (quy đổi VNĐ)'
+                          : `Tiền hàng theo SL đặt (nguyên tệ ${orderTotals.currency})`
+                    }
+                    totalLabel={
+                      !isImportOrder(data)
+                        ? 'Tổng đơn đặt (gồm VAT)'
+                        : orderTotals.mixed
+                          ? 'Tổng đơn đặt (quy đổi VNĐ)'
+                          : `Tổng đơn đặt (nguyên tệ ${orderTotals.currency})`
+                    }
+                    currency={isImportOrder(data) ? orderTotals.currency : undefined}
+                  />
+                  {isImportOrder(data) && (
+                    <div className="ml-auto w-full max-w-sm space-y-1 text-sm">
+                      {orderTotals.mixed ? (
+                        // Đơn trộn nhiều loại tiền: ba dòng tổng ở trên đã là bản quy đổi,
+                        // lặp lại "Tổng quy đổi" là hai con số giống nhau — thay bằng câu nói rõ.
+                        <p className="text-right text-xs text-muted-foreground">
+                          Đơn có nhiều loại tiền — các dòng tổng đã quy đổi VNĐ theo tỷ giá từng
+                          dòng (trống thì theo tỷ giá đơn).
+                        </p>
+                      ) : (
+                        <p className="flex justify-between gap-4">
+                          <span className="text-muted-foreground">Tổng quy đổi (VNĐ)</span>
+                          <span
+                            className="font-semibold text-navy tabular-nums dark:text-foreground"
+                            title="Cộng thành tiền quy đổi của từng dòng theo tỷ giá dòng (trống thì theo tỷ giá đơn)."
+                          >
+                            {formatMoney(baseTotal)} đ
+                          </span>
+                        </p>
+                      )}
+                      {missingRateCount > 0 && (
+                        <p className="flex items-center justify-end gap-1.5 text-xs text-warning">
+                          <AlertTriangle className="size-3.5" />
+                          {missingRateCount} dòng ngoại tệ chưa có tỷ giá — nhập tỷ giá ở đầu đơn
+                          hoặc trong chi tiết dòng để quy đổi.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {!isNew && (
+                    <div className="space-y-1 text-right text-xs text-muted-foreground">
+                      <p>
+                        <span title="Tiền hàng tính theo SỐ LƯỢNG THỰC NHẬN (gồm VAT) — khác tổng đơn đặt ở trên khi chưa nhận đủ.">
+                          Đã nhận: {data.total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
+                        </span>{' '}
+                        ·{' '}
+                        <span title="Cộng cước ghi ở TỪNG LẦN GIAO của các dòng hàng. Đây là khoản trả cho nhà xe, không nằm trong tổng tiền đơn hàng.">
+                          Cước vận chuyển:{' '}
+                          {data.shipping_total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
+                          {shipping.chargedCount > 0 && ` (${shipping.chargedCount} lần giao)`}
+                        </span>
+                      </p>
+                      {shipping.missingCarrierCount > 0 && (
+                        <p className="flex items-center justify-end gap-1.5 text-amber-600 dark:text-amber-500">
+                          <AlertTriangle className="size-3.5" />
+                          {shipping.missingCarrierCount} lần giao có cước nhưng chưa chọn Đơn vị vận
+                          chuyển — cước đó chưa vào công nợ.
+                        </p>
+                      )}
+                      {/* CR-268: tiền trả trước còn treo của đơn — nhận hàng sinh công nợ
+                          tới đâu hệ thống tự đối trừ tới đó, hết treo thì dòng này biến mất. */}
+                      {prepayHangingTotal > 0.01 && (
+                        <p className="flex items-center justify-end gap-1.5 text-warning">
+                          <AlertTriangle className="size-3.5" />
+                          <span title="Tiền phiếu thanh toán trước đã chi cho đơn này nhưng chưa đối trừ vào công nợ. Khi nhận hàng sinh công nợ, hệ thống tự trừ dần.">
+                            Đã trả trước{' '}
+                            {prepayHangingTotal.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ —
+                            chưa đối trừ vào công nợ.
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
-            {overOrders.length > 0 && (
-              <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-                <p className="flex items-center gap-1.5 font-medium">
-                  <AlertTriangle className="size-3.5" />
-                  Số lượng đặt vượt yêu cầu của YCMH {data.pr_code} — chỉ là nhắc, vẫn tạo đơn được
-                </p>
-                {overOrders.map((line) => (
-                  <p key={line.code}>
-                    {line.progress.name} ({line.code}): yêu cầu {formatQty(line.progress.requested)} ·{' '}
-                    {describeOrdered(line.progress)} · đơn này {formatQty(line.qty)} →{' '}
-                    <b>tổng vượt {formatQty(line.over)}</b>
-                  </p>
-                ))}
-                <p className="text-muted-foreground">
-                  Chỉ cần mua thêm phần thiếu thì sửa lại cột SL đặt NCC trước khi bấm Tạo.
-                </p>
-              </div>
-            )}
-            {afterApproveEditable && (
-              <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
-                {/*  Khổ điện thoại không còn cột Hành động — bảng đã thành thẻ, chạm thẻ mở hộp chi tiết dòng. */}
-                Đơn đã duyệt — nội dung đã ký khóa lại.{' '}
-                {isMobile ? 'Chạm vào thẻ dòng hàng' : 'Mở nút bút chì ở cột Hành động'} để sửa:{' '}
-                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
-                {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
-              </p>
-            )}
-            <PurchaseOrderItemsTable
-              items={data.items}
-              order={data}
-              editable={headerEditable}
-              selection={lineSelection.selection}
-              progressEditable={progressEditable}
-              onChange={(items) => patch({ items })}
-              onOpenDetail={setLineIndex}
-              //  Dòng chưa lưu khóa tick theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang
-              //  dòng khác, *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
-              onLineRemoved={(index) => {
-                setPendingFiles((current) => shiftPendingAfterLineRemove(current, index))
-                lineSelection.clear()
-              }}
-              onLineDuplicated={(index) => {
-                setPendingFiles((current) => shiftPendingAfterLineInsert(current, index))
-                lineSelection.clear()
-              }}
-              lineReport={isNew ? undefined : lineReport}
-              onOpenLineReport={(progress) => reportCardRef.current?.focusItem(progress.itemId)}
-              onProgressChange={handleProgressChange}
-            />
-            <DocumentMoneyTotals
-              subtotal={orderTotals.subtotal}
-              vat={orderTotals.vat}
-              total={orderTotals.total}
-              subtotalLabel={
-                !isImportOrder(data)
-                  ? 'Tiền hàng theo SL đặt (chưa VAT)'
-                  : orderTotals.mixed
-                    ? 'Tiền hàng theo SL đặt (quy đổi VNĐ)'
-                    : `Tiền hàng theo SL đặt (nguyên tệ ${orderTotals.currency})`
-              }
-              totalLabel={
-                !isImportOrder(data)
-                  ? 'Tổng đơn đặt (gồm VAT)'
-                  : orderTotals.mixed
-                    ? 'Tổng đơn đặt (quy đổi VNĐ)'
-                    : `Tổng đơn đặt (nguyên tệ ${orderTotals.currency})`
-              }
-              currency={isImportOrder(data) ? orderTotals.currency : undefined}
-            />
-            {isImportOrder(data) && (
-              <div className="ml-auto w-full max-w-sm space-y-1 text-sm">
-                {orderTotals.mixed ? (
-                  // Đơn trộn nhiều loại tiền: ba dòng tổng ở trên đã là bản quy đổi,
-                  // lặp lại "Tổng quy đổi" là hai con số giống nhau — thay bằng câu nói rõ.
-                  <p className="text-right text-xs text-muted-foreground">
-                    Đơn có nhiều loại tiền — các dòng tổng đã quy đổi VNĐ theo tỷ giá từng
-                    dòng (trống thì theo tỷ giá đơn).
-                  </p>
-                ) : (
-                  <p className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">Tổng quy đổi (VNĐ)</span>
-                    <span
-                      className="font-semibold text-navy tabular-nums dark:text-foreground"
-                      title="Cộng thành tiền quy đổi của từng dòng theo tỷ giá dòng (trống thì theo tỷ giá đơn)."
-                    >
-                      {formatMoney(baseTotal)} đ
-                    </span>
-                  </p>
-                )}
-                {missingRateCount > 0 && (
-                  <p className="flex items-center justify-end gap-1.5 text-xs text-warning">
-                    <AlertTriangle className="size-3.5" />
-                    {missingRateCount} dòng ngoại tệ chưa có tỷ giá — nhập tỷ giá ở đầu đơn
-                    hoặc trong chi tiết dòng để quy đổi.
-                  </p>
-                )}
-              </div>
-            )}
-            {!isNew && (
-              <div className="space-y-1 text-right text-xs text-muted-foreground">
-                <p>
-                  <span title="Tiền hàng tính theo SỐ LƯỢNG THỰC NHẬN (gồm VAT) — khác tổng đơn đặt ở trên khi chưa nhận đủ.">
-                    Đã nhận: {data.total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
-                  </span>{' '}
-                  ·{' '}
-                  <span title="Cộng cước ghi ở TỪNG LẦN GIAO của các dòng hàng. Đây là khoản trả cho nhà xe, không nằm trong tổng tiền đơn hàng.">
-                    Cước vận chuyển:{' '}
-                    {data.shipping_total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
-                    {shipping.chargedCount > 0 && ` (${shipping.chargedCount} lần giao)`}
-                  </span>
-                </p>
-                {shipping.missingCarrierCount > 0 && (
-                  <p className="flex items-center justify-end gap-1.5 text-amber-600 dark:text-amber-500">
-                    <AlertTriangle className="size-3.5" />
-                    {shipping.missingCarrierCount} lần giao có cước nhưng chưa chọn Đơn vị vận
-                    chuyển — cước đó chưa vào công nợ.
-                  </p>
-                )}
-                {/* CR-268: tiền trả trước còn treo của đơn — nhận hàng sinh công nợ
-                    tới đâu hệ thống tự đối trừ tới đó, hết treo thì dòng này biến mất. */}
-                {prepayHangingTotal > 0.01 && (
-                  <p className="flex items-center justify-end gap-1.5 text-warning">
-                    <AlertTriangle className="size-3.5" />
-                    <span title="Tiền phiếu thanh toán trước đã chi cho đơn này nhưng chưa đối trừ vào công nợ. Khi nhận hàng sinh công nợ, hệ thống tự trừ dần.">
-                      Đã trả trước{' '}
-                      {prepayHangingTotal.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ —
-                      chưa đối trừ vào công nợ.
-                    </span>
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </WithCardCollapse>
 
-        {/* bao-CR-602: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút
-            dòng hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn
-            thành / Hủy thì chỉ đọc (backend khóa). */}
-        {!isNew && (
-          <SurveyReportCard
-            ref={reportCardRef}
-            entity="purchase_order"
-            ownerId={purchaseOrderId}
-            canEdit={!locked && can('purchase_order', 'write')}
-            itemsLocked
-          />
-        )}
-
-        {/* bao-CR-453: thẻ chi phí thu mua hiện cho MỌI loại đơn (trước: chỉ nhập khẩu). */}
-        <PurchaseOrderImportCostsCard
-          order={data}
-          // Bảng chi phí mở cả khi đơn đã duyệt (cước tàu, thuế về sau) — giống v1.
-          editable={headerEditable || afterApproveEditable}
-          isNew={isNew}
-          suppliers={suppliersData?.items ?? []}
-          onChange={(import_costs) => patch({ import_costs })}
-        />
-
-        {!isNew && <PurchaseOrderPaymentRequestsCard poCode={data.code} />}
-
-        <DocumentAttachmentsCard
-          entity="purchase_order"
-          entityId={purchaseOrderId}
-          canManage={!locked && can('purchase_order', 'write')}
-          autoOpenUpload={attachRequested && !focusDeliveryId && !focusLineId}
-          documentStatus={isNew ? '' : data.document_status || 'none'}
-          //  duoc-CR-741: đổi tình trạng hồ sơ bằng menu ở tiêu đề thẻ này như bản v1. Sửa được
-          //  cả khi đơn đã Hoàn thành (chứng từ thường về sau) — endpoint riêng, không qua Lưu.
-          documentStatusEditable={!isNew && can('purchase_order', 'write')}
-          onDocumentStatusChange={(value) => setDocumentStatus.mutate(value)}
-          v1Wording
-        />
-
-        {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
-            điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
-            (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
-        {DOSSIER_UI_ENABLED && (
-          <RequiredDossiersCard
-            docKind={DOC_KINDS.PURCHASE_ORDER}
-            docId={purchaseOrderId || undefined}
-          />
-        )}
-
-        {!isNew && (
-          <>
-            <DocumentComments entity="purchase_order" entityId={purchaseOrderId} />
-            <AuditTimeline
+          {/* bao-CR-602: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút
+              dòng hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn
+              thành / Hủy thì chỉ đọc (backend khóa). */}
+          {!isNew && (
+            <SurveyReportCard
+              ref={reportCardRef}
               entity="purchase_order"
-              entityId={purchaseOrderId}
-              showMessage
-              dense
+              ownerId={purchaseOrderId}
+              canEdit={!locked && can('purchase_order', 'write')}
+              itemsLocked
             />
-          </>
-        )}
+          )}
+
+          {/* bao-CR-453: thẻ chi phí thu mua hiện cho MỌI loại đơn (trước: chỉ nhập khẩu). */}
+          <PurchaseOrderImportCostsCard
+            order={data}
+            // Bảng chi phí mở cả khi đơn đã duyệt (cước tàu, thuế về sau) — giống v1.
+            editable={headerEditable || afterApproveEditable}
+            isNew={isNew}
+            suppliers={suppliersData?.items ?? []}
+            onChange={(import_costs) => patch({ import_costs })}
+          />
+
+          {!isNew && <PurchaseOrderPaymentRequestsCard poCode={data.code} />}
+
+          <DocumentAttachmentsCard
+            entity="purchase_order"
+            entityId={purchaseOrderId}
+            canManage={!locked && can('purchase_order', 'write')}
+            autoOpenUpload={attachRequested && !focusDeliveryId && !focusLineId}
+            documentStatus={isNew ? '' : data.document_status || 'none'}
+            //  duoc-CR-741: đổi tình trạng hồ sơ bằng menu ở tiêu đề thẻ này như bản v1. Sửa được
+            //  cả khi đơn đã Hoàn thành (chứng từ thường về sau) — endpoint riêng, không qua Lưu.
+            documentStatusEditable={!isNew && can('purchase_order', 'write')}
+            onDocumentStatusChange={(value) => setDocumentStatus.mutate(value)}
+            v1Wording
+          />
+
+          {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+              điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
+              (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
+          {DOSSIER_UI_ENABLED && (
+            <RequiredDossiersCard
+              docKind={DOC_KINDS.PURCHASE_ORDER}
+              docId={purchaseOrderId || undefined}
+            />
+          )}
+
+          {!isNew && (
+            <>
+              <DocumentComments entity="purchase_order" entityId={purchaseOrderId} />
+              <AuditTimeline
+                entity="purchase_order"
+                entityId={purchaseOrderId}
+                showMessage
+                dense
+              />
+            </>
+          )}
+        </CardCollapseScope>
       </div>
 
       <PurchaseOrderPaymentDialog open={paymentOpen} order={data} onOpenChange={setPaymentOpen} />

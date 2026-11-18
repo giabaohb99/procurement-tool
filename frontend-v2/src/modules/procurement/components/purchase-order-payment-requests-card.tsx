@@ -8,6 +8,7 @@ import { PaymentRequestCard } from '@/modules/finance/components/payment-request
 import { PaymentRequestStatusBadge } from '@/modules/finance/components/payment-request-status-badge'
 import { usePaymentRequests } from '@/modules/finance/hooks/use-payment-requests'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -19,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/table'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 
@@ -43,18 +46,35 @@ export function PurchaseOrderPaymentRequestsCard({ poCode }: { poCode: string })
   )
   const items = data?.items ?? []
   const asCards = useIsMobile()
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Yêu cầu thanh toán của đơn này')
 
   if (!canRead || !poCode || items.length === 0) return null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ReceiptText className="size-4 text-muted-foreground" />
+    //  duoc-CR-780: về cùng khuôn thẻ của trang chi tiết ĐMH (đệm `py-4` / `px-4`, tiêu đề màu navy, vạch dưới
+    //  tiêu đề khi mở) — khuôn shadcn gốc đệm 24px nên đứng cạnh các thẻ khác thì cao hơn, nút gập thụt vào trong.
+    <Card className="gap-4 py-4">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
+        <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
+          <ReceiptText className="size-4 text-primary" />
           Yêu cầu thanh toán của đơn này
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Yêu cầu thanh toán của đơn này"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
-      <CardContent>
+      <CardContent hidden={!collapse.open} className="px-4">
         {asCards ? (
           <div className="divide-y overflow-hidden rounded-lg border">
             {items.map((req) => (

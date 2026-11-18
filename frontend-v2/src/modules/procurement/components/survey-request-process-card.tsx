@@ -16,14 +16,17 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { createSelectionColumn } from '@/shared/data-table/selection-column'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { MultiPicker } from '@/shared/ui/multi-picker'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
@@ -98,6 +101,8 @@ export function SurveyRequestProcessCard({
     [process],
   )
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Xử lý khảo sát — gắn phương án cho từng sản phẩm')
   if (!isSurveyRequestProcessable(status)) return null
   if (processQuery.isError) return null
   if (processQuery.isLoading) {
@@ -144,14 +149,27 @@ export function SurveyRequestProcessCard({
 
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <ClipboardList className="size-4 text-primary" />
           Xử lý khảo sát — gắn phương án cho từng sản phẩm
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Xử lý khảo sát — gắn phương án cho từng sản phẩm"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-6 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-6 px-4">
         <p className="text-xs text-muted-foreground">
           Với mỗi sản phẩm: lọc kết quả khảo sát đã duyệt (theo NCC / phân loại / từ khóa) rồi
           bấm dấu cộng để gắn làm phương án. <b>Mã SP hệ thống</b> gắn được cho từng phương án,

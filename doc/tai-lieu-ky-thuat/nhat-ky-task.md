@@ -114,6 +114,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-780 | Gập / mở từng thẻ ở các màn Thu mua giao diện ERP mới
+- status: xong
+- date: 2026-11-18
+- list: Thu mua
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** các màn chi tiết chứng từ Thu mua trên giao diện ERP mới có tới tám, chín thẻ xếp dọc, người dùng phải cuộn rất dài mới tới phần cần xem; anh Được muốn mỗi thẻ gập / mở được, áp cho mọi màn của Thu mua.
+
+**Đã làm**
+- Mỗi thẻ ở màn chi tiết Yêu cầu mua hàng, Yêu cầu báo giá, Đơn mua hàng, Phiếu khảo sát, màn Chứng từ của đơn, hai màn Xử lý phương án và Xử lý khảo sát có nút mũi tên ở góc phải tiêu đề để thu gọn hoặc mở; các thẻ biểu đồ ở Tổng quan Thu mua và tab Tổng quan của Báo cáo mua hàng cũng vậy.
+- Trạng thái gập được nhớ trên máy theo từng loại chứng từ, nên thẻ cùng tên ở chứng từ khác loại không bị kéo theo; khi lập chứng từ mới mọi thẻ luôn mở, không có nút gập; thẻ Thông tin chung của Yêu cầu báo giá tự mở khi bấm Lưu mà còn ô bắt buộc chưa điền.
+- Thẻ gập chỉ ẩn phần thân chứ không bỏ dựng, nên dữ liệu đang gõ dở và luật chặn lưu không mất; thẻ gập bỏ vạch dưới tiêu đề và câu mô tả để mọi thẻ gập cao bằng nhau, nút gập mọi thẻ thẳng một mép phải ở cả khổ điện thoại lẫn laptop.
+- Thẻ Báo cáo thực hiện, Hồ sơ cần hoàn thành, Chi phí theo dòng hàng, Yêu cầu thanh toán của đơn và Lịch sử thao tác đổi về cùng một khuôn theo góp ý khi soát tay; nút gập của Báo cáo thực hiện ghim ở góc phải trên để thanh công cụ xuống hàng ở laptop 15.6 inch thì nút không bị đẩy đi.
+- Thẻ dùng chung ở các phân hệ khác (tệp đính kèm, trao đổi, thẻ biểu đồ) chỉ gập được khi nằm trong màn Thu mua, nên màn của Tài chính, Đặt xe, Đóng dấu, Nhân sự không đổi.
+- Bài hướng dẫn Gập / mở từng thẻ ở các màn Thu mua dưới thẻ Dành cho Nhân viên Mua hàng.
+
+**Kiểm:** bài kiểm mới cho ép mở, cùng tên khác loại chứng từ, thẻ dựng trong thân trang, thẻ biểu đồ, gập rồi mở lại trang vẫn nhớ, chứng từ mới không có nút gập; bài kiểm Thu mua và lớp giao diện dùng chung xanh 1988 bài; typecheck và lint sạch, số cảnh báo không tăng; thử trên trình duyệt YCMH, ĐMH, YCBG, phiếu khảo sát, Tổng quan ở khổ 1440, 1536, 1366 và 390.
+
+Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/ui/chart.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, các thẻ trong `frontend-v2/src/modules/procurement/components/` và các trang chi tiết, xử lý, Tổng quan, Báo cáo trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_gap_mo_the_cr780.py`.
+Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/modules/procurement/components/purchase-request-linked-documents-card.test.tsx`.
+
 ## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
 - status: xong
 - date: 2026-11-17

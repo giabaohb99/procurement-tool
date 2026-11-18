@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/format-date'
 import { nameInitials } from '@/shared/utils/name-initials'
@@ -480,25 +481,19 @@ export function SurveyReportCard({
 
   return (
     <Card ref={cardRef} className="scroll-mt-4 gap-4 py-4">
-      <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+      {/*  duoc-CR-780: cùng khuôn gập với mọi thẻ Thu mua — mũi tên lên / xuống ở GÓC PHẢI, gập thì bỏ vạch
+           gạch chân (để vạch là còn một dải trống dưới tiêu đề như thẻ chưa vẽ xong). */}
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 px-4 relative md:pr-12',
+          showBody && 'border-b pb-3!',
+        )}
+      >
         {/* `basis-auto` (duoc-CR-737): `flex-1` trơn là `flex-basis: 0`, nên hàng không bao giờ
             thấy cần xuống dòng — thanh công cụ dài ăn hết chỗ, tiêu đề bị ép còn ~11px, gãy 4
             dòng và đè lên dãy nút ở khổ 1440. Tính theo bề rộng chữ thì thanh công cụ tự
             xuống hàng hai khi không đủ chỗ, đúng ý `flex-wrap` từ đầu. */}
-        <button
-          type="button"
-          aria-expanded={showBody}
-          disabled={isEmpty}
-          title={showBody ? 'Thu gọn báo cáo thực hiện' : 'Mở báo cáo thực hiện'}
-          className="flex min-w-0 flex-1 basis-auto items-center gap-2 text-left"
-          onClick={() => setCardOpen((current) => !current)}
-        >
-          <ChevronDown
-            className={cn(
-              'size-4 shrink-0 text-muted-foreground transition-transform',
-              !showBody && '-rotate-90',
-            )}
-          />
+        <div className="flex min-w-0 flex-1 basis-auto items-center gap-2">
           <CardTitle className="text-base text-navy dark:text-foreground">
             Báo cáo thực hiện
           </CardTitle>
@@ -507,7 +502,19 @@ export function SurveyReportCard({
               {doneCount}/{report.docs.length} hồ sơ · {reportPercent(report.docs)}%
             </span>
           )}
-        </button>
+        </div>
+        {/*  Khổ rộng: nút GHIM góc phải trên (`md:absolute`, tiêu đề chừa `md:pr-12`) — để nút trôi theo hàng
+             thì laptop ~1150-1366px thanh công cụ xuống hàng hai, nút bị đẩy xuống hàng ba nằm lẻ bên trái.
+             Điện thoại thanh công cụ chiếm trọn hàng dưới nên nút tự đứng cùng hàng tiêu đề.
+             Báo cáo rỗng luôn mở (khối khởi tạo) nên không có nút. */}
+        {!isEmpty && (
+          <CardCollapseToggle
+            title="Báo cáo thực hiện"
+            open={showBody}
+            onToggle={() => setCardOpen((current) => !current)}
+            className="md:absolute md:top-1 md:right-4"
+          />
+        )}
         {showBody && !isEmpty && (
           //  duoc-CR-737: điện thoại xếp ba hàng canh trái (công tắc dạng xem · tìm + lọc ·
           //  cụm nút) thay vì canh phải tự xuống dòng lởm chởm; khổ rộng giữ nguyên.

@@ -1,5 +1,7 @@
 import { usePermission } from '@/core/authorization/use-permission'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -36,15 +38,30 @@ export function PurchaseRequestSupplierCard({
     })
   }
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Nhà cung cấp')
   return (
     <Card className="gap-4 py-4">
       {/* Xem ghi chú về `pb-3!` ở `purchase-request-attachments-card.tsx`. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="text-base text-navy dark:text-foreground">
           Nhà cung cấp
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Nhà cung cấp"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
-      <CardContent className="space-y-5 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-5 px-4">
         <SupplierFields
           title="NCC do bộ phận đề xuất (nếu có)"
           value={data.supplier_req}

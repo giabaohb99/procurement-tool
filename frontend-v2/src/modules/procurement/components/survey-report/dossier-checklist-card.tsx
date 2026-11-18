@@ -1,7 +1,6 @@
 import {
   CalendarClock,
   Check,
-  ChevronDown,
   ExternalLink,
   LayoutList,
   Lock,
@@ -22,6 +21,7 @@ import {
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { ResponsiveLabel } from '@/shared/ui/detail-page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import {
@@ -227,26 +227,27 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
 
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="flex min-h-9 flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
-        <button
-          type="button"
-          aria-expanded={cardOpen}
-          className="flex min-w-0 flex-1 basis-auto cursor-pointer items-center gap-2 text-left"
-          onClick={() => setCardOpen((current) => !current)}
-        >
-          <ChevronDown
-            className={cn(
-              'size-4 shrink-0 text-muted-foreground transition-transform',
-              !cardOpen && '-rotate-90',
-            )}
-          />
+      {/*  duoc-CR-780: cùng khuôn gập với khối Báo cáo thực hiện — nút ở góc phải, gập thì bỏ vạch. */}
+      <CardHeader
+        className={cn(
+          'flex min-h-9 flex-row flex-wrap items-center justify-between gap-3 px-4 relative md:pr-12',
+          cardOpen && 'border-b pb-3!',
+        )}
+      >
+        <div className="flex min-w-0 flex-1 basis-auto items-center gap-2">
           <CardTitle className="text-base text-navy dark:text-foreground">
             Hồ sơ cần hoàn thành
           </CardTitle>
           <span className="text-xs whitespace-nowrap text-muted-foreground">
             {doneCount}/{docs.length} hồ sơ · {donePercent(docs)}%
           </span>
-        </button>
+        </div>
+        <CardCollapseToggle
+          title="Hồ sơ cần hoàn thành"
+          open={cardOpen}
+          onToggle={() => setCardOpen((current) => !current)}
+          className="md:absolute md:top-1 md:right-4"
+        />
 
         {cardOpen && (
           //  duoc-CR-737: cùng khuôn điện thoại với khối Báo cáo thực hiện.

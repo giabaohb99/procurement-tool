@@ -14,11 +14,14 @@ import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseScope, CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { cn } from '@/shared/utils/cn'
 import { formatFileSize } from '@/shared/utils/format-file-size'
 import { ChainFilePreviewDialog } from '../components/chain-file-preview-dialog'
 import { documentChainApi } from '../api/document-chain-api'
@@ -155,14 +158,17 @@ export function PurchaseOrderDocumentChainPage() {
           Cả chuỗi chưa có tệp đính kèm nào.
         </p>
       ) : (
-        groups.map((group) => (
-          <SourceCard
-            key={group.source}
-            group={group}
-            onPreview={setPreview}
-            onDownload={(file) => void downloadOne(file)}
-          />
-        ))
+        //  duoc-CR-780: mỗi nấc của chuỗi gập / mở được, nhớ theo tên nấc.
+        <CardCollapseScope scope="procurement.purchase-order-chain">
+          {groups.map((group) => (
+            <SourceCard
+              key={group.source}
+              group={group}
+              onPreview={setPreview}
+              onDownload={(file) => void downloadOne(file)}
+            />
+          ))}
+        </CardCollapseScope>
       )}
 
       <ChainFilePreviewDialog
@@ -182,9 +188,16 @@ interface SourceCardProps {
 
 /** Một nấc của chuỗi: ĐMH · YCMH · Phiếu khảo sát · YCBG. */
 function SourceCard({ group, onPreview, onDownload }: SourceCardProps) {
+  //  duoc-CR-780: mỗi nấc của chuỗi gập / mở riêng, nhớ theo tên nấc.
+  const collapse = useCardCollapse(group.label)
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="min-h-9 flex flex-row items-center gap-2 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-2 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <FolderOpen className="size-4 text-primary" />
         <CardTitle className="text-base text-navy dark:text-foreground">{group.label}</CardTitle>
         {group.code && (
@@ -193,9 +206,17 @@ function SourceCard({ group, onPreview, onDownload }: SourceCardProps) {
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {group.total} tệp
         </span>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title={group.label}
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-4 px-4">
+      <CardContent hidden={!collapse.open} className="space-y-4 px-4">
         {group.types.map((type) => (
           <div key={type.label} className="space-y-1.5">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

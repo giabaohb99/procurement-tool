@@ -5,7 +5,9 @@ import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useCardCollapse } from '@/shared/hooks/use-card-collapse'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseToggle } from '@/shared/ui/card-collapse'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
@@ -25,6 +27,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 
 import {
@@ -107,16 +110,31 @@ export function PurchaseOrderInfoCard({
     ? CURRENCY_OPTIONS
     : [...CURRENCY_OPTIONS, currency]
 
+  //  duoc-CR-780: gập / mở được khi nằm trong phạm vi gập thẻ của màn Thu mua.
+  const collapse = useCardCollapse('Thông tin chung')
   return (
     <Card className="gap-4 py-4">
       {/* Xem ghi chú về `pb-3!` ở `purchase-request-attachments-card.tsx`. */}
-      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
+      <CardHeader
+        className={cn(
+          'min-h-9 flex flex-row items-center gap-3 px-4',
+          collapse.open && 'border-b pb-3!',
+        )}
+      >
         <CardTitle className="text-base text-navy dark:text-foreground">
           Thông tin chung
         </CardTitle>
+        {collapse.collapsible && (
+          <CardCollapseToggle
+            title="Thông tin chung"
+            open={collapse.open}
+            onToggle={collapse.toggle}
+            className="ml-auto"
+          />
+        )}
       </CardHeader>
 
-      <CardContent className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
+      <CardContent hidden={!collapse.open} className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
         <ReadOnlyField label="Mã đơn mua hàng">
           {data.code || '— (tự sinh khi tạo)'}
         </ReadOnlyField>

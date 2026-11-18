@@ -81,7 +81,11 @@ export function AuditTimeline({
         cùng trang dù khai cùng một mức đệm.
       */}
       <CardHeader
-        className={cn(dense && 'min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!')}
+        className={cn(
+          dense && 'min-h-9 flex flex-row items-center gap-3 px-4',
+          //  duoc-CR-780: gập thì bỏ vạch dưới tiêu đề — để vạch là thẻ gập còn một dải trống phía dưới.
+          dense && collapse.open && 'border-b pb-3!',
+        )}
       >
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="size-4 text-muted-foreground" />

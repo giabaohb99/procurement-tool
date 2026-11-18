@@ -35,6 +35,7 @@ import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useAttachParam } from '@/shared/hooks/use-attach-param'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { CardCollapseScope, CardCollapseToggle, WithCardCollapse } from '@/shared/ui/card-collapse'
 import { DetailPageHeader, type HeaderActionList } from '@/shared/ui/detail-page-header'
 import {
   AlertDialog,
@@ -63,6 +64,7 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 import { surveyRequestApi } from '../api/survey-request-api'
@@ -848,142 +850,167 @@ export function SurveyRequestDetailPage() {
       )}
 
       <div className="min-w-0 space-y-4">
-        <SurveyRequestInfoCard
-          data={loadedDraft}
-          editing={editable}
-          isNew={isNew}
-          companies={companiesData?.items}
-          employees={employeesData?.items}
-          departments={departmentsData?.items}
-          approverCandidates={approverData?.items}
-          lockRequester={isStaff}
-          invalid={invalid}
-          onChange={patch}
-        />
+        {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
+        <CardCollapseScope scope={isNew ? null : 'procurement.survey-request'}>
+          <SurveyRequestInfoCard
+            data={loadedDraft}
+            editing={editable}
+            isNew={isNew}
+            companies={companiesData?.items}
+            employees={employeesData?.items}
+            departments={departmentsData?.items}
+            approverCandidates={approverData?.items}
+            lockRequester={isStaff}
+            invalid={invalid}
+            onChange={patch}
+          />
 
-        <SurveyRequestLinesTable
-          lines={loadedDraft.lines}
-          editing={editable}
-          bulkRemovable={isNew || status === 'draft'}
-          showNstmColumns={showNstmColumns}
-          showStatus={showStatus}
-          canAssignNstm={canAssignNstm}
-          invalid={invalid}
-          purchasers={purchasers}
-          onChange={(lines) => patch({ lines })}
-          onOpenDetail={setLineIndex}
-          onAssigneeChange={handleAssigneeChange}
-          onLineRemoved={(index) =>
-            setPendingFiles((current) => shiftPendingAfterRemove(current, index))
-          }
-          onLineDuplicated={(index) =>
-            setPendingFiles((current) => shiftPendingAfterInsert(current, index))
-          }
-          // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm dòng.
-          // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
-          renderFrame={({ headerActions, body }) => (
-            <Card className="gap-4 py-4">
-              {/*  ⚠️ `flex-col` ở khổ hẹp, `flex-row` từ `sm`. Câu nhắc bên phải dài
-                   ba dòng, mà `justify-between` trên một hàng thì nó ép tiêu đề co
-                   xuống còn ~150px — "Danh sách Sản phẩm cần Khảo sát" vỡ thành ba
-                   dòng đứng cạnh ba dòng chữ mờ, đọc ra như hai cột văn bản rời. */}
-              <CardHeader className="min-h-9 flex flex-col gap-1.5 border-b px-4 pb-3! sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <CardTitle className="text-base text-navy dark:text-foreground">
-                  Danh sách Sản phẩm cần Khảo sát
-                </CardTitle>
-                {editable ? (
-                  <div className="flex flex-wrap items-center gap-2 max-sm:self-start sm:justify-end">
-                    {headerActions}
+          <SurveyRequestLinesTable
+            lines={loadedDraft.lines}
+            editing={editable}
+            bulkRemovable={isNew || status === 'draft'}
+            showNstmColumns={showNstmColumns}
+            showStatus={showStatus}
+            canAssignNstm={canAssignNstm}
+            invalid={invalid}
+            purchasers={purchasers}
+            onChange={(lines) => patch({ lines })}
+            onOpenDetail={setLineIndex}
+            onAssigneeChange={handleAssigneeChange}
+            onLineRemoved={(index) =>
+              setPendingFiles((current) => shiftPendingAfterRemove(current, index))
+            }
+            onLineDuplicated={(index) =>
+              setPendingFiles((current) => shiftPendingAfterInsert(current, index))
+            }
+            // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm dòng.
+            // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
+            // duoc-CR-780: thẻ gập / mở được trong phạm vi gập thẻ của trang.
+            renderFrame={({ headerActions, body }) => (
+              <WithCardCollapse title="Danh sách Sản phẩm cần Khảo sát">
+                {(collapse) => (
+                  <Card className="gap-4 py-4">
+                    {/*  ⚠️ `flex-col` ở khổ hẹp, `flex-row` từ `sm`. Câu nhắc bên phải dài
+                         ba dòng, mà `justify-between` trên một hàng thì nó ép tiêu đề co
+                         xuống còn ~150px — "Danh sách Sản phẩm cần Khảo sát" vỡ thành ba
+                         dòng đứng cạnh ba dòng chữ mờ, đọc ra như hai cột văn bản rời. */}
+                    <CardHeader
+                      className={cn(
+                        'min-h-9 flex flex-col gap-1.5 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3',
+                        collapse.open && 'border-b pb-3!',
+                      )}
+                    >
+                      <CardTitle className="text-base text-navy dark:text-foreground">
+                        Danh sách Sản phẩm cần Khảo sát
+                      </CardTitle>
+                      <div className="flex items-center gap-2 max-sm:self-stretch">
+                        {editable ? (
+                          <div className="flex flex-wrap items-center gap-2 max-sm:self-start sm:justify-end">
+                            {headerActions}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                patch({ lines: [...loadedDraft.lines, { ...EMPTY_SURVEY_REQUEST_LINE }] })
+                              }
+                            >
+                              <Plus />
+                              Thêm dòng
+                            </Button>
+                          </div>
+                        ) : (
+                          showNstmColumns && (
+                            <span className="text-xs text-muted-foreground">
+                              Thay đổi nhân sự phụ trách được lưu ngay, không cần bấm Lưu.
+                            </span>
+                          )
+                        )}
+                        {collapse.collapsible && (
+                          <CardCollapseToggle
+                            title="Danh sách Sản phẩm cần Khảo sát"
+                            open={collapse.open}
+                            onToggle={collapse.toggle}
+                            className="ml-auto"
+                          />
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent hidden={!collapse.open} className="px-4">
+                      {body}
+                    </CardContent>
+                  </Card>
+                )}
+              </WithCardCollapse>
+            )}
+          />
+
+          {showResult && result && (
+            <SurveyRequestResultCard
+              result={result}
+              canChoose={canChooseOption}
+              canSetLineStatus={canSetLineStatus}
+              showCreatePrHint={canCreatePr && !anyChosen}
+              showWaitFinalizeHint={status === 'pr_created' && !canFinalize}
+              onChooseOption={(lineId, optionId) =>
+                void chooseOption.mutateAsync({ lineId, optionId })
+              }
+              onRequestResurvey={setResurveyLineId}
+            />
+          )}
+
+          {/* Khối BÁO CÁO THỰC HIỆN — NS Thu mua (quyền `process`) theo dõi tiến
+              trình thương vụ. Luôn dựng trên phiếu đã lưu, gấp sẵn; người chỉ xem
+              mà phiếu chưa có báo cáo thì khối tự ẩn. Nằm trên khối Trao đổi. */}
+          {showReportBlock && (
+            <SurveyReportCard ownerId={surveyRequestId} canEdit={canEditReport} />
+          )}
+
+          {/* THẺ THỬ "Hồ sơ cần hoàn thành" — dựng SONG SONG với khối Báo cáo
+              thực hiện ngay trên, để so xem phân hệ Hồ sơ có thay được nó không
+              (21/09/2026). Chỉ xem, không tick được; chân thẻ ghi rõ còn thiếu gì.
+
+              ⚠️ Ở TRANG NÀY nó thay luôn chỗ của `RequiredDossiersCard` — hai thẻ
+              đọc CÙNG một API (`/api/dossiers/applicable`), nên bày cả hai là một
+              danh sách hồ sơ hiện hai lần dưới hai cái tên khác nhau. Thẻ này là
+              bản đầy đủ hơn (gom theo giai đoạn + cột tiến trình). Ba trang chứng
+              từ còn lại vẫn dùng `RequiredDossiersCard` như cũ.
+
+              Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp.
+              Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ (21/09/2026) — xem
+              `DOSSIER_UI_ENABLED`. */}
+          {DOSSIER_UI_ENABLED && <DossierChecklistCard surveyRequestId={surveyRequestId} />}
+
+          {!isNew && (
+            <>
+              <DocumentComments entity="survey_request" entityId={surveyRequestId} />
+              <AuditTimeline
+                entity="survey_request"
+                entityId={surveyRequestId}
+                showMessage
+                dense
+                /* Hoàn tác lần xóa báo cáo — nút gắn đúng dòng lịch sử của lần xóa
+                   gần nhất chưa hoàn tác (khớp theo id), chỉ khi NS Thu mua + phiếu
+                   chưa đóng. */
+                renderEntryAction={(log) =>
+                  canEditReport &&
+                  report?.restorable &&
+                  log.id === report.restorable_audit_id ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        patch({ lines: [...loadedDraft.lines, { ...EMPTY_SURVEY_REQUEST_LINE }] })
-                      }
+                      className="h-7 gap-1 px-2 text-xs"
+                      disabled={restoreReport.isPending}
+                      onClick={() => void restoreReport.mutateAsync()}
                     >
-                      <Plus />
-                      Thêm dòng
+                      <Undo2 className="size-3.5" />
+                      Hoàn tác xóa
                     </Button>
-                  </div>
-                ) : (
-                  showNstmColumns && (
-                    <span className="text-xs text-muted-foreground">
-                      Thay đổi nhân sự phụ trách được lưu ngay, không cần bấm Lưu.
-                    </span>
-                  )
-                )}
-              </CardHeader>
-              <CardContent className="px-4">{body}</CardContent>
-            </Card>
+                  ) : null
+                }
+              />
+            </>
           )}
-        />
-
-        {showResult && result && (
-          <SurveyRequestResultCard
-            result={result}
-            canChoose={canChooseOption}
-            canSetLineStatus={canSetLineStatus}
-            showCreatePrHint={canCreatePr && !anyChosen}
-            showWaitFinalizeHint={status === 'pr_created' && !canFinalize}
-            onChooseOption={(lineId, optionId) =>
-              void chooseOption.mutateAsync({ lineId, optionId })
-            }
-            onRequestResurvey={setResurveyLineId}
-          />
-        )}
-
-        {/* Khối BÁO CÁO THỰC HIỆN — NS Thu mua (quyền `process`) theo dõi tiến
-            trình thương vụ. Luôn dựng trên phiếu đã lưu, gấp sẵn; người chỉ xem
-            mà phiếu chưa có báo cáo thì khối tự ẩn. Nằm trên khối Trao đổi. */}
-        {showReportBlock && (
-          <SurveyReportCard ownerId={surveyRequestId} canEdit={canEditReport} />
-        )}
-
-        {/* THẺ THỬ "Hồ sơ cần hoàn thành" — dựng SONG SONG với khối Báo cáo
-            thực hiện ngay trên, để so xem phân hệ Hồ sơ có thay được nó không
-            (21/09/2026). Chỉ xem, không tick được; chân thẻ ghi rõ còn thiếu gì.
-
-            ⚠️ Ở TRANG NÀY nó thay luôn chỗ của `RequiredDossiersCard` — hai thẻ
-            đọc CÙNG một API (`/api/dossiers/applicable`), nên bày cả hai là một
-            danh sách hồ sơ hiện hai lần dưới hai cái tên khác nhau. Thẻ này là
-            bản đầy đủ hơn (gom theo giai đoạn + cột tiến trình). Ba trang chứng
-            từ còn lại vẫn dùng `RequiredDossiersCard` như cũ.
-
-            Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp.
-            Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ (21/09/2026) — xem
-            `DOSSIER_UI_ENABLED`. */}
-        {DOSSIER_UI_ENABLED && <DossierChecklistCard surveyRequestId={surveyRequestId} />}
-
-        {!isNew && (
-          <>
-            <DocumentComments entity="survey_request" entityId={surveyRequestId} />
-            <AuditTimeline
-              entity="survey_request"
-              entityId={surveyRequestId}
-              showMessage
-              dense
-              /* Hoàn tác lần xóa báo cáo — nút gắn đúng dòng lịch sử của lần xóa
-                 gần nhất chưa hoàn tác (khớp theo id), chỉ khi NS Thu mua + phiếu
-                 chưa đóng. */
-              renderEntryAction={(log) =>
-                canEditReport &&
-                report?.restorable &&
-                log.id === report.restorable_audit_id ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs"
-                    disabled={restoreReport.isPending}
-                    onClick={() => void restoreReport.mutateAsync()}
-                  >
-                    <Undo2 className="size-3.5" />
-                    Hoàn tác xóa
-                  </Button>
-                ) : null
-              }
-            />
-          </>
-        )}
+        </CardCollapseScope>
       </div>
 
       <SurveyRequestLineDialog

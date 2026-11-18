@@ -30,6 +30,7 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardCollapseScope, CardCollapseToggle, WithCardCollapse } from '@/shared/ui/card-collapse'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -96,6 +97,7 @@ import {
   type SurveyTable,
 } from '../types/survey-detail'
 import { getSurveyDraftKey, restoreSurveyDraft } from '@/modules/procurement/utils/survey-new-draft'
+import { cn } from '@/shared/utils/cn'
 
 /** Đính kèm của ĐẦU phiếu và của TỪNG DÒNG là hai entity khác nhau ở backend. */
 const HEAD_ATTACHMENT_ENTITY = 'survey'
@@ -739,94 +741,116 @@ export function SurveyDetailPage() {
       )}
 
       <div className="min-w-0 space-y-4">
-        <SurveyInfoCard
-          data={loadedDraft}
-          editable={editable}
-          surveyRequests={surveyRequestsData?.items ?? []}
-          itemGroups={itemGroupNames}
-          units={unitNames}
-          onChange={patch}
-        />
+        {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
+        <CardCollapseScope scope={isNew ? null : 'procurement.survey'}>
+          <SurveyInfoCard
+            data={loadedDraft}
+            editable={editable}
+            surveyRequests={surveyRequestsData?.items ?? []}
+            itemGroups={itemGroupNames}
+            units={unitNames}
+            onChange={patch}
+          />
 
-        {TABLES.map((table) => (
-          <Card key={table} className="min-w-0 gap-4 py-4">
-            <CardHeader className="flex min-h-9 flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
-              <CardTitle className="text-base text-navy dark:text-foreground">
-                {SURVEY_TABLE_LABELS[table]}
-              </CardTitle>
-              {/*  duoc-CR-737: cụm nút của bảng dòng ở góc phải tiêu đề thẻ như bản v1 —
-                   Xóa dòng đã chọn (n) · Thêm dòng · Thêm nhiều. */}
-              {editable && (
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  {selected[table].size > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={ACTION_TONE_CLASS.danger}
-                      onClick={() => void confirmRemoveSelected(table)}
-                    >
-                      <Trash2 />
-                      Xóa dòng đã chọn ({selected[table].size})
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => addLines(table, 1)}>
-                    <Plus />
-                    Thêm dòng
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setBulkCount('3')
-                      setBulkFor(table)
-                    }}
+          {/*  duoc-CR-780: mỗi bảng dòng gập / mở riêng, nhớ theo tên bảng. */}
+          {TABLES.map((table) => (
+            <WithCardCollapse key={table} title={SURVEY_TABLE_LABELS[table]}>
+              {(collapse) => (
+                <Card className="min-w-0 gap-4 py-4">
+                  <CardHeader
+                    className={cn(
+                      'flex min-h-9 flex-row flex-wrap items-center justify-between gap-3 px-4',
+                      collapse.open && 'border-b pb-3!',
+                    )}
                   >
-                    <Rows3 />
-                    Thêm nhiều
-                  </Button>
-                </div>
+                    <CardTitle className="text-base text-navy dark:text-foreground">
+                      {SURVEY_TABLE_LABELS[table]}
+                    </CardTitle>
+                    {/*  duoc-CR-737: cụm nút của bảng dòng ở góc phải tiêu đề thẻ như bản v1 —
+                         Xóa dòng đã chọn (n) · Thêm dòng · Thêm nhiều. Nút gập thẻ đứng cuối cụm. */}
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                      {editable && (
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {selected[table].size > 0 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={ACTION_TONE_CLASS.danger}
+                              onClick={() => void confirmRemoveSelected(table)}
+                            >
+                              <Trash2 />
+                              Xóa dòng đã chọn ({selected[table].size})
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" onClick={() => addLines(table, 1)}>
+                            <Plus />
+                            Thêm dòng
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setBulkCount('3')
+                              setBulkFor(table)
+                            }}
+                          >
+                            <Rows3 />
+                            Thêm nhiều
+                          </Button>
+                        </div>
+                      )}
+                      {collapse.collapsible && (
+                        <CardCollapseToggle
+                          title={SURVEY_TABLE_LABELS[table]}
+                          open={collapse.open}
+                          onToggle={collapse.toggle}
+                        />
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent hidden={!collapse.open} className="min-w-0 px-4">
+                    <SurveyLinesTable
+                      table={table}
+                      lines={linesOf(table)}
+                      editable={editable}
+                      approveEditable={canEditApprove}
+                      invalid={invalid}
+                      catalog={catalog}
+                      selected={selected[table]}
+                      canFill={canFill}
+                      onSelectedChange={(next) => setSelectedOf(table, next)}
+                      onChangeLine={(index, changes) => changeLine(table, index, changes)}
+                      onOpenLine={(index, mode) => setOpenLine({ table, index, mode })}
+                      onDuplicate={(index) => duplicateLine(table, index)}
+                      onRemove={(index) => void confirmRemoveLine(table, index)}
+                    />
+                  </CardContent>
+                </Card>
               )}
-            </CardHeader>
-            <CardContent className="min-w-0 px-4">
-              <SurveyLinesTable
-                table={table}
-                lines={linesOf(table)}
-                editable={editable}
-                approveEditable={canEditApprove}
-                invalid={invalid}
-                catalog={catalog}
-                selected={selected[table]}
-                canFill={canFill}
-                onSelectedChange={(next) => setSelectedOf(table, next)}
-                onChangeLine={(index, changes) => changeLine(table, index, changes)}
-                onOpenLine={(index, mode) => setOpenLine({ table, index, mode })}
-                onDuplicate={(index) => duplicateLine(table, index)}
-                onRemove={(index) => void confirmRemoveLine(table, index)}
+            </WithCardCollapse>
+          ))}
+
+          {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+              điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
+              (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
+          {DOSSIER_UI_ENABLED && (
+            <RequiredDossiersCard docKind={DOC_KINDS.SURVEY} docId={surveyId || undefined} />
+          )}
+
+          {!isNew && (
+            <>
+              <DocumentAttachmentsCard
+                entity={HEAD_ATTACHMENT_ENTITY}
+                entityId={surveyId}
+                canManage={editable}
+                v1Wording
+                autoOpenUpload={attachRequested}
               />
-            </CardContent>
-          </Card>
-        ))}
-
-        {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
-            điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
-            (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
-        {DOSSIER_UI_ENABLED && (
-          <RequiredDossiersCard docKind={DOC_KINDS.SURVEY} docId={surveyId || undefined} />
-        )}
-
-        {!isNew && (
-          <>
-            <DocumentAttachmentsCard
-              entity={HEAD_ATTACHMENT_ENTITY}
-              entityId={surveyId}
-              canManage={editable}
-              v1Wording
-              autoOpenUpload={attachRequested}
-            />
-            <DocumentComments entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} />
-            <AuditTimeline entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} showMessage dense />
-          </>
-        )}
+              <DocumentComments entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} />
+              <AuditTimeline entity={HEAD_ATTACHMENT_ENTITY} entityId={surveyId} showMessage dense />
+            </>
+          )}
+        </CardCollapseScope>
       </div>
 
       <SurveyLineDialog
