@@ -132,6 +132,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `backend/app/modules/work/list_group_members.py`, `list_service.py`, `schema.py`, `controller.py`; `frontend-v2/src/modules/work/components/work-create-dialog.tsx`, `components/work-create-group-members-picker.tsx`, `types/work.ts`, `api/work-api.ts`, `hooks/use-work-lists.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-create-group-members-picker.test.tsx`.
+Commit: 81cf5c61.
+Deploy: dev 18/11/2026 (erp-v2 81cf5c61: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #745, nạp chỉ mục trợ lý 2 đoạn).
 
 ## duoc-CR-782 | Màn Tổng quan phân hệ Dự án dựng lại cho người quản lý
 - status: xong
