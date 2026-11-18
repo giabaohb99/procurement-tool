@@ -105,6 +105,11 @@ def test_moi_dong_du_de_nhan_ra_va_bam_vao(db, toi, du_an):
         "list_name": "Thu mua Quý 3",
         "title": "Chốt giá NCC",
         "due_date": _ngay(-3),
+        #  duoc-CR-782: dòng quá hạn kèm SỐ NGÀY TRỄ và NGƯỜI PHỤ TRÁCH — biết việc nào trễ mà không biết ai giữ
+        #  thì vẫn phải mở từng thẻ để hỏi. Nhân sự 11 không có hồ sơ trong DB thử nên tên rỗng.
+        "overdue_days": 3,
+        "assignees": [""],
+        "can_open": True,
     }
 
 

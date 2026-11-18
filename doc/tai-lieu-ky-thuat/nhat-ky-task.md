@@ -114,6 +114,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-782 | Màn Tổng quan phân hệ Dự án dựng lại cho người quản lý
+- status: xong
+- date: 2026-11-18
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn Tổng quan phân hệ Dự án chỉ có vài thẻ đếm và hai biểu đồ, không có số liệu theo từng người; người quản lý không là thành viên dự án nào nên mở ra thấy toàn số 0, vì phân hệ chỉ cho thấy dự án mình được mời vào.
+
+**Đã làm**
+- Người được giao xem báo cáo Công việc và Dự án (admin có sẵn) nay thấy số liệu của mọi dự án trên màn Tổng quan; người khác vẫn thấy dự án mình tham gia; dự án mình chưa là thành viên chỉ xem được số, không bấm vào được.
+- Thêm nút chọn kỳ 7, 30, 90 ngày và sáu thẻ số: việc đang mở kèm số việc mới, việc quá hạn kèm tỉ lệ, việc xong trong kỳ, tỉ lệ xong đúng hạn, việc chưa ai nhận kèm số việc chưa đặt hạn.
+- Thêm biểu đồ: vòng tình trạng việc đang mở (quá hạn, đến hạn trong bảy ngày, còn hạn, chưa đặt hạn) và hai biểu đồ cột đứng kèm đường theo dự án và theo người, cột là việc đang mở có phần quá hạn tô đỏ, đường là việc xong trong kỳ, dùng chung một trục; màu đã qua bộ kiểm phân biệt cho người mù màu ở cả nền sáng và nền tối.
+- Thêm khối theo dõi từng dự án hoặc từng người: chọn một đối tượng để xem các con số riêng của nó và biểu đồ diễn biến theo ngày (kỳ bảy và ba mươi ngày) hoặc theo tuần (kỳ chín mươi ngày), cột là việc xong chia đúng hạn, trễ hạn, không đặt hạn, đường là việc mới giao.
+- Thêm khối cần xử lý ngay gồm việc quá hạn lâu nhất kèm số ngày trễ và người đang giữ, việc chưa ai nhận, việc chưa đặt hạn.
+- Thêm bảng đối chiếu theo từng người phụ trách: đang mở, quá hạn, trễ lâu nhất, hạn bảy ngày tới, xong trong kỳ, tỉ lệ đúng hạn, giờ ước và giờ thực tế, lần cập nhật gần nhất; bấm vào một người để xem việc đang mở của người đó.
+- Thêm khối sức khỏe từng dự án dạng thẻ, mỗi dự án một thẻ với phần trăm hoàn thành, số việc mở, quá hạn, hạn chót và nhãn Đúng tiến độ, Có rủi ro, Trễ; dự án chưa có việc gom thành một dòng chữ, dự án chưa là thành viên đánh dấu ổ khóa.
+- Sắp màn thành ba tab theo góp ý: mở màn ra là tab Tổng quan với biểu đồ đứng đầu, ngay dưới là các danh sách việc phải ra tay, cơ cấu ưu tiên và việc của tôi; tab Dự án và tab Nhân sự gom bảng chi tiết cùng khối theo dõi một đối tượng; nút kỳ và sáu thẻ số nằm trên cùng cho cả ba tab.
+- Thêm nút quay lại danh sách dự án ở đầu màn chi tiết một dự án; trước đây vào chi tiết rồi chỉ còn cách bấm mục Dự án trên menu trái mới ra được.
+- Thêm tab Báo cáo trong chi tiết từng dự án, chỉ tính trong dự án đó, bố cục hai cột: cột trái là biểu đồ diễn biến của dự án, biểu đồ theo người và bảng đối chiếu theo người; cột phải cố định gồm thẻ tóm tắt (phần trăm hoàn thành, nhãn sức khỏe, các con số xếp dọc), vòng tình trạng việc mở và thẻ Cần xử lý gom việc quá hạn, chưa nhận, chưa hạn vào một khung có nút chuyển. Hai cột chia theo bề rộng của khung báo cáo nên vẫn ra hai cột khi cây dự án đang mở; trên điện thoại xếp một cột, thẻ tóm tắt lên đầu.
+- Cây danh sách dự án bên trái dễ đọc hơn: dự án trong nhóm treo trên một đường gióng dọc, dự án chưa thuộc nhóm có tiêu đề riêng, dòng đang mở tô nền xanh chữ đậm.
+- Ô tìm trên thanh công cụ của bảng việc đổi thành nút có viền kèm chữ Tìm việc, trước đây chỉ là một kính lúp xám khó thấy.
+- Màn danh sách dự án thêm ô tìm theo tên hoặc mô tả, các nhóm dự án thành nút lọc kèm số dự án (Tất cả, từng nhóm, Chưa thuộc nhóm) vẫn giữ nút quản lý nhóm, nút hiện dự án lưu trữ rút gọn còn chữ Lưu trữ; tất cả nằm một hàng trên bảng.
+- Cập nhật tài liệu chức năng, tài liệu API của phân hệ và bài hướng dẫn Màn Tổng quan dưới thẻ Hướng dẫn sử dụng Dự án và Công việc.
+
+**Kiểm:** hai mươi bài kiểm backend mới cho phạm vi xem, diễn biến theo ngày và tuần, từng chỉ số theo người, ngưỡng sức khỏe dự án, danh sách cần xử lý, việc của một người và số câu truy vấn không tăng theo số người; bộ bài kiểm phân hệ Công việc xanh; typecheck, lint và bài kiểm giao diện phân hệ Dự án xanh; thử trên trình duyệt khổ máy tính và điện thoại.
+
+Mã nguồn: `backend/app/modules/work/overview_service.py`, `overview_scope.py`, `overview_people.py`, `overview_projects.py`, `overview_attention.py`, `overview_trend.py`, `controller.py`; `frontend-v2/src/modules/work/pages/work-overview-page.tsx`, `components/work-overview-people-table.tsx`, `components/work-overview-person-tasks-dialog.tsx`, `components/work-overview-project-health-cards.tsx`, `components/work-overview-charts.tsx`, `components/work-overview-tracker.tsx`, `utils/project-health-tone.ts`, `components/work-task-shortlist.tsx`, `components/work-project-report.tsx`, `components/work-overview-trend-chart.tsx`, `components/work-overview-period-switch.tsx`, `components/work-project-report-summary.tsx`, `components/work-project-attention-card.tsx`, `components/work-sidebar-tree.tsx`, `components/work-toolbar.tsx`, `components/project-group-filter.tsx`, `pages/project-list-page.tsx`, `utils/work-groups.ts`, `pages/work-list-page.tsx`, `hooks/use-work-overview.ts`, `frontend-v2/src/shared/ui/stacked-column-line-chart.tsx`; `backend/scripts/seed_help_du_an_tong_quan_cr782.py`.
+Kiểm: `test/backend/test_bao_cao_tong_quan_du_an_cr782.py`, `test/backend/test_du_an_tong_quan_danh_sach_viec.py`, `test/backend/test_pham_vi_bo_may_duyet_xuyen_suot.py`, `frontend-v2/src/modules/work/components/work-overview-charts.test.tsx`, `frontend-v2/src/modules/work/components/work-overview-tracker.test.tsx`, `frontend-v2/src/modules/work/components/work-overview-project-health-cards.test.tsx`, `frontend-v2/src/modules/work/components/work-project-attention-card.test.tsx`, `frontend-v2/src/modules/work/utils/work-groups.test.ts`, `test/backend/test_du_an_dien_bien_cr782.py`.
+
 ## duoc-CR-781 | Ô tìm phân hệ và chức năng ở màn chọn phân hệ giao diện ERP mới
 - status: xong
 - date: 2026-11-18

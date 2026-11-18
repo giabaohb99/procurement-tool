@@ -139,7 +139,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
         {canEditInfo && (
           <DialogFooter className="sm:justify-between">
             {/*  Lưu trữ đứng riêng bên trái, xa nút Lưu — một cú bấm nhầm là cả
-                 nhóm biến khỏi cây (dù khôi phục được qua "Hiện cả dự án lưu trữ"). */}
+                 nhóm biến khỏi cây (dù khôi phục được qua "Lưu trữ"). */}
             <div>
               {confirmArchive ? (
                 <span className="flex items-center gap-2 text-sm">

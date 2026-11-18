@@ -10,7 +10,7 @@ chiếm (`/api/dashboard/tasks`, CR-215).
 
 Mọi endpoint đi qua service, không endpoint nào tự `db.query(...)`.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -87,10 +87,43 @@ def remove_group_member(group_id: int, member_id: int, db: Session = Depends(get
 # ── Danh sách công việc ──────────────────────────────────────────────────────
 
 @router.get("/overview")
-def get_overview(db: Session = Depends(get_db),
+def get_overview(period_days: int = Query(overview.DEFAULT_PERIOD_DAYS, ge=1, le=366),
+                 list_id: int | None = Query(None, ge=1),
+                 db: Session = Depends(get_db),
                  user=Depends(require("work_task", "read"))):
-    """Số liệu màn Tổng quan — chỉ đếm trong những dự án mình tham gia."""
-    return success(overview.overview(db, _actor(db, user)))
+    """Số liệu màn Tổng quan phân hệ Dự án: thẻ số, bảng theo người, sức khỏe dự án, việc cần xử lý.
+
+    Quyền: `work_task.read`. Phạm vi: người xem được báo cáo Công việc & Dự án (`ReportKey.WORK`, admin có sẵn) đếm trên
+    mọi dự án; còn lại chỉ các dự án mình tham gia (trường `scope` trả `all` / `member`). `period_days` (1–366, mặc
+    định 30) là kỳ của các chỉ số "trong kỳ": tạo mới, xong, tỉ lệ đúng hạn, giờ thực tế. `list_id` = chỉ tính riêng một
+    dự án (tab Báo cáo trong chi tiết dự án); dự án ngoài phạm vi ra bộ số rỗng.
+    """
+    return success(overview.overview(db, _actor(db, user), user, period_days, list_id))
+
+
+@router.get("/overview/trend")
+def get_overview_trend(kind: str = Query(..., pattern="^(project|person)$"),
+                       id: int = Query(..., ge=1),
+                       period_days: int = Query(overview.DEFAULT_PERIOD_DAYS, ge=1, le=366),
+                       db: Session = Depends(get_db),
+                       user=Depends(require("work_task", "read"))):
+    """Diễn biến theo ngày / tuần của một dự án hoặc một người: việc mới giao, việc xong (đúng hạn / trễ / không hạn).
+
+    Quyền và phạm vi như `/overview`. `kind=project` với dự án ngoài phạm vi, hoặc `kind=person` chỉ đếm việc người đó
+    phụ trách trong các dự án được đếm — ngoài phạm vi ra chuỗi rỗng. Kỳ ≤ 31 ngày chia theo ngày, dài hơn theo tuần.
+    """
+    return success(overview.overview_trend(db, _actor(db, user), user, kind, id, period_days))
+
+
+@router.get("/overview/people/{employee_id}/tasks")
+def get_overview_person_tasks(employee_id: int, db: Session = Depends(get_db),
+                              user=Depends(require("work_task", "read"))):
+    """Việc đang mở của một người phụ trách, trong phạm vi màn Tổng quan (bấm vào tên ở bảng theo người).
+
+    Quyền và phạm vi như `/overview`: chỉ trả việc thuộc các dự án người xem được đếm; người ngoài phạm vi ra danh
+    sách rỗng, không lộ việc ở dự án khác. Tối đa 50 việc, quá hạn trước.
+    """
+    return success(overview.person_overview_tasks(db, _actor(db, user), user, employee_id))
 
 
 @router.get("/lists")

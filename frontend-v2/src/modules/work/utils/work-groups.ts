@@ -1,4 +1,4 @@
-import type { WorkGroup, WorkGroupNode, WorkSidebar } from '../types/work'
+import type { WorkGroup, WorkGroupNode, WorkList, WorkSidebar } from '../types/work'
 
 /** Một nhóm đã DUỖI PHẲNG từ cây, kèm độ sâu để thụt lề trong ô chọn. */
 export interface FlatWorkGroup extends WorkGroup {
@@ -34,3 +34,13 @@ export function groupNameOf(groups: FlatWorkGroup[], groupId: number | null): st
 
 /** Nhãn cho dự án không thuộc nhóm nào — một chữ, dùng chung mọi chỗ. */
 export const NO_GROUP_LABEL = 'Không có'
+
+/** Giá trị lọc theo nhóm: `all` = mọi dự án, `none` = dự án chưa thuộc nhóm, số = id nhóm. */
+export type ProjectGroupFilterValue = 'all' | 'none' | number
+
+/** Dự án có lọt bộ lọc nhóm không — màn liệt kê dự án lọc bảng và nút nhóm đếm số dùng CHUNG một luật (duoc-CR-782). */
+export function matchesProjectGroup(project: WorkList, value: ProjectGroupFilterValue): boolean {
+  if (value === 'all') return true
+  if (value === 'none') return !project.group_id
+  return project.group_id === value
+}

@@ -1,21 +1,30 @@
-import { Archive, FolderKanban, Plus, Settings2 } from 'lucide-react'
+import { Archive, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
+import { SearchField } from '@/shared/ui/search-field'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { matchesVietnamese } from '@/shared/utils/vn-text'
 import { GroupManageDialog } from '../components/group-manage-dialog'
 import { ProjectCard } from '../components/project-card'
 import { MemberAvatar, MemberStack, ProgressCell } from '../components/project-cells'
+import { ProjectGroupFilter } from '../components/project-group-filter'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { useWorkProjects, useWorkSidebar } from '../hooks/use-work-lists'
 import type { WorkGroup, WorkList } from '../types/work'
 import { dotClass } from '../utils/work-colors'
-import { NO_GROUP_LABEL, flattenGroups, groupNameOf } from '../utils/work-groups'
+import {
+  NO_GROUP_LABEL,
+  flattenGroups,
+  groupNameOf,
+  matchesProjectGroup,
+  type ProjectGroupFilterValue,
+} from '../utils/work-groups'
 
 /**
  * Bảng liệt kê MỌI dự án — màn giữa của phân hệ, mở bằng mục "Dự án" ở thanh
@@ -48,6 +57,20 @@ export function ProjectListPage() {
     const rank = (row: WorkList) => (row.group_id ? (order.get(row.group_id) ?? 9_999) : 10_000)
     return data.slice().sort((a, b) => rank(a) - rank(b) || a.sort_order - b.sort_order || a.id - b.id)
   }, [data, groups])
+
+  //  duoc-CR-782: lọc tại trình duyệt — màn này nạp đủ mọi dự án người xem tham gia (vài chục dòng), không phân trang.
+  const [query, setQuery] = useState('')
+  const [groupFilter, setGroupFilter] = useState<ProjectGroupFilterValue>('all')
+  const filtering = query.trim() !== '' || groupFilter !== 'all'
+  const visibleRows = useMemo(
+    () =>
+      rows?.filter(
+        (row) =>
+          matchesProjectGroup(row, groupFilter) &&
+          (matchesVietnamese(row.name, query) || matchesVietnamese(row.description ?? '', query)),
+      ),
+    [rows, groupFilter, query],
+  )
 
   const columns = useMemo<DataTableColumn<WorkList>[]>(
     () => [
@@ -154,67 +177,63 @@ export function ProjectListPage() {
         </Button>
       </header>
 
-      {/*  bao-CR-482: cụm NHÓM ngay trên bảng. Nhóm không phải một dòng của bảng
-           (một dòng = một dự án), nhưng phải thấy được ở đây — trước đó "DX" chỉ
-           có trong cây bên trái, ai ẩn cây là không biết nhóm tồn tại, càng không
-           có chỗ nào để đổi tên hay phân quyền cho cả nhóm. */}
-      {groups.length > 0 && (
-        <section aria-label="Nhóm dự án" className="flex flex-wrap gap-2">
-          {groups.map((group) => (
-            <div
-              key={group.id}
-              className="flex items-center gap-2 rounded-lg border bg-muted/30 py-1.5 pl-3 pr-1.5 text-sm"
-              style={{ marginLeft: group.depth * 16 }}
-            >
-              <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
-              <span className="font-medium">{group.name}</span>
-              <span className="text-xs text-muted-foreground">{group.listCount} dự án</span>
-              {group.is_archived === 1 && (
-                <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                  Đã lưu trữ
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                title={`Quản lý nhóm dự án ${group.name}`}
-                aria-label={`Quản lý nhóm dự án ${group.name}`}
-                onClick={() => setManageGroup(group)}
-              >
-                <Settings2 className="size-4" />
-              </Button>
-            </div>
-          ))}
-        </section>
-      )}
-
       <DataTable
         fillHeight
         columns={columns}
-        rows={rows}
+        rows={visibleRows}
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isError={isError}
         emptyMessage={
           //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì chưa có gì: người vừa bật "Hiện
           //  cả dự án lưu trữ" mà đọc câu chung sẽ tưởng nút đó làm hỏng danh sách.
-          showArchived
-            ? 'Bạn chưa tham gia dự án nào, kể cả dự án đã lưu trữ.'
-            : 'Bạn chưa tham gia dự án nào.'
+          filtering
+            ? 'Không có dự án nào khớp bộ lọc.'
+            : showArchived
+              ? 'Bạn chưa tham gia dự án nào, kể cả dự án đã lưu trữ.'
+              : 'Bạn chưa tham gia dự án nào.'
         }
         storageKey="work.projects"
         //  Khổ hẹp: THẺ thay bảng — xem `ProjectCard`.
         mobileCard={(row: WorkList) => <ProjectCard project={row} />}
         onRowClick={(row) => navigate(appRoutes.project.detail(row.id))}
         toolbar={
-          <Button
-            variant={showArchived ? 'secondary' : 'outline'}
-            size="sm"
-            onClick={() => setShowArchived((value) => !value)}
-          >
-            <Archive className="size-4" />
-            {showArchived ? 'Đang hiện dự án lưu trữ' : 'Hiện cả dự án lưu trữ'}
-          </Button>
+          <>
+            {/*  Khung cố định bề rộng: `SearchField` tự giãn `flex-1`, để trần là nó ăn hết hàng. */}
+            <div className="w-full sm:w-56">
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Tìm tên, mô tả dự án…"
+                placeholderShort="Tìm dự án…"
+                aria-label="Tìm dự án"
+                className="w-full"
+              />
+            </div>
+            {/*  bao-CR-482 → duoc-CR-782: nhóm thấy được ngay trên bảng (ai ẩn cây trái vẫn biết nhóm tồn tại, vẫn có
+                 chỗ đổi tên / phân quyền cả nhóm), giờ kiêm luôn bộ lọc. */}
+            {groups.length > 0 && (
+              <ProjectGroupFilter
+                groups={groups}
+                projects={data ?? []}
+                value={groupFilter}
+                onChange={setGroupFilter}
+                onManage={setManageGroup}
+              />
+            )}
+            {/*  Nhãn ngắn + trạng thái bấm (`aria-pressed`, nền đậm khi bật): nhãn cũ "Hiện cả dự án lưu trữ" dài 180px
+                 đẩy nút Tải lại / Cột rớt xuống hàng hai khi thanh công cụ có thêm ô tìm và nút nhóm. */}
+            <Button
+              variant={showArchived ? 'secondary' : 'outline'}
+              size="sm"
+              aria-pressed={showArchived}
+              title={showArchived ? 'Đang hiện cả dự án đã lưu trữ — bấm để ẩn' : 'Hiện cả dự án đã lưu trữ'}
+              onClick={() => setShowArchived((value) => !value)}
+            >
+              <Archive className="size-4" />
+              Lưu trữ
+            </Button>
+          </>
         }
       />
 

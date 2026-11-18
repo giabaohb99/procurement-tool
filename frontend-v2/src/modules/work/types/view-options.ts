@@ -20,6 +20,8 @@ export const WORK_VIEWS = [
   { value: 'list', label: 'Danh sách' },
   { value: 'gantt', label: 'Gantt' },
   { value: 'activities', label: 'Hoạt động' },
+  //  duoc-CR-782: báo cáo riêng của dự án đang mở — đứng cuối, sau nhật ký: không phải một cách nhìn mớ việc.
+  { value: 'report', label: 'Báo cáo' },
 ] as const
 
 export type WorkView = (typeof WORK_VIEWS)[number]['value']

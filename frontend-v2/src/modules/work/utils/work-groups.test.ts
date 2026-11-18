@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkGroupNode, WorkList, WorkSidebar } from '../types/work'
-import { flattenGroups, groupNameOf } from './work-groups'
+import { flattenGroups, groupNameOf, matchesProjectGroup } from './work-groups'
 
 function list(id: number, name: string, groupId: number | null): WorkList {
   return {
@@ -54,5 +54,26 @@ describe('flattenGroups — bao-CR-482', () => {
     expect(groupNameOf(groups, null)).toBe('')
     expect(groupNameOf(groups, 1)).toBe('DX')
     expect(groupNameOf(groups, 42)).toBe('Nhóm dự án #42')
+  })
+})
+
+describe('matchesProjectGroup (duoc-CR-782)', () => {
+  const inGroup = list(1, 'ERP v2', 7)
+  const loose = list(2, 'Nhân sự', null)
+
+  it('keeps every project for "all"', () => {
+    expect([inGroup, loose].filter((p) => matchesProjectGroup(p, 'all'))).toHaveLength(2)
+  })
+
+  it('treats a missing group id as "not in any group", never as group 0', () => {
+    expect(matchesProjectGroup(loose, 'none')).toBe(true)
+    expect(matchesProjectGroup(inGroup, 'none')).toBe(false)
+    expect(matchesProjectGroup({ ...loose, group_id: 0 as unknown as null }, 'none')).toBe(true)
+  })
+
+  it('matches only the exact group id', () => {
+    expect(matchesProjectGroup(inGroup, 7)).toBe(true)
+    expect(matchesProjectGroup(inGroup, 8)).toBe(false)
+    expect(matchesProjectGroup(loose, 7)).toBe(false)
   })
 })

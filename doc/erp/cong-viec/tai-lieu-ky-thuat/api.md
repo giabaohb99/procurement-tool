@@ -13,7 +13,7 @@ Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, lu�
 
 **Phong bì chung:** mọi đường trả `{success, message, data}`; lỗi trả `{success: false, error: {code, message, details}}`.
 
-> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 05/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
+> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 18/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
 
 Mã backend: `work`
 
@@ -52,7 +52,9 @@ Mã backend: `work`
 | GET | `/api/work/lists/{list_id}/sections/{section_id}/tasks` | Trang kế của một cột — bao-CR-483. | `work_task.read` |  | tự dò: v2 `work` |
 | POST | `/api/work/lists/{list_id}/transfer` | Chuyển quyền sở hữu (A-04) — nguyên tử, giữ bất biến đúng một chủ. | `work_task.write` |  |  |
 | GET | `/api/work/lists/{list_id}/trash` | Thùng rác của dự án (B-09): việc đã xóa mềm, kèm cờ `can_restore` theo quyền người xem. | `work_task.read` |  | tự dò: v2 `work` |
-| GET | `/api/work/overview` | Số liệu màn Tổng quan — chỉ đếm trong những dự án mình tham gia. | `work_task.read` |  | tự dò: v2 `work` |
+| GET | `/api/work/overview` | Số liệu màn Tổng quan phân hệ Dự án: thẻ số, bảng theo người, sức khỏe dự án, việc cần xử lý. | `work_task.read` | Xem được báo cáo Công việc & Dự án (`ReportKey.WORK`, admin có sẵn): mọi dự án; còn lại: dự án mình tham gia (duoc-CR-782). Dòng ở dự án mình không là thành viên trả `can_open=false` | tự dò: v2 `work` |
+| GET | `/api/work/overview/people/{employee_id}/tasks` | Việc đang mở của một người phụ trách, trong phạm vi màn Tổng quan (bấm vào tên ở bảng theo người). | `work_task.read` | Xem được báo cáo Công việc & Dự án (`ReportKey.WORK`, admin có sẵn): mọi dự án; còn lại: dự án mình tham gia (duoc-CR-782). Dòng ở dự án mình không là thành viên trả `can_open=false` | tự dò: v2 `work` |
+| GET | `/api/work/overview/trend` | Diễn biến theo ngày / tuần của một dự án hoặc một người: việc mới giao, việc xong (đúng hạn / trễ / không hạn). | `work_task.read` | | Như `/overview`; dự án ngoài phạm vi ra chuỗi rỗng; theo người chỉ đếm việc người đó phụ trách (duoc-CR-782) | tự dò: v2 `work` |
 | PATCH | `/api/work/sections/{section_id}` | update section | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/sections/{section_id}` | Xóa cột. | `work_task.delete` |  | tự dò: v2 `work` |
 | POST | `/api/work/sections/{section_id}/move` | Kéo cột sang chỗ khác — trả CẢ danh sách cột đã xếp lại. | `work_task.write` |  | tự dò: v2 `work` |

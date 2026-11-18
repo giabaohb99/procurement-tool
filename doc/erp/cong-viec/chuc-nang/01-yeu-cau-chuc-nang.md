@@ -49,10 +49,10 @@ làm xong trong mã nhưng không nói môi trường.
 | CN-CV-11 | Thùng rác dự án: xem và khôi phục việc đã xóa (DS11 B-09) | Thành viên | Thùng rác dự án | chưa ghi (xong 22/10/2026) | duoc-CR-667 |
 | CN-CV-12 | Đánh giá kết quả việc đã xong: Đạt hoặc Phải làm lại (tự mở lại việc) | Thành viên | `POST /api/work/tasks/{id}/outcome` ([api.md](../tai-lieu-ky-thuat/api.md)) | chưa ghi (chưa có tài liệu chức năng) | duoc-CR-656 |
 | CN-CV-13 | Danh mục loại công việc | Quản trị cấu hình | `/api/work/task-types` ([api.md](../tai-lieu-ky-thuat/api.md)) | chưa ghi (chưa có tài liệu chức năng) | |
-| CN-CV-14 | Tổng quan (chỉ đếm trong dự án mình tham gia) và báo cáo tổng hợp kèm xuất | Thành viên; người có quyền báo cáo | `/api/work/overview`, `/api/work/summary` ([api.md](../tai-lieu-ky-thuat/api.md)) | chưa ghi (chưa có tài liệu chức năng) | |
+| CN-CV-14 | Tổng quan cho người quản lý (duoc-CR-782): thẻ số theo kỳ 7 / 30 / 90 ngày (đang mở, quá hạn, xong trong kỳ, % xong đúng hạn, chưa ai nhận, chưa đặt hạn); bảng đối chiếu theo người (đang mở, quá hạn, trễ lâu nhất, hạn 7 ngày tới, xong trong kỳ, % đúng hạn, giờ ước / thực tế, cập nhật gần nhất; bấm ra việc của người đó); sức khỏe từng dự án; việc cần xử lý ngay; biểu đồ (tình trạng việc mở, cột + đường theo dự án và theo người) và theo dõi diễn biến theo ngày / tuần của từng dự án, từng người. Trong chi tiết từng dự án có tab Báo cáo tính riêng dự án đó và nút quay lại danh sách dự án. Báo cáo tổng hợp kèm xuất ở phân hệ Báo cáo | Thành viên; người được giao xem báo cáo Công việc & Dự án (admin có sẵn) thấy mọi dự án | `/project` · `/api/work/overview`, `/api/work/overview/people/{id}/tasks`, `/api/work/overview/trend`, `/api/work/summary` ([api.md](../tai-lieu-ky-thuat/api.md)) | Dev | duoc-CR-782 |
 | CN-CV-15 | Nhắc hạn việc: trước một ngày, đúng ngày hạn, quá hạn (DS11 F-03) | Người được giao | Tác vụ `agent.work_due` mỗi 5 phút (`backend/app/core/celery_app.py`) | chưa ghi (TL10 §9 ghi chưa có; mã có tác vụ của dịch vụ AI, ai-CR-175) | ai-CR-175 |
 | CN-CV-16 | Dự án kiểu dự án: hồ sơ ngày, vòng đời, tiến độ tự tính (DS11 A-10) | Chủ sở hữu | Thiết lập dự án | chưa ghi (lộ trình xếp W4) | CR-217 |
-| CN-CV-17 | Dashboard thống kê dự án (DS11 D-06) | — | — | Chưa ([TL10 §9](10-du-an-cong-viec.md#9-những-thứ-chưa-có)) | |
+| CN-CV-17 | Dashboard thống kê dự án (DS11 D-06): sức khỏe từng dự án (% hoàn thành, mở, quá hạn, hạn chót, nhãn Đúng tiến độ / Có rủi ro / Trễ / Chưa có việc) trên màn Tổng quan — xem CN-CV-14; biểu đồ tiến độ theo thời gian chưa có | Người quản lý | `/project` | Dev (một phần) | duoc-CR-782 |
 | CN-CV-18 | Màn *Việc của tôi* gom việc từ mọi dự án (DS11 G-03) | — | — | Chưa | |
 | CN-CV-19 | Chuyển việc sang dự án khác (DS11 B-10) | — | — | Chưa | |
 | CN-CV-20 | Gom nhóm kanban theo người / ưu tiên / hạn (DS11 D-08) | — | — | Chưa | |
@@ -65,6 +65,9 @@ làm xong trong mã nhưng không nói môi trường.
 - **Luật nghiệp vụ:** thấy dự án nào là do được mời vào dự án hoặc nhóm chứa nó; có `work_task.read` toàn hệ vẫn không đọc
   dự án mình không tham gia; mỗi dự án đúng một chủ sở hữu, chủ muốn rời phải chuyển quyền trước
   ([TL10 §7](10-du-an-cong-viec.md#7-ai-thấy-được-gì--hai-lớp)).
+- **Ngoại lệ duy nhất — số liệu màn Tổng quan** (duoc-CR-782, anh Được chốt 18/11/2026): ai xem được báo cáo Công việc &
+  Dự án (khóa báo cáo gán ở tab Báo cáo của Phân quyền tài khoản; admin có sẵn) thì màn Tổng quan ĐẾM trên mọi dự án.
+  Chỉ nới phần đọc số liệu: dự án / việc mình không là thành viên vẫn không mở được, dòng của chúng không có link.
 - **Quyền:** RBAC `work_task` gác cửa; vai trò dự án gác dữ liệu ([04-phan-quyen.md](../tai-lieu-ky-thuat/04-phan-quyen.md)).
 
 ### CN-CV-03 và CN-CV-06 — Công việc và khung nhìn

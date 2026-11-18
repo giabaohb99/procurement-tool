@@ -131,7 +131,6 @@ export function WorkSidebarTree({
               <ListLink
                 key={l.id}
                 item={l}
-                depth={0}
                 pinned
                 onTogglePin={() => pins.toggle(l.id)}
                 onNavigate={onNavigate}
@@ -151,12 +150,15 @@ export function WorkSidebarTree({
             onNavigate={onNavigate}
           />
         ))}
-        {/* List không thuộc nhóm nào đứng cuối cây — vẫn hợp lệ (A-08). */}
+        {/* List không thuộc nhóm nào đứng cuối cây — vẫn hợp lệ (A-08). Có nhóm thì phải có tiêu đề riêng: thiếu nó,
+            dự án lẻ chỉ thụt lệch dự án trong nhóm vài pixel và nhìn như con của nhóm cuối cùng (duoc-CR-782). */}
+        {groups.length > 0 && loose.length > 0 && (
+          <p className="mt-3 px-2 pb-1 text-xs font-medium text-muted-foreground uppercase">Chưa thuộc nhóm</p>
+        )}
         {loose.map((l) => (
           <ListLink
             key={l.id}
             item={l}
-            depth={0}
             pinned={pins.isPinned(l.id)}
             onTogglePin={() => pins.toggle(l.id)}
             onNavigate={onNavigate}
@@ -193,14 +195,12 @@ function GroupNode({
 
   return (
     <div>
-      <div
-        className="group flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-accent"
-        style={{ paddingLeft: depth * 12 + 8 }}
-      >
+      <div className="group flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-accent">
         <button
           type="button"
+          aria-expanded={mo}
           onClick={() => setMo((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium"
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-semibold text-foreground"
         >
           <Icon className="size-3.5 shrink-0 text-muted-foreground" />
           {/*  Nhóm dự án (trên dữ liệu là NHÓM) không có bảng việc riêng — biểu
@@ -253,8 +253,10 @@ function GroupNode({
         </DropdownMenu>
       </div>
 
+      {/*  Con của nhóm nằm trong một khung có ĐƯỜNG GIÓNG dọc thẳng dưới mũi tên của nhóm: thụt lề bằng con số
+           (`depth * 12`) như trước thì cấp nọ cấp kia chỉ lệch vài pixel, nhìn không ra dự án nào thuộc nhóm nào. */}
       {mo && (
-        <>
+        <div className="ml-[15px] border-l pl-1.5">
           {node.children.map((c) => (
             <GroupNode
               key={c.id}
@@ -271,13 +273,12 @@ function GroupNode({
             <ListLink
               key={l.id}
               item={l}
-              depth={depth + 1}
               pinned={pins.isPinned(l.id)}
               onTogglePin={() => pins.toggle(l.id)}
               onNavigate={onNavigate}
             />
           ))}
-        </>
+        </div>
       )}
     </div>
   )
@@ -285,13 +286,11 @@ function GroupNode({
 
 function ListLink({
   item,
-  depth,
   pinned,
   onTogglePin,
   onNavigate,
 }: {
   item: WorkList
-  depth: number
   pinned: boolean
   onTogglePin: () => void
   onNavigate?: () => void
@@ -303,11 +302,11 @@ function ListLink({
       <NavLink
         to={appRoutes.project.detail(item.id)}
         onClick={onNavigate}
-        style={{ paddingLeft: depth * 12 + 26 }}
         className={({ isActive }) =>
           cn(
-            'flex items-center gap-2 rounded-md py-1.5 pr-8 text-sm hover:bg-accent',
-            isActive && 'bg-accent font-medium text-accent-foreground',
+            'flex items-center gap-2 rounded-md py-1.5 pr-8 pl-2.5 text-sm text-foreground/85 hover:bg-accent hover:text-foreground',
+            //  Dòng đang mở phải nổi hẳn: nền `accent` của theme gần như trùng nền cây, đứng xa là không thấy.
+            isActive && 'bg-primary/10 font-semibold text-primary hover:bg-primary/15 hover:text-primary',
           )
         }
       >

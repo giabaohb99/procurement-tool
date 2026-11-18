@@ -268,18 +268,20 @@ function ToolbarSearch({
   fullWidth?: boolean
 }) {
   if (!open) {
+    //  duoc-CR-782: bản trước là một kính lúp xám KHÔNG viền đứng lẻ ở mép phải — trên nền canvas xám người dùng
+    //  không thấy có ô tìm (anh Được: "khó nhìn"). Nút có viền + chữ "Tìm việc" chỉ tốn ~95px, vẫn vừa một hàng ở
+    //  1280; khổ hẹp rút về còn biểu tượng như ba nút kia nhưng VẪN giữ viền.
     return (
-      <IconTooltip label="Tìm trong danh sách">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Tìm trong danh sách"
-          className="ml-auto text-muted-foreground hover:text-foreground"
-          onClick={() => onOpenChange(true)}
-        >
-          <Search className="size-4" />
-        </Button>
-      </IconTooltip>
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label="Tìm trong danh sách"
+        className="ml-auto bg-background text-muted-foreground hover:text-foreground max-md:px-2"
+        onClick={() => onOpenChange(true)}
+      >
+        <Search className="size-4" />
+        <span className="max-md:hidden">Tìm việc</span>
+      </Button>
     )
   }
 

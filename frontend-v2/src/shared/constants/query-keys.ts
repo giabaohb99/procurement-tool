@@ -812,8 +812,14 @@ export const queryKeys = {
     all: ['work'] as const,
     /** Cây nhóm → list bên trái; đổi khi tạo/sửa/lưu trữ nhóm hoặc list. */
     sidebar: (includeArchived: boolean) => ['work', 'sidebar', includeArchived] as const,
-    /** Số liệu màn Tổng quan phân hệ Dự án. */
-    overview: () => ['work', 'overview'] as const,
+    /** Số liệu màn Tổng quan phân hệ Dự án, theo kỳ (số ngày); có `listId` = báo cáo riêng một dự án — duoc-CR-782. */
+    overview: (periodDays?: number, listId?: number | null) =>
+      ['work', 'overview', periodDays, listId ?? null] as const,
+    /** Việc đang mở của một người phụ trách, bấm từ bảng theo người của màn Tổng quan (duoc-CR-782). */
+    overviewPersonTasks: (employeeId: number) => ['work', 'overview', 'person', employeeId] as const,
+    /** Diễn biến theo ngày / tuần của một dự án hoặc một người trên màn Tổng quan (duoc-CR-782). */
+    overviewTrend: (kind: 'project' | 'person', id: number, periodDays: number) =>
+      ['work', 'overview', 'trend', kind, id, periodDays] as const,
     lists: (includeArchived: boolean) => ['work', 'lists', includeArchived] as const,
     /**
      * Bảng liệt kê dự án — cùng dữ liệu `lists` nhưng kèm chủ sở hữu + thành

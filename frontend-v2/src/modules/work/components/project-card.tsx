@@ -24,7 +24,7 @@ import { MemberStack, ProgressCell } from './project-cells'
  *
  * ⚠️ **Thẻ chỉ nói cái BẤT THƯỜNG.** Huy hiệu *Đã lưu trữ* chỉ mọc khi dự án đã
  * lưu trữ — mà danh sách mặc định không có dự án nào như vậy, nó chỉ xuất hiện
- * sau khi người dùng tự bật "Hiện cả dự án lưu trữ". Dòng mô tả cũng vậy: dự án
+ * sau khi người dùng tự bật "Lưu trữ". Dòng mô tả cũng vậy: dự án
  * không có mô tả thì bỏ hẳn dòng, đừng in một dấu "—" cho thẳng hàng.
  */
 export function ProjectCard({ project }: { project: WorkList }) {

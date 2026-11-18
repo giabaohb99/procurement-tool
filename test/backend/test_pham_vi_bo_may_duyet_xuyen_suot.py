@@ -191,10 +191,16 @@ def find_service_calls(endpoint, controller_module):
     return found
 
 
-#  Bốn cửa gác của phân hệ Công việc. Tất cả nằm ở `membership_service` (hoặc
-#  bọc lại nó), và tất cả đều quy về tư cách THÀNH VIÊN của list.
+#  Năm cửa gác của phân hệ Công việc. Bốn cái đầu nằm ở `membership_service` (hoặc
+#  bọc lại nó), và đều quy về tư cách THÀNH VIÊN của list.
+#
+#  `overview_list_ids` (duoc-CR-782, `overview_scope.py`) bọc `visible_list_ids` và
+#  CHỈ nới phạm vi ĐỌC SỐ LIỆU của màn Tổng quan cho người xem được báo cáo Công
+#  việc & Dự án (`ReportKey.WORK`, gán ở tab Báo cáo; admin có sẵn) — anh Được chốt
+#  18/11/2026 vì xếp không là thành viên dự án nên màn Tổng quan ra toàn 0. Không
+#  mở dự án, không sửa được việc; ai không có khóa đó vẫn rơi về `visible_list_ids`.
 WORK_GUARDS = ("get_list_or_403", "_get_group_or_403", "get_task_or_403",
-               "visible_list_ids", "group_role")
+               "visible_list_ids", "group_role", "overview_list_ids")
 
 
 def find_guards_in(func) -> set[str]:

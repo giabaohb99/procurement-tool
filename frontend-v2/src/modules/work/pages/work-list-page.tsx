@@ -1,4 +1,6 @@
 import {
+  ArrowLeft,
+  BarChart3,
   GanttChartSquare,
   History,
   KanbanSquare,
@@ -8,11 +10,12 @@ import {
   Users,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { logger } from '@/core/telemetry/logger'
 import { FilterProvider, useFilterContext } from '@/shared/conditional-filter'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -26,6 +29,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { buildTaskFilterFields } from '../config/task-filter-fields'
 import { ActivityFeed } from '../components/activity-feed'
+import { WorkProjectReport } from '../components/work-project-report'
 import { GanttView } from '../components/gantt-view'
 import { ListConfigDialog } from '../components/list-config-dialog'
 import { ListManageDialog } from '../components/list-manage-dialog'
@@ -76,6 +80,7 @@ const VIEW_ICONS = {
   list: Table2,
   gantt: GanttChartSquare,
   activities: History,
+  report: BarChart3,
 } as const
 
 /**
@@ -326,6 +331,13 @@ function WorkListContent({ listId }: { listId: number }) {
              dù bản thân nó chỉ rộng 32px. `flex-1` đặt bề rộng cơ sở về 0, cả
              hai nằm chung một hàng rồi phần chữ mới co lại. */}
         <div className="flex min-w-0 flex-1 items-start gap-2">
+          {/*  duoc-CR-782: lối về danh sách dự án. Trước đây vào chi tiết một dự án rồi chỉ còn cách bấm "Dự án" trên
+               menu trái mới quay ra được (anh Được báo 18/11/2026). */}
+          <Button variant="outline" size="icon" className="size-8 shrink-0" asChild>
+            <Link to={appRoutes.project.list} aria-label="Về danh sách dự án" title="Về danh sách dự án">
+              <ArrowLeft />
+            </Link>
+          </Button>
           <WorkSidebarPeekButton />
           {/*  Tên và mô tả sửa NGAY TẠI ĐÂY — bấm vào chữ là thành ô nhập. Hộp
                thoại "Sửa dự án" trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
@@ -390,7 +402,9 @@ function WorkListContent({ listId }: { listId: number }) {
             {WORK_VIEWS.map((v) => {
               const Icon = VIEW_ICONS[v.value]
               return (
-                <TabsTrigger key={v.value} value={v.value}>
+                //  duoc-CR-782: thêm tab thứ năm "Báo cáo" làm dải rộng 398px ở khổ 390px (tràn mép). Khổ hẹp siết đệm
+                //  ngang + chữ 13px để năm tab vẫn nằm trọn một hàng, cùng tinh thần ghi chú bên dưới.
+                <TabsTrigger key={v.value} value={v.value} className="max-md:px-1.5 max-md:text-[13px]">
                   {/*  ⚠️ Khổ hẹp bỏ BIỂU TƯỢNG chứ không bỏ CHỮ, và cũng không
                        cho dải cuộn ngang. Đo ở 390px: dải đủ bốn tab rộng 407px
                        trên 358px dùng được — thừa 49px, đúng bằng chỗ mà bốn
@@ -416,7 +430,8 @@ function WorkListContent({ listId }: { listId: number }) {
       {/*  Thanh công cụ là của BA khung nhìn việc: "Việc mới", lọc điều kiện,
           sắp xếp, trường hiện trên thẻ — không cái nào có nghĩa trên một cuốn
           nhật ký. Tab "Hoạt động" mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
-      {view !== 'activities' && (
+      {/*  Tab Báo cáo (duoc-CR-782) cũng không cần thanh công cụ việc: lọc / sắp xếp / thêm việc không áp lên số liệu. */}
+      {view !== 'activities' && view !== 'report' && (
         <WorkToolbar
           listId={listId}
           sort={sort}
@@ -617,6 +632,7 @@ function WorkListContent({ listId }: { listId: number }) {
             điều kiện nói về VIỆC, còn đây là dòng sự kiện — lọc theo nó thì
             "Gỡ nhân sự khỏi dự án" chẳng biết xếp vào đâu. */}
         {view === 'activities' && <ActivityFeed listId={listId} onOpenTask={setOpenTaskId} />}
+        {view === 'report' && <WorkProjectReport listId={listId} />}
       </div>
 
       <TaskDetailSheet
