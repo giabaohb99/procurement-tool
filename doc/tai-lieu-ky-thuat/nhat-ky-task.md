@@ -132,6 +132,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `frontend-v2/src/app/search/module-search-index.ts`, `frontend-v2/src/app/search/split-search-highlight.ts`, `frontend-v2/src/app/components/module-search/`, `frontend-v2/src/app/pages/module-launcher-page.tsx`, `frontend-v2/src/shared/ui/command.tsx`, `backend/scripts/seed_help_tim_phan_he_cr781.py`.
 Kiểm: `frontend-v2/src/app/search/module-search-index.test.ts`, `frontend-v2/src/app/search/split-search-highlight.test.ts`, `frontend-v2/src/app/components/module-search/module-search-trigger.test.tsx`.
+Commit: 789fed92.
+Deploy: dev 18/11/2026 (erp-v2 789fed92: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #743, nạp chỉ mục trợ lý 2 đoạn).
 
 ## duoc-CR-780 | Gập / mở từng thẻ ở các màn Thu mua giao diện ERP mới
 - status: xong
