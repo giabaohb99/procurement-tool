@@ -2,7 +2,7 @@ import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /** Đúng chữ ký của `can` từ `usePermission()`. */
-type CanFn = (entity: PermissionEntity, action: PermissionAction) => boolean
+export type CanFn = (entity: PermissionEntity, action: PermissionAction) => boolean
 
 /**
  * Bối cảnh RUNTIME cho luật hiển thị mà quyền tĩnh không nói được.

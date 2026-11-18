@@ -114,6 +114,25 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-781 | Ô tìm phân hệ và chức năng ở màn chọn phân hệ giao diện ERP mới
+- status: xong
+- date: 2026-11-18
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** màn chọn phân hệ chỉ có lưới thẻ phân hệ, người dùng phải nhớ màn mình cần nằm trong phân hệ nào rồi mới bấm vào tìm trong menu trái; anh Được muốn một ô tìm như các trang tài liệu, tìm được cả phân hệ lẫn từng màn bên trong.
+
+**Đã làm**
+- Màn chọn phân hệ có ô Tìm phân hệ, chức năng ngang hàng lời chào; bấm vào hoặc nhấn Ctrl K (máy Mac là Command K) mở hộp tìm kiểu trang tài liệu.
+- Chưa gõ thì hộp liệt kê các phân hệ đang dùng, xếp dọc, mỗi dòng kèm mô tả ngắn; gõ thì ra cả phân hệ lẫn từng màn bên trong, gom theo phân hệ, có đường dẫn nhỏ cho biết màn nằm ở đâu, chữ khớp được tô màu; dùng phím mũi tên để chọn và Enter để mở.
+- Gõ không dấu vẫn tìm ra, gõ nhiều chữ thì mỗi chữ chỉ cần có mặt ở tên màn hoặc tên phân hệ; hộp chỉ hiện phân hệ đang dùng và màn người dùng có quyền vào, theo đúng luật của menu trái.
+- Bỏ ô lọc thẻ cũ chỉ có trên điện thoại vì ô tìm mới đã thay thế; thêm thư viện cmdk cho hộp tìm.
+- Bài hướng dẫn Tìm nhanh phân hệ và chức năng ở màn chọn phân hệ dưới thẻ Bắt đầu.
+
+**Kiểm:** bài kiểm mới cho danh mục theo quyền, xếp hạng kết quả, tô chữ khớp và hộp tìm (phím tắt, Enter mở màn, phân hệ ngoài mở tab mới, không lộ màn thiếu quyền, mở lại là ô trống); typecheck và lint sạch, số cảnh báo không tăng; thử trên trình duyệt khổ máy tính và điện thoại.
+
+Mã nguồn: `frontend-v2/src/app/search/module-search-index.ts`, `frontend-v2/src/app/search/split-search-highlight.ts`, `frontend-v2/src/app/components/module-search/`, `frontend-v2/src/app/pages/module-launcher-page.tsx`, `frontend-v2/src/shared/ui/command.tsx`, `backend/scripts/seed_help_tim_phan_he_cr781.py`.
+Kiểm: `frontend-v2/src/app/search/module-search-index.test.ts`, `frontend-v2/src/app/search/split-search-highlight.test.ts`, `frontend-v2/src/app/components/module-search/module-search-trigger.test.tsx`.
+
 ## duoc-CR-780 | Gập / mở từng thẻ ở các màn Thu mua giao diện ERP mới
 - status: xong
 - date: 2026-11-18
