@@ -114,6 +114,25 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-783 | Tạo dự án trong nhóm thì gán sẵn thành viên của nhóm vào dự án
+- status: xong
+- date: 2026-11-18
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** người được mời vào một nhóm dự án tự có quyền trên mọi dự án bên trong nhóm, nhưng không hiện là thành viên của dự án con, nên hộp Quản lý dự án và ô chọn người phụ trách của dự án không thấy họ.
+
+**Đã làm**
+- Hộp Tạo dự án trong một nhóm có thêm ô tick Gán thành viên của nhóm vào dự án, bật sẵn và chọn sẵn mọi thành viên của nhóm; người tạo bỏ chọn được từng người hoặc bỏ tick để không gán ai.
+- Người được chọn thành thành viên riêng của dự án và giữ vai trò như ở nhóm; chủ sở hữu của nhóm vào dự án với vai trò Quản trị vì mỗi dự án chỉ có một chủ là người tạo.
+- Máy chủ chặn khi danh sách gửi lên có người không thuộc nhóm, để đường này không thành lối mời người lạ vào dự án; người gọi cũ không gửi danh sách thì giữ nguyên cách làm cũ.
+- Cập nhật tài liệu chức năng, tài liệu API của phân hệ và thêm bài hướng dẫn Tạo dự án trong nhóm và gán thành viên của nhóm.
+
+**Kiểm:** bảy bài kiểm backend mới cho chép đúng người và đúng vai trò, chủ nhóm thành Quản trị, bỏ qua người tạo và id trùng, chặn người ngoài nhóm, giữ cách làm cũ, dự án lẻ và trần độ dài danh sách; ba trăm mười sáu bài kiểm backend có sẵn của phân hệ vẫn xanh; năm bài kiểm giao diện mới cho ô chọn thành viên; typecheck và lint sạch; tạo thử một dự án trong nhóm trên máy local thấy đủ hai thành viên rồi lưu trữ dự án thử.
+
+Mã nguồn: `backend/app/modules/work/list_group_members.py`, `list_service.py`, `schema.py`, `controller.py`; `frontend-v2/src/modules/work/components/work-create-dialog.tsx`, `components/work-create-group-members-picker.tsx`, `types/work.ts`, `api/work-api.ts`, `hooks/use-work-lists.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
+Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-create-group-members-picker.test.tsx`.
+
 ## duoc-CR-782 | Màn Tổng quan phân hệ Dự án dựng lại cho người quản lý
 - status: xong
 - date: 2026-11-18

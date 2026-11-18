@@ -1,10 +1,13 @@
 import { useState } from 'react'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { useWorkGroupMembers } from '../hooks/use-work-groups'
 import { useCreateWorkGroup, useCreateWorkList } from '../hooks/use-work-lists'
+import { WorkCreateGroupMembersPicker } from './work-create-group-members-picker'
 
 interface WorkCreateDialogProps {
   /** `list` = tạo dự án · `group` = tạo nhóm dự án (trên dữ liệu là NHÓM, `WorkGroup`). */
@@ -35,22 +38,44 @@ export function WorkCreateDialog({ mode, parentGroupId, onClose }: WorkCreateDia
   const dangLuu = createList.isPending || createGroup.isPending
   const tieuDe = laNhom ? (parentGroupId ? 'Tạo nhóm con' : 'Tạo nhóm dự án') : 'Tạo dự án'
 
+  //  duoc-CR-783: tạo dự án TRONG một nhóm thì hỏi có gán thành viên nhóm vào dự án không (bật sẵn, chọn sẵn hết).
+  const groupForMembers = !laNhom && mode !== null && parentGroupId ? parentGroupId : undefined
+  const groupMembers = useWorkGroupMembers(groupForMembers)
+  const { user } = useAuth()
+  const [assign, setAssign] = useState(true)
+  const [excluded, setExcluded] = useState<Set<number>>(() => new Set())
+  //  Người tạo luôn là chủ dự án — không đưa vào danh sách chọn.
+  const pickable = (groupMembers.data ?? []).filter((m) => m.employee_id !== user?.employee_id)
+
+  function dong() {
+    setTen('')
+    setAssign(true)
+    setExcluded(new Set())
+    onClose()
+  }
+
+  const waitingMembers = Boolean(groupForMembers) && assign && groupMembers.isLoading
+
   function luu() {
     const value = ten.trim()
-    if (!value) return
-    const xong = () => {
-      setTen('')
-      onClose()
-    }
+    //  Enter trong ô tên cũng gọi vào đây — nút Tạo bị khóa chưa đủ chặn lúc danh sách thành viên nhóm còn đang tải.
+    if (!value || dangLuu || waitingMembers) return
     if (laNhom) {
-      createGroup.mutate({ name: value, parent_id: parentGroupId }, { onSuccess: xong })
-    } else {
-      createList.mutate({ name: value, group_id: parentGroupId }, { onSuccess: xong })
+      createGroup.mutate({ name: value, parent_id: parentGroupId }, { onSuccess: dong })
+      return
     }
+    const memberIds =
+      groupForMembers && assign
+        ? pickable.filter((m) => !excluded.has(m.employee_id)).map((m) => m.employee_id)
+        : undefined
+    createList.mutate(
+      { name: value, group_id: parentGroupId, member_employee_ids: memberIds },
+      { onSuccess: dong },
+    )
   }
 
   return (
-    <Dialog open={mode !== null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={mode !== null} onOpenChange={(open) => !open && dong()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{tieuDe}</DialogTitle>
@@ -68,11 +93,23 @@ export function WorkCreateDialog({ mode, parentGroupId, onClose }: WorkCreateDia
           />
         </div>
 
+        {groupForMembers && (
+          <WorkCreateGroupMembersPicker
+            members={pickable}
+            isLoading={groupMembers.isLoading}
+            assign={assign}
+            onAssignChange={setAssign}
+            excluded={excluded}
+            onExcludedChange={setExcluded}
+          />
+        )}
+
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={dong}>
             Hủy
           </Button>
-          <Button onClick={luu} disabled={!ten.trim() || dangLuu}>
+          {/*  Chờ danh sách thành viên nhóm tải xong mới cho tạo: bấm sớm là gửi danh sách rỗng, dự án ra đời thiếu người. */}
+          <Button onClick={luu} disabled={!ten.trim() || dangLuu || waitingMembers}>
             Tạo
           </Button>
         </DialogFooter>

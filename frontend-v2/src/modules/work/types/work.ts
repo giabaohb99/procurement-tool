@@ -107,6 +107,15 @@ export interface WorkSidebar {
   lists: WorkList[]
 }
 
+/** Dữ liệu gửi lên khi tạo dự án (`POST /api/work/lists`). */
+export interface WorkListCreateValues {
+  name: string
+  description?: string
+  group_id?: number | null
+  /** duoc-CR-783: thành viên nhóm chép vào dự án lúc tạo; bỏ trống = không chép. */
+  member_employee_ids?: number[]
+}
+
 export interface WorkMember {
   id: number
   employee_id: number

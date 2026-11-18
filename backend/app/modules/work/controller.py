@@ -139,6 +139,11 @@ def get_lists(include_archived: bool = False, with_people: bool = False,
 @router.post("/lists")
 def create_list(data: schema.ListCreate, db: Session = Depends(get_db),
                 user=Depends(require("work_task", "create"))):
+    """Tạo dự án; người tạo thành chủ dự án, kèm ba cột mặc định.
+
+    Đặt vào nhóm (`group_id`) phải có quyền quản trị nhóm đó. `member_employee_ids` (duoc-CR-783) chép thành viên nhóm
+    thành thành viên riêng của dự án, giữ vai trò ở nhóm (chủ nhóm thành Quản trị); id không thuộc nhóm trả 400.
+    """
     return success(lists.create_list(db, _actor(db, user), data), "Đã tạo danh sách")
 
 

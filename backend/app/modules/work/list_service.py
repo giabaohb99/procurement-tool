@@ -13,6 +13,7 @@ from app.modules.work.audit_entity import AUDIT_LIST, AUDIT_LIST_MEMBER
 from app.modules.work import list_config_service
 from app.modules.work import serializer as ser
 from app.modules.work.group_service import _get_group_or_403, _with_names
+from app.modules.work.list_group_members import copy_group_members_to_list
 from app.modules.work.membership_service import (CAN_MANAGE, CAN_OWN, Actor,
                                                  assert_can_grant,
                                                  block_if_archived,
@@ -53,8 +54,12 @@ def create_list(db: Session, actor: Actor, data) -> dict:
     #  Độ ưu tiên là một TRƯỜNG TÙY BIẾN nạp sẵn, không còn là cột cứng của task
     #  — xem đầu `label_model.py`.
     list_config_service.seed_system_label_fields(db, lst.id, actor.company_id, actor.user_id)
+    copied = 0
+    if group_id and data.member_employee_ids:
+        copied = copy_group_members_to_list(db, actor, lst.id, group_id, data.member_employee_ids)
     db.commit()
-    record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo dự án {lst.name}")
+    note = f" (gán {copied} thành viên của nhóm)" if copied else ""
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo dự án {lst.name}{note}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 

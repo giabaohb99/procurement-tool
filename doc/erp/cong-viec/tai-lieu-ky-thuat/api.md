@@ -34,7 +34,7 @@ Mã backend: `work`
 | PATCH | `/api/work/label-options/{option_id}` | update label option | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/label-options/{option_id}` | delete label option | `work_task.delete` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists` | Mọi dự án mình thấy. | `work_task.read` |  | tự dò: v2 `work` |
-| POST | `/api/work/lists` | create list | `work_task.create` |  | tự dò: v2 `work` |
+| POST | `/api/work/lists` | Tạo dự án; người tạo thành chủ dự án, kèm ba cột mặc định. | `work_task.create` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}` | get list | `work_task.read` |  | tự dò: v2 `work` |
 | PATCH | `/api/work/lists/{list_id}` | update list | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/lists/{list_id}` | archive list | `work_task.delete` |  | tự dò: v2 `work` |
@@ -54,7 +54,7 @@ Mã backend: `work`
 | GET | `/api/work/lists/{list_id}/trash` | Thùng rác của dự án (B-09): việc đã xóa mềm, kèm cờ `can_restore` theo quyền người xem. | `work_task.read` |  | tự dò: v2 `work` |
 | GET | `/api/work/overview` | Số liệu màn Tổng quan phân hệ Dự án: thẻ số, bảng theo người, sức khỏe dự án, việc cần xử lý. | `work_task.read` | Xem được báo cáo Công việc & Dự án (`ReportKey.WORK`, admin có sẵn): mọi dự án; còn lại: dự án mình tham gia (duoc-CR-782). Dòng ở dự án mình không là thành viên trả `can_open=false` | tự dò: v2 `work` |
 | GET | `/api/work/overview/people/{employee_id}/tasks` | Việc đang mở của một người phụ trách, trong phạm vi màn Tổng quan (bấm vào tên ở bảng theo người). | `work_task.read` | Xem được báo cáo Công việc & Dự án (`ReportKey.WORK`, admin có sẵn): mọi dự án; còn lại: dự án mình tham gia (duoc-CR-782). Dòng ở dự án mình không là thành viên trả `can_open=false` | tự dò: v2 `work` |
-| GET | `/api/work/overview/trend` | Diễn biến theo ngày / tuần của một dự án hoặc một người: việc mới giao, việc xong (đúng hạn / trễ / không hạn). | `work_task.read` | | Như `/overview`; dự án ngoài phạm vi ra chuỗi rỗng; theo người chỉ đếm việc người đó phụ trách (duoc-CR-782) | tự dò: v2 `work` |
+| GET | `/api/work/overview/trend` | Diễn biến theo ngày / tuần của một dự án hoặc một người: việc mới giao, việc xong (đúng hạn / trễ / không hạn). | `work_task.read` |  | Như `/overview`; dự án ngoài phạm vi ra chuỗi rỗng; theo người chỉ đếm việc người đó phụ trách (duoc-CR-782) |
 | PATCH | `/api/work/sections/{section_id}` | update section | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/sections/{section_id}` | Xóa cột. | `work_task.delete` |  | tự dò: v2 `work` |
 | POST | `/api/work/sections/{section_id}/move` | Kéo cột sang chỗ khác — trả CẢ danh sách cột đã xếp lại. | `work_task.write` |  | tự dò: v2 `work` |

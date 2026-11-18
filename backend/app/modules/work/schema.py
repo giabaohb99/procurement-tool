@@ -51,6 +51,9 @@ class ListCreate(BaseModel):
     color: Str20 = ""
     group_id: int | None = None
     sort_order: int = 0
+    #  duoc-CR-783: thành viên NHÓM chép vào dự án lúc tạo (chỉ khi có `group_id`). Bỏ trống = không chép — giữ nguyên
+    #  hành vi cho người gọi cũ (công cụ MCP, lập kế hoạch AI). Trần 500 người cho một lần gửi.
+    member_employee_ids: list[int] | None = Field(None, max_length=500)
 
 
 class ListUpdate(BaseModel):

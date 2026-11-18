@@ -37,7 +37,7 @@ làm xong trong mã nhưng không nói môi trường.
 | Mã | Chức năng | Ai dùng | Màn / nơi dùng | Trạng thái | CR |
 |---|---|---|---|---|---|
 | CN-CV-01 | Nhóm (tối đa 2 cấp) và dự án: tạo, sửa, lưu trữ; cây bên trái; ghim dự án (DS11 A-01, A-05, A-08) | Mọi người có `work_task` | Thanh bên trái `/project` | chưa ghi (ghim xong duoc-CR-667) | CR-218, duoc-CR-667 |
-| CN-CV-02 | Thành viên: mời từng người, vai trò trong dự án, kế thừa từ nhóm, rời, gỡ, chuyển quyền sở hữu (DS11 A-02–A-04, A-09, H-02) | Chủ sở hữu, Quản trị dự án | Hộp thoại thành viên | chưa ghi | CR-218 |
+| CN-CV-02 | Thành viên: mời từng người, vai trò trong dự án, kế thừa từ nhóm, rời, gỡ, chuyển quyền sở hữu (DS11 A-02–A-04, A-09, H-02); tạo dự án trong nhóm thì gán sẵn thành viên nhóm vào dự án (chọn được người) | Chủ sở hữu, Quản trị dự án | Hộp thoại thành viên, hộp Tạo dự án | chưa ghi (gán lúc tạo xong duoc-CR-783) | CR-218, duoc-CR-783 |
 | CN-CV-03 | Công việc: tạo, sửa, xóa mềm; nhiều người phụ trách và người theo dõi; ngày bắt đầu, hạn; ưu tiên; hoàn thành / mở lại (DS11 B-01–B-04, B-06) | Thành viên | Kanban, danh sách, panel chi tiết | chưa ghi | CR-218 |
 | CN-CV-04 | Trường tùy biến theo dự án (nhãn chọn một, chọn nhiều thay tag, kiểu chữ / số / ngày / người) (DS11 B-05, B-08, B-13; [TL10 §5](10-du-an-cong-viec.md#trường-tùy-biến)) | Quản trị dự án | Panel chi tiết, thiết lập dự án | chưa ghi | |
 | CN-CV-05 | Việc con: thêm, sửa, xóa, tick; tiến độ n/m trên thẻ; không thành thẻ riêng; tối đa 2 cấp (DS11 C-01, C-02, C-05) | Thành viên | Panel chi tiết | chưa ghi | |
@@ -68,6 +68,11 @@ làm xong trong mã nhưng không nói môi trường.
 - **Ngoại lệ duy nhất — số liệu màn Tổng quan** (duoc-CR-782, anh Được chốt 18/11/2026): ai xem được báo cáo Công việc &
   Dự án (khóa báo cáo gán ở tab Báo cáo của Phân quyền tài khoản; admin có sẵn) thì màn Tổng quan ĐẾM trên mọi dự án.
   Chỉ nới phần đọc số liệu: dự án / việc mình không là thành viên vẫn không mở được, dòng của chúng không có link.
+- **Gán thành viên nhóm lúc tạo dự án** (duoc-CR-783): người trong nhóm vốn có quyền trên dự án con nhờ kế thừa nhưng không
+  hiện trong danh sách thành viên của dự án. Hộp Tạo dự án trong một nhóm có ô tick *Gán thành viên của nhóm vào dự án*
+  bật sẵn, chọn sẵn mọi thành viên trực tiếp của nhóm (bỏ chọn được từng người). Người được chọn thành thành viên riêng
+  của dự án, giữ vai trò ở nhóm; chủ nhóm vào làm Quản trị vì dự án chỉ có một chủ là người tạo. Gửi người không thuộc
+  nhóm thì bị chặn. Chỉ áp lúc TẠO: dự án tạo ngoài nhóm rồi mới chuyển vào nhóm không tự chép thành viên.
 - **Quyền:** RBAC `work_task` gác cửa; vai trò dự án gác dữ liệu ([04-phan-quyen.md](../tai-lieu-ky-thuat/04-phan-quyen.md)).
 
 ### CN-CV-03 và CN-CV-06 — Công việc và khung nhìn

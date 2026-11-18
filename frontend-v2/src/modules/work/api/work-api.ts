@@ -3,6 +3,7 @@ import type {
   WorkLabelField,
   WorkLabelOption,
   WorkList,
+  WorkListCreateValues,
   WorkMember,
   WorkSection,
   WorkSidebar,
@@ -45,7 +46,7 @@ export const workApi = {
       params: { include_archived: includeArchived, with_people: withPeople },
     }),
 
-  createList: (values: { name: string; description?: string; group_id?: number | null }) =>
+  createList: (values: WorkListCreateValues) =>
     apiPost<WorkList>('/api/work/lists', values),
 
   getList: (id: number) => apiGet<WorkList>(`/api/work/lists/${id}`),

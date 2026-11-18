@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workApi } from '../api/work-api'
+import type { WorkListCreateValues } from '../types/work'
 
 /** Cây điều hướng bên trái (A-05) — nhóm → nhóm con → list, kèm list đứng lẻ. */
 export function useWorkSidebar(includeArchived = false) {
@@ -39,7 +40,7 @@ export function useWorkList(id?: number) {
 export function useCreateWorkList() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (values: { name: string; description?: string; group_id?: number | null }) =>
+    mutationFn: (values: WorkListCreateValues) =>
       workApi.createList(values),
     onSuccess: () => {
       toast.success('Đã tạo dự án')
