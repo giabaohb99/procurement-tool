@@ -134,6 +134,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/ui/chart.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, các thẻ trong `frontend-v2/src/modules/procurement/components/` và các trang chi tiết, xử lý, Tổng quan, Báo cáo trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_gap_mo_the_cr780.py`.
 Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/modules/procurement/components/purchase-request-linked-documents-card.test.tsx`.
+Commit: a04c4033.
+Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
 
 ## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
 - status: xong
