@@ -41,14 +41,14 @@ export function ListArchiveAction({ list, onArchived }: ListArchiveActionProps) 
   if (confirming) {
     return (
       <span className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Lưu trữ dự án này? Việc bên trong vẫn giữ nguyên.</span>
+        <span className="text-muted-foreground">Đưa dự án này vào lưu trữ? Việc bên trong vẫn giữ nguyên.</span>
         <Button
           variant="destructive"
           size="sm"
           disabled={archive.isPending}
           onClick={() => archive.mutate(list.id, { onSuccess: onArchived })}
         >
-          Lưu trữ
+          Đưa vào lưu trữ
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
           Thôi
@@ -60,7 +60,7 @@ export function ListArchiveAction({ list, onArchived }: ListArchiveActionProps) 
   return (
     <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
       <Archive className="size-4" />
-      Lưu trữ dự án
+      Đưa vào lưu trữ
     </Button>
   )
 }

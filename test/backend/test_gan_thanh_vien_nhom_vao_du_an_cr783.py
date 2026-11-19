@@ -191,3 +191,82 @@ def test_khong_co_quyen_doc_cong_viec_thi_khong_nhan_chuong_moi(db, toi, cap_quy
     lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
     list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
     assert _chuong(db, 2) == []
+
+
+def test_cay_ben_trai_tra_vai_tro_cua_minh_tren_tung_du_an(db, toi, nhom):
+    """Menu "…" của dòng dự án ở cây cần biết mình là chủ hay không — trước đây cây trả my_role = None cho mọi dự án."""
+    du_an_nhom = list_service.create_list(db, toi, schema.ListCreate(name="Trong nhóm", group_id=nhom["id"]))
+    du_an_le = list_service.create_list(db, toi, schema.ListCreate(name="Lẻ"))
+    an = Actor(user_id=2, employee_id=AN, company_id=COMPANY)
+    #  An là Quản trị nhóm DX: thấy dự án trong nhóm với vai trò kế thừa từ nhóm, không thấy dự án lẻ.
+    cay_an = group_service.sidebar(db, an)
+    trong_nhom = {x["id"]: x["my_role"] for g in cay_an["groups"] for x in g["lists"]}
+    assert trong_nhom[du_an_nhom["id"]] == int(WorkMemberRole.ADMIN)
+    assert all(x["id"] != du_an_le["id"] for x in cay_an["lists"])
+    #  Người tạo là chủ cả hai.
+    cay_toi = group_service.sidebar(db, toi)
+    vai_tro = {x["id"]: x["my_role"] for g in cay_toi["groups"] for x in g["lists"]}
+    vai_tro.update({x["id"]: x["my_role"] for x in cay_toi["lists"]})
+    assert vai_tro[du_an_nhom["id"]] == int(WorkMemberRole.OWNER)
+    assert vai_tro[du_an_le["id"]] == int(WorkMemberRole.OWNER)
+
+
+# ── Xóa vĩnh viễn dự án (anh Được 19/11/2026: "có 2 chức năng là xóa vĩnh viễn và đưa vào lưu trữ") ───────────────────
+
+def _dem(db, model, **loc):
+    q = db.query(model)
+    for k, v in loc.items():
+        q = q.filter(getattr(model, k) == v)
+    return q.count()
+
+
+def test_xoa_vinh_vien_don_sach_du_an_khong_dung_du_an_khac(db, toi):
+    from app.modules.audit.model import AuditLog
+    from app.modules.attachment.model import FileLink
+    from app.modules.comment.model import Comment
+    from app.modules.work import list_purge_service, task_service
+    from app.modules.work.label_model import WorkLabelField
+    from app.modules.work.model import WorkList
+    from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee
+
+    xoa = list_service.create_list(db, toi, schema.ListCreate(name="Bỏ đi"))
+    giu = list_service.create_list(db, toi, schema.ListCreate(name="Giữ lại"))
+    list_service.add_member(db, toi, xoa["id"], schema.MemberIn(employee_id=AN))
+    cha = task_service.create_task(db, toi, schema.TaskCreate(list_id=xoa["id"], title="Cha"))["id"]
+    task_service.create_task(db, toi, schema.TaskCreate(parent_id=cha, title="Con"))
+    giu_task = task_service.create_task(db, toi, schema.TaskCreate(list_id=giu["id"], title="Việc giữ"))["id"]
+    db.add(WorkTaskAssignee(task_id=cha, employee_id=AN, kind=1))
+    db.add(Comment(entity="work_task", entity_id=cha, body="bình luận"))
+    db.add(Comment(entity="work_task", entity_id=giu_task, body="bình luận giữ"))
+    db.add(FileLink(file_id=999, entity="work_task", entity_id=cha))
+    db.commit()
+
+    assert list_purge_service.purge_list(db, toi, xoa["id"]) == {"tasks": 2}
+
+    assert db.get(WorkList, xoa["id"]) is None
+    assert _dem(db, WorkTask, list_id=xoa["id"]) == 0
+    assert _dem(db, WorkSection, list_id=xoa["id"]) == 0
+    assert _dem(db, WorkLabelField, list_id=xoa["id"]) == 0
+    assert _dem(db, WorkListMember, list_id=xoa["id"]) == 0
+    assert _dem(db, WorkTaskAssignee, task_id=cha) == 0
+    assert _dem(db, Comment, entity="work_task", entity_id=cha) == 0
+    assert _dem(db, FileLink, entity="work_task", entity_id=cha) == 0
+    #  Dự án khác còn nguyên.
+    assert db.get(WorkList, giu["id"]) is not None
+    assert _dem(db, WorkTask, list_id=giu["id"]) == 1
+    assert _dem(db, Comment, entity="work_task", entity_id=giu_task) == 1
+    #  Nhật ký thao tác GIỮ LẠI — chỗ duy nhất trả lời "ai xóa dự án nào".
+    assert db.query(AuditLog).filter(AuditLog.entity_id == xoa["id"], AuditLog.action == "delete").count() == 1
+
+
+def test_chi_chu_du_an_moi_xoa_vinh_vien_duoc(db, toi):
+    from app.modules.work import list_purge_service
+    from app.modules.work.model import WorkList
+
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
+    list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN, role=int(WorkMemberRole.ADMIN)))
+    an = Actor(user_id=2, employee_id=AN, company_id=COMPANY)
+    with pytest.raises(HTTPException) as loi:
+        list_purge_service.purge_list(db, an, lst["id"])
+    assert loi.value.status_code == 403
+    assert db.get(WorkList, lst["id"]) is not None

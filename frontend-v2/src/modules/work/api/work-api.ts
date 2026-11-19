@@ -60,6 +60,9 @@ export const workApi = {
 
   archiveList: (id: number) => apiDelete(`/api/work/lists/${id}`),
 
+  /** duoc-CR-783: XÓA VĨNH VIỄN dự án + mọi việc, bình luận, tệp bên trong — khác `archiveList` (lưu trữ). */
+  purgeList: (id: number) => apiDelete(`/api/work/lists/${id}/permanent`),
+
   /** Kéo đổi thứ tự CỘT — trả cả hàng cột đã xếp lại (xem `move_section`). */
   moveSection: (sectionId: number, beforeSectionId: number | null) =>
     apiPost<WorkSection[]>(`/api/work/sections/${sectionId}/move`, {

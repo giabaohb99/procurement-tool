@@ -219,6 +219,7 @@ export function ProjectListPage() {
                 value={groupFilter}
                 onChange={setGroupFilter}
                 onManage={setManageGroup}
+                showArchived={showArchived}
               />
             )}
             {/*  Nhãn ngắn + trạng thái bấm (`aria-pressed`, nền đậm khi bật): nhãn cũ "Hiện cả dự án lưu trữ" dài 180px
@@ -228,7 +229,11 @@ export function ProjectListPage() {
               size="sm"
               aria-pressed={showArchived}
               title={showArchived ? 'Đang hiện cả dự án đã lưu trữ — bấm để ẩn' : 'Hiện cả dự án đã lưu trữ'}
-              onClick={() => setShowArchived((value) => !value)}
+              onClick={() => {
+                setShowArchived((value) => !value)
+                //  Nhóm đang lọc có thể là nhóm lưu trữ sắp bị ẩn khỏi ô chọn — về "Tất cả" cho khỏi kẹt.
+                setGroupFilter('all')
+              }}
             >
               <Archive className="size-4" />
               Lưu trữ

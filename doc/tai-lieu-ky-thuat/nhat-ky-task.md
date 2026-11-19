@@ -114,6 +114,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
+- status: xong
+- date: 2026-11-19
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** anh Được không tìm ra chỗ xóa dự án con, muốn bấm nút ba chấm ở cây bên trái để xóa, muốn hai thao tác tách bạch là xóa vĩnh viễn và đưa vào lưu trữ thay vì xóa chỉ là lưu trữ, muốn chuyển dự án sang nhóm khác ngay ở cây, và thấy cụm nút lọc nhóm ở màn Dự án rối mắt.
+
+**Đã làm**
+- Thêm đường API xóa vĩnh viễn dự án: xóa dự án cùng mọi việc kể cả việc con và việc ở thùng rác, người phụ trách, trường tùy biến, liên kết, bình luận và tệp đính kèm của việc; giữ lại nhật ký thao tác để tra ai đã xóa; chỉ chủ dự án làm được.
+- Mỗi dòng dự án ở cây bên trái có nút ba chấm cho chủ dự án với ba mục: chuyển sang nhóm khác (chỉ liệt kê nhóm mình quản trị, có bỏ khỏi nhóm), đưa vào lưu trữ và xóa vĩnh viễn; menu Quản lý dự án đầu trang cũng có hai mục lưu trữ và xóa vĩnh viễn; mỗi thao tác hỏi lại một lần, xóa xong mà đang ở chính dự án đó thì về màn danh sách dự án.
+- Cây bên trái nay trả về vai trò của mình trên từng dự án (gom hai câu truy vấn cho cả cây) để biết ai là chủ.
+- Kéo thả đổi nhóm ở cây bên trái: chủ dự án kéo dòng dự án thả lên tên nhóm mình quản trị để chuyển vào nhóm, hoặc thả vào khu Chưa thuộc nhóm để đưa ra khỏi nhóm; chỗ thả được sáng viền khi rê tới, dự án của người khác không kéo được.
+- Màn Dự án thay dãy nút lọc nhóm bằng một ô chọn thả xuống kèm số dự án mỗi nhóm, nhóm đã lưu trữ chỉ hiện khi bật Lưu trữ, nút Quản lý nhóm có chữ và chỉ hiện khi đang chọn một nhóm.
+- Cập nhật tài liệu chức năng, tài liệu API và bài hướng dẫn.
+
+**Kiểm:** ba bài kiểm backend mới cho xóa vĩnh viễn dọn sạch đúng dự án mà không đụng dự án khác và vẫn giữ nhật ký, chỉ chủ dự án xóa được, vai trò từng dự án trong cây; năm trăm bốn mươi ba bài kiểm giao diện phân hệ Dự án xanh, có bài mới cho menu ba chấm (lưu trữ, xóa vĩnh viễn, hủy, chuyển nhóm); typecheck và lint sạch; thử trên máy local chuyển một dự án vào nhóm rồi bỏ ra bằng menu và bằng kéo thả, mở hộp xác nhận lưu trữ rồi hủy.
+
+Mã nguồn: `backend/app/modules/work/list_purge_service.py`, `group_service.py`, `controller.py`; `frontend-v2/src/modules/work/components/list-row-menu.tsx`, `components/work-sidebar-tree.tsx`, `components/project-group-filter.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `pages/project-list-page.tsx`, `hooks/use-project-remove-actions.ts`, `hooks/use-work-lists.ts`, `api/work-api.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
+Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-sidebar-tree.test.tsx`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`.
+
 ## duoc-CR-783-luot-2 | Chuông mời vào dự án, nút Mời lại, lưu trữ dự án và sửa bố cục khối thành viên
 - status: xong
 - date: 2026-11-19

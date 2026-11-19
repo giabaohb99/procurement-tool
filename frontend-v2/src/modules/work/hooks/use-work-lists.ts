@@ -74,12 +74,23 @@ export function useUpdateWorkList() {
   })
 }
 
+export function usePurgeWorkList() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => workApi.purgeList(id),
+    onSuccess: () => {
+      toast.success('Đã xóa vĩnh viễn dự án')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
+    },
+  })
+}
+
 export function useArchiveWorkList() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => workApi.archiveList(id),
     onSuccess: () => {
-      toast.success('Đã lưu trữ dự án')
+      toast.success('Đã đưa dự án vào lưu trữ')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })

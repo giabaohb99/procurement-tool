@@ -12,7 +12,7 @@ from app.modules.work import serializer as ser
 from app.modules.work.membership_service import (CAN_MANAGE, CAN_OWN, Actor,
                                                  assert_can_grant, group_role,
                                                  visible_list_ids)
-from app.modules.work.model import (WorkGroup, WorkGroupMember, WorkList,
+from app.modules.work.model import (WorkGroup, WorkGroupMember, WorkList, WorkListMember,
                                     WorkMemberRole)
 
 
@@ -172,11 +172,34 @@ def sidebar(db: Session, actor: Actor, include_archived: bool = False) -> dict:
     for x in lists:
         (by_group.setdefault(x.group_id, []) if x.group_id else loose).append(x)
 
+    list_role = _sidebar_list_roles(db, actor.employee_id, groups)
+
     def node(g: WorkGroup) -> dict:
         out = ser.group_out(g, group_role(db, actor.employee_id, g.id))
-        out["lists"] = [ser.list_out(x, None) for x in by_group.get(g.id, [])]
+        out["lists"] = [ser.list_out(x, list_role(x)) for x in by_group.get(g.id, [])]
         out["children"] = [node(c) for c in groups if c.parent_id == g.id]
         return out
 
     roots = [node(g) for g in groups if not g.parent_id]
-    return {"groups": roots, "lists": [ser.list_out(x, None) for x in loose]}
+    return {"groups": roots, "lists": [ser.list_out(x, list_role(x)) for x in loose]}
+
+
+def _sidebar_list_roles(db: Session, employee_id: int, groups: list):
+    """Vai trò hiệu lực của mình trên TỪNG dự án trong cây — cùng luật `effective_role` (lấy cao nhất giữa mời riêng,
+    nhóm chứa dự án, nhóm ông) nhưng gom hai câu truy vấn cho cả cây thay vì hỏi từng dự án.
+
+    duoc-CR-783: menu "…" của dòng dự án ở cây cần biết mình có phải chủ để hiện mục Lưu trữ dự án; trước đây cây trả
+    `my_role = None` cho mọi dự án.
+    """
+    direct = {lid: int(r) for lid, r in db.query(WorkListMember.list_id, WorkListMember.role)
+              .filter(WorkListMember.employee_id == employee_id).all()}
+    by_group = {gid: int(r) for gid, r in db.query(WorkGroupMember.group_id, WorkGroupMember.role)
+                .filter(WorkGroupMember.employee_id == employee_id).all()}
+    parent_of = {g.id: g.parent_id for g in groups}
+
+    def role_of(lst: WorkList) -> int | None:
+        found = [direct.get(lst.id), by_group.get(lst.group_id), by_group.get(parent_of.get(lst.group_id))]
+        found = [r for r in found if r]
+        return min(found) if found else None
+
+    return role_of

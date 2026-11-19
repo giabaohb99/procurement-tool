@@ -15,7 +15,7 @@ PROJECT_ROOT = "Hướng dẫn sử dụng Dự án và Công việc"
 
 ARTICLES = [
     (PROJECT_ROOT, "Dự án — Tạo dự án trong nhóm và gán thành viên của nhóm",
-     "Tạo dự án trong nhóm, gán sẵn thành viên của nhóm; chuông khi được mời, nút Mời lại; lưu trữ và khôi phục dự án.",
+     "Tạo dự án trong nhóm, gán sẵn thành viên của nhóm; chuông khi được mời, nút Mời lại; chuyển nhóm, lưu trữ và xóa vĩnh viễn dự án.",
      """<h2>Tạo dự án trong nhóm và gán thành viên của nhóm</h2>
 <p>Người trong một <strong>nhóm dự án</strong> (ví dụ nhóm DX) tự có quyền trên mọi dự án bên trong nhóm. Từ ngày
 18/11/2026, khi tạo dự án mới trong nhóm, bạn gán luôn được họ thành <strong>thành viên của dự án</strong>, để họ hiện trong
@@ -51,12 +51,18 @@ danh sách thành viên và trong ô chọn người phụ trách của dự án
 <em>Đã mời ngày …</em>. Người có quyền Quản trị trở lên thấy nút <strong>Mời lại</strong> (hình máy bay giấy) để gửi lại chuông
 nhắc cho người đó; bấm xong nút tạm khóa 30 giây.</li>
 </ul>
-<h3>Lưu trữ (xóa) dự án</h3>
+<h3>Đưa dự án vào lưu trữ, xóa vĩnh viễn, chuyển nhóm</h3>
+<p>Chỉ <strong>chủ dự án</strong> làm được. Ở cây <strong>Danh sách dự án</strong> bên trái, rê chuột vào dòng dự án rồi bấm nút
+<strong>…</strong> (hoặc mở dự án, bấm <strong>Quản lý dự án</strong> ở góc phải trên cùng):</p>
 <ul>
-<li>Chủ dự án mở <strong>Quản lý dự án › Thành viên &amp; thông tin</strong>, bấm <strong>Lưu trữ dự án</strong> ở góc trái chân hộp
-rồi xác nhận. Dự án biến khỏi cây bên trái, việc bên trong vẫn giữ nguyên.</li>
-<li>Muốn lấy lại: ở màn <strong>Dự án</strong> bật nút <strong>Lưu trữ</strong> để hiện dự án đã lưu trữ, mở dự án đó rồi bấm
-<strong>Khôi phục dự án</strong> trong hộp Quản lý dự án.</li>
+<li><strong>Chuyển sang nhóm</strong>: chọn nhóm muốn đưa dự án vào (chỉ hiện nhóm bạn quản trị), hoặc <strong>Bỏ khỏi nhóm</strong>
+để dự án đứng riêng. Chỉ có ở menu <strong>…</strong> của cây. Trên máy tính có thể <strong>kéo</strong> dòng dự án thả lên
+tên nhóm, hoặc thả vào khu <em>Chưa thuộc nhóm</em> để đưa ra khỏi nhóm.</li>
+<li><strong>Đưa vào lưu trữ</strong>: dự án ẩn khỏi danh sách, việc bên trong giữ nguyên. Muốn lấy lại: ở màn
+<strong>Dự án</strong> bật nút <strong>Lưu trữ</strong>, mở dự án đó, vào <strong>Quản lý dự án › Thành viên &amp; thông tin</strong>
+và bấm <strong>Khôi phục dự án</strong>.</li>
+<li><strong>Xóa vĩnh viễn</strong> (chữ đỏ): xóa hẳn dự án cùng mọi việc, bình luận và tệp đính kèm bên trong.
+<strong>Không lấy lại được</strong> — hệ thống hỏi lại một lần trước khi xóa.</li>
 </ul>"""),
 ]
 

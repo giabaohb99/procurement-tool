@@ -78,9 +78,19 @@ làm xong trong mã nhưng không nói môi trường.
   bấm vào mở thẳng dự án (nhóm thì mở màn danh sách dự án). Đổi vai trò người đã có không báo; không báo cho chính người
   mời; người không có `work_task.read` không nhận (cùng cổng chuông giao việc). Mỗi dòng thành viên hiện *Đã mời <ngày>*;
   quản trị trở lên có nút *Mời lại* gửi chuông *Nhắc lời mời vào …*, bấm xong khóa 30 giây để khỏi dội chuông.
-- **Lưu trữ / khôi phục dự án** (duoc-CR-783 lượt 2): chủ dự án có nút *Lưu trữ dự án* ở chân hộp Quản lý dự án (hỏi lại
-  một nhịp; lưu trữ xong về màn danh sách dự án). Dự án đã lưu trữ (bật nút *Lưu trữ* ở màn Dự án để thấy) có nút
-  *Khôi phục dự án*. "Xóa" dự án là lưu trữ: việc bên trong còn nguyên.
+- **Gỡ dự án: Đưa vào lưu trữ hoặc Xóa vĩnh viễn** (duoc-CR-783 lượt 3, anh Được 19/11/2026: "có 2 chức năng là xóa vĩnh
+  viễn và đưa vào lưu trữ"). Chỉ chủ dự án. Hai lối vào: menu "…" của dòng dự án ở cây bên trái, và menu *Quản lý dự án*
+  đầu trang; mỗi thao tác hỏi lại một lần, gỡ xong mà đang ở chính dự án đó thì về màn danh sách dự án.
+  - *Đưa vào lưu trữ*: dự án ẩn khỏi danh sách, việc giữ nguyên. Lấy lại: bật nút *Lưu trữ* ở màn Dự án, mở dự án, bấm
+    *Khôi phục dự án* ở chân hộp Thành viên & thông tin.
+  - *Xóa vĩnh viễn* (`DELETE /api/work/lists/{id}/permanent`): xóa dự án cùng việc (kể cả việc con, việc ở thùng rác),
+    người phụ trách, trường tùy biến, liên kết, bình luận và tệp đính kèm của việc. Không khôi phục được. Nhật ký thao tác
+    được giữ lại để tra ai đã xóa.
+- **Chuyển dự án sang nhóm khác** (duoc-CR-783 lượt 3): menu "…" của dòng dự án ở cây có *Chuyển sang nhóm* — chỉ liệt kê
+  nhóm mình quản trị được (trừ nhóm đang ở và nhóm đã lưu trữ), kèm *Bỏ khỏi nhóm* khi dự án đang trong nhóm. Chỉ chủ dự án.
+  Trên máy tính còn kéo thả được: kéo dòng dự án thả lên tên nhóm (nhóm mình quản trị) hoặc vào khu *Chưa thuộc nhóm*.
+- **Lọc theo nhóm ở màn Dự án**: một ô chọn thả xuống (mỗi nhóm kèm số dự án; nhóm lưu trữ chỉ hiện khi bật *Lưu trữ*),
+  nút *Quản lý nhóm* hiện khi đang chọn một nhóm.
 - **Quyền:** RBAC `work_task` gác cửa; vai trò dự án gác dữ liệu ([04-phan-quyen.md](../tai-lieu-ky-thuat/04-phan-quyen.md)).
 
 ### CN-CV-03 và CN-CV-06 — Công việc và khung nhìn

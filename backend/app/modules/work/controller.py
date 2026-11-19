@@ -20,6 +20,7 @@ from app.core.response import success
 from . import activity_service as activities
 from . import group_service as groups
 from . import list_config_service as cfg
+from . import list_purge_service as purge
 from . import list_service as lists
 from . import member_invite_service as invites
 from . import overview_service as overview
@@ -179,7 +180,21 @@ def update_list(list_id: int, data: schema.ListUpdate, db: Session = Depends(get
 @router.delete("/lists/{list_id}")
 def archive_list(list_id: int, db: Session = Depends(get_db),
                  user=Depends(require("work_task", "delete"))):
+    """Đưa dự án vào lưu trữ — việc bên trong giữ nguyên, khôi phục được (gửi `is_archived = 0` qua PATCH).
+
+    Quyền: chủ dự án. Đường giữ tên `DELETE` vì các nơi gọi cũ (công cụ AI) đang dùng; xóa thật là `/permanent`.
+    """
     return success(lists.archive_list(db, _actor(db, user), list_id), "Đã lưu trữ danh sách")
+
+
+@router.delete("/lists/{list_id}/permanent")
+def purge_list(list_id: int, db: Session = Depends(get_db),
+               user=Depends(require("work_task", "delete"))):
+    """Xóa vĩnh viễn dự án cùng mọi việc, bình luận, tệp đính kèm bên trong — không khôi phục được.
+
+    Quyền: chủ dự án (duoc-CR-783). Nhật ký thao tác được giữ lại. Trả `tasks` = số việc đã xóa.
+    """
+    return success(purge.purge_list(db, _actor(db, user), list_id), "Đã xóa vĩnh viễn dự án")
 
 
 @router.get("/lists/{list_id}/members")

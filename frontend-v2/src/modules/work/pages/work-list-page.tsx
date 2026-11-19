@@ -1,4 +1,5 @@
 import {
+  Archive,
   ArrowLeft,
   BarChart3,
   GanttChartSquare,
@@ -21,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -56,6 +58,7 @@ import {
 import { useCreateTaskLink, useDeleteTaskLink, useUpdateTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
+import { useProjectRemoveActions } from '../hooks/use-project-remove-actions'
 import { useUpdateWorkList, useWorkSidebar } from '../hooks/use-work-lists'
 import type { WorkSection } from '../types/work'
 import { fieldHasOptions, WORK_ROLE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
@@ -152,6 +155,7 @@ function WorkListContent({ listId }: { listId: number }) {
   //  Sửa TÊN / MÔ TẢ ngay trên tiêu đề. Cùng hook với thẻ Thông tin trong hộp
   //  Quản lý dự án — hai lối vào, một đường ghi.
   const updateList = useUpdateWorkList()
+  const removeActions = useProjectRemoveActions({ id: listId, name: board?.list.name ?? '' })
   const moveTask = useMoveTask(listId)
   /*  Thả "xuống cuối cột" khi cột đang tải dở thì neo trước thẻ chưa tải đầu
       tiên — không thì thẻ rơi xuống phần chưa tải và biến khỏi màn hình ngay
@@ -392,6 +396,24 @@ function WorkListContent({ listId }: { listId: number }) {
                 <Trash2 className="size-4" />
                 Thùng rác
               </DropdownMenuItem>
+            )}
+            {/*  duoc-CR-783: hai thao tác gỡ dự án — lưu trữ (khôi phục được) và xóa vĩnh viễn — chỉ chủ dự án. Đặt ngay
+                 trong menu này, cuối menu sau vạch ngăn để khỏi bấm nhầm (anh Được tìm không ra khi nó nằm sâu trong hộp). */}
+            {canOwn && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void removeActions.archiveProject()}>
+                  <Archive className="size-4" />
+                  Đưa vào lưu trữ
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => void removeActions.purgeProject()}
+                >
+                  <Trash2 className="size-4" />
+                  Xóa vĩnh viễn
+                </DropdownMenuItem>
+              </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

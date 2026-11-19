@@ -374,30 +374,31 @@ describe('ListManageDialog — lưu trữ / khôi phục dự án (duoc-CR-783)'
   it('chủ sở hữu thấy nút Lưu trữ, phải xác nhận một nhịp rồi mới gọi', async () => {
     const user = userEvent.setup()
     show(WORK_ROLE.OWNER)
-    await user.click(screen.getByRole('button', { name: /Lưu trữ dự án/ }))
+    await user.click(screen.getByRole('button', { name: 'Đưa vào lưu trữ' }))
     expect(archiveList).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Lưu trữ' }))
+    //  Nút xác nhận mang cùng nhãn và thay chỗ nút mở — chỉ còn một nút tên này.
+    await user.click(screen.getByRole('button', { name: 'Đưa vào lưu trữ' }))
     expect(archiveList).toHaveBeenCalledWith(LIST.id, expect.anything())
   })
 
   it('bấm Thôi thì không lưu trữ', async () => {
     const user = userEvent.setup()
     show(WORK_ROLE.OWNER)
-    await user.click(screen.getByRole('button', { name: /Lưu trữ dự án/ }))
+    await user.click(screen.getByRole('button', { name: 'Đưa vào lưu trữ' }))
     await user.click(screen.getByRole('button', { name: 'Thôi' }))
     expect(archiveList).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: /Lưu trữ dự án/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đưa vào lưu trữ' })).toBeInTheDocument()
   })
 
   it('quản trị không thấy nút lưu trữ — backend gác bằng CAN_OWN', () => {
     show(WORK_ROLE.ADMIN)
-    expect(screen.queryByRole('button', { name: /Lưu trữ dự án/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Đưa vào lưu trữ' })).not.toBeInTheDocument()
   })
 
   it('dự án đã lưu trữ thì đổi thành nút Khôi phục', async () => {
     const user = userEvent.setup()
     show(WORK_ROLE.OWNER, { is_archived: 1 })
-    expect(screen.queryByRole('button', { name: /Lưu trữ dự án/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Đưa vào lưu trữ' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Khôi phục dự án/ }))
     expect(updateList).toHaveBeenCalledWith({ id: LIST.id, values: { is_archived: 0 } })
   })

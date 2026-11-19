@@ -38,7 +38,7 @@ Mã backend: `work`
 | POST | `/api/work/lists` | Tạo dự án; người tạo thành chủ dự án, kèm ba cột mặc định. | `work_task.create` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}` | get list | `work_task.read` |  | tự dò: v2 `work` |
 | PATCH | `/api/work/lists/{list_id}` | update list | `work_task.write` |  | tự dò: v2 `work` |
-| DELETE | `/api/work/lists/{list_id}` | archive list | `work_task.delete` |  | tự dò: v2 `work` |
+| DELETE | `/api/work/lists/{list_id}` | Đưa dự án vào lưu trữ — việc bên trong giữ nguyên, khôi phục được (gửi `is_archived = 0` qua PATCH). | `work_task.delete` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/activities` | Nhật ký gộp của cả dự án — việc + thành viên + cột, mới nhất trước (§8). | `work_task.read` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/activity-actors` | Những người từng thao tác trên dự án — nguồn cho ô lọc "theo người". | `work_task.read` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/board` | Cột + task cha + mọi thứ vẽ trên thẻ, trong MỘT lượt gọi (D-01). | `work_task.read` |  | tự dò: v2 `work` |
@@ -49,6 +49,7 @@ Mã backend: `work`
 | POST | `/api/work/lists/{list_id}/members` | Mời một người vào dự án, hoặc đổi vai trò nếu người đó đã có. | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/lists/{list_id}/members/{member_id}` | remove list member | `work_task.write` |  | tự dò: v2 `work` |
 | POST | `/api/work/lists/{list_id}/members/{member_id}/reinvite` | Gửi lại chuông mời vào dự án cho một thành viên (nút Mời lại). | `work_task.write` |  | tự dò: v2 `work` |
+| DELETE | `/api/work/lists/{list_id}/permanent` | Xóa vĩnh viễn dự án cùng mọi việc, bình luận, tệp đính kèm bên trong — không khôi phục được. | `work_task.delete` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/sections` | get sections | `work_task.read` |  | tự dò: v2 `work` |
 | POST | `/api/work/lists/{list_id}/sections` | create section | `work_task.write` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/sections/{section_id}/tasks` | Trang kế của một cột — bao-CR-483. | `work_task.read` |  | tự dò: v2 `work` |
