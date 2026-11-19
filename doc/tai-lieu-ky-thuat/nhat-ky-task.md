@@ -134,6 +134,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `backend/app/modules/work/list_purge_service.py`, `group_service.py`, `controller.py`; `frontend-v2/src/modules/work/components/list-row-menu.tsx`, `components/work-sidebar-tree.tsx`, `components/project-group-filter.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `pages/project-list-page.tsx`, `hooks/use-project-remove-actions.ts`, `hooks/use-work-lists.ts`, `api/work-api.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-sidebar-tree.test.tsx`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`.
+Commit: e2655d59.
+Deploy: dev 19/11/2026 (erp-v2 e2655d59: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 4 đoạn).
 
 ## duoc-CR-783-luot-2 | Chuông mời vào dự án, nút Mời lại, lưu trữ dự án và sửa bố cục khối thành viên
 - status: xong
