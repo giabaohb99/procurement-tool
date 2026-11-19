@@ -362,6 +362,8 @@ class WorkApi:
     def __init__(self, base_url: str, token: str = ""):
         self.base_url = base_url.rstrip("/")
         self.token = token
+        #  duoc-CR-783: thành viên RIÊNG của từng dự án đã đọc (list_id -> employee_id) — đọc một lần mỗi dự án.
+        self.list_members: dict[int, set[int]] = {}
 
     def call(self, method: str, path: str, payload: dict | None = None) -> dict:
         req = urllib.request.Request(self.base_url + path, method=method)
@@ -505,6 +507,33 @@ def effort_patch(entry: JournalEntry, task: dict, types: TaskTypeDirectory) -> d
     return out
 
 
+def ensure_list_members(api: WorkApi, list_id: int, employee_ids: list[int], codes: list[str],
+                        dry: bool, indent: str = "") -> None:
+    """Người phụ trách chưa là thành viên RIÊNG của dự án thì mời vào (vai trò Thành viên) trước khi giao việc.
+
+    duoc-CR-783, anh Được 19/11/2026: người chỉ vào dự án nhờ kế thừa từ nhóm DX vẫn được giao việc, nhưng không có tên
+    trong danh sách thành viên của dự án nên hộp Quản lý dự án và ô chọn người phụ trách không thấy họ. Mời thêm dòng
+    Thành viên không hạ quyền ai: vai trò hiệu lực lấy cao nhất giữa mời riêng và kế thừa từ nhóm.
+    """
+    if not list_id or not employee_ids:
+        return
+    if list_id not in api.list_members:
+        rows = api.call("GET", f"/api/work/lists/{list_id}/members") or []
+        api.list_members[list_id] = {int(r.get("employee_id") or 0) for r in rows}
+    missing = [e for e in employee_ids if e not in api.list_members[list_id]]
+    if not missing:
+        return
+    label = ", ".join(codes)
+    if dry:
+        print(f"[dry-run] {indent}sẽ mời {label} vào dự án #{list_id} trước khi giao việc")
+    else:
+        for employee_id in missing:
+            api.call("POST", f"/api/work/lists/{list_id}/members",
+                     {"employee_id": employee_id, "role": 3})
+        print(f"{indent}+ mời {label} vào dự án #{list_id} (vai trò Thành viên)")
+    api.list_members[list_id].update(missing)
+
+
 def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
              people: PeopleDirectory, dry: bool, indent: str = "") -> None:
     """Gán người phụ trách cho một task theo `- pic:` của mục.
@@ -515,6 +544,7 @@ def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
     if not entry.pic_codes:
         return
     want = sorted({people.id_of(c) for c in entry.pic_codes} - {0})
+    ensure_list_members(api, int(task.get("list_id") or 0), want, entry.pic_codes, dry, indent)
     have = sorted({int(a.get("employee_id") or 0)
                    for a in (task.get("assignees") or [])
                    if int(a.get("kind") or 1) == 1} - {0})

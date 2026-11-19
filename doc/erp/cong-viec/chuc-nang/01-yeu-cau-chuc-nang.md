@@ -37,7 +37,7 @@ làm xong trong mã nhưng không nói môi trường.
 | Mã | Chức năng | Ai dùng | Màn / nơi dùng | Trạng thái | CR |
 |---|---|---|---|---|---|
 | CN-CV-01 | Nhóm (tối đa 2 cấp) và dự án: tạo, sửa, lưu trữ; cây bên trái; ghim dự án (DS11 A-01, A-05, A-08) | Mọi người có `work_task` | Thanh bên trái `/project` | chưa ghi (ghim xong duoc-CR-667) | CR-218, duoc-CR-667 |
-| CN-CV-02 | Thành viên: mời từng người, vai trò trong dự án, kế thừa từ nhóm, rời, gỡ, chuyển quyền sở hữu (DS11 A-02–A-04, A-09, H-02); tạo dự án trong nhóm thì gán sẵn thành viên nhóm vào dự án (chọn được người) | Chủ sở hữu, Quản trị dự án | Hộp thoại thành viên, hộp Tạo dự án | chưa ghi (gán lúc tạo xong duoc-CR-783) | CR-218, duoc-CR-783 |
+| CN-CV-02 | Thành viên: mời từng người, vai trò trong dự án, kế thừa từ nhóm, rời, gỡ, chuyển quyền sở hữu (DS11 A-02–A-04, A-09, H-02); tạo dự án trong nhóm thì gán sẵn thành viên nhóm vào dự án (chọn được người) | Chủ sở hữu, Quản trị dự án | Hộp thoại thành viên, hộp Tạo dự án | chưa ghi (gán lúc tạo, chuông mời, mời lại, lưu trữ dự án xong duoc-CR-783) | CR-218, duoc-CR-783 |
 | CN-CV-03 | Công việc: tạo, sửa, xóa mềm; nhiều người phụ trách và người theo dõi; ngày bắt đầu, hạn; ưu tiên; hoàn thành / mở lại (DS11 B-01–B-04, B-06) | Thành viên | Kanban, danh sách, panel chi tiết | chưa ghi | CR-218 |
 | CN-CV-04 | Trường tùy biến theo dự án (nhãn chọn một, chọn nhiều thay tag, kiểu chữ / số / ngày / người) (DS11 B-05, B-08, B-13; [TL10 §5](10-du-an-cong-viec.md#trường-tùy-biến)) | Quản trị dự án | Panel chi tiết, thiết lập dự án | chưa ghi | |
 | CN-CV-05 | Việc con: thêm, sửa, xóa, tick; tiến độ n/m trên thẻ; không thành thẻ riêng; tối đa 2 cấp (DS11 C-01, C-02, C-05) | Thành viên | Panel chi tiết | chưa ghi | |
@@ -73,6 +73,14 @@ làm xong trong mã nhưng không nói môi trường.
   bật sẵn, chọn sẵn mọi thành viên trực tiếp của nhóm (bỏ chọn được từng người). Người được chọn thành thành viên riêng
   của dự án, giữ vai trò ở nhóm; chủ nhóm vào làm Quản trị vì dự án chỉ có một chủ là người tạo. Gửi người không thuộc
   nhóm thì bị chặn. Chỉ áp lúc TẠO: dự án tạo ngoài nhóm rồi mới chuyển vào nhóm không tự chép thành viên.
+- **Chuông mời và nút Mời lại** (duoc-CR-783 lượt 2, anh Được 19/11/2026): người MỚI được mời vào dự án hoặc nhóm (kể cả
+  được gán sẵn lúc tạo dự án trong nhóm, hay thêm qua duyệt kế hoạch AI) nhận chuông *Bạn được mời vào dự án / nhóm dự án*,
+  bấm vào mở thẳng dự án (nhóm thì mở màn danh sách dự án). Đổi vai trò người đã có không báo; không báo cho chính người
+  mời; người không có `work_task.read` không nhận (cùng cổng chuông giao việc). Mỗi dòng thành viên hiện *Đã mời <ngày>*;
+  quản trị trở lên có nút *Mời lại* gửi chuông *Nhắc lời mời vào …*, bấm xong khóa 30 giây để khỏi dội chuông.
+- **Lưu trữ / khôi phục dự án** (duoc-CR-783 lượt 2): chủ dự án có nút *Lưu trữ dự án* ở chân hộp Quản lý dự án (hỏi lại
+  một nhịp; lưu trữ xong về màn danh sách dự án). Dự án đã lưu trữ (bật nút *Lưu trữ* ở màn Dự án để thấy) có nút
+  *Khôi phục dự án*. "Xóa" dự án là lưu trữ: việc bên trong còn nguyên.
 - **Quyền:** RBAC `work_task` gác cửa; vai trò dự án gác dữ liệu ([04-phan-quyen.md](../tai-lieu-ky-thuat/04-phan-quyen.md)).
 
 ### CN-CV-03 và CN-CV-06 — Công việc và khung nhìn

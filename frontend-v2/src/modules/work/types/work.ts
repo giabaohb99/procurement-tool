@@ -125,6 +125,8 @@ export interface WorkMember {
   employee_code: string
   /** bao-CR-482: URL ảnh đại diện (thumbnail); rỗng thì vẽ chữ tắt. */
   avatar?: string
+  /** duoc-CR-783: lúc được mời (ISO) — dòng thành viên hiện "Đã mời <ngày>". */
+  invited_at?: string | null
 }
 
 export interface WorkSection {

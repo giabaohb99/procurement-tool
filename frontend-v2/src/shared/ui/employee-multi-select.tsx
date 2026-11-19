@@ -8,6 +8,8 @@ interface EmployeeMultiSelectProps {
   employees: Employee[]
   placeholder: string
   disabled?: boolean
+  /** Hiện người đã chọn dạng chip NGAY TRONG khung chọn (xem `MultiPicker.chipsInTrigger`). */
+  chipsInTrigger?: boolean
 }
 
 /**
@@ -26,6 +28,7 @@ export function EmployeeMultiSelect({
   employees,
   placeholder,
   disabled,
+  chipsInTrigger,
 }: EmployeeMultiSelectProps) {
   return (
     <MultiPicker
@@ -40,6 +43,7 @@ export function EmployeeMultiSelect({
       searchPlaceholder="Tìm theo tên hoặc mã…"
       emptyMessage="Không tìm thấy nhân sự nào."
       disabled={disabled}
+      chipsInTrigger={chipsInTrigger}
     />
   )
 }

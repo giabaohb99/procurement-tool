@@ -25,8 +25,8 @@ def get_group_chain_roles(db: Session, group_id: int) -> dict[int, int]:
 
 
 def copy_group_members_to_list(db: Session, actor: Actor, list_id: int, group_id: int,
-                               employee_ids: list[int]) -> int:
-    """Thêm những người được chọn (phải là thành viên nhóm) vào dự án, giữ vai trò ở nhóm. Trả về số người đã thêm.
+                               employee_ids: list[int]) -> list[int]:
+    """Thêm những người được chọn (phải là thành viên nhóm) vào dự án, giữ vai trò ở nhóm. Trả id những người đã thêm.
 
     - Chủ nhóm vào dự án làm QUẢN TRỊ: dự án giữ bất biến đúng một chủ là người tạo (`transfer_ownership`).
     - Người tạo đã là chủ dự án nên bỏ qua.
@@ -43,4 +43,4 @@ def copy_group_members_to_list(db: Session, actor: Actor, list_id: int, group_id
         role = max(roles[employee_id], int(WorkMemberRole.ADMIN))
         db.add(WorkListMember(company_id=actor.company_id, list_id=list_id, employee_id=employee_id,
                               role=role, created_by=actor.user_id, updated_by=actor.user_id))
-    return len(wanted)
+    return sorted(wanted)

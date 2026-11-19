@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { logger } from '@/core/telemetry/logger'
@@ -117,6 +117,7 @@ export function WorkListPage() {
 }
 
 function WorkListContent({ listId }: { listId: number }) {
+  const navigate = useNavigate()
   const { appliedState } = useFilterContext()
 
   //  Khung nhìn / lát cắt / sắp xếp / trường trên thẻ được NHỚ theo từng danh
@@ -649,6 +650,8 @@ function WorkListContent({ listId }: { listId: number }) {
         myRole={myRole}
         groups={manageGroups}
         onClose={() => setManageOpen(false)}
+        //  duoc-CR-783: lưu trữ xong thì về danh sách dự án — đứng lại trang của dự án vừa lưu trữ là chỗ cụt.
+        onArchived={() => navigate(appRoutes.project.list)}
       />
 
       <WorkTrashDialog open={trashOpen} listId={listId} onClose={() => setTrashOpen(false)} />

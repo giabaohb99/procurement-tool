@@ -10,6 +10,7 @@ import { Separator } from '@/shared/ui/separator'
 import { useListInfoForm } from '../hooks/use-list-info-form'
 import { WORK_ROLE, type WorkList } from '../types/work'
 import type { FlatWorkGroup } from '../utils/work-groups'
+import { ListArchiveAction } from './list-archive-action'
 import { ListInfoPanel } from './list-info-panel'
 import { ListMembersPanel } from './list-members-panel'
 
@@ -21,6 +22,8 @@ interface ListManageDialogProps {
   onClose: () => void
   /** bao-CR-482: nhóm chọn được cho ô "Nhóm" — màn gọi lấy từ cây bên trái. */
   groups?: FlatWorkGroup[]
+  /** duoc-CR-783: lưu trữ xong — màn gọi đưa người dùng đi chỗ khác (dự án vừa lưu trữ biến khỏi cây). */
+  onArchived?: () => void
 }
 
 /**
@@ -38,7 +41,7 @@ interface ListManageDialogProps {
  * quyền quản trị (A-02). Khối Thông tin lúc đó chuyển sang dạng chỉ đọc, khối
  * Thành viên bỏ hàng mời và các nút thao tác.
  */
-export function ListManageDialog({ open, list, myRole, onClose, groups }: ListManageDialogProps) {
+export function ListManageDialog({ open, list, myRole, onClose, groups, onArchived }: ListManageDialogProps) {
   //  Hai NGƯỠNG khác nhau, đúng theo backend — đừng gộp làm một:
   //   · sửa thông tin dự án  → `update_list` gác bằng `CAN_OWN`;
   //   · mời / gỡ / đổi vai trò → `add_member` gác bằng `CAN_MANAGE`.
@@ -67,13 +70,25 @@ export function ListManageDialog({ open, list, myRole, onClose, groups }: ListMa
              chỗ mắt tìm nút xác nhận, và đặt lửng giữa hộp thì nó trông như đang
              xác nhận cho cả phần thành viên bên dưới. */}
         {canEditInfo && (
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>
-              Đóng
-            </Button>
-            <Button onClick={form.save} disabled={!form.canSave}>
-              Lưu thông tin
-            </Button>
+          <DialogFooter className="sm:justify-between">
+            {/*  Lưu trữ đứng riêng bên trái, xa nút Lưu — cùng khuôn hộp Quản lý nhóm (duoc-CR-783). */}
+            <div>
+              <ListArchiveAction
+                list={list}
+                onArchived={() => {
+                  onClose()
+                  onArchived?.()
+                }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Đóng
+              </Button>
+              <Button onClick={form.save} disabled={!form.canSave}>
+                Lưu thông tin
+              </Button>
+            </div>
           </DialogFooter>
         )}
       </DialogContent>

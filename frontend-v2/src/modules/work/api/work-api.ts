@@ -40,6 +40,10 @@ export const workApi = {
   removeGroupMember: (groupId: number, memberId: number) =>
     apiDelete(`/api/work/groups/${groupId}/members/${memberId}`),
 
+  /** duoc-CR-783: gửi lại chuông mời vào nhóm; `notified` = 0 khi người đó không nhận được chuông. */
+  reinviteGroupMember: (groupId: number, memberId: number) =>
+    apiPost<{ notified: number }>(`/api/work/groups/${groupId}/members/${memberId}/reinvite`, {}),
+
   /** `withPeople` nạp thêm chủ sở hữu + thành viên — chỉ màn liệt kê dự án cần. */
   lists: (includeArchived = false, withPeople = false) =>
     apiGet<WorkList[]>('/api/work/lists', {
@@ -69,6 +73,10 @@ export const workApi = {
 
   removeMember: (listId: number, memberId: number) =>
     apiDelete(`/api/work/lists/${listId}/members/${memberId}`),
+
+  /** duoc-CR-783: gửi lại chuông mời vào dự án; `notified` = 0 khi người đó không nhận được chuông. */
+  reinviteMember: (listId: number, memberId: number) =>
+    apiPost<{ notified: number }>(`/api/work/lists/${listId}/members/${memberId}/reinvite`, {}),
 
   leaveList: (listId: number) => apiPost(`/api/work/lists/${listId}/leave`, {}),
 

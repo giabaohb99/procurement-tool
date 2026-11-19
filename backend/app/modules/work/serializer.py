@@ -49,6 +49,8 @@ def member_out(m, name: str = "", code: str = "", avatar: str = "") -> dict:
         "id": m.id, "employee_id": m.employee_id, "role": int(m.role),
         "department_id": m.department_id,
         "employee_name": name, "employee_code": code, "avatar": avatar,
+        #  duoc-CR-783: lúc được mời — dòng thành viên hiện "Đã mời <ngày>".
+        "invited_at": m.created_at.isoformat() if getattr(m, "created_at", None) else None,
     }
 
 

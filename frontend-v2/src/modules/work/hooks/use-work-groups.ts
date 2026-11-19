@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workApi } from '../api/work-api'
+import { toastReinviteResult } from './use-work-config'
 
 /**
  * Hook cho NHÓM dự án — bao-CR-482.
@@ -66,5 +67,12 @@ export function useRemoveWorkGroupMember(groupId: number) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.groupMembers(groupId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
+  })
+}
+
+export function useReinviteWorkGroupMember(groupId: number) {
+  return useMutation({
+    mutationFn: (memberId: number) => workApi.reinviteGroupMember(groupId, memberId),
+    onSuccess: toastReinviteResult,
   })
 }

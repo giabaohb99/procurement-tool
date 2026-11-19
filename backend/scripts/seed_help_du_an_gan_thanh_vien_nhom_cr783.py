@@ -15,7 +15,7 @@ PROJECT_ROOT = "Hướng dẫn sử dụng Dự án và Công việc"
 
 ARTICLES = [
     (PROJECT_ROOT, "Dự án — Tạo dự án trong nhóm và gán thành viên của nhóm",
-     "Tạo dự án trong một nhóm dự án: tick sẵn gán thành viên của nhóm vào dự án, bỏ chọn được từng người.",
+     "Tạo dự án trong nhóm, gán sẵn thành viên của nhóm; chuông khi được mời, nút Mời lại; lưu trữ và khôi phục dự án.",
      """<h2>Tạo dự án trong nhóm và gán thành viên của nhóm</h2>
 <p>Người trong một <strong>nhóm dự án</strong> (ví dụ nhóm DX) tự có quyền trên mọi dự án bên trong nhóm. Từ ngày
 18/11/2026, khi tạo dự án mới trong nhóm, bạn gán luôn được họ thành <strong>thành viên của dự án</strong>, để họ hiện trong
@@ -41,6 +41,22 @@ danh sách thành viên và trong ô chọn người phụ trách của dự án
 <li>Chỉ áp lúc <strong>tạo</strong> dự án. Dự án tạo ở ngoài rồi mới chuyển vào nhóm thì mời thêm người ở hộp
 <strong>Quản lý dự án</strong>.</li>
 <li>Người không được chọn vẫn thấy dự án nhờ là thành viên nhóm, chỉ là không hiện trong danh sách thành viên của dự án.</li>
+</ul>
+<h3>Chuông báo khi được mời</h3>
+<ul>
+<li>Người <strong>mới</strong> được mời vào dự án hoặc nhóm dự án (kể cả được gán sẵn lúc tạo dự án như trên) nhận chuông
+<em>Bạn được mời vào dự án</em> / <em>Bạn được mời vào nhóm dự án</em>. Bấm vào chuông là mở thẳng dự án.</li>
+<li>Đổi vai trò của người đã có trong dự án thì không có chuông.</li>
+<li>Trong hộp <strong>Quản lý dự án</strong> (hoặc <strong>Quản lý nhóm dự án</strong>), mỗi người hiện dòng nhỏ
+<em>Đã mời ngày …</em>. Người có quyền Quản trị trở lên thấy nút <strong>Mời lại</strong> (hình máy bay giấy) để gửi lại chuông
+nhắc cho người đó; bấm xong nút tạm khóa 30 giây.</li>
+</ul>
+<h3>Lưu trữ (xóa) dự án</h3>
+<ul>
+<li>Chủ dự án mở <strong>Quản lý dự án › Thành viên &amp; thông tin</strong>, bấm <strong>Lưu trữ dự án</strong> ở góc trái chân hộp
+rồi xác nhận. Dự án biến khỏi cây bên trái, việc bên trong vẫn giữ nguyên.</li>
+<li>Muốn lấy lại: ở màn <strong>Dự án</strong> bật nút <strong>Lưu trữ</strong> để hiện dự án đã lưu trữ, mở dự án đó rồi bấm
+<strong>Khôi phục dự án</strong> trong hộp Quản lý dự án.</li>
 </ul>"""),
 ]
 

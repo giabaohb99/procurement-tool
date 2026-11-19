@@ -56,6 +56,10 @@ def du_lieu(db, cap_quyen):
     lst = list_service.create_list(db, chu, schema.ListCreate(name="Mua sắm Q4"))
     for p in (LAM, THEO_DOI):
         list_service.add_member(db, chu, lst["id"], schema.MemberIn(employee_id=p[1]))
+    #  duoc-CR-783: mời vào dự án nay cũng kêu chuông. Bài ở tệp này đếm chuông GIAO VIỆC / trạng thái / bình luận,
+    #  nên xóa chuông mời sinh lúc dựng dữ liệu (chuông mời có bài riêng ở test_gan_thanh_vien_nhom_vao_du_an_cr783.py).
+    db.query(Notification).delete()
+    db.commit()
     return SimpleNamespace(db=db, chu=chu, list_id=lst["id"])
 
 

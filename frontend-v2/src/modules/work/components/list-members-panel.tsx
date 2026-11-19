@@ -1,5 +1,6 @@
 import {
   useAddWorkMember,
+  useReinviteWorkMember,
   useRemoveWorkMember,
   useSetWorkMemberRole,
   useWorkMembers,
@@ -28,6 +29,7 @@ export function ListMembersPanel({ open, listId, myRole }: ListMembersPanelProps
   const addMember = useAddWorkMember(listId)
   const removeMember = useRemoveWorkMember(listId)
   const setRole = useSetWorkMemberRole(listId)
+  const reinvite = useReinviteWorkMember(listId)
 
   return (
     <MembersPanel
@@ -39,6 +41,7 @@ export function ListMembersPanel({ open, listId, myRole }: ListMembersPanelProps
       onInvite={(employee_id, role) => addMember.mutate({ employee_id, role })}
       onChangeRole={(employee_id, role) => setRole.mutate({ employee_id, role })}
       onRemove={(memberId) => removeMember.mutate(memberId)}
+      onReinvite={(memberId) => reinvite.mutate(memberId)}
     />
   )
 }

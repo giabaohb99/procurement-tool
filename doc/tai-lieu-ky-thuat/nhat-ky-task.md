@@ -114,6 +114,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-783-luot-2 | Chuông mời vào dự án, nút Mời lại, lưu trữ dự án và sửa bố cục khối thành viên
+- status: xong
+- date: 2026-11-19
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** sau lượt đầu của CR-783, anh Được báo thêm bốn chỗ: được mời vào dự án mà chuông không báo gì, dòng thành viên không cho biết là đã mời và không có cách nhắc lại, chủ dự án con không thấy chỗ xóa dự án, và khối thành viên của hộp Quản lý nhóm dự án lệch bố cục.
+
+**Đã làm**
+- Người mới được mời vào dự án hoặc nhóm dự án nhận chuông kèm đường dẫn mở thẳng dự án, kể cả khi được gán sẵn lúc tạo dự án trong nhóm hay được thêm qua duyệt kế hoạch AI; đổi vai trò không báo, không báo cho chính người mời, người không có quyền xem Dự án không nhận.
+- Mỗi dòng thành viên hiện chữ Đã mời kèm ngày mời; người có quyền Quản trị trở lên có nút Mời lại để gửi chuông nhắc, bấm xong nút khóa ba mươi giây để không dội chuông, bấm đúp liền tay cũng chỉ gửi một lần.
+- Hộp Quản lý dự án có nút Lưu trữ dự án cho chủ dự án, hỏi lại một lần trước khi lưu trữ rồi đưa về màn danh sách dự án; dự án đã lưu trữ có nút Khôi phục dự án.
+- Khối thành viên dùng chung của hộp Quản lý dự án và Quản lý nhóm: người đã chọn để mời hiện ngay trong ô chọn, ô vai trò và nút Mời thẳng hàng với ô chọn; huy hiệu Chủ sở hữu thẳng cột với ô vai trò; nút gỡ ghi đúng gỡ khỏi dự án hay gỡ khỏi nhóm dự án.
+- Script đồng bộ sổ nhật ký lên phân hệ Dự án tự mời người phụ trách vào dự án trước khi giao việc nếu người đó chưa là thành viên riêng; đã chạy cho các task của anh Được trên prod, anh được mời vào chín dự án.
+- Cập nhật tài liệu chức năng, tài liệu API và bài hướng dẫn Tạo dự án trong nhóm và gán thành viên của nhóm.
+
+**Kiểm:** tám bài kiểm backend mới cho chuông mời vào dự án, vào nhóm, lúc tạo dự án trong nhóm, nút Mời lại, quyền bấm Mời lại, ngày mời và người không có quyền xem; bộ bài kiểm chuông giao việc cũ sửa lại để chỉ đếm đúng chuông của nó; ba trăm linh bảy bài kiểm backend liên quan xanh; năm trăm ba mươi tám bài kiểm giao diện phân hệ Dự án xanh, có bài mới cho nút Lưu trữ, Khôi phục, chữ Đã mời và nút Mời lại; typecheck và lint sạch; bấm thử Mời lại trên máy local thấy chuông nhắc ghi đúng.
+
+Mã nguồn: `backend/app/modules/work/member_invite_service.py`, `list_service.py`, `group_service.py`, `list_group_members.py`, `serializer.py`, `controller.py`; `backend/scripts/sync_task_journal.py`; `frontend-v2/src/modules/work/components/members-panel.tsx`, `components/member-row.tsx`, `components/list-members-panel.tsx`, `components/group-members-panel.tsx`, `components/list-manage-dialog.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `hooks/use-work-config.ts`, `hooks/use-work-groups.ts`, `api/work-api.ts`, `types/work.ts`; `frontend-v2/src/shared/ui/employee-multi-select.tsx`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
+Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `test/backend/test_cong_viec_chuong_cr666.py`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`, `frontend-v2/src/modules/work/components/list-members-panel.test.tsx`, `frontend-v2/src/modules/work/components/group-manage-dialog.test.tsx`.
+
 ## duoc-CR-783 | Tạo dự án trong nhóm thì gán sẵn thành viên của nhóm vào dự án
 - status: xong
 - date: 2026-11-18

@@ -89,3 +89,105 @@ def test_du_an_le_bo_qua_danh_sach_thanh_vien_nhom(db, toi, nhom):
 def test_chan_danh_sach_qua_dai_o_tang_schema():
     with pytest.raises(ValidationError):
         schema.ListCreate(name="X", group_id=1, member_employee_ids=list(range(1, 502)))
+
+
+# ── Chuông mời + nút Mời lại (anh Được 19/11/2026: "mời vào dự án mà chuông không thấy gì") ──────────────────────────
+
+def _co_tai_khoan(db, cap_quyen, *pairs):
+    """Gắn tài khoản đang hoạt động + quyền đọc Công việc — chuông chỉ kêu cho người có tài khoản và mở được link."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    for uid, eid in pairs:
+        db.add(Employee(id=eid, code=f"NV{eid}", full_name=f"Người {eid}", company_id=COMPANY))
+        db.add(User(id=uid, email=f"u{uid}@dego.vn", employee_id=eid, is_active=True))
+        cap_quyen(uid, "work_task", read=True, write=True, create=True)
+    db.commit()
+
+
+def _chuong(db, user_id):
+    from app.modules.notification.model import Notification
+
+    return db.query(Notification).filter(Notification.user_id == user_id).order_by(Notification.id).all()
+
+
+def test_moi_vao_du_an_keu_chuong_nguoi_moi_khong_keu_khi_doi_vai_tro(db, toi, cap_quyen):
+    _co_tai_khoan(db, cap_quyen, (1, ME), (2, AN))
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho Quý 4"))
+    list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
+    chuong = _chuong(db, 2)
+    assert len(chuong) == 1
+    assert chuong[0].title == "Bạn được mời vào dự án"
+    assert "Kho Quý 4" in chuong[0].body and chuong[0].link == f"/project/lists/{lst['id']}"
+    #  Đổi vai trò người đã có: không phải lời mời, không kêu thêm.
+    list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN, role=int(WorkMemberRole.ADMIN)))
+    assert len(_chuong(db, 2)) == 1
+    #  Không bao giờ báo cho chính người mời.
+    assert _chuong(db, 1) == []
+
+
+def test_moi_vao_nhom_keu_chuong(db, toi, cap_quyen):
+    _co_tai_khoan(db, cap_quyen, (1, ME), (3, BINH))
+    grp = group_service.create_group(db, toi, schema.GroupCreate(name="IDA"))
+    group_service.add_member(db, toi, grp["id"], schema.MemberIn(employee_id=BINH))
+    chuong = _chuong(db, 3)
+    assert [c.title for c in chuong] == ["Bạn được mời vào nhóm dự án"]
+    assert "IDA" in chuong[0].body
+
+
+def test_gan_san_luc_tao_du_an_trong_nhom_cung_keu_chuong(db, toi, nhom, cap_quyen):
+    _co_tai_khoan(db, cap_quyen, (1, ME), (2, AN), (3, BINH))
+    #  Chuông mời vào NHÓM ở fixture không tính — xóa đi để chỉ đếm chuông của lần tạo dự án.
+    from app.modules.notification.model import Notification
+    db.query(Notification).delete()
+    db.commit()
+    list_service.create_list(db, toi, schema.ListCreate(name="ERP v3", group_id=nhom["id"], member_employee_ids=[AN]))
+    assert [c.title for c in _chuong(db, 2)] == ["Bạn được mời vào dự án"]
+    assert _chuong(db, 3) == []
+
+
+def test_moi_lai_gui_chuong_nhac_va_chan_dong_khong_thuoc_du_an(db, toi, cap_quyen):
+    from app.modules.work import member_invite_service
+
+    _co_tai_khoan(db, cap_quyen, (1, ME), (2, AN))
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
+    m = list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
+    assert member_invite_service.reinvite_list_member(db, toi, lst["id"], m["id"]) == 1
+    assert [c.title for c in _chuong(db, 2)] == ["Bạn được mời vào dự án", "Nhắc lời mời vào dự án"]
+    khac = list_service.create_list(db, toi, schema.ListCreate(name="Khác"))
+    with pytest.raises(HTTPException) as loi:
+        member_invite_service.reinvite_list_member(db, toi, khac["id"], m["id"])
+    assert loi.value.status_code == 404
+
+
+def test_chi_quan_tri_moi_bam_moi_lai(db, toi, cap_quyen):
+    from app.modules.work import member_invite_service
+
+    _co_tai_khoan(db, cap_quyen, (1, ME), (2, AN), (3, BINH))
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
+    list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
+    m_binh = list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=BINH))
+    an = Actor(user_id=2, employee_id=AN, company_id=COMPANY)
+    with pytest.raises(HTTPException) as loi:
+        member_invite_service.reinvite_list_member(db, an, lst["id"], m_binh["id"])
+    assert loi.value.status_code == 403
+
+
+def test_dong_thanh_vien_tra_ngay_moi(db, toi):
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
+    m = list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
+    assert m["invited_at"]
+
+
+def test_khong_co_quyen_doc_cong_viec_thi_khong_nhan_chuong_moi(db, toi, cap_quyen):
+    """Bấm chuông mà link trả 403 thì tệ hơn không có chuông — cùng cổng với chuông giao việc."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    db.add(Employee(id=AN, code="NV21", full_name="An", company_id=COMPANY))
+    db.add(User(id=2, email="u2@dego.vn", employee_id=AN, is_active=True))
+    db.commit()
+    cap_quyen(2, "work_task", read=False)
+    lst = list_service.create_list(db, toi, schema.ListCreate(name="Kho"))
+    list_service.add_member(db, toi, lst["id"], schema.MemberIn(employee_id=AN))
+    assert _chuong(db, 2) == []

@@ -13,7 +13,7 @@ Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, lu�
 
 **Phong bì chung:** mọi đường trả `{success, message, data}`; lỗi trả `{success: false, error: {code, message, details}}`.
 
-> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 18/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
+> Bảng mục 1 dựng TỰ ĐỘNG từ `app.routes` bằng `backend/scripts/dung_bang_api.py` (lần cuối 19/11/2026): *Mục đích* = dòng đầu docstring (không có thì tên hàm — sửa docstring trong mã, đừng sửa tay); *Quyền* = `require(entity, action)` / `require_report` gắn trên đường; *Phạm vi* và *Ai gọi* ghi tay được giữ, chữ *tự dò:* là máy dò từ frontend-v2 và cổng MCP. *Phạm vi* trống nghĩa là **chưa soát** (có thể lọc ở service).
 
 Mã backend: `work`
 
@@ -28,6 +28,7 @@ Mã backend: `work`
 | GET | `/api/work/groups/{group_id}/members` | get group members | `work_task.read` |  | tự dò: v2 `work` |
 | POST | `/api/work/groups/{group_id}/members` | Mời vào nhóm — vai trò kế thừa xuống mọi list bên trong (A-09). | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/groups/{group_id}/members/{member_id}` | remove group member | `work_task.write` |  | tự dò: v2 `work` |
+| POST | `/api/work/groups/{group_id}/members/{member_id}/reinvite` | Gửi lại chuông mời vào nhóm dự án cho một thành viên (nút Mời lại). | `work_task.write` |  | tự dò: v2 `work` |
 | PATCH | `/api/work/label-fields/{field_id}` | update label field | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/label-fields/{field_id}` | delete label field | `work_task.delete` |  | tự dò: v2 `work` |
 | POST | `/api/work/label-fields/{field_id}/options` | create label option | `work_task.write` |  | tự dò: v2 `work` |
@@ -45,8 +46,9 @@ Mã backend: `work`
 | POST | `/api/work/lists/{list_id}/label-fields` | create label field | `work_task.write` |  | tự dò: v2 `work` |
 | POST | `/api/work/lists/{list_id}/leave` | Tự rời danh sách (A-03) — chỉ cần quyền đọc: rời khỏi chỗ của mình không phải hành động ghi lên dữ liệu người khác. | `work_task.read` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/members` | get list members | `work_task.read` |  | tự dò: v2 `work` |
-| POST | `/api/work/lists/{list_id}/members` | add list member | `work_task.write` |  | tự dò: v2 `work` |
+| POST | `/api/work/lists/{list_id}/members` | Mời một người vào dự án, hoặc đổi vai trò nếu người đó đã có. | `work_task.write` |  | tự dò: v2 `work` |
 | DELETE | `/api/work/lists/{list_id}/members/{member_id}` | remove list member | `work_task.write` |  | tự dò: v2 `work` |
+| POST | `/api/work/lists/{list_id}/members/{member_id}/reinvite` | Gửi lại chuông mời vào dự án cho một thành viên (nút Mời lại). | `work_task.write` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/sections` | get sections | `work_task.read` |  | tự dò: v2 `work` |
 | POST | `/api/work/lists/{list_id}/sections` | create section | `work_task.write` |  | tự dò: v2 `work` |
 | GET | `/api/work/lists/{list_id}/sections/{section_id}/tasks` | Trang kế của một cột — bao-CR-483. | `work_task.read` |  | tự dò: v2 `work` |

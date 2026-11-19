@@ -29,6 +29,7 @@ vi.mock('../hooks/use-work-groups', () => ({
   useWorkGroupMembers: () => ({ data: members() }),
   useAddWorkGroupMember: () => ({ mutate: addMember, isPending: false }),
   useRemoveWorkGroupMember: () => ({ mutate: removeMember, isPending: false }),
+  useReinviteWorkGroupMember: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateWorkGroup: () => ({ mutate: updateGroup, isPending: false }),
   useArchiveWorkGroup: () => ({ mutate: archiveGroup, isPending: false }),
 }))
@@ -84,12 +85,12 @@ describe('GroupManageDialog — bao-CR-482', () => {
     expect(screen.getByText('DX')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Lưu thông tin' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Lưu trữ nhóm dự án' })).toBeNull()
-    expect(screen.getByRole('button', { name: /^Mời/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeInTheDocument()
   })
 
   it('khách xem: không có hàng mời, không có nút gỡ', () => {
     render(<GroupManageDialog open group={group(WORK_ROLE.VIEWER)} onClose={() => {}} />)
-    expect(screen.queryByRole('button', { name: /^Mời/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Gỡ/ })).toBeNull()
   })
 })

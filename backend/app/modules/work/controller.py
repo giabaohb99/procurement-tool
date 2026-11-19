@@ -10,7 +10,7 @@ chiếm (`/api/dashboard/tasks`, CR-215).
 
 Mọi endpoint đi qua service, không endpoint nào tự `db.query(...)`.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -21,6 +21,7 @@ from . import activity_service as activities
 from . import group_service as groups
 from . import list_config_service as cfg
 from . import list_service as lists
+from . import member_invite_service as invites
 from . import overview_service as overview
 from . import schema
 from .membership_service import require_employee, resolve_actor
@@ -71,10 +72,25 @@ def get_group_members(group_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/groups/{group_id}/members")
-def add_group_member(group_id: int, data: schema.MemberIn, db: Session = Depends(get_db),
-                     user=Depends(require("work_task", "write"))):
-    """Mời vào nhóm — vai trò kế thừa xuống mọi list bên trong (A-09)."""
-    return success(groups.add_member(db, _actor(db, user), group_id, data), "Đã thêm")
+def add_group_member(group_id: int, data: schema.MemberIn, background_tasks: BackgroundTasks,
+                     db: Session = Depends(get_db), user=Depends(require("work_task", "write"))):
+    """Mời vào nhóm — vai trò kế thừa xuống mọi list bên trong (A-09).
+
+    Người mới được mời nhận chuông (duoc-CR-783); đổi vai trò người đã có thì không báo.
+    """
+    return success(groups.add_member(db, _actor(db, user), group_id, data, background_tasks), "Đã thêm")
+
+
+@router.post("/groups/{group_id}/members/{member_id}/reinvite")
+def reinvite_group_member(group_id: int, member_id: int, background_tasks: BackgroundTasks,
+                          db: Session = Depends(get_db), user=Depends(require("work_task", "write"))):
+    """Gửi lại chuông mời vào nhóm dự án cho một thành viên (nút Mời lại).
+
+    Quyền: quản trị nhóm trở lên. 404 khi dòng thành viên không thuộc nhóm này. Trả `notified` = số người đã được báo
+    (0 khi người đó chưa có tài khoản hoặc chính là người bấm).
+    """
+    sent = invites.reinvite_group_member(db, _actor(db, user), group_id, member_id, background_tasks)
+    return success({"notified": sent}, "Đã gửi lại lời mời")
 
 
 @router.delete("/groups/{group_id}/members/{member_id}")
@@ -137,14 +153,15 @@ def get_lists(include_archived: bool = False, with_people: bool = False,
 
 
 @router.post("/lists")
-def create_list(data: schema.ListCreate, db: Session = Depends(get_db),
+def create_list(data: schema.ListCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                 user=Depends(require("work_task", "create"))):
     """Tạo dự án; người tạo thành chủ dự án, kèm ba cột mặc định.
 
     Đặt vào nhóm (`group_id`) phải có quyền quản trị nhóm đó. `member_employee_ids` (duoc-CR-783) chép thành viên nhóm
-    thành thành viên riêng của dự án, giữ vai trò ở nhóm (chủ nhóm thành Quản trị); id không thuộc nhóm trả 400.
+    thành thành viên riêng của dự án, giữ vai trò ở nhóm (chủ nhóm thành Quản trị) và báo chuông cho họ; id không thuộc
+    nhóm trả 400.
     """
-    return success(lists.create_list(db, _actor(db, user), data), "Đã tạo danh sách")
+    return success(lists.create_list(db, _actor(db, user), data, background_tasks), "Đã tạo danh sách")
 
 
 @router.get("/lists/{list_id}")
@@ -172,9 +189,25 @@ def get_list_members(list_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/lists/{list_id}/members")
-def add_list_member(list_id: int, data: schema.MemberIn, db: Session = Depends(get_db),
-                    user=Depends(require("work_task", "write"))):
-    return success(lists.add_member(db, _actor(db, user), list_id, data), "Đã mời")
+def add_list_member(list_id: int, data: schema.MemberIn, background_tasks: BackgroundTasks,
+                    db: Session = Depends(get_db), user=Depends(require("work_task", "write"))):
+    """Mời một người vào dự án, hoặc đổi vai trò nếu người đó đã có.
+
+    Quyền: quản trị dự án trở lên, không cấp vai trò cao hơn của mình. Người mới được mời nhận chuông (duoc-CR-783).
+    """
+    return success(lists.add_member(db, _actor(db, user), list_id, data, background_tasks), "Đã mời")
+
+
+@router.post("/lists/{list_id}/members/{member_id}/reinvite")
+def reinvite_list_member(list_id: int, member_id: int, background_tasks: BackgroundTasks,
+                         db: Session = Depends(get_db), user=Depends(require("work_task", "write"))):
+    """Gửi lại chuông mời vào dự án cho một thành viên (nút Mời lại).
+
+    Quyền: quản trị dự án trở lên. 404 khi dòng thành viên không thuộc dự án này. Trả `notified` = số người đã được báo
+    (0 khi người đó chưa có tài khoản hoặc chính là người bấm).
+    """
+    sent = invites.reinvite_list_member(db, _actor(db, user), list_id, member_id, background_tasks)
+    return success({"notified": sent}, "Đã gửi lại lời mời")
 
 
 @router.delete("/lists/{list_id}/members/{member_id}")

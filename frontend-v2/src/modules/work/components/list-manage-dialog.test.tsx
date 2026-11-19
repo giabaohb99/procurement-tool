@@ -27,6 +27,8 @@ const addMember = vi.fn()
 const removeMember = vi.fn()
 const setRole = vi.fn()
 const updateList = vi.fn()
+const reinvite = vi.fn()
+const archiveList = vi.fn()
 let canReadEmployees = true
 
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -49,10 +51,12 @@ vi.mock('../hooks/use-work-config', () => ({
   useAddWorkMember: () => ({ mutate: addMember, isPending: false }),
   useRemoveWorkMember: () => ({ mutate: removeMember, isPending: false }),
   useSetWorkMemberRole: () => ({ mutate: setRole, isPending: false }),
+  useReinviteWorkMember: () => ({ mutate: reinvite, isPending: false }),
 }))
 
 vi.mock('../hooks/use-work-lists', () => ({
   useUpdateWorkList: () => ({ mutate: updateList, isPending: false }),
+  useArchiveWorkList: () => ({ mutate: archiveList, isPending: false }),
 }))
 
 function member(id: number, name: string, role: number = WORK_ROLE.MEMBER): WorkMember {
@@ -82,13 +86,14 @@ const LIST: WorkList = {
   members: [],
 }
 
-function show(myRole: number | null, list: Partial<WorkList> = {}) {
+function show(myRole: number | null, list: Partial<WorkList> = {}, onArchived = vi.fn()) {
   render(
     <ListManageDialog
       open
       list={{ ...LIST, ...list }}
       myRole={myRole}
       onClose={vi.fn()}
+      onArchived={onArchived}
     />,
   )
 }
@@ -129,13 +134,13 @@ describe('ListManageDialog — hai ngưỡng quyền', () => {
 
   it('QUẢN TRỊ vẫn mời và đổi vai trò được — hai quyền độc lập nhau', () => {
     show(WORK_ROLE.ADMIN)
-    expect(screen.getByRole('button', { name: /^Mời/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeInTheDocument()
     expect(screen.getByLabelText('Vai trò của Dego Admin')).toBeInTheDocument()
   })
 
   it('KHÁCH XEM không có hàng mời, không ô đổi vai trò, không nút gỡ', () => {
     show(WORK_ROLE.VIEWER)
-    expect(screen.queryByRole('button', { name: /^Mời/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Mời( \(\d+\))?$/ })).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^Vai trò của/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Gỡ /})).not.toBeInTheDocument()
   })
@@ -144,7 +149,7 @@ describe('ListManageDialog — hai ngưỡng quyền', () => {
     //  `myRole === null` mà lỡ so bằng `<=` thì `null <= 2` trong JS là TRUE —
     //  đúng kiểu lỗi mở toang mà không ai thấy.
     show(null)
-    expect(screen.queryByRole('button', { name: /^Mời/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Mời( \(\d+\))?$/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Lưu thông tin' })).not.toBeInTheDocument()
   })
 
@@ -152,7 +157,7 @@ describe('ListManageDialog — hai ngưỡng quyền', () => {
     //  Gọi danh bạ khi thiếu quyền là người dùng ăn toast 403 ngay lúc mở hộp.
     canReadEmployees = false
     show(WORK_ROLE.OWNER)
-    expect(screen.queryByRole('button', { name: /^Mời/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Mời( \(\d+\))?$/ })).not.toBeInTheDocument()
     expect(screen.getByText('Lý Phó Phòng')).toBeInTheDocument()
   })
 })
@@ -360,6 +365,67 @@ describe('ListManageDialog — thao tác gọi đúng API', () => {
 
   it('chưa chọn ai thì nút Mời tắt', () => {
     show(WORK_ROLE.OWNER)
-    expect(screen.getByRole('button', { name: /^Mời/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeDisabled()
+  })
+})
+
+describe('ListManageDialog — lưu trữ / khôi phục dự án (duoc-CR-783)', () => {
+  //  Anh Được báo 19/11/2026: tạo dự án con xong không thấy chỗ xóa — hook lưu trữ có sẵn mà chưa màn nào gắn nút.
+  it('chủ sở hữu thấy nút Lưu trữ, phải xác nhận một nhịp rồi mới gọi', async () => {
+    const user = userEvent.setup()
+    show(WORK_ROLE.OWNER)
+    await user.click(screen.getByRole('button', { name: /Lưu trữ dự án/ }))
+    expect(archiveList).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Lưu trữ' }))
+    expect(archiveList).toHaveBeenCalledWith(LIST.id, expect.anything())
+  })
+
+  it('bấm Thôi thì không lưu trữ', async () => {
+    const user = userEvent.setup()
+    show(WORK_ROLE.OWNER)
+    await user.click(screen.getByRole('button', { name: /Lưu trữ dự án/ }))
+    await user.click(screen.getByRole('button', { name: 'Thôi' }))
+    expect(archiveList).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Lưu trữ dự án/ })).toBeInTheDocument()
+  })
+
+  it('quản trị không thấy nút lưu trữ — backend gác bằng CAN_OWN', () => {
+    show(WORK_ROLE.ADMIN)
+    expect(screen.queryByRole('button', { name: /Lưu trữ dự án/ })).not.toBeInTheDocument()
+  })
+
+  it('dự án đã lưu trữ thì đổi thành nút Khôi phục', async () => {
+    const user = userEvent.setup()
+    show(WORK_ROLE.OWNER, { is_archived: 1 })
+    expect(screen.queryByRole('button', { name: /Lưu trữ dự án/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Khôi phục dự án/ }))
+    expect(updateList).toHaveBeenCalledWith({ id: LIST.id, values: { is_archived: 0 } })
+  })
+})
+
+describe('ListManageDialog — đã mời + mời lại (duoc-CR-783)', () => {
+  it('dòng thành viên hiện ngày mời; chủ sở hữu thì không', () => {
+    members.mockReturnValue([
+      { ...member(1, 'Lý Phó Phòng', WORK_ROLE.OWNER), invited_at: '2026-11-01T02:00:00' },
+      { ...member(3, 'Nguyễn Nhân Viên'), invited_at: '2026-11-18T02:00:00' },
+    ])
+    show(WORK_ROLE.OWNER)
+    expect(within(rowOf('Nguyễn Nhân Viên')).getByText('Đã mời 18/11/2026')).toBeInTheDocument()
+    expect(within(rowOf('Lý Phó Phòng')).queryByText(/Đã mời/)).not.toBeInTheDocument()
+  })
+
+  it('bấm Mời lại gọi đúng dòng, bấm đúp liền tay chỉ gửi một lần', async () => {
+    const user = userEvent.setup()
+    show(WORK_ROLE.OWNER)
+    const button = within(rowOf('Nguyễn Nhân Viên')).getByRole('button', { name: 'Mời lại Nguyễn Nhân Viên' })
+    await user.dblClick(button)
+    expect(reinvite).toHaveBeenCalledTimes(1)
+    expect(reinvite).toHaveBeenCalledWith(3)
+    expect(button).toBeDisabled()
+  })
+
+  it('khách xem không có nút Mời lại', () => {
+    show(WORK_ROLE.VIEWER)
+    expect(screen.queryByRole('button', { name: /Mời lại/ })).not.toBeInTheDocument()
   })
 })

@@ -24,6 +24,8 @@ interface MembersPanelProps {
   onInvite: (employeeId: number, role: number) => void
   onChangeRole: (employeeId: number, role: number) => void
   onRemove: (memberId: number) => void
+  /** duoc-CR-783: gửi lại chuông mời cho một thành viên (nút Mời lại). */
+  onReinvite: (memberId: number) => void
 }
 
 /**
@@ -43,6 +45,7 @@ export function MembersPanel({
   onInvite,
   onChangeRole,
   onRemove,
+  onReinvite,
 }: MembersPanelProps) {
   const [picked, setPicked] = useState<number[]>([])
   const [inviteRole, setInviteRole] = useState<number>(WORK_ROLE.MEMBER)
@@ -109,13 +112,16 @@ export function MembersPanel({
       {canManage && canReadDirectory && (
         //  Hàng mời nằm trong khung nền mờ để tách hẳn khỏi danh sách bên dưới:
         //  trước đây ô chọn nhân sự dính liền bảng, nhìn như dòng đầu của bảng.
-        <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-2.5">
-          <div className="min-w-0 flex-1">
+        //  duoc-CR-783: người đã chọn hiện dạng chip TRONG ô chọn, ba ô căn ĐẦU hàng. Bản cũ để chip rớt xuống dưới ô,
+        //  khung cao lên mà ô vai trò + nút Mời căn đáy nên lệch hẳn khỏi ô chọn (anh Được: "layout xấu quá").
+        <div className="flex flex-wrap items-start gap-2 rounded-lg border bg-muted/30 p-2.5 sm:flex-nowrap">
+          <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
             <EmployeeMultiSelect
               value={picked}
               onChange={setPicked}
               employees={directory?.items ?? []}
               placeholder="Chọn nhân sự để mời"
+              chipsInTrigger
             />
           </div>
           <MemberRoleSelect
@@ -140,9 +146,12 @@ export function MembersPanel({
           <MemberRow
             key={m.id}
             member={m}
+            //  "dự án này" → "dự án": nhãn nút gỡ đúng hộp đang mở (trước đây hộp NHÓM cũng ghi "Gỡ khỏi dự án").
+            removeTarget={subject.replace(/ này$/, '')}
             canManage={canManage}
             onChangeRole={onChangeRole}
             onRemove={onRemove}
+            onReinvite={onReinvite}
           />
         ))}
         {rows.length === 0 && (

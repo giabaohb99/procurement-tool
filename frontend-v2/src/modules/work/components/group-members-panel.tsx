@@ -1,5 +1,6 @@
 import {
   useAddWorkGroupMember,
+  useReinviteWorkGroupMember,
   useRemoveWorkGroupMember,
   useWorkGroupMembers,
 } from '../hooks/use-work-groups'
@@ -23,6 +24,7 @@ export function GroupMembersPanel({ open, groupId, myRole }: GroupMembersPanelPr
   const { data: members = [] } = useWorkGroupMembers(open ? groupId : undefined)
   const addMember = useAddWorkGroupMember(groupId)
   const removeMember = useRemoveWorkGroupMember(groupId)
+  const reinvite = useReinviteWorkGroupMember(groupId)
 
   return (
     <MembersPanel
@@ -34,6 +36,7 @@ export function GroupMembersPanel({ open, groupId, myRole }: GroupMembersPanelPr
       onInvite={(employee_id, role) => addMember.mutate({ employee_id, role })}
       onChangeRole={(employee_id, role) => addMember.mutate({ employee_id, role })}
       onRemove={(memberId) => removeMember.mutate(memberId)}
+      onReinvite={(memberId) => reinvite.mutate(memberId)}
     />
   )
 }

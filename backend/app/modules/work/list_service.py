@@ -14,6 +14,7 @@ from app.modules.work import list_config_service
 from app.modules.work import serializer as ser
 from app.modules.work.group_service import _get_group_or_403, _with_names
 from app.modules.work.list_group_members import copy_group_members_to_list
+from app.modules.work.member_invite_service import notify_list_invited
 from app.modules.work.membership_service import (CAN_MANAGE, CAN_OWN, Actor,
                                                  assert_can_grant,
                                                  block_if_archived,
@@ -29,7 +30,7 @@ from app.modules.work.task_model import WorkSection, WorkTask
 DEFAULT_SECTIONS = ("Cần làm", "Đang làm", "Hoàn thành")
 
 
-def create_list(db: Session, actor: Actor, data) -> dict:
+def create_list(db: Session, actor: Actor, data, background_tasks=None) -> dict:
     """Tạo list: người tạo thành OWNER, seed sẵn ba cột mặc định."""
     group_id = data.group_id or None
     if group_id:
@@ -54,12 +55,14 @@ def create_list(db: Session, actor: Actor, data) -> dict:
     #  Độ ưu tiên là một TRƯỜNG TÙY BIẾN nạp sẵn, không còn là cột cứng của task
     #  — xem đầu `label_model.py`.
     list_config_service.seed_system_label_fields(db, lst.id, actor.company_id, actor.user_id)
-    copied = 0
+    copied: list[int] = []
     if group_id and data.member_employee_ids:
         copied = copy_group_members_to_list(db, actor, lst.id, group_id, data.member_employee_ids)
     db.commit()
-    note = f" (gán {copied} thành viên của nhóm)" if copied else ""
+    note = f" (gán {len(copied)} thành viên của nhóm)" if copied else ""
     record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo dự án {lst.name}{note}")
+    if copied:
+        notify_list_invited(db, actor, lst, copied, background_tasks=background_tasks)
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -174,7 +177,7 @@ def get_members(db: Session, actor: Actor, list_id: int) -> list[dict]:
     return _with_names(db, rows)
 
 
-def add_member(db: Session, actor: Actor, list_id: int, data) -> dict:
+def add_member(db: Session, actor: Actor, list_id: int, data, background_tasks=None) -> dict:
     lst = get_list_or_403(db, actor, list_id, CAN_MANAGE)
     block_if_archived(lst)
     assert_can_grant(effective_role(db, actor.employee_id, list_id), data.role)
@@ -187,15 +190,21 @@ def add_member(db: Session, actor: Actor, list_id: int, data) -> dict:
             raise HTTPException(400, "Đây là chủ dự án — dùng chuyển quyền sở hữu")
         m.role = data.role
         m.updated_by = actor.user_id
+        is_new = False
     else:
         m = WorkListMember(company_id=actor.company_id, list_id=list_id,
                            employee_id=data.employee_id, role=data.role,
                            created_by=actor.user_id, updated_by=actor.user_id)
         db.add(m)
+        is_new = True
     db.commit()
     record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
            f"Mời nhân sự #{data.employee_id} vào dự án")
-    return _with_names(db, [m])[0]
+    out = _with_names(db, [m])[0]
+    #  duoc-CR-783: chỉ lời mời MỚI mới kêu chuông — đổi vai trò người đã có thì không.
+    if is_new:
+        notify_list_invited(db, actor, lst, [data.employee_id], background_tasks=background_tasks)
+    return out
 
 
 def remove_member(db: Session, actor: Actor, list_id: int, member_id: int) -> None:

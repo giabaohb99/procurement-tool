@@ -75,6 +75,19 @@ export function useRemoveWorkMember(listId: number) {
   })
 }
 
+export function useReinviteWorkMember(listId: number) {
+  return useMutation({
+    mutationFn: (memberId: number) => workApi.reinviteMember(listId, memberId),
+    onSuccess: toastReinviteResult,
+  })
+}
+
+/** Báo kết quả nút Mời lại — `notified = 0` nghĩa là chuông không tới được ai, phải nói rõ chứ đừng báo "đã gửi". */
+export function toastReinviteResult({ notified }: { notified: number }) {
+  if (notified > 0) toast.success('Đã gửi lại lời mời')
+  else toast.warning('Không gửi được: người này chưa có tài khoản đăng nhập hoặc chưa có quyền xem Dự án')
+}
+
 export function useCreateSection(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({

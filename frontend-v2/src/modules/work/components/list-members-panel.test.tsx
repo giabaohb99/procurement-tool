@@ -28,6 +28,7 @@ const members = vi.fn<() => WorkMember[]>()
 const addMember = vi.fn()
 const removeMember = vi.fn()
 const setRole = vi.fn()
+const reinvite = vi.fn()
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: () => true }),
@@ -50,6 +51,7 @@ vi.mock('../hooks/use-work-config', () => ({
   useAddWorkMember: () => ({ mutate: addMember, isPending: false }),
   useRemoveWorkMember: () => ({ mutate: removeMember, isPending: false }),
   useSetWorkMemberRole: () => ({ mutate: setRole, isPending: false }),
+  useReinviteWorkMember: () => ({ mutate: reinvite, isPending: false }),
 }))
 
 function member(id: number, name: string, role: number = WORK_ROLE.MEMBER): WorkMember {
@@ -193,7 +195,7 @@ describe('Đổi vai trò người đã ở trong dự án', () => {
 describe('Mời người', () => {
   it('chưa chọn ai thì nút Mời tắt và không hiện số đếm', () => {
     show()
-    const btn = screen.getByRole('button', { name: /^Mời/ })
+    const btn = screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })
     expect(btn).toBeDisabled()
     expect(btn).toHaveTextContent(/^Mời$/)
   })
@@ -202,7 +204,7 @@ describe('Mời người', () => {
     const nguoi = userEvent.setup()
     show()
     await pickPeople(nguoi, 'Người Mới Một')
-    await nguoi.click(screen.getByRole('button', { name: /^Mời/ }))
+    await nguoi.click(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ }))
 
     expect(addMember).toHaveBeenCalledTimes(1)
     expect(addMember).toHaveBeenCalledWith({ employee_id: 900, role: WORK_ROLE.MEMBER })
@@ -213,7 +215,7 @@ describe('Mời người', () => {
     show()
     await pickPeople(nguoi, 'Người Mới Một', 'Người Mới Hai', 'Người Mới Ba')
 
-    const btn = screen.getByRole('button', { name: /^Mời/ })
+    const btn = screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })
     expect(btn).toHaveTextContent('Mời (3)')
 
     await nguoi.click(btn)
@@ -228,7 +230,7 @@ describe('Mời người', () => {
     await nguoi.click(await screen.findByRole('option', { name: /Khách xem/ }))
 
     await pickPeople(nguoi, 'Người Mới Một', 'Người Mới Hai')
-    await nguoi.click(screen.getByRole('button', { name: /^Mời/ }))
+    await nguoi.click(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ }))
 
     expect(addMember).toHaveBeenCalledTimes(2)
     for (const [arg] of addMember.mock.calls) {
@@ -242,9 +244,9 @@ describe('Mời người', () => {
     const nguoi = userEvent.setup()
     show()
     await pickPeople(nguoi, 'Người Mới Một')
-    await nguoi.click(screen.getByRole('button', { name: /^Mời/ }))
+    await nguoi.click(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ }))
 
-    expect(screen.getByRole('button', { name: /^Mời/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeDisabled()
   })
 
   it('bỏ tick hết thì nút Mời tắt lại', async () => {
@@ -257,7 +259,7 @@ describe('Mời người', () => {
     await nguoi.click(pickerPopover().getByRole('button', { name: /Người Mới Một/ }))
     await nguoi.keyboard('{Escape}')
 
-    expect(screen.getByRole('button', { name: /^Mời/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Mời( \(\d+\))?$/ })).toBeDisabled()
     expect(addMember).not.toHaveBeenCalled()
   })
 })

@@ -98,9 +98,9 @@ def _with_names(db: Session, rows: list) -> list[dict]:
     return out
 
 
-def add_member(db: Session, actor: Actor, group_id: int, data) -> dict:
+def add_member(db: Session, actor: Actor, group_id: int, data, background_tasks=None) -> dict:
     """Mời một người vào nhóm — vai trò kế thừa xuống mọi list bên trong (A-09)."""
-    _get_group_or_403(db, actor, group_id, CAN_MANAGE)
+    grp = _get_group_or_403(db, actor, group_id, CAN_MANAGE)
     my_role = group_role(db, actor.employee_id, group_id)
     assert_can_grant(my_role, data.role)
 
@@ -120,7 +120,11 @@ def add_member(db: Session, actor: Actor, group_id: int, data) -> dict:
     db.commit()
     record(db, actor.user_id, AUDIT_GROUP_MEMBER, group_id, "update",
            f"Thêm nhân sự #{data.employee_id} vào nhóm dự án")
-    return _with_names(db, [m])[0]
+    out = _with_names(db, [m])[0]
+    #  duoc-CR-783: lời mời MỚI vào nhóm kêu chuông (nhánh đổi vai trò ở trên thì không).
+    from app.modules.work.member_invite_service import notify_group_invited
+    notify_group_invited(db, actor, grp, [data.employee_id], background_tasks=background_tasks)
+    return out
 
 
 def remove_member(db: Session, actor: Actor, group_id: int, member_id: int) -> None:
