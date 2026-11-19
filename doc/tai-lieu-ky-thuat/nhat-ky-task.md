@@ -134,6 +134,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `backend/app/modules/work/member_invite_service.py`, `list_service.py`, `group_service.py`, `list_group_members.py`, `serializer.py`, `controller.py`; `backend/scripts/sync_task_journal.py`; `frontend-v2/src/modules/work/components/members-panel.tsx`, `components/member-row.tsx`, `components/list-members-panel.tsx`, `components/group-members-panel.tsx`, `components/list-manage-dialog.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `hooks/use-work-config.ts`, `hooks/use-work-groups.ts`, `api/work-api.ts`, `types/work.ts`; `frontend-v2/src/shared/ui/employee-multi-select.tsx`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `test/backend/test_cong_viec_chuong_cr666.py`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`, `frontend-v2/src/modules/work/components/list-members-panel.test.tsx`, `frontend-v2/src/modules/work/components/group-manage-dialog.test.tsx`.
+Commit: b1748d1d.
+Deploy: dev 19/11/2026 (erp-v2 b1748d1d: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 3 đoạn).
 
 ## duoc-CR-783 | Tạo dự án trong nhóm thì gán sẵn thành viên của nhóm vào dự án
 - status: xong
