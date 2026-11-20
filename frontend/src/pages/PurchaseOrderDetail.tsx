@@ -231,14 +231,21 @@ export default function PurchaseOrderDetail() {
   const [approverCands, setApproverCands] = useState<any[]>([])
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(po.status))) { setApproverCands([]); return }
-    loadApproverCandidatesWithDefault(API, isNew ? 0 : Number(id), po).then(({ items, defaultId }) => {
+    loadApproverCandidatesWithDefault(API, isNew ? 0 : Number(id), po).then(({ items, defaultId, defaults }) => {
       setApproverCands(items)
       // bao-CR-786: đơn tạo thẳng chưa chọn người duyệt → điền sẵn trưởng phòng của phòng người lập (một lần).
-      if (isNew && defaultId && !approverDefaulted.current) {
+      // bao-CR-787: cùng lúc điền công ty (hồ sơ trống thì công ty của phòng) và HIỆN phòng xử lý thật sẽ lưu
+      // (nhà máy → phòng nhà máy); chưa tự chọn thì vẫn không gửi phòng xử lý, backend tính lại cùng luật.
+      if (isNew && !approverDefaulted.current) {
         approverDefaulted.current = true
         const cand = items.find((c: any) => Number(c.employee_id) === defaultId)
-        setPo((s: any) => (s.pr_code || Number(s.approver_employee_id)) ? s
-          : { ...s, approver_employee_id: defaultId, approver_employee_name: cand?.name || '' })
+        setPo((s: any) => s.pr_code ? s : {
+          ...s,
+          ...(!Number(s.approver_employee_id) && defaultId ? { approver_employee_id: defaultId, approver_employee_name: cand?.name || '' } : {}),
+          ...(!Number(s.company_id) && Number(defaults.default_company_id) ? { company_id: Number(defaults.default_company_id) } : {}),
+          ...(!s.handler_dept_assigned && Number(defaults.default_handler_dept_id)
+            ? { handler_dept_id: Number(defaults.default_handler_dept_id), handler_dept_name: defaults.default_handler_dept_name || '' } : {}),
+        })
       }
     })
   }, [id, isNew, po.status, po.department, po.department_id, po.company_id, po.handler_dept_id])
@@ -1338,7 +1345,7 @@ export default function PurchaseOrderDetail() {
                       ...departments.filter((d: any) => d.is_active !== false || d.id === Number(po.handler_dept_id))
                         .map((d: any) => ({ value: String(d.id), label: d.name }))]}
                     onChange={(v) => setPo((s: any) => ({ ...s, handler_dept_id: Number(v) || 0,
-                      handler_dept_assigned: !!Number(v),   // bao-CR-786: chưa chọn → backend tự chọn theo phòng người lập
+                      handler_dept_assigned: true,   // bao-CR-787: tự chọn (kể cả Phòng thu mua mặc định = 0) thì gửi đúng lựa chọn
                       handler_dept_name: departments.find((d: any) => d.id === Number(v))?.name || '' }))}
                     placeholder="Phòng thu mua mặc định" />
                 ) : (

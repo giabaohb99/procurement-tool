@@ -8,7 +8,7 @@ export async function loadApproverCandidates(apiBase: string, id: number, doc: a
 }
 
 /** bao-CR-786: kèm `defaultId` — ĐMH đang lập trả trưởng phòng của phòng trên form để điền sẵn đơn tạo thẳng. */
-export async function loadApproverCandidatesWithDefault(apiBase: string, id: number, doc: any): Promise<{ items: any[]; defaultId: number }> {
+export async function loadApproverCandidatesWithDefault(apiBase: string, id: number, doc: any): Promise<{ items: any[]; defaultId: number; defaults: any }> {
   try {
     const r = id > 0
       ? await api.get(`${apiBase}/${id}/approver-candidates`, { _silent: true } as any)
@@ -21,8 +21,9 @@ export async function loadApproverCandidatesWithDefault(apiBase: string, id: num
           },
           _silent: true,
         } as any)
-    return { items: r.data.data.items || [], defaultId: Number(r.data.data.default_employee_id) || 0 }
+    // bao-CR-787: `defaults` = công ty / phòng xử lý mặc định của đơn tạo thẳng (chỉ ĐMH đang lập trả).
+    return { items: r.data.data.items || [], defaultId: Number(r.data.data.default_employee_id) || 0, defaults: r.data.data }
   } catch {
-    return { items: [], defaultId: 0 }
+    return { items: [], defaultId: 0, defaults: {} }
   }
 }

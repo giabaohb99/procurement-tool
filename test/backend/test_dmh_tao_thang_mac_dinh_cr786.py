@@ -62,8 +62,8 @@ def depts(db, seed):
 
 
 def _direct(db, seed, user_id, **kw):
-    return po_service.create_po(db, POCreate(company_id=seed.company_id, supplier_code="NX", supplier_name="NCC",
-                                             **kw), user_id=user_id)
+    kw.setdefault("company_id", seed.company_id)
+    return po_service.create_po(db, POCreate(supplier_code="NX", supplier_name="NCC", **kw), user_id=user_id)
 
 
 def test_factory_buyer_direct_order_defaults_to_own_department(db, seed, depts):
@@ -103,3 +103,27 @@ def test_nspt_defaults_to_creator(db, seed, depts):
     staff = _person(db, seed, depts.it)
     po = _direct(db, seed, staff.user.id)
     assert po.nspt_id == staff.emp.id
+
+
+# ── bao-CR-787: màn tạo hiện đúng mặc định; hồ sơ thiếu công ty thì lấy công ty của phòng ──────────────
+
+def test_creator_defaults_show_factory_handler_and_fall_back_to_department_company(db, seed, depts):
+    from app.modules.purchase_order.edit_service import creator_order_defaults
+    buyer = _person(db, seed, depts.factory)
+    buyer.emp.company_id = 0          # hồ sơ chưa gán công ty (gặp thật trên prod: NSU012)
+    db.commit()
+    got = creator_order_defaults(db, buyer.user.id)
+    assert got["handler_dept_id"] == depts.factory
+    assert got["handler_dept_name"] == "Nhà máy"
+    assert got["company_id"] == seed.company_id, "hồ sơ trống công ty thì theo công ty của phòng"
+    po = _direct(db, seed, buyer.user.id, company_id=0)
+    assert po.company_id == seed.company_id
+    assert po.handler_dept_id == depts.factory
+
+
+def test_creator_defaults_for_other_department_show_central(db, seed, depts):
+    from app.modules.purchase_order.edit_service import creator_order_defaults
+    it_staff = _person(db, seed, depts.it)
+    got = creator_order_defaults(db, it_staff.user.id)
+    assert got["handler_dept_id"] == depts.central
+    assert got["handler_dept_name"] == "Sản xuất -Thu mua"

@@ -23,6 +23,10 @@ export interface ApproverDraftScope {
 export interface ApproverCandidatesResult {
   items: DeptHeadCandidate[]
   default_employee_id?: number
+  /** bao-CR-787: mặc định của đơn tạo thẳng theo người lập (công ty, phòng xử lý thật sẽ lưu). */
+  default_company_id?: number
+  default_handler_dept_id?: number
+  default_handler_dept_name?: string
 }
 
 export function fetchApproverCandidates(doc: ApproverDocPath, id: number) {

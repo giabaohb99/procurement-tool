@@ -164,7 +164,9 @@ Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) �
 **Mặc định khác của đơn tạo thẳng (bao-CR-786, 20/11/2026):** *Công ty nhận hóa đơn*, *Bộ phận* và *NSPT* điền sẵn theo
 người lập (giống YCMH); *Trưởng phòng phê duyệt* điền sẵn trưởng phòng (`Department.manager_id`) của phòng người lập nếu
 người đó duyệt được đơn và không phải chính người lập (`GET /api/purchase-orders/meta/approver-candidates` trả thêm
-`default_employee_id`; backend cũng tự gán lúc tạo nếu ô trống). Ô nào người lập đã chọn thì giữ.
+`default_employee_id`; backend cũng tự gán lúc tạo nếu ô trống). bao-CR-787: cùng đường đó trả `default_company_id`,
+`default_handler_dept_id`, `default_handler_dept_name` để màn tạo hiện đúng phòng xử lý thật và công ty (hồ sơ trống công ty
+thì lấy công ty của phòng). Ô nào người lập đã chọn thì giữ.
 
 ### 9. NSPT phụ trách (`nspt`)
 
