@@ -276,6 +276,7 @@ xử lý, dữ liệu gửi lên và hook người duyệt; typecheck hai giao d
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-order-info-card.tsx`, `frontend-v2/src/modules/procurement/hooks/use-approver-candidates.ts`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
 Kiểm: `frontend-v2/src/modules/procurement/components/purchase-order-info-card.test.tsx`, `frontend-v2/src/modules/procurement/hooks/use-approver-candidates.test.tsx`.
+Deploy: dev 20/11/2026 (erp-v2 75abe9a9); prod 20/11/2026 bản 2.24.1 (main 56fca654, chỉ dựng giao diện ERP mới + cũ).
 
 ## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
 - status: xong
