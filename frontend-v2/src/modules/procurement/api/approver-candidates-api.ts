@@ -19,12 +19,19 @@ export interface ApproverDraftScope {
   head_of_dept_id?: number
 }
 
+/** Danh sách người duyệt được; `default_employee_id` chỉ ĐMH đang lập trả (bao-CR-786). */
+export interface ApproverCandidatesResult {
+  items: DeptHeadCandidate[]
+  default_employee_id?: number
+}
+
 export function fetchApproverCandidates(doc: ApproverDocPath, id: number) {
-  return apiGet<{ items: DeptHeadCandidate[] }>(`/api/${doc}/${id}/approver-candidates`)
+  return apiGet<ApproverCandidatesResult>(`/api/${doc}/${id}/approver-candidates`)
 }
 
 export function fetchDraftApproverCandidates(doc: ApproverDocPath, scope: ApproverDraftScope) {
-  return apiGet<{ items: DeptHeadCandidate[] }>(`/api/${doc}/meta/approver-candidates`, {
+  //  bao-CR-786: ĐMH trả thêm `default_employee_id` — trưởng phòng của phòng trên form, để điền sẵn đơn tạo thẳng.
+  return apiGet<ApproverCandidatesResult>(`/api/${doc}/meta/approver-candidates`, {
     params: scope,
   })
 }

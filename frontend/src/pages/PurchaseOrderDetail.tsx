@@ -7,7 +7,7 @@ import { useFormTelemetry } from '../telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '../telemetry/ui-event-codes'
 import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
-import { loadApproverCandidates } from '../components/approverCandidates'
+import { loadApproverCandidatesWithDefault } from '../components/approverCandidates'
 import ProductPicker from '../components/ProductPicker'
 import CopyText from '../components/CopyText'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
@@ -231,8 +231,31 @@ export default function PurchaseOrderDetail() {
   const [approverCands, setApproverCands] = useState<any[]>([])
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(po.status))) { setApproverCands([]); return }
-    loadApproverCandidates(API, isNew ? 0 : Number(id), po).then(setApproverCands)
+    loadApproverCandidatesWithDefault(API, isNew ? 0 : Number(id), po).then(({ items, defaultId }) => {
+      setApproverCands(items)
+      // bao-CR-786: đơn tạo thẳng chưa chọn người duyệt → điền sẵn trưởng phòng của phòng người lập (một lần).
+      if (isNew && defaultId && !approverDefaulted.current) {
+        approverDefaulted.current = true
+        const cand = items.find((c: any) => Number(c.employee_id) === defaultId)
+        setPo((s: any) => (s.pr_code || Number(s.approver_employee_id)) ? s
+          : { ...s, approver_employee_id: defaultId, approver_employee_name: cand?.name || '' })
+      }
+    })
   }, [id, isNew, po.status, po.department, po.department_id, po.company_id, po.handler_dept_id])
+  const approverDefaulted = useRef(false)
+  // bao-CR-786: đơn tạo thẳng (không YCMH nguồn) điền sẵn như YCMH — công ty nhận hóa đơn, bộ phận, NSPT theo người lập.
+  const creatorDefaulted = useRef(false)
+  useEffect(() => {
+    if (!isNew || !user || creatorDefaulted.current) return
+    creatorDefaulted.current = true
+    const u: any = user
+    setPo((s: any) => s.pr_code ? s : {
+      ...s,
+      company_id: Number(s.company_id) || Number(u.company_id) || 0,
+      department: s.department || u.department_name || '',
+      nspt: s.nspt || u.full_name || '',
+    })
+  }, [isNew, user])
   const [logs, setLogs] = useState<any[]>([])
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — thẻ bên dưới nạp rồi báo lên, bảng dòng
   //  hàng đọc % theo dòng từ đây; bấm ô "Hồ sơ" thì ra lệnh cho thẻ cuộn tới + sổ nút.
@@ -840,7 +863,8 @@ export default function PurchaseOrderDetail() {
       department: po.department, nspt: po.nspt, order_date: po.order_date,
       approver_employee_id: Number(po.approver_employee_id) || 0,   // bao-CR-499
       // bao-CR-785: đơn tạo thẳng gửi phòng xử lý đã chọn (0 = phòng thu mua mặc định); có YCMH nguồn thì để backend chép từ YCMH.
-      ...(po.pr_code ? {} : { handler_dept_id: Number(po.handler_dept_id) || 0 }),
+      // bao-CR-786: chỉ gửi khi người lập TỰ chọn; chưa chọn thì backend theo luật YCMH (phòng tự mua → phòng mình).
+      ...(!po.pr_code && po.handler_dept_assigned ? { handler_dept_id: Number(po.handler_dept_id) || 0 } : {}),
       vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
       // bao-CR-319 — loại đơn + tiền tệ + tờ khai. Thiếu mấy khóa này thì người dùng chọn
       // "Nhập khẩu" trên màn hình xong lưu lại vẫn ra đơn trong nước.
@@ -1314,6 +1338,7 @@ export default function PurchaseOrderDetail() {
                       ...departments.filter((d: any) => d.is_active !== false || d.id === Number(po.handler_dept_id))
                         .map((d: any) => ({ value: String(d.id), label: d.name }))]}
                     onChange={(v) => setPo((s: any) => ({ ...s, handler_dept_id: Number(v) || 0,
+                      handler_dept_assigned: !!Number(v),   // bao-CR-786: chưa chọn → backend tự chọn theo phòng người lập
                       handler_dept_name: departments.find((d: any) => d.id === Number(v))?.name || '' }))}
                     placeholder="Phòng thu mua mặc định" />
                 ) : (

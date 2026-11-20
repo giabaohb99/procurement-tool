@@ -133,6 +133,8 @@ export interface PurchaseOrderDetail {
   handler_dept_id?: number
   /** bao-CR-480: tên phòng xử lý do backend trả kèm. */
   handler_dept_name?: string
+  /** bao-CR-786 (chỉ giao diện): người lập đã tự chọn Phòng xử lý — chưa chọn thì không gửi, backend tự chọn. */
+  handler_dept_assigned?: boolean
   /**
    * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt") và
    * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên

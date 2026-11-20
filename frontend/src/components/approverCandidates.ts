@@ -4,6 +4,11 @@
 import { api } from '../api/client'
 
 export async function loadApproverCandidates(apiBase: string, id: number, doc: any): Promise<any[]> {
+  return (await loadApproverCandidatesWithDefault(apiBase, id, doc)).items
+}
+
+/** bao-CR-786: kèm `defaultId` — ĐMH đang lập trả trưởng phòng của phòng trên form để điền sẵn đơn tạo thẳng. */
+export async function loadApproverCandidatesWithDefault(apiBase: string, id: number, doc: any): Promise<{ items: any[]; defaultId: number }> {
   try {
     const r = id > 0
       ? await api.get(`${apiBase}/${id}/approver-candidates`, { _silent: true } as any)
@@ -16,8 +21,8 @@ export async function loadApproverCandidates(apiBase: string, id: number, doc: a
           },
           _silent: true,
         } as any)
-    return r.data.data.items || []
+    return { items: r.data.data.items || [], defaultId: Number(r.data.data.default_employee_id) || 0 }
   } catch {
-    return []
+    return { items: [], defaultId: 0 }
   }
 }

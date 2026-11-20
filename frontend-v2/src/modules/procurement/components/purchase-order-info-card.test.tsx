@@ -36,7 +36,11 @@ describe('PurchaseOrderInfoCard — Phòng xử lý', () => {
     expect(picker).not.toBeNull()
     await userEvent.click(picker)
     await userEvent.click(await screen.findByText('Dego Organic'))
-    expect(onChange).toHaveBeenCalledWith({ handler_dept_id: 5, handler_dept_name: 'Dego Organic' })
+    expect(onChange).toHaveBeenCalledWith({
+      handler_dept_id: 5,
+      handler_dept_name: 'Dego Organic',
+      handler_dept_assigned: true,
+    })
   })
 
   it('keeps the handling department read-only when the order comes from a request', () => {

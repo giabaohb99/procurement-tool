@@ -102,7 +102,10 @@ class POCreate(BaseModel):
     supplier_code: Str50 = ""
     supplier_name: Str255 = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
-    handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý; 0 = chép từ YCMH nếu có
+    # bao-CR-414: phòng ĐƯỢC NHỜ xử lý. bao-CR-786: None = người lập không chọn → có YCMH nguồn thì chép từ YCMH,
+    # không có thì theo luật YCMH (phòng tự mua → chính phòng người lập, còn lại phòng thu mua mặc định);
+    # 0 gửi rõ = phòng thu mua mặc định.
+    handler_dept_id: int | None = None
     department: Str255 = ""
     nspt_id: int = 0              # CR-087: NSPT neo bằng id; bỏ trống thì tra từ `nspt`
     approver_employee_id: int = 0   # bao-CR-499: người được chọn duyệt; sau Duyệt = người thực duyệt

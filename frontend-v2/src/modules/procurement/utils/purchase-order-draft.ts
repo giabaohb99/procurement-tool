@@ -130,7 +130,10 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
     nspt: data.nspt,
     approver_employee_id: data.approver_employee_id ?? 0,   // bao-CR-499
     //  bao-CR-785: đơn tạo thẳng gửi phòng xử lý đã chọn; có YCMH nguồn thì để backend chép từ YCMH.
-    ...(data.pr_code ? {} : { handler_dept_id: Number(data.handler_dept_id) || 0 }),
+    //  bao-CR-786: chỉ gửi khi người lập TỰ chọn; chưa chọn thì backend theo luật YCMH (phòng tự mua → phòng mình).
+    ...(!data.pr_code && data.handler_dept_assigned
+      ? { handler_dept_id: Number(data.handler_dept_id) || 0 }
+      : {}),
     order_date: data.order_date,
     vat_rate: Number(data.vat_rate) || 0,
     payment_terms: data.payment_terms,
@@ -379,4 +382,30 @@ export function lineProgressOf(
     }
   }
   return out
+}
+
+/** Phần tài khoản đang đăng nhập cần để điền sẵn đơn tạo thẳng (khớp `AuthUser`). */
+export interface PurchaseOrderCreator {
+  full_name?: string
+  company_id?: number
+  department_id?: number
+  department_name?: string
+}
+
+/**
+ * bao-CR-786 (đại ca chốt 20/11/2026) — đơn TẠO THẲNG (không YCMH nguồn) điền sẵn như YCMH: công ty nhận hóa
+ * đơn, bộ phận theo người lập, NSPT là chính người lập. Ô nào đã có giá trị thì giữ; đơn có YCMH nguồn thì không đụng.
+ */
+export function withCreatorDefaults(
+  draft: PurchaseOrderDetail,
+  creator: PurchaseOrderCreator | null | undefined,
+): PurchaseOrderDetail {
+  if (!creator || draft.pr_code) return draft
+  return {
+    ...draft,
+    company_id: draft.company_id || creator.company_id || 0,
+    department: draft.department || creator.department_name || '',
+    department_id: draft.department_id || creator.department_id || 0,
+    nspt: draft.nspt || creator.full_name || '',
+  }
 }

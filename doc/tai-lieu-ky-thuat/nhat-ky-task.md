@@ -255,6 +255,28 @@ Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/mod
 Commit: a04c4033.
 Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
 
+## bao-CR-786 | Đơn mua hàng tạo thẳng điền sẵn phòng xử lý, công ty, bộ phận, NSPT và người duyệt theo người lập
+- status: xong
+- date: 2026-11-20
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** sau bao-CR-785, đơn mua hàng tạo thẳng (không từ yêu cầu mua hàng) vẫn mặc định phòng xử lý là phòng thu
+mua kể cả khi người lập thuộc phòng tự mua (nhà máy Dego Organic, Kinh doanh AGC), và các ô công ty nhận hóa đơn, bộ
+phận, người duyệt để trống, phải chọn tay; yêu cầu mua hàng thì đã điền sẵn.
+
+**Đã làm**
+- Phòng xử lý không chọn thì theo đúng luật yêu cầu mua hàng: người của phòng tự mua → chính phòng đó, còn lại → phòng
+  thu mua mặc định; người lập chọn tay thì giữ.
+- Công ty nhận hóa đơn, bộ phận và nhân sự phụ trách điền sẵn theo người lập; trưởng phòng phê duyệt điền sẵn trưởng
+  phòng của phòng người lập (không tự gán khi chính người lập là trưởng phòng). Máy chủ cũng tự gán khi lưu nếu ô trống.
+- Áp cả giao diện cũ và mới; đơn tạo từ yêu cầu mua hàng không đổi.
+
+**Kiểm:** bài kiểm máy chủ mới 5 bài (phòng tự mua, phòng khác, chọn rõ, người duyệt mặc định, NSPT) cùng các bài phòng
+xử lý, công nợ theo phòng, người duyệt liên quan xanh; typecheck hai giao diện, lint sạch; bài kiểm giao diện đơn mua hàng xanh.
+
+Mã nguồn: `backend/app/modules/purchase_order/edit_service.py`, `backend/app/modules/purchase_order/controller.py`, `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
+Kiểm: `test/backend/test_dmh_tao_thang_mac_dinh_cr786.py`, `frontend-v2/src/modules/procurement/utils/purchase-order-draft.test.ts`.
+
 ## bao-CR-785 | Đơn mua hàng tạo thẳng chọn được phòng xử lý và người duyệt
 - status: xong
 - date: 2026-11-20
