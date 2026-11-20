@@ -177,6 +177,13 @@ def creator_order_defaults(db: Session, user_id: int, department_id: int = 0) ->
     dept_id = int(department_id or 0) or (int(emp.department_id or 0) if emp else 0)
     dept = db.get(Department, dept_id) if dept_id else None
     company_id = (int(emp.company_id or 0) if emp else 0) or (int(dept.company_id or 0) if dept else 0)
+    if not company_id:
+        # bao-CR-788: prod 20/11/2026 cả phòng Dego Organic (28 người) và phòng của nó đều chưa gán công ty — lùi về
+        # công ty của đơn mua hàng gần nhất chính người này lập (NSU012: 79/79 đơn là DEGO HOLDING).
+        last = (db.query(PurchaseOrder.company_id)
+                .filter(PurchaseOrder.created_by == user_id, PurchaseOrder.company_id > 0)
+                .order_by(PurchaseOrder.id.desc()).first())
+        company_id = int(last[0]) if last else 0
     handler = normalize_handler_dept_id(db, default_handler_dept_id(db, dept_id))
     handler_dept = db.get(Department, handler) if handler else None
     return {"department_id": dept_id, "company_id": company_id, "handler_dept_id": handler,

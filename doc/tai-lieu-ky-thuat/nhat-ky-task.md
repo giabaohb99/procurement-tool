@@ -255,6 +255,22 @@ Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/mod
 Commit: a04c4033.
 Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
 
+## bao-CR-788 | Đơn mua hàng tạo thẳng lấy công ty nhận hóa đơn theo đơn gần nhất khi hồ sơ chưa gán công ty
+- status: xong
+- date: 2026-11-20
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** sau bản 2.24.3 ô **Công ty nhận hóa đơn** của tài khoản nhà máy vẫn trống: trên prod cả 28 nhân sự phòng Dego
+Organic và chính các phòng Dego Organic, IT, Sản xuất -Thu mua đều chưa gán công ty.
+
+**Đã làm**
+- Hồ sơ và phòng đều chưa gán công ty thì lấy công ty của đơn mua hàng gần nhất chính người đó lập.
+
+**Kiểm:** thêm 1 bài máy chủ; 28 bài mặc định đơn tạo thẳng và phòng thu mua mặc định xanh.
+
+Mã nguồn: `backend/app/modules/purchase_order/edit_service.py`.
+Kiểm: `test/backend/test_dmh_tao_thang_mac_dinh_cr786.py`.
+
 ## bao-CR-787 | Màn tạo đơn mua hàng thẳng hiện đúng phòng xử lý và công ty sẽ lưu
 - status: xong
 - date: 2026-11-20

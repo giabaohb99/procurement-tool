@@ -127,3 +127,15 @@ def test_creator_defaults_for_other_department_show_central(db, seed, depts):
     got = creator_order_defaults(db, it_staff.user.id)
     assert got["handler_dept_id"] == depts.central
     assert got["handler_dept_name"] == "Sản xuất -Thu mua"
+
+
+def test_company_falls_back_to_creator_last_order_when_profile_and_department_are_blank(db, seed, depts):
+    """bao-CR-788 — hồ sơ và phòng đều chưa gán công ty (gặp thật trên prod) → công ty của đơn gần nhất người đó lập."""
+    from app.modules.purchase_order.edit_service import creator_order_defaults
+    buyer = _person(db, seed, depts.factory)
+    buyer.emp.company_id = 0
+    db.get(Department, depts.factory).company_id = 0
+    db.commit()
+    assert creator_order_defaults(db, buyer.user.id)["company_id"] == 0
+    _direct(db, seed, buyer.user.id, company_id=seed.company_id)
+    assert creator_order_defaults(db, buyer.user.id)["company_id"] == seed.company_id
