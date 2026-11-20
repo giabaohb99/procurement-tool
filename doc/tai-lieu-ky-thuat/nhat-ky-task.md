@@ -270,6 +270,7 @@ Organic và chính các phòng Dego Organic, IT, Sản xuất -Thu mua đều ch
 
 Mã nguồn: `backend/app/modules/purchase_order/edit_service.py`.
 Kiểm: `test/backend/test_dmh_tao_thang_mac_dinh_cr786.py`.
+Deploy: prod 20/11/2026 bản 2.24.4 (main 36708177, chỉ dựng api).
 
 ## bao-CR-787 | Màn tạo đơn mua hàng thẳng hiện đúng phòng xử lý và công ty sẽ lưu
 - status: xong
@@ -291,6 +292,7 @@ typecheck hai giao diện, lint sạch; bài kiểm giao diện đơn mua hàng 
 
 Mã nguồn: `backend/app/modules/purchase_order/edit_service.py`, `backend/app/modules/purchase_order/controller.py`, `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
 Kiểm: `test/backend/test_dmh_tao_thang_mac_dinh_cr786.py`.
+Deploy: prod 20/11/2026 bản 2.24.3 (main d89aea26, dựng api + giao diện ERP mới + cũ).
 
 ## bao-CR-786 | Đơn mua hàng tạo thẳng điền sẵn phòng xử lý, công ty, bộ phận, NSPT và người duyệt theo người lập
 - status: xong
