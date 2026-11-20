@@ -276,6 +276,7 @@ xử lý, công nợ theo phòng, người duyệt liên quan xanh; typecheck ha
 
 Mã nguồn: `backend/app/modules/purchase_order/edit_service.py`, `backend/app/modules/purchase_order/controller.py`, `frontend-v2/src/modules/procurement/pages/purchase-order-detail-page.tsx`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
 Kiểm: `test/backend/test_dmh_tao_thang_mac_dinh_cr786.py`, `frontend-v2/src/modules/procurement/utils/purchase-order-draft.test.ts`.
+Deploy: prod 20/11/2026 bản 2.24.2 (main f18318f5, dump prod_truoc_release_20261120_1458.sql.gz, dựng api + giao diện ERP mới + cũ).
 
 ## bao-CR-785 | Đơn mua hàng tạo thẳng chọn được phòng xử lý và người duyệt
 - status: xong
