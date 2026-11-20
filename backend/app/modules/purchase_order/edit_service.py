@@ -142,6 +142,47 @@ def _handler_dept_of_pr(db: Session, pr_code: str) -> int:
     return (pr.handler_dept_id or 0) if pr else 0
 
 
+def _creator_dept_id(db: Session, data: POCreate, user_id: int) -> int:
+    """Phòng của người lập đơn: ô phòng ban trên form, trống thì theo hồ sơ nhân sự của tài khoản."""
+    if int(data.department_id or 0):
+        return int(data.department_id)
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    user = db.get(User, user_id)
+    emp = db.get(Employee, int(user.employee_id or 0)) if user and user.employee_id else None
+    return int(emp.department_id or 0) if emp else 0
+
+
+def default_po_approver_id(db: Session, department_id: int, user_id: int) -> int:
+    """bao-CR-786 — người duyệt mặc định của đơn tạo thẳng: trưởng phòng (Department.manager_id) của phòng người
+    lập; 0 khi phòng chưa gán trưởng phòng hoặc chính người lập là trưởng phòng (không tự duyệt đơn mình)."""
+    from app.core.approver_candidates import get_department_head_id
+    from app.modules.user.model import User
+    head = get_department_head_id(db, int(department_id or 0))
+    user = db.get(User, user_id)
+    if not head or (user and int(user.employee_id or 0) == head):
+        return 0
+    return head
+
+
+def _pick_handler_dept(db: Session, data: POCreate, user_id: int) -> int:
+    """Phòng xử lý lúc TẠO đơn (chưa chuẩn hóa `0`).
+
+    bao-CR-786 (đại ca chốt 20/11/2026): đơn tạo thẳng (không YCMH nguồn) mà người lập không chọn phòng thì theo
+    đúng luật YCMH — người của phòng tự mua → chính phòng đó, còn lại → phòng thu mua mặc định. Chọn rõ (kể cả
+    `0`) thì giữ lựa chọn.
+    """
+    if data.handler_dept_id:
+        return int(data.handler_dept_id)
+    pr_code = (data.pr_code or "").strip()
+    if pr_code:
+        return _handler_dept_of_pr(db, pr_code)
+    if data.handler_dept_id is None:
+        from app.modules.purchase_request.department_service import default_handler_dept_id
+        return default_handler_dept_id(db, _creator_dept_id(db, data, user_id))
+    return 0
+
+
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     _ensure_pr_dispatched(db, (data.pr_code or "").strip())
     nspt, nspt_id = (data.nspt or "").strip(), data.nspt_id
@@ -149,18 +190,25 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
         nspt, nspt_id = _default_nspt(db, data, user_id)
     # bao-CR-414: đơn lập từ YCMH thừa kế phòng được nhờ, trừ khi form gửi rõ.
     # bao-CR-524: không có phòng nào (đơn lẻ / YCMH cũ còn `0`) → phòng thu mua mặc định.
-    handler_dept_id = normalize_handler_dept_id(
-        db, data.handler_dept_id or _handler_dept_of_pr(db, (data.pr_code or "").strip()))
+    handler_dept_id = normalize_handler_dept_id(db, _pick_handler_dept(db, data, user_id))
+    department, department_id, approver_id = data.department, data.department_id, int(data.approver_employee_id or 0)
+    if not (data.pr_code or "").strip():
+        # bao-CR-786: đơn tạo thẳng — bộ phận trống thì theo phòng người lập, chưa chọn người duyệt thì
+        # mặc định trưởng phòng của phòng đó (trừ khi chính người lập là trưởng phòng).
+        if not int(department_id or 0) and not (department or "").strip():
+            department_id = _creator_dept_id(db, data, user_id)
+        if not approver_id:
+            approver_id = default_po_approver_id(db, int(department_id or 0), user_id)
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
-        supplier_name=data.supplier_name, department=data.department,
-        department_id=data.department_id, handler_dept_id=handler_dept_id, nspt=nspt, nspt_id=nspt_id,
+        supplier_name=data.supplier_name, department=department,
+        department_id=department_id, handler_dept_id=handler_dept_id, nspt=nspt, nspt_id=nspt_id,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
         # bao-CR-758: người lập chọn "Trưởng phòng phê duyệt" ngay ở form TẠO (bao-CR-499) — trước đây ô
         # này bị bỏ rơi lúc tạo, mở đơn vừa tạo ra lại trống, phải chọn lại rồi Lưu thêm một lần.
-        approver_employee_id=int(data.approver_employee_id or 0),
+        approver_employee_id=approver_id,
         order_type=data.order_type or int(OrderType.DOMESTIC),
         currency=(data.currency or "").strip() or DEFAULT_CURRENCY,
         exchange_rate=float(data.exchange_rate or 0) or 1,

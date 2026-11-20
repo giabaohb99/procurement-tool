@@ -155,11 +155,16 @@ Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) �
 ### 8b. Phòng xử lý (`handler_dept_id`)
 
 - Kiểu nhập: Chọn từ danh mục phòng ban (SearchSelect) khi đơn **không có YCMH nguồn**; có YCMH nguồn thì chỉ xem
-- Mặc định: *Phòng thu mua mặc định* (gửi `0`, backend ghi id thật của phòng Sản xuất -Thu mua, bao-CR-524); có YCMH nguồn thì chép từ YCMH
+- Mặc định: có YCMH nguồn thì chép từ YCMH; không có thì theo luật YCMH (bao-CR-786): người lập thuộc *phòng tự mua* (phòng có người giữ bậc `dept_proc`, vd Dego Organic, Kinh doanh AGC) → chính phòng đó, còn lại → *Phòng thu mua mặc định* (Sản xuất -Thu mua). Giao diện chỉ gửi `handler_dept_id` khi người lập tự chọn; chọn rõ mục *Phòng thu mua mặc định* là gửi `0`
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: `/api/departments`; giao diện chỉ gửi `handler_dept_id` khi `pr_code` trống (bao-CR-785, cả v1 và v2)
 - Người sửa: Người tạo / người có `purchase_order:write` khi đơn chưa khóa
 - Logic đặc biệt: Đơn từ YCMH muốn đổi phòng thì đổi ở YCMH (nút *Chuyển phòng xử lý*). Đổi phòng xử lý làm danh sách *Trưởng phòng phê duyệt* tính lại theo phòng mới. Màn tạo đơn ở giao diện mới hỏi danh sách người duyệt ngay cả khi đơn chưa có phòng ban (trước bao-CR-785 không hỏi nên ô báo *Chưa có ai duyệt được phiếu này*).
+
+**Mặc định khác của đơn tạo thẳng (bao-CR-786, 20/11/2026):** *Công ty nhận hóa đơn*, *Bộ phận* và *NSPT* điền sẵn theo
+người lập (giống YCMH); *Trưởng phòng phê duyệt* điền sẵn trưởng phòng (`Department.manager_id`) của phòng người lập nếu
+người đó duyệt được đơn và không phải chính người lập (`GET /api/purchase-orders/meta/approver-candidates` trả thêm
+`default_employee_id`; backend cũng tự gán lúc tạo nếu ô trống). Ô nào người lập đã chọn thì giữ.
 
 ### 9. NSPT phụ trách (`nspt`)
 

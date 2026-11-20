@@ -24,6 +24,7 @@ import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -112,6 +113,7 @@ import {
 import { PO_STATUS_LABELS } from '../types/purchase-document'
 import {
   createEmptyPurchaseOrder,
+  withCreatorDefaults,
   toPurchaseOrderPayload,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
@@ -194,6 +196,7 @@ export function PurchaseOrderDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { can } = usePermission()
+  const { user } = useAuth()
 
   const isNew = !id || id === 'new'
   const purchaseOrderId = isNew ? 0 : Number(id)
@@ -229,9 +232,12 @@ export function PurchaseOrderDetailPage() {
   /** Nháp đang sửa. Đơn mới có thể được điền sẵn từ YCMH (`state.fromPurchaseRequest`). */
   const [draft, setDraft] = useState<PurchaseOrderDetail | null>(() =>
     isNew
-      ? createEmptyPurchaseOrder(
-          (location.state as { fromPurchaseRequest?: PurchaseOrderDraftFromRequest } | null)
-            ?.fromPurchaseRequest,
+      ? withCreatorDefaults(
+          createEmptyPurchaseOrder(
+            (location.state as { fromPurchaseRequest?: PurchaseOrderDraftFromRequest } | null)
+              ?.fromPurchaseRequest,
+          ),
+          user,
         )
       : null,
   )
@@ -291,6 +297,11 @@ export function PurchaseOrderDetailPage() {
   //  thao tác khác làm mới đơn, xóa sạch giá người dùng vừa gõ. Nay gộp: phần đã sửa giữ nguyên.
   const serverDataChanged = useHasChanged(serverData)
   const isNewChanged = useHasChanged(isNew)
+  //  bao-CR-786: tài khoản nạp sau lượt vẽ đầu thì điền sẵn lúc đó (đơn tạo thẳng).
+  const userChanged = useHasChanged(user)
+  if (userChanged && isNew && draft && !draft.pr_code) {
+    setDraft(withCreatorDefaults(draft, user))
+  }
   if ((serverDataChanged || isNewChanged) && !isNew) {
     const latest = serverData ?? null
     setDraft(
@@ -395,6 +406,21 @@ export function PurchaseOrderDetailPage() {
     },
     isNew || ['draft', 'rejected'].includes(approverSource?.status ?? ''),
   )
+  //  bao-CR-786: đơn tạo thẳng chưa chọn người duyệt → điền sẵn trưởng phòng của phòng người lập (backend gợi ý),
+  //  chỉ một lần; người lập đổi tay sau đó thì giữ lựa chọn.
+  const [approverDefaulted, setApproverDefaulted] = useState(false)
+  const defaultApproverId = approverData?.default_employee_id ?? 0
+  if (isNew && !approverDefaulted && draft && !draft.pr_code && defaultApproverId) {
+    setApproverDefaulted(true)
+    if (!draft.approver_employee_id) {
+      const candidate = approverData?.items.find((item) => item.employee_id === defaultApproverId)
+      setDraft({
+        ...draft,
+        approver_employee_id: defaultApproverId,
+        approver_employee_name: candidate?.name ?? '',
+      })
+    }
+  }
 
   if (!isNew && isLoading) {
     return (

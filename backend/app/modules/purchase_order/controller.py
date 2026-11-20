@@ -82,9 +82,15 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
     """
     #  bao-CR-552: + Trưởng bộ phận, bỏ tài khoản Quản trị hệ thống (luật nằm ở core).
     from app.core.approver_candidates import draft_fields, list_candidates_for_draft
+    from .edit_service import default_po_approver_id
     fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
-    return success({"items": list_candidates_for_draft(db, PurchaseOrder, "purchase_order", fields,
-                                                       head_of_dept_id)})
+    items = list_candidates_for_draft(db, PurchaseOrder, "purchase_order", fields, head_of_dept_id)
+    #  bao-CR-786: người duyệt gợi ý cho đơn tạo thẳng = trưởng phòng của phòng trên form (giao diện điền sẵn khi ô
+    #  còn trống); không nằm trong danh sách duyệt được thì không gợi ý.
+    default_id = default_po_approver_id(db, int(fields.get("department_id") or 0), user.id)
+    if default_id not in {int(i.get("employee_id") or 0) for i in items}:
+        default_id = 0
+    return success({"items": items, "default_employee_id": default_id})
 
 
 @router.get("/{pid}/approver-candidates")

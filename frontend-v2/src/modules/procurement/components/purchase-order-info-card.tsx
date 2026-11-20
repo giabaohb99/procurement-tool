@@ -42,6 +42,7 @@ import { switchOrderType } from '../utils/purchase-order-import-cost'
 import {
   DEFAULT_PURCHASING_LABEL,
   HANDLING_DEPT_DEFAULT_OPTION,
+  HANDLING_DEPT_HINT,
   handlingDeptCreateOptions,
   handlingDeptLabel,
 } from '../utils/handling-dept-display'
@@ -317,9 +318,12 @@ export function PurchaseOrderInfoCard({
                 onChange({
                   handler_dept_id: id,
                   handler_dept_name: departments.find((department) => department.id === id)?.name ?? '',
+                  //  bao-CR-786: mục mặc định = chưa chọn → backend tự chọn theo phòng người lập.
+                  handler_dept_assigned: id > 0,
                 })
               }}
             />
+            {!data.id && <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>}
           </div>
         ) : (
           <ReadOnlyField label="Phòng xử lý">

@@ -12,6 +12,7 @@ import {
   createEmptyPurchaseOrder,
   toDraftFromRequest,
   toPurchaseOrderPayload,
+  withCreatorDefaults,
 } from './purchase-order-draft'
 
 function makeOption(overrides: Partial<PurchaseRequestOption> = {}): PurchaseRequestOption {
@@ -335,13 +336,18 @@ describe('toPurchaseOrderPayload — không gửi số sau VAT đã gõ (duoc-CR
 
 describe('toPurchaseOrderPayload — Phòng xử lý của đơn tạo thẳng (bao-CR-785)', () => {
   it('sends the chosen handling department when the order has no source request', () => {
-    const payload = toPurchaseOrderPayload({ ...createEmptyPurchaseOrder(), handler_dept_id: 5 })
+    const payload = toPurchaseOrderPayload({
+      ...createEmptyPurchaseOrder(),
+      handler_dept_id: 5,
+      handler_dept_assigned: true,
+    })
     expect(payload.handler_dept_id).toBe(5)
   })
 
-  it('sends 0 (default purchasing department) when nothing was chosen', () => {
+  //  bao-CR-786: chưa chọn thì KHÔNG gửi — backend chọn theo luật YCMH (phòng tự mua → phòng người lập).
+  it('leaves the handling department to the backend when nothing was chosen', () => {
     const payload = toPurchaseOrderPayload(createEmptyPurchaseOrder())
-    expect(payload.handler_dept_id).toBe(0)
+    expect(payload).not.toHaveProperty('handler_dept_id')
   })
 
   it('leaves the handling department to the source request when the order has one', () => {
@@ -349,7 +355,30 @@ describe('toPurchaseOrderPayload — Phòng xử lý của đơn tạo thẳng (
       ...createEmptyPurchaseOrder(),
       pr_code: 'PYC13112604',
       handler_dept_id: 5,
+      handler_dept_assigned: true,
     })
     expect(payload).not.toHaveProperty('handler_dept_id')
+  })
+})
+
+describe('withCreatorDefaults — đơn tạo thẳng điền sẵn theo người lập (bao-CR-786)', () => {
+  const creator = { full_name: 'Lâm Bích Dư', company_id: 2, department_id: 20, department_name: 'Sản xuất -Thu mua' }
+
+  it('fills company, department and NSPT from the creator', () => {
+    const draft = withCreatorDefaults(createEmptyPurchaseOrder(), creator)
+    expect(draft).toMatchObject({
+      company_id: 2,
+      department_id: 20,
+      department: 'Sản xuất -Thu mua',
+      nspt: 'Lâm Bích Dư',
+    })
+  })
+
+  it('keeps values already on the form and leaves orders from a request alone', () => {
+    const kept = withCreatorDefaults({ ...createEmptyPurchaseOrder(), company_id: 9 }, creator)
+    expect(kept.company_id).toBe(9)
+    const fromRequest = withCreatorDefaults({ ...createEmptyPurchaseOrder(), pr_code: 'PYC1' }, creator)
+    expect(fromRequest.nspt).toBe('')
+    expect(fromRequest.company_id).toBe(0)
   })
 })
