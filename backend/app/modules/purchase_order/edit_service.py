@@ -165,6 +165,24 @@ def default_po_approver_id(db: Session, department_id: int, user_id: int) -> int
     return head
 
 
+def creator_order_defaults(db: Session, user_id: int, department_id: int = 0) -> dict:
+    """bao-CR-787 — mặc định của đơn TẠO THẲNG theo người lập, dùng chung cho lúc tạo và cho màn tạo (điền sẵn):
+    phòng (ô form, trống thì hồ sơ), công ty (hồ sơ, trống thì công ty của phòng), phòng xử lý (luật YCMH)."""
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    from app.modules.purchase_request.department_service import default_handler_dept_id
+    from app.modules.user.model import User
+    user = db.get(User, user_id)
+    emp = db.get(Employee, int(user.employee_id or 0)) if user and user.employee_id else None
+    dept_id = int(department_id or 0) or (int(emp.department_id or 0) if emp else 0)
+    dept = db.get(Department, dept_id) if dept_id else None
+    company_id = (int(emp.company_id or 0) if emp else 0) or (int(dept.company_id or 0) if dept else 0)
+    handler = normalize_handler_dept_id(db, default_handler_dept_id(db, dept_id))
+    handler_dept = db.get(Department, handler) if handler else None
+    return {"department_id": dept_id, "company_id": company_id, "handler_dept_id": handler,
+            "handler_dept_name": handler_dept.name if handler_dept else ""}
+
+
 def _pick_handler_dept(db: Session, data: POCreate, user_id: int) -> int:
     """Phòng xử lý lúc TẠO đơn (chưa chuẩn hóa `0`).
 
@@ -192,6 +210,7 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     # bao-CR-524: không có phòng nào (đơn lẻ / YCMH cũ còn `0`) → phòng thu mua mặc định.
     handler_dept_id = normalize_handler_dept_id(db, _pick_handler_dept(db, data, user_id))
     department, department_id, approver_id = data.department, data.department_id, int(data.approver_employee_id or 0)
+    company_id = data.company_id
     if not (data.pr_code or "").strip():
         # bao-CR-786: đơn tạo thẳng — bộ phận trống thì theo phòng người lập, chưa chọn người duyệt thì
         # mặc định trưởng phòng của phòng đó (trừ khi chính người lập là trưởng phòng).
@@ -199,9 +218,12 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
             department_id = _creator_dept_id(db, data, user_id)
         if not approver_id:
             approver_id = default_po_approver_id(db, int(department_id or 0), user_id)
+        # bao-CR-787: công ty nhận hóa đơn trống → công ty của người lập (hồ sơ trống thì theo công ty của phòng).
+        if not int(company_id or 0):
+            company_id = creator_order_defaults(db, user_id, int(department_id or 0))["company_id"]
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
-        survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
+        survey_code=data.survey_code, company_id=company_id, supplier_code=data.supplier_code,
         supplier_name=data.supplier_name, department=department,
         department_id=department_id, handler_dept_id=handler_dept_id, nspt=nspt, nspt_id=nspt_id,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,

@@ -82,7 +82,12 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
     """
     #  bao-CR-552: + Trưởng bộ phận, bỏ tài khoản Quản trị hệ thống (luật nằm ở core).
     from app.core.approver_candidates import draft_fields, list_candidates_for_draft
-    from .edit_service import default_po_approver_id
+    from .edit_service import creator_order_defaults, default_po_approver_id
+    #  bao-CR-787: đơn tạo thẳng chưa có phòng trên form → tính như lúc lưu (backend điền phòng người lập), để danh
+    #  sách duyệt + người duyệt gợi ý khớp đơn sẽ tạo.
+    defaults = creator_order_defaults(db, user.id, int(department_id or 0))
+    if not department and not int(department_id or 0):
+        department_id = defaults["department_id"]
     fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
     items = list_candidates_for_draft(db, PurchaseOrder, "purchase_order", fields, head_of_dept_id)
     #  bao-CR-786: người duyệt gợi ý cho đơn tạo thẳng = trưởng phòng của phòng trên form (giao diện điền sẵn khi ô
@@ -90,7 +95,11 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
     default_id = default_po_approver_id(db, int(fields.get("department_id") or 0), user.id)
     if default_id not in {int(i.get("employee_id") or 0) for i in items}:
         default_id = 0
-    return success({"items": items, "default_employee_id": default_id})
+    #  bao-CR-787: kèm mặc định của đơn tạo thẳng để màn tạo HIỆN đúng thứ sẽ lưu (phòng xử lý thật, công ty).
+    return success({"items": items, "default_employee_id": default_id,
+                    "default_company_id": defaults["company_id"],
+                    "default_handler_dept_id": defaults["handler_dept_id"],
+                    "default_handler_dept_name": defaults["handler_dept_name"]})
 
 
 @router.get("/{pid}/approver-candidates")

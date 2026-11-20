@@ -412,16 +412,26 @@ export function PurchaseOrderDetailPage() {
   //  chỉ một lần; người lập đổi tay sau đó thì giữ lựa chọn.
   const [approverDefaulted, setApproverDefaulted] = useState(false)
   const defaultApproverId = approverData?.default_employee_id ?? 0
-  if (isNew && !approverDefaulted && draft && !draft.pr_code && defaultApproverId) {
+  if (isNew && !approverDefaulted && draft && !draft.pr_code && approverData) {
     setApproverDefaulted(true)
-    if (!draft.approver_employee_id) {
-      const candidate = approverData?.items.find((item) => item.employee_id === defaultApproverId)
-      setDraft({
-        ...draft,
-        approver_employee_id: defaultApproverId,
-        approver_employee_name: candidate?.name ?? '',
-      })
-    }
+    const candidate = approverData.items.find((item) => item.employee_id === defaultApproverId)
+    setDraft({
+      ...draft,
+      ...(!draft.approver_employee_id && defaultApproverId
+        ? { approver_employee_id: defaultApproverId, approver_employee_name: candidate?.name ?? '' }
+        : {}),
+      //  bao-CR-787: hiện đúng phòng xử lý / công ty sẽ lưu (nhà máy → phòng nhà máy). Chưa tự chọn thì vẫn KHÔNG
+      //  gửi phòng xử lý — backend tính lại cùng luật.
+      ...(!draft.company_id && approverData.default_company_id
+        ? { company_id: approverData.default_company_id }
+        : {}),
+      ...(!draft.handler_dept_assigned && approverData.default_handler_dept_id
+        ? {
+            handler_dept_id: approverData.default_handler_dept_id,
+            handler_dept_name: approverData.default_handler_dept_name ?? '',
+          }
+        : {}),
+    })
   }
 
   if (!isNew && isLoading) {

@@ -336,8 +336,8 @@ export function PurchaseOrderInfoCard({
                 onChange({
                   handler_dept_id: id,
                   handler_dept_name: departments.find((department) => department.id === id)?.name ?? '',
-                  //  bao-CR-786: mục mặc định = chưa chọn → backend tự chọn theo phòng người lập.
-                  handler_dept_assigned: id > 0,
+                  //  bao-CR-787: người lập tự chọn (kể cả mục Phòng thu mua mặc định = 0) thì gửi đúng lựa chọn.
+                  handler_dept_assigned: true,
                 })
               }}
             />
