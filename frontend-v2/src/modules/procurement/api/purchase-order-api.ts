@@ -81,6 +81,8 @@ export interface PurchaseOrderPayload {
   nspt: string
   /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn); sau Duyệt backend tự ghi người thực duyệt. */
   approver_employee_id?: number
+  /** bao-CR-785 — chỉ gửi khi đơn KHÔNG có YCMH nguồn; 0 = phòng thu mua mặc định. */
+  handler_dept_id?: number
   order_date: string
   vat_rate: number
   payment_terms: string

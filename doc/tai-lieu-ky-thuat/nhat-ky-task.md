@@ -255,6 +255,28 @@ Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/mod
 Commit: a04c4033.
 Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
 
+## bao-CR-785 | Đơn mua hàng tạo thẳng chọn được phòng xử lý và người duyệt
+- status: xong
+- date: 2026-11-20
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** tạo đơn mua hàng thẳng, không từ yêu cầu mua hàng (ví dụ đơn của nhà máy), ô **Phòng xử lý** luôn khóa ở
+**Phòng thu mua mặc định** trên cả hai giao diện. Riêng giao diện ERP mới, ô **Trưởng phòng phê duyệt** còn báo **Chưa có
+ai duyệt được phiếu này**, trong khi giao diện cũ vẫn chọn được người duyệt.
+
+**Đã làm**
+- Đơn không có YCMH nguồn: ô **Phòng xử lý** chọn được từ danh mục phòng ban, mục đầu là **Phòng thu mua mặc định**; đơn
+  tạo từ YCMH vẫn chỉ xem, đổi phòng thì đổi ở YCMH. Áp cả giao diện cũ và mới.
+- Giao diện mới hỏi danh sách người duyệt ngay cả khi đơn chưa có phòng ban (nguyên nhân lỗi: màn chỉ hỏi khi đã có phòng),
+  nên ô **Trưởng phòng phê duyệt** có danh sách như giao diện cũ; đổi phòng xử lý thì danh sách tính lại.
+- Tài liệu chức năng đơn mua hàng thêm mục Phòng xử lý.
+
+**Kiểm:** kiểm trên dev máy chủ trả đủ người duyệt cho tài khoản nhà máy khi đơn chưa có phòng; bài kiểm mới cho ô Phòng
+xử lý, dữ liệu gửi lên và hook người duyệt; typecheck hai giao diện, lint sạch; 7 tệp, 61 bài kiểm xanh.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-order-info-card.tsx`, `frontend-v2/src/modules/procurement/hooks/use-approver-candidates.ts`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
+Kiểm: `frontend-v2/src/modules/procurement/components/purchase-order-info-card.test.tsx`, `frontend-v2/src/modules/procurement/hooks/use-approver-candidates.test.tsx`.
+
 ## bao-CR-779 | Màn in phiếu đề xuất từ đơn mua hàng mở sẵn Mẫu thường có chữ ký thay cho Mẫu thu mua
 - status: xong
 - date: 2026-11-17

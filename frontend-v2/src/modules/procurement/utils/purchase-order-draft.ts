@@ -129,6 +129,8 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
     department: data.department,
     nspt: data.nspt,
     approver_employee_id: data.approver_employee_id ?? 0,   // bao-CR-499
+    //  bao-CR-785: đơn tạo thẳng gửi phòng xử lý đã chọn; có YCMH nguồn thì để backend chép từ YCMH.
+    ...(data.pr_code ? {} : { handler_dept_id: Number(data.handler_dept_id) || 0 }),
     order_date: data.order_date,
     vat_rate: Number(data.vat_rate) || 0,
     payment_terms: data.payment_terms,

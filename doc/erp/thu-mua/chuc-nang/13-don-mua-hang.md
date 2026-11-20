@@ -152,6 +152,15 @@ Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) �
 - Nguồn dữ liệu / liên kết: Tự điền từ PYC (`purchase_request.department`) khi chọn `pr_code`
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 
+### 8b. Phòng xử lý (`handler_dept_id`)
+
+- Kiểu nhập: Chọn từ danh mục phòng ban (SearchSelect) khi đơn **không có YCMH nguồn**; có YCMH nguồn thì chỉ xem
+- Mặc định: *Phòng thu mua mặc định* (gửi `0`, backend ghi id thật của phòng Sản xuất -Thu mua, bao-CR-524); có YCMH nguồn thì chép từ YCMH
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `/api/departments`; giao diện chỉ gửi `handler_dept_id` khi `pr_code` trống (bao-CR-785, cả v1 và v2)
+- Người sửa: Người tạo / người có `purchase_order:write` khi đơn chưa khóa
+- Logic đặc biệt: Đơn từ YCMH muốn đổi phòng thì đổi ở YCMH (nút *Chuyển phòng xử lý*). Đổi phòng xử lý làm danh sách *Trưởng phòng phê duyệt* tính lại theo phòng mới. Màn tạo đơn ở giao diện mới hỏi danh sách người duyệt ngay cả khi đơn chưa có phòng ban (trước bao-CR-785 không hỏi nên ô báo *Chưa có ai duyệt được phiếu này*).
+
 ### 9. NSPT phụ trách (`nspt`)
 
 - Kiểu nhập: Chọn từ danh sách nhân sự (SearchSelect); điền tự động khi tạo đơn

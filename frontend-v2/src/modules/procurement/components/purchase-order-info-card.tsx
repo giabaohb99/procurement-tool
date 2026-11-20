@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import type { Company } from '@/modules/hr/types/company'
+import type { Department } from '@/modules/hr/types/department'
 import type { Employee } from '@/modules/hr/types/employee'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -41,7 +42,12 @@ import {
 } from '../types/purchase-order-detail'
 import { DEFAULT_PRINT_TERMS } from '../utils/purchase-order-print-terms'
 import { switchOrderType } from '../utils/purchase-order-import-cost'
-import { handlingDeptLabel } from '../utils/handling-dept-display'
+import {
+  DEFAULT_PURCHASING_LABEL,
+  HANDLING_DEPT_DEFAULT_OPTION,
+  handlingDeptCreateOptions,
+  handlingDeptLabel,
+} from '../utils/handling-dept-display'
 
 /** Tỷ giá nhập tới 6 số lẻ (1 JPY = 0,0065 USD kiểu vậy) — 3 số mặc định là mất. */
 const EXCHANGE_RATE_MAX_DECIMALS = 6
@@ -62,6 +68,8 @@ interface PurchaseOrderInfoCardProps {
   /** Chỉ NCC bán hàng — đơn vị vận chuyển chọn ở từng lần giao. */
   suppliers?: Supplier[]
   employees?: Employee[]
+  /** bao-CR-785 — danh mục phòng cho ô Phòng xử lý của đơn tạo thẳng (không có YCMH nguồn). */
+  departments?: Department[]
   /** Chỉ người có quyền duyệt mới giao được NSPT phụ trách. */
   canPickNspt: boolean
   /** Id YCMH nguồn (dò theo `pr_code`) để mở nhanh phiếu gốc. */
@@ -83,6 +91,7 @@ export function PurchaseOrderInfoCard({
   companies = [],
   suppliers = [],
   employees = [],
+  departments = [],
   approverCandidates = [],
   canPickNspt,
   purchaseRequestId,
@@ -305,9 +314,36 @@ export function PurchaseOrderInfoCard({
           đơn. Muốn đổi thì đổi ở YCMH (nút
           "Chuyển phòng xử lý"), đơn con đi theo.
         */}
-        <ReadOnlyField label="Phòng xử lý">
-          {handlingDeptLabel(data.handler_dept_id, data.handler_dept_name)}
-        </ReadOnlyField>
+        {/* bao-CR-785: đơn TẠO THẲNG (không có YCMH nguồn) thì chọn được phòng; mục đầu = phòng thu mua mặc định (0). */}
+        {editable && !data.pr_code && departments.length ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="po-handler-dept">Phòng xử lý</Label>
+            <SearchSelect
+              id="po-handler-dept"
+              searchInTrigger
+              value={
+                Number(data.handler_dept_id) > 0
+                  ? String(data.handler_dept_id)
+                  : HANDLING_DEPT_DEFAULT_OPTION
+              }
+              placeholder={DEFAULT_PURCHASING_LABEL}
+              searchPlaceholder="Gõ để tìm phòng ban…"
+              options={handlingDeptCreateOptions(departments, data.handler_dept_id)}
+              onChange={(value) => {
+                const id = value === HANDLING_DEPT_DEFAULT_OPTION ? 0 : Number(value) || 0
+                if (id === (Number(data.handler_dept_id) || 0)) return
+                onChange({
+                  handler_dept_id: id,
+                  handler_dept_name: departments.find((department) => department.id === id)?.name ?? '',
+                })
+              }}
+            />
+          </div>
+        ) : (
+          <ReadOnlyField label="Phòng xử lý">
+            {handlingDeptLabel(data.handler_dept_id, data.handler_dept_name)}
+          </ReadOnlyField>
+        )}
 
         <div className="space-y-1.5">
           <Label>Hình thức thanh toán NCC</Label>
