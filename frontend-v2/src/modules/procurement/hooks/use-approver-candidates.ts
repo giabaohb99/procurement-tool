@@ -24,7 +24,9 @@ export function useApproverCandidates(
     queryKey: queryKeys.procurement.approverCandidates(doc, id, id ? {} : { ...scope }),
     queryFn: () =>
       id ? fetchApproverCandidates(doc, id) : fetchDraftApproverCandidates(doc, scope),
-    enabled: enabled && (id > 0 || Boolean(scope.department || scope.department_id)),
+    //  bao-CR-785: đơn tạo thẳng (không YCMH nguồn) chưa có phòng ban vẫn phải hỏi — backend tính theo
+    //  người đang lập; trước đây chặn ở đây nên ô báo "Chưa có ai duyệt được" (v1 vẫn hỏi).
+    enabled,
     staleTime: 60_000,
   })
 }

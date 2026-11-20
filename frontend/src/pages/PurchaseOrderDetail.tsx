@@ -219,6 +219,8 @@ export default function PurchaseOrderDetail() {
     inspection_days: 0, return_days: 0, invoice_deadline: '',
   })
   const [companies, setCompanies] = useState<any[]>([])
+  // bao-CR-785: danh mục phòng cho ô Phòng xử lý của đơn tạo thẳng (không từ YCMH).
+  const [departments, setDepartments] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -263,6 +265,7 @@ export default function PurchaseOrderDetail() {
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
+    api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
     api.get('/api/units', { params: { page_size: 300 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/warehouses', { params: { page_size: 300 } }).then((r) => setWarehouses(r.data.data.items))
@@ -836,6 +839,8 @@ export default function PurchaseOrderDetail() {
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
       department: po.department, nspt: po.nspt, order_date: po.order_date,
       approver_employee_id: Number(po.approver_employee_id) || 0,   // bao-CR-499
+      // bao-CR-785: đơn tạo thẳng gửi phòng xử lý đã chọn (0 = phòng thu mua mặc định); có YCMH nguồn thì để backend chép từ YCMH.
+      ...(po.pr_code ? {} : { handler_dept_id: Number(po.handler_dept_id) || 0 }),
       vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
       // bao-CR-319 — loại đơn + tiền tệ + tờ khai. Thiếu mấy khóa này thì người dùng chọn
       // "Nhập khẩu" trên màn hình xong lưu lại vẫn ra đơn trong nước.
@@ -1300,9 +1305,20 @@ export default function PurchaseOrderDetail() {
               </div>
               {/* bao-CR-480: "Phòng xử lý" chép từ YCMH nguồn, chỉ xem — đơn do nhà máy mua hay do
                   phòng thu mua mặc định mua phải thấy ngay trên đầu đơn; muốn đổi thì đổi ở YCMH.
-                  bao-CR-524: backend trả tên phòng thật (kể cả đơn cũ còn 0) — không còn "Thu mua chung". */}
+                  bao-CR-524: backend trả tên phòng thật (kể cả đơn cũ còn 0) — không còn "Thu mua chung".
+                  bao-CR-785: đơn TẠO THẲNG (không có YCMH nguồn) thì chọn được phòng; trống = phòng thu mua mặc định. */}
               <div className="form-row"><label>Phòng xử lý</label>
-                <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Phòng thu mua mặc định')} disabled />
+                {headerEditable && !po.pr_code && departments.length ? (
+                  <SearchSelect value={Number(po.handler_dept_id) ? String(po.handler_dept_id) : ''}
+                    options={[{ value: '', label: 'Phòng thu mua mặc định' },
+                      ...departments.filter((d: any) => d.is_active !== false || d.id === Number(po.handler_dept_id))
+                        .map((d: any) => ({ value: String(d.id), label: d.name }))]}
+                    onChange={(v) => setPo((s: any) => ({ ...s, handler_dept_id: Number(v) || 0,
+                      handler_dept_name: departments.find((d: any) => d.id === Number(v))?.name || '' }))}
+                    placeholder="Phòng thu mua mặc định" />
+                ) : (
+                  <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Phòng thu mua mặc định')} disabled />
+                )}
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt đơn — hệ thống ghi lúc duyệt, chỉ xem. */}
               {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi

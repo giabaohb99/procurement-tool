@@ -30,6 +30,7 @@ import { trackUiAction } from '@/core/telemetry/track-ui-action'
 // CR-268: mượn hook tiền treo của phân hệ Tài chính — báo đơn còn tiền trả trước.
 import { usePrepayHanging } from '@/modules/finance/hooks/use-payment-requests'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { RequiredDossiersCard } from '@/modules/dossier/components/required-dossiers-card'
@@ -205,6 +206,11 @@ export function PurchaseOrderDetailPage() {
   const lineReport = useMemo(() => lineReportProgress(executionReport), [executionReport])
   const reportCardRef = useRef<SurveyReportCardHandle>(null)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
+  //  bao-CR-785: ô Phòng xử lý của đơn tạo thẳng.
+  const { data: departmentsData } = useDepartments(
+    { page_size: 500 },
+    { enabled: can('department', 'read') },
+  )
   const { data: suppliersData } = useSuppliers(
     { page_size: 1000, is_active: true },
     { enabled: can('supplier', 'read') },
@@ -896,6 +902,7 @@ export function PurchaseOrderDetailPage() {
             (supplier) => supplier.supplier_type !== 'transport',
           )}
           employees={employeesData?.items}
+          departments={departmentsData?.items}
           approverCandidates={approverData?.items}
           canPickNspt={can('purchase_order', 'approve')}
           purchaseRequestId={purchaseRequestId}

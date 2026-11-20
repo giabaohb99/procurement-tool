@@ -332,3 +332,24 @@ describe('toPurchaseOrderPayload — không gửi số sau VAT đã gõ (duoc-CR
     expect(payload.items[0]).not.toHaveProperty('price_after_vat_input')
   })
 })
+
+describe('toPurchaseOrderPayload — Phòng xử lý của đơn tạo thẳng (bao-CR-785)', () => {
+  it('sends the chosen handling department when the order has no source request', () => {
+    const payload = toPurchaseOrderPayload({ ...createEmptyPurchaseOrder(), handler_dept_id: 5 })
+    expect(payload.handler_dept_id).toBe(5)
+  })
+
+  it('sends 0 (default purchasing department) when nothing was chosen', () => {
+    const payload = toPurchaseOrderPayload(createEmptyPurchaseOrder())
+    expect(payload.handler_dept_id).toBe(0)
+  })
+
+  it('leaves the handling department to the source request when the order has one', () => {
+    const payload = toPurchaseOrderPayload({
+      ...createEmptyPurchaseOrder(),
+      pr_code: 'PYC13112604',
+      handler_dept_id: 5,
+    })
+    expect(payload).not.toHaveProperty('handler_dept_id')
+  })
+})
