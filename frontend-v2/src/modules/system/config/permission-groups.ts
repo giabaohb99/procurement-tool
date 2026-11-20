@@ -33,6 +33,7 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
       'purchase_order',
       'goods_receipt',
       'category_assignee',
+      'packaging_cost',
     ],
   },
   {

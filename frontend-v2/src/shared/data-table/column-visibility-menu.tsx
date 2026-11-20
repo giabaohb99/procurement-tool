@@ -142,7 +142,11 @@ export function ColumnVisibilityMenu<T>({
                   )}
                   {/* Menu này là danh sách TÊN cột — dấu sao bắt buộc chỉ có
                       nghĩa ở tiêu đề bảng, đưa vào đây chỉ làm rối. */}
-                  <span className="truncate">{columnLabel(column.header)}</span>
+                  <span className="truncate">
+                    {/*  Cột thuộc một nhóm (`group`) kèm tên nhóm — "Ngày mua" của năm lần mua không được trùng tên. */}
+                    {column.group ? `${column.group} · ` : ''}
+                    {columnLabel(column.header)}
+                  </span>
                 </button>
 
                 <ColumnColorMenu

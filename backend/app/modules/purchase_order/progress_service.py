@@ -9,6 +9,7 @@ from app.core.status_codes import PO_PROGRESS_STATUS
 from app.core.text_limits import column_limit, ensure_max_length
 
 from .model import POItem, PurchaseOrder
+from app.modules.product_price.ledger_sync_service import sync_po_price_ledger   # duoc-CR-784: sổ giá
 from .base_service import (ENTITY, PROG_CANCELLED, PROG_COMPLETED, PROG_NOT_ORDERED, PROG_PAUSED, _sync_pr,
                            deliveries_of, get_po)
 
@@ -117,6 +118,7 @@ def apply_auto_progress(db: Session, po: PurchaseOrder, user_id: int | None = No
     if changed:
         db.commit()
         _sync_pr(db, po.pr_code)
+        sync_po_price_ledger(db, po)   # duoc-CR-784: dòng vừa vào `completed` đã sang lịch sử — gọi lại cho đủ khuôn
     return changed
 
 
@@ -158,5 +160,6 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     label = "Tiếp tục" if target == "__resume__" else PO_PROGRESS_STATUS.label_of(target, target)
     record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {label}")
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
+    sync_po_price_ledger(db, po)   # duoc-CR-784: dòng hủy thì ra khỏi sổ giá; tiếp tục thì vào lại
     db.refresh(po)
     return po

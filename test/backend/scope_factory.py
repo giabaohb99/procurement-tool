@@ -96,6 +96,7 @@ ENTITY_MODEL_PATHS = {
     "work_schedule_personal": ("app.modules.employee.model", "Employee"),   # duoc-CR-757: đo trên hồ sơ nhân sự đích
     "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
     "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
+    "packaging_cost": ("app.modules.product_price.model", "ProductPriceLedger"),   # duoc-CR-784: đo trên sổ giá
 }
 
 

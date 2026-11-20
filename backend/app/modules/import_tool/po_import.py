@@ -20,6 +20,7 @@ from app.modules.payable.model import Payable
 from app.modules.payment_request import service as pr_service
 from app.modules.payment_request.schema import LineIn, PRequestCreate
 from app.modules.product.model import Product
+from app.modules.product_price.ledger_sync_service import sync_po_price_ledger   # duoc-CR-784
 from app.modules.purchase_history import service as ph_service
 from app.modules.purchase_order import service as po_service
 from app.modules.purchase_order.model import POItem, PODelivery, PurchaseOrder
@@ -340,6 +341,9 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             # idempotent theo po_item_id nên dòng vừa được auto_advance chốt rồi không ghi trùng.
             if it.progress_status == po_service.PROG_COMPLETED:
                 ph_service.snapshot_line_safe(db, po, it)
+        if apply:
+            # duoc-CR-784: giá / SL / trạng thái dòng vừa nạp → sổ giá. Chưa commit (cuối `run` mới commit).
+            sync_po_price_ledger(db, po, commit=False)
         changes.append({"survey_id": po.id, "was_new": was_new, "snapshot": snap})
 
     if apply:

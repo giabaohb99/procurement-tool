@@ -114,6 +114,30 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-784 | Cụm Giá bao bì ở Thu mua: sổ giá, báo giá, ngưỡng giá, định mức bao bì và màn mô phỏng tác động giá
+- status: xong
+- date: 2026-11-20
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** phòng Thu mua đang theo dõi giá vật tư bao bì bằng một tệp HTML riêng (*Báo cáo giá NVL sản xuất*, dữ liệu trích từ sổ chi tiết mua hàng MISA). Anh Được yêu cầu đưa vào ERP: một bảng lưu giá có cột nguồn (lịch sử mua hàng thì thêm dòng mới, dòng đơn mua hàng thì được cập nhật lại), một bảng báo giá, giá trị min / max cho từng mã, để xem khi đổi giá một mã bao bì thì chi phí các sản phẩm đổi bao nhiêu.
+
+**Đã làm**
+- Thêm **sổ giá**: mỗi dòng lịch sử mua hàng thành một dòng mới (không sửa lùi), dòng ĐMH (đơn mua hàng) đã duyệt thì có rồi cập nhật, chưa có thì tạo; khi dòng ĐMH hoàn thành và sang lịch sử mua hàng thì dòng nguồn ĐMH bị bỏ để không đếm đôi; đơn hủy, xóa, bỏ duyệt thì dòng ra khỏi sổ. Giá ngoại tệ đổi ra VNĐ theo tỷ giá của dòng. Có script nạp ngược từ lịch sử mua hàng và dòng ĐMH đang mở, kèm chế độ kiểm lệch.
+- Thêm **báo giá** (báo giá có ngày hiệu lực ở tương lai tính ngay là giá mới), **ngưỡng sàn / trần** cho từng mã (giá vượt ngưỡng tô đỏ), và **định mức bao bì** theo mã hàng hóa: chai, nắp, nhãn, nhãn thùng, thùng và quy cách thùng, nạp từ Excel qua *Quản lý Import* (chạy thử trước rồi mới ghi).
+- Dựng năm màn trong nhóm **Giá bao bì** của menu Thu mua: *Tác động giá bao bì* (chọn mã có chip trong ô, nhập giá giả định, bảng sản phẩm bị ảnh hưởng với chi phí bao bì trên chai và trên thùng, chia trang và sắp xếp ở máy chủ), *Bảng giá VTBB* (giá cũ / mới / chênh lệch, min – max, sàn – trần, giá mua gần nhất và lần trước), *Giá mua gần nhất* (3 / 5 / 10 lần, tiêu đề gộp theo từng lần, mỗi lần một màu tiêu đề, nhiều bộ lọc), *Báo giá VTBB*, *Định mức bao bì*. Màn nào cũng xuất Excel được.
+- Thêm khóa quyền **packaging_cost** (Giá bao bì), phạm vi theo pháp nhân trên sổ giá; admin và trưởng phòng thu mua có sẵn, vai trò khác tick tay.
+- Bảng dùng chung **DataTable** có thêm tiêu đề gộp nhóm cột: nhãn nhóm dính khi cuộn ngang, kéo cột chỉ trong nhóm, màu tiêu đề theo nhóm; bảng không khai nhóm giữ nguyên như cũ.
+- Đã chốt trong lúc làm: giá tăng tô **xanh**, giảm tô **đỏ**; thân bảng không nhuộm màu theo nhóm.
+
+**Kiểm:** hơn 330 bài kiểm backend của CR này xanh (sổ giá, mốc đồng bộ ĐMH, báo giá, định mức, trạng thái giá, tác động, chia trang, giá mua gần nhất, số truy vấn cố định); bài canh phạm vi và khóa quyền xanh; typecheck và lint giao diện sạch, các bài kiểm vitest của cụm Giá bao bì và bảng dùng chung xanh. Đo trên MySQL ở cỡ dữ liệu gấp 100 lần (650 nghìn dòng sổ giá, 20 nghìn định mức): màn Tác động chọn 500 mã từ 5,5 giây còn 234 ms, Bảng giá mặc định từ 19,6 giây còn 195 ms.
+
+**Còn lại:** đường sửa giá sau duyệt của ĐMH chưa ghi sổ giá vì tệp của phiên khác chưa commit; chưa có bài hướng dẫn sử dụng; định mức hiện nạp thử từ dữ liệu bản mẫu, cần tệp DATA_CHAI.xlsx thật (mã thùng đang trống).
+
+Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packaging_cost/`, `backend/app/core/packaging_price_codes.py`, migration `pkgcost784_tac_dong_gia_bao_bi.py`, `backend/scripts/backfill_product_price_ledger.py`; `frontend-v2/src/modules/procurement/` (các tệp `packaging-*`), `frontend-v2/src/shared/data-table/column-groups.ts`.
+Kiểm: `test/backend/test_*_cr784.py`.
+Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`.
+
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong
 - date: 2026-11-19

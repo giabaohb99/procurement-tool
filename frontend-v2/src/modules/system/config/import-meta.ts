@@ -8,6 +8,10 @@
 
 export const IMPORT_MODULE_SURVEY = 1
 export const IMPORT_MODULE_PURCHASE_ORDER = 2
+// Tờ khai hải quan GTT02 (bao-CR-470) và định mức bao bì DATA_CHAI.xlsx (duoc-CR-784) — khớp `ImportModule` ở backend.
+// Cả hai nạp ở màn riêng của phân hệ mình nên KHÔNG có trong `IMPORT_MODULE_OPTIONS`; chỉ cần nhãn để trang lô nhập hiện chữ.
+export const IMPORT_MODULE_CUSTOMS_DECLARATION = 3
+export const IMPORT_MODULE_PACKAGING_BOM = 4
 // Danh mục nền (Đ-13d) — khớp `ImportModule` ở backend.
 export const IMPORT_MODULE_COMPANY = 10
 export const IMPORT_MODULE_DEPARTMENT = 11
@@ -32,6 +36,8 @@ export const IMPORT_MODULE_SEAL_REQUEST = 24
 export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_SURVEY]: 'Khảo sát',
   [IMPORT_MODULE_PURCHASE_ORDER]: 'Đơn mua hàng',
+  [IMPORT_MODULE_CUSTOMS_DECLARATION]: 'Dữ liệu hải quan',
+  [IMPORT_MODULE_PACKAGING_BOM]: 'Định mức bao bì',
   [IMPORT_MODULE_COMPANY]: 'Công ty',
   [IMPORT_MODULE_DEPARTMENT]: 'Phòng ban',
   [IMPORT_MODULE_EMPLOYEE]: 'Nhân sự',

@@ -25,6 +25,8 @@ from app.modules.survey import model as _survey  # noqa: F401
 from app.modules.purchase_request import model as _pr  # noqa: F401
 from app.modules.purchase_order import model as _po  # noqa: F401
 from app.modules.purchase_history import model as _purchase_history  # noqa: F401
+from app.modules.product_price import model as _product_price  # noqa: F401  duoc-CR-784
+from app.modules.packaging_cost import model as _packaging_cost  # noqa: F401  duoc-CR-784
 from app.modules.goods_receipt import model as _gr  # noqa: F401
 from app.modules.inventory import model as _inventory  # noqa: F401
 from app.modules.payable import model as _payable  # noqa: F401

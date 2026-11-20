@@ -47,6 +47,11 @@ _MODULE_GUARDS = {
         "revert": ([("employee", "write")], "Hoàn tác lô Nhân sự cần quyền sửa Nhân sự"),
         "file": ([("employee_sensitive", "read")], "Tệp chứa thông tin nhạy cảm"),
     },
+    #  duoc-CR-784: nhập định mức bao bì (DATA_CHAI.xlsx) = quyền `import` VÀ quyền trên khóa `packaging_cost`.
+    ImportModule.PACKAGING_BOM: {
+        "create": ([("packaging_cost", "create")], "Nhập định mức bao bì cần quyền tạo ở Giá bao bì"),
+        "revert": ([("packaging_cost", "delete")], "Hoàn tác lô định mức bao bì cần quyền xóa ở Giá bao bì"),
+    },
     #  M6: Phòng ban nhập Excel (CSV cũ đã ngừng và trỏ về đây) cần quyền sửa Phòng ban.
     ImportModule.DEPARTMENT: {
         "create": ([("department", "write")], "Nhập Phòng ban cần quyền sửa Phòng ban"),

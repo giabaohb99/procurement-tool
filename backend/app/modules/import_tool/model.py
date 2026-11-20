@@ -21,6 +21,9 @@ class ImportModule(IntEnum):
     # đời cũ nên KHÔNG đi đường openpyxl; tác vụ nền chuyển thẳng byte thô cho
     # `app.modules.customs.importer`. Gác bằng khóa `customs_price`, không bằng `import`.
     CUSTOMS_DECLARATION = 3
+    # Định mức bao bì theo mã hàng hóa (duoc-CR-784) — tệp DATA_CHAI.xlsx, đọc bằng `packaging_cost.bom_import`.
+    # Gác bằng khóa `packaging_cost` (xem `_MODULE_GUARDS`). Không hỗ trợ hoàn tác đợt đầu.
+    PACKAGING_BOM = 4
     # Danh mục nền (Đ-13d) — chừa 3..9 cho nghiệp vụ, 10+ cho danh mục.
     COMPANY = 10
     DEPARTMENT = 11

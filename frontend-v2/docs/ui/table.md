@@ -53,6 +53,35 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | `hideable` | | `false` = luôn hiện. Đặt cho cột định danh (tên/mã) và cột hành động |
 | `defaultHidden` | | Ẩn sẵn lần đầu, người dùng bật lại được |
 | `defaultPinned` | | Ghim trái sẵn. Chỉ đặt cho cột định danh của bảng **nhiều cột** |
+| `group` | | Nhãn **nhóm cột** — xem *Tiêu đề gộp nhóm cột* dưới đây |
+
+### Tiêu đề gộp nhóm cột (`group`, duoc-CR-784)
+
+Bảng ma trận (vd *Giá 5 lần gần nhất*: mỗi lần mua ba cột Ngày / Nhà cung cấp / Đơn giá) cần HAI hàng tiêu đề: hàng trên là
+tên nhóm, hàng dưới là tên cột. Khai `group: 'Lần 1'` trên từng cột — **các cột liền nhau cùng nhãn** gộp thành một ô
+(`colSpan`) ở hàng nhóm. Không cột nào khai `group` thì bảng vẽ **y như cũ** (một hàng tiêu đề).
+
+```tsx
+{ key: 'code', header: 'Mã VTBB', group: 'Thông tin VTBB', defaultPinned: true, ... },
+{ key: 'p0_date', header: 'Lần 1 · Ngày mua', group: 'Lần 1 (gần nhất)', ... },
+{ key: 'p0_price', header: 'Lần 1 · Đơn giá', group: 'Lần 1 (gần nhất)', ... },
+```
+
+- Nhóm tính theo cột **đang hiện** theo đúng thứ tự đang xem: ẩn một cột thì nhóm co lại, ẩn hết nhóm thì ô nhóm biến mất.
+- **Không nhuộm nền theo nhóm** (người chủ chốt 20/11/2026: tiêu đề hai tông trông loang lổ, thân bảng nhuộm theo
+  nhóm chồng vằn dòng thành ô ca rô khó đọc). Nhóm chỉ thể hiện ở hàng tiêu đề nhóm + **vạch mảnh 1px cuối mỗi nhóm, chỉ ở
+  tiêu đề**; thân bảng giữ vằn dòng như mọi bảng. `dividerAfter` khai tay ở cột vẫn kẻ vạch đậm cả thân như cũ.
+- Nhãn nhóm **dính** sát mép phải vùng cột ghim khi cuộn ngang, nên nhóm cuộn qua một nửa vẫn đọc đủ nhãn.
+- **Màu tiêu đề theo nhóm** khai bằng `groupTone: <số>` ở mọi cột của nhóm (vd `groupTone: 0` cho cụm Lần 1, `1` cho Lần 2…):
+  vòng qua 4 màu biểu đồ `--chart-1..4` pha nhạt, **chỉ tô hai hàng tiêu đề**, thân bảng vẫn trắng + vằn dòng. Không khai thì nền
+  tiêu đề thường.
+- **Kéo đổi chỗ chỉ được TRONG cùng nhóm** (kéo sang nhóm khác bị bỏ qua, kể cả từ menu "Cột"); cột không khai nhóm coi như một
+  nhóm trống chung nên bảng cũ vẫn kéo tự do.
+- Cột ghim dồn ra đầu bảng: ghim một cột giữa nhóm thì nhóm đó tách thành hai ô: nhãn ghi **một lần** ở ô không ghim, ô trên cột ghim để trống (dính theo khi cuộn
+  ngang) — trừ khi cả nhóm đã bị ghim thì nhãn ở lại ô ghim.
+- Menu **Cột** ghi tên cột kèm nhóm ("Lần 1 · Ngày mua") để năm cột "Ngày mua" không trùng tên.
+- Tên nhóm là chữ trơn (không phải `ReactNode`); khai nhãn đủ ngắn để vừa độ rộng nhóm. Mã nguồn: `column-groups.ts`
+  (phần thuần, có bài kiểm) + `data-table-column-groups.test.tsx`.
 
 ### Prop của `DataTable`
 

@@ -25,7 +25,7 @@ _SUBSYSTEM_MODULES = {
     "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
     "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
                     ImportModule.SURVEY, ImportModule.PURCHASE_ORDER,
-                    ImportModule.CUSTOMS_DECLARATION],
+                    ImportModule.CUSTOMS_DECLARATION, ImportModule.PACKAGING_BOM],
     "production": [ImportModule.SUPPLIER, ImportModule.PRODUCT, ImportModule.UNIT,
                    ImportModule.ITEM_GROUP],
     "inventory": [ImportModule.WAREHOUSE],
@@ -209,6 +209,10 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
             batch.updated_by = user_id
             db.commit()
         return res
+    if batch.module == ImportModule.PACKAGING_BOM:
+        #  duoc-CR-784: nhập định mức bao bì không ghi bản chụp — rẽ riêng để KHÔNG rơi xuống nhánh `else` cuối
+        #  (hoàn tác của Khảo sát). Muốn quay lại thì sửa / nhập lại tệp.
+        return {"ok": False, "message": "Phân hệ này chưa hỗ trợ hoàn tác — sửa lại định mức hoặc nhập lại tệp đúng."}
     changes = (db.query(ImportChange).filter(ImportChange.batch_id == batch.id)
                .order_by(ImportChange.id.desc()).all())    # duoc-CR-628: hoàn tác theo thứ tự NGƯỢC lúc ghi
     if not changes:
@@ -321,6 +325,7 @@ def _po_payment_blockers(db, changes) -> list[str]:
 
 
 def _revert_po(db: Session, changes, user_id: int):
+    from app.modules.product_price.ledger_sync_service import sync_po_price_ledger
     from app.modules.purchase_order import service as po_service
     from app.modules.purchase_order.model import (PODelivery, POItem,
                                                    PurchaseOrder)
@@ -353,5 +358,6 @@ def _revert_po(db: Session, changes, user_id: int):
                 db.add(dv)
         db.flush()
         po_service.recompute_effects(db, po, user_id)
+        sync_po_price_ledger(db, po, commit=False)   # duoc-CR-784: dòng dựng lại từ bản chụp → sổ giá khớp theo
         restored += 1
     return deleted, restored

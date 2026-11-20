@@ -34,6 +34,7 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "labor_contract",
            "ai_skill",       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
            "usage_profile",  # duoc-CR-641 (khai ở bao-CR-647) — xem dòng dưới
+           "product_price", "packaging_cost",   # duoc-CR-784: sổ giá / báo giá / ngưỡng + định mức bao bì
            "ai_plan"]        # kh-AI1-3: đề xuất kế hoạch AI — `reject_reason` 500, kế hoạch JSON chặn ở service.normalize
 #  ↑ usage_profile: duoc-CR-641 (khai ở bao-CR-647): hồ sơ cách làm việc — UiEvent.route_pattern, UsageDaily.first_route 120
 #  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
@@ -168,6 +169,9 @@ TARGETS.update({
     **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
     "ai_plan.PlanRejectIn": ["AiPlanProposal"],
     **_same("work", "WorkTaskType", "TaskTypeCreate", "TaskTypeUpdate"),   # duoc-CR-666
+    #  duoc-CR-784: báo giá + ngưỡng giá (phân hệ có ba model nên khai tay); định mức bao bì chỉ một model nên tự ghép
+    **_same("product_price", "ProductPriceQuote", "QuoteCreate", "QuoteUpdate"),
+    **_same("product_price", "ProductPriceLimit", "LimitCreate", "LimitUpdate"),
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).

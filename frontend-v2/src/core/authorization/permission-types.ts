@@ -166,6 +166,8 @@ export const ENTITIES = [
   //  — sổ không sửa được — mà là nút "Chạy lại", tức gọi ngược sang hệ ngoài.
   'sync_log',
   'purchase_cost_type',
+  // duoc-CR-784 — Giá bao bì (tác động giá, bảng giá, báo giá, ngưỡng, định mức). Khớp ENTITIES của backend.
+  'packaging_cost',
   // bao-CR-470 — Tra cứu giá hải quan (khớp ENTITIES của backend, canh bởi
   // test_dong_bo_giao_dien_v2.py).
   'customs_price',

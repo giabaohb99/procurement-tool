@@ -121,6 +121,12 @@ export const appRoutes = {
      */
     customsExports: '/procurement/customs-prices/exports',
     customsExportDetail: (id: number | string) => `/procurement/customs-prices/exports/${id}`,
+    /** duoc-CR-784 — cụm Giá bao bì (khóa `packaging_cost`). Đường gốc = màn Tác động giá. */
+    packagingImpact: '/procurement/packaging-cost',
+    packagingPrices: '/procurement/packaging-cost/prices',
+    packagingLastPrices: '/procurement/packaging-cost/last-prices',
+    packagingQuotes: '/procurement/packaging-cost/quotes',
+    packagingBoms: '/procurement/packaging-cost/boms',
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì "Việc của tôi"

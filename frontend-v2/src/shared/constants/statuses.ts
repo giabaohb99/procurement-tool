@@ -235,6 +235,34 @@ export const LEAVE_TYPE: readonly StatusOption[] = [
   {"value": "recuperation", "label": "Nghỉ dưỡng sức phục hồi sức khỏe", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Xu hướng chi phí bao bì */
+export const PACKAGING_COST_TREND: readonly StatusOption[] = [
+  {"value": "1", "label": "Tăng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Giảm", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Không đổi", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Chưa có giá", "sort_order": 4, "is_terminal": false, "is_exception": false},
+]
+
+/** Cảnh báo chi phí bao bì */
+export const PACKAGING_COST_WARNING: readonly StatusOption[] = [
+  {"value": "1", "label": "Thiếu giá chai", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Chưa khai mã thành phần", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Thiếu giá thành phần", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Thiếu quy cách thùng", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "ĐVT mua khác ĐVT danh mục", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Dưới ngưỡng sàn", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Vượt ngưỡng trần", "sort_order": 7, "is_terminal": false, "is_exception": false},
+]
+
+/** Vai trò thành phần bao bì */
+export const PACKAGING_ROLE: readonly StatusOption[] = [
+  {"value": "1", "label": "Chai", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Nắp", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Nhãn", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Nhãn thùng", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Thùng", "sort_order": 5, "is_terminal": false, "is_exception": false},
+]
+
 /** Trạng thái công nợ */
 export const PAYABLE_STATUS: readonly StatusOption[] = [
   {"value": "unpaid", "label": "Chờ thanh toán", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -284,6 +312,12 @@ export const PR_LINE_STATUS: readonly StatusOption[] = [
   {"value": "received", "label": "Đã nhận hàng", "sort_order": 4, "is_terminal": false, "is_exception": false},
   {"value": "completed", "label": "Hoàn thành", "sort_order": 5, "is_terminal": true, "is_exception": false},
   {"value": "cancelled", "label": "Hủy đơn", "sort_order": 0, "is_terminal": true, "is_exception": true},
+]
+
+/** Nguồn dòng sổ giá */
+export const PRICE_SOURCE_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Lịch sử mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Dòng đơn mua hàng", "sort_order": 2, "is_terminal": false, "is_exception": false},
 ]
 
 /** Báo cáo */
@@ -471,6 +505,40 @@ export const JOB_RUN_STATUS_CODE = {
   SKIPPED: 4,
 } as const
 
+/** Xu hướng chi phí bao bì — khóa → mã gửi lên backend. */
+export const PACKAGING_COST_TREND_CODE = {
+  UP: 1,
+  DOWN: 2,
+  SAME: 3,
+  NO_PRICE: 4,
+} as const
+
+/** Cảnh báo chi phí bao bì — khóa → mã gửi lên backend. */
+export const PACKAGING_COST_WARNING_CODE = {
+  MISSING_BOTTLE_PRICE: 1,
+  MISSING_COMPONENT_CODE: 2,
+  MISSING_COMPONENT_PRICE: 3,
+  MISSING_CARTON_QTY: 4,
+  UNIT_MISMATCH: 5,
+  BELOW_FLOOR: 6,
+  ABOVE_CEILING: 7,
+} as const
+
+/** Vai trò thành phần bao bì — khóa → mã gửi lên backend. */
+export const PACKAGING_ROLE_CODE = {
+  BOTTLE: 1,
+  CAP: 2,
+  LABEL: 3,
+  CARTON_LABEL: 4,
+  CARTON: 5,
+} as const
+
+/** Nguồn dòng sổ giá — khóa → mã gửi lên backend. */
+export const PRICE_SOURCE_TYPE_CODE = {
+  PURCHASE_HISTORY: 1,
+  PO_LINE: 2,
+} as const
+
 /** Chức năng được bấm — khóa → mã gửi lên backend. */
 export const UI_ACTION_CODE = {
   COLUMN_TOGGLE: 1,
@@ -564,12 +632,16 @@ export const STATUS_SETS = {
   labor_contract_variable_type: LABOR_CONTRACT_VARIABLE_TYPE,
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
+  packaging_cost_trend: PACKAGING_COST_TREND,
+  packaging_cost_warning: PACKAGING_COST_WARNING,
+  packaging_role: PACKAGING_ROLE,
   payable_status: PAYABLE_STATUS,
   po_delivery_status: PO_DELIVERY_STATUS,
   po_document_status: PO_DOCUMENT_STATUS,
   po_item_line_status: PO_ITEM_LINE_STATUS,
   po_progress_status: PO_PROGRESS_STATUS,
   pr_line_status: PR_LINE_STATUS,
+  price_source_type: PRICE_SOURCE_TYPE,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
   ui_action: UI_ACTION,

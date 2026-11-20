@@ -573,6 +573,11 @@ def main():
                               "WHERE source='legacy'")).scalar()
         print(f"\nĐã nạp {n} dòng lịch sử cũ. Bảng hiện có: {tot} dòng "
               f"(cũ {leg} / hệ thống {tot - leg}).")
+        # duoc-CR-784: nạp lại làm đổi id dòng lịch sử → sổ giá phải xóa dòng mồ côi + chèn dòng mới.
+        from app.modules.product_price.ledger_sync_service import sync_history_ledger
+        ledger = sync_history_ledger(db)
+        db.commit()
+        print("Sổ giá (tab_product_price_ledger): " + ", ".join(f"{k}={v}" for k, v in ledger.items()))
     finally:
         db.close()
 

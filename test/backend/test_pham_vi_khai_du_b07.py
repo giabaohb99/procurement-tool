@@ -202,9 +202,11 @@ def test_du_55_entity():
     `leave_comp_request`; nằm trong `_SYS_ENTITIES`.
     80 → 81 ngày 13/11/2026 (duoc-CR-757 lượt 2): lịch làm việc riêng của nhân sự (`work_schedule_personal`) — đo trên
     HỒ SƠ NHÂN SỰ đích (company / dept_id / self như `employee`); nằm trong `_SYS_ENTITIES`, chỉ `dept_head` khai tay.
+    81 → 82 ngày 20/11/2026 (duoc-CR-784): Giá bao bì (`packaging_cost`) — company đo trên SỔ GIÁ (`ProductPriceLedger`);
+    KHÔNG nằm trong `_SYS_ENTITIES` nên `pur_manager` (Quản lý thu mua) tự có, vai trò khác tick tay.
     """
-    assert len(ENTITIES) == 81
-    assert len(SCOPE_FIELDS) == 81
+    assert len(ENTITIES) == 82
+    assert len(SCOPE_FIELDS) == 82
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

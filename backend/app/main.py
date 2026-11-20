@@ -120,6 +120,10 @@ from app.modules.legacy_datxe.controller import router as legacy_datxe_router
 from app.modules.agent_hub.controller import router as agent_hub_router  # ai-CR-036
 from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
+from app.modules.product_price.quote_limit_controller import limit_router as product_price_limit_router  # duoc-CR-784
+from app.modules.product_price.quote_limit_controller import quote_router as product_price_quote_router  # duoc-CR-784
+from app.modules.packaging_cost.bom_controller import router as packaging_bom_router  # duoc-CR-784
+from app.modules.packaging_cost.impact_controller import router as packaging_cost_router  # duoc-CR-784
 from app.modules.role.controller import router as role_router
 from app.modules.report_access.controller import router as report_access_router
 from app.modules.ai_skill.controller import router as ai_skill_router
@@ -425,6 +429,10 @@ app.include_router(po_cost_type_router)
 app.include_router(purchase_progress_router)
 app.include_router(survey_progress_router)
 app.include_router(purchase_history_router)
+app.include_router(packaging_cost_router)       # duoc-CR-784: tác động giá, bảng giá VTBB, ô chọn mã, xuất Excel
+app.include_router(packaging_bom_router)        # duoc-CR-784: định mức bao bì (CRUD)
+app.include_router(product_price_quote_router)  # duoc-CR-784: báo giá
+app.include_router(product_price_limit_router)  # duoc-CR-784: ngưỡng sàn / trần
 app.include_router(inventory_router)
 app.include_router(payable_router)
 app.include_router(payment_request_router)

@@ -5,15 +5,20 @@ import {
   ClipboardList,
   FileStack,
   FileText,
+  History,
   Landmark,
   LayoutDashboard,
   List,
+  ListTree,
   PackagePlus,
   ReceiptText,
   ShoppingCart,
+  Tags,
   TextSearch,
+  TrendingUp,
   Truck,
   UserCheck,
+  WalletCards,
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -184,6 +189,44 @@ export const procurementModule: ErpModule = {
           hidden: true,
         },
       ],
+    },
+    //  duoc-CR-784 — cụm Giá bao bì, khóa RIÊNG `packaging_cost` (giá vốn bao bì, nhạy cảm). Mục gốc là
+    //  đường cha của ba mục kia nên phải `end: true`, không thì nó sáng lây khi đứng ở Bảng giá / Báo giá.
+    {
+      label: 'Tác động giá bao bì',
+      path: appRoutes.procurement.packagingImpact,
+      icon: TrendingUp,
+      entity: 'packaging_cost',
+      end: true,
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Bảng giá VTBB',
+      path: appRoutes.procurement.packagingPrices,
+      icon: WalletCards,
+      entity: 'packaging_cost',
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Giá mua gần nhất',
+      path: appRoutes.procurement.packagingLastPrices,
+      icon: History,
+      entity: 'packaging_cost',
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Báo giá VTBB',
+      path: appRoutes.procurement.packagingQuotes,
+      icon: Tags,
+      entity: 'packaging_cost',
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Định mức bao bì',
+      path: appRoutes.procurement.packagingBoms,
+      icon: ListTree,
+      entity: 'packaging_cost',
+      group: 'Giá bao bì',
     },
     {
       label: 'Phiếu khảo sát',
@@ -403,6 +446,37 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.poCostTypeDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/po-cost-type-detail-page')).PoCostTypeDetailPage,
+      }),
+    },
+    // duoc-CR-784 — cụm Giá bao bì
+    {
+      path: appRoutes.procurement.packagingImpact,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-impact-page')).PackagingImpactPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingPrices,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-price-list-page')).PackagingPriceListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingLastPrices,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-last-prices-page')).PackagingLastPricesPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingQuotes,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-quote-list-page')).PackagingQuoteListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingBoms,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-bom-list-page')).PackagingBomListPage,
       }),
     },
     // bao-CR-470 — Tra cứu thị trường (danh mục hóa chất nằm trong thẻ "Cấu hình", bao-CR-501)

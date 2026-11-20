@@ -16,6 +16,7 @@ from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 
 from .model import DEFAULT_CURRENCY, OrderType, POItem, PurchaseOrder
 from .schema import POCreate, POUpdate
+from app.modules.product_price.ledger_sync_service import sync_po_price_ledger   # duoc-CR-784: sổ giá
 from .base_service import (ENTITY, PROG_CANCELLED, PROG_COMPLETED, _sync_pr, get_po, items_of, rate_of,
                            sync_urgent_group)
 from .item_service import _save_items, fill_blank_invoice_name
@@ -258,6 +259,8 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     db.refresh(po)
     # CR-074: dòng YCMH phải đổi sang `not_ordered` NGAY khi đơn vừa được lập, kể cả đơn Nháp.
     _sync_pr(db, po.pr_code)
+    #  duoc-CR-784: KHÔNG gắn hook sổ giá ở đây — đơn mới luôn ở Nháp nên chưa thể có dòng sổ giá; thêm một lượt truy vấn
+    #  vào mỗi lần sinh đơn là phí (`test_moc_dong_bo_so_gia_cr784` khai miễn trừ này kèm lý do).
     record(db, user_id, ENTITY, po.id, "create")
     return po
 
@@ -476,6 +479,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     # SL đặt/nhận thay đổi (vd sửa SL nhận 1800→1900). apply_auto_progress chỉ sync khi có
     # đổi trạng thái nên nếu thiếu bước này, tiến độ SL bên YCMH sẽ bị cũ.
     _sync_pr(db, po.pr_code)
+    sync_po_price_ledger(db, po)   # duoc-CR-784: giá / SL / VAT / dòng bị xóa đổi → cập nhật sổ giá
     db.refresh(po)
     return po
 
@@ -515,6 +519,7 @@ def delete_po(db: Session, pid: int, user_id: int):
     # CR-074: xóa đơn xong thì dòng YCMH phải quay lại `no_po` nếu không còn đơn nào khác —
     # `sync_from_purchase_orders` đã bỏ đơn xóa mềm nên đồng bộ lại là đủ.
     _sync_pr(db, po.pr_code)
+    sync_po_price_ledger(db, po)   # duoc-CR-784: đơn xóa mềm thôi tính vào sổ giá
     record(db, user_id, ENTITY, pid, "delete", f"Xóa mềm đơn {po.code}")
 
 
@@ -549,5 +554,6 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     # Mọi đổi trạng thái ĐƠN đều ảnh hưởng việc đơn có được TÍNH vào YCMH hay không
     # (duyệt → bắt đầu tính; hủy/từ chối → thôi tính) nên luôn đồng bộ lại tiến độ dòng YCMH.
     _sync_pr(db, po.pr_code)
+    sync_po_price_ledger(db, po)   # duoc-CR-784: duyệt → vào sổ giá; hủy / từ chối / bỏ duyệt → ra khỏi sổ giá
     db.refresh(po)
     return po

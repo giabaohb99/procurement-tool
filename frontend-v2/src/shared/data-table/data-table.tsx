@@ -2,16 +2,25 @@ import { useQueryClient } from '@tanstack/react-query'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { RotateCw } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/shared/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
 import { columnColorStyle } from './column-color-palette'
 import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
+import { canMoveWithinGroup, layoutColumnGroups } from './column-groups'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { DataTableMobileCards } from './data-table-mobile-cards'
 import { DataTablePagination } from './data-table-pagination'
@@ -19,7 +28,11 @@ import { FilterResetButton } from './filter-reset-button'
 import { measureColumnContentWidth } from './measure-column-width'
 import { isInteractiveTarget, openInNewTab, wantsNewTab } from './row-new-tab'
 import { columnLabel } from './required-header'
-import type { DataTableColumn, DataTablePagination as PaginationConfig } from './types'
+import type {
+  ColumnDropSide,
+  DataTableColumn,
+  DataTablePagination as PaginationConfig,
+} from './types'
 import { useColumnDrag } from './use-column-drag'
 import { shouldShowIdColumn, withIdColumn } from './id-column'
 import { usePinnedOffsets } from './use-pinned-offsets'
@@ -80,6 +93,20 @@ const BODY_CELL =
  */
 const DIVIDER_HEAD = 'shadow-[inset_-2px_0_0_0_var(--muted-foreground),inset_0_-1px_0_0_var(--border)]'
 const DIVIDER_BODY = 'shadow-[inset_-2px_0_0_0_var(--muted-foreground)]'
+/**
+ * Vạch cuối NHÓM cột (`DataTableColumn.group`, duoc-CR-784): chỉ kẻ ở tiêu đề, MẢNH (1px) và chỉ đậm hơn vạch thường một
+ * chút — vạch 2px đen của `dividerAfter` lặp lại mỗi 3 cột trông nặng nề (người chủ chê 20/11/2026).
+ */
+/** Số màu biểu đồ có trong theme (`--chart-1..4`, cả bản sáng lẫn tối) — `groupTone` vòng qua đúng chừng này màu. */
+const GROUP_TONE_COUNT = 4
+/** Nền tiêu đề của nhóm có `groupTone`: màu biểu đồ pha nhạt trên nền thẻ, đổi theo theme sáng / tối. */
+function groupToneStyle(tone: number | undefined): CSSProperties | undefined {
+  if (tone === undefined || tone < 0) return undefined
+  const token = `--chart-${(Math.trunc(tone) % GROUP_TONE_COUNT) + 1}`
+  return { backgroundColor: `color-mix(in oklab, var(${token}) 16%, var(--card))` }
+}
+const GROUP_DIVIDER_HEAD =
+  'shadow-[inset_-1px_0_0_0_color-mix(in_oklab,var(--foreground)_28%,transparent),inset_0_-1px_0_0_var(--border)]'
 /**
  * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
  * Hàng lẻ (odd): nền thẻ `bg-card`
@@ -397,7 +424,14 @@ export function DataTable<T>({
     return { ...merged, ...layout.columnColors }
   }, [tableColumns, layout.columnColors])
 
-  const { drag, startDrag } = useColumnDrag(moveColumn)
+  //  Kéo cột chỉ trong cùng nhóm (bảng không khai `group` thì mọi cột cùng nhóm "trống" → tự do như cũ).
+  const moveWithinGroup = useCallback(
+    (fromKey: string, toKey: string, side: ColumnDropSide) => {
+      if (canMoveWithinGroup(tableColumns, fromKey, toKey)) moveColumn(fromKey, toKey, side)
+    },
+    [tableColumns, moveColumn],
+  )
+  const { drag, startDrag } = useColumnDrag(moveWithinGroup)
   const tableRef = useRef<HTMLTableElement>(null)
 
   const columnCount = visibleColumns.length
@@ -457,6 +491,14 @@ export function DataTable<T>({
     pinnedRightKeys,
   )
   const lastPinnedKey = pinnedKeys.at(-1)
+  //  duoc-CR-784: hàng tiêu đề NHÓM cột — `null` khi bảng không khai `group` (vẽ y như cũ).
+  const groupLayout = layoutColumnGroups(visibleColumns, pinnedKeys)
+  const groupEndOf = (key: string) => groupLayout?.groupEndKeys.has(key) ?? false
+  //  Tổng bề rộng vùng cột ghim trái — chỗ nhãn nhóm phải dính vào khi cuộn ngang.
+  const lastPinnedColumn = visibleColumns.find((column) => column.key === lastPinnedKey)
+  const pinnedWidth = lastPinnedColumn
+    ? (pinnedOffsets[lastPinnedColumn.key] ?? 0) + (widthOf(lastPinnedColumn) ?? 0)
+    : 0
   const beforePinnedRightKey = useMemo(() => {
     const firstRightIndex = visibleColumns.findIndex((column) => column.stickyRight)
     return firstRightIndex > 0 ? visibleColumns[firstRightIndex - 1]?.key : undefined
@@ -579,7 +621,7 @@ export function DataTable<T>({
                 onTogglePin={trackedTogglePin}
                 onAutoFitAll={autoFitAll}
                 onColorChange={trackedSetColumnColor}
-                onMove={moveColumn}
+                onMove={moveWithinGroup}
                 onReset={trackedResetLayout}
               />
             )}
@@ -656,6 +698,18 @@ export function DataTable<T>({
             Bỏ cái `border` chứ không bỏ cái `shadow`, vì `border-collapse` làm
             border của hàng tiêu đề dính đỉnh biến mất khi cuộn.
           */}
+          {/*
+            Có hàng NHÓM cột thì hàng đầu tiên của bảng là các ô `colSpan` không có bề rộng, mà `table-fixed` lấy bề rộng
+            cột từ hàng ĐẦU TIÊN — nên chia đều mọi cột. `<colgroup>` có ưu tiên cao hơn mọi ô, khai lại đúng bề rộng từng
+            cột để bảng có nhóm chạy y như bảng không nhóm. (Cột không khai `width` để trống: vẫn nhận phần dư.)
+          */}
+          {groupLayout && (
+            <colgroup>
+              {visibleColumns.map((column) => (
+                <col key={column.key} style={{ width: widthOf(column) }} />
+              ))}
+            </colgroup>
+          )}
           <TableHeader
             className={cn('bg-row-head [&_tr]:border-b-0', fillHeight && 'sticky top-0 z-30')}
           >
@@ -666,6 +720,38 @@ export function DataTable<T>({
               xuyên qua (và ô cột ghim `bg-inherit` cũng lộ theo). Ghi đè bằng
               đúng màu đục để hover không đổi gì cả.
             */}
+            {groupLayout && (
+              <TableRow className="bg-row-head hover:bg-row-head">
+                {groupLayout.segments.map((segment) => (
+                  <TableHead
+                    key={segment.id}
+                    colSpan={segment.span}
+                    data-group-label={segment.label || undefined}
+                    style={{
+                      left: segment.pinned ? pinOffset(segment.firstKey) : undefined,
+                      ...groupToneStyle(segment.tone),
+                    }}
+                    className={cn(
+                      HEAD_CELL,
+                      'h-8 text-center text-[12.5px] font-semibold',
+                      segment.dividerAfter && GROUP_DIVIDER_HEAD,
+                      segment.pinned && 'sticky z-20 border-r-0 bg-inherit',
+                    )}
+                  >
+                    {/*
+                      Nhãn DÍNH bên phải vùng cột ghim: cuộn ngang qua nửa nhóm thì nhãn trượt theo chứ không bị cột ghim
+                      che mất nửa chữ ("Lần 3" còn mỗi "3"). Không ghim cột nào thì `pinnedWidth` = 0, nhãn đứng giữa như cũ.
+                    */}
+                    <span
+                      className={cn('inline-block max-w-full truncate align-middle', !segment.pinned && 'sticky')}
+                      style={segment.pinned ? undefined : { left: pinnedWidth + 12, right: 12 }}
+                    >
+                      {segment.label}
+                    </span>
+                  </TableHead>
+                ))}
+              </TableRow>
+            )}
             <TableRow ref={headerRowRef} className="bg-row-head hover:bg-row-head">
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
@@ -674,11 +760,15 @@ export function DataTable<T>({
                   width={widthOf(column)}
                   className={cn(
                     HEAD_CELL,
-                    column.dividerAfter && DIVIDER_HEAD,
+                    column.dividerAfter ? DIVIDER_HEAD : groupEndOf(column.key) && GROUP_DIVIDER_HEAD,
                     alignClass(column.align),
                     pinClass(column.key, true),
                   )}
-                  colorStyle={columnColorStyle(columnColors[column.key], 'head')}
+                  //  Tiêu đề KHÔNG nhuộm theo nhóm (một màu nền cho gọn mắt); nhóm chỉ nhuộm ở thân bảng.
+                  colorStyle={{
+                    ...groupToneStyle(column.groupTone),
+                    ...columnColorStyle(columnColors[column.key], 'head'),
+                  }}
                   pinnedOffset={pinOffset(column.key)}
                   pinnedRightOffset={pinRightOffset(column.key)}
                   suppressRightDivider={column.key === beforePinnedRightKey}
@@ -804,6 +894,8 @@ export function DataTable<T>({
                         }}
                         className={cn(
                           BODY_CELL,
+                          //  Vạch cuối NHÓM chỉ kẻ ở tiêu đề (người chủ chốt 20/11: thân bảng không kẻ, nền nhuộm xen kẽ
+                          //  đã đủ tách nhóm); `dividerAfter` khai tay ở cột thì vẫn kẻ cả thân như cũ.
                           column.dividerAfter && DIVIDER_BODY,
                           alignClass(column.align),
                           pinClass(column.key),

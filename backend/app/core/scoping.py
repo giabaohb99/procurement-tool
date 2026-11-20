@@ -302,6 +302,12 @@ SCOPE_FIELDS = {
     "dossier":          {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by", "self": "owner_employee_id"},
 
+    #  duoc-CR-784 — Giá bao bì: phạm vi theo PHÁP NHÂN, đo trên cột `company_id` của SỔ GIÁ (`ProductPriceLedger`) vì đó là
+    #  bảng duy nhất mang giá vốn theo giao dịch. Định mức bao bì / báo giá / ngưỡng là danh mục dùng chung, không có
+    #  cột pháp nhân — các đường CRUD của chúng gác bằng quyền hành động (`make_crud_router(scoped=False)`). Giá cũ /
+    #  mới / min / max chỉ tính trên các dòng sổ giá người xem được thấy. Người xem toàn công ty để scope `all`.
+    "packaging_cost":   {"company": "company_id"},
+
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
     #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của

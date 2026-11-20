@@ -155,6 +155,10 @@ ENTITIES = [
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
     "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
+    # Giá bao bì (duoc-CR-784): màn Tác động giá + Bảng giá VTBB + Báo giá + Ngưỡng giá + Định mức bao bì. MỘT khóa cho cả
+    # cụm vì cùng một nhóm người dùng; chứa GIÁ VỐN bao bì nên KHÔNG dùng lại `product.read` / `purchase_history` (ai xem
+    # sản phẩm cũng xem được giá mua). Phạm vi theo pháp nhân đo trên SỔ GIÁ (`tab_product_price_ledger.company_id`).
+    "packaging_cost",
     # Tra cứu giá hải quan (bao-CR-470, doc/erp/hai-quan). MỘT khóa cho cả màn tra cứu:
     # read = xem danh sách + biểu đồ · write = nạp tệp GTT02 · delete = hoàn tác lô.
     # Không vai trò nào tự có — đại ca tick tay trên màn Phân quyền (xem `_SYS_ENTITIES`).
@@ -277,6 +281,7 @@ ENTITY_LABELS = {
     "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
     "customs_pesticide": "Danh mục thuốc BVTV (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
+    "packaging_cost": "Giá bao bì",
     "agent_task": "Trợ lý Telegram › Việc của bot",
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
@@ -298,7 +303,7 @@ ACTION_LABELS = {
 #  tự nhận, hàng trăm người giữ) mà được tick Xem / Xuất ở đây thì màn Phân quyền hiện một dòng vàng nhắc (KHÔNG chặn lưu).
 #  Khai MỘT chỗ, giao diện chỉ đọc qua /api/roles/meta. Thêm entity thì thêm vào đây, không gõ ở frontend.
 SENSITIVE_PROCUREMENT_ENTITIES = ["supplier", "contract", "purchase_order", "payable", "payment_request",
-                                  "customs_price"]
+                                  "customs_price", "packaging_cost"]
 SENSITIVE_WARN_ACTIONS = ["read", "export"]
 
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]

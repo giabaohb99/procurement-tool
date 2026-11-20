@@ -87,6 +87,19 @@ export interface DataTableColumn<T> {
    * cuối nhóm). Chỉ đổi độ đậm vạch có sẵn, không đổi nền nên hàng tô nền vẫn nổi.
    */
   dividerAfter?: boolean
+  /**
+   * duoc-CR-784 — NHÃN NHÓM cột: các cột liền nhau cùng nhãn gộp thành một ô ở hàng tiêu đề phía TRÊN hàng tên cột
+   * (vd "Lần 1" trên ba cột Ngày mua / Nhà cung cấp / Đơn giá). Cuối nhóm kẻ vạch mảnh ở tiêu đề. Chỉ cần khai ở ít
+   * nhất một cột là hàng nhóm xuất hiện; cột không khai nhóm đứng trong ô trống. Kéo cột chỉ được TRONG cùng nhóm. Xem
+   * `column-groups.ts` và docs/ui/table.md.
+   */
+  group?: string
+  /**
+   * duoc-CR-784 — MÀU TIÊU ĐỀ của nhóm: số thứ tự (0, 1, 2…) vòng qua bảng màu biểu đồ `--chart-1..4` (xanh dương, cam,
+   * xanh lá, vàng), pha nhạt. Chỉ tô hai hàng TIÊU ĐỀ của nhóm, thân bảng giữ trắng + vằn dòng (người chủ chốt 20/11/2026:
+   * nhuộm cả thân bảng thành ô ca rô khó đọc). Khai cùng số cho mọi cột của một nhóm; bỏ trống = nền tiêu đề thường.
+   */
+  groupTone?: number
 }
 
 /**

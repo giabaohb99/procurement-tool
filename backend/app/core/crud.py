@@ -67,7 +67,8 @@ def _doc(text: str):
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
-                     sort_nulls_last=(), csv_import=True, audit_entity=None, after_update=None):
+                     sort_nulls_last=(), csv_import=True, audit_entity=None, after_update=None,
+                     scoped=True, enrich_out=None):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
@@ -79,6 +80,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     - `before_delete(db, obj)` — chỗ duy nhất chặn được việc xóa một dòng danh mục
       mà nơi khác đang trỏ tới. Không có nó thì mọi danh mục dùng bộ sinh này đều
       xóa được thoải mái và để lại dữ liệu mồ côi.
+
+    - `scoped=False` (duoc-CR-784) — danh mục DÙNG CHUNG mà khóa quyền của nó lọc phạm vi trên một bảng KHÁC (vd định
+      mức / báo giá / ngưỡng của khóa `packaging_cost`, phạm vi đo trên sổ giá): bảng này không có cột pháp nhân nên
+      `apply_scope` / `get_scoped` không dựng được điều kiện. Cổng chỉ còn là quyền hành động (`require`).
+    - `enrich_out(db, rows)` — gắn thêm trường hiển thị (tên, ĐVT…) vào các dòng đầu ra, gom MỘT truy vấn cho cả trang.
 
     Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
     cả bộ CRUD.
@@ -109,27 +115,35 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         d.setdefault("updated_at", getattr(o, "updated_at", None))
         return d
 
+    def out_rows(db, objs):
+        rows = [out(o) for o in objs]
+        if enrich_out and rows:
+            enrich_out(db, rows)
+        return rows
+
     @router.get("")
     @_doc(f"Danh sách {lbl}, có lọc và phân trang.\n\nLọc theo các cột cho phép của danh mục, sắp xếp, đi qua phạm vi dữ liệu.")
     def list_items(request: Request, pg: dict = Depends(pagination),
                    sort_by: str | None = None, sort_dir: str = "asc",
                    db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
         q = apply_filters(db.query(Model), Model, request, filterable)
-        q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
+        if scoped:
+            q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
         total = q.count()   # đếm SAU khi lọc phạm vi, kẻo phân trang lệch số
         #  whitelist cột; mặc định id desc. `sort_nulls_last` đẩy dòng NULL xuống
         #  cuối cho những cột mà NULL nghĩa là "không áp dụng" — xem `apply_sort`.
         q = apply_sort(q, Model, sort_by, sort_dir, nulls_last=sort_nulls_last)
         items = q.offset(pg["offset"]).limit(pg["limit"]).all()
-        return success({"total": total, "items": [out(i) for i in items]})
+        return success({"total": total, "items": out_rows(db, items)})
 
     @router.get("/{oid}")
     @_doc(f"Xem một dòng {lbl} theo id.")
     def get_item(oid: int, db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
-        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user))
+        o = (get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user)) if scoped
+             else db.query(Model).filter(Model.id == oid).first())
         if not o:
             raise HTTPException(404, "Không tìm thấy")
-        return success(out(o))
+        return success(out_rows(db, [o])[0])
 
     @router.post("")
     @_doc(f"Thêm một dòng {lbl}; chặn trùng mã, ghi nhật ký.")
@@ -151,13 +165,14 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                            else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
         record(db, user.id, log_entity, o.id, "create")
-        return success(out(o), "Đã tạo", 201)
+        return success(out_rows(db, [o])[0], "Đã tạo", 201)
 
     @router.patch("/{oid}")
     @_doc(f"Sửa một dòng {lbl}; chỉ ghi các ô gửi lên, ghi nhật ký.")
     def update_item(oid: int, data: UpdateSchema, db: Session = Depends(get_db),
                     user=Depends(require(entity, "write"))):
-        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "write")
+        o = (get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "write") if scoped
+             else db.query(Model).filter(Model.id == oid).first())
         if not o:
             raise HTTPException(404, "Không tìm thấy")
         values = data.model_dump(exclude_unset=True)
@@ -177,13 +192,14 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         commit_or_conflict(db, conflict_message)
         db.refresh(o)
         record(db, user.id, log_entity, oid, "update")
-        return success(out(o), "Đã cập nhật")
+        return success(out_rows(db, [o])[0], "Đã cập nhật")
 
     @router.delete("/{oid}")
     @_doc(f"Xóa một dòng {lbl}; danh mục có xóa mềm thì chỉ đánh dấu, đang được nơi khác dùng thì chặn.")
     def delete_item(oid: int, db: Session = Depends(get_db),
                     user=Depends(require(entity, "delete"))):
-        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "delete")
+        o = (get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "delete") if scoped
+             else db.query(Model).filter(Model.id == oid).first())
         if not o:
             raise HTTPException(404, "Không tìm thấy")
         if before_delete:

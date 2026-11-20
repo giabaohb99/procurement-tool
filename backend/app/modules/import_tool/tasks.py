@@ -20,6 +20,7 @@ _MODULE_LABEL = {
     ImportModule.SURVEY: "Khảo sát",
     ImportModule.PURCHASE_ORDER: "Đơn mua hàng",
     ImportModule.CUSTOMS_DECLARATION: "Dữ liệu hải quan",
+    ImportModule.PACKAGING_BOM: "Định mức bao bì",
     ImportModule.COMPANY: "Công ty",
     ImportModule.DEPARTMENT: "Phòng ban",
     ImportModule.EMPLOYEE: "Nhân sự",
@@ -65,7 +66,10 @@ def run_import(batch_id: int) -> dict:
         wb = _load_workbook(sf)
 
         # Khảo sát + ĐMH nay đi MẪU CHUẨN (doc_import), không còn Misa (CR-176).
-        if catalog_import.is_catalog_module(batch.module):
+        if batch.module == ImportModule.PACKAGING_BOM:
+            from app.modules.packaging_cost import bom_import   # duoc-CR-784: nhập trong hàm, tránh vòng nhập
+            bom_import.run(db, batch, wb, apply=(batch.mode == ImportMode.APPLY))
+        elif catalog_import.is_catalog_module(batch.module):
             catalog_import.run(db, batch, wb, apply=(batch.mode == ImportMode.APPLY))
         elif doc_import.is_doc_module(batch.module):
             doc_import.run(db, batch, wb, apply=(batch.mode == ImportMode.APPLY))
@@ -125,6 +129,10 @@ def precheck_headers(module: int, wb) -> None:
     """Đối chiếu dòng tiêu đề của file với bảng đã chọn — sai thì raise
     `ImportValidationError`. Dùng để chặn NGAY tại bước upload (đồng bộ), không
     phải đợi chạy nền rồi mới biết chọn nhầm phân hệ/bảng."""
+    if module == ImportModule.PACKAGING_BOM:
+        from app.modules.packaging_cost import bom_import   # duoc-CR-784: kiểm sheet + dòng tiêu đề ngay lúc tải lên
+        bom_import.precheck(wb)
+        return
     if catalog_import.is_catalog_module(module):
         adapter = catalog_import.ADAPTERS[module]
         fields = adapter["fields"]

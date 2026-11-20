@@ -345,6 +345,15 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "(hai mức nhạy cảm tách riêng); `audit`+`change_log` khai "
                                "PUBLIC vì lọc nhật ký theo phạm vi người tra là giấu đúng "
                                "lượt gọi cần soi nhất",
+    #  duoc-CR-784: khóa `packaging_cost` đo phạm vi trên SỔ GIÁ (`ProductPriceLedger.company_id`, xem `impact_controller.py`
+    #  — có `scope_condition`). Ba bảng danh mục dưới đây (định mức bao bì / báo giá / ngưỡng giá) dùng chung mọi pháp nhân,
+    #  KHÔNG có cột pháp nhân để lọc — dựng bằng `make_crud_router(scoped=False)` nên gác bằng quyền hành động từng route.
+    "packaging_cost/bom_controller.py": "duoc-CR-784: định mức bao bì theo mã HH — danh mục dùng chung, không có cột pháp nhân; "
+                                        "make_crud_router(scoped=False), cổng là require('packaging_cost', …) từng route. "
+                                        "Phạm vi theo pháp nhân của khóa này chỉ áp trên sổ giá (impact_controller.py)",
+    "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá + ngưỡng sàn/trần — danh mục dùng chung, không có cột "
+                                               "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_cost', …) "
+                                               "từng route. Giá chỉ ĐI VÀO màn Tác động qua `get_price_states` (có scope_cond)",
     # -- không có dữ liệu theo dòng để lọc --
     "auth/controller.py": "đăng nhập/đổi mật khẩu — chưa có phiên quyền để lọc",
     "meta/controller.py": "hằng số + danh mục mã trạng thái, không đọc bảng nghiệp vụ",
