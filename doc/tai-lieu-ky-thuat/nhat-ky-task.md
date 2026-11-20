@@ -137,6 +137,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packaging_cost/`, `backend/app/core/packaging_price_codes.py`, migration `pkgcost784_tac_dong_gia_bao_bi.py`, `backend/scripts/backfill_product_price_ledger.py`; `frontend-v2/src/modules/procurement/` (các tệp `packaging-*`), `frontend-v2/src/shared/data-table/column-groups.ts`.
 Kiểm: `test/backend/test_*_cr784.py`.
 Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`.
+Commit: 1357b785.
+Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch). Chưa lên prod.
 
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong
