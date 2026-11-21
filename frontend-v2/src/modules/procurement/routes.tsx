@@ -207,6 +207,8 @@ export const procurementModule: ErpModule = {
       icon: WalletCards,
       entity: 'packaging_cost',
       group: 'Giá bao bì',
+      //  Màn Báo giá VTBB (ẩn khỏi menu) thuộc về đây: báo giá nhập từ Bảng giá, đứng ở màn đó thì sáng mục này.
+      matchPaths: [appRoutes.procurement.packagingQuotes],
     },
     {
       label: 'Giá mua gần nhất',
@@ -228,6 +230,9 @@ export const procurementModule: ErpModule = {
       icon: Tags,
       entity: 'packaging_cost',
       group: 'Giá bao bì',
+      //  Ẩn khỏi menu (người chủ chốt 21/11/2026: file HTML gốc không có tab này, báo giá nhập ngay ở Bảng giá VTBB).
+      //  Giữ mục để đường dẫn vẫn bị gác quyền packaging_cost — bỏ hẳn mục là route mở cho mọi người đăng nhập.
+      hidden: true,
     },
     {
       label: 'Định mức bao bì',

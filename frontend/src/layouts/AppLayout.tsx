@@ -182,7 +182,7 @@ const NAV_GROUPS: NavGroup[] = [
           { to: "/packaging-cost/price-list", label: "Bảng giá VTBB", icon: "ti-list-details" },
           { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
           { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
-          { to: "/product-price-quotes", label: "Báo giá VTBB", icon: "ti-file-dollar" },
+          // Báo giá VTBB ẩn khỏi menu (21/11/2026: file HTML gốc không có tab này); trang /product-price-quotes vẫn vào được.
           { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2" },
         ],
       },

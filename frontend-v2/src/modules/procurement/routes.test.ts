@@ -21,16 +21,18 @@ const PACKAGING_PATHS = [
   appRoutes.procurement.packagingQuotes,
   appRoutes.procurement.packagingBoms,
 ]
+/** Báo giá VTBB ẩn khỏi menu (21/11/2026) nhưng đường dẫn vẫn gác quyền như các màn khác. */
+const PACKAGING_MENU_PATHS = PACKAGING_PATHS.filter((path) => path !== appRoutes.procurement.packagingQuotes)
 
 function packagingMenu(can: ReturnType<typeof grants>) {
   return visibleNavItems(procurementModule as ErpModule, can)
-    .filter((item) => item.group === 'Giá bao bì')
+    .filter((item) => item.group === 'Giá bao bì' && !item.hidden)
     .map((item) => item.path)
 }
 
 describe('Giá bao bì menu (packaging_cost)', () => {
-  it('shows all six screens to a reader of packaging_cost', () => {
-    expect(packagingMenu(grants('packaging_cost.read'))).toEqual(PACKAGING_PATHS)
+  it('shows the five menu screens to a reader of packaging_cost (Báo giá VTBB is hidden from the menu)', () => {
+    expect(packagingMenu(grants('packaging_cost.read'))).toEqual(PACKAGING_MENU_PATHS)
   })
 
   it('hides them from purchasers without the key — cost of packaging is sensitive', () => {
