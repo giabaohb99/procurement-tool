@@ -10,6 +10,7 @@ import {
   COST_WARNING_KIND, isNum, isOutsideLimit, joinWarnings, normalizeWarnings, warningText,
 } from '../../utils/packaging-price'
 import { CodeLink, DiffText, OneLine, PctText, PriceText, RangeText } from './PackagingCells'
+import { PACKAGING_LIMITS_ENABLED } from '../../utils/packaging-flags'
 
 /** Câu ghi chú một mã: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi, trễ 400 ms). */
 function buildNote(row: PackagingSelectedCode, applied: number | null): string {
@@ -62,10 +63,10 @@ export default function PackagingImpactSelectedTable({
       //  Min và Max tách hai cột — giá thấp / cao nhất trong sổ giá của mã.
       { key: 'min', label: 'Min', width: 100, align: 'right', cell: (r) => <PriceText value={r.min} /> },
       { key: 'max', label: 'Max', width: 100, align: 'right', cell: (r) => <PriceText value={r.max} /> },
-      {
-        key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right',
-        cell: (r) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(appliedOf(r), r.floor, r.ceiling)} />,
-      },
+      ...(PACKAGING_LIMITS_ENABLED ? [{
+        key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right' as const,
+        cell: (r: PackagingSelectedCode) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(appliedOf(r), r.floor, r.ceiling)} />,
+      }] : []),
       {
         key: 'note', label: 'Ghi chú', width: 170,
         cell: (r) => <span className="pkg-err" title={buildNote(r, appliedOf(r))}>{buildNote(r, appliedOf(r))}</span>,

@@ -20,6 +20,7 @@ import {
 } from '../utils/packaging-warning-text'
 import { PackagingCodeLink } from './packaging-code-link'
 import { DiffText, PercentText, PriceText, RangeText } from './packaging-price-cells'
+import { dropLimitColumn } from '../config/packaging-feature-flags'
 
 interface PackagingImpactSelectedTableProps {
   rows: PackagingSelectedCode[] | undefined
@@ -66,7 +67,7 @@ export function PackagingImpactSelectedTable({
 }: PackagingImpactSelectedTableProps) {
   const columns = useMemo<DataTableColumn<PackagingSelectedCode>[]>(() => {
     const appliedOf = (row: PackagingSelectedCode) => assumed[row.code] ?? row.new
-    return [
+    return dropLimitColumn<DataTableColumn<PackagingSelectedCode>>([
       {
         key: 'code',
         header: 'Mã',
@@ -186,7 +187,7 @@ export function PackagingImpactSelectedTable({
           </Button>
         ),
       },
-    ]
+    ])
   }, [assumed, onAssumedChange, onRemove])
 
   return (

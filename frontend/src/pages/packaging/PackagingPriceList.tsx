@@ -18,6 +18,7 @@ import { fmtDateStr } from '../../utils/datetime'
 import { isOutsideLimit, joinWarnings } from '../../utils/packaging-price'
 import { collectGroups, nextSort } from '../../utils/packaging-query'
 import '../../components/packaging/packaging.css'
+import { PACKAGING_LIMITS_ENABLED } from '../../utils/packaging-flags'
 
 interface Filters { q: string; group: string; scope: 'bom' | 'all'; breachOnly: boolean }
 const EMPTY: Filters = { q: '', group: '', scope: 'bom', breachOnly: false }
@@ -90,10 +91,10 @@ export default function PackagingPriceList() {
     //  Min và Max tách hai cột, mỗi cột xếp theo đúng giá trị nó hiện.
     { key: 'min', label: 'Min', width: 100, align: 'right', sort: 'min', cell: (r) => <PriceText value={r.min} /> },
     { key: 'max', label: 'Max', width: 100, align: 'right', sort: 'max', cell: (r) => <PriceText value={r.max} /> },
-    {
-      key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right', sort: 'floor',
-      cell: (r) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(r.new, r.floor, r.ceiling)} />,
-    },
+    ...(PACKAGING_LIMITS_ENABLED ? [{
+      key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right' as const, sort: 'floor',
+      cell: (r: PackagingPriceRow) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(r.new, r.floor, r.ceiling)} />,
+    }] : []),
     { key: 'usage', label: 'Số SP đang dùng', width: 100, align: 'right', sort: 'usage', cell: (r) => r.usage },
     { key: 'note', label: 'Ghi chú', width: 200, defaultHidden: true, cell: (r) => <span className="pkg-err">{joinWarnings(r.warnings)}</span> },
     {
@@ -101,7 +102,7 @@ export default function PackagingPriceList() {
       cell: (r) => (
         <span className="pkg-actions">
           {canQuote && <button className="btn outline sm" onClick={() => setQuoteCode(r.code)}>Báo giá</button>}
-          {canLimit && <button className="btn ghost sm" onClick={() => setLimitRow(r)}>Ngưỡng</button>}
+          {canLimit && PACKAGING_LIMITS_ENABLED && <button className="btn ghost sm" onClick={() => setLimitRow(r)}>Ngưỡng</button>}
         </span>
       ),
     },
@@ -152,10 +153,12 @@ export default function PackagingPriceList() {
             <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
             <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
           </div>
-          <label className="pkg-switch">
-            <input type="checkbox" checked={filters.breachOnly} onChange={(e) => patch({ breachOnly: e.target.checked })} />
-            Chỉ mã ngoài ngưỡng
-          </label>
+          {PACKAGING_LIMITS_ENABLED && (
+            <label className="pkg-switch">
+              <input type="checkbox" checked={filters.breachOnly} onChange={(e) => patch({ breachOnly: e.target.checked })} />
+              Chỉ mã ngoài ngưỡng
+            </label>
+          )}
           {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
         </div>
         <TableToolbar {...table} onRefresh={list.reload} />

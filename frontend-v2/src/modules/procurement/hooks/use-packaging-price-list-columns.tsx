@@ -22,6 +22,7 @@ import {
 import type { PackagingPriceRow } from '../types/packaging-cost-types'
 import { isOutsidePriceLimit } from '../utils/packaging-price-format'
 import { joinPackagingWarnings } from '../utils/packaging-warning-text'
+import { dropLimitColumn, PACKAGING_LIMITS_ENABLED } from '../config/packaging-feature-flags'
 
 interface PriceListColumnOptions {
   canQuote: boolean
@@ -37,199 +38,200 @@ export function usePackagingPriceListColumns({
   onLimit,
 }: PriceListColumnOptions) {
   return useMemo<DataTableColumn<PackagingPriceRow>[]>(
-    () => [
-      {
-        key: 'code',
-        header: 'Mã VTBB',
-        width: 120,
-        sortable: true,
-        hideable: false,
-        defaultPinned: true,
-        cell: (row) => <PackagingCodeLink code={row.code} />,
-      },
-      {
-        key: 'name',
-        header: 'Tên vật tư',
-        width: 220,
-        wrap: true,
-        sortable: true,
-        cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
-      },
-      { key: 'group', header: 'Nhóm', width: 100, sortable: true, cell: (row) => row.group },
-      { key: 'unit', header: 'ĐVT', width: 70, cell: (row) => row.unit },
-      {
-        key: 'purchase_count',
-        header: 'Số lần mua',
-        width: 90,
-        align: 'right',
-        sortable: true,
-        sortDescFirst: true,
-        cell: (row) => row.purchase_count,
-      },
-      {
-        key: 'last_date',
-        header: 'Mua gần nhất',
-        width: 110,
-        sortable: true,
-        sortDescFirst: true,
-        cell: (row) => (row.last_date ? formatDate(row.last_date) : <EmptyDash />),
-      },
-      {
-        key: 'last_purchase_price',
-        header: 'Giá mua gần nhất',
-        width: 110,
-        align: 'right',
-        sortable: true,
-        sortDescFirst: true,
-        cell: (row) => <PriceText value={row.last_purchase_price} />,
-      },
-      {
-        key: 'prev_purchase_price',
-        header: 'Giá mua lần trước',
-        width: 110,
-        align: 'right',
-        sortable: true,
-        sortDescFirst: true,
-        cell: (row) => <PriceText value={row.prev_purchase_price} />,
-      },
-      {
-        key: 'quote',
-        header: 'Báo giá mới',
-        width: 120,
-        align: 'right',
-        sortable: true,
-        sortKey: 'quote_price',
-        cell: (row) =>
-          row.quote ? (
-            <div className="leading-tight">
-              <PriceText value={row.quote.price} />
-              <div className="text-xs text-muted-foreground">
-                {formatDate(row.quote.valid_from)}
+    () =>
+      dropLimitColumn<DataTableColumn<PackagingPriceRow>>([
+        {
+          key: 'code',
+          header: 'Mã VTBB',
+          width: 120,
+          sortable: true,
+          hideable: false,
+          defaultPinned: true,
+          cell: (row) => <PackagingCodeLink code={row.code} />,
+        },
+        {
+          key: 'name',
+          header: 'Tên vật tư',
+          width: 220,
+          wrap: true,
+          sortable: true,
+          cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
+        },
+        { key: 'group', header: 'Nhóm', width: 100, sortable: true, cell: (row) => row.group },
+        { key: 'unit', header: 'ĐVT', width: 70, cell: (row) => row.unit },
+        {
+          key: 'purchase_count',
+          header: 'Số lần mua',
+          width: 90,
+          align: 'right',
+          sortable: true,
+          sortDescFirst: true,
+          cell: (row) => row.purchase_count,
+        },
+        {
+          key: 'last_date',
+          header: 'Mua gần nhất',
+          width: 110,
+          sortable: true,
+          sortDescFirst: true,
+          cell: (row) => (row.last_date ? formatDate(row.last_date) : <EmptyDash />),
+        },
+        {
+          key: 'last_purchase_price',
+          header: 'Giá mua gần nhất',
+          width: 110,
+          align: 'right',
+          sortable: true,
+          sortDescFirst: true,
+          cell: (row) => <PriceText value={row.last_purchase_price} />,
+        },
+        {
+          key: 'prev_purchase_price',
+          header: 'Giá mua lần trước',
+          width: 110,
+          align: 'right',
+          sortable: true,
+          sortDescFirst: true,
+          cell: (row) => <PriceText value={row.prev_purchase_price} />,
+        },
+        {
+          key: 'quote',
+          header: 'Báo giá mới',
+          width: 120,
+          align: 'right',
+          sortable: true,
+          sortKey: 'quote_price',
+          cell: (row) =>
+            row.quote ? (
+              <div className="leading-tight">
+                <PriceText value={row.quote.price} />
+                <div className="text-xs text-muted-foreground">
+                  {formatDate(row.quote.valid_from)}
+                </div>
               </div>
-            </div>
-          ) : (
-            <EmptyDash />
+            ) : (
+              <EmptyDash />
+            ),
+        },
+        {
+          key: 'old',
+          header: 'Giá cũ',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          cell: (row) => <PriceText value={row.old} className="font-semibold" />,
+        },
+        {
+          key: 'new',
+          header: 'Giá mới',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          cell: (row) => <PriceText value={row.new} className="font-semibold" />,
+        },
+        {
+          key: 'diff',
+          header: 'Chênh lệch',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          cell: (row) => <DiffText value={row.diff} />,
+        },
+        {
+          key: 'pct',
+          header: '%',
+          width: 80,
+          align: 'right',
+          sortable: true,
+          cell: (row) => <PercentText value={row.pct} />,
+        },
+        //  Min và Max tách hai cột (người chủ chốt 21/11/2026), mỗi cột xếp theo đúng giá trị nó hiện.
+        {
+          key: 'min',
+          header: 'Min',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          defaultHidden: true,
+          cell: (row) => <PriceText value={row.min} />,
+        },
+        {
+          key: 'max',
+          header: 'Max',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          sortDescFirst: true,
+          defaultHidden: true,
+          cell: (row) => <PriceText value={row.max} />,
+        },
+        {
+          key: 'limit',
+          header: 'Sàn – Trần',
+          width: 140,
+          align: 'right',
+          sortable: true,
+          sortKey: 'floor',
+          cell: (row) => (
+            <RangeText
+              low={row.floor}
+              high={row.ceiling}
+              danger={isOutsidePriceLimit(row.new, row.floor, row.ceiling)}
+            />
           ),
-      },
-      {
-        key: 'old',
-        header: 'Giá cũ',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        cell: (row) => <PriceText value={row.old} className="font-semibold" />,
-      },
-      {
-        key: 'new',
-        header: 'Giá mới',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        cell: (row) => <PriceText value={row.new} className="font-semibold" />,
-      },
-      {
-        key: 'diff',
-        header: 'Chênh lệch',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        cell: (row) => <DiffText value={row.diff} />,
-      },
-      {
-        key: 'pct',
-        header: '%',
-        width: 80,
-        align: 'right',
-        sortable: true,
-        cell: (row) => <PercentText value={row.pct} />,
-      },
-      //  Min và Max tách hai cột (người chủ chốt 21/11/2026), mỗi cột xếp theo đúng giá trị nó hiện.
-      {
-        key: 'min',
-        header: 'Min',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        defaultHidden: true,
-        cell: (row) => <PriceText value={row.min} />,
-      },
-      {
-        key: 'max',
-        header: 'Max',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        sortDescFirst: true,
-        defaultHidden: true,
-        cell: (row) => <PriceText value={row.max} />,
-      },
-      {
-        key: 'limit',
-        header: 'Sàn – Trần',
-        width: 140,
-        align: 'right',
-        sortable: true,
-        sortKey: 'floor',
-        cell: (row) => (
-          <RangeText
-            low={row.floor}
-            high={row.ceiling}
-            danger={isOutsidePriceLimit(row.new, row.floor, row.ceiling)}
-          />
-        ),
-      },
-      {
-        key: 'usage',
-        header: 'Số SP đang dùng',
-        width: 100,
-        align: 'right',
-        sortable: true,
-        sortDescFirst: true,
-        cell: (row) => row.usage,
-      },
-      {
-        key: 'note',
-        header: 'Ghi chú',
-        width: 200,
-        wrap: true,
-        defaultHidden: true,
-        cell: (row) => (
-          <span className="text-xs text-destructive">{joinPackagingWarnings(row.warnings)}</span>
-        ),
-      },
-      {
-        key: 'actions',
-        header: 'Thao tác',
-        width: 170,
-        hideable: false,
-        cell: (row) => (
-          <div className="flex gap-1" onClick={(event) => event.stopPropagation()}>
-            {canQuote && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7"
-                onClick={() => onQuote(row)}
-              >
-                Báo giá
-              </Button>
-            )}
-            {canLimit && (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7"
-                onClick={() => onLimit(row)}
-              >
-                Ngưỡng
-              </Button>
-            )}
-          </div>
-        ),
-      },
-    ],
+        },
+        {
+          key: 'usage',
+          header: 'Số SP đang dùng',
+          width: 100,
+          align: 'right',
+          sortable: true,
+          sortDescFirst: true,
+          cell: (row) => row.usage,
+        },
+        {
+          key: 'note',
+          header: 'Ghi chú',
+          width: 200,
+          wrap: true,
+          defaultHidden: true,
+          cell: (row) => (
+            <span className="text-xs text-destructive">{joinPackagingWarnings(row.warnings)}</span>
+          ),
+        },
+        {
+          key: 'actions',
+          header: 'Thao tác',
+          width: 170,
+          hideable: false,
+          cell: (row) => (
+            <div className="flex gap-1" onClick={(event) => event.stopPropagation()}>
+              {canQuote && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => onQuote(row)}
+                >
+                  Báo giá
+                </Button>
+              )}
+              {canLimit && PACKAGING_LIMITS_ENABLED && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7"
+                  onClick={() => onLimit(row)}
+                >
+                  Ngưỡng
+                </Button>
+              )}
+            </div>
+          ),
+        },
+      ]),
     [canQuote, canLimit, onQuote, onLimit],
   )
 }

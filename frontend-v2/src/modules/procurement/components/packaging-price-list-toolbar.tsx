@@ -9,6 +9,7 @@ import { Label } from '@/shared/ui/label'
 import { Switch } from '@/shared/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 import { cn } from '@/shared/utils/cn'
+import { PACKAGING_LIMITS_ENABLED } from '../config/packaging-feature-flags'
 
 export interface PriceListFilters {
   q: string
@@ -74,16 +75,18 @@ export function PackagingPriceListToolbar({
         <ToggleGroupItem value="all">Mọi mã có giá</ToggleGroupItem>
       </ToggleGroup>
 
-      <div className="flex items-center gap-2">
-        <Switch
-          id="price-breach-only"
-          checked={filters.breachOnly}
-          onCheckedChange={(breachOnly) => patch({ breachOnly })}
-        />
-        <Label htmlFor="price-breach-only" className="text-sm font-normal">
-          Chỉ mã ngoài ngưỡng
-        </Label>
-      </div>
+      {PACKAGING_LIMITS_ENABLED && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id="price-breach-only"
+            checked={filters.breachOnly}
+            onCheckedChange={(breachOnly) => patch({ breachOnly })}
+          />
+          <Label htmlFor="price-breach-only" className="text-sm font-normal">
+            Chỉ mã ngoài ngưỡng
+          </Label>
+        </div>
+      )}
     </div>
   )
 }
