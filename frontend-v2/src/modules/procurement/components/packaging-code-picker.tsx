@@ -1,17 +1,21 @@
 /**
  * duoc-CR-784 — ô chọn NHIỀU mã bao bì của màn Tác động giá (bám `renderPicker` của bản mẫu).
  *
+ * Cả khung là MỘT combobox: chip + ô gõ nằm chung một hàng, gõ ở đâu thì danh sách lọc ở đó (người chủ chốt 21/11/2026,
+ * bỏ ô tìm thứ hai trong popup). Tiêu điểm LUÔN ở ô gõ khi danh sách mở; danh sách chỉ là listbox gắn bằng
+ * `aria-activedescendant`, bấm chọn xong vẫn giữ chữ đang gõ để chọn tiếp nhiều mã khớp.
+ *
  * Không dùng thẳng `shared/ui/multi-picker.tsx` vì luật tìm khác hẳn: gõ TÊN NHÓM là lọc cả nhóm để
  * "Chọn tất cả" chọn đúng nhóm đó (`buildPackagingCodeMatcher`), còn ô chung chỉ tìm chuỗi con có dấu.
  * Trần `maxCodes` mã — vượt thì chặn cả lượt và báo, không cắt bớt ngầm.
  */
 import { Check, Search, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent, MouseEvent } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { Popover, PopoverAnchor, PopoverContent } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
 import type { PackagingCodeOption } from '../types/packaging-cost-types'
@@ -35,22 +39,18 @@ export type PackagingPickerKind = 'material' | 'product'
 
 const PICKER_TEXT: Record<
   PackagingPickerKind,
-  { aria: string; empty: string; more: string; search: string; searchHint: string; summary: string }
+  { aria: string; empty: string; more: string; summary: string }
 > = {
   material: {
     aria: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng',
     empty: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng — gõ mã, tên hoặc tên nhóm',
-    more: 'Thêm mã…',
-    search: 'Tìm mã bao bì',
-    searchHint: 'Vd: chai · nắp · nhãn, thùng · NAP0085',
+    more: 'Thêm mã… (vd: chai · nắp · nhãn, thùng · NAP0085)',
     summary: 'mã bao bì đang dùng cho sản phẩm',
   },
   product: {
     aria: 'Chọn mã sản phẩm',
     empty: 'Chọn sản phẩm — gõ mã hoặc tên',
-    more: 'Thêm sản phẩm…',
-    search: 'Tìm mã sản phẩm',
-    searchHint: 'Vd: HH0713 · tên sản phẩm',
+    more: 'Thêm sản phẩm… (vd: HH0713 · tên sản phẩm)',
     summary: 'sản phẩm có định mức bao bì',
   },
 }
@@ -78,6 +78,11 @@ export function PackagingCodePicker({
 }: PackagingCodePickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+  //  -1 = chưa tô dòng nào: Enter khi chưa tô thì không chọn gì (tránh chọn nhầm dòng đầu).
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const boxRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listboxId = useId()
   const text = PICKER_TEXT[kind]
   const showMaterialMeta = kind === 'material'
 
@@ -87,8 +92,17 @@ export function PackagingCodePicker({
     () => options.filter(buildPackagingCodeMatcher(keyword, groups)),
     [options, keyword, groups],
   )
+  const visible = useMemo(() => filtered.slice(0, LIST_MAX), [filtered])
   const selectedSet = useMemo(() => new Set(value), [value])
   const pickedInView = filtered.filter((option) => selectedSet.has(option.code)).length
+  const activeOption = open && activeIndex >= 0 ? visible[activeIndex] : undefined
+  const optionDomId = (code: string) => `${listboxId}-opt-${code}`
+
+  //  Dòng đang tô luôn nằm trong khung nhìn khi bấm mũi tên (listbox cuộn riêng, tiêu điểm không rời ô gõ).
+  useEffect(() => {
+    if (activeOption) document.getElementById(optionDomId(activeOption.code))?.scrollIntoView?.({ block: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- optionDomId chỉ phụ thuộc listboxId (ổn định)
+  }, [activeOption])
 
   function commit(next: string[]) {
     if (next.length > maxCodes) {
@@ -114,18 +128,94 @@ export function PackagingCodePicker({
     onChange(value.filter((code) => !dropped.has(code)))
   }
 
+  /** Đóng danh sách và bỏ chữ đang gõ để ô trở về dạng "chip + gợi ý". */
+  function closeList() {
+    setOpen(false)
+    setKeyword('')
+    setActiveIndex(-1)
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    //  Đang gõ dấu tiếng Việt (Telex / VNI): Enter / mũi tên thuộc về bộ gõ, không phải của ô chọn.
+    if (event.nativeEvent.isComposing) return
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault()
+        if (!open) {
+          setOpen(true)
+          return
+        }
+        if (!visible.length) return
+        const step = event.key === 'ArrowDown' ? 1 : -1
+        setActiveIndex((current) => (current < 0 ? (step === 1 ? 0 : visible.length - 1) : (current + step + visible.length) % visible.length))
+        return
+      }
+      case 'Enter': {
+        //  Luôn chặn: ô nằm trong <form> thì Enter không được gửi form cha (bẫy biểu mẫu), kể cả khi không chọn được gì.
+        event.preventDefault()
+        if (!open) {
+          setOpen(true)
+          return
+        }
+        //  Có dòng đang tô (mũi tên) thì bật / tắt dòng đó; không thì theo bản mẫu: gõ ĐÚNG một mã trong danh sách,
+        //  hoặc bộ lọc chỉ còn đúng một mã thì thêm mã đó. Xong xóa chữ để gõ mã kế tiếp.
+        if (activeOption) {
+          toggle(activeOption.code)
+        } else {
+          const typedCode = keyword.trim().split(/\s+/)[0]?.toUpperCase() ?? ''
+          const hit =
+            options.find((option) => option.code.toUpperCase() === typedCode) ??
+            (filtered.length === 1 ? filtered[0] : undefined)
+          if (!hit) return
+          if (!selectedSet.has(hit.code)) commit([...value, hit.code])
+        }
+        setKeyword('')
+        setActiveIndex(-1)
+        return
+      }
+      case 'Escape':
+        if (open) {
+          event.preventDefault()
+          event.stopPropagation()
+          closeList()
+          inputRef.current?.blur()
+        }
+        return
+      case 'Tab':
+        closeList()
+        return
+      case 'Backspace':
+        //  Ô gõ trống thì Backspace bỏ chip cuối, như mọi ô chọn nhiều.
+        if (!keyword && value.length > 0) onChange(value.slice(0, -1))
+        return
+      default:
+    }
+  }
+
+  /** Bấm vào khoảng trống của khung (không phải chip / nút) thì đưa tiêu điểm về ô gõ. */
+  function handleBoxMouseDown(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement
+    if (target === inputRef.current || target.closest('button')) return
+    event.preventDefault()
+    inputRef.current?.focus()
+    if (!loading) setOpen(true)
+  }
+
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(next) => (next ? setOpen(true) : closeList())}>
         {/*
           Mã đã chọn hiện NGAY TRONG ô (chip có nút x để bỏ nhanh) + nút x cuối ô bỏ hết — người chủ chốt 20/11/2026.
-          Khung là `div` (không phải `button`) vì chip chứa nút bỏ: nút lồng trong nút là HTML sai, bấm x lại mở danh sách.
-          Phần chữ còn lại mới là nút mở danh sách; `PopoverAnchor` giữ danh sách bám theo cả khung.
+          Khung là `div` vì chip chứa nút bỏ (nút lồng nút là HTML sai); `PopoverAnchor` giữ danh sách bám theo cả khung,
+          không có `PopoverTrigger` — danh sách mở bằng tiêu điểm / bấm / gõ trong ô gõ.
         */}
         <PopoverAnchor asChild>
           <div
+            ref={boxRef}
+            onMouseDown={handleBoxMouseDown}
             className={cn(
-              'flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5 shadow-xs',
+              'flex min-h-10 w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5 shadow-xs',
               open && 'border-ring ring-[3px] ring-ring/50',
             )}
           >
@@ -152,20 +242,35 @@ export function PackagingCodePicker({
                 +{value.length - CHIP_MAX} mã
               </span>
             )}
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                aria-label={text.aria}
-                disabled={loading}
-                className="min-w-[12rem] flex-1 truncate py-1 text-left text-sm text-muted-foreground outline-none disabled:cursor-not-allowed"
-              >
-                {loading
+            <input
+              ref={inputRef}
+              type="text"
+              role="combobox"
+              aria-label={text.aria}
+              aria-expanded={open}
+              aria-controls={open ? listboxId : undefined}
+              aria-autocomplete="list"
+              aria-activedescendant={activeOption ? optionDomId(activeOption.code) : undefined}
+              autoComplete="off"
+              disabled={loading}
+              value={keyword}
+              placeholder={
+                loading
                   ? 'Đang nạp danh sách mã…'
                   : value.length
                     ? text.more
-                    : (emptyPlaceholder ?? text.empty)}
-              </button>
-            </PopoverTrigger>
+                    : (emptyPlaceholder ?? text.empty)
+              }
+              onChange={(event) => {
+                setKeyword(event.target.value)
+                setActiveIndex(-1)
+                setOpen(true)
+              }}
+              onFocus={() => setOpen(true)}
+              onClick={() => setOpen(true)}
+              onKeyDown={handleKeyDown}
+              className="min-w-[12rem] flex-1 truncate bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+            />
             {value.length > 0 && (
               <button
                 type="button"
@@ -179,16 +284,19 @@ export function PackagingCodePicker({
             )}
           </div>
         </PopoverAnchor>
-        <PopoverContent align="start" className="w-[min(44rem,calc(100vw-2rem))] p-0">
-          <div className="border-b p-2">
-            <Input
-              autoFocus
-              aria-label={text.search}
-              placeholder={text.searchHint}
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-          </div>
+        <PopoverContent
+          align="start"
+          className="w-[min(44rem,calc(100vw-2rem))] p-0"
+          //  Tiêu điểm ở lại ô gõ: không cướp khi mở, không trả về "nút kích hoạt" khi đóng, và bấm trong danh sách
+          //  (kể cả nút Chọn tất cả) không làm ô gõ mất tiêu điểm.
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onMouseDown={(event) => event.preventDefault()}
+          //  Bấm / chuyển tiêu điểm trong khung của chính ô này không tính là "ra ngoài".
+          onInteractOutside={(event) => {
+            if (boxRef.current?.contains(event.target as Node)) event.preventDefault()
+          }}
+        >
           <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1.5 text-sm">
             <span className="text-muted-foreground">
               {filtered.length} {text.summary}
@@ -214,24 +322,32 @@ export function PackagingCodePicker({
               </Button>
             </div>
           </div>
-          <div className="max-h-80 overflow-y-auto p-1" role="listbox" aria-multiselectable="true">
+          <div
+            id={listboxId}
+            className="max-h-80 overflow-y-auto p-1"
+            role="listbox"
+            aria-label={text.aria}
+            aria-multiselectable="true"
+          >
             {filtered.length === 0 && (
               <p className="px-2 py-4 text-center text-sm text-muted-foreground">
                 Không có mã phù hợp.
               </p>
             )}
-            {filtered.slice(0, LIST_MAX).map((option) => {
+            {visible.map((option, index) => {
               const checked = selectedSet.has(option.code)
               return (
-                <button
+                <div
                   key={option.code}
-                  type="button"
+                  id={optionDomId(option.code)}
                   role="option"
                   aria-selected={checked}
                   onClick={() => toggle(option.code)}
+                  onMouseMove={() => activeIndex !== index && setActiveIndex(index)}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
+                    'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
                     checked && 'bg-accent',
+                    index === activeIndex && 'bg-accent ring-1 ring-ring/60',
                   )}
                 >
                   <Check className={cn('size-4 shrink-0', !checked && 'invisible')} />
@@ -248,7 +364,7 @@ export function PackagingCodePicker({
                       {option.new != null && ` · ${formatPackagingPrice(option.new)}`}
                     </span>
                   )}
-                </button>
+                </div>
               )
             })}
             {filtered.length > LIST_MAX && (

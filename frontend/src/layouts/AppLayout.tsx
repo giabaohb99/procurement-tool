@@ -169,24 +169,27 @@ const NAV_GROUPS: NavGroup[] = [
           })),
         ],
       },
+    ],
+  },
+  {
+    // duoc-CR-784 — cụm riêng "Giá nguyên vật liệu sản xuất" (người chủ chốt 21/11/2026: tách khỏi Mua hàng, đổi tên từ
+    // "Giá bao bì"). Mọi mục gác khóa quyền riêng `packaging_cost`. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có),
+    // trang /product-price-quotes vẫn vào được và sáng mục Bảng giá VTBB.
+    title: "Giá nguyên vật liệu sản xuất",
+    key: "gianvl",
+    items: [
+      { to: "/packaging-cost/impact", label: "Tác động giá", icon: "ti-trending-up", entity: "packaging_cost" },
+      { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum", entity: "packaging_cost" },
       {
-        // duoc-CR-784 — cụm Giá bao bì (bê từ bản v2): khóa quyền riêng `packaging_cost`. Báo giá VTBB + Định mức
-        // trỏ tới route CRUD chung nên khai `matchPaths` để mục cha vẫn sổ menu con khi đang ở hai màn đó.
-        to: "/packaging-cost",
-        label: "Giá bao bì",
-        icon: "ti-bottle",
+        to: "/packaging-cost/price-list",
+        label: "Bảng giá VTBB",
+        icon: "ti-list-details",
         entity: "packaging_cost",
-        matchPaths: ["/product-price-quotes", "/packaging-boms"],
-        children: [
-          { to: "/packaging-cost/impact", label: "Tác động giá", icon: "ti-trending-up", isDefault: true },
-          { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum" },
-          { to: "/packaging-cost/price-list", label: "Bảng giá VTBB", icon: "ti-list-details" },
-          { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
-          { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
-          // Báo giá VTBB ẩn khỏi menu (21/11/2026: file HTML gốc không có tab này); trang /product-price-quotes vẫn vào được.
-          { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2" },
-        ],
+        matchPaths: ["/product-price-quotes"],
       },
+      { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history", entity: "packaging_cost" },
+      { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline", entity: "packaging_cost" },
+      { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2", entity: "packaging_cost" },
     ],
   },
   {

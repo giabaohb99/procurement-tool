@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Seed Trung tâm trợ giúp cho cụm Giá bao bì của phân hệ Thu mua — duoc-CR-784 (21/11/2026).
+"""Seed Trung tâm trợ giúp cho cụm Giá nguyên vật liệu sản xuất của phân hệ Thu mua — duoc-CR-784 (21/11/2026).
 
 Dựng 1 thẻ phân hệ *Hướng dẫn sử dụng Giá bao bì* + 8 bài theo TÁC VỤ: tổng quan (công thức, sổ giá, luật giá cũ / mới,
 quyền), xem tác động khi NCC đổi giá, rà chi phí mọi sản phẩm, Bảng giá VTBB + nhập báo giá, giá các lần mua gần nhất,
 lịch sử mua + biểu đồ, khai / nhập định mức bao bì, lỗi thường gặp + dành cho quản trị.
 
 Cụm có ở CẢ HAI giao diện: ERP mới (menu Thu mua, nhóm Giá bao bì, `frontend-v2/src/modules/procurement/pages/packaging-*`)
-và giao diện cũ Thu mua (menu Mua hàng › Giá bao bì, `frontend/src/pages/packaging/*`, ngoại lệ D-026 người chủ duyệt
+và giao diện cũ Thu mua (menu Giá nguyên vật liệu sản xuất, `frontend/src/pages/packaging/*`, ngoại lệ D-026 người chủ duyệt
 21/11/2026). Theo nếp các bài Thu mua có sẵn, mỗi bài ghi một đoạn ngắn *Trên giao diện cũ (Thu mua)* ở chỗ hai bản khác
 nhau, không tách bài riêng.
 
@@ -33,30 +33,33 @@ Phải KHỚP với `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md` (mục
 """
 import argparse
 
-from help_seed_common import HelpArticle, SessionLocal, _descendants, rebuild_tree, ref, slugify
+from help_seed_common import HelpArticle, SessionLocal, _delete_subtree, _descendants, rebuild_tree, ref, slugify
 
-ROOT_TITLE = "Hướng dẫn sử dụng Giá bao bì"
-OVERVIEW_TITLE = "Giá bao bì — Các màn, ai được xem và giá cũ, giá mới lấy từ đâu"
-IMPACT_TITLE = "Giá bao bì — Xem tác động khi nhà cung cấp đổi giá chai, nắp, nhãn, thùng"
-PRODUCTS_TITLE = "Giá bao bì — Rà chi phí bao bì của mọi sản phẩm"
-PRICES_TITLE = "Giá bao bì — Tra Bảng giá VTBB và nhập báo giá của nhà cung cấp"
-LAST_PRICES_TITLE = "Giá bao bì — So đơn giá các lần mua gần nhất"
-HISTORY_TITLE = "Giá bao bì — Xem lịch sử mua và biểu đồ giá của một mã"
-BOM_TITLE = "Giá bao bì — Khai và nhập định mức bao bì từ Excel"
-FAQ_TITLE = "Giá bao bì — Lỗi thường gặp, giới hạn và dành cho quản trị"
+ROOT_TITLE = "Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất"
+#  Tên gốc cũ (trước 21/11/2026 chiều, khi menu còn tên "Giá bao bì"): `rebuild_tree` tìm cây theo TIÊU ĐỀ gốc nên phải
+#  xóa riêng cây mang tên cũ, không thì dev / prod còn hai cây trùng nội dung.
+LEGACY_ROOT_TITLES = ("Hướng dẫn sử dụng Giá bao bì",)
+OVERVIEW_TITLE = "Giá NVL sản xuất — Các màn, ai được xem và giá cũ, giá mới lấy từ đâu"
+IMPACT_TITLE = "Giá NVL sản xuất — Xem tác động khi nhà cung cấp đổi giá chai, nắp, nhãn, thùng"
+PRODUCTS_TITLE = "Giá NVL sản xuất — Rà chi phí bao bì của mọi sản phẩm"
+PRICES_TITLE = "Giá NVL sản xuất — Tra Bảng giá VTBB và nhập báo giá của nhà cung cấp"
+LAST_PRICES_TITLE = "Giá NVL sản xuất — So đơn giá các lần mua gần nhất"
+HISTORY_TITLE = "Giá NVL sản xuất — Xem lịch sử mua và biểu đồ giá của một mã"
+BOM_TITLE = "Giá NVL sản xuất — Khai và nhập định mức bao bì từ Excel"
+FAQ_TITLE = "Giá NVL sản xuất — Lỗi thường gặp, giới hạn và dành cho quản trị"
 
 OLD_UI = "<p><strong>Trên giao diện cũ (Thu mua):</strong> "
 
 TREE = {
     "title": ROOT_TITLE,
     "icon": "package",
-    "summary": "Giá bao bì: xem NCC đổi giá chai, nắp, nhãn, thùng làm chi phí bao bì của sản phẩm nào tăng bao nhiêu, bảng giá VTBB, báo giá, lịch sử mua, định mức bao bì",
-    "content": f"""<h2>Giá bao bì</h2>
-<p>Cụm <strong>Giá bao bì</strong> giúp Thu mua trả lời một câu hỏi: <em>nhà cung cấp đổi giá một mã chai, nắp, nhãn, nhãn thùng hay thùng thì chi phí bao bì của những sản phẩm nào đổi theo, đổi bao nhiêu</em>. Có con số đó rồi mới quyết: nhận giá, thương lượng lại, đổi nhà cung cấp hay báo Kinh doanh xem lại giá bán.</p>
+    "summary": "Giá nguyên vật liệu sản xuất: xem NCC đổi giá chai, nắp, nhãn, thùng làm chi phí bao bì của sản phẩm nào tăng bao nhiêu, bảng giá VTBB, báo giá, lịch sử mua, định mức bao bì",
+    "content": f"""<h2>Giá nguyên vật liệu sản xuất</h2>
+<p>Cụm <strong>Giá nguyên vật liệu sản xuất</strong> giúp Thu mua trả lời một câu hỏi: <em>nhà cung cấp đổi giá một mã chai, nắp, nhãn, nhãn thùng hay thùng thì chi phí bao bì của những sản phẩm nào đổi theo, đổi bao nhiêu</em>. Có con số đó rồi mới quyết: nhận giá, thương lượng lại, đổi nhà cung cấp hay báo Kinh doanh xem lại giá bán.</p>
 <p>Mở ở đâu:</p>
 <ul>
-<li><strong>Giao diện ERP mới:</strong> phân hệ <strong>Thu mua</strong>, nhóm menu <strong>Giá bao bì</strong> (Tác động giá bao bì, Tổng hợp theo sản phẩm, Bảng giá VTBB, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì).</li>
-<li><strong>Giao diện cũ (Thu mua):</strong> menu <strong>Mua hàng › Giá bao bì</strong>, cùng các mục con như trên (mục đầu tên ngắn là <strong>Tác động giá</strong>).</li>
+<li><strong>Giao diện ERP mới:</strong> phân hệ <strong>Thu mua</strong>, nhóm menu <strong>Giá nguyên vật liệu sản xuất</strong> (Tác động giá bao bì, Tổng hợp theo sản phẩm, Bảng giá VTBB, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì).</li>
+<li><strong>Giao diện cũ (Thu mua):</strong> menu <strong>Giá nguyên vật liệu sản xuất</strong>, cùng các mục con như trên (mục đầu tên ngắn là <strong>Tác động giá</strong>).</li>
 </ul>
 <p>Không thấy menu là tài khoản chưa được giao quyền <strong>Giá bao bì</strong>, nhờ quản trị (xem {ref(FAQ_TITLE, "Lỗi thường gặp và dành cho quản trị")}).</p>
 <p>Đọc theo việc cần làm:</p>
@@ -74,7 +77,7 @@ TREE = {
             "title": OVERVIEW_TITLE,
             "icon": "book-open",
             "summary": "Công thức chi phí bao bì / chai, sổ giá lấy từ lịch sử mua và dòng ĐMH đã duyệt, luật giá cũ / giá mới, màu tăng giảm, quyền Giá bao bì và phạm vi pháp nhân",
-            "content": f"""<h2>Cụm Giá bao bì gồm những màn nào</h2>
+            "content": f"""<h2>Cụm Giá nguyên vật liệu sản xuất gồm những màn nào</h2>
 <table>
 <thead><tr><th>Màn (menu)</th><th>Dùng để</th></tr></thead>
 <tbody>
@@ -132,7 +135,7 @@ TREE = {
             "icon": "bar-chart",
             "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm chai / nắp / nhãn), nhập giá giả định, đọc sản phẩm bị ảnh hưởng, CP bao bì / chai cũ và mới, ghi chú cảnh báo, Xuất Excel",
             "content": f"""<h2>Khi nào dùng</h2>
-<p>Nhà cung cấp báo tăng (hoặc giảm) giá một hay nhiều mã bao bì, hoặc bạn muốn thử "nếu nắp lên 350 đ thì sao" trước khi chốt giá. Mở <strong>Thu mua › Giá bao bì › Tác động giá bao bì</strong> (màn có tiêu đề <strong>Tác động tăng giá bao bì</strong>).</p>
+<p>Nhà cung cấp báo tăng (hoặc giảm) giá một hay nhiều mã bao bì, hoặc bạn muốn thử "nếu nắp lên 350 đ thì sao" trước khi chốt giá. Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Tác động giá bao bì</strong> (màn có tiêu đề <strong>Tác động tăng giá bao bì</strong>).</p>
 
 <h2>Các bước</h2>
 <ol>
@@ -171,7 +174,7 @@ TREE = {
 </tbody>
 </table>
 <p>Bảng mã đã chọn báo <em>Các mã đã chọn chưa có trong định mức nào.</em> nghĩa là chưa sản phẩm nào khai dùng các mã đó, nên không có tác động để tính.</p>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Tác động giá</strong>; các bước, nút và cột như trên. Đơn giá hiện tới 4 chữ số lẻ.</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Tác động giá</strong>; các bước, nút và cột như trên. Đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
             "title": PRODUCTS_TITLE,
@@ -179,7 +182,7 @@ TREE = {
             "summary": "Màn Tổng hợp theo sản phẩm: mọi sản phẩm có định mức, CP cũ / mới một chai, chênh một chai và một thùng, % chênh, chip Tăng / Giảm / Không đổi / Chưa có giá kèm số đếm",
             "content": f"""<h2>Khi nào dùng</h2>
 <p>Đầu kỳ báo giá, hoặc khi Kinh doanh hỏi "sản phẩm nào đang tăng chi phí bao bì". Khác màn {ref(IMPACT_TITLE, "Tác động giá")} (bắt đầu từ mã bao bì), màn này bắt đầu từ <strong>sản phẩm</strong>: mọi mã HH có định mức, giá cũ so với giá mới hiện hành, không có giá giả định.</p>
-<p>Mở <strong>Thu mua › Giá bao bì › Tổng hợp theo sản phẩm</strong>.</p>
+<p>Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Tổng hợp theo sản phẩm</strong>.</p>
 
 <h2>Lọc nhanh bằng chip</h2>
 <p>Hàng chip trên bảng kèm số sản phẩm của từng loại: <strong>Tất cả</strong>, <strong>Tăng</strong> (chi phí bao bì tăng, cần xem lại giá bán), <strong>Giảm</strong>, <strong>Không đổi</strong>, <strong>Chưa có giá</strong> (thiếu giá chai nên chưa tính được). Bấm một chip để chỉ xem loại đó; bấm <strong>Tất cả</strong> để bỏ lọc. Số trên chip đếm theo từ khóa đang tìm.</p>
@@ -191,14 +194,14 @@ TREE = {
 <li>Sau đó là năm ô thành phần (Chai, Nắp, Nhãn, Nhãn thùng, Thùng: mã và giá cũ → mới, mã bấm được) và <strong>Ghi chú</strong> (cùng bộ cảnh báo như màn Tác động giá).</li>
 </ul>
 <p>Ô <strong>Tìm mã HH, tên, mã thành phần…</strong> tìm không cần dấu. Bấm tiêu đề cột để xếp, ví dụ <strong>Chênh /thùng</strong> giảm dần. <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng).</p>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Tổng hợp theo sản phẩm</strong>, cùng chip, cột và nút.</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Tổng hợp theo sản phẩm</strong>, cùng chip, cột và nút.</p>""",
         },
         {
             "title": PRICES_TITLE,
             "icon": "coins",
             "summary": "Bảng giá VTBB: giá mua gần nhất, lần trước, báo giá mới, giá cũ / mới / chênh / %, Min, Max, số SP đang dùng; nút Báo giá mới và nút Báo giá từng dòng để ghi báo giá của NCC",
             "content": f"""<h2>Tra giá từng mã</h2>
-<p>Mở <strong>Thu mua › Giá bao bì › Bảng giá VTBB</strong>. Mỗi mã vật tư bao bì một dòng:</p>
+<p>Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Bảng giá VTBB</strong>. Mỗi mã vật tư bao bì một dòng:</p>
 <table>
 <thead><tr><th>Cột</th><th>Nghĩa</th></tr></thead>
 <tbody>
@@ -227,14 +230,14 @@ TREE = {
 <li>Báo giá nhập nhầm: nhập lại báo giá đúng với <strong>cùng ngày hiệu lực</strong>, báo giá nhập sau thắng. Muốn sửa hay xóa hẳn báo giá nhầm thì dùng màn danh sách <strong>Báo giá VTBB</strong>: màn này không có trong menu, mở bằng đường <em>/procurement/packaging-cost/quotes</em>; bấm một dòng để mở hộp sửa (<strong>Lưu thay đổi</strong>), nút xóa trong hộp cần quyền Xóa.</li>
 </ul>
 <p>Hộp báo lỗi: <em>Nhập mã vật tư bao bì.</em>, <em>Nhập đơn giá báo giá (lớn hơn 0).</em>, <em>Chọn ngày hiệu lực.</em> là thiếu ô tương ứng.</p>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Bảng giá VTBB</strong>. Nút <strong>Báo giá mới</strong> và nút <strong>Báo giá</strong> từng dòng mở cùng hộp nhập như trên. Cột <strong>Min</strong>, <strong>Max</strong> hiện sẵn; đơn giá hiện tới 4 chữ số lẻ. Danh sách Báo giá VTBB (không có trong menu, đường <em>/product-price-quotes</em>) là màn danh sách chung: bấm một dòng mở <strong>trang chi tiết</strong> (không phải hộp thoại) để sửa rồi bấm <strong>Lưu</strong>, hoặc <strong>Xóa</strong>.</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Bảng giá VTBB</strong>. Nút <strong>Báo giá mới</strong> và nút <strong>Báo giá</strong> từng dòng mở cùng hộp nhập như trên. Cột <strong>Min</strong>, <strong>Max</strong> hiện sẵn; đơn giá hiện tới 4 chữ số lẻ. Danh sách Báo giá VTBB (không có trong menu, đường <em>/product-price-quotes</em>) là màn danh sách chung: bấm một dòng mở <strong>trang chi tiết</strong> (không phải hộp thoại) để sửa rồi bấm <strong>Lưu</strong>, hoặc <strong>Xóa</strong>.</p>""",
         },
         {
             "title": LAST_PRICES_TITLE,
             "icon": "clipboard-list",
             "summary": "Màn Giá mua gần nhất: đơn giá 3 / 5 / 10 lần mua có giá gần nhất của từng mã VTBB, ngày, NCC, biến động lần 1 so lần 2 / lần n, giá TB, lọc NCC, ngày, xu hướng, ngưỡng %",
             "content": f"""<h2>Khi nào dùng</h2>
-<p>Muốn xem giá một mã đi lên hay đi xuống qua nhiều lần mua, mua của nhà cung cấp nào, để có lý lẽ khi thương lượng. Mở <strong>Thu mua › Giá bao bì › Giá mua gần nhất</strong>.</p>
+<p>Muốn xem giá một mã đi lên hay đi xuống qua nhiều lần mua, mua của nhà cung cấp nào, để có lý lẽ khi thương lượng. Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Giá mua gần nhất</strong>.</p>
 
 <h2>Đọc bảng</h2>
 <ul>
@@ -258,14 +261,14 @@ TREE = {
 </tbody>
 </table>
 <p><strong>Xuất Excel</strong> ra đúng bộ lọc, số lần và thứ tự đang xem; bật Hiện số lượng thì tệp có thêm cột số lượng.</p>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Giá mua gần nhất</strong>, cùng bộ lọc và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Giá mua gần nhất</strong>, cùng bộ lọc và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
             "title": HISTORY_TITLE,
             "icon": "calendar",
-            "summary": "Màn Lịch sử mua hàng của cụm Giá bao bì: từng lần mua theo mã VTBB hoặc theo mã sản phẩm, dòng tóm tắt, biểu đồ Diễn biến đơn giá khi chọn một mã, So lần trước, nhãn ĐMH đang mở",
+            "summary": "Màn Lịch sử mua hàng của cụm Giá nguyên vật liệu sản xuất: từng lần mua theo mã VTBB hoặc theo mã sản phẩm, dòng tóm tắt, biểu đồ Diễn biến đơn giá khi chọn một mã, So lần trước, nhãn ĐMH đang mở",
             "content": f"""<h2>Mở màn</h2>
-<p>Mở <strong>Thu mua › Giá bao bì › Lịch sử mua hàng</strong>, hoặc bấm vào bất kỳ mã vật tư nào ở các bảng của cụm (màn mở sẵn đúng mã đó). Màn này khác tab Lịch sử mua hàng trên chi tiết sản phẩm: nó đọc sổ giá của cụm Giá bao bì nên có cả dòng đơn mua hàng đang mở.</p>
+<p>Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, hoặc bấm vào bất kỳ mã vật tư nào ở các bảng của cụm (màn mở sẵn đúng mã đó). Màn này khác tab Lịch sử mua hàng trên chi tiết sản phẩm: nó đọc sổ giá của cụm Giá nguyên vật liệu sản xuất nên có cả dòng đơn mua hàng đang mở.</p>
 
 <h2>Chọn xem cái gì</h2>
 <ol>
@@ -284,14 +287,14 @@ TREE = {
 <li>Lần mua đơn giá 0 vẫn hiện để đối chiếu, nhưng không tính vào giá bình quân, thấp nhất, cao nhất và biểu đồ.</li>
 </ul>
 <p><strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng).</p>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Lịch sử mua hàng</strong>, cùng chế độ, bộ lọc, biểu đồ và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, cùng chế độ, bộ lọc, biểu đồ và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
             "title": BOM_TITLE,
             "icon": "boxes",
             "summary": "Định mức bao bì theo mã HH: chai, nắp, nhãn, nhãn thùng, thùng, quy cách thùng; thêm, sửa từng dòng, Nhập từ Excel tệp DATA_CHAI.xlsx qua Quản lý Import (Chạy thử rồi Ghi thật)",
             "content": f"""<h2>Định mức bao bì là gì</h2>
-<p>Mỗi mã hàng hóa (mã HH) một dòng: dùng mã <strong>chai</strong>, <strong>nắp</strong>, <strong>nhãn</strong> nào (tính theo chai), mã <strong>nhãn thùng</strong>, <strong>thùng</strong> nào (tính theo thùng) và <strong>quy cách thùng</strong> (bao nhiêu chai một thùng). Thu mua tự khai và giữ danh mục này; mọi con số chi phí của cụm Giá bao bì đều đọc từ đây. Mở <strong>Thu mua › Giá bao bì › Định mức bao bì</strong>.</p>
+<p>Mỗi mã hàng hóa (mã HH) một dòng: dùng mã <strong>chai</strong>, <strong>nắp</strong>, <strong>nhãn</strong> nào (tính theo chai), mã <strong>nhãn thùng</strong>, <strong>thùng</strong> nào (tính theo thùng) và <strong>quy cách thùng</strong> (bao nhiêu chai một thùng). Thu mua tự khai và giữ danh mục này; mọi con số chi phí của cụm Giá nguyên vật liệu sản xuất đều đọc từ đây. Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Định mức bao bì</strong>.</p>
 <p>Ở bảng, mã thành phần <strong>tô đỏ</strong> kèm chữ <em>chưa có trong danh mục</em> là mã chưa có trong danh mục sản phẩm (gõ sai, hoặc chưa tạo sản phẩm); quy cách thùng ghi <em>chưa có</em> là đang bằng 0.</p>
 
 <h2>Thêm hoặc sửa một dòng</h2>
@@ -316,7 +319,7 @@ TREE = {
 <li>Tệp tối đa 20.000 dòng mỗi sheet. Lô nhập định mức <strong>chưa hoàn tác được</strong>: luôn đọc kỹ bản chạy thử trước khi Ghi thật.</li>
 <li>Nút Nhập từ Excel chỉ hiện với người có quyền tạo Giá bao bì và quyền tạo, xem Quản lý Import.</li>
 </ul>
-{OLD_UI}menu <strong>Mua hàng › Giá bao bì › Định mức bao bì</strong> là màn danh sách chung: bấm <strong>Thêm</strong> hoặc bấm một dòng là mở <strong>trang chi tiết</strong> (không phải hộp thoại), điền rồi bấm <strong>Tạo</strong> / <strong>Lưu</strong>, xóa bằng nút <strong>Xóa</strong> trên trang. Nhập từ Excel giống trên: bấm <strong>Chạy thử</strong>, sang trang lô import, bấm <strong>Ghi thật</strong> (nút này có ở trang lô của lô định mức bao bì đã chạy thử xong).</p>""",
+{OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Định mức bao bì</strong> là màn danh sách chung: bấm <strong>Thêm</strong> hoặc bấm một dòng là mở <strong>trang chi tiết</strong> (không phải hộp thoại), điền rồi bấm <strong>Tạo</strong> / <strong>Lưu</strong>, xóa bằng nút <strong>Xóa</strong> trên trang. Nhập từ Excel giống trên: bấm <strong>Chạy thử</strong>, sang trang lô import, bấm <strong>Ghi thật</strong> (nút này có ở trang lô của lô định mức bao bì đã chạy thử xong).</p>""",
         },
         {
             "title": FAQ_TITLE,
@@ -392,8 +395,26 @@ def check_unique_titles() -> None:
         raise SystemExit(f"Tiêu đề đã có bài khác dùng, đổi tiêu đề trước: {clash}")
 
 
+def drop_legacy_trees(dry_run: bool) -> None:
+    """Xóa cây bài mang tiêu đề gốc CŨ (kèm thẻ trang chủ của nó) trước khi dựng cây tên mới."""
+    db = SessionLocal()
+    try:
+        for title in LEGACY_ROOT_TITLES:
+            old = db.query(HelpArticle).filter(HelpArticle.title == title, HelpArticle.parent_id.is_(None)).first()
+            if old is None:
+                continue
+            if dry_run:
+                print(f"  (sẽ xóa cây tên cũ '{title}', gốc id={old.id})")
+                continue
+            print(f"Đã xóa cây tên cũ '{title}': {_delete_subtree(db, old.id)} bài (gốc id={old.id}).")
+        if not dry_run:
+            db.commit()
+    finally:
+        db.close()
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Bài HDSD duoc-CR-784: cụm Giá bao bì")
+    parser = argparse.ArgumentParser(description="Bài HDSD duoc-CR-784: cụm Giá nguyên vật liệu sản xuất")
     parser.add_argument("--dry-run", action="store_true", help="chỉ kiểm tiêu đề và in cây, không ghi")
     args = parser.parse_args()
     check_unique_titles()
@@ -401,8 +422,10 @@ def main() -> None:
         for node in iter_nodes():
             print(f"  {'(gốc) ' if node is TREE else '  '}{node['title']} — /{slugify(node['title'])} "
                   f"({len(node['content'])} ký tự)")
+        drop_legacy_trees(dry_run=True)
         print(f"Thử xong: {EXPECTED_ARTICLES} bài, tiêu đề không trùng, chưa ghi gì.")
         return
+    drop_legacy_trees(dry_run=False)
     rebuild_tree(TREE)
 
 

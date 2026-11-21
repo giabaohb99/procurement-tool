@@ -7,7 +7,7 @@
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Hiệu lực (chỉ trên dev) |
 | CR liên quan | duoc-CR-784 |
-| Giao diện | ERP v2: phân hệ Thu mua, nhóm menu **Giá bao bì** (`/procurement/packaging-cost/...`, `frontend-v2/src/modules/procurement/pages/packaging-*.tsx`) · giao diện cũ Thu mua: menu **Mua hàng › Giá bao bì** (`/packaging-cost/...`, `/packaging-boms`, `/product-price-quotes`; `frontend/src/pages/packaging/*`) |
+| Giao diện | ERP v2: phân hệ Thu mua, nhóm menu **Giá nguyên vật liệu sản xuất** (tên chốt 21/11/2026, trước là Giá bao bì) (`/procurement/packaging-cost/...`, `frontend-v2/src/modules/procurement/pages/packaging-*.tsx`) · giao diện cũ Thu mua: **cụm menu riêng Giá nguyên vật liệu sản xuất** (`/packaging-cost/...`, `/packaging-boms`, `/product-price-quotes`; `frontend/src/pages/packaging/*`) |
 | Bài Help Center | Thẻ **Hướng dẫn sử dụng Giá bao bì** + 8 bài, `backend/scripts/seed_help_gia_bao_bi_cr784.py` |
 | Hợp đồng kỹ thuật | [api.md](../tai-lieu-ky-thuat/api.md) (nhóm `packaging-cost`, các dòng `/api/packaging-cost/*`, `/api/packaging-boms`, `/api/product-price-quotes`) · [kế hoạch 261120](../plans/261120-tac-dong-gia-bao-bi/plan.md) (phase 04 = hợp đồng API và số đo hiệu năng) |
 | Nguồn | Bản mẫu `Bao cao gia NVL san xuat - 11.2026.html` của Thu mua; mã màn và mã backend `packaging_cost/`, `product_price/`, `core/packaging_price_codes.py` (đọc 21/11/2026) |
@@ -123,7 +123,7 @@ mua gần nhất*.
 ## 6. Lịch sử mua hàng (của cụm Giá bao bì)
 
 Màn `/procurement/packaging-cost/history` (cũ `/packaging-cost/history`), đường dẫn sâu `?codes=` / `?hh=`. Bấm mã ở mọi bảng
-của cụm là mở màn này. Bài HDSD: *Giá bao bì — Xem lịch sử mua và biểu đồ giá của một mã*. Khác tab Lịch sử mua hàng ở chi
+của cụm là mở màn này. Bài HDSD: *Giá NVL sản xuất — Xem lịch sử mua và biểu đồ giá của một mã*. Khác tab Lịch sử mua hàng ở chi
 tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có cả dòng ĐMH đang mở.
 
 - Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (mọi thành phần của định mức, thêm cột Vai trò); tối đa 200

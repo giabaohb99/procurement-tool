@@ -27,7 +27,7 @@ const PACKAGING_MENU_PATHS = PACKAGING_PATHS.filter((path) => path !== appRoutes
 
 function packagingMenu(can: ReturnType<typeof grants>) {
   return visibleNavItems(procurementModule as ErpModule, can)
-    .filter((item) => item.group === 'Giá bao bì' && !item.hidden)
+    .filter((item) => item.group === 'Giá nguyên vật liệu sản xuất' && !item.hidden)
     .map((item) => item.path)
 }
 

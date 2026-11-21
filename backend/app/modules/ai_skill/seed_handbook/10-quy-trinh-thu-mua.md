@@ -69,7 +69,7 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 
 Cụm màn cho Thu mua xem **nhà cung cấp đổi giá một mã chai, nắp, nhãn, nhãn thùng, thùng (VTBB) thì chi phí bao bì của
 sản phẩm nào đổi theo, đổi bao nhiêu**, để quyết nhận giá / thương lượng / đổi NCC / báo xem lại giá bán. Giao diện mới:
-phân hệ **Thu mua**, nhóm menu **Giá bao bì**; giao diện cũ: **Mua hàng › Giá bao bì**. Cần quyền **Giá bao bì**
+phân hệ **Thu mua**, nhóm menu **Giá nguyên vật liệu sản xuất**; giao diện cũ: cụm menu riêng **Giá nguyên vật liệu sản xuất**. Cần quyền **Giá bao bì**
 (`packaging_cost`, nhóm Thu mua ở màn phân quyền vai trò): không có quyền Xem thì không thấy menu — nhờ quản trị.
 - Màn: ***Tác động giá bao bì*** (cũ: *Tác động giá*; chọn mã, gõ tên nhóm rồi ***Chọn tất cả***, ô ***Nhập giá*** để thử
   giá giả định, bảng sản phẩm bị ảnh hưởng, ***Xuất Excel***) · ***Tổng hợp theo sản phẩm*** (mọi sản phẩm có định mức, chip
@@ -90,7 +90,7 @@ phân hệ **Thu mua**, nhóm menu **Giá bao bì**; giao diện cũ: **Mua hàn
   thành phần: Nhãn* (phần đó tính 0) · *Chưa khai mã thành phần* · *Thiếu quy cách thùng* · *ĐVT mua khác ĐVT danh mục*.
 - **Giới hạn:** một chai một bộ chai / nắp / nhãn; mỗi mã HH một định mức (chưa có phiên bản); đơn giá hiểu là giá một
   cái theo ĐVT danh mục.
-- Hỏi số cụ thể → dùng công cụ Giá bao bì nếu có trong danh sách công cụ: `packaging_price_impact` ("nắp X lên 350 đ thì
+- Hỏi số cụ thể → dùng công cụ giá nguyên vật liệu bao bì nếu có trong danh sách công cụ: `packaging_price_impact` ("nắp X lên 350 đ thì
   sản phẩm nào tăng bao nhiêu", nhận giá giả định), `packaging_price_lookup` (giá cũ / mới, lần mua gần nhất của một mã VTBB),
   `packaging_product_cost` (chi phí bao bì / chai, / thùng của một mã HH). Không có công cụ hoặc người hỏi thiếu quyền Giá bao
   bì thì chỉ màn ***Tác động giá bao bì***. **Không tự nhẩm** chi phí từ lịch sử mua, đừng đoán giá.

@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { FormEvent } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 const toastError = vi.fn()
@@ -23,20 +24,22 @@ const OPTIONS = [
   option('NHG0100', 'Nhãn'),
 ]
 
+const boxInput = () => screen.getByRole('combobox', { name: /Chọn mã chai/ })
+
 async function openPicker(value: string[] = [], maxCodes?: number) {
   const user = userEvent.setup()
   const onChange = vi.fn()
   render(
     <PackagingCodePicker options={OPTIONS} value={value} onChange={onChange} maxCodes={maxCodes} />,
   )
-  await user.click(screen.getByRole('button', { name: /Chọn mã chai/ }))
+  await user.click(boxInput())
   return { user, onChange }
 }
 
 describe('PackagingCodePicker', () => {
   it('"Chọn tất cả" after typing a group name picks only that group and keeps earlier picks', async () => {
     const { user, onChange } = await openPicker(['NHG0100'])
-    await user.type(screen.getByLabelText('Tìm mã bao bì'), 'chai')
+    await user.type(boxInput(), 'chai')
     await user.click(screen.getByRole('button', { name: 'Chọn tất cả (2)' }))
     expect(onChange).toHaveBeenCalledWith(['NHG0100', 'CPT0105', 'CPT0075'])
   })
@@ -56,7 +59,7 @@ describe('PackagingCodePicker', () => {
 
   it('"Bỏ chọn" only clears codes in the current filter', async () => {
     const { user, onChange } = await openPicker(['CPT0105', 'NAP0085'])
-    await user.type(screen.getByLabelText('Tìm mã bao bì'), 'nắp')
+    await user.type(boxInput(), 'nắp')
     await user.click(screen.getByRole('button', { name: 'Bỏ chọn (1)' }))
     expect(onChange).toHaveBeenCalledWith(['CPT0105'])
   })
@@ -76,8 +79,105 @@ describe('PackagingCodePicker', () => {
     expect(onChange).toHaveBeenLastCalledWith(['NAP0085'])
     await user.click(screen.getByRole('button', { name: 'Bỏ hết mã đã chọn' }))
     expect(onChange).toHaveBeenLastCalledWith([])
-    // the chip buttons sit outside the trigger, so removing never opens the search list
-    expect(screen.queryByLabelText('Tìm mã bao bì')).not.toBeInTheDocument()
+    // chip buttons are not the input, so removing never opens the list
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('has no second search box: the list opens from the box input itself and typing filters it', async () => {
+    const { user } = await openPicker()
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    expect(boxInput()).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByPlaceholderText(/^Vd:/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('option')).toHaveLength(4)
+    await user.type(boxInput(), 'nắp')
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+    expect(boxInput()).toHaveFocus()
+  })
+
+  it('shows the long placeholder when empty and the short "Thêm mã…" hint once chips exist', () => {
+    const { unmount } = render(<PackagingCodePicker options={OPTIONS} value={[]} onChange={vi.fn()} />)
+    expect(boxInput()).toHaveAttribute('placeholder', expect.stringContaining('Chọn mã chai'))
+    unmount()
+    render(<PackagingCodePicker options={OPTIONS} value={['CPT0105']} onChange={vi.fn()} />)
+    expect(boxInput()).toHaveAttribute('placeholder', expect.stringContaining('Thêm mã…'))
+  })
+
+  it('ArrowDown + Enter toggles the highlighted row, clears the typed text and never submits a wrapping form', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const onSubmit = vi.fn((event: FormEvent) => event.preventDefault())
+    render(
+      <form onSubmit={onSubmit}>
+        <PackagingCodePicker options={OPTIONS} value={['NHG0100']} onChange={onChange} />
+      </form>,
+    )
+    await user.type(boxInput(), 'chai')
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+    // options are sorted by the caller: CPT0105 then CPT0075, so the 2nd highlighted row is CPT0075
+    expect(onChange).toHaveBeenCalledWith(['NHG0100', 'CPT0075'])
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(boxInput()).toHaveValue('')
+    expect(screen.getAllByRole('option')).toHaveLength(4)
+  })
+
+  it('Enter with no highlight adds the exact typed code, or the single remaining match, and ignores the rest', async () => {
+    const { user, onChange } = await openPicker(['NHG0100'])
+    await user.type(boxInput(), 'nap0085{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(['NHG0100', 'NAP0085'])
+    expect(boxInput()).toHaveValue('')
+    onChange.mockClear()
+    // two matches and no exact code: nothing is added and the text stays
+    await user.type(boxInput(), 'chai{Enter}')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(boxInput()).toHaveValue('chai')
+    await user.clear(boxInput())
+    // a single remaining match ("nap" only hits NAP0085) is added without typing the full code
+    await user.type(boxInput(), 'nap{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(['NHG0100', 'NAP0085'])
+  })
+
+  it('Enter never clears chips and the cap still blocks it with a toast', async () => {
+    toastError.mockClear()
+    const { user, onChange } = await openPicker(['CPT0105', 'CPT0075'], 2)
+    await user.type(boxInput(), 'nap0085{Enter}')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(toastError).toHaveBeenCalledWith(expect.stringContaining('tối đa 2 mã'))
+  })
+
+  it('Backspace on an empty box removes the last chip, but not while text is typed', async () => {
+    const { user, onChange } = await openPicker(['CPT0105', 'NAP0085'])
+    await user.type(boxInput(), 'x')
+    await user.keyboard('{Backspace}')
+    expect(onChange).not.toHaveBeenCalled()
+    await user.keyboard('{Backspace}')
+    expect(onChange).toHaveBeenCalledWith(['CPT0105'])
+  })
+
+  it('Escape closes the list and blurs the box', async () => {
+    const { user } = await openPicker()
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(boxInput()).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('keeps the list open and the typed text after a mouse pick so several matches can be chosen', async () => {
+    const { user, onChange } = await openPicker()
+    await user.type(boxInput(), 'chai')
+    await user.click(screen.getByRole('option', { name: /CPT0105/ }))
+    expect(onChange).toHaveBeenCalledWith(['CPT0105'])
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    expect(boxInput()).toHaveValue('chai')
+    expect(boxInput()).toHaveFocus()
+  })
+
+  it('has accessible combobox wiring: aria-controls points at the listbox, options carry aria-selected', async () => {
+    await openPicker(['NAP0085'])
+    const listbox = screen.getByRole('listbox')
+    expect(boxInput()).toHaveAttribute('aria-controls', listbox.id)
+    const selected = within(listbox).getByRole('option', { name: /NAP0085/ })
+    expect(selected).toHaveAttribute('aria-selected', 'true')
+    expect(within(listbox).getByRole('option', { name: /CPT0105/ })).toHaveAttribute('aria-selected', 'false')
   })
 })
 
@@ -91,16 +191,16 @@ describe('PackagingCodePicker kind="product"', () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(<PackagingCodePicker kind="product" options={PRODUCTS} value={[]} onChange={onChange} />)
-    await user.click(screen.getByRole('button', { name: 'Chọn mã sản phẩm' }))
+    await user.click(screen.getByRole('combobox', { name: 'Chọn mã sản phẩm' }))
     return { user, onChange }
   }
 
   it('treats a typed word as plain text (a product named "Chai ..." is not mistaken for the Chai group)', async () => {
     const { user } = await openProducts()
-    await user.type(screen.getByLabelText('Tìm mã sản phẩm'), 'chai')
+    await user.type(screen.getByRole('combobox', { name: 'Chọn mã sản phẩm' }), 'chai')
     expect(screen.getAllByRole('option')).toHaveLength(2)
-    await user.clear(screen.getByLabelText('Tìm mã sản phẩm'))
-    await user.type(screen.getByLabelText('Tìm mã sản phẩm'), 'tương')
+    await user.clear(screen.getByRole('combobox', { name: 'Chọn mã sản phẩm' }))
+    await user.type(screen.getByRole('combobox', { name: 'Chọn mã sản phẩm' }), 'tương')
     expect(screen.getAllByRole('option')).toHaveLength(1)
   })
 
@@ -115,7 +215,7 @@ describe('PackagingCodePicker kind="product"', () => {
     render(
       <PackagingCodePicker options={OPTIONS} value={[]} onChange={vi.fn()} emptyPlaceholder="Tất cả mã VTBB" />,
     )
-    expect(screen.getByText('Tất cả mã VTBB')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Tất cả mã VTBB')).toBeInTheDocument()
   })
 })
 

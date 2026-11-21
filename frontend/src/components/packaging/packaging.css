@@ -60,16 +60,18 @@
 .pkg-chip button:hover, .pkg-chipbox .pkg-clear:hover { opacity: 1; color: var(--red); background: rgba(0, 0, 0, 0.05); }
 .pkg-chipbox .pkg-clear { margin-left: auto; color: var(--muted); font-size: 16px; }
 .pkg-chip-more { padding: 3px 10px; border-radius: 8px; border: 1px solid rgba(0, 174, 239, 0.35); color: var(--teal-dark); font-size: 13px; font-weight: 700; }
-.pkg-trigger {
-  flex: 1; min-width: 200px; height: 32px; border: 0; background: none; text-align: left; color: var(--muted);
-  font-size: 13.5px; cursor: pointer; font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.pkg-chipbox { cursor: text; }
+.pkg-input {
+  flex: 1; min-width: 200px; height: 32px; border: 0 !important; background: none !important; box-shadow: none !important;
+  outline: none; padding: 0 !important; color: var(--navy); font-size: 13.5px; font-family: inherit;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.pkg-input::placeholder { color: var(--muted); }
+.pkg-input:disabled { cursor: not-allowed; }
 .pkg-dd {
   position: absolute; z-index: 60; left: 0; top: calc(100% + 6px); width: min(720px, 100%);
   background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 40px rgba(16, 24, 64, 0.18);
 }
-.pkg-dd-search { padding: 10px; border-bottom: 1px solid var(--border); }
-.pkg-dd-search input { width: 100%; height: 38px; }
 .pkg-dd-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
 .pkg-dd-bar .grow { flex: 1; }
 .pkg-dd-bar button { border: 0; background: none; color: var(--teal-dark); font-weight: 600; cursor: pointer; font-size: 13px; font-family: inherit; }
@@ -81,6 +83,7 @@
 }
 .pkg-opt:hover { background: #f4f7fe; }
 .pkg-opt.on { background: #eaf6fd; }
+.pkg-opt.active { background: #dff0fb; box-shadow: inset 0 0 0 1px rgba(0, 174, 239, 0.5); }
 .pkg-opt .tick { width: 16px; flex: none; color: var(--teal); visibility: hidden; }
 .pkg-opt.on .tick { visibility: visible; }
 .pkg-opt .c { width: 104px; flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
