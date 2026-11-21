@@ -90,6 +90,14 @@ truy vấn tổng hợp mới (thường là group-by / min-max).
 - Quyền: `product` + `read` VÀ `supplier` + `read`.
 - Tình trạng: MỚI (distinct NCC theo mã + tổng hợp).
 
+### packaging_price_impact · packaging_price_lookup · packaging_product_cost — Giá bao bì [ĐÃ CODE 21/11/2026, duoc-CR-784]
+- Mục đích: "chai CPT0075 lên 2.600 thì sản phẩm nào tăng chi phí bao nhiêu" (`packaging_price_impact`, có giá giả định);
+  "giá mua gần nhất của nhãn NHG0713", "5 lần mua gần nhất của CPT0075" (`packaging_price_lookup`); "chi phí bao bì / chai của
+  HH0417.1", "những sản phẩm chi phí bao bì tăng" (`packaging_product_cost`).
+- Nguồn: dịch vụ của màn Giá bao bì (`packaging_cost/*_service.py`, sổ giá `tab_product_price_ledger`) — không tính lại, số khớp màn.
+- Quyền: `packaging_cost.read` + phạm vi pháp nhân trên sổ giá (như màn web). Tiền VND trước VAT. Qua cổng MCP: nhóm G7
+  riêng `packaging`, tắt mặc định. Hợp đồng đủ ở `doc/agent-hub/06-cong-mcp.md` §3.7c.
+
 ---
 
 ## Nhóm 3 - Tra danh mục (giúp bot map câu hỏi mô tả sang mã)

@@ -56,6 +56,7 @@ from .supplier_quote_tool import SUPPLIER_QUOTE_SPECS
 from .approval_action_tool import PROPOSE_APPROVAL_SPEC
 from .skill_tool import SKILL_SPECS
 from .capability_tool import CAPABILITY_SPECS
+from .packaging_cost_tool import PACKAGING_COST_SPECS
 
 log = logging.getLogger("app.assistant.tools")
 
@@ -112,6 +113,7 @@ def _active_specs() -> list:
                            *SUPPLIER_QUOTE_SPECS,  # ai-CR-238: soạn nháp nhập báo giá NCC vào phiếu khảo sát / YCBG đang mở
                            *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
                            *CAPABILITY_SPECS,     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
+                           *PACKAGING_COST_SPECS,  # duoc-CR-784: tác động giá bao bì, tra giá VTBB, chi phí bao bì sản phẩm
                            BACKGROUND_JOBS_SPEC]  # bao-CR-703: sổ việc chạy ngầm (chỉ quản trị)
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)

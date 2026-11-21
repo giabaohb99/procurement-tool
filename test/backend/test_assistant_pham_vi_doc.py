@@ -69,6 +69,11 @@ TOOL_CHUNG_TU = {
     "employee_leave_summary": "leave_balance",
     #  duoc-CR-761: ca theo ngày của nhân sự khác — apply_scope(Employee, 'employee') như màn Xem lịch.
     "employee_work_shifts": "employee",
+    #  duoc-CR-784: giá bao bì — sổ giá lọc theo PHÁP NHÂN (scope_condition(ProductPriceLedger, 'packaging_cost') qua
+    #  last_prices_controller.view_scope, đúng hàm của màn web); định mức / báo giá / ngưỡng là danh mục dùng chung.
+    "packaging_price_impact": "packaging_cost",
+    "packaging_price_lookup": "packaging_cost",
+    "packaging_product_cost": "packaging_cost",
 }
 
 #  DANH MỤC / THỐNG KÊ dùng chung toàn công ty: không có cột chủ sở hữu để lọc, phạm vi
@@ -201,7 +206,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  93 = + `my_salary` (duoc-CR-757 — lương của chính người hỏi, chỉ ở chat riêng).
     #  95 = + `my_work_shifts` / `employee_work_shifts` (duoc-CR-761 — ca làm việc theo ngày của tôi / của nhân sự khác).
     #  96 = + `my_projects` (duoc-CR-763 — dự án / nhóm dự án người hỏi tham gia, cùng luật màn Dự án).
-    assert len(thuc_te) == 96, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  99 = + `packaging_price_impact` / `packaging_price_lookup` / `packaging_product_cost` (duoc-CR-784 — giá bao bì).
+    assert len(thuc_te) == 99, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)
@@ -235,6 +241,9 @@ CA_O_TEP_KHAC = {
     "employee_leave_summary":
         "test_tro_ly_tra_phep_lich_lam_viec_cr757::test_tra_phep_nguoi_khac_khong_lot_cong_ty_khac",
     "employee_work_shifts": "test_tro_ly_ca_lam_viec_cr761::test_ca_nguoi_khac_truong_phong_chi_thay_phong_minh",
+    "packaging_price_impact": "test_cong_cu_gia_bao_bi_cr784::test_pham_vi_phap_nhan_ca_ba_cong_cu",
+    "packaging_price_lookup": "test_cong_cu_gia_bao_bi_cr784::test_pham_vi_phap_nhan_ca_ba_cong_cu",
+    "packaging_product_cost": "test_cong_cu_gia_bao_bi_cr784::test_pham_vi_phap_nhan_ca_ba_cong_cu",
 }
 
 #  Tool đọc chứng từ CHƯA có ca rò rỉ ở BẤT KỲ đâu. Để trống là mục tiêu; còn dòng nào thì

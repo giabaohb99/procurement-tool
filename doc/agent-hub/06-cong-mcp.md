@@ -291,6 +291,25 @@ dự án chủ khóa thấy, đúng tập của màn Dự án (`membership_servi
 `archived`, `url` = `/project/lists/{id}`; cộng `total`, `returned`, `has_more` (trần 100), `group_count`, `my_open_task_count`,
 `note`. Số truy vấn cố định. Câu *nhóm dự án* không nạp công cụ nhóm chat.
 
+### 3.7c Giá bao bì (duoc-CR-784, 21/11/2026)
+
+Ba tool CHỈ ĐỌC ở nhóm RIÊNG `packaging` (**tắt mặc định** — giá vốn bao bì, khóa `packaging_cost` nhạy cảm; quản trị bật ở G7),
+đã khai `READ_TOOLS`, `ROW_BUDGET_TOOLS` (đếm theo `items`), `STRUCTURED_TOOLS`. Gác như màn Giá bao bì: `packaging_cost.read`
+(thiếu thì `denied`) + phạm vi PHÁP NHÂN trên sổ giá (`last_prices_controller.view_scope`) — giá chỉ tính trên các dòng sổ chủ
+khóa được thấy; mã chỉ có giá ở pháp nhân khác trả cùng hình với mã chưa có giá nào. Không tính lại: gọi đúng dịch vụ của màn
+(`compute_impact`, `build_product_overview`, `compute_product_cost`, `get_price_states`, `latest_priced_by_code`). Mọi số là VND
+trước VAT; mỗi kết quả kèm `currency`, `price_basis`, `price_rule` (luật giá cũ / mới), `note`. Số truy vấn cố định.
+
+| Tool | Tham số | Kết quả |
+|---|---|---|
+| `packaging_price_impact` | `codes[]` (1–50 mã VTBB), `assumed_prices[{code, price}]` (giá giả định >= 0, mã chỉ có giá giả định cũng tính là đã chọn), `top_n` (1–50, mặc định 20), `sort_dir` (`desc` tăng nhiều nhất trước / `asc`) | `selected[]` (`code, name, group, unit, old_price, new_price, assumed_price, applied_price, price_diff, pct_change` (%), `products_using, min_price, max_price, floor_price, ceiling_price, last_purchase_date, warnings[]` nhãn, `history_url`) · `kpis` (`selected_count, assumed_count, affected_products, increased, decreased, max_increase_bottle, max_increase_carton`, tính trên TOÀN BỘ sản phẩm bị ảnh hưởng) · `items[]` sản phẩm xếp theo chênh lệch chi phí / chai (`hh_code, hh_name, carton_qty, cost_old_bottle, cost_applied_bottle, diff_bottle, pct_change, cost_old_carton, cost_applied_carton, diff_carton, trend` + `trend_label, selected_parts[], warnings[]`) · `total, page, page_size, has_more, url` (màn Tác động giá) |
+| `packaging_price_lookup` | `codes[]` (tối đa 20) hoặc `q` (chữ tìm trong mã / tên, tối đa 100 ký tự; mã trùng đúng chữ tìm đứng đầu), `purchases` (0–10, mặc định 5), `limit` (số mã khi tìm, 1–20, mặc định 10) | `items[]`: `code, name, group, unit, old_price, new_price, new_price_source` (Báo giá / Lần mua gần nhất), `price_diff, pct_change, last_purchase` / `prev_purchase` (`date, price, qty?, unit, supplier_code, supplier, source_label`), `quote` (`price, valid_from, supplier_code, supplier`), `purchase_count` (mọi dòng sổ kể cả giá 0), `min_price, max_price, floor_price, ceiling_price, products_using, recent_purchases[]` (lần mua CÓ GIÁ, mới nhất trước), `warnings[], history_url` · `no_data_codes` (mã không có trong danh mục và không có giá nào được xem) · `total, has_more` |
+| `packaging_product_cost` | `hh_codes[]` (tối đa 20, đường nhanh: chỉ đọc định mức của các mã đó) hoặc `q` + `trend` (`all, up, down, flat, missing`) + `limit` (1–50) + `page` (đúng hàm tab Tổng hợp theo sản phẩm) | `items[]`: `hh_code, hh_name, legal_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct_change, cost_old_carton, cost_new_carton, diff_carton, trend` + `trend_label, parts[]` (`role` + `role_label, code, name, old_price, new_price`; thành phần chưa khai mã bị bỏ), `warnings[], history_url` · `counts` (chế độ lọc) · `no_bom_codes` (mã chưa có định mức) · `total, page, page_size, has_more, url` |
+
+Bộ lọc công cụ (`tool_router`, nhóm `packaging`): mã VTBB (`CPT / CHT / CET / CEV / CPV / NHG / NHD / NDT / NAP / THU` + số) hoặc
+chữ *bao bì*, *chai*, *tác động giá*, *chi phí bao bì*, *định mức bao bì*. Chữ *nhãn* trơn KHÔNG khớp (gập dấu trùng *nhận*).
+Nhãn ý định: `tra_cuu.san_pham`. Không có tool ghi (nhập báo giá / sửa định mức chỉ trên màn web).
+
 ### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)
 
 Cổng MCP **không bao giờ** là cuộc trò chuyện riêng (hội thoại nằm ở máy chủ của ứng dụng AI bên ngoài và có thể được chia
@@ -315,7 +334,7 @@ gọi thẳng thì `denied` kèm tên nhóm. `report_issue`, `confirm_draft` lu�
 | Mặc định | Nhóm |
 |---|---|
 | **Bật** (Q4 + Agent 1 17/10) | `mine` tra cứu phiếu / việc của chính mình · `leave` **Nghỉ phép và ca làm việc** (gồm `employee_leave_summary` tra phép người khác theo quyền, duoc-CR-757; `my_work_shifts`, `employee_work_shifts` ca theo ngày, duoc-CR-761) · `directory` danh bạ, thuật ngữ, HDSD · `reports` báo cáo gom sẵn + bảng số · `skills` Kho skill |
-| **Tắt** | `purchase` thu mua (gồm `erp_read`) · `finance` công nợ và thanh toán (kéo theo bộ `payable` / `payment_request` của `dataset_query`) · `document` văn thư · `work` soạn việc / kế hoạch · `customs` tra cứu thị trường · `google` lịch / Drive · `personal` sổ nhớ, ghi chú, nhóm chat, biên bản · `ticket` tạo phiếu hỗ trợ · `research` nghiên cứu sâu (tốn phí) · `export` xuất tệp |
+| **Tắt** | `purchase` thu mua (gồm `erp_read`) · `packaging` giá bao bì (duoc-CR-784, §3.7c) · `finance` công nợ và thanh toán (kéo theo bộ `payable` / `payment_request` của `dataset_query`) · `document` văn thư · `work` soạn việc / kế hoạch · `customs` tra cứu thị trường · `google` lịch / Drive · `personal` sổ nhớ, ghi chú, nhóm chat, biên bản · `ticket` tạo phiếu hỗ trợ · `research` nghiên cứu sâu (tốn phí) · `export` xuất tệp |
 
 Cấu hình lưu MỘT dòng JSON ở `tab_setting.agent_mcp_settings` của ERP (đi qua cổng B `/settings/raw` ở chế độ tách dịch
 vụ — khóa này phải có trong `erp.SETTING_RAW_KEYS`), đệm 60 giây. Trường chưa lưu theo biến môi trường (§5).

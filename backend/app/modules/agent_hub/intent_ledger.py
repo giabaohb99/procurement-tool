@@ -172,6 +172,9 @@ TOOL_SUB: dict[str, Sub] = {
     "contract_list_by_expiry": Sub.LOOKUP_CONTRACT,
     "product_search": Sub.LOOKUP_PRODUCT, "product_best_price": Sub.LOOKUP_PRODUCT,
     "product_purchase_history": Sub.LOOKUP_PRODUCT,
+    #  duoc-CR-784: giá bao bì — cùng nhãn "Sản phẩm, giá mua".
+    "packaging_price_impact": Sub.LOOKUP_PRODUCT, "packaging_price_lookup": Sub.LOOKUP_PRODUCT,
+    "packaging_product_cost": Sub.LOOKUP_PRODUCT,
     "customs_price_stats": Sub.LOOKUP_CUSTOMS, "customs_buy_timing": Sub.LOOKUP_CUSTOMS,
     "customs_market": Sub.LOOKUP_CUSTOMS, "customs_legal_check": Sub.LOOKUP_CUSTOMS,
     "document_read": Sub.LOOKUP_DOCUMENT, "document_search": Sub.LOOKUP_DOCUMENT, "my_documents": Sub.LOOKUP_DOCUMENT,

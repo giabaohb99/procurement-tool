@@ -65,6 +65,37 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
   Nguyễn Văn A*). Đơn cũ chưa gắn hồ sơ chỉ có chữ đã lưu (vd *Mr Tiên*) — đọc nguyên chữ đó, **đừng đoán** là ai. Hỏi
   *"vì sao đơn hiện mã trần / tên lạ"* thì nói: đó là đơn cũ chưa gắn hồ sơ, mở đơn chọn lại NSPT rồi lưu là xong.
 
+## Giá bao bì (duoc-CR-784, từ 21/11/2026)
+
+Cụm màn cho Thu mua xem **nhà cung cấp đổi giá một mã chai, nắp, nhãn, nhãn thùng, thùng (VTBB) thì chi phí bao bì của
+sản phẩm nào đổi theo, đổi bao nhiêu**, để quyết nhận giá / thương lượng / đổi NCC / báo xem lại giá bán. Giao diện mới:
+phân hệ **Thu mua**, nhóm menu **Giá bao bì**; giao diện cũ: **Mua hàng › Giá bao bì**. Cần quyền **Giá bao bì**
+(`packaging_cost`, nhóm Thu mua ở màn phân quyền vai trò): không có quyền Xem thì không thấy menu — nhờ quản trị.
+- Màn: ***Tác động giá bao bì*** (cũ: *Tác động giá*; chọn mã, gõ tên nhóm rồi ***Chọn tất cả***, ô ***Nhập giá*** để thử
+  giá giả định, bảng sản phẩm bị ảnh hưởng, ***Xuất Excel***) · ***Tổng hợp theo sản phẩm*** (mọi sản phẩm có định mức, chip
+  *Tăng / Giảm / Không đổi / Chưa có giá*) · ***Bảng giá VTBB*** (giá mua gần nhất, lần trước, báo giá, cũ / mới; nút
+  ***Báo giá mới*** và ***Báo giá*** từng dòng để ghi báo giá của NCC) · ***Giá mua gần nhất*** (3 / 5 / 10 lần) ·
+  ***Lịch sử mua hàng*** (theo mã VTBB hoặc theo mã sản phẩm, biểu đồ khi chọn một mã) · ***Định mức bao bì*** (Thu mua tự
+  khai theo mã HH, ***Nhập từ Excel*** tệp DATA_CHAI.xlsx: ***Chạy thử*** rồi ***Ghi thật*** ở trang lô Quản lý Import).
+- **Công thức:** CP bao bì / chai = chai + nắp + nhãn + (nhãn thùng + thùng) / quy cách thùng; CP / thùng = CP / chai x
+  quy cách. Giá VNĐ chưa VAT theo ĐVT danh mục.
+- **Giá lấy từ đâu:** sổ giá tự gom từ lịch sử mua hàng (mỗi lần mua, ghi một lần) và dòng ĐMH **đã duyệt** chưa hoàn
+  thành (sửa đơn thì cập nhật; dòng sang lịch sử, bị hủy hoặc đơn bị hủy duyệt thì rời sổ). Đơn nháp / chờ duyệt chưa tính.
+  Dòng đơn giá 0 đếm vào số lần mua nhưng không làm giá. Giá lọc theo **pháp nhân** người hỏi được xem — hai người có thể
+  thấy giá khác nhau. Lấy từ lịch sử mua của ERP, **chưa** lấy từ MISA.
+- **Giá cũ / mới:** có báo giá → mới = báo giá mới nhất (kể cả ngày hiệu lực ở tương lai), cũ = lần mua có giá gần nhất;
+  không báo giá → mới = lần mua có giá gần nhất, cũ = lần trước đó; mới mua một lần → cũ = mới. Số **tăng hiện xanh, giảm
+  hiện đỏ**.
+- **Ghi chú cảnh báo:** *Thiếu giá chai* (CP để trống, xu hướng *Chưa có giá* → nhập báo giá cho mã chai) · *Thiếu giá
+  thành phần: Nhãn* (phần đó tính 0) · *Chưa khai mã thành phần* · *Thiếu quy cách thùng* · *ĐVT mua khác ĐVT danh mục*.
+- **Giới hạn:** một chai một bộ chai / nắp / nhãn; mỗi mã HH một định mức (chưa có phiên bản); đơn giá hiểu là giá một
+  cái theo ĐVT danh mục.
+- Hỏi số cụ thể → dùng công cụ Giá bao bì nếu có trong danh sách công cụ: `packaging_price_impact` ("nắp X lên 350 đ thì
+  sản phẩm nào tăng bao nhiêu", nhận giá giả định), `packaging_price_lookup` (giá cũ / mới, lần mua gần nhất của một mã VTBB),
+  `packaging_product_cost` (chi phí bao bì / chai, / thùng của một mã HH). Không có công cụ hoặc người hỏi thiếu quyền Giá bao
+  bì thì chỉ màn ***Tác động giá bao bì***. **Không tự nhẩm** chi phí từ lịch sử mua, đừng đoán giá.
+  Bước thao tác chi tiết: HDSD *Hướng dẫn sử dụng Giá bao bì* (search_docs).
+
 ## Tên nút trên màn Thu mua (từ 09/11/2026, giao diện mới và cũ ghi giống nhau)
 
 Chỉ đường cho người dùng thì gọi đúng chữ trên nút dưới đây, đừng dùng tên cũ của giao diện mới (*Thêm mới*,

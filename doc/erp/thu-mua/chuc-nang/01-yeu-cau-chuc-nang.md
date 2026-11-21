@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| Bản | 0.3 |
-| Ngày | 09/11/2026 |
+| Bản | 0.4 |
+| Ngày | 21/11/2026 |
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Nháp |
-| CR liên quan | bao-CR-712, td-0311, duoc-CR-741 · CR chính trong tài liệu cũ: CR-034, CR-068, CR-108, CR-268, bao-CR-310, bao-CR-388, bao-CR-414, bao-CR-422 |
+| CR liên quan | bao-CR-712, td-0311, duoc-CR-741, duoc-CR-784 · CR chính trong tài liệu cũ: CR-034, CR-068, CR-108, CR-268, bao-CR-310, bao-CR-388, bao-CR-414, bao-CR-422 |
 
 Tệp này là **mục lục chức năng**: mỗi chức năng một dòng tóm tắt và liên kết tới tài liệu chi tiết đã có ở
-`chuc-nang/10..20`. Chi tiết từng trường, từng nút vẫn nằm ở tài liệu gốc (luật *một sự thật một chỗ*); sửa nghiệp vụ thì
+`chuc-nang/10..21`. Chi tiết từng trường, từng nút vẫn nằm ở tài liệu gốc (luật *một sự thật một chỗ*); sửa nghiệp vụ thì
 sửa tài liệu gốc trước, rồi chỉnh dòng tóm tắt ở đây nếu nghĩa đổi.
 
 **Cách đọc cột Trạng thái.** Tài liệu cũ không ghi rõ chức năng nào đã lên prod, nên phần lớn ghi *chưa ghi*. Chữ
@@ -60,6 +60,12 @@ sửa tài liệu gốc trước, rồi chỉnh dòng tóm tắt ở đây nếu
 | CN-TM-22 | Xuất Excel danh sách YCBG, YCMH, ĐMH, Tiến độ — [11 mục G](11-yeu-cau-khao-sat.md), [12 mục G](12-yeu-cau-mua-hang.md), [13 mục J](13-don-mua-hang.md) | Mọi người có quyền `export` | Nút *Xuất Excel* trên danh sách; tick dòng thì thành *Xuất Excel (n)*, chỉ xuất phiếu đã tick | có trên prod 05/11; xuất theo dòng tick: dev | CR-068, duoc-CR-741 |
 | CN-TM-23 | Phòng tự mua hàng: bậc phạm vi `dept_proc`, bộ tài khoản riêng, công ty con thu hẹp — [20](20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) | Admin | Phân quyền tài khoản | có trên prod 05/11 | bao-CR-414, bao-CR-480 |
 | CN-TM-24 | Danh mục và quản trị dùng chung đang được mô tả trong tài liệu thu mua: phòng ban, công ty ([16](16-danh-muc.md)); nhân sự, tài khoản, vai trò, cấu hình hệ thống ([17](17-he-thong-bao-cao.md)) | Admin | Nhiều màn | có trên prod 05/11 | CR-022, CR-023, CR-037 |
+| CN-TM-25 | Tác động giá bao bì: chọn mã chai / nắp / nhãn / nhãn thùng / thùng (cả nhóm), giá giả định, sản phẩm bị ảnh hưởng với CP bao bì / chai, / thùng cũ và mới, ghi chú cảnh báo, Xuất Excel — [21 mục 1, 2](21-tac-dong-gia-bao-bi.md) | NSTM, quản lý thu mua | `/procurement/packaging-cost` (v1 `/packaging-cost/impact`) | có (dev) | duoc-CR-784 |
+| CN-TM-26 | Tổng hợp chi phí bao bì theo sản phẩm: mọi mã HH có định mức, chip Tăng / Giảm / Không đổi / Chưa có giá kèm số đếm — [21 mục 3](21-tac-dong-gia-bao-bi.md) | NSTM, quản lý thu mua | `/procurement/packaging-cost/products` | có (dev) | duoc-CR-784 |
+| CN-TM-27 | Bảng giá VTBB (giá mua gần nhất, lần trước, báo giá, cũ / mới / chênh, Min, Max, số SP) và nhập báo giá NCC; danh sách Báo giá VTBB ẩn khỏi menu — [21 mục 4](21-tac-dong-gia-bao-bi.md) | NSTM | `/procurement/packaging-cost/prices`, `.../quotes` (v1 `/packaging-cost/price-list`, `/product-price-quotes`) | có (dev) | duoc-CR-784 |
+| CN-TM-28 | Giá mua gần nhất: đơn giá 3 / 5 / 10 lần mua có giá của từng mã VTBB, biến động, giá TB — [21 mục 5](21-tac-dong-gia-bao-bi.md) | NSTM | `/procurement/packaging-cost/last-prices` | có (dev) | duoc-CR-784 |
+| CN-TM-29 | Lịch sử mua hàng của cụm Giá bao bì: theo mã VTBB hoặc theo mã sản phẩm, biểu đồ đơn giá, nhãn ĐMH đang mở — [21 mục 6](21-tac-dong-gia-bao-bi.md) | NSTM | `/procurement/packaging-cost/history` | có (dev) | duoc-CR-784 |
+| CN-TM-30 | Định mức bao bì theo mã HH (chai, nắp, nhãn, nhãn thùng, thùng, quy cách thùng), nhập `DATA_CHAI.xlsx` qua Quản lý Import (chạy thử rồi ghi thật) — [21 mục 7](21-tac-dong-gia-bao-bi.md) | NSTM | `/procurement/packaging-cost/boms` (v1 `/packaging-boms`) | có (dev) | duoc-CR-784 |
 
 Danh mục sản phẩm, ĐVT, phân loại, thương hiệu thuộc phân hệ [Mặt hàng](../../mat-hang/chuc-nang/01-yeu-cau-chuc-nang.md);
 màn Tồn kho và danh mục Kho thuộc phân hệ [Kho](../../kho/chuc-nang/01-yeu-cau-chuc-nang.md); đơn nhập khẩu và chi phí thu
@@ -127,6 +133,17 @@ mua thuộc phân hệ [Nhập khẩu](../../nhap-khau/chuc-nang/01-yeu-cau-chuc
 - **Quyền:** entity `payment_request` (`create`, `write`, `approve`, `print`, `export`, `delete`); bảng ở [14 mục D](14-yeu-cau-thanh-toan.md).
 - **Ngoại lệ / lỗi người dùng gặp:** chưa ghi câu báo lỗi cụ thể.
 - **Liên quan:** CN-TM-13, CN-TM-15; công cụ AI `draft_payment_request`, `payment_request_read`.
+
+### CN-TM-25..30 — Giá bao bì
+
+- **Mục đích:** NCC đổi giá một mã vật tư bao bì thì biết ngay sản phẩm nào đổi chi phí bao bì, đổi bao nhiêu, để quyết nhận giá, thương lượng, đổi NCC hay xem lại giá bán.
+- **Luồng chính:** sổ giá tự gom từ lịch sử mua hàng và dòng ĐMH đã duyệt → (tùy chọn) nhập báo giá NCC ở Bảng giá VTBB → chọn mã ở Tác động giá, thử giá giả định → đọc sản phẩm bị ảnh hưởng, Xuất Excel. Định mức bao bì do Thu mua tự khai hoặc nhập từ Excel.
+- **Luật nghiệp vụ:** CP bao bì / chai = chai + nắp + nhãn + (nhãn thùng + thùng) / quy cách thùng; có báo giá thì giá mới = báo giá mới nhất (kể cả ngày hiệu lực tương lai), cũ = lần mua có giá gần nhất; không thì mới = lần mua có giá gần nhất, cũ = lần trước; bỏ dòng giá 0. Chi tiết ở [21 mục 1](21-tac-dong-gia-bao-bi.md).
+- **Dữ liệu:** `tab_product_price_ledger` (sổ giá), `tab_product_price_quote` (báo giá), `tab_packaging_bom` (định mức), `tab_product_price_limit` (ngưỡng, đang ẩn).
+- **Quyền:** entity `packaging_cost` (`read`, `create`, `write`, `delete`, `export`), nhạy cảm; phạm vi pháp nhân đo trên sổ giá. Nhập Excel cần thêm `import.create` + `import.read`.
+- **Giao diện:** ERP v2 và giao diện cũ Thu mua (ngoại lệ D-026, người chủ duyệt 21/11/2026); chỉ trên dev. HDSD: thẻ *Hướng dẫn sử dụng Giá bao bì* (`seed_help_gia_bao_bi_cr784.py`).
+- **Ngoại lệ / lỗi người dùng gặp:** ghi chú *Thiếu giá chai*, *Thiếu giá thành phần: …*, *Chưa khai mã thành phần*, *Thiếu quy cách thùng*, *ĐVT mua khác ĐVT danh mục* ([21 mục 2](21-tac-dong-gia-bao-bi.md)); `codes` rỗng hoặc quá 500 mã trả 422.
+- **Liên quan:** CN-TM-19 (lịch sử mua hàng là nguồn 1 của sổ giá), CN-TM-09 (dòng ĐMH đã duyệt là nguồn 2).
 
 ## 4. Luồng trạng thái chứng từ
 

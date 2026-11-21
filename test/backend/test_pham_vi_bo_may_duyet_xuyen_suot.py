@@ -1273,6 +1273,13 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  của giao diện, nên đây KHÔNG phải lỗ riêng của Trợ lý AI.
     #  # QUYẾT ĐỊNH CHỜ: giá mua theo pháp nhân có phải dữ liệu dùng chung
     #  # toàn tập đoàn không? Xem báo cáo cụm 07 mục E2.
+    #  duoc-CR-784: giá bao bì — sổ giá lọc theo pháp nhân như màn web; định mức / báo giá / ngưỡng dùng chung.
+    "packaging_price_impact": "ctx.can(packaging_cost) + scope_condition(ProductPriceLedger, packaging_cost) qua "
+                              "view_scope của màn Giá bao bì, đưa xuống compute_impact (duoc-CR-784)",
+    "packaging_price_lookup": "ctx.can(packaging_cost) + view_scope trên sổ giá cho get_price_states và "
+                              "latest_priced_by_code (duoc-CR-784)",
+    "packaging_product_cost": "ctx.can(packaging_cost) + view_scope trên sổ giá cho get_price_states / "
+                              "build_product_overview (duoc-CR-784)",
     "product_search": "danh mục PUBLIC — cổng là ctx.can(product)",
     "supplier_search": "danh mục PUBLIC — cổng là ctx.can(supplier)",
     "product_purchase_history": "ctx.can(product) (+supplier để hiện tên NCC) — bảng lịch sử giá",

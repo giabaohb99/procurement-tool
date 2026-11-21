@@ -64,6 +64,8 @@ READ_TOOLS = frozenset({
     #  duoc-CR-761: ca làm việc theo ngày — của chính mình (không khóa) / của nhân sự khác (employee.read + phạm vi).
     "my_work_shifts", "employee_work_shifts",
     "my_projects",   # duoc-CR-763: dự án / nhóm dự án mình tham gia, cùng luật visible_list_ids của màn Dự án
+    #  duoc-CR-784: giá bao bì — chỉ đọc, gác packaging_cost.read + phạm vi pháp nhân trên sổ giá như màn web.
+    "packaging_price_impact", "packaging_price_lookup", "packaging_product_cost",
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
@@ -88,9 +90,12 @@ _PROPOSAL_SHAPE = {"update": "update_proposal", "delete": "update_proposal", "ap
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
 #  duoc-CR-757: employee_leave_summary trả tới 50 người / lượt (đếm theo khóa `employees`); duoc-CR-761: employee_work_shifts
 #  cùng khuôn (tới 50 người × 7 ngày).
-ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read", "employee_leave_summary", "employee_work_shifts"})
+#  duoc-CR-784: ba tool giá bao bì trả tới 50 sản phẩm / mã mỗi lượt (đếm theo khóa `items`) — giá vốn, nhạy cảm.
+ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read", "employee_leave_summary", "employee_work_shifts",
+                              "packaging_price_impact", "packaging_price_lookup", "packaging_product_cost"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
-STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read", "office_read"})
+STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read", "office_read",
+                              "packaging_price_impact", "packaging_price_lookup", "packaging_product_cost"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
 DOWNLOAD_TTL_SEC = 15 * 60
 

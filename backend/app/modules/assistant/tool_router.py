@@ -38,6 +38,11 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"|mat hang|\bgia\b|hop dong|nhap kho|thu mua|vat tu|dat hang|giao hang|tien do"
      r"|gia thi truong|tim gia|gia web|gia tren mang|link (mua|san pham)|ncc tot nhat|cham diem|danh gia ncc"
      r"|xep hang ncc|nha cung cap tot|nen mua( .{1,40})? cua ai|so ncc"),
+    #  duoc-CR-784: giá bao bì — mã VTBB (chai CPT / CHT / CET…, nắp NAP, nhãn NHG / NHD, nhãn thùng NDT, thùng THU) hoặc chữ
+    #  bao bì / tác động giá. KHÔNG khớp chữ "nhan" trơn: gập dấu thì "nhận hàng" cũng thành "nhan".
+    ("packaging", frozenset({"packaging_price_impact", "packaging_price_lookup", "packaging_product_cost"}),
+     r"bao bi|\bvtbb\b|vat tu bao|\bchai\b|\bnap (chai|nhom|nhua)|\bnhan (dan|chai|thung|mac)\b|\bthung (carton|giay)"
+     r"|tac dong gia|chi phi bao bi|gia bao bi|dinh muc bao bi|\b(cpt|cht|cet|cev|cpv|nhg|nhd|ndt|nap|thu)\d{3,}"),
     ("make_purchase", frozenset({"draft_purchase_request", "draft_survey_request"}),
      r"(len|tao|lap|soan|lam)( giup| giup anh| giup em)? (phieu|ycmh|ycbg|yeu cau|don)|can mua|dat mua|xin mua"
      r"|de xuat mua|phieu bao gia"),
