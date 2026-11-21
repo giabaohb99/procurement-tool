@@ -1,6 +1,7 @@
 import {
   BarChart3,
   ChartColumnBig,
+  ChartLine,
   ClipboardCheck,
   ClipboardList,
   FileStack,
@@ -211,6 +212,13 @@ export const procurementModule: ErpModule = {
       label: 'Giá mua gần nhất',
       path: appRoutes.procurement.packagingLastPrices,
       icon: History,
+      entity: 'packaging_cost',
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Lịch sử mua hàng',
+      path: appRoutes.procurement.packagingHistory,
+      icon: ChartLine,
       entity: 'packaging_cost',
       group: 'Giá bao bì',
     },
@@ -465,6 +473,12 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.packagingLastPrices,
       lazy: async () => ({
         Component: (await import('./pages/packaging-last-prices-page')).PackagingLastPricesPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingHistory,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-history-page')).PackagingHistoryPage,
       }),
     },
     {

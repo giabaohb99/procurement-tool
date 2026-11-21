@@ -351,6 +351,10 @@ BB4_CONTROLLER_MIEN_TRU = {
     "packaging_cost/bom_controller.py": "duoc-CR-784: định mức bao bì theo mã HH — danh mục dùng chung, không có cột pháp nhân; "
                                         "make_crud_router(scoped=False), cổng là require('packaging_cost', …) từng route. "
                                         "Phạm vi theo pháp nhân của khóa này chỉ áp trên sổ giá (impact_controller.py)",
+    "packaging_cost/history_controller.py": "duoc-CR-784: Lịch sử mua hàng CÓ lọc phạm vi — gọi `view_scope` (dùng chung "
+                                            "với last_prices_controller.py), hàm đó gọi scope_condition(ProductPriceLedger, "
+                                            "'packaging_cost', …) và truyền scope_cond vào build_history; bài dò tên hàm "
+                                            "trong tệp không thấy vì lời gọi nằm ở tệp kia",
     "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá + ngưỡng sàn/trần — danh mục dùng chung, không có cột "
                                                "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_cost', …) "
                                                "từng route. Giá chỉ ĐI VÀO màn Tác động qua `get_price_states` (có scope_cond)",

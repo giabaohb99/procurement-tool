@@ -17,6 +17,7 @@ const PACKAGING_PATHS = [
   appRoutes.procurement.packagingImpact,
   appRoutes.procurement.packagingPrices,
   appRoutes.procurement.packagingLastPrices,
+  appRoutes.procurement.packagingHistory,
   appRoutes.procurement.packagingQuotes,
   appRoutes.procurement.packagingBoms,
 ]
@@ -28,7 +29,7 @@ function packagingMenu(can: ReturnType<typeof grants>) {
 }
 
 describe('Giá bao bì menu (packaging_cost)', () => {
-  it('shows all five screens to a reader of packaging_cost', () => {
+  it('shows all six screens to a reader of packaging_cost', () => {
     expect(packagingMenu(grants('packaging_cost.read'))).toEqual(PACKAGING_PATHS)
   })
 

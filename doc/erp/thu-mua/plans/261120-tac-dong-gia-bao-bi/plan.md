@@ -43,7 +43,7 @@ Nguồn nghiệp vụ: bản mẫu `Bao cao gia NVL san xuat - 11.2026.html` (h�
 | 04 | [BE API tác động giá, bảng giá, xuất Excel](phase-04-be-api-tac-dong-bang-gia-xuat-excel.md) | 6 | 01, 03 | xong BE (local 20/11) |
 | 05 | [FE màn Giá bao bì (frontend-v2)](phase-05-fe-man-gia-bao-bi.md) | 10 | 04 (hợp đồng chốt ở 04) | xong (local 20/11) |
 | 06 | [Tài liệu, HDSD, RAG, sổ](phase-06-tai-lieu-hdsd-rag.md) | 3 | 05 | chưa |
-| 07 | [Đợt sau: lịch sử theo mã/SP, 5 lần gần nhất, tổng hợp](phase-07-dot-sau-lich-su-5-lan-tong-hop.md) | (8, không tính) | 06 | tab Giá mua gần nhất (3/5/10 lần, nhóm cột) đã làm 20/11 theo yêu cầu người chủ; lịch sử theo mã/SP + tổng hợp còn hoãn |
+| 07 | [Đợt sau: lịch sử theo mã/SP, 5 lần gần nhất, tổng hợp](phase-07-dot-sau-lich-su-5-lan-tong-hop.md) | (8, không tính) | 06 | tab Giá mua gần nhất (3/5/10 lần, nhóm cột) đã làm 20/11 và tab Lịch sử mua hàng (theo mã VTBB / theo SP, biểu đồ, Excel) đã làm 21/11 theo yêu cầu người chủ; tab Tổng hợp còn hoãn |
 
 Backend 01 → 02 → 03 → 04 chạy **nối tiếp, một người giữ** (02 và 03 cùng sửa `import_tool/service.py`; 03 và 04 cùng
 `main.py`). Phase 05 được dựng khung từ lúc 04 chốt hợp đồng, nối API thật sau khi 04 xong.

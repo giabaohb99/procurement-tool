@@ -11,6 +11,7 @@ import type { DataTableColumn } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/utils/format-date'
 
+import { PackagingCodeLink } from '../components/packaging-code-link'
 import {
   DiffText,
   EmptyDash,
@@ -44,7 +45,7 @@ export function usePackagingPriceListColumns({
         sortable: true,
         hideable: false,
         defaultPinned: true,
-        cell: (row) => <span className="font-semibold tabular-nums">{row.code}</span>,
+        cell: (row) => <PackagingCodeLink code={row.code} />,
       },
       {
         key: 'name',

@@ -288,3 +288,91 @@ export interface PackagingBom extends Record<string, unknown> {
   parts?: { role: number; code: string; name: string; unit: string; in_catalog: boolean }[]
   updated_at?: string
 }
+
+/** Chế độ chọn của tab Lịch sử mua hàng: theo mã VTBB, hoặc theo mã sản phẩm (mở rộng qua định mức). */
+export type PackagingHistoryMode = 'code' | 'product'
+
+/** Một lần mua (`GET /history` → `items[]`) — chụp bất biến của sổ giá, không sửa được. */
+export interface PackagingHistoryRow {
+  /** Id dòng sổ giá (khóa dòng của bảng). */
+  id: number
+  date: string | null
+  code: string
+  name: string
+  group: string
+  supplier_code: string
+  /** Tên nhà cung cấp đã bỏ đuôi " - VTBB"; không có tên thì là mã; không có nhà cung cấp thì rỗng. */
+  supplier: string
+  qty: number | null
+  unit: string
+  /** VNĐ chưa VAT; 0 = dòng không có giá (không tính vào KPI / biểu đồ). */
+  price: number | null
+  vat: number | null
+  amount: number | null
+  /** Mã `PriceSourceType`: 1 = lịch sử mua, 2 = dòng ĐMH đang mở. */
+  source_type: number
+  /** Id ĐMH nguồn; 0 = dữ liệu cũ không có ĐMH. */
+  doc_id: number
+  po_code: string
+  /** Giá lần mua CÓ GIÁ liền trước của cùng mã (không phụ thuộc bộ lọc) và chênh / tỷ số so với nó. */
+  prev_price: number | null
+  diff: number | null
+  pct: number | null
+  /** Số thứ tự lần mua của mã (lần đầu tiên = 1). */
+  seq: number
+  /** Chế độ sản phẩm: mã `PackagingRole` mà mã này đóng trong định mức đã chọn. */
+  roles: number[]
+}
+
+export interface PackagingHistoryStats {
+  purchase_count: number
+  priced_count: number
+  qty_total: number | null
+  /** Giá bình quân GIA QUYỀN = tổng tiền / tổng số lượng của các lần mua có giá; null nếu chưa có số lượng. */
+  weighted_avg: number | null
+  min: number | null
+  max: number | null
+  supplier_count: number
+  first_date: string | null
+  last_date: string | null
+}
+
+export interface PackagingHistoryPoint {
+  date: string
+  price: number
+  supplier_code: string
+  supplier: string
+  qty: number | null
+}
+
+export interface PackagingHistoryResult {
+  items: PackagingHistoryRow[]
+  total: number
+  stats: PackagingHistoryStats
+  /** Chỉ khi đúng MỘT mã được chọn: các điểm giá cũ → mới cho biểu đồ. */
+  series: PackagingHistoryPoint[] | null
+  suppliers: PackagingLastPricesSupplier[]
+}
+
+/** Bộ lọc của Lịch sử mua hàng — cũng là tham số của đường xuất Excel (cùng thứ tự). */
+export interface PackagingHistoryParams {
+  mode: PackagingHistoryMode
+  /** Mã VTBB (chế độ `code`); rỗng = mọi mã VTBB của cụm giá. */
+  codes?: string[]
+  /** Mã sản phẩm (chế độ `product`); rỗng = mọi sản phẩm có định mức. */
+  hh_codes?: string[]
+  q?: string
+  supplier?: string[]
+  date_from?: string
+  date_to?: string
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
+  page?: number
+  page_size?: number
+}
+
+/** Sản phẩm có định mức cho ô chọn của chế độ sản phẩm (`GET /hh-options`). */
+export interface PackagingHhOption {
+  code: string
+  name: string
+}

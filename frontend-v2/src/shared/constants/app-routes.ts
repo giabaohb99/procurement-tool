@@ -125,6 +125,7 @@ export const appRoutes = {
     packagingImpact: '/procurement/packaging-cost',
     packagingPrices: '/procurement/packaging-cost/prices',
     packagingLastPrices: '/procurement/packaging-cost/last-prices',
+    packagingHistory: '/procurement/packaging-cost/history',
     packagingQuotes: '/procurement/packaging-cost/quotes',
     packagingBoms: '/procurement/packaging-cost/boms',
   },

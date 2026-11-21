@@ -13,6 +13,7 @@ import { useMemo } from 'react'
 import type { DataTableColumn } from '@/shared/data-table'
 import { formatDate } from '@/shared/utils/format-date'
 
+import { PackagingCodeLink } from '../components/packaging-code-link'
 import { EmptyDash, PercentText, PriceText } from '../components/packaging-price-cells'
 import type { PackagingLastPricesRow } from '../types/packaging-cost-types'
 import { formatPackagingPrice } from '../utils/packaging-price-format'
@@ -94,7 +95,7 @@ export function usePackagingLastPricesColumns(n: number, showQty: boolean) {
         sortable: true,
         hideable: false,
         defaultPinned: true,
-        cell: (row) => <span className="font-semibold tabular-nums">{row.code}</span>,
+        cell: (row) => <PackagingCodeLink code={row.code} />,
       },
       {
         key: 'name',

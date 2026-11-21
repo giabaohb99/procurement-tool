@@ -18,6 +18,7 @@ import {
   normalizeWarnings,
   packagingWarningText,
 } from '../utils/packaging-warning-text'
+import { PackagingCodeLink } from './packaging-code-link'
 import { DiffText, PercentText, PriceText, RangeText } from './packaging-price-cells'
 
 interface PackagingImpactSelectedTableProps {
@@ -72,7 +73,7 @@ export function PackagingImpactSelectedTable({
         width: 100,
         hideable: false,
         defaultPinned: true,
-        cell: (row) => <span className="font-semibold tabular-nums">{row.code}</span>,
+        cell: (row) => <PackagingCodeLink code={row.code} />,
       },
       //  Một dòng, rê chuột hiện đủ — tên xuống 2–3 dòng làm bảng cao lổn nhổn (người chủ chê 20/11/2026).
       {

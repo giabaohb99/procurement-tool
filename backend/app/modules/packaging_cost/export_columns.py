@@ -11,8 +11,8 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from app.core.export_xlsx import HEAD_BG, HEAD_TEXT, VN_OFFSET, Col, cell_value, check_row_limit, guard_workbook
-from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS, CostTrend,
-                                            CostWarning, PackagingRole)
+from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS,
+                                            PRICE_SOURCE_TYPE_LABELS, CostTrend, CostWarning, PackagingRole, PriceSourceType)
 
 from .last_prices_service import flatten_for_export
 
@@ -145,6 +145,32 @@ def build_last_prices_workbook(rows: list[dict], n: int = 5, show_qty: bool = Fa
     ws = wb.active
     ws.title = "Giá mua gần nhất"
     _write(ws, _last_price_columns(n, show_qty), [flatten_for_export(r, n) for r in rows])
+    buf = BytesIO()
+    guard_workbook(wb).save(buf)
+    return buf.getvalue()
+
+
+def _history_columns(product_mode: bool) -> list[Col]:
+    cols = [Col("date", "Ngày mua", "date"), Col("code", "Mã VTBB", width=14), Col("name", "Tên vật tư", width=40)]
+    if product_mode:
+        cols.append(Col("role_text", "Vai trò", width=14))
+    return cols + [Col("supplier_code", "Mã NCC", width=12), Col("supplier", "Nhà cung cấp", width=28), Col("unit", "ĐVT", width=8),
+                   Col("qty", "Số lượng", "qty"), Col("price", "Đơn giá", "price"), Col("vat", "VAT (%)", "decimal", 9),
+                   Col("amount", "Thành tiền", "money"), Col("diff", "Chênh so lần trước", "price"),
+                   Col("pct_view", "% chênh", "percent", 10), Col("source_text", "Nguồn", width=20),
+                   Col("po_code", "Số ĐMH", width=14)]
+
+
+def build_history_workbook(rows: list[dict], product_mode: bool = False) -> bytes:
+    """Một sheet "Lịch sử mua hàng": cùng bộ lọc + thứ tự đang xem; chế độ sản phẩm thêm cột Vai trò của mã thành phần."""
+    check_row_limit(len(rows))
+    flat = [{**r, "pct_view": None if r["pct"] is None else r["pct"] * 100,
+             "role_text": ", ".join(PACKAGING_ROLE_LABELS[PackagingRole(x)] for x in r["roles"]),
+             "source_text": PRICE_SOURCE_TYPE_LABELS[PriceSourceType(r["source_type"])]} for r in rows]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Lịch sử mua hàng"
+    _write(ws, _history_columns(product_mode), flat)
     buf = BytesIO()
     guard_workbook(wb).save(buf)
     return buf.getvalue()

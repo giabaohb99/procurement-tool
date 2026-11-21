@@ -80,3 +80,42 @@ describe('PackagingCodePicker', () => {
     expect(screen.queryByLabelText('Tìm mã bao bì')).not.toBeInTheDocument()
   })
 })
+
+describe('PackagingCodePicker kind="product"', () => {
+  const PRODUCTS: PackagingCodeOption[] = [
+    { code: 'HH0713', name: 'Nước tương chai 500ml', group: '', usage: 0, new: null },
+    { code: 'HH0714', name: 'Chai nhựa rỗng', group: '', usage: 0, new: null },
+  ]
+
+  async function openProducts() {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<PackagingCodePicker kind="product" options={PRODUCTS} value={[]} onChange={onChange} />)
+    await user.click(screen.getByRole('button', { name: 'Chọn mã sản phẩm' }))
+    return { user, onChange }
+  }
+
+  it('treats a typed word as plain text (a product named "Chai ..." is not mistaken for the Chai group)', async () => {
+    const { user } = await openProducts()
+    await user.type(screen.getByLabelText('Tìm mã sản phẩm'), 'chai')
+    expect(screen.getAllByRole('option')).toHaveLength(2)
+    await user.clear(screen.getByLabelText('Tìm mã sản phẩm'))
+    await user.type(screen.getByLabelText('Tìm mã sản phẩm'), 'tương')
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+  })
+
+  it('does not show the "SP / price" meta of a material code, and picks by code', async () => {
+    const { user, onChange } = await openProducts()
+    expect(screen.queryByText(/SP/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('option', { name: /HH0713/ }))
+    expect(onChange).toHaveBeenCalledWith(['HH0713'])
+  })
+
+  it('shows a custom empty placeholder so the screen can say "empty = all"', () => {
+    render(
+      <PackagingCodePicker options={OPTIONS} value={[]} onChange={vi.fn()} emptyPlaceholder="Tất cả mã VTBB" />,
+    )
+    expect(screen.getByText('Tất cả mã VTBB')).toBeInTheDocument()
+  })
+})
+

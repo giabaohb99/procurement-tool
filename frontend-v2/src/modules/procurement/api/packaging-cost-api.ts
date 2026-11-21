@@ -11,6 +11,9 @@ import { filenameFromContentDisposition } from '@/core/api/download-file'
 import { readBlobErrorMessage } from './customs-api'
 import type {
   PackagingCodeOption,
+  PackagingHhOption,
+  PackagingHistoryParams,
+  PackagingHistoryResult,
   PackagingImpactRequest,
   PackagingImpactResult,
   PackagingLastPricesParams,
@@ -63,6 +66,26 @@ export async function exportPackagingLastPrices(params: PackagingLastPricesParam
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }
+}
+
+/** Lịch sử mua hàng: từng lần mua + KPI + biểu đồ; lọc / xếp / phân trang tại máy chủ. */
+export function fetchPackagingHistory(params: PackagingHistoryParams) {
+  return apiGet<PackagingHistoryResult>(`${BASE}/history`, { params })
+}
+
+/** Xuất Lịch sử mua hàng — cùng bộ lọc + thứ tự đang xem, không kèm `page`. */
+export async function exportPackagingHistory(params: PackagingHistoryParams) {
+  try {
+    await downloadFile(`${BASE}/history/export`, 'lich-su-mua-hang.xlsx', { ...params })
+  } catch (error) {
+    throw new Error(await readBlobErrorMessage(error), { cause: error })
+  }
+}
+
+/** Sản phẩm (mã HH) có định mức bao bì — nạp một lần cho ô chọn của chế độ "Theo mã sản phẩm". */
+export async function fetchPackagingHhOptions(): Promise<PackagingHhOption[]> {
+  const res = await apiGet<{ items: PackagingHhOption[] }>(`${BASE}/hh-options`)
+  return res.items ?? []
 }
 
 /**

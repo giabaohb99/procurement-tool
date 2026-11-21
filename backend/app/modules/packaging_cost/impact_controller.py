@@ -16,6 +16,7 @@ from app.core.response import success
 
 from . import export_columns as xl
 from .impact_schema import ImpactRequest
+from .history_controller import router as history_router
 from .impact_service import compute_impact
 from .last_prices_controller import router as last_prices_router
 from .last_prices_controller import view_scope as _scope
@@ -122,3 +123,4 @@ def code_options(q: str = Query("", max_length=100), group: str = Query("", max_
 
 
 router.include_router(last_prices_router)
+router.include_router(history_router)

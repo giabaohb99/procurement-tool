@@ -27,9 +27,40 @@ const CHIP_MAX = 12
 /** Số dòng vẽ trong danh sách; "Chọn tất cả" vẫn áp cho MỌI mã khớp, kể cả phần chưa vẽ. */
 const LIST_MAX = 200
 
+/**
+ * Ô chọn dùng cho hai loại mã: `material` (mã vật tư bao bì, mặc định — tìm theo tên nhóm, kèm số SP + giá mới) và `product`
+ * (mã sản phẩm có định mức, Lịch sử mua hàng — chỉ tìm chữ trong mã / tên, không có nhóm, không có số SP / giá).
+ */
+export type PackagingPickerKind = 'material' | 'product'
+
+const PICKER_TEXT: Record<
+  PackagingPickerKind,
+  { aria: string; empty: string; more: string; search: string; searchHint: string; summary: string }
+> = {
+  material: {
+    aria: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng',
+    empty: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng — gõ mã, tên hoặc tên nhóm',
+    more: 'Thêm mã…',
+    search: 'Tìm mã bao bì',
+    searchHint: 'Vd: chai · nắp · nhãn, thùng · NAP0085',
+    summary: 'mã bao bì đang dùng cho sản phẩm',
+  },
+  product: {
+    aria: 'Chọn mã sản phẩm',
+    empty: 'Chọn sản phẩm — gõ mã hoặc tên',
+    more: 'Thêm sản phẩm…',
+    search: 'Tìm mã sản phẩm',
+    searchHint: 'Vd: HH0713 · tên sản phẩm',
+    summary: 'sản phẩm có định mức bao bì',
+  },
+}
+
 interface PackagingCodePickerProps {
   /** Danh sách đã xếp sẵn (`sortPackagingCodeOptions`). */
   options: PackagingCodeOption[]
+  kind?: PackagingPickerKind
+  /** Chữ gợi ý khi CHƯA chọn mã nào (mặc định theo `kind`) — màn cho phép để trống = tất cả nói rõ ở đây. */
+  emptyPlaceholder?: string
   value: string[]
   onChange: (codes: string[]) => void
   loading?: boolean
@@ -42,11 +73,16 @@ export function PackagingCodePicker({
   onChange,
   loading = false,
   maxCodes = PACKAGING_MAX_CODES,
+  kind = 'material',
+  emptyPlaceholder,
 }: PackagingCodePickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+  const text = PICKER_TEXT[kind]
+  const showMaterialMeta = kind === 'material'
 
-  const groups = useMemo(() => collectSearchGroups(options), [options])
+  //  Sản phẩm không có "nhóm": để rỗng thì từ khóa luôn rơi về tìm chữ (gõ "chai" ra sản phẩm tên có chữ chai).
+  const groups = useMemo(() => (kind === 'material' ? collectSearchGroups(options) : []), [options, kind])
   const filtered = useMemo(
     () => options.filter(buildPackagingCodeMatcher(keyword, groups)),
     [options, keyword, groups],
@@ -119,15 +155,15 @@ export function PackagingCodePicker({
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label="Chọn mã chai / nắp / nhãn / nhãn thùng / thùng"
+                aria-label={text.aria}
                 disabled={loading}
                 className="min-w-[12rem] flex-1 truncate py-1 text-left text-sm text-muted-foreground outline-none disabled:cursor-not-allowed"
               >
                 {loading
                   ? 'Đang nạp danh sách mã…'
                   : value.length
-                    ? 'Thêm mã…'
-                    : 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng — gõ mã, tên hoặc tên nhóm'}
+                    ? text.more
+                    : (emptyPlaceholder ?? text.empty)}
               </button>
             </PopoverTrigger>
             {value.length > 0 && (
@@ -147,15 +183,15 @@ export function PackagingCodePicker({
           <div className="border-b p-2">
             <Input
               autoFocus
-              aria-label="Tìm mã bao bì"
-              placeholder="Vd: chai · nắp · nhãn, thùng · NAP0085"
+              aria-label={text.search}
+              placeholder={text.searchHint}
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1.5 text-sm">
             <span className="text-muted-foreground">
-              {filtered.length} mã bao bì đang dùng cho sản phẩm
+              {filtered.length} {text.summary}
             </span>
             <div className="ml-auto flex gap-1">
               <Button
@@ -200,14 +236,18 @@ export function PackagingCodePicker({
                 >
                   <Check className={cn('size-4 shrink-0', !checked && 'invisible')} />
                   <span className="w-28 shrink-0 font-medium tabular-nums">{option.code}</span>
-                  <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">
-                    {option.group}
-                  </span>
+                  {showMaterialMeta && (
+                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">
+                      {option.group}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1 truncate">{option.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {option.usage} SP
-                    {option.new != null && ` · ${formatPackagingPrice(option.new)}`}
-                  </span>
+                  {showMaterialMeta && (
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {option.usage} SP
+                      {option.new != null && ` · ${formatPackagingPrice(option.new)}`}
+                    </span>
+                  )}
                 </button>
               )
             })}
