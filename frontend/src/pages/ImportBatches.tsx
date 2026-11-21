@@ -8,7 +8,8 @@ import Pagination from '../components/Pagination'
 import DateRangePicker from '../components/DateRangePicker'
 import { fmtDateTime } from '../utils/datetime'
 
-export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng' }
+// 4 = Định mức bao bì (duoc-CR-784): tải lên từ màn Định mức bao bì, không có trong hộp "Import mới" của trang này.
+export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng', 4: 'Định mức bao bì' }
 export const IMPORT_MODE: Record<number, string> = { 0: 'Chạy thử', 1: 'Ghi' }
 export const IMPORT_STATUS: Record<number, { l: string; c: string }> = {
   0: { l: 'Chờ', c: 'gray' }, 1: { l: 'Đang chạy', c: 'warn' }, 2: { l: 'Xong', c: 'ok' }, 3: { l: 'Lỗi', c: 'err' },
@@ -27,6 +28,7 @@ const MODE_BADGE: Record<number, { bg: string; color: string; label: string }> =
 const MODULE_STYLE: Record<number, { bg: string; color: string }> = {
   1: { bg: '#ecfdf5', color: '#059669' },
   2: { bg: '#eff6ff', color: '#2563eb' },
+  4: { bg: '#fff7ed', color: '#c2410c' },
 }
 
 export default function ImportBatches() {

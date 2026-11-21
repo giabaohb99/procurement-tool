@@ -1,0 +1,165 @@
+/* duoc-CR-784 — kiểu riêng của cụm Giá bao bì (bản v1). Mọi lớp đều mang tiền tố `pkg-` để không đụng màn khác. */
+
+/* Thẻ chứa ô thả xuống (ô chọn mã): `.card` mặc định overflow:auto nên sẽ cắt mất danh sách. */
+.card.pkg-card { overflow: visible; }
+
+.pkg-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pkg-muted { color: var(--muted); }
+.pkg-code { font-weight: 700; color: var(--teal); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pkg-oneline { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkg-err { color: var(--red); font-size: 12.5px; }
+.pkg-hint { font-size: 12.5px; color: var(--muted); }
+
+/* ── Thanh lọc: hàng ngang gọn, nút dạng viên (chip nhóm) và công tắc phân đoạn ── */
+.pkg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.pkg-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.pkg-field input[type="text"], .pkg-field input:not([type]) { height: 32px; padding: 0 10px; }
+.pkg-search { width: 280px; max-width: 100%; }
+.pkg-search input { width: 100%; height: 36px; }
+
+.pkg-pills { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.pkg-pill {
+  height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border);
+  background: #fff; color: var(--navy); font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.pkg-pill:hover { background: #f4f7fe; }
+.pkg-pill.on { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+
+.pkg-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.pkg-seg button {
+  height: 32px; padding: 0 12px; border: 0; border-right: 1px solid var(--border); background: #fff;
+  color: var(--navy); font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.pkg-seg button:last-child { border-right: 0; }
+.pkg-seg button:hover { background: #f4f7fe; }
+.pkg-seg button.on { background: var(--teal); color: #fff; font-weight: 600; }
+
+.pkg-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--navy); cursor: pointer; white-space: nowrap; }
+.pkg-switch input { width: 16px; height: 16px; accent-color: var(--teal); }
+
+/* Dòng tóm tắt một hàng (thay cho các thẻ KPI lớn) */
+.pkg-summary { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+.pkg-summary b { color: var(--navy); font-variant-numeric: tabular-nums; }
+
+/* ── Ô chọn nhiều mã: chip nằm TRONG ô, danh sách thả xuống ── */
+.pkg-picker { position: relative; }
+.pkg-chipbox {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px;
+  border: 1px solid var(--border); border-radius: 12px; background: #fff;
+}
+.pkg-chipbox.open { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.18); }
+.pkg-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 8px;
+  border: 1px solid rgba(0, 174, 239, 0.35); background: rgba(0, 174, 239, 0.1); color: var(--teal-dark);
+  font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.pkg-chip button, .pkg-chipbox .pkg-clear {
+  border: 0; background: none; cursor: pointer; color: inherit; opacity: 0.75; padding: 2px; border-radius: 6px;
+  display: inline-flex; align-items: center; font-size: 14px;
+}
+.pkg-chip button:hover, .pkg-chipbox .pkg-clear:hover { opacity: 1; color: var(--red); background: rgba(0, 0, 0, 0.05); }
+.pkg-chipbox .pkg-clear { margin-left: auto; color: var(--muted); font-size: 16px; }
+.pkg-chip-more { padding: 3px 10px; border-radius: 8px; border: 1px solid rgba(0, 174, 239, 0.35); color: var(--teal-dark); font-size: 13px; font-weight: 700; }
+.pkg-trigger {
+  flex: 1; min-width: 200px; height: 32px; border: 0; background: none; text-align: left; color: var(--muted);
+  font-size: 13.5px; cursor: pointer; font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pkg-dd {
+  position: absolute; z-index: 60; left: 0; top: calc(100% + 6px); width: min(720px, 100%);
+  background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 40px rgba(16, 24, 64, 0.18);
+}
+.pkg-dd-search { padding: 10px; border-bottom: 1px solid var(--border); }
+.pkg-dd-search input { width: 100%; height: 38px; }
+.pkg-dd-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.pkg-dd-bar .grow { flex: 1; }
+.pkg-dd-bar button { border: 0; background: none; color: var(--teal-dark); font-weight: 600; cursor: pointer; font-size: 13px; font-family: inherit; }
+.pkg-dd-bar button:disabled { color: #b9c4d6; cursor: default; }
+.pkg-dd-list { max-height: 320px; overflow-y: auto; padding: 4px; }
+.pkg-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px;
+  background: none; text-align: left; font-size: 13px; color: var(--navy); cursor: pointer; font-family: inherit;
+}
+.pkg-opt:hover { background: #f4f7fe; }
+.pkg-opt.on { background: #eaf6fd; }
+.pkg-opt .tick { width: 16px; flex: none; color: var(--teal); visibility: hidden; }
+.pkg-opt.on .tick { visibility: visible; }
+.pkg-opt .c { width: 104px; flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pkg-opt .g { width: 80px; flex: none; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkg-opt .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkg-opt .u { flex: none; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pkg-dd-empty { padding: 18px 8px; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ── Ô giá giả định (nền vàng) ── */
+.pkg-assumed { width: 120px; height: 32px !important; text-align: right; background: #fffbeb !important; border-color: #fcd34d !important; padding: 0 8px !important; }
+.pkg-x { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 4px; border-radius: 6px; }
+.pkg-x:hover { color: var(--red); background: rgba(0, 0, 0, 0.05); }
+
+/* Ô thành phần của bảng sản phẩm bị ảnh hưởng: mã trên, giá dưới */
+.pkg-part { line-height: 1.25; }
+.pkg-part .code { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pkg-part .price { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.pkg-part.sel { background: #fef3c7; border-radius: 6px; padding: 2px 6px; margin: 0 -6px; }
+
+/* Bảng cuộn trong khung chiều cao giới hạn (bảng mã đã chọn có thể dài hàng chục dòng) */
+.pkg-scroll-y { max-height: 28rem; overflow-y: auto; }
+.pkg-scroll-y thead th { position: sticky; top: 0; z-index: 3; }
+
+/* ── Giá mua gần nhất: tiêu đề hai hàng, mỗi cụm "Lần" một màu (chỉ tiêu đề), cột Mã dính trái ── */
+.pkg-lp { table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.pkg-lp tbody tr { background: #fff; }
+.pkg-lp tbody tr:nth-child(even) { background: #fff; }
+.pkg-lp td, .pkg-lp th { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-lp thead th { padding: 8px 10px; font-size: 11.5px; height: 36px; }
+.pkg-lp thead tr:first-child th { text-align: center; }
+.pkg-lp tbody td { padding: 8px 10px; font-size: 13px; }
+.pkg-lp .sticky-col { position: sticky; left: 0; z-index: 1; background: inherit; }
+.pkg-lp thead .sticky-col { z-index: 4; background: #f4f7fe; }
+.pkg-lp .g0 { background: #dbeafe !important; }
+.pkg-lp .g1 { background: #ffedd5 !important; }
+.pkg-lp .g2 { background: #dcfce7 !important; }
+.pkg-lp .g3 { background: #fef3c7 !important; }
+.pkg-lp thead .gsep { border-left: 1px solid #cbd5e1; }
+.pkg-lp thead th.th-sortable:hover { filter: brightness(0.96); }
+
+/* ── Biểu đồ đơn giá (SVG tự vẽ) ── */
+.pkg-chart { position: relative; }
+.pkg-chart-title { font-size: 13.5px; font-weight: 600; margin-bottom: 4px; color: var(--navy); }
+.pkg-chart-title span { font-weight: 400; color: var(--muted); }
+.pkg-chart-tip {
+  position: absolute; z-index: 5; pointer-events: none; min-width: 170px; padding: 8px 10px; border-radius: 8px;
+  background: #fff; border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(16, 24, 64, 0.16); font-size: 12px; color: var(--navy);
+}
+.pkg-chart-tip b { display: block; font-size: 13px; margin-bottom: 4px; }
+.pkg-chart-tip div { display: flex; justify-content: space-between; gap: 12px; }
+
+/* ── Hộp thoại ── */
+.pkg-modal-overlay {
+  position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.pkg-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
+.pkg-modal-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; border-bottom: 1px solid var(--border); }
+.pkg-modal-head h3 { margin: 0; font-size: 17px; color: var(--navy); }
+.pkg-modal-head .sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.pkg-modal-body { padding: 16px 22px; }
+.pkg-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px 18px; }
+.pkg-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.pkg-form .full { grid-column: 1 / -1; }
+.pkg-form label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+.pkg-form input, .pkg-form textarea { width: 100%; }
+.pkg-form textarea { height: 64px; padding: 10px 16px; }
+.pkg-ro { height: 40px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: #f4f7fe; font-weight: 700; color: var(--navy); }
+.pkg-drop { border: 2px dashed #d1d5db; border-radius: 14px; padding: 22px; text-align: center; cursor: pointer; background: #fafbfc; color: var(--muted); font-size: 13px; }
+.pkg-drop.has { border-color: #06b6d4; background: #f0fdfa; color: var(--navy); }
+
+@media (max-width: 720px) {
+  .pkg-form { grid-template-columns: 1fr; }
+  .pkg-search { width: 100%; }
+}
+
+/* Lịch sử mua hàng: dòng đơn giá 0 (không có giá) mờ đi, không làm nhiễu cột */
+tbody tr.pkg-zero td { color: var(--muted); }
+
+/* Nút thao tác trên dòng bảng (Báo giá / Ngưỡng): một dòng, không xuống chữ */
+.pkg-actions { display: inline-flex; gap: 4px; }
+.pkg-actions .btn { white-space: nowrap; }

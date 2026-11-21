@@ -53,6 +53,7 @@ type NavItem = {
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
   external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
   children?: NavChild[];  // menu con — sổ ra khi đang ở trong mục cha (duoc-CR-491)
+  matchPaths?: string[];  // đường KHÁC cũng tính là "đang ở trong mục cha" (mục con trỏ tới route CRUD chung, vd /packaging-boms)
   badge?: string;         // khóa số đếm chờ duyệt ở /api/dashboard/menu-badges → bóng đỏ trên biểu tượng (duoc-CR-723)
 };
 type NavChild = {
@@ -166,6 +167,23 @@ const NAV_GROUPS: NavGroup[] = [
             icon: sec.icon,
             visible: (can: (entity: string, action: string) => boolean) => canSeeCustomsSection(sec.key, can),
           })),
+        ],
+      },
+      {
+        // duoc-CR-784 — cụm Giá bao bì (bê từ bản v2): khóa quyền riêng `packaging_cost`. Báo giá VTBB + Định mức
+        // trỏ tới route CRUD chung nên khai `matchPaths` để mục cha vẫn sổ menu con khi đang ở hai màn đó.
+        to: "/packaging-cost",
+        label: "Giá bao bì",
+        icon: "ti-bottle",
+        entity: "packaging_cost",
+        matchPaths: ["/product-price-quotes", "/packaging-boms"],
+        children: [
+          { to: "/packaging-cost/impact", label: "Tác động giá", icon: "ti-trending-up", isDefault: true },
+          { to: "/packaging-cost/price-list", label: "Bảng giá VTBB", icon: "ti-list-details" },
+          { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
+          { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
+          { to: "/product-price-quotes", label: "Báo giá VTBB", icon: "ti-file-dollar" },
+          { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2" },
         ],
       },
     ],
@@ -352,7 +370,8 @@ function NavParent({ item, pathname, can, onPick }: {
   can: (entity: string, action: string) => boolean;
   onPick: () => void;
 }) {
-  const inside = isActive(pathname, item.to);
+  const inside = isActive(pathname, item.to)
+    || !!item.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const children = (item.children ?? []).filter((c) => !c.visible || c.visible(can));
   return (
     <>
@@ -497,7 +516,8 @@ export default function AppLayout() {
 
   const current = [...ALL_ITEMS]
     .reverse()
-    .find((n) => isActive(loc.pathname, n.to));
+    .find((n) => isActive(loc.pathname, n.to)
+      || !!n.matchPaths?.some((p) => loc.pathname === p || loc.pathname.startsWith(p + "/")));
   const currentGroup = NAV_GROUPS.find((g) =>
     g.items.some((n) => n.to === current?.to),
   );

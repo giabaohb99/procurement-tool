@@ -21,6 +21,7 @@ import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtPrice, fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
 import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
+import { PACKAGING_CRUDS } from './packaging-cruds'
 
 export type FieldDef = {
   key: string
@@ -100,6 +101,10 @@ export type CrudConfig = {
   // Chip mô tả dưới tên ở thẻ đầu trang chi tiết (mã, chức vụ, trạng thái…)
   detailChips?: (row: any) => { icon?: string; text: string; cls?: string }[]
   detailTwoCols?: boolean          // trang chi tiết chia 2 cột: form trái, thẻ phụ + lịch sử phải
+  /** Khóa `entity` của nhật ký thao tác khi KHÁC khóa quyền `entity` (vd Báo giá VTBB: quyền `packaging_cost`, nhật ký `packaging_cost_quote`). */
+  auditEntity?: string
+  /** Nút riêng của màn đặt cạnh nút "Thêm" ở đầu danh sách (vd "Nhập từ Excel" của Định mức bao bì). */
+  headerExtra?: () => any
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -1026,4 +1031,6 @@ export const cruds: Record<string, CrudConfig> = {
         hint: 'Ngừng dùng thì không còn hiện trong tra cứu và cảnh báo.' },
     ],
   },
+  // duoc-CR-784 — cụm Giá bao bì: Báo giá VTBB + Định mức bao bì (khai ở config/packaging-cruds.tsx)
+  ...PACKAGING_CRUDS,
 }

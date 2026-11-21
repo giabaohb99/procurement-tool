@@ -50,6 +50,11 @@ import SurveyProgress from './pages/SurveyProgress'
 import TicketList from './pages/TicketList'
 import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
+import PackagingGate from './components/packaging/PackagingGate'
+import PackagingImpact from './pages/packaging/PackagingImpact'
+import PackagingPriceList from './pages/packaging/PackagingPriceList'
+import PackagingLastPrices from './pages/packaging/PackagingLastPrices'
+import PackagingHistory from './pages/packaging/PackagingHistory'
 
 // bao-CR-728 — chuông "xuất xong" của lô xuất Tra cứu thị trường (bao-CR-718) ghi link đường v2
 // `/procurement/customs-prices/exports/<id>`; người dùng bản cũ bấm chuông thì chuyển sang màn lô của bản này.
@@ -120,6 +125,13 @@ export default function App() {
             <Route path="customs-prices/exports" element={<CustomsExportBatches />} />
             <Route path="customs-prices/exports/:id" element={<CustomsExportBatchDetail />} />
             <Route path="procurement/customs-prices/exports/:id?" element={<CustomsExportLinkRedirect />} />
+            {/* duoc-CR-784: cụm Giá bao bì (bê từ bản v2). Báo giá VTBB + Định mức bao bì đi route CRUD chung :entity
+                (`product-price-quotes`, `packaging-boms` — khai ở config/packaging-cruds.tsx). */}
+            <Route path="packaging-cost" element={<Navigate to="/packaging-cost/impact" replace />} />
+            <Route path="packaging-cost/impact" element={<PackagingGate><PackagingImpact /></PackagingGate>} />
+            <Route path="packaging-cost/price-list" element={<PackagingGate><PackagingPriceList /></PackagingGate>} />
+            <Route path="packaging-cost/last-prices" element={<PackagingGate><PackagingLastPrices /></PackagingGate>} />
+            <Route path="packaging-cost/history" element={<PackagingGate><PackagingHistory /></PackagingGate>} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

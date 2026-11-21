@@ -1,0 +1,134 @@
+/**
+ * duoc-CR-784 — gọi API cụm Giá bao bì (bản v1). Chỉ là lớp mỏng quanh `api` (axios): bóc phong bì
+ * `{success, message, data}`, tải tệp Excel, và đọc câu lỗi nằm trong blob khi xuất tệp thất bại.
+ *
+ * Tham số dạng mảng đi theo `paramsSerializer: { indexes: null }` của `api/client.ts` (`supplier=a&supplier=b`),
+ * đúng cách `Query(list[str])` của backend đọc.
+ */
+import { api } from './client'
+import type {
+  PackagingCodeOption, PackagingHhOption, PackagingHistoryParams, PackagingHistoryResult,
+  PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
+  PackagingPriceLimit, PackagingPriceListParams, PackagingPriceRow,
+} from './packaging-cost-types'
+
+const BASE = '/api/packaging-cost'
+export const PACKAGING_QUOTE_API = '/api/product-price-quotes'
+export const PACKAGING_LIMIT_API = '/api/product-price-limits'
+export const PACKAGING_BOM_API = '/api/packaging-boms'
+/** `ImportModule.PACKAGING_BOM` ở `backend/app/modules/import_tool/model.py`. */
+export const IMPORT_MODULE_PACKAGING_BOM = 4
+
+/** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
+export async function fetchCodeOptions(): Promise<PackagingCodeOption[]> {
+  const r = await api.get(`${BASE}/code-options`)
+  const d = r.data.data
+  return Array.isArray(d) ? d : (d?.items ?? [])
+}
+
+/** Sản phẩm (mã HH) có định mức bao bì — ô chọn của chế độ "Theo mã sản phẩm". */
+export async function fetchHhOptions(): Promise<PackagingHhOption[]> {
+  const r = await api.get(`${BASE}/hh-options`)
+  return r.data.data?.items ?? []
+}
+
+/** Tính tác động — đọc thuần (không ghi nhật ký) dù là POST. */
+export async function fetchImpact(body: PackagingImpactRequest): Promise<PackagingImpactResult> {
+  const r = await api.post(`${BASE}/impact`, body, { _silent: true } as any)
+  return r.data.data
+}
+
+export async function fetchPriceList(params: PackagingPriceListParams): Promise<{ items: PackagingPriceRow[]; total: number }> {
+  const r = await api.get(`${BASE}/price-list`, { params })
+  return r.data.data
+}
+
+export async function fetchLastPrices(params: PackagingLastPricesParams): Promise<PackagingLastPricesResult> {
+  const r = await api.get(`${BASE}/last-prices`, { params })
+  return r.data.data
+}
+
+export async function fetchHistory(params: PackagingHistoryParams): Promise<PackagingHistoryResult> {
+  const r = await api.get(`${BASE}/history`, { params })
+  return r.data.data
+}
+
+/** Ngưỡng của MỘT mã; chưa đặt thì `null`. */
+export async function fetchPriceLimit(code: string): Promise<PackagingPriceLimit | null> {
+  const r = await api.get(PACKAGING_LIMIT_API, { params: { product_code: code, page_size: 50 } })
+  //  Bộ lọc `product_code` là LIKE: lấy nhiều dòng rồi so đúng mã — mã dài hơn (`NAP00851`) có thể che dòng của `NAP0085`.
+  const items: PackagingPriceLimit[] = r.data.data?.items ?? []
+  return items.find((it) => it.product_code === code) ?? null
+}
+
+export interface PriceLimitPayload {
+  product_code: string
+  floor_price: number | null
+  ceiling_price: number | null
+  note: string
+}
+
+/** Có rồi thì sửa, chưa có thì tạo (mỗi mã đúng một dòng ngưỡng). */
+export async function savePriceLimit(id: number | null, payload: PriceLimitPayload): Promise<void> {
+  if (id) await api.patch(`${PACKAGING_LIMIT_API}/${id}`, payload)
+  else await api.post(PACKAGING_LIMIT_API, payload)
+}
+
+export interface QuotePayload {
+  product_code: string
+  supplier_code: string
+  price: number
+  vat: number
+  valid_from: string
+  note: string
+}
+
+export async function createQuote(payload: QuotePayload): Promise<void> {
+  await api.post(PACKAGING_QUOTE_API, payload)
+}
+
+// ── Tải tệp Excel ───────────────────────────────────────────────────────────────
+
+/** Lỗi trả về dạng blob (do `responseType: 'blob'`) → đọc ra câu thông báo của backend. */
+export async function readBlobError(e: any, fallback = 'Không xuất được tệp Excel'): Promise<string> {
+  try {
+    const body = e?.response?.data
+    const text = body instanceof Blob ? await body.text() : ''
+    return JSON.parse(text)?.error?.message || fallback
+  } catch {
+    return fallback
+  }
+}
+
+function saveBlob(response: { data: Blob; headers: any }, fallbackName: string) {
+  const cd = String(response.headers['content-disposition'] || '')
+  const name = /filename="?([^";]+)"?/.exec(cd)?.[1] || fallbackName
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', name)
+  document.body.appendChild(link)
+  link.click()
+  link.parentNode?.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+/** Xuất Excel bằng GET: cùng bộ lọc + thứ tự đang xem, không kèm `page`. Ném `Error` mang câu thông báo cho nơi gọi. */
+export async function downloadExport(path: 'price-list' | 'last-prices' | 'history', params: object, fallbackName: string) {
+  try {
+    const r = await api.get(`${BASE}/${path}/export`, { params, responseType: 'blob' })
+    saveBlob(r, fallbackName)
+  } catch (e) {
+    throw new Error(await readBlobError(e))
+  }
+}
+
+/** Xuất màn Tác động (2 sheet) — là POST (thân giống `/impact`). */
+export async function exportImpact(body: PackagingImpactRequest) {
+  try {
+    const r = await api.post(`${BASE}/impact/export`, body, { responseType: 'blob', _silent: true } as any)
+    saveBlob(r, 'tac-dong-gia-bao-bi.xlsx')
+  } catch (e) {
+    throw new Error(await readBlobError(e))
+  }
+}

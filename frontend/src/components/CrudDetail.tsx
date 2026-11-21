@@ -33,7 +33,7 @@ export default function CrudDetail() {
 
   async function loadLogs() {
     if (isNew || !cfg) return
-    const r = await api.get('/api/audit-logs', { params: { entity: cfg.entity, entity_id: id } })
+    const r = await api.get('/api/audit-logs', { params: { entity: cfg.auditEntity ?? cfg.entity, entity_id: id } })
     setLogs(r.data.data)
   }
 

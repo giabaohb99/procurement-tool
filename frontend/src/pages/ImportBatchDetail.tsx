@@ -6,6 +6,7 @@ import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { IMPORT_MODULE, IMPORT_MODE, statusBadge } from './ImportBatches'
+import { IMPORT_MODULE_PACKAGING_BOM } from '../api/packaging-cost'
 
 const LEVEL: Record<number, { l: string; c: string }> = {
   0: { l: 'Info', c: '#64748b' }, 1: { l: 'Cảnh báo', c: '#d97706' },
@@ -65,6 +66,19 @@ export default function ImportBatchDetail() {
     } catch { /* toast */ } finally { setReverting(false) }
   }
 
+  // duoc-CR-784 — lô Định mức bao bì: tải từ màn Định mức bao bì luôn CHẠY THỬ trước; xem nhật ký xong bấm "Ghi thật"
+  // để tạo lô ghi thật dùng lại đúng tệp (POST /api/imports/{id}/commit). Chỉ bật cho module này.
+  const [committing, setCommitting] = useState(false)
+  async function commit() {
+    if (!window.confirm('Ghi thật dữ liệu từ bản chạy thử này? Hệ thống chạy lại đúng tệp ở chế độ Ghi và lưu vào hệ thống.')) return
+    setCommitting(true)
+    try {
+      const r = await api.post(`/api/imports/${id}/commit`)
+      toast.success(r.data.message || 'Đang ghi thật dữ liệu')
+      if (r.data.data?.id) navigate(`/import-batches/${r.data.data.id}`)
+    } catch { /* interceptor đã hiện thông báo lỗi */ } finally { setCommitting(false) }
+  }
+
   if (!b) return <div style={{ padding: 20, color: 'var(--muted)' }}>Đang tải…</div>
   const Stat = ({ label, val, color }: any) => (
     <div style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 10, minWidth: 92, textAlign: 'center' }}>
@@ -79,7 +93,13 @@ export default function ImportBatchDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>Import #{b.id} — {IMPORT_MODULE[b.module]}</h2>
         {statusBadge(b.status)}
         <span style={{ flex: 1 }} />
-        {b.status === 2 && b.mode === 1 && can('import', 'delete') && (
+        {b.module === IMPORT_MODULE_PACKAGING_BOM && b.status === 2 && b.mode === 0 && can('import', 'create') && (
+          <button className="btn" onClick={commit} disabled={committing}>
+            <i className="ti ti-device-floppy" />{committing ? 'Đang gửi…' : 'Ghi thật'}
+          </button>
+        )}
+        {/* Lô định mức bao bì chưa hỗ trợ hoàn tác (backend trả 400) nên không bày nút. */}
+        {b.module !== IMPORT_MODULE_PACKAGING_BOM && b.status === 2 && b.mode === 1 && can('import', 'delete') && (
           <button className="btn ghost" style={{ color: '#dc2626' }} onClick={revert} disabled={reverting}>
             <i className="ti ti-arrow-back-up" />{reverting ? 'Đang hoàn tác…' : 'Hoàn tác'}
           </button>

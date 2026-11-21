@@ -450,6 +450,7 @@ export default function CrudList() {
               <i className="ti ti-copy" />{cloneMode ? 'Xong' : 'Nhân bản'}
             </button>
           )}
+          {cfg.headerExtra?.()}
           {can(cfg.entity, 'create') && (
             <button className="btn" onClick={() => navigate(`/${cfg.slug}/new`)}><i className="ti ti-plus" />Thêm</button>
           )}
