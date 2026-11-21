@@ -22,7 +22,7 @@ describe('PackagingHistorySummary', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('shows the single-code KPIs on one text line (no cards)', () => {
+  it('shows the single-code KPIs as cards', () => {
     render(<PackagingHistorySummary stats={STATS} singleCode />)
     expect(screen.getByText('Giá BQ gia quyền')).toBeInTheDocument()
     expect(screen.getByText('2.456,38')).toBeInTheDocument()
@@ -33,7 +33,7 @@ describe('PackagingHistorySummary', () => {
   it('hides price KPIs for many codes and explains why', () => {
     render(<PackagingHistorySummary stats={STATS} singleCode={false} />)
     expect(screen.queryByText('Giá BQ gia quyền')).not.toBeInTheDocument()
-    expect(screen.getByText(/chọn đúng một mã/)).toBeInTheDocument()
+    expect(screen.getByText(/chọn đúng một mã/i)).toBeInTheDocument()
   })
 
   it('does not nag about "pick one code" when there is nothing to show (edge: zero purchases)', () => {
@@ -43,6 +43,6 @@ describe('PackagingHistorySummary', () => {
         singleCode={false}
       />,
     )
-    expect(screen.queryByText(/chọn đúng một mã/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/chọn đúng một mã/i)).not.toBeInTheDocument()
   })
 })

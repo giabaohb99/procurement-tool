@@ -166,3 +166,13 @@ tbody tr.pkg-zero td { color: var(--muted); }
 /* Nút thao tác trên dòng bảng (Báo giá / Ngưỡng): một dòng, không xuống chữ */
 .pkg-actions { display: inline-flex; gap: 4px; }
 .pkg-actions .btn { white-space: nowrap; }
+
+/* duoc-CR-784 — thẻ số liệu Lịch sử mua hàng: mỗi thẻ một màu nhấn (viền trái + ô biểu tượng), số to đậm. */
+.pkg-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.pkg-stat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px; background-color: #fff;
+  border: 1px solid var(--border, #e5e7eb); border-left-width: 4px; border-radius: 12px; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
+.pkg-stat-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pkg-stat-ic { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;
+  flex-shrink: 0; font-size: 17px; }
+.pkg-stat-label { font-size: 13px; font-weight: 500; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-stat-val { font-weight: 700; line-height: 1.15; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }

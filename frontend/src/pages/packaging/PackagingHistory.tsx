@@ -79,15 +79,36 @@ export default function PackagingHistory() {
   }
 
   const stats = list.data?.stats
-  const summary = stats ? (
-    <>
-      {buildHistorySummary(stats, singleCode).map((it, i) => (
-        <span key={it.label}>{i > 0 && <span style={{ margin: '0 6px' }}>·</span>}{it.label} <b>{it.value}</b></span>
-      ))}
-      {!singleCode && stats.purchase_count > 0 && (
-        <span className="pkg-hint" style={{ marginLeft: 8 }}>(chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất)</span>
-      )}
-    </>
+  //  Số liệu tóm tắt dạng THẺ đặt trên biểu đồ (người chủ chốt 21/11/2026), cùng kiểu thẻ `hz-stat` của trang Tổng quan.
+  //  Mỗi thẻ một màu nhấn (viền trái + ô biểu tượng nền nhạt + số to đậm) — người chủ muốn thẻ nổi bật (21/11/2026).
+  const HISTORY_LOOK: Record<string, { icon: string; color: string }> = {
+    'Số lần mua': { icon: 'ti-shopping-cart', color: '#2563eb' },
+    'Tổng SL': { icon: 'ti-packages', color: '#d97706' },
+    'Giá BQ gia quyền': { icon: 'ti-calculator', color: '#0891b2' },
+    'Thấp nhất': { icon: 'ti-arrow-bar-to-down', color: '#16a34a' },
+    'Cao nhất': { icon: 'ti-arrow-bar-to-up', color: '#ea580c' },
+    'Số NCC': { icon: 'ti-truck', color: '#4f46e5' },
+    'Khoảng ngày': { icon: 'ti-calendar', color: '#64748b' },
+  }
+  const summaryCards = stats ? (
+    <div className="pkg-stats">
+      {buildHistorySummary(stats, singleCode).map((it, i) => {
+        const look = HISTORY_LOOK[it.label] ?? { icon: 'ti-chart-bar', color: '#2563eb' }
+        const long = String(it.value).length > 12
+        return (
+          <div key={it.label} className="pkg-stat" style={{ borderLeftColor: look.color, backgroundImage: `linear-gradient(135deg, ${look.color}12, transparent 60%)` }}>
+            <div className="pkg-stat-head">
+              <span className="pkg-stat-ic" style={{ background: `${look.color}26`, color: look.color }}><i className={'ti ' + look.icon} /></span>
+              <span className="pkg-stat-label">{it.label}</span>
+            </div>
+            <div className="pkg-stat-val" title={String(it.value)} style={{ fontSize: long ? 15 : 24 }}>{it.value}</div>
+            {i === 0 && !singleCode && stats.purchase_count > 0 && (
+              <div className="pkg-hint" style={{ fontSize: 11 }}>Chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất</div>
+            )}
+          </div>
+        )
+      })}
+    </div>
   ) : null
   const first = list.data?.items[0]
 
@@ -109,12 +130,13 @@ export default function PackagingHistory() {
         <PackagingHistoryToolbar selection={selection} onSelection={changeSelection} filters={filters} onFilters={changeFilters}
           codeOptions={codeOptions} productOptions={productOptions} optionsLoading={isProduct ? productsLoading : codesLoading}
           suppliers={list.data?.suppliers ?? []} />
+        {summaryCards}
         {series && series.length > 0 && (
           <PackagingHistoryChart series={series} subject={[first?.code, first?.name].filter(Boolean).join(' · ')} />
         )}
         <PackagingHistoryTable rows={list.data?.items ?? []} total={list.data?.total ?? 0} productMode={isProduct} singleCode={singleCode}
           sortBy={sortBy} sortDir={sortDir} onSort={onSort} page={page} pageSize={pageSize}
-          onPage={(p, s) => { setPage(p); setPageSize(s) }} onReload={list.reload} summary={summary}
+          onPage={(p, s) => { setPage(p); setPageSize(s) }} onReload={list.reload}
           empty={list.failed ? 'Không tải được lịch sử — thử tải lại.' : list.loading ? 'Đang tải…'
             : filtersActive ? 'Không có lần mua nào khớp bộ lọc.' : 'Chưa có lần mua nào cho lựa chọn này.'} />
       </div>

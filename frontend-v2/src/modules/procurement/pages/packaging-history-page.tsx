@@ -119,6 +119,11 @@ export function PackagingHistoryPage() {
           optionsLoading={isProduct ? hhOptionsQuery.isLoading : codeOptionsQuery.isLoading}
           suppliers={list.data?.suppliers ?? []}
         />
+        {/* Thẻ số liệu đặt TRÊN biểu đồ (người chủ chốt 21/11/2026), không còn nằm trong thanh công cụ của bảng. */}
+        <PackagingHistorySummary
+          stats={list.data?.stats}
+          singleCode={series !== null}
+        />
         {series && series.length > 0 && (
           <PackagingHistoryChart
             series={series}
@@ -151,13 +156,6 @@ export function PackagingHistoryPage() {
             setSortDir(dir)
           }}
           rowClassName={(row) => (row.price === 0 ? 'text-muted-foreground' : undefined)}
-          toolbar={
-            <PackagingHistorySummary
-              stats={list.data?.stats}
-              singleCode={series !== null}
-              fetching={list.isFetching && !list.isLoading}
-            />
-          }
           pagination={{
             page,
             pageSize,

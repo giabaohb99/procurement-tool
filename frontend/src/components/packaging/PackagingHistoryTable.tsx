@@ -63,7 +63,7 @@ export default function PackagingHistoryTable({
   pageSize: number
   onPage: (page: number, pageSize: number) => void
   onReload: () => void
-  summary: ReactNode
+  summary?: ReactNode
   empty: ReactNode
 }) {
   const columns = useMemo<TableColumn<PackagingHistoryRow>[]>(() => {
