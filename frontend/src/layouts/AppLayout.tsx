@@ -179,6 +179,7 @@ const NAV_GROUPS: NavGroup[] = [
         matchPaths: ["/product-price-quotes", "/packaging-boms"],
         children: [
           { to: "/packaging-cost/impact", label: "Tác động giá", icon: "ti-trending-up", isDefault: true },
+          { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum" },
           { to: "/packaging-cost/price-list", label: "Bảng giá VTBB", icon: "ti-list-details" },
           { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
           { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },

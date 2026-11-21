@@ -64,13 +64,14 @@ def _selected_columns() -> list[Col]:
             Col("usage", "Số SP dùng", "int", 10), Col("warn_text", "Cảnh báo", width=36)]
 
 
-def _product_columns() -> list[Col]:
+def _product_columns(new_word: str = "áp dụng") -> list[Col]:
+    """`new_word` = chữ gọi giá sau: "áp dụng" ở Tác động giá (có giá giả định), "mới" ở Tổng hợp theo sản phẩm."""
     cols = [Col("hh_code", "Mã HH", width=14), Col("hh_name", "Tên hàng hóa", width=44),
             Col("legal_name", "Tên pháp lý", width=30), Col("carton_qty", "Quy cách thùng", "int", 12)]
     for role in PackagingRole:
         label = PACKAGING_ROLE_LABELS[role].lower()
         cols += [Col(f"code_{int(role)}", f"Mã {label}", width=12), Col(f"old_{int(role)}", f"Giá {label} cũ", "price"),
-                 Col(f"applied_{int(role)}", f"Giá {label} áp dụng", "price")]
+                 Col(f"applied_{int(role)}", f"Giá {label} {new_word}", "price")]
     return cols + [Col("cost_old_bottle", "CP bao bì/chai cũ", "price"), Col("cost_applied_bottle", "CP bao bì/chai mới", "price"),
                    Col("diff_bottle", "Tăng/giảm /chai", "price"), Col("diff_carton", "Tăng/giảm /thùng", "price"),
                    Col("pct_view", "% chênh", "percent", 10), Col("trend_text", "Xu hướng", width=14),
@@ -109,6 +110,18 @@ def build_impact_workbook(result: dict) -> bytes:
            for s in result["selected"]]
     _write(ws, _selected_columns(), sel)
     _write(wb.create_sheet("Sản phẩm bị ảnh hưởng"), _product_columns(), [_flat_product(p) for p in result["products"]])
+    buf = BytesIO()
+    guard_workbook(wb).save(buf)
+    return buf.getvalue()
+
+
+def build_product_overview_workbook(rows: list[dict]) -> bytes:
+    """Một sheet "Tổng hợp theo sản phẩm": cùng cột với bảng sản phẩm của Tác động giá (giá sau gọi là "mới")."""
+    check_row_limit(len(rows))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tổng hợp theo sản phẩm"
+    _write(ws, _product_columns("mới"), [_flat_product(p) for p in rows])
     buf = BytesIO()
     guard_workbook(wb).save(buf)
     return buf.getvalue()

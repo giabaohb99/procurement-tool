@@ -9,6 +9,7 @@ import {
   EMPTY_HISTORY_FILTERS,
   PACKAGING_HISTORY_MAX_CODES,
   packagingHistoryHref,
+  packagingHistoryProductHref,
   parseHistorySearch,
   priceAxisDomain,
 } from './packaging-history'
@@ -82,6 +83,18 @@ describe('packagingHistoryHref', () => {
     expect(packagingHistoryHref('A&B=1')).toBe(
       '/procurement/packaging-cost/history?codes=A%26B%3D1',
     )
+  })
+})
+
+describe('packagingHistoryProductHref', () => {
+  it('links one product in product mode (bare ?hh= deep link) and escapes it', () => {
+    expect(packagingHistoryProductHref('HH0417.1')).toBe(
+      '/procurement/packaging-cost/history?hh=HH0417.1',
+    )
+    expect(packagingHistoryProductHref('A&B')).toBe('/procurement/packaging-cost/history?hh=A%26B')
+    expect(
+      parseHistorySearch(new URLSearchParams(packagingHistoryProductHref('HH1').split('?')[1])),
+    ).toEqual({ mode: 'product', codes: [], hh: ['HH1'] })
   })
 })
 

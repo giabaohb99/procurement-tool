@@ -9,7 +9,7 @@ Hoãn · ~8 giờ (không tính vào effort) · cần 06 xong và người dùng
 ## Nội dung (bám bản mẫu)
 | Tab | Đường đề xuất | Tái dùng |
 |---|---|---|
-| Tổng hợp (mọi SP: tăng / giảm / không đổi / chưa có giá) | `GET /api/packaging-cost/summary` (+ `/export`) | `compute_product_cost` không ghi đè + `get_price_states(None)` — gần như miễn phí |
+| Tổng hợp theo sản phẩm (mọi SP: tăng / giảm / không đổi / chưa có giá) — **xong 21/11/2026** | `GET /api/packaging-cost/product-overview` (+ `/export`; không đặt `/summary` vì cổng repo coi đó là báo cáo) | `compute_product_cost` không ghi đè + `get_price_states` cho mọi mã thành phần; chip xu hướng kèm số đếm, lọc `q` / `trend`, xếp + phân trang máy chủ; 5 truy vấn cố định; màn `/procurement/packaging-cost/products` (v2) và `/packaging-cost/products` (v1) |
 | Giá 5 lần gần nhất (ma trận) | `GET /api/packaging-cost/last-prices` | truy vấn 1 của `get_price_states` với `rn <= 5`, thêm biến động lần 1/2, 1/5, giá TB |
 | Lịch sử theo mã VTBB / theo SP (biểu đồ đơn giá) — **xong 21/11/2026** | `GET /api/packaging-cost/history` (+ `/export`, `/hh-options`) | đọc thẳng sổ giá, phân trang máy chủ; giá 0 hiện nhưng không tính KPI; KPI + biểu đồ khi chọn đúng một mã; màn `/procurement/packaging-cost/history`, đường dẫn sâu `?codes=` / `?hh=`; 3 – 5 truy vấn cố định |
 

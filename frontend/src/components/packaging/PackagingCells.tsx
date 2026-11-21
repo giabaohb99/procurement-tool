@@ -1,9 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  amountText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR,
+  amountText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR, PKG_UP_COLOR, trendLabel, COST_TREND,
 } from '../../utils/packaging-price'
-import { historyHref } from '../../utils/packaging-query'
+import { historyHref, historyProductHref } from '../../utils/packaging-query'
 import './packaging.css'
 
 type Num = number | null | undefined
@@ -49,13 +49,28 @@ export function RangeText({ low, high, danger }: { low: Num; high: Num; danger?:
   )
 }
 
-/** Ô MÃ VTBB bấm được: mở Lịch sử mua hàng của đúng mã đó (`?codes=`). */
-export function CodeLink({ code }: { code: string }) {
+/**
+ * Ô MÃ bấm được: mã VTBB mở Lịch sử mua hàng của đúng mã đó (`?codes=`); `product` = mã HÀNG HÓA, mở lịch sử ở chế độ
+ * "Theo mã sản phẩm" (`?hh=`, mọi mã thành phần của định mức).
+ */
+export function CodeLink({ code, product }: { code: string; product?: boolean }) {
   return (
-    <Link to={historyHref(code)} className="pkg-code" title={`Xem lịch sử mua hàng của ${code}`}
+    <Link to={product ? historyProductHref(code) : historyHref(code)} className="pkg-code"
+      title={product ? `Xem lịch sử mua các vật tư bao bì của ${code}` : `Xem lịch sử mua hàng của ${code}`}
       onClick={(e) => e.stopPropagation()}>
       {code}
     </Link>
+  )
+}
+
+/** Xu hướng chi phí của một sản phẩm (mã `CostTrend`): tăng xanh, giảm đỏ (cùng luật với ô chênh lệch), còn lại màu mờ. */
+export function TrendText({ trend }: { trend: number }) {
+  const color = trend === COST_TREND.UP ? PKG_UP_COLOR : trend === COST_TREND.DOWN ? PKG_DOWN_COLOR : undefined
+  return (
+    <span className={color ? undefined : 'pkg-muted'} style={{ fontWeight: 600, color }}
+      title={trend === COST_TREND.UP ? 'Chi phí tăng — cần xem lại giá bán' : undefined}>
+      {trendLabel(trend)}
+    </span>
   )
 }
 

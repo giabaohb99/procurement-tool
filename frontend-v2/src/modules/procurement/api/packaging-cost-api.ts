@@ -18,6 +18,8 @@ import type {
   PackagingImpactResult,
   PackagingLastPricesParams,
   PackagingLastPricesResult,
+  PackagingOverviewParams,
+  PackagingOverviewResult,
   PackagingPriceLimit,
   PackagingPriceListParams,
   PackagingPriceListResult,
@@ -63,6 +65,20 @@ export function fetchPackagingLastPrices(params: PackagingLastPricesParams) {
 export async function exportPackagingLastPrices(params: PackagingLastPricesParams) {
   try {
     await downloadFile(`${BASE}/last-prices/export`, 'gia-mua-gan-nhat.xlsx', { ...params })
+  } catch (error) {
+    throw new Error(await readBlobErrorMessage(error), { cause: error })
+  }
+}
+
+/** Tổng hợp theo sản phẩm: mọi sản phẩm có định mức, chi phí / chai cũ so với mới + xu hướng; lọc / xếp / trang tại máy chủ. */
+export function fetchPackagingProductOverview(params: PackagingOverviewParams) {
+  return apiGet<PackagingOverviewResult>(`${BASE}/product-overview`, { params })
+}
+
+/** Xuất Tổng hợp theo sản phẩm — cùng bộ lọc + thứ tự đang xem, không kèm `page`. */
+export async function exportPackagingProductOverview(params: PackagingOverviewParams) {
+  try {
+    await downloadFile(`${BASE}/product-overview/export`, 'tong-hop-theo-san-pham.xlsx', { ...params })
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }

@@ -123,6 +123,7 @@ export const appRoutes = {
     customsExportDetail: (id: number | string) => `/procurement/customs-prices/exports/${id}`,
     /** duoc-CR-784 — cụm Giá bao bì (khóa `packaging_cost`). Đường gốc = màn Tác động giá. */
     packagingImpact: '/procurement/packaging-cost',
+    packagingProducts: '/procurement/packaging-cost/products',
     packagingPrices: '/procurement/packaging-cost/prices',
     packagingLastPrices: '/procurement/packaging-cost/last-prices',
     packagingHistory: '/procurement/packaging-cost/history',

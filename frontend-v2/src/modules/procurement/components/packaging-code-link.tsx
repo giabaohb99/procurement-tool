@@ -8,18 +8,24 @@ import { Link } from 'react-router-dom'
 
 import { cn } from '@/shared/utils/cn'
 
-import { packagingHistoryHref } from '../utils/packaging-history'
+import { packagingHistoryHref, packagingHistoryProductHref } from '../utils/packaging-history'
 
 interface PackagingCodeLinkProps {
   code: string
   className?: string
+  /** `code` là mã HÀNG HÓA (sản phẩm): mở lịch sử ở chế độ "Theo mã sản phẩm" (mọi mã thành phần của định mức). */
+  product?: boolean
 }
 
-export function PackagingCodeLink({ code, className }: PackagingCodeLinkProps) {
+export function PackagingCodeLink({ code, className, product = false }: PackagingCodeLinkProps) {
   return (
     <Link
-      to={packagingHistoryHref(code)}
-      title={`Xem lịch sử mua hàng của ${code}`}
+      to={product ? packagingHistoryProductHref(code) : packagingHistoryHref(code)}
+      title={
+        product
+          ? `Xem lịch sử mua các vật tư bao bì của ${code}`
+          : `Xem lịch sử mua hàng của ${code}`
+      }
       onClick={(event) => event.stopPropagation()}
       className={cn('font-semibold text-primary tabular-nums hover:underline', className)}
     >

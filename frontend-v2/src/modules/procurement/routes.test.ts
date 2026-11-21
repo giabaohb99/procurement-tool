@@ -15,6 +15,7 @@ function grants(...cap: string[]) {
 
 const PACKAGING_PATHS = [
   appRoutes.procurement.packagingImpact,
+  appRoutes.procurement.packagingProducts,
   appRoutes.procurement.packagingPrices,
   appRoutes.procurement.packagingLastPrices,
   appRoutes.procurement.packagingHistory,
@@ -31,7 +32,7 @@ function packagingMenu(can: ReturnType<typeof grants>) {
 }
 
 describe('Giá bao bì menu (packaging_cost)', () => {
-  it('shows the five menu screens to a reader of packaging_cost (Báo giá VTBB is hidden from the menu)', () => {
+  it('shows the six menu screens to a reader of packaging_cost (Báo giá VTBB is hidden from the menu)', () => {
     expect(packagingMenu(grants('packaging_cost.read'))).toEqual(PACKAGING_MENU_PATHS)
   })
 

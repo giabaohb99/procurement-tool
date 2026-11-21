@@ -14,6 +14,7 @@ import {
   PackagePlus,
   ReceiptText,
   ShoppingCart,
+  Sigma,
   Tags,
   TextSearch,
   TrendingUp,
@@ -199,6 +200,13 @@ export const procurementModule: ErpModule = {
       icon: TrendingUp,
       entity: 'packaging_cost',
       end: true,
+      group: 'Giá bao bì',
+    },
+    {
+      label: 'Tổng hợp theo sản phẩm',
+      path: appRoutes.procurement.packagingProducts,
+      icon: Sigma,
+      entity: 'packaging_cost',
       group: 'Giá bao bì',
     },
     {
@@ -466,6 +474,13 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.packagingImpact,
       lazy: async () => ({
         Component: (await import('./pages/packaging-impact-page')).PackagingImpactPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingProducts,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-product-overview-page'))
+          .PackagingProductOverviewPage,
       }),
     },
     {

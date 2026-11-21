@@ -87,6 +87,11 @@ export function packagingHistoryHref(code: string): string {
   return `${appRoutes.procurement.packagingHistory}?${new URLSearchParams({ codes: code }).toString()}`
 }
 
+/** Đường dẫn tới Lịch sử mua hàng của MỘT sản phẩm (chế độ "Theo mã sản phẩm": mọi mã thành phần của định mức). */
+export function packagingHistoryProductHref(hhCode: string): string {
+  return `${appRoutes.procurement.packagingHistory}?${new URLSearchParams({ hh: hhCode }).toString()}`
+}
+
 /**
  * Lựa chọn + bộ lọc màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). Chỉ gửi mã
  * của chế độ đang bật. `sort.by` rỗng = để máy chủ xếp mặc định (ngày mới nhất trước).

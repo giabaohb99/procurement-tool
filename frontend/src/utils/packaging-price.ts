@@ -65,6 +65,11 @@ const COST_WARNING_LABELS: Record<number, string> = {
   1: 'Thiếu giá chai', 2: 'Chưa khai mã thành phần', 3: 'Thiếu giá thành phần', 4: 'Thiếu quy cách thùng',
   5: 'ĐVT mua khác ĐVT danh mục', 6: 'Dưới ngưỡng sàn', 7: 'Vượt ngưỡng trần',
 }
+/** `CostTrend` — xu hướng chi phí của một sản phẩm so với giá cũ. */
+export const COST_TREND = { UP: 1, DOWN: 2, SAME: 3, NO_PRICE: 4 } as const
+const COST_TREND_LABELS: Record<number, string> = { 1: 'Tăng', 2: 'Giảm', 3: 'Không đổi', 4: 'Chưa có giá' }
+export const trendLabel = (trend: number | null | undefined): string =>
+  trend == null ? '' : (COST_TREND_LABELS[trend] ?? `Mã ${trend}`)
 /** `PriceSourceType.PO_LINE` — dòng ĐMH đang mở (giá còn có thể đổi). */
 export const PRICE_SOURCE_PO_LINE = 2
 

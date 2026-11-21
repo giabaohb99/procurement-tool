@@ -52,6 +52,7 @@ import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
 import PackagingGate from './components/packaging/PackagingGate'
 import PackagingImpact from './pages/packaging/PackagingImpact'
+import PackagingProductOverview from './pages/packaging/PackagingProductOverview'
 import PackagingPriceList from './pages/packaging/PackagingPriceList'
 import PackagingLastPrices from './pages/packaging/PackagingLastPrices'
 import PackagingHistory from './pages/packaging/PackagingHistory'
@@ -129,6 +130,7 @@ export default function App() {
                 (`product-price-quotes`, `packaging-boms` — khai ở config/packaging-cruds.tsx). */}
             <Route path="packaging-cost" element={<Navigate to="/packaging-cost/impact" replace />} />
             <Route path="packaging-cost/impact" element={<PackagingGate><PackagingImpact /></PackagingGate>} />
+            <Route path="packaging-cost/products" element={<PackagingGate><PackagingProductOverview /></PackagingGate>} />
             <Route path="packaging-cost/price-list" element={<PackagingGate><PackagingPriceList /></PackagingGate>} />
             <Route path="packaging-cost/last-prices" element={<PackagingGate><PackagingLastPrices /></PackagingGate>} />
             <Route path="packaging-cost/history" element={<PackagingGate><PackagingHistory /></PackagingGate>} />

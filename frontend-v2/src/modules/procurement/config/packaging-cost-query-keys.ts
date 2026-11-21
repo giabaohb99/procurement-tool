@@ -10,6 +10,7 @@ import type {
   PackagingHistoryParams,
   PackagingImpactRequest,
   PackagingLastPricesParams,
+  PackagingOverviewParams,
   PackagingPriceListParams,
 } from '../types/packaging-cost-types'
 
@@ -24,6 +25,8 @@ export const packagingCostKeys = {
     [ROOT, 'packagingCost', 'priceList', params] as const,
   lastPrices: (params: PackagingLastPricesParams) =>
     [ROOT, 'packagingCost', 'lastPrices', params] as const,
+  productOverview: (params: PackagingOverviewParams) =>
+    [ROOT, 'packagingCost', 'productOverview', params] as const,
   history: (params: PackagingHistoryParams) => [ROOT, 'packagingCost', 'history', params] as const,
   hhOptions: () => [ROOT, 'packagingCost', 'hhOptions'] as const,
   limit: (code: string) => [ROOT, 'packagingCost', 'limit', code] as const,

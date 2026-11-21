@@ -7,8 +7,16 @@ import { cn } from '@/shared/utils/cn'
 
 import type { PackagingPart } from '../types/packaging-cost-types'
 import { formatPackagingPrice, packagingDiffTone } from '../utils/packaging-price-format'
+import { PackagingCodeLink } from './packaging-code-link'
 
-export function PackagingPartCell({ part }: { part: PackagingPart | undefined }) {
+export function PackagingPartCell({
+  part,
+  linkCode = false,
+}: {
+  part: PackagingPart | undefined
+  /** Mã bấm được → Lịch sử mua hàng của mã đó (bảng Tổng hợp theo sản phẩm). */
+  linkCode?: boolean
+}) {
   if (!part?.code) return <span className="text-muted-foreground">—</span>
 
   const current = part.applied ?? part.new
@@ -21,7 +29,11 @@ export function PackagingPartCell({ part }: { part: PackagingPart | undefined })
         part.selected && '-mx-1 rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900',
       )}
     >
-      <div className="text-xs font-medium tabular-nums">{part.code}</div>
+      {linkCode ? (
+        <PackagingCodeLink code={part.code} className="text-xs font-medium" />
+      ) : (
+        <div className="text-xs font-medium tabular-nums">{part.code}</div>
+      )}
       <div className="text-xs tabular-nums">
         {current == null ? (
           <span className="text-muted-foreground">chưa có giá</span>

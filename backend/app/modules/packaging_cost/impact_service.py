@@ -76,12 +76,16 @@ def _matches(bom, terms: list[str]) -> bool:
     return all(term in haystack for term in terms)
 
 
-def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc") -> list[tuple]:
-    """Lọc theo `q` rồi xếp `(bom, cost)`: ô trống xuống CUỐI cả hai chiều, khóa phụ là mã hàng hóa tăng dần (luật §8)."""
+def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc",
+                     getters: dict = SORT_GETTERS) -> list[tuple]:
+    """Lọc theo `q` rồi xếp `(bom, cost)`: ô trống xuống CUỐI cả hai chiều, khóa phụ là mã hàng hóa tăng dần (luật §8).
+
+    `getters` = bảng khóa cột được phép xếp của màn gọi (mặc định: của Tác động giá); khóa lạ → xếp theo mã hàng hóa.
+    """
     terms = fold_text(q).split()
     if terms:
         items = [it for it in items if _matches(it[0], terms)]
-    getter = SORT_GETTERS.get(sort_by, SORT_GETTERS["hh_code"])
+    getter = getters.get(sort_by, getters["hh_code"])
     return sort_blank_last(items, lambda it: getter(*it), lambda it: it[0].hh_code, desc=sort_dir == "desc")
 
 

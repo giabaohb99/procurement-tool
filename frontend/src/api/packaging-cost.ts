@@ -9,6 +9,7 @@ import { api } from './client'
 import type {
   PackagingCodeOption, PackagingHhOption, PackagingHistoryParams, PackagingHistoryResult,
   PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
+  PackagingOverviewParams, PackagingOverviewResult,
   PackagingPriceLimit, PackagingPriceListParams, PackagingPriceRow,
 } from './packaging-cost-types'
 
@@ -45,6 +46,12 @@ export async function fetchPriceList(params: PackagingPriceListParams): Promise<
 
 export async function fetchLastPrices(params: PackagingLastPricesParams): Promise<PackagingLastPricesResult> {
   const r = await api.get(`${BASE}/last-prices`, { params })
+  return r.data.data
+}
+
+/** Tổng hợp theo sản phẩm: mọi sản phẩm có định mức, chi phí / chai cũ so với mới + xu hướng; lọc / xếp / trang tại máy chủ. */
+export async function fetchProductOverview(params: PackagingOverviewParams): Promise<PackagingOverviewResult> {
+  const r = await api.get(`${BASE}/product-overview`, { params })
   return r.data.data
 }
 
@@ -114,7 +121,7 @@ function saveBlob(response: { data: Blob; headers: any }, fallbackName: string) 
 }
 
 /** Xuất Excel bằng GET: cùng bộ lọc + thứ tự đang xem, không kèm `page`. Ném `Error` mang câu thông báo cho nơi gọi. */
-export async function downloadExport(path: 'price-list' | 'last-prices' | 'history', params: object, fallbackName: string) {
+export async function downloadExport(path: 'price-list' | 'last-prices' | 'history' | 'product-overview', params: object, fallbackName: string) {
   try {
     const r = await api.get(`${BASE}/${path}/export`, { params, responseType: 'blob' })
     saveBlob(r, fallbackName)

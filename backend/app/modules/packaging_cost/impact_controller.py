@@ -20,6 +20,7 @@ from .history_controller import router as history_router
 from .impact_service import compute_impact
 from .last_prices_controller import router as last_prices_router
 from .last_prices_controller import view_scope as _scope
+from .product_overview_controller import router as product_overview_router
 from .price_list_service import SORT_KEYS, build_price_list, build_price_list_page
 
 ENTITY = "packaging_cost"
@@ -124,3 +125,4 @@ def code_options(q: str = Query("", max_length=100), group: str = Query("", max_
 
 router.include_router(last_prices_router)
 router.include_router(history_router)
+router.include_router(product_overview_router)

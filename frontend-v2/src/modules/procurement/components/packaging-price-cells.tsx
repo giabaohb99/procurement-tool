@@ -4,6 +4,7 @@
  * Chưa có giá thì trả `<span>—</span>` chứ không trả chuỗi `'—'`: `DataTable` cố ý đổi ô chuỗi gạch trần
  * thành ô trống (CR-132), mà ô trống ở cột giá đọc như "giá 0".
  */
+import { PACKAGING_COST_TREND_CODE } from '@/shared/constants/statuses'
 import { cn } from '@/shared/utils/cn'
 
 import {
@@ -12,6 +13,7 @@ import {
   formatPackagingPrice,
   packagingDiffTone,
 } from '../utils/packaging-price-format'
+import { costTrendLabel } from '../utils/packaging-warning-text'
 
 type Num = number | null | undefined
 
@@ -56,6 +58,27 @@ export function RangeText({
   return (
     <span className={cn('tabular-nums', danger && 'font-semibold text-destructive')}>
       {a || '…'} – {b || '…'}
+    </span>
+  )
+}
+
+/**
+ * Xu hướng chi phí của một sản phẩm (mã `CostTrend`): chữ + màu theo chiều (tăng xanh, giảm đỏ — cùng luật với ô chênh lệch);
+ * không đổi / chưa có giá để màu mờ. Tăng kèm gợi ý "cần xem lại giá bán" ở chú giải.
+ */
+export function TrendText({ trend }: { trend: number }) {
+  const tone =
+    trend === PACKAGING_COST_TREND_CODE.UP
+      ? packagingDiffTone(1)
+      : trend === PACKAGING_COST_TREND_CODE.DOWN
+        ? packagingDiffTone(-1)
+        : 'text-muted-foreground'
+  return (
+    <span
+      className={cn('font-medium', tone)}
+      title={trend === PACKAGING_COST_TREND_CODE.UP ? 'Chi phí tăng — cần xem lại giá bán' : undefined}
+    >
+      {costTrendLabel(trend)}
     </span>
   )
 }

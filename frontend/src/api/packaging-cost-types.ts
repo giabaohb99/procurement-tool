@@ -78,6 +78,28 @@ export interface PackagingImpactProduct {
   warnings: PackagingWarning[]
 }
 
+/** Bộ lọc xu hướng của tab Tổng hợp theo sản phẩm (mã chữ của URL, khác mã số `CostTrend` của dòng). */
+export type PackagingOverviewTrend = 'all' | 'up' | 'down' | 'flat' | 'missing'
+/** Số sản phẩm theo xu hướng — trên tập đã lọc `q`, chưa lọc `trend` (chip luôn đủ số). */
+export type PackagingOverviewCounts = Record<PackagingOverviewTrend, number>
+
+export interface PackagingOverviewParams {
+  q?: string
+  trend?: PackagingOverviewTrend
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
+  page?: number
+  page_size?: number
+}
+
+export interface PackagingOverviewResult {
+  /** Cùng hình với `products[]` của Tác động giá (giá giả định không có: `applied` = `new`). */
+  items: PackagingImpactProduct[]
+  /** Số dòng sau cả hai bộ lọc `q` + `trend`. */
+  total: number
+  counts: PackagingOverviewCounts
+}
+
 export interface PackagingImpactKpis {
   selected_count: number
   selected_by_group: Record<string, number>

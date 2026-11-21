@@ -20,6 +20,7 @@ export const PACKAGING_PATHS = {
   priceList: '/packaging-cost/price-list',
   lastPrices: '/packaging-cost/last-prices',
   history: '/packaging-cost/history',
+  products: '/packaging-cost/products',
   quotes: '/product-price-quotes',
   boms: '/packaging-boms',
 } as const
@@ -105,6 +106,10 @@ export function buildHistorySearch(sel: HistorySelection): Record<string, string
 /** Đường dẫn tới Lịch sử mua hàng của MỘT mã VTBB — dùng cho ô mã ở các bảng khác. */
 export const historyHref = (code: string): string =>
   `${PACKAGING_PATHS.history}?${new URLSearchParams({ codes: code }).toString()}`
+
+/** Đường dẫn tới Lịch sử mua hàng của MỘT sản phẩm (chế độ "Theo mã sản phẩm": mọi mã thành phần của định mức). */
+export const historyProductHref = (hhCode: string): string =>
+  `${PACKAGING_PATHS.history}?${new URLSearchParams({ hh: hhCode }).toString()}`
 
 export function buildHistoryParams(
   sel: HistorySelection, f: HistoryFilters, search: string, sort: { by: string; dir: 'asc' | 'desc' },
