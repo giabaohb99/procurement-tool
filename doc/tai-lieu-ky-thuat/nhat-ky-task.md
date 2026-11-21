@@ -129,6 +129,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Thêm khóa quyền **packaging_cost** (Giá bao bì), phạm vi theo pháp nhân trên sổ giá; admin và trưởng phòng thu mua có sẵn, vai trò khác tick tay.
 - Bảng dùng chung **DataTable** có thêm tiêu đề gộp nhóm cột: nhãn nhóm dính khi cuộn ngang, kéo cột chỉ trong nhóm, màu tiêu đề theo nhóm; bảng không khai nhóm giữ nguyên như cũ.
 - Đã chốt trong lúc làm: giá tăng tô **xanh**, giảm tô **đỏ**; thân bảng không nhuộm màu theo nhóm.
+- Ngày 21/11/2026: cột **Min – Max** ở bảng mã đã chọn (màn *Tác động*) và *Bảng giá VTBB* tách thành hai cột **Min** và **Max**, mỗi cột xếp theo đúng giá trị nó hiện.
 
 **Kiểm:** hơn 330 bài kiểm backend của CR này xanh (sổ giá, mốc đồng bộ ĐMH, báo giá, định mức, trạng thái giá, tác động, chia trang, giá mua gần nhất, số truy vấn cố định); bài canh phạm vi và khóa quyền xanh; typecheck và lint giao diện sạch, các bài kiểm vitest của cụm Giá bao bì và bảng dùng chung xanh. Đo trên MySQL ở cỡ dữ liệu gấp 100 lần (650 nghìn dòng sổ giá, 20 nghìn định mức): màn Tác động chọn 500 mã từ 5,5 giây còn 234 ms, Bảng giá mặc định từ 19,6 giây còn 195 ms.
 

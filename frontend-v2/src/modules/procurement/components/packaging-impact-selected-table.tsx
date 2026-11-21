@@ -78,7 +78,7 @@ export function PackagingImpactSelectedTable({
       {
         key: 'name',
         header: 'Tên vật tư',
-        width: 240,
+        width: 210,
         cell: (row) => <span title={row.name}>{row.name}</span>,
       },
       { key: 'group', header: 'Nhóm', width: 80, cell: (row) => row.group },
@@ -129,12 +129,20 @@ export function PackagingImpactSelectedTable({
         cell: (row) => <PercentText value={row.pct} />,
       },
       { key: 'usage', header: 'Số SP', width: 80, align: 'right', cell: (row) => row.usage },
+      //  Min và Max tách hai cột (người chủ chốt 21/11/2026) — giá thấp / cao nhất trong sổ giá của mã.
       {
-        key: 'min_max',
-        header: 'Min – Max',
-        width: 130,
+        key: 'min',
+        header: 'Min',
+        width: 90,
         align: 'right',
-        cell: (row) => <RangeText low={row.min} high={row.max} />,
+        cell: (row) => <PriceText value={row.min} />,
+      },
+      {
+        key: 'max',
+        header: 'Max',
+        width: 90,
+        align: 'right',
+        cell: (row) => <PriceText value={row.max} />,
       },
       {
         key: 'limit',
@@ -152,7 +160,7 @@ export function PackagingImpactSelectedTable({
       {
         key: 'note',
         header: 'Ghi chú',
-        width: 150,
+        width: 140,
         wrap: true,
         cell: (row) => (
           <span className="text-xs text-destructive">{buildNote(row, appliedOf(row))}</span>
