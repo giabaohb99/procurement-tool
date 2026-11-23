@@ -2737,7 +2737,12 @@ input,
   --rdp-day_button-height: 24px;
   --rdp-nav_button-width: 22px;
   --rdp-nav_button-height: 22px;
-  width: fit-content;
+  /* duoc-CR-784: max-content (không phải fit-content) — fit-content co theo chỗ trống còn lại tính từ vị trí CŨ của khung,
+     nên mở lần hai ở ô sát mép phải thì hai tháng rớt thành hàng dọc, nút điều hướng ghim mép phải chừa một khoảng trắng,
+     và bề rộng đo sai làm khung tràn ra ngoài màn hình. Màn quá hẹp thì cuộn ngang trong khung. */
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  overflow-x: auto;
 }
 /* Bố cục: nút nhanh (trái) + lịch 2 tháng (phải) */
 .drp-body { display: flex; gap: 12px; }
@@ -2764,7 +2769,7 @@ input,
 }
 .drp-preset:hover { background: #e0f4fd; border-color: #bae6fd; color: var(--teal-dark); }
 .drp-pop .rdp-root { font-size: 11.5px; margin: 0; }
-.drp-pop .rdp-months { display: flex; flex-direction: row; gap: 12px; }
+.drp-pop .rdp-months { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 12px; max-width: none; }
 .drp-pop table { margin: 0; border-collapse: collapse; border-spacing: 0; }
 /* Vô hiệu style bảng chung của app bên trong lịch (padding/viền/zebra/hover dòng).
    KHÔNG đặt background trên <td> — nếu không sẽ đè mất màu tô khoảng ngày bên dưới. */
