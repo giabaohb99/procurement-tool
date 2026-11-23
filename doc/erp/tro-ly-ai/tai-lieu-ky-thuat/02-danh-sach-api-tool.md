@@ -95,6 +95,8 @@ truy vấn tổng hợp mới (thường là group-by / min-max).
   "giá mua gần nhất của nhãn NHG0713", "5 lần mua gần nhất của CPT0075" (`packaging_price_lookup`); "chi phí bao bì / chai của
   HH0417.1", "những sản phẩm chi phí bao bì tăng" (`packaging_product_cost`).
 - Nguồn: dịch vụ của màn Giá bao bì (`packaging_cost/*_service.py`, sổ giá `tab_product_price_ledger`) — không tính lại, số khớp màn.
+  Từ 23/11/2026 sổ giá có nguồn **Sổ Misa** (tới 30/06/2026, sau mốc chỉ dùng đơn mua hàng ERP); lần mua trả `source_label`
+  *Sổ Misa* khi lấy từ nguồn đó. Hướng dẫn trả lời cho trợ lý nằm ở cẩm nang `quy-trinh-thu-mua` (mục Giá nguyên vật liệu sản xuất).
 - Quyền: `packaging_cost.read` + phạm vi pháp nhân trên sổ giá (như màn web). Tiền VND trước VAT. Qua cổng MCP: nhóm G7
   riêng `packaging`, tắt mặc định. Hợp đồng đủ ở `doc/agent-hub/06-cong-mcp.md` §3.7c.
 

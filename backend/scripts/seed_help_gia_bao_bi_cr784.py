@@ -76,7 +76,7 @@ TREE = {
         {
             "title": OVERVIEW_TITLE,
             "icon": "book-open",
-            "summary": "Công thức chi phí bao bì / chai, sổ giá lấy từ lịch sử mua và dòng ĐMH đã duyệt, luật giá cũ / giá mới, màu tăng giảm, quyền Giá bao bì và phạm vi pháp nhân",
+            "summary": "Công thức chi phí bao bì / chai, sổ giá (Sổ Misa tới 30/06/2026, sau đó đơn mua hàng ERP), luật giá cũ / giá mới, màu tăng giảm, In và Xuất Excel, quyền Giá bao bì và phạm vi pháp nhân",
             "content": f"""<h2>Cụm Giá nguyên vật liệu sản xuất gồm những màn nào</h2>
 <table>
 <thead><tr><th>Màn (menu)</th><th>Dùng để</th></tr></thead>
@@ -106,8 +106,10 @@ TREE = {
 <tbody>
 <tr><td><strong>Lịch sử mua hàng</strong></td><td>Mỗi lần mua đã ghi vào lịch sử mua hàng (kể cả dữ liệu cũ đã nạp)</td><td>Ghi một lần, không sửa</td></tr>
 <tr><td><strong>Dòng đơn mua hàng</strong> (hiện chữ <em>ĐMH đang mở</em>)</td><td>Đơn mua hàng đã duyệt, dòng chưa hủy, chưa sang lịch sử mua hàng</td><td>Sửa giá, số lượng, nhà cung cấp, ngày trên đơn thì sổ sửa theo. Dòng sang lịch sử mua hàng, bị hủy, hoặc đơn bị hủy duyệt thì dòng này tự rời sổ</td></tr>
+<tr><td><strong>Sổ Misa</strong></td><td>Sổ chi tiết mua hàng Misa từ 2025 tới hết 30/06/2026, do Thu mua cung cấp (cùng số liệu với báo cáo giá NVL bản HTML), nạp một lần bằng công cụ của quản trị</td><td>Không sửa trên màn; có số mới thì quản trị nạp lại</td></tr>
 </tbody>
 </table>
+<p><strong>Mốc 30/06/2026:</strong> từ ngày này trở về trước hệ thống chỉ dùng giá trong <strong>Sổ Misa</strong>; sau mốc chỉ dùng lần mua của <strong>đơn mua hàng thật trên ERP</strong>. Lịch sử mua cũ nạp từ tệp khảo sát (có dòng sai ngày, sai giá) không còn được tính. Vì vậy số trên màn có thể khác bản HTML ở những mã đã có đơn mua hàng sau 30/06/2026: đó là giá mua mới hơn, đúng ý.</p>
 <p>Lần mua có <strong>đơn giá 0</strong> vẫn được đếm vào số lần mua nhưng không bao giờ dùng làm giá.</p>
 
 <h2>Giá cũ và giá mới</h2>
@@ -120,7 +122,13 @@ TREE = {
 <tr><td>Chưa mua lần nào, chưa có báo giá</td><td colspan="2">Chưa có giá (ô hiện gạch ngang)</td></tr>
 </tbody>
 </table>
-<p><strong>Màu chênh lệch:</strong> số <strong>tăng hiện màu xanh</strong>, số <strong>giảm hiện màu đỏ</strong>, không đổi thì để màu thường. Màu này áp chung mọi màn của cụm.</p>
+<p><strong>Màu chênh lệch:</strong> số <strong>tăng hiện màu xanh</strong>, số <strong>giảm hiện màu đỏ</strong>, không đổi thì để màu thường. Màu này áp chung mọi màn, bản in và tệp Excel của cụm.</p>
+
+<h2>In và Xuất Excel</h2>
+<ul>
+<li>Nút <strong>In</strong> (màn Tác động giá bao bì và Lịch sử mua hàng, cần quyền Xem) mở một thẻ mới đúng theo bộ lọc đang xem, nạp đủ mọi dòng rồi tự bật hộp in. Bản in khổ A4 ngang, trình bày như bản in của báo cáo HTML: tiêu đề báo cáo, ô lọc, thẻ số liệu, biểu đồ (khi xem một mã) và bảng.</li>
+<li>Nút <strong>Xuất Excel</strong> (cần quyền Xuất) tải tệp theo đúng bộ lọc và thứ tự đang xem, tối đa 5.000 dòng. Tệp trình bày như tệp Excel của báo cáo HTML: dòng 1 tiêu đề <em>BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — tên báo cáo</em>, dòng 2 ngày xuất và đơn vị (VNĐ, chưa VAT), đầu cột nền xanh đậm (cột chai, nắp, nhãn, nhãn thùng, thùng nền xanh lá), số có dấu nghìn, phần trăm dạng 12,4%, ô tăng xanh giảm đỏ, cố định hàng tiêu đề, có bộ lọc, in A4 ngang có số trang.</li>
+</ul>
 
 <h2>Ai được xem gì</h2>
 <ul>
@@ -133,7 +141,7 @@ TREE = {
         {
             "title": IMPACT_TITLE,
             "icon": "bar-chart",
-            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm chai / nắp / nhãn), nhập giá giả định, đọc sản phẩm bị ảnh hưởng, CP bao bì / chai cũ và mới, ghi chú cảnh báo, Xuất Excel",
+            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm), nhập giá giả định, ba thẻ (có Tăng nhiều nhất /thùng), lọc nâng cao, xếp mọi cột kể cả Chai / Nắp / Nhãn, ghi chú cảnh báo, In, Xuất Excel",
             "content": f"""<h2>Khi nào dùng</h2>
 <p>Nhà cung cấp báo tăng (hoặc giảm) giá một hay nhiều mã bao bì, hoặc bạn muốn thử "nếu nắp lên 350 đ thì sao" trước khi chốt giá. Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Tác động giá bao bì</strong> (màn có tiêu đề <strong>Tác động tăng giá bao bì</strong>).</p>
 
@@ -143,8 +151,8 @@ TREE = {
 <li>Mã đã chọn hiện thành nhãn nhỏ trong ô. Bấm dấu <strong>x</strong> trên một nhãn để bỏ mã đó; bấm dấu <strong>x</strong> ở cuối ô (<em>Bỏ hết mã đã chọn</em>) để bỏ tất cả.</li>
 <li>Bảng <strong>mã đã chọn</strong> hiện ngay dưới ô: Mã, Tên vật tư, Nhóm, Giá cũ, Giá mới, <strong>Giá giả định</strong>, Chênh lệch, %, Số SP (số sản phẩm đang dùng mã), Min, Max, Ghi chú. Bấm dấu <strong>x</strong> cuối dòng cũng bỏ được mã.</li>
 <li>Muốn thử giá chưa chốt: gõ vào ô <strong>Nhập giá</strong> (nền vàng) ở cột Giá giả định. Khoảng nửa giây sau khi ngừng gõ, mọi con số bên dưới tính lại theo giá đó. Xóa trắng ô là quay về giá mới.</li>
-<li>Đọc dòng tóm tắt trên bảng: <strong>Mã đã chọn</strong> (kèm số mã theo nhóm, số mã đang giả định) <strong>· Sản phẩm bị ảnh hưởng</strong>.</li>
-<li>Đọc bảng sản phẩm bên dưới (xem mục tiếp). Cần gửi đi thì bấm <strong>Xuất Excel</strong> ở góc phải trên cùng: tệp có hai sheet <em>Mã đã chọn</em> và <em>Sản phẩm bị ảnh hưởng</em>, theo đúng giá giả định đang gõ, từ khóa tìm và thứ tự đang xếp.</li>
+<li>Đọc ba <strong>thẻ số liệu</strong> đầu màn: <strong>Mã đã chọn</strong> (kèm số mã theo nhóm, số mã đang giả định), <strong>Sản phẩm bị ảnh hưởng</strong> (đang lọc thì ghi <em>Đang lọc: x / tổng</em>) và <strong>Tăng nhiều nhất /thùng</strong> (sản phẩm có chi phí bao bì một thùng tăng mạnh nhất: mức tăng mỗi thùng, mỗi chai, mã và tên sản phẩm). Bấm thẻ Tăng nhiều nhất là bảng sản phẩm xếp theo mức tăng /thùng giảm dần và cuộn tới bảng; Kinh doanh tra nhanh ở đây.</li>
+<li>Đọc bảng sản phẩm bên dưới (xem mục tiếp). Cần gửi đi thì bấm <strong>Xuất Excel</strong> ở góc phải trên cùng: tệp có hai sheet <em>Sản phẩm bị ảnh hưởng</em> và <em>Mã đã chọn</em>, theo đúng giá giả định đang gõ, bộ lọc và thứ tự đang xếp. Cần bản giấy thì bấm <strong>In</strong> (phải chọn ít nhất một mã).</li>
 </ol>
 <p>Ô <strong>Khoảng ngày tính min – max</strong> ở góc phải chỉ đổi hai cột Min, Max (giá thấp nhất, cao nhất trong khoảng ngày đó). Giá cũ, giá mới không phụ thuộc ô này.</p>
 
@@ -160,7 +168,13 @@ TREE = {
 <tr><td>Ghi chú</td><td>Cảnh báo của dòng, ví dụ <em>Thiếu giá thành phần: Nhãn</em> (xem bảng dưới).</td></tr>
 </tbody>
 </table>
-<p>Bảng có ô <strong>Tìm mã HH, tên, mã thành phần…</strong>, bấm tiêu đề cột để xếp (ví dụ xếp <strong>Tăng/giảm /thùng</strong> giảm dần để thấy sản phẩm bị ảnh hưởng nặng nhất), và chia trang. Chọn cả nhóm chai có thể ra hàng nghìn sản phẩm: dòng tóm tắt luôn đếm trên toàn bộ, bảng chỉ hiện từng trang.</p>
+<h2>Lọc và xếp</h2>
+<ul>
+<li><strong>Bảng mã đã chọn</strong>: chọn mã của nhiều nhóm thì có hàng chip <strong>Tất cả</strong> · <strong>Chai</strong> · <strong>Nắp</strong> · <strong>Nhãn</strong>… kèm số mã; bấm một chip để chỉ xem mã của nhóm đó (chỉ lọc bảng này, không đổi các mã đang tính).</li>
+<li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Lọc nâng cao</strong>. Trong hộp lọc nâng cao: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>Từ – Đến</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, và ô <strong>Chỉ sản phẩm có cảnh báo</strong>. Bấm <strong>Áp dụng</strong> để lọc, <strong>Xóa lọc</strong> để bỏ; nút hiện số điều kiện đang bật.</li>
+<li>Bấm tiêu đề cột để xếp, kể cả các cột <strong>Chai</strong>, <strong>Nắp</strong>, <strong>Nhãn</strong>, <strong>Nhãn thùng</strong>, <strong>Thùng</strong> (xếp theo giá đang dùng của thành phần đó). Ví dụ xếp <strong>Tăng/giảm /thùng</strong> giảm dần để thấy sản phẩm bị ảnh hưởng nặng nhất.</li>
+<li>Bảng chia trang; chọn cả nhóm chai có thể ra hàng nghìn sản phẩm: thẻ số liệu luôn đếm trên toàn bộ, bảng chỉ hiện từng trang. Xuất Excel và In theo đúng bộ lọc, thứ tự đang xem.</li>
+</ul>
 
 <h2>Ghi chú cảnh báo nghĩa là gì</h2>
 <table>
@@ -266,7 +280,7 @@ TREE = {
         {
             "title": HISTORY_TITLE,
             "icon": "calendar",
-            "summary": "Màn Lịch sử mua hàng của cụm Giá nguyên vật liệu sản xuất: từng lần mua theo mã VTBB hoặc theo mã sản phẩm, dòng tóm tắt, biểu đồ Diễn biến đơn giá khi chọn một mã, So lần trước, nhãn ĐMH đang mở",
+            "summary": "Màn Lịch sử mua hàng của cụm Giá NVL sản xuất: từng lần mua theo mã VTBB hoặc mã sản phẩm, thẻ số liệu, biểu đồ đơn giá khi chọn một mã, cột Kho, nguồn Sổ Misa / đơn mua hàng, In, Xuất Excel",
             "content": f"""<h2>Mở màn</h2>
 <p>Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, hoặc bấm vào bất kỳ mã vật tư nào ở các bảng của cụm (màn mở sẵn đúng mã đó). Màn này khác tab Lịch sử mua hàng trên chi tiết sản phẩm: nó đọc sổ giá của cụm Giá nguyên vật liệu sản xuất nên có cả dòng đơn mua hàng đang mở.</p>
 
@@ -282,11 +296,11 @@ TREE = {
 <ul>
 <li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng xanh, giảm đỏ, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã hoặc mọi mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp. Chế độ theo mã sản phẩm: Số sản phẩm, Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp.</li>
 <li><strong>Biểu đồ Diễn biến đơn giá</strong> hiện khi chọn đúng một mã: mỗi điểm là một lần mua có giá, rê chuột để xem ngày, đơn giá, nhà cung cấp, số lượng.</li>
-<li>Bảng, mới nhất trước: Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, Số lượng, Đơn giá, Thành tiền, <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (mã đơn mua hàng, bấm để mở đơn).</li>
+<li>Bảng, mới nhất trước: Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, <strong>Kho</strong> (kho nhập hàng; lần mua trong Sổ Misa lấy kho của Misa, lần mua trên ERP lấy kho của dòng đơn mua hàng), Số lượng, Đơn giá, Thành tiền, <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (mã đơn mua hàng bấm để mở đơn, hoặc chữ <em>Sổ Misa</em>). Ô tìm tìm được cả theo tên kho; bấm tiêu đề cột Kho để xếp.</li>
 <li>Nhãn <strong>ĐMH đang mở</strong>: dòng của đơn mua hàng đã duyệt, chưa hoàn thành; giá còn có thể đổi nếu đơn được sửa.</li>
 <li>Lần mua đơn giá 0 vẫn hiện để đối chiếu, nhưng không tính vào giá bình quân, thấp nhất, cao nhất và biểu đồ.</li>
 </ul>
-<p><strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng).</p>
+<p><strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng). <strong>In</strong> mở bản in A4 ngang gồm ô lọc, thẻ số liệu, biểu đồ và mọi dòng.</p>
 {OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, cùng chế độ, bộ lọc, biểu đồ và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
@@ -324,14 +338,15 @@ TREE = {
         {
             "title": FAQ_TITLE,
             "icon": "help",
-            "summary": "Không thấy menu Giá bao bì, số khác bảng tính cũ, thiếu giá, giới hạn hiện tại (một chai một bộ, một định mức một mã HH, giá từ lịch sử mua của ERP) và cách quản trị giao quyền Giá bao bì",
+            "summary": "Không thấy menu, số khác báo cáo HTML (mốc Sổ Misa 30/06/2026), thiếu giá, màn chưa đổi sau cập nhật, giới hạn hiện tại (một chai một bộ, một định mức một mã HH) và cách quản trị giao quyền Giá bao bì",
             "content": f"""<h2>Lỗi thường gặp</h2>
 <table>
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
 <tr><td>Không thấy nhóm menu Giá bao bì</td><td>Tài khoản chưa có quyền Xem của Giá bao bì.</td><td>Nhờ quản trị giao quyền (mục dưới).</td></tr>
 <tr><td>Thấy màn nhưng không có nút Xuất Excel / Báo giá mới / Nhập từ Excel</td><td>Thiếu quyền Xuất / Tạo (Nhập từ Excel cần thêm quyền Quản lý Import).</td><td>Nhờ quản trị bổ sung đúng quyền cần dùng.</td></tr>
-<tr><td>Giá trên ERP khác bảng tính đang dùng</td><td>ERP lấy giá từ lịch sử mua hàng và đơn mua hàng của chính ERP, chưa lấy từ MISA; báo giá chỉ có khi đã nhập ở Bảng giá VTBB. Pháp nhân bạn được xem cũng làm giá khác.</td><td>Bấm mã để mở Lịch sử mua hàng, xem đang dùng lần mua nào.</td></tr>
+<tr><td>Giá trên ERP khác báo cáo giá NVL bản HTML</td><td>Tới 30/06/2026 hai bên cùng số (Sổ Misa); sau mốc đó ERP lấy thêm đơn mua hàng thật trên ERP nên giá mới hơn. Báo giá chỉ có khi đã nhập ở Bảng giá VTBB. Pháp nhân bạn được xem cũng làm giá khác.</td><td>Bấm mã để mở Lịch sử mua hàng, cột Nguồn cho biết lần mua nào từ Sổ Misa, lần nào từ đơn mua hàng.</td></tr>
+<tr><td>Vừa cập nhật mà màn vẫn như cũ (giao diện cũ)</td><td>Giao diện cũ là ứng dụng cài được, trình duyệt giữ bản cũ tới khi tải lại.</td><td>Bấm <strong>Tải lại</strong> ở hộp <em>Đã có phiên bản mới</em> góc phải dưới, hoặc đóng hết thẻ rồi mở lại.</td></tr>
 <tr><td>Sản phẩm không hiện ở màn Tác động giá</td><td>Định mức của sản phẩm không chứa mã đang chọn, hoặc sản phẩm chưa có định mức.</td><td>Kiểm ở {ref(BOM_TITLE, "Định mức bao bì")}.</td></tr>
 <tr><td>CP bao bì để trống, xu hướng <em>Chưa có giá</em></td><td>Thiếu giá chai.</td><td>Nhập báo giá cho mã chai ({ref(PRICES_TITLE, "Bảng giá VTBB")}).</td></tr>
 <tr><td>Vừa sửa đơn mua hàng, giá trên màn chưa đổi</td><td>Chỉ đơn đã duyệt mới vào sổ giá; đơn nháp, chờ duyệt chưa tính.</td><td>Duyệt đơn rồi tải lại màn.</td></tr>
@@ -344,7 +359,7 @@ TREE = {
 <li>Mỗi chai dùng đúng <strong>một</strong> chai, một nắp, một nhãn (chưa khai được hai nhãn trên một chai).</li>
 <li>Mỗi mã HH <strong>một</strong> định mức, chưa có phiên bản định mức theo thời gian: đổi bao bì là sửa đè.</li>
 <li>Đơn giá hiểu là giá <strong>một cái</strong> theo ĐVT danh mục; mua theo đơn vị khác thì xem cảnh báo <em>ĐVT mua khác ĐVT danh mục</em>.</li>
-<li>Giá lấy từ lịch sử mua hàng của ERP, chưa nạp sổ mua hàng từ MISA.</li>
+<li>Sổ Misa mới có tới 30/06/2026; có số Misa mới hơn thì quản trị nạp lại.</li>
 <li>Chọn một lần tối đa 500 mã ở màn Tác động giá; Lịch sử mua hàng chọn tối đa 200 mã.</li>
 </ul>
 
