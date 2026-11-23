@@ -178,7 +178,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Giá nguyên vật liệu sản xuất",
     key: "gianvl",
     items: [
-      { to: "/packaging-cost/impact", label: "Tác động giá", icon: "ti-trending-up", entity: "packaging_cost" },
+      { to: "/packaging-cost/impact", label: "Tác động giá bao bì", icon: "ti-trending-up", entity: "packaging_cost" },
       { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum", entity: "packaging_cost" },
       {
         to: "/packaging-cost/price-list",
