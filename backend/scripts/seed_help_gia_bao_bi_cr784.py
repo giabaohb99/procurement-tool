@@ -106,10 +106,10 @@ TREE = {
 <tbody>
 <tr><td><strong>Lịch sử mua hàng</strong></td><td>Mỗi lần mua đã ghi vào lịch sử mua hàng (kể cả dữ liệu cũ đã nạp)</td><td>Ghi một lần, không sửa</td></tr>
 <tr><td><strong>Dòng đơn mua hàng</strong> (hiện chữ <em>ĐMH đang mở</em>)</td><td>Đơn mua hàng đã duyệt, dòng chưa hủy, chưa sang lịch sử mua hàng</td><td>Sửa giá, số lượng, nhà cung cấp, ngày trên đơn thì sổ sửa theo. Dòng sang lịch sử mua hàng, bị hủy, hoặc đơn bị hủy duyệt thì dòng này tự rời sổ</td></tr>
-<tr><td><strong>Sổ Misa</strong></td><td>Sổ chi tiết mua hàng Misa từ 2025 tới hết 30/06/2026, do Thu mua cung cấp (cùng số liệu với báo cáo giá NVL bản HTML), nạp một lần bằng công cụ của quản trị</td><td>Không sửa trên màn; có số mới thì quản trị nạp lại</td></tr>
+<tr><td><strong>Sổ Misa</strong></td><td>Sổ chi tiết mua hàng Misa (đang có từ 2025 tới hết 30/06/2026, cùng số liệu với báo cáo giá NVL bản HTML)</td><td>Thu mua nạp tệp Excel xuất từ Misa bằng nút <strong>Nạp sổ Misa</strong> ở màn Lịch sử mua hàng ({ref(HISTORY_TITLE, "xem cách nạp")})</td></tr>
 </tbody>
 </table>
-<p><strong>Mốc 30/06/2026:</strong> từ ngày này trở về trước hệ thống chỉ dùng giá trong <strong>Sổ Misa</strong>; sau mốc chỉ dùng lần mua của <strong>đơn mua hàng thật trên ERP</strong>. Lịch sử mua cũ nạp từ tệp khảo sát (có dòng sai ngày, sai giá) không còn được tính. Vì vậy số trên màn có thể khác bản HTML ở những mã đã có đơn mua hàng sau 30/06/2026: đó là giá mua mới hơn, đúng ý.</p>
+<p><strong>Mốc sổ Misa</strong> (hiện là 30/06/2026, tự dời tới ngày lớn nhất mỗi lần nạp sổ Misa mới): từ ngày này trở về trước hệ thống chỉ dùng giá trong <strong>Sổ Misa</strong>; sau mốc chỉ dùng lần mua của <strong>đơn mua hàng thật trên ERP</strong>. Lịch sử mua cũ nạp từ tệp khảo sát (có dòng sai ngày, sai giá) không còn được tính. Vì vậy số trên màn có thể khác bản HTML ở những mã đã có đơn mua hàng sau 30/06/2026: đó là giá mua mới hơn, đúng ý.</p>
 <p>Lần mua có <strong>đơn giá 0</strong> vẫn được đếm vào số lần mua nhưng không bao giờ dùng làm giá.</p>
 
 <h2>Giá cũ và giá mới</h2>
@@ -244,6 +244,19 @@ TREE = {
 <li>Báo giá nhập nhầm: nhập lại báo giá đúng với <strong>cùng ngày hiệu lực</strong>, báo giá nhập sau thắng. Muốn sửa hay xóa hẳn báo giá nhầm thì dùng màn danh sách <strong>Báo giá VTBB</strong>: màn này không có trong menu, mở bằng đường <em>/procurement/packaging-cost/quotes</em>; bấm một dòng để mở hộp sửa (<strong>Lưu thay đổi</strong>), nút xóa trong hộp cần quyền Xóa.</li>
 </ul>
 <p>Hộp báo lỗi: <em>Nhập mã vật tư bao bì.</em>, <em>Nhập đơn giá báo giá (lớn hơn 0).</em>, <em>Chọn ngày hiệu lực.</em> là thiếu ô tương ứng.</p>
+
+<h2>Nhập nhiều báo giá một lần từ Excel</h2>
+<ol>
+<li>Bấm <strong>Nhập báo giá</strong> ở góc phải trên cùng (cạnh Báo giá mới). Trong hộp, bấm <strong>Tải tệp mẫu</strong> để lấy tệp <em>mau-nhap-bao-gia-vtbb.xlsx</em>.</li>
+<li>Điền mỗi báo giá một dòng: <strong>Mã VTBB</strong>, <strong>Đơn giá</strong> (VNĐ chưa VAT), <strong>Ngày hiệu lực</strong> (bắt buộc); <strong>Mã NCC</strong>, <strong>VAT (%)</strong> (ghi 8 là 8%), <strong>Ghi chú</strong> (tùy chọn). Sheet <em>Hướng dẫn</em> trong tệp có giải thích và ví dụ.</li>
+<li>Chọn tệp, bấm <strong>Chạy thử</strong>: hệ thống chưa ghi gì, chuyển sang trang lô ở Quản lý Import với nhật ký từng dòng (thêm, sửa giá cũ → mới, dòng lỗi).</li>
+<li>Đúng rồi thì bấm <strong>Ghi thật</strong>.</li>
+</ol>
+<ul>
+<li>Trùng <strong>mã + mã NCC + ngày hiệu lực</strong> với báo giá đã có thì cập nhật đơn giá, VAT, ghi chú; chưa có thì thêm. Báo giá đang có mà không nằm trong tệp giữ nguyên.</li>
+<li>Mã chưa có trong danh mục sản phẩm, đơn giá trống / bằng 0, ngày sai bị bỏ và ghi lỗi; các dòng khác vẫn nhập.</li>
+<li>Cần quyền <strong>Tạo</strong> của Giá bao bì và quyền tạo, xem Quản lý Import. Lô nhập báo giá chưa hoàn tác được: sửa hay xóa báo giá nhầm ở màn Báo giá VTBB.</li>
+</ul>
 {OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Bảng giá VTBB</strong>. Nút <strong>Báo giá mới</strong> và nút <strong>Báo giá</strong> từng dòng mở cùng hộp nhập như trên. Cột <strong>Min</strong>, <strong>Max</strong> hiện sẵn; đơn giá hiện tới 4 chữ số lẻ. Danh sách Báo giá VTBB (không có trong menu, đường <em>/product-price-quotes</em>) là màn danh sách chung: bấm một dòng mở <strong>trang chi tiết</strong> (không phải hộp thoại) để sửa rồi bấm <strong>Lưu</strong>, hoặc <strong>Xóa</strong>.</p>""",
         },
         {
@@ -301,6 +314,19 @@ TREE = {
 <li>Lần mua đơn giá 0 vẫn hiện để đối chiếu, nhưng không tính vào giá bình quân, thấp nhất, cao nhất và biểu đồ.</li>
 </ul>
 <p><strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng). <strong>In</strong> mở bản in A4 ngang gồm ô lọc, thẻ số liệu, biểu đồ và mọi dòng.</p>
+
+<h2>Nạp sổ Misa</h2>
+<ol>
+<li>Xuất <strong>Sổ chi tiết mua hàng</strong> từ Misa ra Excel, giữ nguyên tiêu đề cột của Misa (cần các cột Ngày, Mã hàng, Số lượng, Đơn giá; nên có Mã / Tên nhà cung cấp, Tên kho, ĐVT). Chưa có sẵn thì bấm <strong>Tải tệp mẫu</strong> trong hộp nạp.</li>
+<li>Bấm <strong>Nạp sổ Misa</strong> ở góc phải trên cùng, chọn tệp, bấm <strong>Chạy thử</strong>.</li>
+<li>Ở trang lô, đọc dòng tóm tắt đầu nhật ký: số lần mua trong tệp, khoảng ngày, số dòng <em>giữ / thêm / bỏ</em>, mốc sổ Misa cũ → mới, các dòng bị bỏ qua. Đúng thì bấm <strong>Ghi thật</strong>.</li>
+</ol>
+<ul>
+<li>Chỉ dữ liệu Misa <strong>trong khoảng ngày của tệp</strong> bị thay: lần mua trùng giữ nguyên, lần mua mới thêm, lần mua không còn trong tệp bị bỏ. Ngoài khoảng ngày giữ nguyên, nên nạp từng tháng cũng được.</li>
+<li>Mã đầu PPA, CKC, CPM, CPN và dòng số lượng 0 bị bỏ qua (giống báo cáo HTML). Đơn giá trống vẫn nhận nhưng không làm giá.</li>
+<li>Mốc sổ Misa dời tới ngày lớn nhất đã nạp; giá các màn tính lại ngay.</li>
+<li>Cần quyền <strong>Sửa</strong> của Giá bao bì (vì đổi giá cả cụm) và quyền tạo, xem Quản lý Import. Lô nạp sổ Misa chưa hoàn tác được: nạp lại tệp đúng để sửa.</li>
+</ul>
 {OLD_UI}menu <strong>Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, cùng chế độ, bộ lọc, biểu đồ và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
@@ -321,7 +347,7 @@ TREE = {
 
 <h2>Nhập hàng loạt từ Excel</h2>
 <ol>
-<li>Ở màn Định mức bao bì, bấm <strong>Nhập từ Excel</strong>. Hộp <strong>Nhập định mức bao bì</strong> mở ra.</li>
+<li>Ở màn Định mức bao bì, bấm <strong>Nhập từ Excel</strong>. Hộp <strong>Nhập định mức bao bì</strong> mở ra. Chưa có tệp thì bấm <strong>Tải tệp mẫu</strong> (sheet MAP_SP đúng cột A–K, kèm sheet Hướng dẫn).</li>
 <li>Chọn tệp <strong>DATA_CHAI.xlsx</strong> (chỉ nhận .xlsx). Tệp có sheet <strong>MAP_SP</strong>, hoặc hai sheet <strong>data</strong> + <strong>DATA CHUNG</strong>.</li>
 <li>Bấm <strong>Chạy thử</strong>. Hệ thống chưa ghi gì, chỉ đọc tệp rồi chuyển sang trang lô ở <strong>Quản lý Import</strong>.</li>
 <li>Ở trang lô, đọc nhật ký từng dòng: dòng nào thêm mới, dòng nào đổi ô nào (cũ → mới), dòng nào lỗi.</li>
@@ -344,7 +370,7 @@ TREE = {
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
 <tr><td>Không thấy nhóm menu Giá bao bì</td><td>Tài khoản chưa có quyền Xem của Giá bao bì.</td><td>Nhờ quản trị giao quyền (mục dưới).</td></tr>
-<tr><td>Thấy màn nhưng không có nút Xuất Excel / Báo giá mới / Nhập từ Excel</td><td>Thiếu quyền Xuất / Tạo (Nhập từ Excel cần thêm quyền Quản lý Import).</td><td>Nhờ quản trị bổ sung đúng quyền cần dùng.</td></tr>
+<tr><td>Thấy màn nhưng không có nút Xuất Excel / Báo giá mới / Nhập báo giá / Nạp sổ Misa / Nhập từ Excel</td><td>Thiếu quyền Xuất / Tạo của Giá bao bì; Nạp sổ Misa cần quyền Sửa; các nút nhập Excel cần thêm quyền tạo, xem Quản lý Import.</td><td>Nhờ quản trị bổ sung đúng quyền cần dùng.</td></tr>
 <tr><td>Giá trên ERP khác báo cáo giá NVL bản HTML</td><td>Tới 30/06/2026 hai bên cùng số (Sổ Misa); sau mốc đó ERP lấy thêm đơn mua hàng thật trên ERP nên giá mới hơn. Báo giá chỉ có khi đã nhập ở Bảng giá VTBB. Pháp nhân bạn được xem cũng làm giá khác.</td><td>Bấm mã để mở Lịch sử mua hàng, cột Nguồn cho biết lần mua nào từ Sổ Misa, lần nào từ đơn mua hàng.</td></tr>
 <tr><td>Vừa cập nhật mà màn vẫn như cũ (giao diện cũ)</td><td>Giao diện cũ là ứng dụng cài được, trình duyệt giữ bản cũ tới khi tải lại.</td><td>Bấm <strong>Tải lại</strong> ở hộp <em>Đã có phiên bản mới</em> góc phải dưới, hoặc đóng hết thẻ rồi mở lại.</td></tr>
 <tr><td>Sản phẩm không hiện ở màn Tác động giá</td><td>Định mức của sản phẩm không chứa mã đang chọn, hoặc sản phẩm chưa có định mức.</td><td>Kiểm ở {ref(BOM_TITLE, "Định mức bao bì")}.</td></tr>
@@ -359,7 +385,7 @@ TREE = {
 <li>Mỗi chai dùng đúng <strong>một</strong> chai, một nắp, một nhãn (chưa khai được hai nhãn trên một chai).</li>
 <li>Mỗi mã HH <strong>một</strong> định mức, chưa có phiên bản định mức theo thời gian: đổi bao bì là sửa đè.</li>
 <li>Đơn giá hiểu là giá <strong>một cái</strong> theo ĐVT danh mục; mua theo đơn vị khác thì xem cảnh báo <em>ĐVT mua khác ĐVT danh mục</em>.</li>
-<li>Sổ Misa mới có tới 30/06/2026; có số Misa mới hơn thì quản trị nạp lại.</li>
+<li>Sổ Misa hiện có tới 30/06/2026; có số Misa mới hơn thì nạp bằng nút Nạp sổ Misa ở màn Lịch sử mua hàng.</li>
 <li>Chọn một lần tối đa 500 mã ở màn Tác động giá; Lịch sử mua hàng chọn tối đa 200 mã.</li>
 </ul>
 

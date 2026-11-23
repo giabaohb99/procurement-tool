@@ -33,7 +33,9 @@ export function PackagingPriceListToolbar({
   const patch = (next: Partial<PriceListFilters>) => onChange({ ...filters, ...next })
 
   return (
-    <div className="flex w-full flex-wrap items-center gap-2">
+    //  `flex-1` (không `w-full`): khối lọc chiếm phần còn lại của hàng để nút Tải lại / Cột của bảng đứng CÙNG hàng bên phải;
+    //  `w-full` từng đẩy hai nút đó xuống một hàng riêng, chừa dải trống giữa thanh lọc và bảng (người chủ báo 23/11/2026).
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
       <div className="relative w-full max-w-xs">
         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input

@@ -9,7 +9,7 @@ import DateRangePicker from '../components/DateRangePicker'
 import { fmtDateTime } from '../utils/datetime'
 
 // 4 = Định mức bao bì (duoc-CR-784): tải lên từ màn Định mức bao bì, không có trong hộp "Import mới" của trang này.
-export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng', 4: 'Định mức bao bì' }
+export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng', 4: 'Định mức bao bì', 5: 'Báo giá VTBB', 6: 'Sổ Misa (giá NVL)' }
 export const IMPORT_MODE: Record<number, string> = { 0: 'Chạy thử', 1: 'Ghi' }
 export const IMPORT_STATUS: Record<number, { l: string; c: string }> = {
   0: { l: 'Chờ', c: 'gray' }, 1: { l: 'Đang chạy', c: 'warn' }, 2: { l: 'Xong', c: 'ok' }, 3: { l: 'Lỗi', c: 'err' },

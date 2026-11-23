@@ -52,6 +52,15 @@ _MODULE_GUARDS = {
         "create": ([("packaging_cost", "create")], "Nhập định mức bao bì cần quyền tạo ở Giá bao bì"),
         "revert": ([("packaging_cost", "delete")], "Hoàn tác lô định mức bao bì cần quyền xóa ở Giá bao bì"),
     },
+    ImportModule.PACKAGING_QUOTE: {
+        "create": ([("packaging_cost", "create")], "Nhập báo giá VTBB cần quyền tạo ở Giá bao bì"),
+        "revert": ([("packaging_cost", "delete")], "Hoàn tác lô báo giá VTBB cần quyền xóa ở Giá bao bì"),
+    },
+    #  Sổ Misa đổi giá của cả cụm (thay dòng trong khoảng ngày + dời mốc) nên đòi quyền SỬA, không chỉ quyền tạo.
+    ImportModule.PACKAGING_MISA: {
+        "create": ([("packaging_cost", "write")], "Nạp sổ Misa cần quyền sửa ở Giá bao bì"),
+        "revert": ([("packaging_cost", "write")], "Hoàn tác lô sổ Misa cần quyền sửa ở Giá bao bì"),
+    },
     #  M6: Phòng ban nhập Excel (CSV cũ đã ngừng và trỏ về đây) cần quyền sửa Phòng ban.
     ImportModule.DEPARTMENT: {
         "create": ([("department", "write")], "Nhập Phòng ban cần quyền sửa Phòng ban"),
@@ -133,7 +142,13 @@ def download_template(module: int = Query(...), db: Session = Depends(get_db), u
     """Tải file .xlsx mẫu (đúng bộ cột) cho một đối tượng danh mục. Đặt TRƯỚC /{bid}
     để 'template' không bị bắt làm bid (int) → 422."""
     _guard_view(db, user)
+    from app.modules.packaging_cost.import_templates import TEMPLATES as PACKAGING_TEMPLATES
+
     from . import catalog_import, doc_import
+    if module in PACKAGING_TEMPLATES:       # duoc-CR-784: định mức bao bì, báo giá VTBB, Sổ Misa (có sheet Hướng dẫn)
+        name, build = PACKAGING_TEMPLATES[module]
+        return Response(content=build(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": _content_disposition(f"{name}.xlsx")})
     if catalog_import.is_catalog_module(module):
         data = catalog_import.build_template(module)
         sheet = catalog_import.ADAPTERS[module]["sheet"]

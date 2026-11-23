@@ -25,7 +25,8 @@ _SUBSYSTEM_MODULES = {
     "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
     "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
                     ImportModule.SURVEY, ImportModule.PURCHASE_ORDER,
-                    ImportModule.CUSTOMS_DECLARATION, ImportModule.PACKAGING_BOM],
+                    ImportModule.CUSTOMS_DECLARATION, ImportModule.PACKAGING_BOM, ImportModule.PACKAGING_QUOTE,
+                    ImportModule.PACKAGING_MISA],
     "production": [ImportModule.SUPPLIER, ImportModule.PRODUCT, ImportModule.UNIT,
                    ImportModule.ITEM_GROUP],
     "inventory": [ImportModule.WAREHOUSE],
@@ -209,8 +210,8 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
             batch.updated_by = user_id
             db.commit()
         return res
-    if batch.module == ImportModule.PACKAGING_BOM:
-        #  duoc-CR-784: nhập định mức bao bì không ghi bản chụp — rẽ riêng để KHÔNG rơi xuống nhánh `else` cuối
+    if batch.module in (ImportModule.PACKAGING_BOM, ImportModule.PACKAGING_QUOTE, ImportModule.PACKAGING_MISA):
+        #  duoc-CR-784: nhập định mức bao bì / báo giá VTBB / Sổ Misa không ghi bản chụp — rẽ riêng để KHÔNG rơi xuống nhánh `else` cuối
         #  (hoàn tác của Khảo sát). Muốn quay lại thì sửa / nhập lại tệp.
         return {"ok": False, "message": "Phân hệ này chưa hỗ trợ hoàn tác — sửa lại định mức hoặc nhập lại tệp đúng."}
     changes = (db.query(ImportChange).filter(ImportChange.batch_id == batch.id)

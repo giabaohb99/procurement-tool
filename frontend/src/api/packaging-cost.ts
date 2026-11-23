@@ -19,6 +19,14 @@ export const PACKAGING_LIMIT_API = '/api/product-price-limits'
 export const PACKAGING_BOM_API = '/api/packaging-boms'
 /** `ImportModule.PACKAGING_BOM` ở `backend/app/modules/import_tool/model.py`. */
 export const IMPORT_MODULE_PACKAGING_BOM = 4
+/** `ImportModule.PACKAGING_QUOTE` — Báo giá VTBB. */
+export const IMPORT_MODULE_PACKAGING_QUOTE = 5
+/** `ImportModule.PACKAGING_MISA` — Sổ chi tiết mua hàng Misa (giá NVL). */
+export const IMPORT_MODULE_PACKAGING_MISA = 6
+/** Ba kiểu nhập của cụm giá bao bì: có nút "Ghi thật" ở trang lô, KHÔNG hỗ trợ hoàn tác. */
+export const PACKAGING_IMPORT_MODULES: readonly number[] = [
+  IMPORT_MODULE_PACKAGING_BOM, IMPORT_MODULE_PACKAGING_QUOTE, IMPORT_MODULE_PACKAGING_MISA,
+]
 
 /** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
 export async function fetchCodeOptions(): Promise<PackagingCodeOption[]> {
@@ -137,5 +145,15 @@ export async function exportImpact(body: PackagingImpactRequest) {
     saveBlob(r, 'tac-dong-gia-bao-bi.xlsx')
   } catch (e) {
     throw new Error(await readBlobError(e))
+  }
+}
+
+/** Tải tệp mẫu Excel của một kiểu nhập (`import.read`). Ném `Error` mang câu thông báo cho nơi gọi. */
+export async function downloadImportTemplate(module: number) {
+  try {
+    const r = await api.get('/api/imports/template', { params: { module }, responseType: 'blob', _silent: true } as any)
+    saveBlob(r, `mau-nhap-${module}.xlsx`)
+  } catch (e) {
+    throw new Error(await readBlobError(e, 'Không tải được tệp mẫu'))
   }
 }

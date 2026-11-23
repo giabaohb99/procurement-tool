@@ -2,7 +2,7 @@
  * duoc-CR-784 — danh mục Định mức bao bì theo mã hàng hóa (`/api/packaging-boms`, khóa `packaging_cost`).
  *
  * Mỗi mã HH một dòng: chai + nắp + nhãn (tính theo chai) và nhãn thùng + thùng (tính theo thùng, chia quy
- * cách). Nạp hàng loạt bằng nút "Nhập từ Excel" (`PackagingBomImportButton`); ở đây sửa từng dòng.
+ * cách). Nạp hàng loạt bằng nút "Nhập từ Excel" (`PackagingExcelImportButton`); ở đây sửa từng dòng.
  * Mã thành phần chưa có trong danh mục sản phẩm thì ô tô đỏ (máy chủ gắn `parts[].in_catalog`).
  */
 import type { CrudConfig, CrudFormField } from '@/shared/crud'
@@ -11,7 +11,8 @@ import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 import { PACKAGING_BOM_API } from '../api/packaging-cost-api'
-import { PackagingBomImportButton } from '../components/packaging-bom-import-button'
+import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
+import { PACKAGING_BOM_IMPORT } from './packaging-excel-imports'
 import type { PackagingBom } from '../types/packaging-cost-types'
 import { packagingRoleLabel } from '../utils/packaging-warning-text'
 import { packagingCostKeys } from './packaging-cost-query-keys'
@@ -73,7 +74,7 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
   deleteInForm: true,
   dialogMaxWidth: 'sm:max-w-2xl',
   alsoInvalidate: [packagingCostKeys.all],
-  renderToolbarExtra: () => <PackagingBomImportButton />,
+  renderToolbarExtra: () => <PackagingExcelImportButton kind={PACKAGING_BOM_IMPORT} />,
   columns: [
     {
       key: 'hh_code',

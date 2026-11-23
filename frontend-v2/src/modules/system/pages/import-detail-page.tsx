@@ -36,6 +36,7 @@ import {
   IMPORT_MODE_DRY_RUN,
   IMPORT_MODE_LABELS,
   IMPORT_MODULE_LABELS,
+  IMPORT_MODULES_WITHOUT_REVERT,
   IMPORT_STATUS_DONE,
   IMPORT_STATUS_FAILED,
 } from '../config/import-meta'
@@ -119,6 +120,7 @@ export function ImportDetailPage() {
     !!batch &&
     batch.status === IMPORT_STATUS_DONE &&
     batch.mode === IMPORT_MODE_APPLY &&
+    !IMPORT_MODULES_WITHOUT_REVERT.includes(batch.module) &&
     can('import', 'delete')
 
   // Bản chạy thử đã hoàn tất -> cho phép "Ghi thật" (thử → xem → ghi).

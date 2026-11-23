@@ -7,9 +7,10 @@ import TableScroll from '../../components/TableScroll'
 import TableToolbar from '../../components/TableToolbar'
 import { toast } from '../../components/toast'
 import PackagingLimitModal from '../../components/packaging/PackagingLimitModal'
+import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingQuoteModal from '../../components/packaging/PackagingQuoteModal'
 import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText, RangeText } from '../../components/packaging/PackagingCells'
-import { downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
+import { IMPORT_MODULE_PACKAGING_QUOTE, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
 import type { PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
@@ -131,6 +132,9 @@ export default function PackagingPriceList() {
             onChange={(v) => { setRange(v); setPage(1) }} />
         </div>
         {canQuote && <button className="btn" onClick={() => setQuoteCode('')}><i className="ti ti-plus" />Báo giá mới</button>}
+        <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_QUOTE} action="create"
+          label="Nhập báo giá" title="Nhập báo giá VTBB từ Excel"
+          description="Mỗi dòng một báo giá: Mã VTBB, Đơn giá (VNĐ chưa VAT), Ngày hiệu lực; tùy chọn Mã NCC, VAT (%), Ghi chú. Trùng mã + NCC + ngày hiệu lực thì cập nhật, chưa có thì thêm. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
         {can('packaging_cost', 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel}>
             <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
@@ -139,29 +143,31 @@ export default function PackagingPriceList() {
       </div>
 
       <div className="card table-card">
-        <div className="pkg-row" style={{ padding: '14px 0 10px' }}>
-          <div className="pkg-search">
-            <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên vật tư…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
+        {/* Thanh lọc nằm CÙNG hàng với nút Tải lại / Cột của bảng (người chủ báo dải trống giữa hai hàng, 23/11/2026). */}
+        <TableToolbar {...table} onRefresh={list.reload}>
+          <div className="pkg-row" style={{ flex: 1, minWidth: 0 }}>
+            <div className="pkg-search">
+              <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên vật tư…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
+            </div>
+            <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
+              {['', ...groups].map((g) => (
+                <button key={g || 'all'} type="button" className={'pkg-pill' + (filters.group === g ? ' on' : '')}
+                  aria-pressed={filters.group === g} onClick={() => patch({ group: g })}>{g || 'Tất cả'}</button>
+              ))}
+            </div>
+            <div className="pkg-seg" role="group" aria-label="Phạm vi mã">
+              <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
+              <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
+            </div>
+            {PACKAGING_LIMITS_ENABLED && (
+              <label className="pkg-switch">
+                <input type="checkbox" checked={filters.breachOnly} onChange={(e) => patch({ breachOnly: e.target.checked })} />
+                Chỉ mã ngoài ngưỡng
+              </label>
+            )}
+            {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
           </div>
-          <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
-            {['', ...groups].map((g) => (
-              <button key={g || 'all'} type="button" className={'pkg-pill' + (filters.group === g ? ' on' : '')}
-                aria-pressed={filters.group === g} onClick={() => patch({ group: g })}>{g || 'Tất cả'}</button>
-            ))}
-          </div>
-          <div className="pkg-seg" role="group" aria-label="Phạm vi mã">
-            <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
-            <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
-          </div>
-          {PACKAGING_LIMITS_ENABLED && (
-            <label className="pkg-switch">
-              <input type="checkbox" checked={filters.breachOnly} onChange={(e) => patch({ breachOnly: e.target.checked })} />
-              Chỉ mã ngoài ngưỡng
-            </label>
-          )}
-          {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
-        </div>
-        <TableToolbar {...table} onRefresh={list.reload} />
+        </TableToolbar>
         <TableScroll>
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
             <TableColGroup columns={table.columns} colW={table.colW} />

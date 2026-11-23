@@ -1,6 +1,6 @@
 import type { CrudConfig } from './cruds'
-import PackagingBomImportButton from '../components/packaging/PackagingBomImportButton'
-import { PACKAGING_BOM_API, PACKAGING_QUOTE_API } from '../api/packaging-cost'
+import PackagingExcelImportButton from '../components/packaging/PackagingExcelImportButton'
+import { IMPORT_MODULE_PACKAGING_BOM, PACKAGING_BOM_API, PACKAGING_QUOTE_API } from '../api/packaging-cost'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtPrice } from '../utils/money'
 import { PACKAGING_ROLE_LABELS } from '../utils/packaging-price'
@@ -77,7 +77,11 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   'packaging-boms': {
     slug: 'packaging-boms', entity: 'packaging_cost', auditEntity: 'packaging_bom', title: 'Định mức bao bì',
     apiPath: PACKAGING_BOM_API, txn: true,
-    headerExtra: () => <PackagingBomImportButton />,
+    headerExtra: () => (
+      <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_BOM} action="create"
+        label="Nhập từ Excel" title="Nhập định mức bao bì"
+        description="Tệp DATA_CHAI.xlsx (sheet MAP_SP, hoặc data + DATA CHUNG). Hệ thống chạy thử trước — xem nhật ký từng dòng ở trang lô rồi mới bấm Ghi thật. Mã HH đã có thì cập nhật, chưa có thì tạo; dòng không có trong tệp giữ nguyên." />
+    ),
     columns: [
       { key: 'hh_code', label: 'Mã HH', render: (r) => <b>{r.hh_code}</b> },
       { key: 'hh_name', label: 'Tên hàng hóa' },

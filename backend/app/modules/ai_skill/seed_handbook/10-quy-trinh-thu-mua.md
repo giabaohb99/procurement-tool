@@ -98,6 +98,10 @@ phân hệ **Thu mua**, nhóm menu **Giá nguyên vật liệu sản xuất**; g
   thành phần: Nhãn* (phần đó tính 0) · *Chưa khai mã thành phần* · *Thiếu quy cách thùng* · *ĐVT mua khác ĐVT danh mục*.
 - **Giới hạn:** một chai một bộ chai / nắp / nhãn; mỗi mã HH một định mức (chưa có phiên bản); đơn giá hiểu là giá một
   cái theo ĐVT danh mục; Sổ Misa mới tới 30/06/2026.
+- **Nhập Excel (kèm tệp mẫu, nút *Tải tệp mẫu* trong hộp):** ***Nhập báo giá*** ở Bảng giá VTBB (Mã VTBB, Đơn giá, Ngày hiệu
+  lực, Mã NCC, VAT, Ghi chú; trùng mã + NCC + ngày thì sửa) · ***Nạp sổ Misa*** ở Lịch sử mua hàng (Sổ chi tiết mua hàng xuất
+  từ Misa; chỉ thay dữ liệu Misa trong khoảng ngày của tệp, mốc tự dời; cần quyền **Sửa** Giá bao bì) · ***Nhập từ Excel*** ở
+  Định mức bao bì. Cả ba: ***Chạy thử*** → xem nhật ký ở trang lô Quản lý Import → ***Ghi thật***; chưa hoàn tác được.
 - **In / Excel:** bản in A4 ngang và tệp Excel trình bày như báo cáo HTML (tiêu đề *BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT*,
   ngày xuất, ô tăng xanh giảm đỏ), theo đúng bộ lọc đang xem; Excel tối đa 5.000 dòng.
 - Giao diện cũ là ứng dụng cài được: cập nhật xong mà màn chưa đổi thì bấm ***Tải lại*** ở hộp *Đã có phiên bản mới*.

@@ -24,8 +24,10 @@ import {
   PackagingPriceListToolbar,
   type PriceListFilters,
 } from '../components/packaging-price-list-toolbar'
+import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PackagingPriceLimitDialog } from '../components/packaging-price-limit-dialog'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
+import { PACKAGING_QUOTE_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
 import { usePackagingPriceList } from '../hooks/use-packaging-price-list'
 import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-columns'
@@ -114,6 +116,7 @@ export function PackagingPriceListPage() {
                 Báo giá mới
               </Button>
             )}
+            <PackagingExcelImportButton kind={PACKAGING_QUOTE_IMPORT} />
             {can('packaging_cost', 'export') && (
               <Button
                 type="button"

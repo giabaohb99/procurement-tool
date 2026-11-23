@@ -171,6 +171,18 @@ Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging
 - Cố định hàng tiêu đề và vài cột đầu, bật bộ lọc, khổ A4 ngang vừa một trang chiều ngang, lặp hàng tiêu đề khi in, chân
   trang *Trang x / y*, không kẻ lưới, font Montserrat.
 
+**Nhập Excel kèm tệp mẫu** (23/11/2026, cả hai giao diện; đi qua Quản lý Import: Chạy thử → nhật ký → Ghi thật, chưa hoàn tác):
+
+| Loại (module) | Nút / màn | Quyền | Luật |
+|---|---|---|---|
+| Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_cost.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
+| Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục |
+| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa |
+
+Mọi nút nhập còn đòi `import.create` + `import.read`. Tệp mẫu: `GET /api/imports/template?module=4|5|6` (sheet dữ liệu chỉ có
+tiêu đề + sheet *Hướng dẫn*; ví dụ đặt dưới dòng 6 để bộ đọc Misa không nhận nhầm). Mã: `packaging_cost/quote_import.py`,
+`misa_xlsx_import.py`, `import_templates.py`, `import_registry.py`.
+
 ## 7. Định mức bao bì và nhập từ Excel
 
 Màn `/procurement/packaging-cost/boms` (cũ `/packaging-boms`). Bài HDSD: *Giá bao bì — Khai và nhập định mức bao bì từ Excel*.

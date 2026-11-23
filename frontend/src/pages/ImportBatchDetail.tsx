@@ -6,7 +6,7 @@ import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { IMPORT_MODULE, IMPORT_MODE, statusBadge } from './ImportBatches'
-import { IMPORT_MODULE_PACKAGING_BOM } from '../api/packaging-cost'
+import { PACKAGING_IMPORT_MODULES } from '../api/packaging-cost'
 
 const LEVEL: Record<number, { l: string; c: string }> = {
   0: { l: 'Info', c: '#64748b' }, 1: { l: 'Cảnh báo', c: '#d97706' },
@@ -93,13 +93,13 @@ export default function ImportBatchDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>Import #{b.id} — {IMPORT_MODULE[b.module]}</h2>
         {statusBadge(b.status)}
         <span style={{ flex: 1 }} />
-        {b.module === IMPORT_MODULE_PACKAGING_BOM && b.status === 2 && b.mode === 0 && can('import', 'create') && (
+        {PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 0 && can('import', 'create') && (
           <button className="btn" onClick={commit} disabled={committing}>
             <i className="ti ti-device-floppy" />{committing ? 'Đang gửi…' : 'Ghi thật'}
           </button>
         )}
-        {/* Lô định mức bao bì chưa hỗ trợ hoàn tác (backend trả 400) nên không bày nút. */}
-        {b.module !== IMPORT_MODULE_PACKAGING_BOM && b.status === 2 && b.mode === 1 && can('import', 'delete') && (
+        {/* Lô cụm giá bao bì (định mức, báo giá, sổ Misa) chưa hỗ trợ hoàn tác (backend trả 400) nên không bày nút. */}
+        {!PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 1 && can('import', 'delete') && (
           <button className="btn ghost" style={{ color: '#dc2626' }} onClick={revert} disabled={reverting}>
             <i className="ti ti-arrow-back-up" />{reverting ? 'Đang hoàn tác…' : 'Hoàn tác'}
           </button>

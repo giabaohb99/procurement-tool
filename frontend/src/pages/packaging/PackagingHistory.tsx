@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { toast } from '../../components/toast'
+import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingHistoryChart from '../../components/packaging/PackagingHistoryChart'
 import PackagingHistoryTable from '../../components/packaging/PackagingHistoryTable'
 import PackagingHistoryToolbar from '../../components/packaging/PackagingHistoryToolbar'
-import { downloadExport, fetchCodeOptions, fetchHhOptions, fetchHistory } from '../../api/packaging-cost'
+import { IMPORT_MODULE_PACKAGING_MISA, downloadExport, fetchCodeOptions, fetchHhOptions, fetchHistory } from '../../api/packaging-cost'
 import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
@@ -111,6 +112,9 @@ export default function PackagingHistory() {
             <i className="ti ti-printer" />In
           </button>
         )}
+        <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_MISA} action="write"
+          label="Nạp sổ Misa" title="Nạp Sổ chi tiết mua hàng Misa"
+          description="Tệp Excel Sổ chi tiết mua hàng xuất từ Misa (cột Ngày, Mã hàng, Số lượng, Đơn giá, Tên NCC, Tên kho…). Chỉ thay dữ liệu Misa trong khoảng ngày của tệp, dòng trùng giữ nguyên, ngoài khoảng không đổi; mốc sổ Misa dời theo ngày lớn nhất. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
         {can('packaging_cost', 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel}>
             <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}

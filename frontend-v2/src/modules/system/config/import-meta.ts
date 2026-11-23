@@ -12,6 +12,15 @@ export const IMPORT_MODULE_PURCHASE_ORDER = 2
 // Cả hai nạp ở màn riêng của phân hệ mình nên KHÔNG có trong `IMPORT_MODULE_OPTIONS`; chỉ cần nhãn để trang lô nhập hiện chữ.
 export const IMPORT_MODULE_CUSTOMS_DECLARATION = 3
 export const IMPORT_MODULE_PACKAGING_BOM = 4
+// duoc-CR-784: báo giá VTBB + Sổ chi tiết mua hàng Misa (.xlsx) của cụm Giá NVL sản xuất.
+export const IMPORT_MODULE_PACKAGING_QUOTE = 5
+export const IMPORT_MODULE_PACKAGING_MISA = 6
+/** Ba loại nhập của cụm Giá NVL sản xuất: backend chưa hỗ trợ hoàn tác nên màn lô không bày nút Hoàn tác. */
+export const IMPORT_MODULES_WITHOUT_REVERT: readonly number[] = [
+  IMPORT_MODULE_PACKAGING_BOM,
+  IMPORT_MODULE_PACKAGING_QUOTE,
+  IMPORT_MODULE_PACKAGING_MISA,
+]
 // Danh mục nền (Đ-13d) — khớp `ImportModule` ở backend.
 export const IMPORT_MODULE_COMPANY = 10
 export const IMPORT_MODULE_DEPARTMENT = 11
@@ -38,6 +47,8 @@ export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_PURCHASE_ORDER]: 'Đơn mua hàng',
   [IMPORT_MODULE_CUSTOMS_DECLARATION]: 'Dữ liệu hải quan',
   [IMPORT_MODULE_PACKAGING_BOM]: 'Định mức bao bì',
+  [IMPORT_MODULE_PACKAGING_QUOTE]: 'Báo giá VTBB',
+  [IMPORT_MODULE_PACKAGING_MISA]: 'Sổ Misa (giá NVL)',
   [IMPORT_MODULE_COMPANY]: 'Công ty',
   [IMPORT_MODULE_DEPARTMENT]: 'Phòng ban',
   [IMPORT_MODULE_EMPLOYEE]: 'Nhân sự',
@@ -139,6 +150,19 @@ export const IMPORT_CATEGORY_LABELS: Record<string, string> = {
   doc_exists: 'Phiếu đã tồn tại',
   doc_no_line: 'Phiếu không có dòng',
   line_missing: 'Dòng thiếu dữ liệu',
+  // duoc-CR-784: nhập báo giá VTBB (`packaging_cost/quote_import.py`) + nạp Sổ Misa (`misa_xlsx_import.py`).
+  quote_new: 'Thêm báo giá',
+  quote_update: 'Sửa báo giá',
+  misa_summary: 'Tóm tắt sổ Misa',
+  misa_add: 'Thêm lần mua',
+  misa_remove: 'Bỏ lần mua',
+  bad_row: 'Dòng thiếu / sai',
+  bad_date: 'Sai ngày',
+  bad_number: 'Số / mã lỗi',
+  bad_vat: 'VAT không hợp lệ',
+  code_not_in_catalog: 'Mã chưa có trong danh mục',
+  duplicate: 'Trùng dòng',
+  log_trimmed: 'Bớt nhật ký',
 }
 
 /** Batch còn đang chạy → cần auto-poll để cập nhật khi worker xong. */

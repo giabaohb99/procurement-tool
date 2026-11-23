@@ -25,7 +25,9 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { exportPackagingHistory } from '../api/packaging-cost-api'
 import { PackagingHistoryChart } from '../components/packaging-history-chart'
 import { PackagingHistorySummary } from '../components/packaging-history-summary'
+import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PackagingHistoryToolbar } from '../components/packaging-history-toolbar'
+import { PACKAGING_MISA_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
 import { usePackagingHhOptions, usePackagingHistory } from '../hooks/use-packaging-history'
 import { usePackagingHistoryColumns } from '../hooks/use-packaging-history-columns'
@@ -113,6 +115,7 @@ export function PackagingHistoryPage() {
                 </Link>
               </Button>
             )}
+            <PackagingExcelImportButton kind={PACKAGING_MISA_IMPORT} />
             {can('packaging_cost', 'export') && (
               <Button
                 type="button"
