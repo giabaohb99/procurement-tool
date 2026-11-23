@@ -1,21 +1,18 @@
 /**
- * duoc-CR-784 — luật thuần của tab Lịch sử mua hàng: đường dẫn sâu (`?codes=` / `?hh=`), bộ lọc → tham số máy chủ, dòng
- * KPI, dữ liệu + trục của biểu đồ đơn giá.
+ * duoc-CR-784 — luật thuần của tab Lịch sử mua hàng: đường dẫn sâu (`?codes=` / `?hh=`), bộ lọc → tham số máy chủ, dữ
+ * liệu + trục của biểu đồ đơn giá. Các thẻ số liệu ở `packaging-history-summary-items.ts`.
  *
  * Mã được cất trong URL (không chỉ trong state) để màn khác dẫn thẳng vào được — bấm mã ở Bảng giá / Giá mua gần nhất /
  * Tác động giá là mở đúng lịch sử của mã đó — và để gửi link cho người khác.
  */
 import { appRoutes } from '@/shared/constants/app-routes'
 import { formatDate } from '@/shared/utils/format-date'
-import { formatQuantity } from '@/shared/utils/format-money'
 
 import type {
   PackagingHistoryMode,
   PackagingHistoryParams,
   PackagingHistoryPoint,
-  PackagingHistoryStats,
 } from '../types/packaging-cost-types'
-import { formatPackagingPrice } from './packaging-price-format'
 
 /** Trần số mã một lượt — khớp `MAX_CODES` của máy chủ (`history_service.py`). */
 export const PACKAGING_HISTORY_MAX_CODES = 200
@@ -113,45 +110,6 @@ export function buildHistoryParams(
     date_to: filters.to || undefined,
     ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
   }
-}
-
-export interface HistorySummaryItem {
-  label: string
-  value: string
-}
-
-/**
- * Các số của dòng KPI. Giá bình quân / thấp nhất / cao nhất / tổng số lượng chỉ có nghĩa khi xem MỘT mã (trộn giá của
- * nhiều vật tư khác nhau ra một con số là vô nghĩa) nên nhiều mã chỉ còn số lần mua, số nhà cung cấp và khoảng ngày.
- */
-export function buildHistorySummary(
-  stats: PackagingHistoryStats,
-  singleCode: boolean,
-): HistorySummaryItem[] {
-  const count =
-    stats.priced_count === stats.purchase_count
-      ? String(stats.purchase_count)
-      : `${stats.purchase_count} (${stats.priced_count} có giá)`
-  const items: HistorySummaryItem[] = [{ label: 'Số lần mua', value: count }]
-  if (singleCode) {
-    items.push(
-      { label: 'Tổng SL', value: formatQuantity(stats.qty_total) || '0' },
-      { label: 'Giá BQ gia quyền', value: formatPackagingPrice(stats.weighted_avg) || '—' },
-      { label: 'Thấp nhất', value: formatPackagingPrice(stats.min) || '—' },
-      { label: 'Cao nhất', value: formatPackagingPrice(stats.max) || '—' },
-    )
-  }
-  items.push({ label: 'Số NCC', value: String(stats.supplier_count) })
-  if (stats.first_date && stats.last_date) {
-    items.push({
-      label: 'Khoảng ngày',
-      value:
-        stats.first_date === stats.last_date
-          ? formatDate(stats.first_date)
-          : `${formatDate(stats.first_date)} – ${formatDate(stats.last_date)}`,
-    })
-  }
-  return items
 }
 
 /** Điểm biểu đồ: nhãn ngày ngắn cho trục + giá + thông tin hiện ở ô rê chuột. */

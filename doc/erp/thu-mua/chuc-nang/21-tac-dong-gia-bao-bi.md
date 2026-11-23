@@ -141,8 +141,15 @@ tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có c�
 
 - Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (mọi thành phần của định mức, thêm cột Vai trò); tối đa 200
   mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm.
-- Dòng tóm tắt (trên toàn bộ tập lọc): Số lần mua, Số NCC, Khoảng ngày; đúng một mã thì thêm Tổng SL, Giá BQ gia quyền, Thấp
-  nhất, Cao nhất, và biểu đồ *Diễn biến đơn giá*.
+- Thẻ số liệu (trên toàn bộ tập lọc), trình bày y bản mẫu HTML (thẻ trắng, viền trên xanh lá, số to, một dòng phụ; chốt
+  23/11/2026), ở cả màn hình lẫn bản in:
+  - Đúng một mã: *Tổng số lần mua* (dòng phụ: khoảng ngày) · *Tổng số lượng mua* (ĐVT) · *Tổng giá trị mua* (giá x SL của
+    các lần có giá; dòng phụ: số lần có giá / số lần mua) · *Giá thấp nhất – cao nhất* (BQ gia quyền) · *Gần nhất so với lần
+    đầu* (phần trăm giá lần có giá gần nhất so với lần có giá đầu tiên, tăng xanh giảm đỏ; dòng phụ: giá đầu → giá gần
+    nhất) · *Số nhà cung cấp*; kèm biểu đồ *Diễn biến đơn giá*.
+  - Nhiều mã / mọi mã: *Số mã đã chọn* (số mã có lịch sử mua) hoặc *Số mã hàng* · *Tổng số lần mua* · *Tổng giá trị mua* ·
+    *Số nhà cung cấp*.
+  - Theo mã sản phẩm: *Số sản phẩm* · *Mã vật tư liên quan* · *Số dòng lịch sử* · *Số nhà cung cấp*.
 - Cột: Lần, Ngày mua, Mã VTBB, Tên vật tư, [Vai trò], Nhà cung cấp, **Kho**, Số lượng, Đơn giá, Thành tiền, So lần trước, Nguồn
   (mã ĐMH bấm được, nhãn *ĐMH đang mở*). Dòng giá 0 hiện nhưng không tính KPI / biểu đồ. Xuất Excel tối đa 5.000 dòng.
 - **Kho** (bổ sung 23/11/2026 theo ý kiến chủ dự án: *thiếu cột kho so với file của Ms.Mi*): tên kho nhập hàng của lần mua. Dòng

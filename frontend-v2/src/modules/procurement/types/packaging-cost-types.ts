@@ -386,6 +386,15 @@ export interface PackagingHistoryStats {
   supplier_count: number
   first_date: string | null
   last_date: string | null
+  /** Tổng giá x số lượng của các lần mua CÓ GIÁ. */
+  amount_total: number | null
+  /** Số mã có lần mua trong tập lọc. */
+  code_count: number
+  /** ĐVT trên sổ giá (có nghĩa khi xem một mã). */
+  unit: string
+  /** Giá của lần mua có giá đầu tiên / gần nhất trong tập lọc. */
+  first_price: number | null
+  last_price: number | null
 }
 
 export interface PackagingHistoryPoint {

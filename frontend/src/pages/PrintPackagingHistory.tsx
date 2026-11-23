@@ -6,7 +6,7 @@ import { PrintHistoryFilters, PrintHistoryTable, PrintPriceChart } from '../comp
 import PackagingPrintShell from '../components/packaging/PackagingPrintShell'
 import { PrintKpis } from '../components/packaging/PackagingPrintWidgets'
 import { cappedPrintNotice, describeHistoryFilters, parseHistoryPrintSearch } from '../utils/packaging-print'
-import { buildHistorySummary } from '../utils/packaging-query'
+import { buildHistorySummary } from '../utils/packaging-history-summary'
 
 /**
  * duoc-CR-784 — BẢN IN Lịch sử mua hàng (A4 nằm ngang, bản v1). Bảng trên màn hình phân trang tại máy chủ nên in màn hình chỉ
@@ -40,8 +40,7 @@ export default function PrintPackagingHistory() {
           <PrintHistoryFilters mode={params.mode} codes={codes} first={data.items[0]} singleCode={singleCode}
             extras={describeHistoryFilters(params, data.suppliers)} />
           {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.total, 'lần mua')}</p>}
-          <PrintKpis items={buildHistorySummary(data.stats, singleCode)}
-            hint={!singleCode && data.stats.purchase_count > 0 ? 'Chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất' : undefined} />
+          <PrintKpis items={buildHistorySummary(data.stats, { singleCode, mode: params.mode, selectedCount: codes.length })} />
           {series && series.length > 0 && <PrintPriceChart series={series} />}
           <PrintHistoryTable rows={data.items} productMode={productMode} singleCode={singleCode} total={data.total} />
         </>

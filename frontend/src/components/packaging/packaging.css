@@ -188,6 +188,18 @@ button.pkg-stat:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
 .pkg-stat-sub > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pkg-stat-val { font-weight: 700; line-height: 1.15; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
+/* Thẻ số liệu của Lịch sử mua hàng, y bản mẫu HTML (23/11/2026): thẻ trắng, viền trên xanh lá, số to navy, dòng phụ xám.
+   Tăng = xanh, giảm = đỏ (luật màu chung của cụm, ngược bản mẫu). */
+.pkg-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.pkg-kpi { display: flex; flex-direction: column; min-width: 0; padding: 12px 14px; background: #fff;
+  border: 1px solid var(--border, #e5e7eb); border-top: 3px solid #92c83e; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); }
+.pkg-kpi-k { font-size: 12px; font-weight: 600; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-kpi-v { margin-top: 4px; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--navy, #1b2559);
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-kpi-v.up { color: #16a34a; }
+.pkg-kpi-v.down { color: #dc2626; }
+.pkg-kpi-s { margin-top: 2px; font-size: 12px; color: #8c939c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ── Lọc nâng cao của bảng sản phẩm bị ảnh hưởng (Tác động giá) + chip nhóm của bảng mã đã chọn ── */
 .pkg-badge {
   display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;

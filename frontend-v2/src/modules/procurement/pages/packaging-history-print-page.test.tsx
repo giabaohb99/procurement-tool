@@ -53,6 +53,11 @@ const stats = {
   supplier_count: 2,
   first_date: '2026-01-01',
   last_date: '2026-05-01',
+  amount_total: 9904500,
+  code_count: 1,
+  unit: 'Cái',
+  first_price: 1000,
+  last_price: 1200,
 }
 
 vi.mock('@/core/api', async (importOriginal) => {
@@ -124,10 +129,13 @@ describe('PackagingHistoryPrintPage', () => {
     expect(document.querySelector('.info')).toHaveTextContent(
       'CET0028 — Chai nhựa 1L · Chai · ĐVT Cái · NCC: Nhựa Á Châu · Ngày mua: từ 01/01/2026',
     )
-    // 1 dòng tiêu đề + 9 dòng dữ liệu; đúng một mã nên có đủ 7 thẻ và không có cột Tên vật tư.
+    // 1 dòng tiêu đề + 9 dòng dữ liệu; đúng một mã nên có đủ 6 thẻ của bản mẫu và không có cột Tên vật tư.
     expect(bodyRows()).toHaveLength(9)
     expect(screen.queryByRole('columnheader', { name: 'Tên vật tư' })).not.toBeInTheDocument()
-    expect(screen.getByText('Giá BQ gia quyền')).toBeInTheDocument()
+    expect(document.querySelectorAll('.kpi')).toHaveLength(6)
+    expect(screen.getByText('Giá thấp nhất – cao nhất')).toBeInTheDocument()
+    expect(screen.getByText('BQ gia quyền 1.100,5')).toBeInTheDocument()
+    expect(screen.getByText('+20,0%')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Diễn biến đơn giá' })).toBeInTheDocument()
     expect(screen.getByText('ĐMH đang mở')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Kho' })).toBeInTheDocument()
@@ -148,10 +156,10 @@ describe('PackagingHistoryPrintPage', () => {
     await screen.findByRole('table')
     await waitFor(() => expect(bodyRows()).toHaveLength(1203))
     expect(calls.map((call) => call.params.page)).toEqual([1, 2, 3])
-    // Nhiều mã: không có thẻ giá, có cột tên, và có câu nhắc chọn đúng một mã.
-    expect(screen.queryByText('Giá BQ gia quyền')).not.toBeInTheDocument()
+    // Mọi mã: không có thẻ giá, thẻ đầu là số mã hàng, có cột tên.
+    expect(screen.queryByText('Giá thấp nhất – cao nhất')).not.toBeInTheDocument()
+    expect(screen.getByText('Số mã hàng')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Tên vật tư' })).toBeInTheDocument()
-    expect(screen.getByText(/Chọn đúng một mã để xem giá bình quân/)).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 

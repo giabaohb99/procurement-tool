@@ -48,7 +48,8 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
     hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập hàng, rỗng nếu không biết), `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước
     của cùng mã (không phụ thuộc bộ lọc), `seq` = số thứ tự lần mua của mã, `doc_id` / `po_code` = ĐMH nguồn (0 / rỗng nếu
     dữ liệu cũ không có). Trả `stats` (trên TOÀN BỘ tập đã lọc: `purchase_count, priced_count, qty_total, weighted_avg`
-    gia quyền theo số lượng, `min, max, supplier_count, first_date, last_date`), `series` (đúng một mã được chọn: tối đa 1.000
+    gia quyền theo số lượng, `min, max, supplier_count, first_date, last_date`, `amount_total` = tổng giá x SL của lần có giá,
+    `code_count` = số mã có lần mua, `unit`, `first_price` / `last_price` = giá lần có giá đầu tiên / gần nhất), `series` (đúng một mã được chọn: tối đa 1.000
     điểm giá cũ -> mới) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền `packaging_cost.read`; chỉ tính các dòng
     sổ giá thuộc pháp nhân người xem được thấy.
     """

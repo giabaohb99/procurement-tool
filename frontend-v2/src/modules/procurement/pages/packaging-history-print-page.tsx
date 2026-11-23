@@ -18,12 +18,12 @@ import {
   PrintPriceChart,
 } from '../components/packaging-history-print-parts'
 import { usePackagingHistoryPrint } from '../hooks/use-packaging-history-print'
-import { buildHistorySummary } from '../utils/packaging-history'
 import {
   describeCappedPrint,
   describeHistoryFilters,
   parseHistoryPrintSearch,
 } from '../utils/packaging-history-print'
+import { buildHistorySummary } from '../utils/packaging-history-summary-items'
 
 export function PackagingHistoryPrintPage() {
   const [searchParams] = useSearchParams()
@@ -62,12 +62,11 @@ export function PackagingHistoryPrintPage() {
             </p>
           )}
           <PrintKpis
-            items={buildHistorySummary(data.stats, singleCode)}
-            hint={
-              !singleCode && data.stats.purchase_count > 0
-                ? 'Chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất'
-                : undefined
-            }
+            items={buildHistorySummary(data.stats, {
+              singleCode,
+              mode: params.mode,
+              selectedCount: codes.length,
+            })}
           />
           {series && series.length > 0 && <PrintPriceChart series={series} />}
           <PrintHistoryTable

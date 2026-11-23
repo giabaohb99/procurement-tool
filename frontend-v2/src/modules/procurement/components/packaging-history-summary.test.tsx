@@ -14,35 +14,36 @@ const STATS: PackagingHistoryStats = {
   supplier_count: 2,
   first_date: '2025-01-06',
   last_date: '2025-11-07',
+  amount_total: 457991000,
+  code_count: 1,
+  unit: 'Cái',
+  first_price: 2377,
+  last_price: 2500,
 }
 
 describe('PackagingHistorySummary', () => {
   it('renders nothing before the first answer', () => {
-    const { container } = render(<PackagingHistorySummary stats={undefined} singleCode={false} />)
+    const { container } = render(
+      <PackagingHistorySummary stats={undefined} singleCode={false} mode="code" selectedCount={0} />,
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('shows the single-code KPIs as cards', () => {
-    render(<PackagingHistorySummary stats={STATS} singleCode />)
-    expect(screen.getByText('Giá BQ gia quyền')).toBeInTheDocument()
-    expect(screen.getByText('2.456,38')).toBeInTheDocument()
-    expect(screen.getByText('186.450')).toBeInTheDocument()
-    expect(screen.getByText('06/01/2025 – 07/11/2025')).toBeInTheDocument()
+  it('shows the six template cards for one code, each with its sub-line', () => {
+    render(<PackagingHistorySummary stats={STATS} singleCode mode="code" selectedCount={1} />)
+    expect(screen.getByText('Tổng giá trị mua')).toBeInTheDocument()
+    expect(screen.getByText('457.991.000')).toBeInTheDocument()
+    expect(screen.getByText('2.377 – 2.500')).toBeInTheDocument()
+    expect(screen.getByText('BQ gia quyền 2.456,38')).toBeInTheDocument()
+    expect(screen.getByText('+5,2%')).toBeInTheDocument()
+    expect(screen.getByText('06/01/2025 → 07/11/2025')).toBeInTheDocument()
   })
 
-  it('hides price KPIs for many codes and explains why', () => {
-    render(<PackagingHistorySummary stats={STATS} singleCode={false} />)
-    expect(screen.queryByText('Giá BQ gia quyền')).not.toBeInTheDocument()
-    expect(screen.getByText(/chọn đúng một mã/i)).toBeInTheDocument()
-  })
-
-  it('does not nag about "pick one code" when there is nothing to show (edge: zero purchases)', () => {
+  it('hides price cards for many codes', () => {
     render(
-      <PackagingHistorySummary
-        stats={{ ...STATS, purchase_count: 0, priced_count: 0, first_date: null, last_date: null }}
-        singleCode={false}
-      />,
+      <PackagingHistorySummary stats={STATS} singleCode={false} mode="code" selectedCount={3} />,
     )
-    expect(screen.queryByText(/chọn đúng một mã/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Giá thấp nhất – cao nhất')).not.toBeInTheDocument()
+    expect(screen.getByText('Số mã đã chọn')).toBeInTheDocument()
   })
 })

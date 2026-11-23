@@ -122,6 +122,25 @@ def test_so_gop_theo_bo_loc_va_khong_co_so_luong_thi_khong_co_gia_binh_quan(db, 
     assert only_zero["purchase_count"] == 1
 
 
+def test_so_cho_the_ban_mau_tong_gia_tri_gia_dau_gia_cuoi_dvt_va_so_ma(db, api):
+    """Thẻ của bản mẫu HTML (23/11/2026): tổng giá trị chỉ cộng lần CÓ GIÁ, giá đầu / cuối bỏ qua dòng giá 0."""
+    stats = _get(api, codes=["CPT0105"])["stats"]
+    assert stats["amount_total"] == 100 * 1000 + 110 * 500 + 105 * 1500 + 120 * 1000 + 130 * 2000
+    assert (stats["first_price"], stats["last_price"]) == (100, 130)
+    assert (stats["unit"], stats["code_count"]) == ("Cái", 1)
+    #  Dòng giá 0 là lần mua MỚI NHẤT của khoảng lọc: giá cuối vẫn là lần có giá gần nhất, không phải 0.
+    tail = _get(api, codes=["CPT0105"], date_from="2026-03-01", date_to="2026-04-20")["stats"]
+    assert (tail["first_price"], tail["last_price"]) == (105, 120)
+    #  Cùng ngày: thứ tự doc_id rồi id quyết định lần "gần nhất", khớp danh sách.
+    add_ledger(db, "CPT0105", 140, "2026-05-01", qty=1, doc_id=99)
+    assert _get(api, codes=["CPT0105"])["stats"]["last_price"] == 140
+    #  Nhiều mã: đếm số mã có lần mua; không có dòng nào thì mọi số mới về rỗng / 0.
+    assert _get(api, codes=["CPT0105", "NAP0085", "NHG0001"])["stats"]["code_count"] == 2
+    empty = _get(api, codes=["NHG0001"])["stats"]
+    assert (empty["amount_total"], empty["code_count"], empty["unit"], empty["first_price"], empty["last_price"]) == (
+        0, 0, "", None, None)
+
+
 # ── Biểu đồ ─────────────────────────────────────────────────────────────────────
 def test_chuoi_bieu_do_chi_khi_dung_mot_ma_cu_toi_moi_va_bo_gia_0(api):
     series = _get(api, codes=["CPT0105"])["series"]

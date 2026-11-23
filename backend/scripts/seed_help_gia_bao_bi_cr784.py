@@ -280,7 +280,7 @@ TREE = {
 
 <h2>Đọc kết quả</h2>
 <ul>
-<li><strong>Dòng tóm tắt</strong> tính trên toàn bộ kết quả lọc: Số lần mua (kèm số lần có giá nếu có lần đơn giá 0), Số NCC, Khoảng ngày. Chọn <strong>đúng một mã</strong> thì có thêm Tổng SL, Giá BQ gia quyền, Thấp nhất, Cao nhất.</li>
+<li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng xanh, giảm đỏ, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã hoặc mọi mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp. Chế độ theo mã sản phẩm: Số sản phẩm, Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp.</li>
 <li><strong>Biểu đồ Diễn biến đơn giá</strong> hiện khi chọn đúng một mã: mỗi điểm là một lần mua có giá, rê chuột để xem ngày, đơn giá, nhà cung cấp, số lượng.</li>
 <li>Bảng, mới nhất trước: Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, Số lượng, Đơn giá, Thành tiền, <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (mã đơn mua hàng, bấm để mở đơn).</li>
 <li>Nhãn <strong>ĐMH đang mở</strong>: dòng của đơn mua hàng đã duyệt, chưa hoàn thành; giá còn có thể đổi nếu đơn được sửa.</li>

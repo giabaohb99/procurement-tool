@@ -101,7 +101,18 @@ def _conds(codes: list[str] | None, *, q: str = "", suppliers: list[str] | None 
     return conds
 
 
+def _edge_price(conds: list, *, latest: bool):
+    """Giá của lần mua CÓ GIÁ đầu tiên / gần nhất trong tập lọc (cùng thứ tự ngày, doc_id, id của danh sách).
+
+    `correlate(None)`: câu con đứng riêng, không bị SQLAlchemy nối vào bảng sổ giá của câu ngoài (cùng bảng `L`).
+    """
+    order = [L.price_date, L.doc_id, L.id]
+    return (select(L.price).where(*conds, L.price > 0)
+            .order_by(*[c.desc() if latest else c.asc() for c in order]).limit(1).correlate(None).scalar_subquery())
+
+
 def _stats(db: Session, conds: list) -> dict:
+    """Số liệu của các thẻ tóm tắt, gom trong MỘT câu SQL (thẻ của bản mẫu HTML, duoc-CR-784)."""
     priced = L.price > 0
     row = db.execute(select(
         func.count(L.id), func.coalesce(func.sum(case((priced, 1), else_=0)), 0), func.coalesce(func.sum(L.qty), 0),
@@ -109,13 +120,19 @@ def _stats(db: Session, conds: list) -> dict:
         func.coalesce(func.sum(case((priced, L.qty), else_=0)), 0),
         func.min(case((priced, L.price))), func.max(case((priced, L.price))),
         func.count(func.distinct(case((L.supplier_code != "", L.supplier_code)))),
-        func.min(L.price_date), func.max(L.price_date)).where(*conds)).one()
-    count, priced_count, qty_total, amount_priced, qty_priced, low, high, supplier_count, first, last = row
+        func.min(L.price_date), func.max(L.price_date), func.count(func.distinct(L.product_code)),
+        func.max(func.nullif(func.trim(L.unit), "")),
+        _edge_price(conds, latest=False), _edge_price(conds, latest=True)).where(*conds)).one()
+    (count, priced_count, qty_total, amount_priced, qty_priced, low, high, supplier_count, first, last, code_count,
+     unit, first_price, last_price) = row
     #  Giá bình quân GIA QUYỀN = tổng tiền / tổng số lượng của các lần mua CÓ GIÁ; chưa có số lượng thì không có số.
     weighted = float(amount_priced) / float(qty_priced) if qty_priced and float(qty_priced) > 0 else None
     return {"purchase_count": int(count), "priced_count": int(priced_count), "qty_total": num(qty_total, 3),
             "weighted_avg": num(weighted), "min": num(low), "max": num(high), "supplier_count": int(supplier_count),
-            "first_date": iso(first), "last_date": iso(last)}
+            "first_date": iso(first), "last_date": iso(last),
+            #  Tổng giá trị mua = cộng (giá x số lượng) của các lần CÓ GIÁ, như bản mẫu HTML.
+            "amount_total": num(amount_priced), "code_count": int(code_count or 0),
+            "unit": unit if count else "", "first_price": num(first_price), "last_price": num(last_price)}
 
 
 def _supplier_options(db: Session, conds: list) -> list[dict]:
@@ -189,7 +206,8 @@ def _series(db: Session, conds: list) -> list[dict]:
 
 def _empty() -> dict:
     zero = {"purchase_count": 0, "priced_count": 0, "qty_total": 0, "weighted_avg": None, "min": None, "max": None,
-            "supplier_count": 0, "first_date": None, "last_date": None}
+            "supplier_count": 0, "first_date": None, "last_date": None, "amount_total": 0, "code_count": 0, "unit": "",
+            "first_price": None, "last_price": None}
     return {"items": [], "total": 0, "stats": zero, "series": None, "suppliers": []}
 
 

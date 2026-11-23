@@ -9,9 +9,10 @@ import { downloadExport, fetchCodeOptions, fetchHhOptions, fetchHistory } from '
 import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
+import { buildHistorySummary } from '../../utils/packaging-history-summary'
 import { historyPrintHref } from '../../utils/packaging-print'
 import {
-  buildHistoryParams, buildHistorySearch, buildHistorySummary, EMPTY_HISTORY_FILTERS, nextSort,
+  buildHistoryParams, buildHistorySearch, EMPTY_HISTORY_FILTERS, nextSort,
   parseHistorySearch, sortCodeOptions, type HistoryFilters, type HistorySelection,
 } from '../../utils/packaging-query'
 import '../../components/packaging/packaging.css'
@@ -80,35 +81,19 @@ export default function PackagingHistory() {
   }
 
   const stats = list.data?.stats
-  //  Số liệu tóm tắt dạng THẺ đặt trên biểu đồ (người chủ chốt 21/11/2026), cùng kiểu thẻ `hz-stat` của trang Tổng quan.
-  //  Mỗi thẻ một màu nhấn (viền trái + ô biểu tượng nền nhạt + số to đậm) — người chủ muốn thẻ nổi bật (21/11/2026).
-  const HISTORY_LOOK: Record<string, { icon: string; color: string }> = {
-    'Số lần mua': { icon: 'ti-shopping-cart', color: '#2563eb' },
-    'Tổng SL': { icon: 'ti-packages', color: '#d97706' },
-    'Giá BQ gia quyền': { icon: 'ti-calculator', color: '#0891b2' },
-    'Thấp nhất': { icon: 'ti-arrow-bar-to-down', color: '#16a34a' },
-    'Cao nhất': { icon: 'ti-arrow-bar-to-up', color: '#ea580c' },
-    'Số NCC': { icon: 'ti-truck', color: '#4f46e5' },
-    'Khoảng ngày': { icon: 'ti-calendar', color: '#64748b' },
-  }
+  //  Thẻ số liệu trình bày y bản mẫu HTML (người chủ chốt 23/11/2026): thẻ trắng, viền trên xanh lá, số to navy, một dòng
+  //  phụ xám; bộ thẻ đổi theo cách xem (một mã / nhiều mã / theo sản phẩm), xem `buildHistorySummary`.
   const summaryCards = stats ? (
-    <div className="pkg-stats">
-      {buildHistorySummary(stats, singleCode).map((it, i) => {
-        const look = HISTORY_LOOK[it.label] ?? { icon: 'ti-chart-bar', color: '#2563eb' }
-        const long = String(it.value).length > 12
-        return (
-          <div key={it.label} className="pkg-stat" style={{ borderLeftColor: look.color, backgroundImage: `linear-gradient(135deg, ${look.color}12, transparent 60%)` }}>
-            <div className="pkg-stat-head">
-              <span className="pkg-stat-ic" style={{ background: `${look.color}26`, color: look.color }}><i className={'ti ' + look.icon} /></span>
-              <span className="pkg-stat-label">{it.label}</span>
-            </div>
-            <div className="pkg-stat-val" title={String(it.value)} style={{ fontSize: long ? 15 : 24 }}>{it.value}</div>
-            {i === 0 && !singleCode && stats.purchase_count > 0 && (
-              <div className="pkg-hint" style={{ fontSize: 11 }}>Chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất</div>
-            )}
-          </div>
-        )
-      })}
+    <div className="pkg-kpis">
+      {buildHistorySummary(stats, {
+        singleCode, mode: selection.mode, selectedCount: isProduct ? selection.hh.length : selection.codes.length,
+      }).map((it) => (
+        <div key={it.label} className="pkg-kpi">
+          <div className="pkg-kpi-k">{it.label}</div>
+          <div className={it.tone ? `pkg-kpi-v ${it.tone}` : 'pkg-kpi-v'} title={it.value}>{it.value}</div>
+          <div className="pkg-kpi-s" title={it.sub}>{it.sub || '\u00a0'}</div>
+        </div>
+      ))}
     </div>
   ) : null
   const first = list.data?.items[0]

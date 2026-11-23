@@ -142,6 +142,8 @@ export function PackagingHistoryPage() {
         <PackagingHistorySummary
           stats={list.data?.stats}
           singleCode={series !== null}
+          mode={selection.mode}
+          selectedCount={isProduct ? selection.hh.length : selection.codes.length}
         />
         {series && series.length > 0 && (
           <PackagingHistoryChart

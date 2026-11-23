@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PackagingHistoryStats } from '../types/packaging-cost-types'
 import {
   buildChartPoints,
   buildHistoryParams,
   buildHistorySearch,
-  buildHistorySummary,
   EMPTY_HISTORY_FILTERS,
   PACKAGING_HISTORY_MAX_CODES,
   packagingHistoryHref,
@@ -13,19 +11,6 @@ import {
   parseHistorySearch,
   priceAxisDomain,
 } from './packaging-history'
-
-const stats = (over: Partial<PackagingHistoryStats> = {}): PackagingHistoryStats => ({
-  purchase_count: 6,
-  priced_count: 5,
-  qty_total: 6050,
-  weighted_avg: 1234.5678,
-  min: 100,
-  max: 130,
-  supplier_count: 2,
-  first_date: '2026-01-01',
-  last_date: '2026-05-01',
-  ...over,
-})
 
 describe('parseHistorySearch', () => {
   it('reads a deep link with codes as code mode, trimming blanks and duplicates', () => {
@@ -152,52 +137,6 @@ describe('buildHistoryParams', () => {
       date_to: '2026-02-01',
       q: 'nhựa',
     })
-  })
-})
-
-describe('buildHistorySummary', () => {
-  it('shows price figures only for a single code, and says how many rows are priced', () => {
-    const labels = (items: { label: string }[]) => items.map((i) => i.label)
-    expect(labels(buildHistorySummary(stats(), true))).toEqual([
-      'Số lần mua',
-      'Tổng SL',
-      'Giá BQ gia quyền',
-      'Thấp nhất',
-      'Cao nhất',
-      'Số NCC',
-      'Khoảng ngày',
-    ])
-    expect(labels(buildHistorySummary(stats(), false))).toEqual([
-      'Số lần mua',
-      'Số NCC',
-      'Khoảng ngày',
-    ])
-    expect(buildHistorySummary(stats(), false)[0].value).toBe('6 (5 có giá)')
-    expect(buildHistorySummary(stats({ priced_count: 6 }), false)[0].value).toBe('6')
-  })
-
-  it('shows dashes, not zero, when nothing has a price or a quantity (edge: all rows price 0)', () => {
-    const items = buildHistorySummary(
-      stats({ priced_count: 0, weighted_avg: null, min: null, max: null, qty_total: null }),
-      true,
-    )
-    const byLabel = Object.fromEntries(items.map((i) => [i.label, i.value]))
-    expect(byLabel['Giá BQ gia quyền']).toBe('—')
-    expect(byLabel['Thấp nhất']).toBe('—')
-    expect(byLabel['Tổng SL']).toBe('0')
-  })
-
-  it('collapses a one-day range and drops the range when there are no purchases', () => {
-    const one = buildHistorySummary(
-      stats({ first_date: '2026-03-01', last_date: '2026-03-01' }),
-      false,
-    )
-    expect(one.at(-1)).toEqual({ label: 'Khoảng ngày', value: '01/03/2026' })
-    const none = buildHistorySummary(
-      stats({ purchase_count: 0, priced_count: 0, first_date: null, last_date: null }),
-      false,
-    )
-    expect(none.map((i) => i.label)).toEqual(['Số lần mua', 'Số NCC'])
   })
 })
 

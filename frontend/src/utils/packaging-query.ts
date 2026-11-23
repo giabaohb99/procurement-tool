@@ -1,14 +1,14 @@
 /**
  * duoc-CR-784 — luật thuần của cụm Giá bao bì (bản v1): tìm mã kiểu bản mẫu, đường dẫn sâu của Lịch sử mua
- * hàng (`?codes=` / `?hh=`), bộ lọc màn hình → tham số máy chủ, dòng tóm tắt và trục biểu đồ.
+ * hàng (`?codes=` / `?hh=`), bộ lọc màn hình → tham số máy chủ và trục biểu đồ
+ * (thẻ số liệu ở `packaging-history-summary.ts`).
  */
 import type {
   PackagingCodeOption, PackagingHistoryMode, PackagingHistoryParams, PackagingHistoryPoint,
-  PackagingHistoryStats, PackagingLastPricesParams, PackagingLastPricesRow, PackagingLastPurchase,
+  PackagingLastPricesParams, PackagingLastPricesRow, PackagingLastPurchase,
   LastPricesTrend,
 } from '../api/packaging-cost-types'
-import { diffColor, priceText, qtyText, roleLabel } from './packaging-price'
-import { fmtDateStr } from './datetime'
+import { diffColor, roleLabel } from './packaging-price'
 
 /** Trần số mã một lượt tính (`POST /impact` nhận `codes: str[1..500]`). */
 export const PACKAGING_MAX_CODES = 500
@@ -125,31 +125,6 @@ export function buildHistoryParams(
     date_to: f.to || undefined,
     ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
   }
-}
-
-/**
- * Các số của dòng KPI. Giá bình quân / thấp nhất / cao nhất / tổng số lượng chỉ có nghĩa khi xem MỘT mã (trộn giá của
- * nhiều vật tư ra một con số là vô nghĩa) nên nhiều mã chỉ còn số lần mua, số NCC và khoảng ngày.
- */
-export function buildHistorySummary(s: PackagingHistoryStats, singleCode: boolean): { label: string; value: string }[] {
-  const count = s.priced_count === s.purchase_count ? String(s.purchase_count) : `${s.purchase_count} (${s.priced_count} có giá)`
-  const items = [{ label: 'Số lần mua', value: count }]
-  if (singleCode) {
-    items.push(
-      { label: 'Tổng SL', value: qtyText(s.qty_total) || '0' },
-      { label: 'Giá BQ gia quyền', value: priceText(s.weighted_avg) || '—' },
-      { label: 'Thấp nhất', value: priceText(s.min) || '—' },
-      { label: 'Cao nhất', value: priceText(s.max) || '—' },
-    )
-  }
-  items.push({ label: 'Số NCC', value: String(s.supplier_count) })
-  if (s.first_date && s.last_date) {
-    items.push({
-      label: 'Khoảng ngày',
-      value: s.first_date === s.last_date ? fmtDateStr(s.first_date) : `${fmtDateStr(s.first_date)} – ${fmtDateStr(s.last_date)}`,
-    })
-  }
-  return items
 }
 
 /** "Chai, Nắp" — vai trò mã này đóng trong định mức các sản phẩm đã chọn. */
