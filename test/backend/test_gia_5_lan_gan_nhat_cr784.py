@@ -13,7 +13,7 @@ from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, read_report_sheet
 
 URL = "/api/packaging-cost/last-prices"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -202,21 +202,25 @@ def test_xuat_excel_dung_cot_loc_va_o_trong_khong_thanh_0(api, db):
     res = api.get(URL + "/export", params={"only_priced": False, "sort_by": "code"})
     assert res.status_code == 200 and res.headers["content-type"] == XLSX
     ws = openpyxl.load_workbook(BytesIO(res.content)).active
-    head = [c.value for c in ws[1]]
-    assert head[:6] == ["Mã VTBB", "Tên vật tư", "Nhóm", "ĐVT", "Số lần có giá", "Lần 1 (gần nhất) - Ngày mua"]
-    assert head[-3:] == ["Lần 1 so lần 2 (%)", "Lần 1 so lần 5 (%)", "Giá TB 5 lần"]
+    head, rows = read_report_sheet(ws)
+    #  Hàng nhóm như bản mẫu: THÔNG TIN VTBB · LẦN k · BIẾN ĐỘNG · GIÁ TB (ô gộp), dưới là tên cột ngắn.
+    assert head[:6] == ["THÔNG TIN VTBB - Mã VTBB", "THÔNG TIN VTBB - Tên vật tư", "THÔNG TIN VTBB - Nhóm",
+                        "THÔNG TIN VTBB - ĐVT", "THÔNG TIN VTBB - Số lần có giá", "LẦN 1 (gần nhất) - Ngày mua"]
+    assert head[-3:] == ["BIẾN ĐỘNG - Lần 1 so lần 2", "BIẾN ĐỘNG - Lần 1 so lần 5", "GIÁ TB - Giá TB 5 lần"]
     assert len(head) == 5 + 15 + 3
-    by_code = {ws.cell(row=r, column=1).value: {h: ws.cell(row=r, column=i + 1).value for i, h in enumerate(head)}
-               for r in range(2, ws.max_row + 1)}
+    assert "A4:E4" in {str(m) for m in ws.merged_cells.ranges}
+    by_code = {r[0].value: {h: c.value for h, c in zip(head, r)} for r in rows}
     assert list(by_code) == ["CPT0105", "NAP0085", "NHG0001"]
     chai = by_code["CPT0105"]
-    assert chai["Lần 1 (gần nhất) - Đơn giá"] == 150 and chai["Lần 5 - Đơn giá"] == 110
-    assert chai["Lần 1 (gần nhất) - Nhà cung cấp"] == "Nhựa Việt"
-    assert chai["Lần 1 so lần 2 (%)"] == pytest.approx((150 / 130 - 1) * 100, abs=1e-3)
+    assert chai["LẦN 1 (gần nhất) - Đơn giá"] == 150 and chai["LẦN 5 - Đơn giá"] == 110
+    assert chai["LẦN 1 (gần nhất) - Nhà cung cấp"] == "Nhựa Việt"
+    #  Phần trăm ghi TỶ SỐ, định dạng 0.0% để Excel tự hiện "15,4%".
+    v12 = rows[0][head.index("BIẾN ĐỘNG - Lần 1 so lần 2")]
+    assert v12.value == pytest.approx(150 / 130 - 1, abs=1e-6) and v12.number_format.startswith("0.0%")
     nhan = by_code["NHG0001"]
-    assert nhan["Lần 1 (gần nhất) - Đơn giá"] in (None, "") and nhan["Giá TB 5 lần"] in (None, "")
-    only_q = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"q": "nap"}).content)).active
-    assert only_q.max_row == 2 and only_q["A2"].value == "NAP0085"
+    assert nhan["LẦN 1 (gần nhất) - Đơn giá"] is None and nhan["GIÁ TB - Giá TB 5 lần"] is None
+    _, only_q = read_report_sheet(openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"q": "nap"}).content)).active)
+    assert len(only_q) == 1 and only_q[0][0].value == "NAP0085"
 
 
 # ── Số lần hiển thị n ───────────────────────────────────────────────────────────
@@ -314,14 +318,13 @@ def test_xep_theo_gia_va_ngay_cua_lan_thu_k(api, moves):
 
 
 def test_xuat_excel_theo_n_va_them_cot_so_luong_va_loc(api, moves):
-    ws = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"n": 3, "show_qty": True}).content)).active
-    head = [c.value for c in ws[1]]
+    head, _ = read_report_sheet(openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"n": 3, "show_qty": True}).content)).active)
     assert len(head) == 5 + 3 * 4 + 3
-    assert "Lần 3 - Số lượng" in head and "Lần 1 so lần 3 (%)" in head and "Giá TB 3 lần" in head
+    assert "LẦN 3 - Số lượng" in head and "BIẾN ĐỘNG - Lần 1 so lần 3" in head and "GIÁ TB - Giá TB 3 lần" in head
     ws10 = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"n": 10}).content)).active
     assert ws10.max_column == 5 + 10 * 3 + 3
-    filtered = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"trend": "down"}).content)).active
-    assert filtered.max_row == 2 and filtered["A2"].value == "DWN01"
+    _, filtered = read_report_sheet(openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"trend": "down"}).content)).active)
+    assert len(filtered) == 1 and filtered[0][0].value == "DWN01"
 
 
 def test_dvt_danh_muc_trong_thi_lay_dvt_cua_lan_mua_gan_nhat_co_ghi_dvt(db, api):

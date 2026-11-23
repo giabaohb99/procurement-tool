@@ -78,7 +78,7 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
 - Bảng sản phẩm bị ảnh hưởng (phân trang, tìm, xếp tại máy chủ): STT, Mã HH, Tên hàng hóa, Quy cách thùng, Chai, Nắp,
   Nhãn, Nhãn thùng (giá /thùng), Thùng (giá /thùng) — ô thành phần ghi *giá cũ → giá đang dùng*, mã đang chọn tô vàng —,
   CP bao bì/chai cũ, CP bao bì/chai mới, Tăng/giảm /chai, Tăng/giảm /thùng, Ghi chú.
-- **Xuất Excel** (quyền `export`): hai sheet *Mã đã chọn*, *Sản phẩm bị ảnh hưởng*, theo giá giả định đang gõ, `q` và thứ tự.
+- **Xuất Excel** (quyền `export`): hai sheet *Sản phẩm bị ảnh hưởng* (đứng đầu) và *Mã đã chọn*, theo giá giả định đang gõ, `q` và thứ tự.
 - Bản cũ: cùng bước, nút, cột.
 
 **Ghi chú cảnh báo** (`CostWarning`, nhãn ở `core/packaging_price_codes.py`):
@@ -157,6 +157,19 @@ tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có c�
   ĐMH (tên trong danh mục kho theo mã kho; mã không có trong danh mục thì hiện chính mã); không biết kho thì để trống. Ô tìm tìm
   được cả theo tên kho, bấm tiêu đề cột để xếp (ô trống luôn xuống cuối), có trong bản in và trong Excel (cột *Kho* ngay sau
   *Nhà cung cấp*). Chưa có bộ lọc theo kho.
+
+**Khuôn tệp Excel** (chốt 23/11/2026, chép bản mẫu HTML; áp cho mọi bản xuất của cụm: Tác động giá, Tổng hợp theo sản phẩm,
+Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging_cost/report_xlsx_writer.py`):
+
+- Dòng 1 tiêu đề *BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — <tên báo cáo>* chữ navy đậm; dòng 2 chữ nghiêng *Dego Holding –
+  Phòng Thu mua · Xuất ngày … · Đơn vị: VNĐ, giá chưa VAT · <số mã / số dòng, mã đã chọn…>*; dòng 3 vạch xanh lá.
+- Đầu cột nền navy chữ trắng; cột thành phần (chai, nắp, nhãn, nhãn thùng, thùng) nền xanh lá đậm. Giá mua gần nhất có
+  thêm hàng nhóm gộp ô *THÔNG TIN VTBB · LẦN 1 (gần nhất) … · BIẾN ĐỘNG · GIÁ TB*, lần chẵn nền xanh lá.
+- Số có dấu nghìn (số lẻ thì hai chữ số lẻ), âm màu đỏ, bằng 0 hiện "-", phần trăm dạng 12,4%, ngày dd/mm/yyyy; ô chưa có
+  số để trống. Giá mới / chi phí mới đậm navy; chênh lệch, phần trăm, giá thành phần tăng **xanh** giảm **đỏ** (ngược bản
+  mẫu, theo luật màu chung của cụm).
+- Cố định hàng tiêu đề và vài cột đầu, bật bộ lọc, khổ A4 ngang vừa một trang chiều ngang, lặp hàng tiêu đề khi in, chân
+  trang *Trang x / y*, không kẻ lưới, font Montserrat.
 
 ## 7. Định mức bao bì và nhập từ Excel
 

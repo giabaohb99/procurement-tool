@@ -14,7 +14,7 @@ from app.modules.packaging_cost.model import PackagingBom
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products
+from so_gia_factory_cr784 import add_ledger, add_products, column_values
 
 D = Decimal
 IMPACT = "/api/packaging-cost/impact"
@@ -247,10 +247,10 @@ def test_xuat_excel_theo_bo_loc_va_xep(api):
     res = api.post(IMPACT + "/export", json=_body(trend="up", sort_by="part_bottle", sort_dir="desc", page=2, page_size=1))
     assert res.status_code == 200
     ws = openpyxl.load_workbook(BytesIO(res.content))["Sản phẩm bị ảnh hưởng"]
-    assert [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)] == ["HH1", "HH5"]
+    assert column_values(ws, "Mã HH") == ["HH1", "HH5"]
     allrows = api.post(IMPACT + "/export", json=_body(warnings_only=True, part_roles=[1]))
     ws = openpyxl.load_workbook(BytesIO(allrows.content))["Sản phẩm bị ảnh hưởng"]
-    assert [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)] == ["HH2"]
+    assert column_values(ws, "Mã HH") == ["HH2"]
 
 
 def test_tong_hop_theo_san_pham_xep_cot_thanh_phan(api):

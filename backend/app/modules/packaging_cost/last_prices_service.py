@@ -180,9 +180,8 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
 
 
 def flatten_for_export(row: dict, n: int = DEFAULT_N) -> dict:
-    """Trải `purchases` thành khóa phẳng `p{k}_date|supplier|qty|price` (k = 1..n); biến động đổi sang thang 0–100."""
-    flat = {**row, "v12_view": None if row["v12"] is None else row["v12"] * 100,
-            "v1n_view": None if row["v1n"] is None else row["v1n"] * 100}
+    """Trải `purchases` thành khóa phẳng `p{k}_date|supplier|qty|price` (k = 1..n); biến động giữ TỶ SỐ (Excel hiện %)."""
+    flat = dict(row)
     for k in range(1, n + 1):
         p = row["purchases"][k - 1] if k <= len(row["purchases"]) else {}
         flat[f"p{k}_date"], flat[f"p{k}_supplier"] = p.get("date"), p.get("supplier")

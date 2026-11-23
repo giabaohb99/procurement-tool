@@ -13,7 +13,7 @@ from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote, make_item, make_po
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, make_item, make_po, read_report_sheet
 
 URL = "/api/packaging-cost/history"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -289,16 +289,21 @@ def test_xuat_excel_dung_bo_loc_thu_tu_va_cot_vai_tro_cua_che_do_san_pham(api):
     res = api.get(URL + "/export", params={"codes": ["CPT0105"], "sort_by": "price", "sort_dir": "asc"})
     assert res.status_code == 200 and res.headers["content-type"] == XLSX
     ws = openpyxl.load_workbook(BytesIO(res.content)).active
-    head = [c.value for c in ws[1]]
-    assert head[:3] == ["Ngày mua", "Mã VTBB", "Tên vật tư"] and "Vai trò" not in head
-    assert ws.max_row == 7                                                     # tiêu đề + 6 lần mua
-    prices = [ws.cell(row=r, column=head.index("Đơn giá") + 1).value for r in range(2, 8)]
+    head, rows = read_report_sheet(ws)
+    assert head[:3] == ["Ngày mua", "Mã VTBB", "Tên vật tư"] and "Thành phần" not in head
+    assert len(rows) == 6
+    prices = [r[head.index("Đơn giá")].value for r in rows]
     assert prices == sorted(prices) and prices[0] == 0
-    sources = {ws.cell(row=r, column=head.index("Nguồn") + 1).value for r in range(2, 8)}
+    sources = {r[head.index("Nguồn")].value for r in rows}
     assert sources == {"Lịch sử mua hàng", "Dòng đơn mua hàng"}
+    #  Khuôn bản mẫu: tiêu đề báo cáo ở dòng 1, dòng phụ có ngày xuất, cố định hàng tiêu đề cột.
+    assert ws["A1"].value == "BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — LỊCH SỬ MUA HÀNG"
+    assert ws["A2"].value.startswith("Dego Holding – Phòng Thu mua · Xuất ngày") and "1 mã · 6 lần mua" in ws["A2"].value
+    assert ws.freeze_panes == "D5" and ws.auto_filter.ref == f"A4:{ws.cell(row=4, column=len(head)).column_letter}10"
     product = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"mode": "product", "hh_codes": ["HH0001"]}).content)).active
-    head2 = [c.value for c in product[1]]
-    assert "Vai trò" in head2 and {product.cell(row=r, column=head2.index("Vai trò") + 1).value for r in range(2, product.max_row + 1)} == {"Chai", "Nắp"}
+    head2, rows2 = read_report_sheet(product)
+    assert "Thành phần" in head2 and {r[head2.index("Thành phần")].value for r in rows2} == {"Chai", "Nắp"}
+    assert product["A1"].value.endswith("LỊCH SỬ MUA HÀNG THEO SẢN PHẨM")
 
 
 def test_xuat_excel_chan_o_tran_so_dong(db, api, monkeypatch):
@@ -337,11 +342,9 @@ def test_xep_theo_kho_o_trong_xuong_cuoi_hai_chieu(api, kho):
 
 def test_xuat_excel_co_cot_kho_dung_thu_tu(api, kho):
     res = api.get(URL + "/export", params={"codes": ["NHG0001"], "sort_by": "warehouse", "sort_dir": "asc"})
-    ws = openpyxl.load_workbook(BytesIO(res.content)).active
-    head = [c.value for c in ws[1]]
+    head, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content)).active)
     assert head.index("Kho") == head.index("Nhà cung cấp") + 1
-    col = head.index("Kho") + 1
-    assert [ws.cell(row=r, column=col).value for r in range(2, 6)] == ["KHO NCC HÀ LONG", "Kho DEGO Cần Thơ", None, None]
+    assert [r[head.index("Kho")].value for r in rows[:4]] == ["KHO NCC HÀ LONG", "Kho DEGO Cần Thơ", None, None]
 
 
 # ── Số truy vấn ─────────────────────────────────────────────────────────────────

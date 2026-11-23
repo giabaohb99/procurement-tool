@@ -14,7 +14,7 @@ from app.modules.packaging_cost.product_overview_service import OVERVIEW_SORT_GE
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, read_report_sheet
 
 URL = "/api/packaging-cost/product-overview"
 
@@ -200,11 +200,10 @@ def test_pham_vi_cong_ty_khong_thay_gia_cua_phap_nhan_khac(db, seed, cap_quyen, 
 def test_xuat_excel_theo_bo_loc_va_thu_tu_bo_qua_phan_trang(api):
     res = api.get(URL + "/export", params={"trend": "up", "sort_by": "hh_code", "sort_dir": "desc", "page": 3, "page_size": 1})
     assert res.status_code == 200 and "tong-hop-theo-san-pham" in res.headers["content-disposition"]
-    ws = openpyxl.load_workbook(BytesIO(res.content))["Tổng hợp theo sản phẩm"]
-    assert [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)] == ["HH05", "HH01"]
-    header = [c.value for c in ws[1]]
-    assert "CP bao bì/chai mới" in header and "Xu hướng" in header and "Giá chai mới" in header
-    assert ws.cell(row=2, column=header.index("Xu hướng") + 1).value == "Tăng"
-    assert ws.cell(row=2, column=header.index("CP bao bì/chai mới") + 1).value == 180
-    none_row = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"trend": "missing"}).content))["Tổng hợp theo sản phẩm"]
-    assert none_row.cell(row=2, column=header.index("CP bao bì/chai mới") + 1).value is None      # ô trống, không phải 0
+    header, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content))["Tổng hợp theo sản phẩm"])
+    assert [r[0].value for r in rows] == ["HH05", "HH01"]
+    assert "CP bao bì/chai mới" in header and "Trạng thái" in header and "Giá chai mới" in header
+    assert rows[0][header.index("Trạng thái")].value == "Tăng"
+    assert rows[0][header.index("CP bao bì/chai mới")].value == 180
+    _, none_rows = read_report_sheet(openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"trend": "missing"}).content))["Tổng hợp theo sản phẩm"])
+    assert none_rows[0][header.index("CP bao bì/chai mới")].value is None      # ô trống, không phải 0

@@ -15,7 +15,7 @@ from app.modules.packaging_cost.price_list_service import build_price_list
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote, read_report_sheet
 
 D = Decimal
 IMPACT, PRICE_LIST, OPTIONS = "/api/packaging-cost/impact", "/api/packaging-cost/price-list", "/api/packaging-cost/code-options"
@@ -325,26 +325,27 @@ def test_xuat_excel_tac_dong_hai_sheet_mo_duoc_va_chan_cong_thuc(api, db):
     res = api.post(IMPACT + "/export", json={"codes": ["CPT0105"], "assumed_prices": {"CPT0105": 1500}})
     assert res.status_code == 200 and res.headers["content-type"] == XLSX
     wb = openpyxl.load_workbook(BytesIO(res.content))
-    assert wb.sheetnames == ["Mã đã chọn", "Sản phẩm bị ảnh hưởng"]
-    sel, prod = wb["Mã đã chọn"], wb["Sản phẩm bị ảnh hưởng"]
-    head = [c.value for c in prod[1]]
-    assert head[:4] == ["Mã HH", "Tên hàng hóa", "Tên pháp lý", "Quy cách thùng"] and "Xu hướng" in head
-    row = {h: c.value for h, c in zip(head, prod[2])}
-    assert row["Mã HH"] == "HH0417.1" and row["Tăng/giảm /thùng"] == 20000 and row["Xu hướng"] == "Tăng"
-    assert prod["B2"].data_type == "s" and prod["B2"].value.startswith("=")          # không bị Excel chạy như công thức
-    assert sel["A2"].value == "CPT0105" and sel["G2"].value == 1500
+    assert wb.sheetnames == ["Sản phẩm bị ảnh hưởng", "Mã đã chọn"]          # sheet chính đứng đầu như bản mẫu
+    head, rows = read_report_sheet(wb["Sản phẩm bị ảnh hưởng"])
+    assert head[:4] == ["Mã HH", "Tên hàng hoá", "Tên pháp lý", "Quy cách thùng"] and "Trạng thái" in head
+    row = {h: c.value for h, c in zip(head, rows[0])}
+    assert row["Mã HH"] == "HH0417.1" and row["Tăng/giảm /thùng"] == 20000 and row["Trạng thái"] == "Tăng"
+    name_cell = rows[0][head.index("Tên hàng hoá")]
+    assert name_cell.data_type == "s" and name_cell.value.startswith("=")            # không bị Excel chạy như công thức
+    sel_head, sel_rows = read_report_sheet(wb["Mã đã chọn"])
+    assert sel_rows[0][0].value == "CPT0105" and sel_rows[0][sel_head.index("Giá giả định")].value == 1500
 
 
 def test_xuat_excel_bang_gia_theo_bo_loc_va_o_trong_khong_bi_thanh_0(api, db):
     add_ledger(db, "KHAC001", 10, "2026-03-01")
     res = api.get(PRICE_LIST + "/export", params={"scope": "all", "q": "KHAC"})
     assert res.status_code == 200
-    ws = openpyxl.load_workbook(BytesIO(res.content)).active
-    assert ws.max_row == 2 and ws["A2"].value == "KHAC001"
-    head = {c.value: c.column_letter for c in ws[1]}
-    assert ws[f"{head['Giá báo giá']}2"].value is None               # chưa có báo giá → ô trống, không phải 0
-    assert ws[f"{head['Giá mua gần nhất']}2"].value == 10 and ws[f"{head['Giá mua lần trước']}2"].value is None
-    assert ws[f"{head['Mua gần nhất']}2"].value.date().isoformat() == "2026-03-01"
+    head, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content)).active)
+    assert len(rows) == 1 and rows[0][0].value == "KHAC001"
+    row = {h: c.value for h, c in zip(head, rows[0])}
+    assert row["Báo giá mới"] is None                                 # chưa có báo giá → ô trống, không phải 0
+    assert row["Giá mua gần nhất"] == 10 and row["Giá mua lần trước"] is None
+    assert row["Mua gần nhất"].date().isoformat() == "2026-03-01"
 
 
 def test_chenh_lech_thung_nhan_so_tho_roi_moi_lam_tron():

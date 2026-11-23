@@ -70,3 +70,28 @@ def add_products(db, *codes_names_units):
     for code, name, unit in codes_names_units:
         db.add(Product(code=code, name=name, unit=unit, item_group="Chai"))
     db.commit()
+
+
+def read_report_sheet(ws):
+    """Đọc một sheet xuất theo khuôn bản mẫu HTML (dòng 1–3 là tiêu đề báo cáo): trả `(tên cột, các dòng ô)`.
+
+    Hàng tiêu đề cột = hàng ngay trên ô cố định. Tên cột bỏ xuống dòng thành dấu cách; sheet có hàng nhóm (Giá mua gần
+    nhất) thì tên cột = "<nhóm> - <cột>". Dòng trả về là bộ Ô (không phải giá trị) để bài kiểm soi được cả kiểu ô.
+    """
+    from openpyxl.utils.cell import coordinate_from_string
+    head_row = coordinate_from_string(ws.freeze_panes)[1] - 1
+    labels = [str(c.value or "").replace("\n", " ") for c in ws[head_row]]
+    if head_row > 4:
+        group, groups = "", []
+        for c in ws[head_row - 1]:
+            group = c.value or group          # ô gộp: chỉ ô đầu mang chữ
+            groups.append(group)
+        labels = [f"{g} - {label}" for g, label in zip(groups, labels)]
+    return labels, list(ws.iter_rows(min_row=head_row + 1))
+
+
+def column_values(ws, label: str) -> list:
+    """Giá trị của một cột (theo tên cột của `read_report_sheet`) từ trên xuống."""
+    head, rows = read_report_sheet(ws)
+    i = head.index(label)
+    return [r[i].value for r in rows]

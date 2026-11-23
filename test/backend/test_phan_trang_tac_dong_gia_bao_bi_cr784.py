@@ -12,7 +12,7 @@ from app.modules.packaging_cost.price_list_service import STATIC_SORT_KEYS, buil
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, column_values
 
 D = Decimal
 IMPACT = "/api/packaging-cost/impact"
@@ -162,9 +162,9 @@ def test_xuat_excel_bo_qua_phan_trang_nhung_theo_tim_va_xep(api):
     res = api.post(IMPACT + "/export", json=_body(page=3, page_size=1, q="HH01", sort_by="hh_code", sort_dir="desc"))
     assert res.status_code == 200
     ws = openpyxl.load_workbook(BytesIO(res.content))["Sản phẩm bị ảnh hưởng"]
-    assert [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)] == [f"HH{i:03d}" for i in range(19, 9, -1)]
+    assert column_values(ws, "Mã HH") == [f"HH{i:03d}" for i in range(19, 9, -1)]
     full = api.post(IMPACT + "/export", json=_body(page_size=1))
-    assert openpyxl.load_workbook(BytesIO(full.content))["Sản phẩm bị ảnh hưởng"].max_row == N + 1
+    assert len(column_values(openpyxl.load_workbook(BytesIO(full.content))["Sản phẩm bị ảnh hưởng"], "Mã HH")) == N
 
 
 # ── Bảng giá: đường nhanh == đường đầy đủ ───────────────────────────────────────
