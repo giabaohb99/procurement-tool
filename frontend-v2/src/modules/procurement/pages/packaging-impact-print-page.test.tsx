@@ -110,15 +110,9 @@ describe('PackagingImpactPrintPage', () => {
     expect(await screen.findByRole('heading', { name: 'BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT' })).toBeInTheDocument()
     expect(screen.getByText(/Báo cáo giá › Tác động giá bao bì/)).toBeInTheDocument()
     expect(await screen.findAllByText(/^(CPT0105|NAP0085)$/, { selector: '.mchip' })).toHaveLength(2)
-    //  Ba thẻ số liệu thay dòng chữ tóm tắt; dòng thông tin chỉ còn các điều kiện đang bật.
+    //  Dòng thông tin chỉ còn các điều kiện đang bật; ba thẻ số liệu đã bỏ khỏi bản in theo người chủ (23/11/2026).
     expect(document.querySelector('.info')).toHaveTextContent('Giá giả định: CPT0105 = 1.250 · Tìm sản phẩm: "b07"')
-    const boxes = [...document.querySelectorAll('.kpi')].map((box) => box.textContent)
-    expect(boxes).toEqual([
-      'Mã đã chọn21 chai · 1 nắp · 1 mã giả định',
-      'Sản phẩm bị ảnh hưởng3Dùng ít nhất 1 mã đã chọn',
-      'Tăng nhiều nhất /thùng+3.000 VNĐ/thùng+250 /chaiHH0003 — Sản phẩm ba',
-    ])
-    expect(document.querySelector('.kpi .v.up')).toHaveTextContent('+3.000')
+    expect(document.querySelectorAll('.kpi')).toHaveLength(0)
     expect(screen.getByRole('columnheader', { name: 'Giá giả định' })).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: /Sàn/ })).not.toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Nhãn thùng (giá /thùng)' })).toBeInTheDocument()

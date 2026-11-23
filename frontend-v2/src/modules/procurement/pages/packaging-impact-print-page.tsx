@@ -44,8 +44,6 @@ export function PackagingImpactPrintPage() {
         <>
           <PrintImpactSelection
             codes={request.codes}
-            kpis={data.kpis}
-            matched={data.products_total}
             extras={describeImpactFilters(request)}
             rows={data.selected}
           />

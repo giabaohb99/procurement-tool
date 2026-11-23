@@ -126,7 +126,7 @@ TREE = {
 
 <h2>In và Xuất Excel</h2>
 <ul>
-<li>Nút <strong>In</strong> (màn Tác động giá bao bì và Lịch sử mua hàng, cần quyền Xem) mở một thẻ mới đúng theo bộ lọc đang xem, nạp đủ mọi dòng rồi tự bật hộp in. Bản in khổ A4 ngang, trình bày như bản in của báo cáo HTML: tiêu đề báo cáo, ô lọc, thẻ số liệu, biểu đồ (khi xem một mã) và bảng.</li>
+<li>Nút <strong>In</strong> (màn Tác động giá bao bì và Lịch sử mua hàng, cần quyền Xem) mở một thẻ mới đúng theo bộ lọc đang xem, nạp đủ mọi dòng rồi tự bật hộp in. Bản in khổ A4 ngang, trình bày như bản in của báo cáo HTML: tiêu đề báo cáo, ô lọc, thẻ số liệu và biểu đồ (Lịch sử mua hàng, khi xem một mã) và bảng.</li>
 <li>Nút <strong>Xuất Excel</strong> (cần quyền Xuất) tải tệp theo đúng bộ lọc và thứ tự đang xem, tối đa 5.000 dòng. Tệp trình bày như tệp Excel của báo cáo HTML: dòng 1 tiêu đề <em>BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — tên báo cáo</em>, dòng 2 ngày xuất và đơn vị (VNĐ, chưa VAT), đầu cột nền xanh đậm (cột chai, nắp, nhãn, nhãn thùng, thùng nền xanh lá), số có dấu nghìn, phần trăm dạng 12,4%, ô tăng xanh giảm đỏ, cố định hàng tiêu đề, có bộ lọc, in A4 ngang có số trang.</li>
 </ul>
 
@@ -151,7 +151,7 @@ TREE = {
 <li>Mã đã chọn hiện thành nhãn nhỏ trong ô. Bấm dấu <strong>x</strong> trên một nhãn để bỏ mã đó; bấm dấu <strong>x</strong> ở cuối ô (<em>Bỏ hết mã đã chọn</em>) để bỏ tất cả.</li>
 <li>Bảng <strong>mã đã chọn</strong> hiện ngay dưới ô: Mã, Tên vật tư, Nhóm, Giá cũ, Giá mới, <strong>Giá giả định</strong>, Chênh lệch, %, Số SP (số sản phẩm đang dùng mã), Min, Max, Ghi chú. Bấm dấu <strong>x</strong> cuối dòng cũng bỏ được mã.</li>
 <li>Muốn thử giá chưa chốt: gõ vào ô <strong>Nhập giá</strong> (nền vàng) ở cột Giá giả định. Khoảng nửa giây sau khi ngừng gõ, mọi con số bên dưới tính lại theo giá đó. Xóa trắng ô là quay về giá mới.</li>
-<li>Muốn biết sản phẩm nào tăng chi phí nhiều nhất: ở bảng sản phẩm bấm tiêu đề cột <strong>Tăng/giảm /thùng</strong> để xếp giảm dần. Số sản phẩm bị ảnh hưởng hiện ở chân bảng. Bản in vẫn có ba thẻ <em>Mã đã chọn</em>, <em>Sản phẩm bị ảnh hưởng</em>, <em>Tăng nhiều nhất /thùng</em>.</li>
+<li>Muốn biết sản phẩm nào tăng chi phí nhiều nhất: ở bảng sản phẩm bấm tiêu đề cột <strong>Tăng/giảm /thùng</strong> để xếp giảm dần. Số sản phẩm bị ảnh hưởng hiện ở chân bảng.</li>
 <li>Đọc bảng sản phẩm bên dưới (xem mục tiếp). Cần gửi đi thì bấm <strong>Xuất Excel</strong> ở góc phải trên cùng: tệp có hai sheet <em>Sản phẩm bị ảnh hưởng</em> và <em>Mã đã chọn</em>, theo đúng giá giả định đang gõ, bộ lọc và thứ tự đang xếp. Cần bản giấy thì bấm <strong>In</strong> (phải chọn ít nhất một mã).</li>
 </ol>
 <p>Ô <strong>Khoảng ngày tính min – max</strong> ở góc phải chỉ đổi hai cột Min, Max (giá thấp nhất, cao nhất trong khoảng ngày đó). Giá cũ, giá mới không phụ thuộc ô này.</p>
@@ -173,7 +173,7 @@ TREE = {
 <li><strong>Bảng mã đã chọn</strong>: chọn mã của nhiều nhóm thì có hàng chip <strong>Tất cả</strong> · <strong>Chai</strong> · <strong>Nắp</strong> · <strong>Nhãn</strong>… kèm số mã; bấm một chip để chỉ xem mã của nhóm đó (chỉ lọc bảng này, không đổi các mã đang tính).</li>
 <li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Lọc nâng cao</strong>. Trong hộp lọc nâng cao: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>Từ – Đến</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, và ô <strong>Chỉ sản phẩm có cảnh báo</strong>. Bấm <strong>Áp dụng</strong> để lọc, <strong>Xóa lọc</strong> để bỏ; nút hiện số điều kiện đang bật.</li>
 <li>Bấm tiêu đề cột để xếp, kể cả các cột <strong>Chai</strong>, <strong>Nắp</strong>, <strong>Nhãn</strong>, <strong>Nhãn thùng</strong>, <strong>Thùng</strong> (xếp theo giá đang dùng của thành phần đó). Ví dụ xếp <strong>Tăng/giảm /thùng</strong> giảm dần để thấy sản phẩm bị ảnh hưởng nặng nhất.</li>
-<li>Bảng chia trang; chọn cả nhóm chai có thể ra hàng nghìn sản phẩm: thẻ số liệu luôn đếm trên toàn bộ, bảng chỉ hiện từng trang. Xuất Excel và In theo đúng bộ lọc, thứ tự đang xem.</li>
+<li>Bảng chia trang; chọn cả nhóm chai có thể ra hàng nghìn sản phẩm, tổng số sản phẩm hiện ở chân bảng. Xuất Excel và In theo đúng bộ lọc, thứ tự đang xem.</li>
 </ul>
 
 <h2>Ghi chú cảnh báo nghĩa là gì</h2>

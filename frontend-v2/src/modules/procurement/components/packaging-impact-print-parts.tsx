@@ -6,12 +6,10 @@
  */
 import { PACKAGING_PART_COLUMNS } from '../config/packaging-part-columns'
 import type {
-  PackagingImpactKpis,
   PackagingImpactProduct,
   PackagingPart,
   PackagingSelectedCode,
 } from '../types/packaging-cost-types'
-import { buildImpactSummaryCards } from '../utils/packaging-impact-print'
 import {
   formatPackagingDiff,
   formatPackagingPercent,
@@ -22,7 +20,7 @@ import {
   joinPackagingWarnings,
   packagingRoleLabel,
 } from '../utils/packaging-warning-text'
-import { PrintChipsBox, PrintDash, PrintKpis } from './packaging-print-widgets'
+import { PrintChipsBox, PrintDash } from './packaging-print-widgets'
 
 type Num = number | null | undefined
 
@@ -50,18 +48,13 @@ function Percent({ value }: { value: Num }) {
 
 interface PrintImpactSelectionProps {
   codes: readonly string[]
-  kpis: PackagingImpactKpis
-  /** Số sản phẩm khớp từ khóa (khác `kpis.affected_products` khi có từ khóa / bộ lọc nâng cao). */
-  matched: number
   /** Giá giả định / khoảng ngày / từ khóa đang bật — từ `describeImpactFilters`. */
   extras: readonly string[]
   rows: readonly PackagingSelectedCode[]
 }
 
-/** Khối ô lọc + ba thẻ số liệu + dòng điều kiện đang bật + bảng MÃ ĐÃ CHỌN. */
-export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: PrintImpactSelectionProps) {
-  //  Cùng ba thẻ với màn hình; "Đang lọc: x / M" chỉ hiện khi từ khóa / bộ lọc làm số dòng khác số bị ảnh hưởng.
-  const cards = buildImpactSummaryCards(kpis, matched !== kpis.affected_products ? matched : undefined)
+/** Khối ô lọc + dòng điều kiện đang bật + bảng MÃ ĐÃ CHỌN (ba thẻ số liệu đã bỏ theo người chủ, 23/11/2026). */
+export function PrintImpactSelection({ codes, extras, rows }: PrintImpactSelectionProps) {
   return (
     <div className="panel">
       <div className="pfilters">
@@ -70,7 +63,6 @@ export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: Pri
           <PrintChipsBox codes={codes} emptyText="Chưa chọn mã" />
         </div>
       </div>
-      <PrintKpis items={cards} />
       {extras.length > 0 && <div className="info">{extras.join(' · ')}</div>}
       {rows.length === 0 ? (
         <p className="empty">Các mã đã chọn chưa có trong định mức nào.</p>

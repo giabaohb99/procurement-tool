@@ -36,7 +36,7 @@ export default function PrintPackagingImpact() {
     <PackagingPrintShell subtitle="Tác động giá bao bì" status={message ? 'error' : data ? 'ready' : 'loading'} errorMessage={message}>
       {data && (
         <>
-          <PrintImpactSelection codes={request.codes} kpis={data.kpis} matched={data.products_total}
+          <PrintImpactSelection codes={request.codes}
             extras={describeImpactFilters(request)} rows={data.selected} />
           {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.products_total, 'sản phẩm')}</p>}
           <PrintImpactProducts rows={data.products} matched={data.products_total}
