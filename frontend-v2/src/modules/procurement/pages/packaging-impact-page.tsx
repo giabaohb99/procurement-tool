@@ -8,7 +8,7 @@
  * trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); ba thẻ luôn tính trên toàn bộ tập.
  */
 import { FileDown, Loader2, Printer } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -27,7 +27,6 @@ import { exportPackagingImpact } from '../api/packaging-cost-api'
 import { PackagingCodePicker } from '../components/packaging-code-picker'
 import { PackagingImpactProductsTable } from '../components/packaging-impact-products-table'
 import { PackagingImpactSelectedTable } from '../components/packaging-impact-selected-table'
-import { PackagingImpactSummary } from '../components/packaging-impact-summary'
 import { usePackagingCodeOptions, usePackagingImpact } from '../hooks/use-packaging-impact'
 import { usePackagingImpactTableState } from '../hooks/use-packaging-impact-table-state'
 import type { PackagingImpactRequest } from '../types/packaging-cost-types'
@@ -62,9 +61,7 @@ export function PackagingImpactPage() {
   )
 
   const table = usePackagingImpactTableState([codes, range])
-  const productsRef = useRef<HTMLDivElement>(null)
   /** Đang lọc bằng từ khóa / lọc nâng cao → thẻ "Sản phẩm bị ảnh hưởng" ghi "Đang lọc: x / M". */
-  const filtersActive = table.keyword !== '' || table.filterCount > 0
 
   /** Phần thân dùng chung cho tính toán và Xuất Excel (cùng bộ lọc + thứ tự); chưa kèm trang. */
   const filterBody = useMemo<PackagingImpactRequest>(
@@ -95,11 +92,6 @@ export function PackagingImpactPage() {
       return next
     })
   }, [])
-  /** Bấm thẻ "Tăng nhiều nhất /thùng": xếp bảng sản phẩm theo chênh /thùng giảm dần rồi cuộn tới bảng. */
-  const showTopIncrease = () => {
-    table.setSort('diff_carton', 'desc')
-    productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
   const removeCode = useCallback(
     (code: string) => setCodes((prev) => prev.filter((item) => item !== code)),
     [],
@@ -184,11 +176,8 @@ export function PackagingImpactPage() {
           </p>
         ) : (
           <>
-            <PackagingImpactSummary
-              kpis={data?.kpis}
-              filteredTotal={filtersActive ? data?.products_total : undefined}
-              onShowTopIncrease={showTopIncrease}
-            />
+            {/* Ba thẻ số liệu (Mã đã chọn · Sản phẩm bị ảnh hưởng · Tăng nhiều nhất /thùng) đã bỏ theo người chủ (23/11/2026);
+                bản in vẫn giữ thẻ. */}
             <PackagingImpactSelectedTable
               rows={data?.selected}
               isLoading={impact.isLoading}
@@ -208,7 +197,7 @@ export function PackagingImpactPage() {
       </Card>
 
       {codes.length > 0 && (
-        <div ref={productsRef} className="scroll-mt-4">
+        <div>
           <Card className="gap-3 p-4">
             <PackagingImpactProductsTable
               rows={data?.products}

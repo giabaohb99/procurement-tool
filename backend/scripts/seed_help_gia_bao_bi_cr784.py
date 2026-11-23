@@ -141,7 +141,7 @@ TREE = {
         {
             "title": IMPACT_TITLE,
             "icon": "bar-chart",
-            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm), nhập giá giả định, ba thẻ (có Tăng nhiều nhất /thùng), lọc nâng cao, xếp mọi cột kể cả Chai / Nắp / Nhãn, ghi chú cảnh báo, In, Xuất Excel",
+            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm), nhập giá giả định, đọc bảng mã đã chọn và sản phẩm bị ảnh hưởng, lọc nâng cao, xếp mọi cột kể cả Chai / Nắp / Nhãn, ghi chú cảnh báo, In, Xuất Excel",
             "content": f"""<h2>Khi nào dùng</h2>
 <p>Nhà cung cấp báo tăng (hoặc giảm) giá một hay nhiều mã bao bì, hoặc bạn muốn thử "nếu nắp lên 350 đ thì sao" trước khi chốt giá. Mở <strong>Thu mua › Giá nguyên vật liệu sản xuất › Tác động giá bao bì</strong> (màn có tiêu đề <strong>Tác động tăng giá bao bì</strong>).</p>
 
@@ -151,7 +151,7 @@ TREE = {
 <li>Mã đã chọn hiện thành nhãn nhỏ trong ô. Bấm dấu <strong>x</strong> trên một nhãn để bỏ mã đó; bấm dấu <strong>x</strong> ở cuối ô (<em>Bỏ hết mã đã chọn</em>) để bỏ tất cả.</li>
 <li>Bảng <strong>mã đã chọn</strong> hiện ngay dưới ô: Mã, Tên vật tư, Nhóm, Giá cũ, Giá mới, <strong>Giá giả định</strong>, Chênh lệch, %, Số SP (số sản phẩm đang dùng mã), Min, Max, Ghi chú. Bấm dấu <strong>x</strong> cuối dòng cũng bỏ được mã.</li>
 <li>Muốn thử giá chưa chốt: gõ vào ô <strong>Nhập giá</strong> (nền vàng) ở cột Giá giả định. Khoảng nửa giây sau khi ngừng gõ, mọi con số bên dưới tính lại theo giá đó. Xóa trắng ô là quay về giá mới.</li>
-<li>Đọc ba <strong>thẻ số liệu</strong> đầu màn: <strong>Mã đã chọn</strong> (kèm số mã theo nhóm, số mã đang giả định), <strong>Sản phẩm bị ảnh hưởng</strong> (đang lọc thì ghi <em>Đang lọc: x / tổng</em>) và <strong>Tăng nhiều nhất /thùng</strong> (sản phẩm có chi phí bao bì một thùng tăng mạnh nhất: mức tăng mỗi thùng, mỗi chai, mã và tên sản phẩm). Bấm thẻ Tăng nhiều nhất là bảng sản phẩm xếp theo mức tăng /thùng giảm dần và cuộn tới bảng; Kinh doanh tra nhanh ở đây.</li>
+<li>Muốn biết sản phẩm nào tăng chi phí nhiều nhất: ở bảng sản phẩm bấm tiêu đề cột <strong>Tăng/giảm /thùng</strong> để xếp giảm dần. Số sản phẩm bị ảnh hưởng hiện ở chân bảng. Bản in vẫn có ba thẻ <em>Mã đã chọn</em>, <em>Sản phẩm bị ảnh hưởng</em>, <em>Tăng nhiều nhất /thùng</em>.</li>
 <li>Đọc bảng sản phẩm bên dưới (xem mục tiếp). Cần gửi đi thì bấm <strong>Xuất Excel</strong> ở góc phải trên cùng: tệp có hai sheet <em>Sản phẩm bị ảnh hưởng</em> và <em>Mã đã chọn</em>, theo đúng giá giả định đang gõ, bộ lọc và thứ tự đang xếp. Cần bản giấy thì bấm <strong>In</strong> (phải chọn ít nhất một mã).</li>
 </ol>
 <p>Ô <strong>Khoảng ngày tính min – max</strong> ở góc phải chỉ đổi hai cột Min, Max (giá thấp nhất, cao nhất trong khoảng ngày đó). Giá cũ, giá mới không phụ thuộc ô này.</p>

@@ -167,27 +167,6 @@ tbody tr.pkg-zero td { color: var(--muted); }
 .pkg-actions { display: inline-flex; gap: 4px; }
 .pkg-actions .btn { white-space: nowrap; }
 
-/* duoc-CR-784 — thẻ số liệu Lịch sử mua hàng: mỗi thẻ một màu nhấn (viền trái + ô biểu tượng), số to đậm. */
-.pkg-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-.pkg-stat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px; background-color: #fff;
-  border: 1px solid var(--border, #e5e7eb); border-left-width: 4px; border-radius: 12px; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
-.pkg-stat-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.pkg-stat-ic { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;
-  flex-shrink: 0; font-size: 17px; }
-.pkg-stat-label { font-size: 13px; font-weight: 500; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pkg-stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 900px) { .pkg-stats.three { grid-template-columns: 1fr; } }
-/* Thẻ bấm được (Tăng nhiều nhất /thùng): là <button> nên đặt lại chữ, con trỏ, vòng tiêu điểm */
-button.pkg-stat { width: 100%; font: inherit; text-align: left; cursor: pointer; }
-button.pkg-stat:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, .12); }
-button.pkg-stat:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
-.pkg-stat-more { margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: #64748b; }
-.pkg-stat-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.pkg-stat-unit { font-size: 12px; color: #64748b; }
-.pkg-stat-sub { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 12px; color: #64748b; }
-.pkg-stat-sub > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pkg-stat-val { font-weight: 700; line-height: 1.15; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-
 /* Thẻ số liệu của Lịch sử mua hàng, y bản mẫu HTML (23/11/2026): thẻ trắng, viền trên xanh lá, số to navy, dòng phụ xám.
    Tăng = xanh, giảm = đỏ (luật màu chung của cụm, ngược bản mẫu). */
 .pkg-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }

@@ -72,8 +72,7 @@ sản phẩm nào đổi theo, đổi bao nhiêu**, để quyết nhận giá / 
 phân hệ **Thu mua**, nhóm menu **Giá nguyên vật liệu sản xuất**; giao diện cũ: cụm menu riêng **Giá nguyên vật liệu sản xuất**. Cần quyền **Giá bao bì**
 (`packaging_cost`, nhóm Thu mua ở màn phân quyền vai trò): không có quyền Xem thì không thấy menu — nhờ quản trị.
 - Màn (hai giao diện cùng tên): ***Tác động giá bao bì*** (chọn mã, gõ tên nhóm rồi ***Chọn tất cả***, ô ***Nhập giá*** để
-  thử giá giả định; ba thẻ *Mã đã chọn* · *Sản phẩm bị ảnh hưởng* · ***Tăng nhiều nhất /thùng*** — bấm thẻ này bảng xếp theo
-  mức tăng /thùng; chip nhóm *Chai / Nắp / Nhãn* ở bảng mã đã chọn; ***Lọc nâng cao*** ở bảng sản phẩm: xu hướng, vai trò của
+  thử giá giả định; muốn biết sản phẩm tăng nhiều nhất thì xếp cột *Tăng/giảm /thùng* giảm dần; chip nhóm *Chai / Nắp / Nhãn* ở bảng mã đã chọn; ***Lọc nâng cao*** ở bảng sản phẩm: xu hướng, vai trò của
   mã, khoảng quy cách / tăng giảm /chai, /thùng / CP mới, chỉ dòng có cảnh báo; xếp được mọi cột kể cả *Chai*, *Nắp*,
   *Nhãn*; ***In***, ***Xuất Excel***) · ***Tổng hợp theo sản phẩm*** (mọi sản phẩm có định mức, chip
   *Tăng / Giảm / Không đổi / Chưa có giá*) · ***Bảng giá VTBB*** (giá mua gần nhất, lần trước, báo giá, cũ / mới; nút
