@@ -48,6 +48,11 @@ chỉ xét **dòng Misa có ngày <= mốc** và, sau mốc, **chỉ lần mua c
 gỡ) thì hành vi y hệt trước đây. Điều kiện là một biểu thức SQL dùng chung (`product_price/misa_cutoff.py`, áp bên trong
 `latest_priced_by_code` và `build_history`), nên không thêm truy vấn nào. Nhãn nguồn hiện **Sổ Misa**.
 
+Chủ dự án chốt **phương án A** ngày 23/11/2026: giữ cả hai nguồn như trên (sổ Misa tới mốc, ĐMH thật trên ERP sau mốc),
+không chuyển sang chỉ dùng sổ Misa. Vì vậy trên máy dev, nơi đã có ĐMH thật sau 30/06/2026, Tổng hợp ra Tăng 316 · Giảm 270 ·
+Không đổi 414, lệch báo cáo HTML (239 · 251 · 510) là đúng ý: phần lệch đến từ 97 dòng ĐMH đã duyệt và 12 dòng lịch sử mua
+có gắn ĐMH sau mốc.
+
 **Giá cũ / giá mới** (`product_price/price_state_service.py`):
 
 | Mã đang có | Giá mới | Giá cũ |
