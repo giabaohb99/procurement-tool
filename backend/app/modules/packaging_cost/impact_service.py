@@ -92,6 +92,17 @@ IMPACT_BOM_COLUMNS = (PackagingBom.hh_code, PackagingBom.hh_name, PackagingBom.l
                       PackagingBom.carton_qty)
 
 
+def max_increase_product(items: list[tuple]) -> dict | None:
+    """Sản phẩm tăng chi phí /thùng NHIỀU NHẤT (thẻ "Tăng nhiều nhất /thùng"). Hòa → chênh /chai lớn hơn, rồi mã hàng hóa tăng
+    dần. Không sản phẩm nào TĂNG (lớn nhất ≤ 0, hoặc không có /thùng) → None: không đưa số âm / 0 ra làm "tăng nhiều nhất"."""
+    rising = [(bom, cost) for bom, cost in items if cost.diff_carton is not None and cost.diff_carton > 0]
+    if not rising:
+        return None
+    bom, cost = min(rising, key=lambda it: (-it[1].diff_carton, -(it[1].diff_bottle or 0), it[0].hh_code))
+    return {"hh_code": bom.hh_code, "hh_name": bom.hh_name, "diff_bottle": num(cost.diff_bottle),
+            "diff_carton": num(cost.diff_carton), "carton_qty": cost.carton_qty}
+
+
 def _matches(bom, terms: list[str]) -> bool:
     """Mọi từ khóa (đã bỏ dấu) đều nằm trong mã HH + tên + tên pháp lý + mã thành phần — đúng ô tìm của bảng."""
     haystack = fold_text(" ".join([bom.hh_code, bom.hh_name, bom.legal_name or "", *bom_codes(bom)]))
@@ -156,7 +167,8 @@ def compute_impact(db: Session, codes: list[str], assumed: dict[str, Decimal], *
             "increased": sum(1 for c in costs if c.trend == CostTrend.UP),
             "decreased": sum(1 for c in costs if c.trend == CostTrend.DOWN),
             "max_increase_carton": num(max(cartons)) if cartons else None,
-            "max_increase_bottle": num(max(bottles)) if bottles else None}
+            "max_increase_bottle": num(max(bottles)) if bottles else None,
+            "max_increase_product": max_increase_product(items)}
 
     arranged = arrange_products(items, q=q, sort_by=sort_by, sort_dir=sort_dir, filters=filters)
     window = arranged if page is None else arranged[(page - 1) * page_size:page * page_size]

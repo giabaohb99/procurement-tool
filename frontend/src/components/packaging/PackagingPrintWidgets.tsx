@@ -17,14 +17,21 @@ export function PrintChipsBox({ codes, emptyText }: { codes: readonly string[]; 
   )
 }
 
-/** Hàng thẻ số liệu (nhãn nhỏ, số navy to). Giá trị dài (khoảng ngày) hạ cỡ chữ để khỏi tràn thẻ. */
-export function PrintKpis({ items, hint }: { items: readonly { label: string; value: string }[]; hint?: string }) {
+/** Một thẻ số liệu của bản in: số to (kèm đơn vị nhỏ), tối đa hai dòng phụ, `tone` tô màu số (tăng = xanh). */
+export interface PrintKpiItem { label: string; value: string; unit?: string; sub?: string; detail?: string; tone?: 'up' | 'down' }
+
+/** Hàng thẻ số liệu (nhãn nhỏ, số navy to). Giá trị dài (khoảng ngày, câu "Không có…") hạ cỡ chữ để khỏi tràn thẻ. */
+export function PrintKpis({ items, hint }: { items: readonly PrintKpiItem[]; hint?: string }) {
   return (
     <div className="kpis">
       {items.map((it, i) => (
         <div key={it.label} className="panel kpi">
           <div className="k">{it.label}</div>
-          <div className={it.value.length > 12 ? 'v long' : 'v'}>{it.value}</div>
+          <div className={['v', it.value.length > 12 && 'long', it.tone].filter(Boolean).join(' ')}>
+            {it.value}{it.unit && <small> {it.unit}</small>}
+          </div>
+          {it.sub && <div className={it.tone ? `s ${it.tone}` : 's'}>{it.sub}</div>}
+          {it.detail && <div className="s dt">{it.detail}</div>}
           {i === 0 && hint && <div className="s">{hint}</div>}
         </div>
       ))}

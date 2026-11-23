@@ -2,13 +2,13 @@
  * duoc-CR-784 — màn TÁC ĐỘNG TĂNG GIÁ BAO BÌ (bám `renderImpact` / `drawImpact` của bản mẫu
  * `Bao cao gia NVL san xuat - 11.2026.html`).
  *
- * Chọn một hoặc nhiều mã chai / nắp / nhãn / nhãn thùng / thùng → bảng mã đã chọn (giá cũ, mới, ô giá
- * giả định), bốn thẻ KPI, và bảng mọi sản phẩm dùng ít nhất một mã đó với chi phí bao bì /chai, /thùng cũ
+ * Chọn một hoặc nhiều mã chai / nắp / nhãn / nhãn thùng / thùng → ba thẻ số liệu (mã đã chọn, sản phẩm bị ảnh
+ * hưởng, sản phẩm tăng nhiều nhất /thùng), bảng mã đã chọn (giá cũ, mới, ô giá giả định), và bảng mọi sản phẩm dùng ít nhất một mã đó với chi phí bao bì /chai, /thùng cũ
  * và mới. Giá giả định trễ 400 ms rồi mới tính lại; dữ liệu cũ giữ nguyên trong lúc tính. Bảng sản phẩm phân
- * trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); thẻ KPI luôn tính trên toàn bộ tập.
+ * trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); ba thẻ luôn tính trên toàn bộ tập.
  */
 import { FileDown, Loader2, Printer } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -62,6 +62,9 @@ export function PackagingImpactPage() {
   )
 
   const table = usePackagingImpactTableState([codes, range])
+  const productsRef = useRef<HTMLDivElement>(null)
+  /** Đang lọc bằng từ khóa / lọc nâng cao → thẻ "Sản phẩm bị ảnh hưởng" ghi "Đang lọc: x / M". */
+  const filtersActive = table.keyword !== '' || table.filterCount > 0
 
   /** Phần thân dùng chung cho tính toán và Xuất Excel (cùng bộ lọc + thứ tự); chưa kèm trang. */
   const filterBody = useMemo<PackagingImpactRequest>(
@@ -92,6 +95,11 @@ export function PackagingImpactPage() {
       return next
     })
   }, [])
+  /** Bấm thẻ "Tăng nhiều nhất /thùng": xếp bảng sản phẩm theo chênh /thùng giảm dần rồi cuộn tới bảng. */
+  const showTopIncrease = () => {
+    table.setSort('diff_carton', 'desc')
+    productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const removeCode = useCallback(
     (code: string) => setCodes((prev) => prev.filter((item) => item !== code)),
     [],
@@ -175,37 +183,43 @@ export function PackagingImpactPage() {
             <b>nhãn</b>…) rồi bấm <b>Chọn tất cả</b> để chọn cả nhóm.
           </p>
         ) : (
-          <PackagingImpactSelectedTable
-            rows={data?.selected}
-            isLoading={impact.isLoading}
-            isError={impact.isError}
-            assumed={assumed}
-            onAssumedChange={changeAssumed}
-            onRemove={removeCode}
-            //  Một hàng duy nhất trên bảng: tóm tắt bên trái, nút của bảng bên phải; bỏ hết mã = nút x trong ô chọn mã.
-            toolbar={
-              <div className="flex items-center gap-3">
-                <PackagingImpactSummary kpis={data?.kpis} />
-                {impact.isFetching && (
+          <>
+            <PackagingImpactSummary
+              kpis={data?.kpis}
+              filteredTotal={filtersActive ? data?.products_total : undefined}
+              onShowTopIncrease={showTopIncrease}
+            />
+            <PackagingImpactSelectedTable
+              rows={data?.selected}
+              isLoading={impact.isLoading}
+              isError={impact.isError}
+              assumed={assumed}
+              onAssumedChange={changeAssumed}
+              onRemove={removeCode}
+              //  Số liệu đã lên thẻ; thanh công cụ chỉ còn vòng quay báo đang tính lại (bỏ hết mã = nút x trong ô chọn mã).
+              toolbar={
+                impact.isFetching ? (
                   <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-                )}
-              </div>
-            }
-          />
+                ) : undefined
+              }
+            />
+          </>
         )}
       </Card>
 
       {codes.length > 0 && (
-        <Card className="gap-3 p-4">
-          <PackagingImpactProductsTable
-            rows={data?.products}
-            total={data?.products_total ?? 0}
-            affected={data?.kpis.affected_products}
-            isLoading={impact.isLoading}
-            isError={impact.isError}
-            view={table}
-          />
-        </Card>
+        <div ref={productsRef} className="scroll-mt-4">
+          <Card className="gap-3 p-4">
+            <PackagingImpactProductsTable
+              rows={data?.products}
+              total={data?.products_total ?? 0}
+              affected={data?.kpis.affected_products}
+              isLoading={impact.isLoading}
+              isError={impact.isError}
+              view={table}
+            />
+          </Card>
+        </div>
       )}
     </PageContainer>
   )

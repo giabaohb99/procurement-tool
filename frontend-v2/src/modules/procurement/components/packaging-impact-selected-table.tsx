@@ -29,7 +29,7 @@ interface PackagingImpactSelectedTableProps {
   /** `null` = bỏ giả định, quay về giá bảng giá. */
   onAssumedChange: (code: string, price: number | null) => void
   onRemove: (code: string) => void
-  /** Nội dung bên trái thanh công cụ của bảng (dòng tóm tắt số mã / số sản phẩm bị ảnh hưởng). */
+  /** Nội dung bên trái thanh công cụ của bảng (hiện chỉ là vòng quay "đang tính lại"; số liệu tóm tắt đã ở ba thẻ phía trên). */
   toolbar?: ReactNode
 }
 

@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import DateRangePicker from '../../components/DateRangePicker'
 import { toast } from '../../components/toast'
 import PackagingCodePicker from '../../components/packaging/PackagingCodePicker'
+import PackagingImpactSummary from '../../components/packaging/PackagingImpactSummary'
 import PackagingImpactProductsTable from '../../components/packaging/PackagingImpactProductsTable'
 import PackagingImpactSelectedTable from '../../components/packaging/PackagingImpactSelectedTable'
 import { exportImpact, fetchCodeOptions, fetchImpact } from '../../api/packaging-cost'
-import type { PackagingCodeOption, PackagingImpactKpis, PackagingImpactRequest } from '../../api/packaging-cost-types'
+import type { PackagingCodeOption, PackagingImpactRequest } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
-import { describeImpactSummaryDetail, impactPrintHref } from '../../utils/packaging-print'
+import { impactPrintHref } from '../../utils/packaging-print'
 import { nextSort, sortCodeOptions } from '../../utils/packaging-query'
 import { EMPTY_IMPACT_FILTERS, countImpactFilters, impactFiltersToRequest } from '../../utils/packaging-impact-filters'
 import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
@@ -21,21 +22,9 @@ function pickAssumed(codes: string[], assumed: Record<string, number>): Record<s
   return Object.keys(picked).length ? picked : undefined
 }
 
-function ImpactSummary({ kpis }: { kpis: PackagingImpactKpis | undefined }) {
-  if (!kpis) return null
-  const detail = describeImpactSummaryDetail(kpis)
-  return (
-    <>
-      Mã đã chọn <b>{kpis.selected_count}</b>{detail && ` (${detail})`}
-      <span style={{ margin: '0 8px' }}>·</span>
-      Sản phẩm bị ảnh hưởng <b>{kpis.affected_products}</b>
-    </>
-  )
-}
-
 /**
  * Màn TÁC ĐỘNG TĂNG GIÁ BAO BÌ: chọn một hoặc nhiều mã chai / nắp / nhãn / nhãn thùng / thùng → bảng mã đã chọn
- * (giá cũ, mới, ô giá giả định), dòng tóm tắt, và bảng mọi sản phẩm dùng ít nhất một mã đó với chi phí bao bì /chai,
+ * (giá cũ, mới, ô giá giả định), ba thẻ số liệu, và bảng mọi sản phẩm dùng ít nhất một mã đó với chi phí bao bì /chai,
  * /thùng cũ và mới. Giá giả định trễ 400 ms rồi mới tính lại; bảng sản phẩm phân trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ.
  */
 export default function PackagingImpact() {
@@ -54,6 +43,9 @@ export default function PackagingImpact() {
   const [exporting, setExporting] = useState(false)
   const debouncedAssumed = useDebouncedValue(assumed, 400)
   const query = useDebouncedValue(keyword, 250).trim()
+  const productsRef = useRef<HTMLDivElement>(null)
+  /** Đang lọc bằng từ khóa / lọc nâng cao → thẻ "Sản phẩm bị ảnh hưởng" ghi "Đang lọc: x / M". */
+  const filtersActive = keyword !== '' || countImpactFilters(filters) > 0
 
   useEffect(() => {
     fetchCodeOptions().then((d) => setOptions(sortCodeOptions(d)))
@@ -90,6 +82,11 @@ export default function PackagingImpact() {
       return next
     })
   }, [])
+  /** Bấm thẻ "Tăng nhiều nhất /thùng": xếp bảng sản phẩm theo chênh /thùng giảm dần rồi cuộn tới bảng. */
+  const showTopIncrease = () => {
+    setSortBy('diff_carton'); setSortDir('desc'); setPage(1)
+    productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const removeCode = useCallback((code: string) => { setCodes((prev) => prev.filter((c) => c !== code)); setPage(1) }, [])
 
   async function exportExcel() {
@@ -137,14 +134,17 @@ export default function PackagingImpact() {
             Bấm vào ô trên để chọn một hoặc nhiều mã. Gõ tên nhóm (<b>chai</b>, <b>nắp</b>, <b>nhãn</b>…) rồi bấm <b>Chọn tất cả</b> để chọn cả nhóm.
           </div>
         ) : (
-          <PackagingImpactSelectedTable rows={data?.selected} loading={impact.loading} failed={impact.failed}
-            assumed={assumed} onAssumedChange={changeAssumed} onRemove={removeCode}
-            summary={<ImpactSummary kpis={data?.kpis} />} />
+          <>
+            <PackagingImpactSummary kpis={data?.kpis} filteredTotal={filtersActive ? data?.products_total : undefined}
+              onShowTopIncrease={showTopIncrease} />
+            <PackagingImpactSelectedTable rows={data?.selected} loading={impact.loading} failed={impact.failed}
+              assumed={assumed} onAssumedChange={changeAssumed} onRemove={removeCode} />
+          </>
         )}
       </div>
 
       {codes.length > 0 && (
-        <div className="card pkg-card">
+        <div ref={productsRef} className="card pkg-card" style={{ scrollMarginTop: 12 }}>
           <PackagingImpactProductsTable rows={data?.products} total={data?.products_total ?? 0} affected={data?.kpis.affected_products}
             loading={impact.loading} failed={impact.failed}
             keyword={keyword} onKeyword={changeKeyword} filters={filters} filterCount={countImpactFilters(filters)}

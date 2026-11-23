@@ -137,7 +137,16 @@ export interface PackagingOverviewResult {
   counts: PackagingOverviewCounts
 }
 
-/** Bốn thẻ KPI của màn Tác động. */
+/** Sản phẩm tăng chi phí /thùng nhiều nhất (thẻ "Tăng nhiều nhất /thùng") — trên TOÀN BỘ tập bị ảnh hưởng, không theo bộ lọc. */
+export interface PackagingMaxIncreaseProduct {
+  hh_code: string
+  hh_name: string
+  diff_bottle: number | null
+  diff_carton: number
+  carton_qty: number
+}
+
+/** Số liệu tổng hợp của màn Tác động (ba thẻ trên màn hình / bản in). */
 export interface PackagingImpactKpis {
   selected_count: number
   selected_by_group: Record<string, number>
@@ -147,6 +156,8 @@ export interface PackagingImpactKpis {
   decreased: number
   max_increase_carton: number | null
   max_increase_bottle: number | null
+  /** `null` = không sản phẩm nào tăng chi phí /thùng (thẻ ghi "Không có sản phẩm tăng"). */
+  max_increase_product: PackagingMaxIncreaseProduct | null
 }
 
 export interface PackagingImpactResult {

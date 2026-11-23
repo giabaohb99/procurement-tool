@@ -1,8 +1,8 @@
 import type { PackagingImpactKpis, PackagingImpactProduct, PackagingPart, PackagingSelectedCode } from '../../api/packaging-cost-types'
 import { diffText, joinWarnings, pctText, priceText, roleLabel, selectedCodeNote } from '../../utils/packaging-price'
-import { describeImpactSummaryDetail } from '../../utils/packaging-print'
+import { buildImpactSummaryCards } from '../../utils/packaging-print'
 import { PrintDash } from './PackagingPrintShell'
-import { PrintChipsBox } from './PackagingPrintWidgets'
+import { PrintChipsBox, PrintKpis } from './PackagingPrintWidgets'
 
 /**
  * duoc-CR-784 — các khối của bản in Tác động giá bao bì (bản v1), dựng theo bản mẫu HTML: khối ô lọc (ô mã chọn nhiều + dòng
@@ -23,7 +23,7 @@ const PART_COLUMNS = [
   { role: 4, perCarton: true }, { role: 5, perCarton: true },
 ] as const
 
-/** Khối ô lọc + dòng tóm tắt + bảng MÃ ĐÃ CHỌN. `matched` = số sản phẩm khớp từ khóa + bộ lọc nâng cao; `extras` = giá giả định / khoảng ngày / từ khóa. */
+/** Khối ô lọc + ba thẻ số liệu + dòng điều kiện đang bật + bảng MÃ ĐÃ CHỌN. `matched` = số sản phẩm khớp từ khóa + bộ lọc nâng cao; `extras` = giá giả định / khoảng ngày / từ khóa. */
 export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: {
   codes: readonly string[]
   kpis: PackagingImpactKpis
@@ -31,7 +31,8 @@ export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: {
   extras: readonly string[]
   rows: readonly PackagingSelectedCode[]
 }) {
-  const detail = describeImpactSummaryDetail(kpis)
+  //  Cùng ba thẻ với màn hình; "Đang lọc: x / M" chỉ hiện khi từ khóa / bộ lọc làm số dòng khác số bị ảnh hưởng.
+  const cards = buildImpactSummaryCards(kpis, matched !== kpis.affected_products ? matched : undefined)
   return (
     <div className="panel">
       <div className="pfilters">
@@ -40,11 +41,8 @@ export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: {
           <PrintChipsBox codes={codes} emptyText="Chưa chọn mã" />
         </div>
       </div>
-      <div className="info">
-        Mã đã chọn <b>{kpis.selected_count}</b>{detail && ` (${detail})`} · Sản phẩm bị ảnh hưởng <b>{kpis.affected_products}</b>
-        {matched !== kpis.affected_products && ` (khớp từ khóa / bộ lọc: ${matched})`}
-        {extras.map((e) => ` · ${e}`).join('')}
-      </div>
+      <PrintKpis items={cards} />
+      {extras.length > 0 && <div className="info">{extras.join(' · ')}</div>}
       {rows.length === 0 ? <p className="empty">Các mã đã chọn chưa có trong định mức nào.</p> : (
         <table>
           <thead>

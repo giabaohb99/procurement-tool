@@ -67,6 +67,7 @@ vi.mock('@/core/api', async (importOriginal) => {
           selected_count: 2, selected_by_group: { Chai: 1, Nắp: 1 }, assumed_count: 1,
           affected_products: total, increased: total, decreased: 0,
           max_increase_carton: 3000, max_increase_bottle: 250,
+          max_increase_product: { hh_code: 'HH0003', hh_name: 'Sản phẩm ba', diff_bottle: 250, diff_carton: 3000, carton_qty: 12 },
         },
         products: Array.from({ length: count }, (_, i) => product(start + i + 1)),
         products_total: total,
@@ -109,9 +110,15 @@ describe('PackagingImpactPrintPage', () => {
     expect(await screen.findByRole('heading', { name: 'BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT' })).toBeInTheDocument()
     expect(screen.getByText(/Báo cáo giá › Tác động giá bao bì/)).toBeInTheDocument()
     expect(await screen.findAllByText(/^(CPT0105|NAP0085)$/, { selector: '.mchip' })).toHaveLength(2)
-    expect(document.querySelector('.info')).toHaveTextContent(
-      'Mã đã chọn 2 (1 chai · 1 nắp · 1 mã giả định) · Sản phẩm bị ảnh hưởng 3 · Giá giả định: CPT0105 = 1.250 · Tìm sản phẩm: "b07"',
-    )
+    //  Ba thẻ số liệu thay dòng chữ tóm tắt; dòng thông tin chỉ còn các điều kiện đang bật.
+    expect(document.querySelector('.info')).toHaveTextContent('Giá giả định: CPT0105 = 1.250 · Tìm sản phẩm: "b07"')
+    const boxes = [...document.querySelectorAll('.kpi')].map((box) => box.textContent)
+    expect(boxes).toEqual([
+      'Mã đã chọn21 chai · 1 nắp · 1 mã giả định',
+      'Sản phẩm bị ảnh hưởng3Dùng ít nhất 1 mã đã chọn',
+      'Tăng nhiều nhất /thùng+3.000 VNĐ/thùng+250 /chaiHH0003 — Sản phẩm ba',
+    ])
+    expect(document.querySelector('.kpi .v.up')).toHaveTextContent('+3.000')
     expect(screen.getByRole('columnheader', { name: 'Giá giả định' })).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: /Sàn/ })).not.toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Nhãn thùng (giá /thùng)' })).toBeInTheDocument()

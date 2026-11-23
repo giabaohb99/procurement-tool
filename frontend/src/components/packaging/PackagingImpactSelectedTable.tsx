@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import NumberInput from '../NumberInput'
 import TableHead, { TableCells, TableColGroup } from '../TableHead'
 import TableToolbar from '../TableToolbar'
@@ -14,10 +13,10 @@ import { buildSelectedGroupChips, resolveSelectedGroup } from '../../utils/packa
 /**
  * Bảng MÃ ĐÃ CHỌN của màn Tác động giá: giá cũ / mới, ô giá giả định (nền vàng), chênh lệch, số SP dùng, min / max
  * theo sổ giá, ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng thì ô ngưỡng tô đỏ và ghi chú nói rõ. Chip nhóm (Chai · Nắp ·
- * Nhãn · Nhãn thùng · Thùng) cạnh dòng tóm tắt chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
+ * Nhãn · Nhãn thùng · Thùng) trên thanh công cụ chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
  */
 export default function PackagingImpactSelectedTable({
-  rows, loading, failed, assumed, onAssumedChange, onRemove, summary,
+  rows, loading, failed, assumed, onAssumedChange, onRemove,
 }: {
   rows: PackagingSelectedCode[] | undefined
   loading: boolean
@@ -27,8 +26,6 @@ export default function PackagingImpactSelectedTable({
   /** `null` = bỏ giả định, quay về giá bảng giá. */
   onAssumedChange: (code: string, price: number | null) => void
   onRemove: (code: string) => void
-  /** Dòng tóm tắt bên trái thanh công cụ. */
-  summary: ReactNode
 }) {
   const columns = useMemo<TableColumn<PackagingSelectedCode>[]>(() => {
     const appliedOf = (r: PackagingSelectedCode) => assumed[r.code] ?? r.new
@@ -80,7 +77,6 @@ export default function PackagingImpactSelectedTable({
     <div>
       <TableToolbar {...table}>
         <div className="pkg-row" style={{ flex: 1, textAlign: 'left' }}>
-          <div className="pkg-summary">{summary}</div>
           {/*  Một nhóm duy nhất thì không có gì để lọc. */}
           {chips.length > 1 && (
             <div className="pkg-pills small" role="group" aria-label="Lọc mã đã chọn theo nhóm">

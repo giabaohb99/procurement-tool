@@ -8,11 +8,11 @@
  * gửi máy chủ: chế độ lạ về `code`, ngày sai khuôn / không có trên lịch bị bỏ, khóa xếp ngoài danh sách bị bỏ, mã cắt ở trần.
  */
 import type {
-  PackagingHistoryParams, PackagingImpactKpis, PackagingImpactRequest, PackagingSupplierOption,
+  PackagingHistoryParams, PackagingImpactKpis, PackagingImpactRequest, PackagingMaxIncreaseProduct, PackagingSupplierOption,
 } from '../api/packaging-cost-types'
 import { fmtDateStr } from './datetime'
 import { appendImpactFilterSearch, describeImpactAdvancedFilters, parseImpactFilterSearch } from './packaging-impact-filters'
-import { priceText } from './packaging-price'
+import { diffText, priceText } from './packaging-price'
 import { PACKAGING_HISTORY_MAX_CODES, PACKAGING_MAX_CODES } from './packaging-query'
 
 export const PACKAGING_PRINT_PATHS = {
@@ -194,3 +194,44 @@ export const describeSelectedGroups = (by: Record<string, number> | undefined): 
 /** Phần trong ngoặc của dòng tóm tắt: "2 chai · 1 nắp · 1 mã giả định" (rỗng nếu không có gì). */
 export const describeImpactSummaryDetail = (k: PackagingImpactKpis): string =>
   [describeSelectedGroups(k.selected_by_group), k.assumed_count ? `${k.assumed_count} mã giả định` : ''].filter(Boolean).join(' · ')
+
+/** Ba thẻ số liệu của màn Tác động — dùng chung cho màn hình và bản in (người chủ chốt 23/11/2026: thẻ, không phải dòng chữ). */
+export type ImpactSummaryCardKey = 'selected' | 'affected' | 'top-increase'
+
+export interface ImpactSummaryCard {
+  key: ImpactSummaryCardKey
+  label: string
+  value: string
+  /** Đơn vị nhỏ cạnh số to ("VNĐ/thùng"); rỗng nếu không có. */
+  unit: string
+  /** Dòng phụ thứ nhất ("2 chai · 1 nắp", "Đang lọc: x / M", "+250 /chai"); rỗng nếu không có gì để nói. */
+  sub: string
+  /** Dòng phụ thứ hai — chỉ thẻ "Tăng nhiều nhất": "HHxxxx — tên sản phẩm". */
+  detail: string
+  /** Thẻ "Tăng nhiều nhất" có sản phẩm: số tô xanh (chi phí tăng = xanh, luật màu của hệ). */
+  tone: 'up' | undefined
+  /** Sản phẩm của thẻ "Tăng nhiều nhất" (để bấm vào xem); `null` ở hai thẻ kia và khi không sản phẩm nào tăng. */
+  product: PackagingMaxIncreaseProduct | null
+}
+
+export const IMPACT_TOP_INCREASE_EMPTY = 'Không có sản phẩm tăng'
+
+/**
+ * Dựng ba thẻ từ `kpis`. `filteredTotal` = số sản phẩm sau từ khóa / lọc nâng cao, chỉ truyền khi ĐANG lọc (thẻ "Sản phẩm bị
+ * ảnh hưởng" nói rõ "Đang lọc: x / M"; M luôn là số chưa lọc). Thẻ "Tăng nhiều nhất" lấy từ `kpis.max_increase_product`
+ * (null → câu "Không có sản phẩm tăng", KHÔNG đưa số âm / 0 ra làm "tăng nhiều nhất").
+ */
+export function buildImpactSummaryCards(kpis: PackagingImpactKpis, filteredTotal?: number): ImpactSummaryCard[] {
+  const top = kpis.max_increase_product ?? null
+  const n = (v: number) => v.toLocaleString('vi-VN')
+  return [
+    { key: 'selected', label: 'Mã đã chọn', value: n(kpis.selected_count), unit: '', sub: describeImpactSummaryDetail(kpis),
+      detail: '', tone: undefined, product: null },
+    { key: 'affected', label: 'Sản phẩm bị ảnh hưởng', value: n(kpis.affected_products), unit: '',
+      sub: filteredTotal == null ? 'Dùng ít nhất 1 mã đã chọn' : `Đang lọc: ${n(filteredTotal)} / ${n(kpis.affected_products)}`,
+      detail: '', tone: undefined, product: null },
+    { key: 'top-increase', label: 'Tăng nhiều nhất /thùng', value: top ? diffText(top.diff_carton) : IMPACT_TOP_INCREASE_EMPTY,
+      unit: top ? 'VNĐ/thùng' : '', sub: top && top.diff_bottle != null ? `${diffText(top.diff_bottle)} /chai` : '',
+      detail: top ? `${top.hh_code} — ${top.hh_name}` : '', tone: top ? 'up' : undefined, product: top },
+  ]
+}

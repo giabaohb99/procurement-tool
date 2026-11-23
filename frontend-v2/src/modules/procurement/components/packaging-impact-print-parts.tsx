@@ -11,7 +11,7 @@ import type {
   PackagingPart,
   PackagingSelectedCode,
 } from '../types/packaging-cost-types'
-import { describeImpactSummaryDetail } from '../utils/packaging-impact-print'
+import { buildImpactSummaryCards } from '../utils/packaging-impact-print'
 import {
   formatPackagingDiff,
   formatPackagingPercent,
@@ -22,7 +22,7 @@ import {
   joinPackagingWarnings,
   packagingRoleLabel,
 } from '../utils/packaging-warning-text'
-import { PrintChipsBox, PrintDash } from './packaging-print-widgets'
+import { PrintChipsBox, PrintDash, PrintKpis } from './packaging-print-widgets'
 
 type Num = number | null | undefined
 
@@ -58,9 +58,10 @@ interface PrintImpactSelectionProps {
   rows: readonly PackagingSelectedCode[]
 }
 
-/** Khối ô lọc + dòng tóm tắt + bảng MÃ ĐÃ CHỌN. */
+/** Khối ô lọc + ba thẻ số liệu + dòng điều kiện đang bật + bảng MÃ ĐÃ CHỌN. */
 export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: PrintImpactSelectionProps) {
-  const detail = describeImpactSummaryDetail(kpis)
+  //  Cùng ba thẻ với màn hình; "Đang lọc: x / M" chỉ hiện khi từ khóa / bộ lọc làm số dòng khác số bị ảnh hưởng.
+  const cards = buildImpactSummaryCards(kpis, matched !== kpis.affected_products ? matched : undefined)
   return (
     <div className="panel">
       <div className="pfilters">
@@ -69,12 +70,8 @@ export function PrintImpactSelection({ codes, kpis, matched, extras, rows }: Pri
           <PrintChipsBox codes={codes} emptyText="Chưa chọn mã" />
         </div>
       </div>
-      <div className="info">
-        Mã đã chọn <b>{kpis.selected_count}</b>
-        {detail && ` (${detail})`} · Sản phẩm bị ảnh hưởng <b>{kpis.affected_products}</b>
-        {matched !== kpis.affected_products && ` (khớp từ khóa / bộ lọc: ${matched})`}
-        {extras.map((extra) => ` · ${extra}`).join('')}
-      </div>
+      <PrintKpis items={cards} />
+      {extras.length > 0 && <div className="info">{extras.join(' · ')}</div>}
       {rows.length === 0 ? (
         <p className="empty">Các mã đã chọn chưa có trong định mức nào.</p>
       ) : (
