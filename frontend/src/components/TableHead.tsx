@@ -28,7 +28,7 @@ export default function TableHead({ columns, sortBy, sortDir = 'asc', onSort, st
               className={'th-resizable' + (sortable ? ' th-sortable' : '')}
               style={{ textAlign: c.align || 'left', ...(c.th || {}), ...(thStyle?.(c.key) || {}) }}
               onClick={sortable ? () => onSort!(c.sort!) : undefined}
-              title={sortable ? 'Bấm để sắp xếp' : undefined}
+              title={sortable ? (c.sortTitle ?? 'Bấm để sắp xếp') : undefined}
             >
               <span className="th-inner">
                 <span className="th-label">{c.label}</span>

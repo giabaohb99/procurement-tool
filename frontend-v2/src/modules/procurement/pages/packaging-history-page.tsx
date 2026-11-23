@@ -5,12 +5,14 @@
  * Lịch sử là bản chụp BẤT BIẾN của sổ giá — không có ô sửa đơn giá (sai thì sửa ở ĐMH / nguồn nạp). Lọc + xếp + phân trang tại
  * MÁY CHỦ (luật §8). Lựa chọn mã nằm ở URL (`?codes=A,B` · `?hh=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
  */
-import { FileDown, Loader2 } from 'lucide-react'
+import { FileDown, Loader2, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
@@ -37,6 +39,7 @@ import {
   type PackagingHistoryFilters,
   type PackagingHistorySelection,
 } from '../utils/packaging-history'
+import { packagingHistoryPrintHref } from '../utils/packaging-history-print'
 
 export function PackagingHistoryPage() {
   const { can } = usePermission()
@@ -95,17 +98,33 @@ export function PackagingHistoryPage() {
         title="Lịch sử mua hàng"
         description="Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá chưa VAT (VND), là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn."
         actions={
-          can('packaging_cost', 'export') && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={exporting}
-              onClick={() => void exportExcel()}
-            >
-              {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-              Xuất Excel
-            </Button>
-          )
+          <>
+            {/* In = xem, nên gác theo quyền đọc (không đòi quyền xuất). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
+            {can('packaging_cost', 'read') && (
+              <Button asChild variant="outline">
+                <Link
+                  to={packagingHistoryPrintHref(filterParams)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
+                >
+                  <Printer />
+                  In
+                </Link>
+              </Button>
+            )}
+            {can('packaging_cost', 'export') && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={exporting}
+                onClick={() => void exportExcel()}
+              >
+                {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
+                Xuất Excel
+              </Button>
+            )}
+          </>
         }
       />
       <Card className="flex min-h-0 flex-1 flex-col gap-3 p-4">

@@ -11,7 +11,10 @@ Số truy vấn CỐ ĐỊNH (tối đa 5) bất kể số mã / số dòng / b�
   4. trang dòng: nối tên sản phẩm / nhà cung cấp / số ĐMH, kèm giá của lần mua có giá liền trước và số thứ tự lần mua
      (hai truy vấn con tương quan chạy trên chỉ mục phủ `ix_ppl_code_latest`, chỉ cho các dòng của trang);
   5. (đúng một mã) các điểm giá cho biểu đồ, tối đa SERIES_CAP điểm gần nhất.
-Phạm vi pháp nhân (`scope_cond`) áp cho MỌI truy vấn kể cả hai truy vấn con. Giá 0 vẫn hiện trong bảng (cờ qua `price == 0`)
+Phạm vi pháp nhân (`scope_cond`) áp cho MỌI truy vấn kể cả hai truy vấn con; mốc sổ Misa (`product_price/misa_cutoff.py`) gộp
+vào cùng điều kiện đó — không thêm truy vấn (truy vấn con vô hướng đọc `tab_setting` nằm trong WHERE). Tên nhà cung cấp: tên chép
+theo dòng sổ (`supplier_name`, nguồn Misa) thắng tên ở `tab_supplier`. Kho (`warehouse_name`) chép theo dòng sổ, tìm được
+bằng `q`, xếp được (`sort_by=warehouse`). Giá 0 vẫn hiện trong bảng (cờ qua `price == 0`)
 nhưng không tính vào giá bình quân / min / max / biểu đồ. Lọc + xếp + phân trang tại máy chủ (luật §8).
 """
 from datetime import date
@@ -24,6 +27,7 @@ from app.core.export_xlsx import MAX_ROWS
 from app.core.packaging_price_codes import PackagingRole
 from app.core.sort_order import build_blank_last_order, with_stable_tiebreak
 from app.modules.product.model import Product
+from app.modules.product_price.misa_cutoff import with_misa_cutoff
 from app.modules.product_price.model import ProductPriceLedger as L
 from app.modules.product_price.model import ProductPriceQuote
 from app.modules.purchase_order.model import PurchaseOrder
@@ -37,7 +41,7 @@ from .numbers import iso, num
 
 MAX_CODES = 200
 SERIES_CAP = 1000
-SORT_KEYS = ("date", "code", "name", "supplier", "qty", "price", "amount", "vat", "source")
+SORT_KEYS = ("date", "code", "name", "supplier", "warehouse", "qty", "price", "amount", "vat", "source")
 _ROLES = list(PackagingRole)          # cùng thứ tự với PART_COLUMNS
 
 
@@ -60,15 +64,21 @@ def _universe_codes():
     return union(*parts, select(ProductPriceQuote.product_code))
 
 
+def _supplier_name_expr():
+    """Tên nhà cung cấp hiện ra: tên chép theo dòng sổ (nguồn Misa) thắng, rồi tên ở `tab_supplier`; trống thì None."""
+    return func.coalesce(func.nullif(func.trim(L.supplier_name), ""), Supplier.name)
+
+
 def _retarget(alias, cond):
     """Chuyển điều kiện phạm vi dựng trên `ProductPriceLedger` sang bí danh của nó (hai truy vấn con)."""
     return ClauseAdapter(inspect(alias).selectable).traverse(cond)
 
 
 def _text_match(needle: str) -> list:
-    """Điều kiện tìm chữ: mã, tên sản phẩm, mã / tên nhà cung cấp (LIKE có thoát ký tự đặc biệt)."""
+    """Điều kiện tìm chữ: mã, tên sản phẩm, mã / tên nhà cung cấp, tên kho (LIKE có thoát ký tự đặc biệt)."""
     return [L.product_code.contains(needle, autoescape=True), L.supplier_code.contains(needle, autoescape=True),
             L.product_code.in_(select(Product.code).where(Product.name.contains(needle, autoescape=True))),
+            L.supplier_name.contains(needle, autoescape=True), L.warehouse_name.contains(needle, autoescape=True),
             L.supplier_code.in_(select(Supplier.code).where(Supplier.name.contains(needle, autoescape=True)))]
 
 
@@ -109,7 +119,7 @@ def _stats(db: Session, conds: list) -> dict:
 
 
 def _supplier_options(db: Session, conds: list) -> list[dict]:
-    rows = db.execute(select(L.supplier_code, func.max(Supplier.name)).select_from(L)
+    rows = db.execute(select(L.supplier_code, func.max(_supplier_name_expr())).select_from(L)
                       .outerjoin(Supplier, Supplier.code == L.supplier_code)
                       .where(*conds, L.supplier_code != "").group_by(L.supplier_code)).all()
     options = [{"code": code, "name": supplier_label(name, code)} for code, name in rows]
@@ -123,8 +133,10 @@ def _order(sort_by: str, sort_dir: str) -> list:
     desc = sort_dir == "desc"
     if sort_by == "date":      # cùng thứ tự "lần mua gần nhất" của `price_state_service`: ngày, doc_id, id
         return [(c.desc() if desc else c.asc()) for c in (L.price_date, L.doc_id)] + [L.id.desc() if desc else L.id.asc()]
-    supplier_name = func.coalesce(func.nullif(func.trim(Supplier.name), ""), L.supplier_code)
+    supplier_name = func.coalesce(func.nullif(func.trim(L.supplier_name), ""), func.nullif(func.trim(Supplier.name), ""),
+                                  L.supplier_code)
     expr, is_text = {"code": (L.product_code, True), "name": (Product.name, True), "supplier": (supplier_name, True),
+                     "warehouse": (func.nullif(func.trim(L.warehouse_name), ""), True),
                      "qty": (L.qty, False), "price": (L.price, False), "amount": (L.price * L.qty, False),
                      "vat": (L.vat, False), "source": (L.source_type, False)}[sort_by]
     return with_stable_tiebreak(build_blank_last_order(expr, sort_dir, is_text=is_text), L.id)
@@ -144,7 +156,8 @@ def _page_rows(db: Session, conds: list, order: list, scope_cond, limit: int, of
                   .order_by(prev.price_date.desc(), prev.doc_id.desc(), prev.id.desc()).limit(1).scalar_subquery())
     seq = select(func.count(ordinal.id)).where(_before(ordinal), *scope_ord).scalar_subquery()
     query = (select(L.id, L.price_date, L.product_code, L.supplier_code, L.qty, L.unit, L.price, L.vat, L.source_type,
-                    L.doc_id, Product.name, Product.item_group, Supplier.name, PurchaseOrder.code, prev_price, seq)
+                    L.doc_id, Product.name, Product.item_group, _supplier_name_expr(), L.warehouse_name,
+                    PurchaseOrder.code, prev_price, seq)
              .select_from(L).outerjoin(Product, Product.code == L.product_code)
              .outerjoin(Supplier, Supplier.code == L.supplier_code).outerjoin(PurchaseOrder, PurchaseOrder.id == L.doc_id)
              .where(*conds).order_by(*order).limit(limit).offset(offset))
@@ -152,12 +165,13 @@ def _page_rows(db: Session, conds: list, order: list, scope_cond, limit: int, of
 
 
 def _item(r, roles: dict[str, list[int]]) -> dict:
-    (row_id, day, code, supplier_code, qty, unit, price, vat, source_type, doc_id, name, group, supplier, po_code,
-     prev_price, ordinal) = r
+    (row_id, day, code, supplier_code, qty, unit, price, vat, source_type, doc_id, name, group, supplier, warehouse,
+     po_code, prev_price, ordinal) = r
     diff = float(price) - float(prev_price) if price and prev_price is not None else None
     return {"id": row_id, "date": iso(day), "code": code, "name": name or "", "group": group or "",
             "supplier_code": supplier_code, "supplier": supplier_label(supplier, supplier_code) if supplier_code else "",
-            "qty": num(qty, 3), "unit": unit or "", "price": num(price), "vat": num(vat, 2),
+            "warehouse": (warehouse or "").strip(), "qty": num(qty, 3), "unit": unit or "", "price": num(price),
+            "vat": num(vat, 2),
             "amount": num(price * qty), "source_type": int(source_type), "doc_id": int(doc_id or 0),
             "po_code": po_code or "", "prev_price": num(prev_price), "diff": num(diff, 4),
             "pct": num(diff / float(prev_price), 6) if diff is not None and prev_price else None,
@@ -166,7 +180,7 @@ def _item(r, roles: dict[str, list[int]]) -> dict:
 
 def _series(db: Session, conds: list) -> list[dict]:
     """Các điểm giá (chỉ lần mua CÓ GIÁ) cũ -> mới, tối đa SERIES_CAP điểm gần nhất."""
-    rows = db.execute(select(L.price_date, L.price, L.supplier_code, L.qty, Supplier.name).select_from(L)
+    rows = db.execute(select(L.price_date, L.price, L.supplier_code, L.qty, _supplier_name_expr()).select_from(L)
                       .outerjoin(Supplier, Supplier.code == L.supplier_code).where(*conds, L.price > 0)
                       .order_by(L.price_date.desc(), L.doc_id.desc(), L.id.desc()).limit(SERIES_CAP)).all()
     return [{"date": iso(d), "price": num(p), "supplier_code": s, "supplier": supplier_label(n, s) if s else "",
@@ -189,6 +203,7 @@ def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = 
     định mức), mỗi dòng kèm `roles` (mã `PackagingRole`); sản phẩm chưa có định mức nào thì kết quả rỗng.
     `series` chỉ có khi tập mã đã chọn đúng MỘT mã (biểu đồ diễn biến đơn giá), ngược lại `None`.
     """
+    scope_cond = with_misa_cutoff(scope_cond)      # mốc sổ Misa: dòng Misa tới mốc + nguồn 1 / 2 sau mốc (chưa có mốc = như cũ)
     roles: dict[str, list[int]] = {}
     explicit = [c for c in (codes or []) if c] if mode == "code" else None
     if mode == "product":

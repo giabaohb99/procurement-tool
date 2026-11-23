@@ -145,7 +145,7 @@ export function ColumnHeaderCell<T>({
             {column.headerContent}
           </span>
         ) : (
-          <span className="truncate select-text">
+          <span className="truncate select-text" title={column.headerTitle}>
             {label}
             {required && <RequiredMark />}
           </span>

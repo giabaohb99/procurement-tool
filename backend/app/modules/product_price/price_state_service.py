@@ -16,6 +16,9 @@ chuyển nguồn; `doc_id` giữ nguyên qua lần chuyển đó. Hai dòng cùn
 Luật cũ / mới (đúng `build()` của bản mẫu): có báo giá → mới = báo giá, cũ = lần mua có giá gần nhất (không có lần mua thì cũ =
 mới); không báo giá → mới = lần mua gần nhất, cũ = lần trước đó (chỉ một lần mua thì cũ = mới). Phạm vi dữ liệu: `scope_cond`
 là điều kiện phạm vi của khóa `packaging_cost` trên sổ giá — giá chỉ tính trên các dòng người xem được thấy.
+
+Mốc sổ Misa (`misa_cutoff.py`) được áp BÊN TRONG `latest_priced_by_code` — mọi số của hàm này (cũ / mới, p1 / p2, số lần mua,
+ngày cuối, min / max) chỉ xét dòng còn hiệu lực: Misa tới mốc, nguồn 1 / 2 sau mốc. Chưa có mốc = như cũ.
 """
 from dataclasses import dataclass
 from datetime import date
@@ -40,6 +43,7 @@ class PricePoint:
     unit: str = ""
     source_type: int = 0
     doc_id: int = 0
+    supplier_name: str = ""      # tên nhà cung cấp chép theo dòng sổ (nguồn Misa); trống = tra `tab_supplier` theo mã
 
 
 @dataclass
@@ -79,7 +83,7 @@ def derive_old_new(p1: PricePoint | None, p2: PricePoint | None, quote: QuotePoi
 
 def _point(r: LedgerRow) -> PricePoint:
     return PricePoint(price=r.price, date=r.price_date, supplier_code=r.supplier_code, unit=r.unit,
-                      source_type=r.source_type, doc_id=r.doc_id)
+                      source_type=r.source_type, doc_id=r.doc_id, supplier_name=r.supplier_name)
 
 
 def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None = None, date_from: date | None = None,

@@ -1,0 +1,51 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { fetchAllHistory, printErrorMessage } from '../api/packaging-print'
+import type { PackagingHistoryPrintData } from '../api/packaging-print'
+import { PrintHistoryFilters, PrintHistoryTable, PrintPriceChart } from '../components/packaging/PackagingHistoryPrintParts'
+import PackagingPrintShell from '../components/packaging/PackagingPrintShell'
+import { PrintKpis } from '../components/packaging/PackagingPrintWidgets'
+import { cappedPrintNotice, describeHistoryFilters, parseHistoryPrintSearch } from '../utils/packaging-print'
+import { buildHistorySummary } from '../utils/packaging-query'
+
+/**
+ * duoc-CR-784 — BẢN IN Lịch sử mua hàng (A4 nằm ngang, bản v1). Bảng trên màn hình phân trang tại máy chủ nên in màn hình chỉ
+ * ra một trang; trang này nhận ĐÚNG bộ lọc qua query string (xem `parseHistoryPrintSearch`) rồi nạp ĐỦ mọi dòng, tới trần
+ * `PRINT_ROW_CAP` (quá thì cắt và báo rõ trên tờ giấy). Route đứng NGOÀI `AppLayout`, gác bằng `PackagingGate`.
+ */
+export default function PrintPackagingHistory() {
+  const [sp] = useSearchParams()
+  const query = sp.toString()
+  const params = useMemo(() => parseHistoryPrintSearch(new URLSearchParams(query)), [query])
+  const [data, setData] = useState<PackagingHistoryPrintData | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    setData(null); setError('')
+    fetchAllHistory(params)
+      .then((d) => { if (alive) setData(d) })
+      .catch((e) => { if (alive) setError(`Không tải được lịch sử mua hàng: ${printErrorMessage(e)}`) })
+    return () => { alive = false }
+  }, [params])
+
+  const series = data?.series ?? null
+  const singleCode = series !== null
+  const productMode = params.mode === 'product'
+  const codes = (productMode ? params.hh_codes : params.codes) ?? []
+  return (
+    <PackagingPrintShell subtitle="Lịch sử mua hàng" status={error ? 'error' : data ? 'ready' : 'loading'} errorMessage={error}>
+      {data && (
+        <>
+          <PrintHistoryFilters mode={params.mode} codes={codes} first={data.items[0]} singleCode={singleCode}
+            extras={describeHistoryFilters(params, data.suppliers)} />
+          {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.total, 'lần mua')}</p>}
+          <PrintKpis items={buildHistorySummary(data.stats, singleCode)}
+            hint={!singleCode && data.stats.purchase_count > 0 ? 'Chọn đúng một mã để xem giá bình quân, thấp nhất, cao nhất' : undefined} />
+          {series && series.length > 0 && <PrintPriceChart series={series} />}
+          <PrintHistoryTable rows={data.items} productMode={productMode} singleCode={singleCode} total={data.total} />
+        </>
+      )}
+    </PackagingPrintShell>
+  )
+}

@@ -318,6 +318,7 @@ export const PR_LINE_STATUS: readonly StatusOption[] = [
 export const PRICE_SOURCE_TYPE: readonly StatusOption[] = [
   {"value": "1", "label": "Lịch sử mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
   {"value": "2", "label": "Dòng đơn mua hàng", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Sổ Misa", "sort_order": 3, "is_terminal": false, "is_exception": false},
 ]
 
 /** Báo cáo */
@@ -537,6 +538,7 @@ export const PACKAGING_ROLE_CODE = {
 export const PRICE_SOURCE_TYPE_CODE = {
   PURCHASE_HISTORY: 1,
   PO_LINE: 2,
+  MISA: 3,
 } as const
 
 /** Chức năng được bấm — khóa → mã gửi lên backend. */

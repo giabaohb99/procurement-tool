@@ -167,7 +167,8 @@ def _history_columns(product_mode: bool) -> list[Col]:
     cols = [Col("date", "Ngày mua", "date"), Col("code", "Mã VTBB", width=14), Col("name", "Tên vật tư", width=40)]
     if product_mode:
         cols.append(Col("role_text", "Vai trò", width=14))
-    return cols + [Col("supplier_code", "Mã NCC", width=12), Col("supplier", "Nhà cung cấp", width=28), Col("unit", "ĐVT", width=8),
+    return cols + [Col("supplier_code", "Mã NCC", width=12), Col("supplier", "Nhà cung cấp", width=28),
+                   Col("warehouse", "Kho", width=24), Col("unit", "ĐVT", width=8),
                    Col("qty", "Số lượng", "qty"), Col("price", "Đơn giá", "price"), Col("vat", "VAT (%)", "decimal", 9),
                    Col("amount", "Thành tiền", "money"), Col("diff", "Chênh so lần trước", "price"),
                    Col("pct_view", "% chênh", "percent", 10), Col("source_text", "Nguồn", width=20),

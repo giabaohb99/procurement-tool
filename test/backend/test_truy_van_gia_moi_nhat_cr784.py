@@ -106,7 +106,8 @@ def test_cach_lateral_sinh_sql_lateral_khong_ham_cua_so_va_sqlite_khong_dung_no(
 
 def test_model_va_migration_cung_khai_chi_muc_phu():
     names = {ix.name: [c.name for c in ix.columns] for ix in L.__table__.indexes}
-    assert names["ix_ppl_code_latest"] == ["product_code", "price_date", "doc_id", "id", "price", "company_id"]
+    # `source_type` thêm ở cuối bởi migration `misa784` (điều kiện mốc sổ Misa đọc được từ chỉ mục phủ)
+    assert names["ix_ppl_code_latest"] == ["product_code", "price_date", "doc_id", "id", "price", "company_id", "source_type"]
     assert "ix_ppl_code_date" not in names                          # chỉ mục cũ đã được thay
     root = Path(__file__).resolve().parents[2]           # gốc repo (máy chủ) hoặc /app (trong container, nơi `migrations/` nằm ngay dưới)
     migration = next(p for p in (root / "backend/migrations/versions", root / "migrations/versions")
@@ -114,6 +115,8 @@ def test_model_va_migration_cung_khai_chi_muc_phu():
     text = migration.read_text(encoding="utf-8")
     assert '"ix_ppl_code_latest"' in text and '"ix_ppl_code_date"' not in text.replace("`ix_ppl_code_date`", "")
     assert '["product_code", "price_date", "doc_id", "id", "price", "company_id"]' in text.replace("\n", " ").replace("  ", " ")
+    misa = migration.with_name("misa784_nguon_so_misa_ten_ncc.py").read_text(encoding="utf-8")
+    assert 'down_revision: Union[str, None] = "pkgcost784"' in misa and '[*OLD_COLUMNS, "source_type"]' in misa
 
 
 @pytest.mark.skipif(not os.environ.get("PKG784_MYSQL_URL"), reason="chỉ chạy khi có MySQL thật có sổ giá (PKG784_MYSQL_URL)")

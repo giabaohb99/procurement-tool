@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import NumberInput from '../NumberInput'
 import TableHead, { TableCells, TableColGroup } from '../TableHead'
@@ -6,25 +6,15 @@ import TableToolbar from '../TableToolbar'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingSelectedCode } from '../../api/packaging-cost-types'
 import { PRICE_DECIMALS } from '../../utils/money'
-import {
-  COST_WARNING_KIND, isNum, isOutsideLimit, joinWarnings, normalizeWarnings, warningText,
-} from '../../utils/packaging-price'
+import { isOutsideLimit, selectedCodeNote } from '../../utils/packaging-price'
 import { CodeLink, DiffText, OneLine, PctText, PriceText, RangeText } from './PackagingCells'
 import { PACKAGING_LIMITS_ENABLED } from '../../utils/packaging-flags'
-
-/** Câu ghi chú một mã: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi, trễ 400 ms). */
-function buildNote(row: PackagingSelectedCode, applied: number | null): string {
-  //  Bỏ cảnh báo ngưỡng của máy chủ rồi tự tính lại theo giá đang gõ: vừa gõ về trong ngưỡng mà ô vẫn báo "vượt trần" thêm một nhịp là sai.
-  const limitKinds: number[] = [COST_WARNING_KIND.BELOW_FLOOR, COST_WARNING_KIND.ABOVE_CEILING]
-  const notes = [joinWarnings(normalizeWarnings(row.warnings).filter((w) => !limitKinds.includes(w.kind)))]
-  if (isNum(applied) && isNum(row.floor) && applied < row.floor) notes.push(warningText({ kind: COST_WARNING_KIND.BELOW_FLOOR }))
-  if (isNum(applied) && isNum(row.ceiling) && applied > row.ceiling) notes.push(warningText({ kind: COST_WARNING_KIND.ABOVE_CEILING }))
-  return notes.filter(Boolean).join('; ')
-}
+import { buildSelectedGroupChips, resolveSelectedGroup } from '../../utils/packaging-selected-groups'
 
 /**
  * Bảng MÃ ĐÃ CHỌN của màn Tác động giá: giá cũ / mới, ô giá giả định (nền vàng), chênh lệch, số SP dùng, min / max
- * theo sổ giá, ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng thì ô ngưỡng tô đỏ và ghi chú nói rõ.
+ * theo sổ giá, ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng thì ô ngưỡng tô đỏ và ghi chú nói rõ. Chip nhóm (Chai · Nắp ·
+ * Nhãn · Nhãn thùng · Thùng) cạnh dòng tóm tắt chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
  */
 export default function PackagingImpactSelectedTable({
   rows, loading, failed, assumed, onAssumedChange, onRemove, summary,
@@ -69,7 +59,7 @@ export default function PackagingImpactSelectedTable({
       }] : []),
       {
         key: 'note', label: 'Ghi chú', width: 170,
-        cell: (r) => <span className="pkg-err" title={buildNote(r, appliedOf(r))}>{buildNote(r, appliedOf(r))}</span>,
+        cell: (r) => <span className="pkg-err" title={selectedCodeNote(r, appliedOf(r))}>{selectedCodeNote(r, appliedOf(r))}</span>,
       },
       {
         key: 'remove', label: '', width: 44, align: 'center', fixed: true,
@@ -80,12 +70,29 @@ export default function PackagingImpactSelectedTable({
 
   const table = useTableColumns('packaging-impact-selected', columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
-  const list = rows ?? []
+  const [pickedGroup, setPickedGroup] = useState('')
+  const chips = useMemo(() => buildSelectedGroupChips(rows), [rows])
+  //  Nhóm đã chọn mà bị bỏ hết mã thì tự về "Tất cả" (suy ra lúc vẽ, không cần effect).
+  const group = resolveSelectedGroup(pickedGroup, chips)
+  const list = (group ? rows?.filter((r) => r.group === group) : rows) ?? []
 
   return (
     <div>
       <TableToolbar {...table}>
-        <div className="pkg-summary" style={{ flex: 1, textAlign: 'left' }}>{summary}</div>
+        <div className="pkg-row" style={{ flex: 1, textAlign: 'left' }}>
+          <div className="pkg-summary">{summary}</div>
+          {/*  Một nhóm duy nhất thì không có gì để lọc. */}
+          {chips.length > 1 && (
+            <div className="pkg-pills small" role="group" aria-label="Lọc mã đã chọn theo nhóm">
+              {[{ group: '', label: 'Tất cả', count: rows?.length ?? 0 }, ...chips.map((c) => ({ ...c, label: c.group }))].map((c) => (
+                <button key={c.group || 'all'} type="button" className={'pkg-pill' + (group === c.group ? ' on' : '')}
+                  aria-pressed={group === c.group} onClick={() => setPickedGroup(c.group)}>
+                  {c.label} ({c.count.toLocaleString('vi-VN')})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </TableToolbar>
       {/*  Chọn cả nhóm là vài chục mã — chặn chiều cao, cuộn trong khung để bảng sản phẩm không bị đẩy xuống tận cuối trang. */}
       <div className="table-scroll pkg-scroll-y">

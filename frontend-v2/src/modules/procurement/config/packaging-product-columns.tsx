@@ -79,19 +79,26 @@ export function buildPackagingProductColumns({
       cell: (row) => (row.carton_qty ? row.carton_qty.toLocaleString('vi-VN') : <span>—</span>),
     },
   ]
-  const parts = PACKAGING_PART_COLUMNS.map<PackagingProductColumn>((part) => ({
-    key: `part_${part.role}`,
-    header: part.perCarton
+  const parts = PACKAGING_PART_COLUMNS.map<PackagingProductColumn>((part) => {
+    const header = part.perCarton
       ? `${packagingRoleLabel(part.role)} (giá /thùng)`
-      : packagingRoleLabel(part.role),
-    width: 140,
-    cell: (row) => (
-      <PackagingPartCell
-        part={row.parts.find((item) => item.role === part.role)}
-        linkCode={compact}
-      />
-    ),
-  }))
+      : packagingRoleLabel(part.role)
+    return {
+      key: `part_${part.role}`,
+      header,
+      //  Xếp theo GIÁ MỚI (đang áp) của thành phần — con số kéo chi phí; ô không có mã / chưa có giá xuống cuối.
+      sortable: true,
+      sortKey: part.sortKey,
+      headerTitle: 'Xếp theo giá mới của thành phần',
+      width: 140,
+      cell: (row: PackagingImpactProduct) => (
+        <PackagingPartCell
+          part={row.parts.find((item) => item.role === part.role)}
+          linkCode={compact}
+        />
+      ),
+    }
+  })
   const costs: PackagingProductColumn[] = [
     {
       key: 'cost_old_bottle',

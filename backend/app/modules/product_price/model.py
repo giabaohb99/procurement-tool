@@ -26,17 +26,23 @@ class ProductPriceLedger(Base):
         # Chỉ mục PHỦ cho mọi truy vấn của màn giá (duoc-CR-784, đo trên sổ 650 nghìn dòng): `(mã, ngày, doc_id, id)` đúng thứ tự
         # "lần mua gần nhất" nên truy vấn con `ORDER BY ... LIMIT 1 OFFSET n-1` chỉ đọc chỉ mục; `price` + `company_id` nằm
         # sẵn trong chỉ mục nên điều kiện giá > 0 và phạm vi pháp nhân không phải chạm bảng. Thay `ix_ppl_code_date`.
-        Index("ix_ppl_code_latest", "product_code", "price_date", "doc_id", "id", "price", "company_id"),
+        # `source_type` nằm cuối chỉ mục để điều kiện mốc sổ Misa (`misa_cutoff.py`) cũng đọc được từ chỉ mục.
+        Index("ix_ppl_code_latest", "product_code", "price_date", "doc_id", "id", "price", "company_id", "source_type"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    # PriceSourceType: 1 = tab_purchase_history.id · 2 = tab_po_item.id
+    # PriceSourceType: 1 = tab_purchase_history.id · 2 = tab_po_item.id · 3 = id dòng sổ chi tiết mua hàng Misa
     source_type: Mapped[int] = mapped_column(SmallInteger)
     source_id: Mapped[int] = mapped_column(BigInteger)
     # Id ĐMH (0 với dữ liệu cũ không có ĐMH) — để đồng bộ theo đơn và mở ngược chứng từ.
     doc_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     product_code: Mapped[str] = mapped_column(String(50))
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
+    # Tên nhà cung cấp chép theo dòng (chỉ nguồn Misa: mã Misa không nằm trong `tab_supplier`); NULL = tra theo `supplier_code`.
+    supplier_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # TÊN kho nhập hàng chép theo dòng (Misa: cột kho của sổ chi tiết; nguồn 1 / 2: tên kho tra từ mã kho của dòng ĐMH, không có
+    # trong danh mục thì giữ chính mã). NULL = không biết kho.
+    warehouse_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # Pháp nhân của giao dịch — phạm vi dữ liệu của khóa `packaging_cost` đo trên cột này.
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     price_date: Mapped[date] = mapped_column(Date)

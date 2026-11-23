@@ -99,13 +99,21 @@ def _num(value) -> float | None:
     return None if value is None else round(float(value), 4)
 
 
+def _supplier_of(point, suppliers: dict[str, str]) -> str:
+    """Tên nhà cung cấp của một lần mua: tên chép theo dòng sổ (nguồn Misa) thắng tên tra theo mã."""
+    from app.modules.packaging_cost.last_prices_service import supplier_label
+
+    name = (getattr(point, "supplier_name", "") or "").strip()
+    return supplier_label(name, point.supplier_code) if name else suppliers.get(point.supplier_code, point.supplier_code)
+
+
 def purchase_point(point, suppliers: dict[str, str]) -> dict | None:
     """Một lần mua (`PricePoint` / `LedgerRow`) → `{date, price, qty?, unit, supplier_code, supplier, source_label}`."""
     if point is None:
         return None
     day = getattr(point, "date", None) or getattr(point, "price_date", None)
     out = {"date": _iso(day), "price": _num(point.price), "unit": point.unit or "",
-           "supplier_code": point.supplier_code, "supplier": suppliers.get(point.supplier_code, point.supplier_code),
+           "supplier_code": point.supplier_code, "supplier": _supplier_of(point, suppliers),
            "source_label": PRICE_SOURCE_TYPE_LABELS.get(point.source_type, "")}
     if getattr(point, "qty", None) is not None:
         out["qty"] = round(float(point.qty), 3)

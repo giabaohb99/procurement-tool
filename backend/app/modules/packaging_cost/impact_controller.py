@@ -38,7 +38,7 @@ def _impact(db: Session, body: ImpactRequest, user, action: str, *, paged: bool)
     return compute_impact(db, body.codes, {c: Decimal(str(v)) for c, v in body.assumed_prices.items()},
                           date_from=body.date_from, date_to=body.date_to, scope_cond=_scope(db, user, action),
                           page=body.page if paged else None, page_size=body.page_size, q=body.q,
-                          sort_by=body.sort_by, sort_dir=body.sort_dir)
+                          sort_by=body.sort_by, sort_dir=body.sort_dir, filters=body.to_filters())
 
 
 @router.post("/impact")
@@ -50,8 +50,12 @@ def impact(body: ImpactRequest, db: Session = Depends(get_db), user=Depends(requ
     người xem được thấy. `kpis` tính trên TOÀN BỘ sản phẩm bị ảnh hưởng; bảng `products` phân trang tại máy chủ
     (`page`, `page_size` <= 500) sau khi lọc `q` (mã HH, tên, tên pháp lý, mã thành phần — không phân biệt dấu) và xếp
     `sort_by` (`hh_code, hh_name, carton_qty, cost_old_bottle, cost_applied_bottle, diff_bottle, diff_carton,
-    cost_old_carton, cost_applied_carton, pct, trend`; khóa lạ → `hh_code`) theo `sort_dir`, ô trống xuống cuối;
-    `products_total` = số dòng sau lọc `q`. Mã không có trong định mức nào vẫn trả 200 với `products` rỗng; tối đa 500 mã,
+    cost_old_carton, cost_applied_carton, pct, trend` và năm cột thành phần `part_bottle, part_cap, part_label,
+    part_carton_label, part_carton` = giá đang áp của thành phần, hòa theo mã thành phần rồi mã HH; khóa lạ → `hh_code`)
+    theo `sort_dir`, ô trống xuống cuối. Lọc nâng cao (VÀ với nhau, sau khi tính chi phí): `trend` (`all|up|down|flat|missing`),
+    `part_roles` (vai trò 1..5 mà sản phẩm có MÃ ĐÃ CHỌN, một trong các vai trò), khoảng `carton_qty_min/max`,
+    `diff_bottle_min/max`, `diff_carton_min/max`, `cost_new_bottle_min/max` (biên đóng; dòng trống bị loại khi khoảng bật),
+    `warnings_only` (chỉ sản phẩm có cảnh báo). `products_total` = số dòng sau mọi bộ lọc; `kpis` không đổi theo bộ lọc. Mã không có trong định mức nào vẫn trả 200 với `products` rỗng; tối đa 500 mã,
     giá giả định >= 0 (422 nếu sai).
     """
     return success(_impact(db, body, user, "read", paged=True))
@@ -61,8 +65,8 @@ def impact(body: ImpactRequest, db: Session = Depends(get_db), user=Depends(requ
 def impact_export(body: ImpactRequest, db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
     """Xuất Excel kết quả Tác động giá (hai sheet: Mã đã chọn, Sản phẩm bị ảnh hưởng). Quyền `packaging_cost.export`.
 
-    Bỏ qua `page` / `page_size` (xuất ĐỦ mọi dòng, chặn bởi trần số dòng của lần xuất), nhưng theo `q` + `sort_by` / `sort_dir`
-    như bảng đang xem.
+    Bỏ qua `page` / `page_size` (xuất ĐỦ mọi dòng, chặn bởi trần số dòng của lần xuất), nhưng theo `q` + lọc nâng cao + `sort_by` /
+    `sort_dir` như bảng đang xem.
     """
     return xl.xlsx_download(xl.build_impact_workbook(_impact(db, body, user, "export", paged=False)), "tac-dong-gia-bao-bi")
 

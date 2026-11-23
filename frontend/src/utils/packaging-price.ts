@@ -5,7 +5,7 @@
  * `null` = chưa có giá → chuỗi rỗng; nơi vẽ ô tự đặt gạch "—" (khác với 0 đồng).
  */
 import { fmtPrice, fmtVND } from './money'
-import type { PackagingWarning, PackagingWarningInput } from '../api/packaging-cost-types'
+import type { PackagingSelectedCode, PackagingWarning, PackagingWarningInput } from '../api/packaging-cost-types'
 
 type Num = number | null | undefined
 
@@ -89,3 +89,13 @@ export function warningText(w: PackagingWarning): string {
 /** Cột Ghi chú: mọi cảnh báo nối bằng "; ", bỏ câu trùng. */
 export const joinWarnings = (list: readonly PackagingWarningInput[] | null | undefined): string =>
   [...new Set(normalizeWarnings(list).map(warningText))].join('; ')
+
+/** Câu ghi chú một mã đã chọn: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi, trễ 400 ms). */
+export function selectedCodeNote(row: PackagingSelectedCode, applied: number | null): string {
+  //  Bỏ cảnh báo ngưỡng của máy chủ rồi tự tính lại theo giá đang gõ: vừa gõ về trong ngưỡng mà ô vẫn báo "vượt trần" thêm một nhịp là sai.
+  const limitKinds: number[] = [COST_WARNING_KIND.BELOW_FLOOR, COST_WARNING_KIND.ABOVE_CEILING]
+  const notes = [joinWarnings(normalizeWarnings(row.warnings).filter((w) => !limitKinds.includes(w.kind)))]
+  if (isNum(applied) && isNum(row.floor) && applied < row.floor) notes.push(warningText({ kind: COST_WARNING_KIND.BELOW_FLOOR }))
+  if (isNum(applied) && isNum(row.ceiling) && applied > row.ceiling) notes.push(warningText({ kind: COST_WARNING_KIND.ABOVE_CEILING }))
+  return notes.filter(Boolean).join('; ')
+}

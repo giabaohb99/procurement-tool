@@ -3,13 +3,7 @@
  * chốt 20/11/2026: bỏ bốn thẻ KPI của bản mẫu, hai số còn giữ thì đưa vào bảng, không để thành thẻ riêng).
  */
 import type { PackagingImpactKpis } from '../types/packaging-cost-types'
-
-/** "2 chai · 1 nắp" — số mã đã chọn theo nhóm. */
-function describeSelectedGroups(byGroup: Record<string, number> | undefined): string {
-  return Object.entries(byGroup ?? {})
-    .map(([group, count]) => `${count} ${group.toLowerCase()}`)
-    .join(' · ')
-}
+import { describeImpactSummaryDetail } from '../utils/packaging-impact-print'
 
 interface PackagingImpactSummaryProps {
   kpis: PackagingImpactKpis | undefined
@@ -17,12 +11,7 @@ interface PackagingImpactSummaryProps {
 
 export function PackagingImpactSummary({ kpis }: PackagingImpactSummaryProps) {
   if (!kpis) return null
-  const detail = [
-    describeSelectedGroups(kpis.selected_by_group),
-    kpis.assumed_count ? `${kpis.assumed_count} mã giả định` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const detail = describeImpactSummaryDetail(kpis)
 
   return (
     <p className="text-sm text-muted-foreground">

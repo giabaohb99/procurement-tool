@@ -22,6 +22,7 @@ from sqlalchemy import and_, func, inspect, select, true
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.util import ClauseAdapter
 
+from .misa_cutoff import misa_cutoff_condition
 from .model import ProductPriceLedger as L
 
 #  Mốc "xa nhất" thay cho `thr` rỗng — luôn nhỏ hơn mọi ngày hợp lệ (schema chặn năm < MIN_YEAR).
@@ -39,6 +40,7 @@ class LedgerRow:
     supplier_code: str
     source_type: int
     doc_id: int
+    supplier_name: str = ""     # tên nhà cung cấp chép theo dòng (nguồn Misa); trống = tra `tab_supplier` theo mã
 
 
 @dataclass
@@ -62,7 +64,7 @@ def uses_lateral(db: Session) -> bool:
 def _detail_columns(outer):
     return [outer.id.label("l_id"), outer.price.label("l_price"), outer.qty.label("l_qty"), outer.unit.label("l_unit"),
             outer.price_date.label("l_date"), outer.supplier_code.label("l_supplier"), outer.source_type.label("l_source"),
-            outer.doc_id.label("l_doc")]
+            outer.doc_id.label("l_doc"), outer.supplier_name.label("l_supplier_name")]
 
 
 def _lateral_statement(n: int, where: list, rank_conds: list, agg_cols: list | None, agg_conds: list | None):
@@ -115,8 +117,13 @@ def latest_priced_by_code(db: Session, n: int, *, codes: set[str] | None, rank_c
     """
     if n < 1:
         raise ValueError("n phải >= 1")
+    # Mốc sổ Misa (`misa_cutoff.py`): MỘT chỗ duy nhất áp cho mọi đường tính giá — mã, hạng và số gộp đều chỉ thấy dòng còn hiệu lực.
+    cut = misa_cutoff_condition()
+    rank_conds = [*rank_conds, cut]
+    agg_conds = [*(agg_conds or []), cut]
     build = _lateral_statement if (strategy == "lateral" if strategy else uses_lateral(db)) else _portable_statement
     where = [L.product_code.in_(codes or {""})] if codes is not None else []
+    where.append(cut)
     stmt, stat_count = build(n, where, rank_conds, agg_cols, agg_conds)
 
     result: dict[str, CodeLatest] = {}
@@ -128,7 +135,8 @@ def latest_priced_by_code(db: Session, n: int, *, codes: set[str] | None, rank_c
         if m["l_id"] is not None:
             entry.rows.append(LedgerRow(id=int(m["l_id"]), price=m["l_price"], qty=m["l_qty"], unit=m["l_unit"] or "",
                                         price_date=m["l_date"], supplier_code=m["l_supplier"] or "",
-                                        source_type=int(m["l_source"]), doc_id=int(m["l_doc"] or 0)))
+                                        source_type=int(m["l_source"]), doc_id=int(m["l_doc"] or 0),
+                                        supplier_name=m["l_supplier_name"] or ""))
     for entry in result.values():
         entry.rows.sort(key=lambda row: (row.price_date, row.doc_id, row.id), reverse=True)
         del entry.rows[n:]

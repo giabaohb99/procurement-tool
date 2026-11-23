@@ -41,6 +41,20 @@ export interface PackagingImpactRequest {
   sort_dir?: 'asc' | 'desc'
   /** Tìm theo mã HH, tên, tên pháp lý, mã thành phần (không phân biệt dấu). */
   q?: string
+  /** Lọc nâng cao của bảng sản phẩm — làm ở máy chủ, KPI không đổi, Xuất Excel + bản in theo cùng bộ lọc. */
+  trend?: Exclude<PackagingOverviewTrend, 'all'>
+  /** Vai trò (1..5) mà sản phẩm có MÃ ĐÃ CHỌN — một trong các vai trò. */
+  part_roles?: number[]
+  carton_qty_min?: number
+  carton_qty_max?: number
+  diff_bottle_min?: number
+  diff_bottle_max?: number
+  diff_carton_min?: number
+  diff_carton_max?: number
+  cost_new_bottle_min?: number
+  cost_new_bottle_max?: number
+  /** Chỉ sản phẩm đang có ít nhất một cảnh báo. */
+  warnings_only?: boolean
 }
 
 /** Một mã đã chọn ở bảng trên của màn Tác động. */
@@ -140,7 +154,7 @@ export interface PackagingImpactResult {
   kpis: PackagingImpactKpis
   /** CHỈ trang được hỏi (đã lọc `q`, đã xếp). */
   products: PackagingImpactProduct[]
-  /** Số sản phẩm sau lọc `q` — tổng của bảng phân trang (khác `kpis.affected_products` là số chưa lọc). */
+  /** Số sản phẩm sau lọc `q` + lọc nâng cao — tổng của bảng phân trang (khác `kpis.affected_products` là số chưa lọc). */
   products_total: number
 }
 
@@ -327,6 +341,8 @@ export interface PackagingHistoryRow {
   supplier_code: string
   /** Tên nhà cung cấp đã bỏ đuôi " - VTBB"; không có tên thì là mã; không có nhà cung cấp thì rỗng. */
   supplier: string
+  /** Tên kho nhập hàng của lần mua (chép theo dòng sổ giá); rỗng = không biết kho. */
+  warehouse: string
   qty: number | null
   unit: string
   /** VNĐ chưa VAT; 0 = dòng không có giá (không tính vào KPI / biểu đồ). */

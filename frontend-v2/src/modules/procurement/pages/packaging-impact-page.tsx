@@ -5,13 +5,16 @@
  * Chọn một hoặc nhiều mã chai / nắp / nhãn / nhãn thùng / thùng → bảng mã đã chọn (giá cũ, mới, ô giá
  * giả định), bốn thẻ KPI, và bảng mọi sản phẩm dùng ít nhất một mã đó với chi phí bao bì /chai, /thùng cũ
  * và mới. Giá giả định trễ 400 ms rồi mới tính lại; dữ liệu cũ giữ nguyên trong lúc tính. Bảng sản phẩm phân
- * trang / tìm / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); thẻ KPI luôn tính trên toàn bộ tập.
+ * trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); thẻ KPI luôn tính trên toàn bộ tập.
  */
-import { FileDown, Loader2 } from 'lucide-react'
+import { FileDown, Loader2, Printer } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
@@ -29,6 +32,8 @@ import { usePackagingCodeOptions, usePackagingImpact } from '../hooks/use-packag
 import { usePackagingImpactTableState } from '../hooks/use-packaging-impact-table-state'
 import type { PackagingImpactRequest } from '../types/packaging-cost-types'
 import { sortPackagingCodeOptions } from '../utils/packaging-code-match'
+import { impactFiltersToRequest } from '../utils/packaging-impact-filters'
+import { packagingImpactPrintHref } from '../utils/packaging-impact-print'
 
 /** Chỉ gửi giả định của mã còn đang chọn — bỏ mã khỏi danh sách là bỏ luôn giá giả định của nó. */
 function pickAssumed(
@@ -66,10 +71,11 @@ export function PackagingImpactPage() {
       date_from: range.from || undefined,
       date_to: range.to || undefined,
       q: table.query || undefined,
+      ...impactFiltersToRequest(table.filters),
       //  Chưa chọn cột xếp thì KHÔNG gửi — máy chủ xếp mặc định theo mã HH.
       ...(table.sortBy ? { sort_by: table.sortBy, sort_dir: table.sortDir } : {}),
     }),
-    [codes, debouncedAssumed, range, table.query, table.sortBy, table.sortDir],
+    [codes, debouncedAssumed, range, table.query, table.filters, table.sortBy, table.sortDir],
   )
   const body = useMemo<PackagingImpactRequest>(
     () => ({ ...filterBody, page: table.page, page_size: table.pageSize }),
@@ -118,6 +124,29 @@ export function PackagingImpactPage() {
               placeholder="Khoảng ngày tính min – max"
               onChange={(from, to) => setRange({ from, to })}
             />
+            {/* In = xem (quyền đọc). Mở tab mới, mã + giá giả định ĐANG GÕ + từ khóa / cột xếp của bảng; trang in tự nạp đủ mọi sản phẩm. */}
+            {can('packaging_cost', 'read') &&
+              (codes.length ? (
+                <Button asChild variant="outline">
+                  <Link
+                    to={packagingImpactPrintHref({
+                      ...filterBody,
+                      assumed_prices: pickAssumed(codes, assumed),
+                    })}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
+                  >
+                    <Printer />
+                    In
+                  </Link>
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" disabled title="Chọn ít nhất một mã để in">
+                  <Printer />
+                  In
+                </Button>
+              ))}
             {can('packaging_cost', 'export') && (
               <Button
                 type="button"
@@ -155,7 +184,7 @@ export function PackagingImpactPage() {
             onRemove={removeCode}
             //  Một hàng duy nhất trên bảng: tóm tắt bên trái, nút của bảng bên phải; bỏ hết mã = nút x trong ô chọn mã.
             toolbar={
-              <div className="flex flex-1 items-center gap-3">
+              <div className="flex items-center gap-3">
                 <PackagingImpactSummary kpis={data?.kpis} />
                 {impact.isFetching && (
                   <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
@@ -171,6 +200,7 @@ export function PackagingImpactPage() {
           <PackagingImpactProductsTable
             rows={data?.products}
             total={data?.products_total ?? 0}
+            affected={data?.kpis.affected_products}
             isLoading={impact.isLoading}
             isError={impact.isError}
             view={table}

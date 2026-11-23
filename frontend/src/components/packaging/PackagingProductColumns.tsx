@@ -4,10 +4,11 @@ import type { PackagingImpactProduct, PackagingPart } from '../../api/packaging-
 import { diffColor, joinWarnings, priceText, roleLabel } from '../../utils/packaging-price'
 import { CodeLink, DiffText, OneLine, PriceText } from './PackagingCells'
 
-/** Năm cột thành phần của định mức: vai trò (`PackagingRole`) + `perCarton` = giá tính cho cả thùng, chia quy cách thùng. */
+/** Năm cột thành phần của định mức: vai trò (`PackagingRole`) + `perCarton` = giá tính cho cả thùng, chia quy cách thùng + `sort` = khóa `sort_by` máy chủ nhận (xếp theo giá đang áp của thành phần). */
 const PART_COLUMNS = [
-  { role: 1, perCarton: false }, { role: 2, perCarton: false }, { role: 3, perCarton: false },
-  { role: 4, perCarton: true }, { role: 5, perCarton: true },
+  { role: 1, perCarton: false, sort: 'part_bottle' }, { role: 2, perCarton: false, sort: 'part_cap' },
+  { role: 3, perCarton: false, sort: 'part_label' }, { role: 4, perCarton: true, sort: 'part_carton_label' },
+  { role: 5, perCarton: true, sort: 'part_carton' },
 ] as const
 
 /** Ô THÀNH PHẦN: mã trên, giá dưới — giá đổi thì "cũ → mới" với số mới tô theo chiều tăng / giảm; mã đang chọn tô nổi. */
@@ -61,6 +62,8 @@ export function buildProductColumns({ offset, newKey, compact, extraAfterCosts =
     key: `part_${p.role}`,
     label: p.perCarton ? `${roleLabel(p.role)} (giá /thùng)` : roleLabel(p.role),
     width: 140,
+    sort: p.sort,
+    sortTitle: 'Xếp theo giá mới của thành phần',
     cell: (r) => <PartCell part={r.parts.find((x) => x.role === p.role)} linkCode={compact} />,
   }))
   const costs: TableColumn<PackagingImpactProduct>[] = [

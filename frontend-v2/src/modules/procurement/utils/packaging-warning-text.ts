@@ -8,12 +8,13 @@
 import {
   labelOf,
   PACKAGING_COST_TREND,
+  PACKAGING_COST_WARNING_CODE,
   PACKAGING_COST_WARNING,
   PACKAGING_ROLE,
   type StatusOption,
 } from '@/shared/constants/statuses'
 
-import type { PackagingWarning } from '../types/packaging-cost-types'
+import type { PackagingSelectedCode, PackagingWarning } from '../types/packaging-cost-types'
 
 function labelOrFallback(
   options: readonly StatusOption[],
@@ -50,4 +51,25 @@ export function joinPackagingWarnings(
   warnings: readonly (number | PackagingWarning)[] | null | undefined,
 ): string {
   return [...new Set(normalizeWarnings(warnings).map(packagingWarningText))].join('; ')
+}
+
+/** Câu ghi chú của một mã: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi). */
+export function buildSelectedCodeNote(row: PackagingSelectedCode, applied: number | null): string {
+  //  Bỏ cảnh báo ngưỡng của máy chủ rồi tự tính lại theo giá đang gõ — máy chủ chỉ biết giá đã gửi
+  //  (trễ 400 ms), để nguyên thì vừa gõ về trong ngưỡng mà ô vẫn báo "vượt trần" thêm một nhịp.
+  const limitKinds: number[] = [
+    PACKAGING_COST_WARNING_CODE.BELOW_FLOOR,
+    PACKAGING_COST_WARNING_CODE.ABOVE_CEILING,
+  ]
+  const serverNotes = normalizeWarnings(row.warnings).filter((w) => !limitKinds.includes(w.kind))
+  const notes = [joinPackagingWarnings(serverNotes)]
+  if (isFiniteNumber(applied) && isFiniteNumber(row.floor) && applied < row.floor)
+    notes.push(packagingWarningText({ kind: PACKAGING_COST_WARNING_CODE.BELOW_FLOOR }))
+  if (isFiniteNumber(applied) && isFiniteNumber(row.ceiling) && applied > row.ceiling)
+    notes.push(packagingWarningText({ kind: PACKAGING_COST_WARNING_CODE.ABOVE_CEILING }))
+  return notes.filter(Boolean).join('; ')
+}
+
+function isFiniteNumber(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }

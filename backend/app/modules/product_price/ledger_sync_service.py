@@ -11,6 +11,7 @@ Luật sổ giá:
 
 Lỗi ở hook KHÔNG được chặn luồng mua hàng: `sync_po_price_ledger` bọc try / except + log, giống `_sync_pr`.
 """
+import json
 import logging
 from datetime import date, datetime
 from decimal import Decimal
@@ -19,6 +20,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, aliased
 
 from app.core.packaging_price_codes import PriceSourceType
+from app.modules.catalog.model import Warehouse
 from app.modules.purchase_history.model import PurchaseHistory
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 
@@ -28,6 +30,7 @@ log = logging.getLogger(__name__)
 
 PROG_CANCELLED = "cancelled"          # trùng `purchase_order.base_service.PROG_CANCELLED` (không import để khỏi vòng)
 MIN_YEAR, MAX_YEAR = 1990, 2100       # ngày ngoài dải này coi là ngày hỏng, bỏ dòng
+MAX_WAREHOUSE_NAME = 200              # cột `warehouse_name` String(200); tên kho trong danh mục được tới 255
 MAX_PRICE = Decimal("9999999999999")  # cột Numeric(18,4): quá trần thì bỏ dòng thay vì làm nổ cả lượt lưu ĐMH
 BATCH = 1000
 _Q4 = Decimal("0.0001")
@@ -52,7 +55,31 @@ def _to_vnd(price, rate) -> Decimal:
     return (Decimal(str(price or 0)) * _rate(rate)).quantize(_Q4)
 
 
-def values_from_history(ph: PurchaseHistory, rate) -> dict | None:
+def warehouse_label(code: str | None, names: dict[str, str] | None = None) -> str | None:
+    """Tên kho hiện ra trên sổ giá: tên trong danh mục kho theo mã; mã không có trong danh mục thì giữ chính mã; trống -> None."""
+    code = (code or "").strip()
+    if not code:
+        return None
+    return ((names or {}).get(code) or code).strip()[:MAX_WAREHOUSE_NAME] or None
+
+
+def load_warehouse_names(db: Session) -> dict[str, str]:
+    """`{mã kho: tên kho}` — MỘT truy vấn, bảng danh mục nhỏ (kho đang dùng thắng khi trùng mã)."""
+    rows = db.query(Warehouse.code, Warehouse.name).order_by(Warehouse.is_active.asc(), Warehouse.id.desc()).all()
+    return {(c or "").strip(): (n or "").strip() for c, n in rows if (c or "").strip()}
+
+
+def history_warehouse_code(ph: PurchaseHistory) -> str:
+    """Mã kho của dòng lịch sử: nằm trong JSON `extra` (khóa `warehouse_code`); JSON hỏng / thiếu khóa -> rỗng."""
+    try:
+        data = json.loads(ph.extra or "{}")
+    except (TypeError, ValueError):
+        return ""
+    value = data.get("warehouse_code") if isinstance(data, dict) else ""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def values_from_history(ph: PurchaseHistory, rate, warehouse_names: dict[str, str] | None = None) -> dict | None:
     """Giá trị dòng sổ nguồn 1 từ một dòng lịch sử; None nếu thiếu mã hàng / ngày hỏng / giá quá trần."""
     price_date = parse_ledger_date(ph.order_date)
     price = _to_vnd(ph.price, rate)
@@ -61,11 +88,15 @@ def values_from_history(ph: PurchaseHistory, rate) -> dict | None:
     return {"source_type": int(PriceSourceType.PURCHASE_HISTORY), "source_id": ph.id, "doc_id": ph.po_id or 0,
             "product_code": ph.product_code.strip(), "supplier_code": ph.supplier_code or "",
             "company_id": ph.company_id or 0, "price_date": price_date, "price": price,
-            "vat": Decimal(str(ph.vat or 0)), "qty": Decimal(str(ph.qty_order or 0)), "unit": ph.unit or ""}
+            "vat": Decimal(str(ph.vat or 0)), "qty": Decimal(str(ph.qty_order or 0)), "unit": ph.unit or "",
+            "warehouse_name": warehouse_label(history_warehouse_code(ph), warehouse_names)}
 
 
-def values_from_line(po: PurchaseOrder, item: POItem) -> dict | None:
-    """Giá trị dòng sổ nguồn 2 từ một dòng ĐMH; None nếu dòng không đủ điều kiện vào sổ."""
+def values_from_line(po: PurchaseOrder, item: POItem, warehouse_name: str | None = None) -> dict | None:
+    """Giá trị dòng sổ nguồn 2 từ một dòng ĐMH; None nếu dòng không đủ điều kiện vào sổ.
+
+    `warehouse_name` = tên kho trong danh mục ứng với `item.warehouse_code` (nơi gọi nối sẵn, không tra từng dòng).
+    """
     price_date = parse_ledger_date(po.order_date)
     price = _to_vnd(item.price, item.exchange_rate)
     if not (item.product_code or "").strip() or price_date is None or abs(price) > MAX_PRICE:
@@ -75,7 +106,8 @@ def values_from_line(po: PurchaseOrder, item: POItem) -> dict | None:
     return {"source_type": int(PriceSourceType.PO_LINE), "source_id": item.id, "doc_id": po.id,
             "product_code": item.product_code.strip(), "supplier_code": po.supplier_code or "",
             "company_id": po.company_id or 0, "price_date": price_date, "price": price,
-            "vat": Decimal(str(item.vat or 0)), "qty": Decimal(str(item.qty_order or 0)), "unit": item.unit or ""}
+            "vat": Decimal(str(item.vat or 0)), "qty": Decimal(str(item.qty_order or 0)), "unit": item.unit or "",
+            "warehouse_name": warehouse_label(item.warehouse_code, {(item.warehouse_code or "").strip(): warehouse_name or ""})}
 
 
 def po_counts_in_ledger(po: PurchaseOrder) -> bool:
@@ -94,7 +126,11 @@ def record_history_row(db: Session, ph: PurchaseHistory, exchange_rate=1) -> boo
     Gọi từ `snapshot_line` SAU `db.add(ph)` + `db.flush()` (có id). Kiểm tồn tại TRƯỚC khi chèn (không dựa vào lỗi unique:
     một lần flush hỏng giữa `auto_advance_line` làm hỏng cả phiên). Trả True nếu chèn dòng mới.
     """
-    values = values_from_history(ph, exchange_rate)
+    code = history_warehouse_code(ph)
+    #  Một truy vấn theo khóa duy nhất, chỉ khi dòng có mã kho (mỗi dòng lịch sử mới chỉ ghi một lần, lúc dòng ĐMH hoàn thành)
+    found = db.query(Warehouse.name).filter(Warehouse.code == code).first() if code else None
+    names = {code: (found[0] or "").strip()} if found else {}
+    values = values_from_history(ph, exchange_rate, names)
     if values is None:
         #  Dòng lịch sử hỏng (ngày sai / mã trống / giá quá trần) KHÔNG vào được sổ — giữ nguyên dòng nguồn 2 để giá
         #  không biến mất; `sync_history_ledger` đếm dòng này ở `skipped_bad_row` / `skipped_bad_date`.
@@ -123,7 +159,11 @@ def sync_po_price_ledger(db: Session, po: PurchaseOrder, commit: bool = True) ->
         db.flush()   # session autoflush=False ở vài nơi: dòng vừa sửa phải xuống DB trước khi đọc lại
         desired: dict[int, dict] = {}
         if po_counts_in_ledger(po):
-            items = db.query(POItem).filter(POItem.po_id == po.id).all()
+            #  Tên kho nối thẳng vào truy vấn dòng ĐMH (không thêm truy vấn): `warehouse_code` trùng danh mục thì lấy tên
+            rows = (db.query(POItem, Warehouse.name).outerjoin(Warehouse, Warehouse.code == POItem.warehouse_code)
+                    .filter(POItem.po_id == po.id).all())
+            items = [it for it, _ in rows]
+            wh_names = {it.id: name for it, name in rows}
             #  "đã có lịch sử" CHỈ tính dòng lịch sử đã vào được sổ giá (nguồn 1) — lịch sử hỏng ngày thì dòng ĐMH ở lại
             covered = {r[0] for r in db.query(PurchaseHistory.po_item_id).join(
                 ProductPriceLedger, (ProductPriceLedger.source_type == int(PriceSourceType.PURCHASE_HISTORY))
@@ -132,7 +172,7 @@ def sync_po_price_ledger(db: Session, po: PurchaseOrder, commit: bool = True) ->
             for it in items:
                 if it.id in covered:
                     continue
-                values = values_from_line(po, it)
+                values = values_from_line(po, it, wh_names.get(it.id))
                 if values is not None:
                     desired[it.id] = values
         existing = {r.source_id: r for r in db.query(ProductPriceLedger).filter(
@@ -160,6 +200,29 @@ def sync_po_price_ledger(db: Session, po: PurchaseOrder, commit: bool = True) ->
     return stats
 
 
+def _refresh_history_warehouse(db: Session, wh_names: dict[str, str]) -> int:
+    """Điền / sửa `warehouse_name` cho dòng sổ nguồn 1 ĐÃ CÓ (chèn từ trước khi sổ có cột kho, hoặc đổi tên kho trong danh mục).
+
+    Chỉ quét dòng lịch sử có mã kho khác rỗng trong `extra` (vài chục / vài trăm dòng), theo lô khóa id — không truy vấn từng dòng.
+    """
+    src1, count, last_id = int(PriceSourceType.PURCHASE_HISTORY), 0, 0
+    L, PH = ProductPriceLedger, PurchaseHistory
+    while True:
+        rows = (db.query(PH, L).join(L, (L.source_type == src1) & (L.source_id == PH.id))
+                .filter(PH.id > last_id, PH.extra.contains('"warehouse_code": "'), ~PH.extra.contains('"warehouse_code": ""'))
+                .order_by(PH.id.asc()).limit(BATCH).all())
+        if not rows:
+            return count
+        for ph, row in rows:
+            last_id = max(last_id, ph.id)
+            wanted = warehouse_label(history_warehouse_code(ph), wh_names)
+            if row.warehouse_name != wanted:
+                row.warehouse_name = wanted
+                row.synced_at = datetime.utcnow()
+                count += 1
+        db.flush()
+
+
 def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
     """Toàn bảng: xóa dòng sổ nguồn 1 mồ côi, chèn dòng lịch sử còn thiếu (lô 1000), xóa nguồn 2 đã có lịch sử.
 
@@ -178,7 +241,8 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
         db.execute(delete(L).where(L.id.in_(orphan_ids[i:i + BATCH])))
     stats["deleted_orphans"] = len(orphan_ids)
 
-    # 3) dòng lịch sử còn thiếu trong sổ
+    # 3) dòng lịch sử còn thiếu trong sổ (danh mục kho nạp MỘT lần cho cả lượt, tra mã -> tên trong bộ nhớ)
+    wh_names = load_warehouse_names(db)
     last_id = 0
     while True:
         rows = (db.query(PH, POItem.exchange_rate, POItem.id)
@@ -190,7 +254,7 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
         for ph, rate, item_id in rows:
             last_id = max(last_id, ph.id)
             ledger_stats.count_history_row(stats, ph, rate, item_id)
-            values = values_from_history(ph, rate)
+            values = values_from_history(ph, rate, wh_names)
             if values is None:
                 stats["skipped_bad_row"] += 1
                 if parse_ledger_date(ph.order_date) is None:
@@ -200,6 +264,7 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
             stats["inserted"] += 1
         db.flush()
     db.flush()
+    stats["updated_warehouse"] = _refresh_history_warehouse(db, wh_names)
     # 4) dòng nguồn 2 mà `po_item_id` đã có dòng lịch sử TRONG SỔ -> xóa (lịch sử là bản chốt cuối). Chạy SAU bước 3 để lịch sử
     #    vừa chèn đã có mặt; dòng lịch sử hỏng (không vào sổ) thì KHÔNG xóa dòng ĐMH — giá không được biến mất.
     hist = aliased(L)

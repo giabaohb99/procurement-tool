@@ -46,7 +46,7 @@ function SourceCell({ row }: { row: PackagingHistoryRow }) {
 
 /**
  * Bảng lần mua của màn Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…"). Cột bật xếp gửi `sort_by` = khóa cột lên máy chủ
- * (`date, code, name, supplier, qty, price, amount, vat, source`); "Lần" và "So lần trước" tính theo từng mã nên chưa xếp
+ * (`date, code, name, supplier, warehouse, qty, price, amount, vat, source`); "Lần" và "So lần trước" tính theo từng mã nên chưa xếp
  * được. Một mã: bỏ cột Tên (đã có ở tiêu đề biểu đồ) nhường chỗ cho nhà cung cấp.
  */
 export default function PackagingHistoryTable({
@@ -76,6 +76,7 @@ export default function PackagingHistoryTable({
     if (productMode) cols.push({ key: 'role', label: 'Vai trò', width: 110, cell: (r) => rolesText(r.roles) || <Dash /> })
     cols.push(
       { key: 'supplier', label: 'Nhà cung cấp', width: singleCode ? 260 : 190, sort: 'supplier', cell: (r) => (r.supplier ? <OneLine>{r.supplier}</OneLine> : <Dash />) },
+      { key: 'warehouse', label: 'Kho', width: 190, sort: 'warehouse', cell: (r) => (r.warehouse ? <OneLine>{r.warehouse}</OneLine> : <Dash />) },
       {
         key: 'qty', label: 'Số lượng', width: 120, align: 'right', sort: 'qty',
         cell: (r) => {

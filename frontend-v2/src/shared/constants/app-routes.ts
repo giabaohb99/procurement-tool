@@ -99,6 +99,10 @@ export const appRoutes = {
      * `company_id` / `view`).
      */
     importLandedCostPrint: '/print/import-landed-cost',
+    /** duoc-CR-784 — bản in Lịch sử mua hàng (A4 ngang). Bộ lọc đi qua query string, không có `:id`. */
+    packagingHistoryPrint: '/print/packaging-history',
+    /** duoc-CR-784 — bản in Tác động giá bao bì (A4 ngang). Mã + giá giả định + tìm / xếp đi qua query string. */
+    packagingImpactPrint: '/print/packaging-impact',
     /** Trang riêng của báo cáo Chi tiết YC mua hàng (bao-CR-296/299) — nội dung
         dùng chung với tab cùng tên trong Báo cáo mua hàng. */
     prLinesReport: '/procurement/pr-lines-report',

@@ -288,6 +288,43 @@ def test_xuat_excel_chan_o_tran_so_dong(db, api, monkeypatch):
     assert api.get(URL + "/export", params={"codes": ["CPT0105"]}).status_code == 400
 
 
+# ── Cột Kho (duoc-CR-784: bổ sung theo yêu cầu "thiếu kho" của file Misa) ───────────────────────────
+@pytest.fixture
+def kho(db, world):
+    """Ba dòng NHG0001 có kho khác nhau + một dòng không biết kho."""
+    add_ledger(db, "NHG0001", 10, "2026-06-01", qty=1, warehouse="KHO NCC HÀ LONG")
+    add_ledger(db, "NHG0001", 20, "2026-06-02", qty=1, warehouse="Kho DEGO Cần Thơ")
+    add_ledger(db, "NHG0001", 30, "2026-06-03", qty=1, warehouse="  ")             # chỉ khoảng trắng = như trống
+    add_ledger(db, "NHG0001", 40, "2026-06-04", qty=1)
+
+
+def test_moi_dong_tra_ve_kho_rong_khi_khong_biet(api, kho):
+    rows = _get(api, codes=["NHG0001"])["items"]
+    assert {r["date"]: r["warehouse"] for r in rows} == {
+        "2026-06-04": "", "2026-06-03": "", "2026-06-02": "Kho DEGO Cần Thơ", "2026-06-01": "KHO NCC HÀ LONG"}
+
+
+def test_chu_tim_q_tim_ca_ten_kho(api, kho):
+    assert [r["date"] for r in _get(api, codes=["NHG0001"], q="HÀ LONG")["items"]] == ["2026-06-01"]
+    assert [r["date"] for r in _get(api, codes=["NHG0001"], q="Cần Thơ")["items"]] == ["2026-06-02"]
+    assert _get(api, codes=["NHG0001"], q="khong co kho nay")["total"] == 0
+
+
+def test_xep_theo_kho_o_trong_xuong_cuoi_hai_chieu(api, kho):
+    for direction, head in (("asc", ["KHO NCC HÀ LONG", "Kho DEGO Cần Thơ"]), ("desc", ["Kho DEGO Cần Thơ", "KHO NCC HÀ LONG"])):
+        names = [r["warehouse"] for r in _get(api, codes=["NHG0001"], sort_by="warehouse", sort_dir=direction)["items"]]
+        assert names[:2] == head and names[2:] == ["", ""]
+
+
+def test_xuat_excel_co_cot_kho_dung_thu_tu(api, kho):
+    res = api.get(URL + "/export", params={"codes": ["NHG0001"], "sort_by": "warehouse", "sort_dir": "asc"})
+    ws = openpyxl.load_workbook(BytesIO(res.content)).active
+    head = [c.value for c in ws[1]]
+    assert head.index("Kho") == head.index("Nhà cung cấp") + 1
+    col = head.index("Kho") + 1
+    assert [ws.cell(row=r, column=col).value for r in range(2, 6)] == ["KHO NCC HÀ LONG", "Kho DEGO Cần Thơ", None, None]
+
+
 # ── Số truy vấn ─────────────────────────────────────────────────────────────────
 def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world):
     from datetime import date
@@ -308,4 +345,7 @@ def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world)
     _, big_prod = count_queries(db, lambda: build_history(db, mode="product", hh_codes=["HH0001"] + [f"HH1{i:04d}" for i in range(80)]))
     assert len(small_all) == len(big_all) == 3                    # số gộp + ô chọn nhà cung cấp + trang dòng
     assert len(small) == len(big_one) == 4                        # + truy vấn biểu đồ của đúng một mã
+    add_ledger(db, "C0000", 5, "2026-01-02", warehouse="Kho A")
+    _, big_kho = count_queries(db, lambda: build_history(db, q="kho", sort_by="warehouse", sort_dir="asc", page_size=50))
+    assert len(big_kho) == 3                                      # tìm + xếp theo kho không thêm truy vấn
     assert len(big_busy) == 3 and len(big_prod) == 4              # nhiều mã = không biểu đồ; chế độ sản phẩm + truy vấn định mức

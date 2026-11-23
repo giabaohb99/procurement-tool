@@ -17,6 +17,7 @@ from app.core.packaging_price_codes import CostTrend, CostWarning
 from app.modules.product_price.price_state_service import PriceState, get_price_states
 
 from .cost_service import ProductCost, compute_product_cost, fold_text, price_warnings
+from .impact_filters import ImpactFilters, filter_products
 from .model import PackagingBom
 from .numbers import iso, num
 from .sorting import sort_blank_last
@@ -57,6 +58,26 @@ def selected_row(code: str, st: PriceState, assumed: Decimal | None, usage: int)
             "last_date": iso(st.last_date), "warnings": warnings}
 
 
+def part_price_getter(role: int):
+    """Khóa xếp của cột thành phần `role` (1..5): giá ĐANG ÁP của thành phần đó — con số kéo chi phí (giá mới, hoặc giá giả
+    định nếu mã được chọn kèm giá). Sản phẩm không có mã ở vai trò đó, hoặc mã chưa có giá → trống → xuống cuối cả hai chiều."""
+    def getter(bom, cost):
+        part = cost.parts[role - 1]
+        return part.applied if part.code else None
+    return getter
+
+
+def part_tie_getter(role: int):
+    """Khóa phụ khi xếp theo cột thành phần: mã thành phần rồi mã hàng hóa (cùng giá thì gom các sản phẩm dùng chung một mã)."""
+    return lambda bom, cost: (cost.parts[role - 1].code, bom.hh_code)
+
+
+#  Khóa xếp cột thành phần → vai trò (`PackagingRole`). Đặt tên theo tên cột định mức, không theo số, cho URL dễ đọc.
+PART_SORT_ROLES = {"part_bottle": 1, "part_cap": 2, "part_label": 3, "part_carton_label": 4, "part_carton": 5}
+PART_SORT_GETTERS = {key: part_price_getter(role) for key, role in PART_SORT_ROLES.items()}
+#  Khóa phụ riêng của từng khóa xếp; khóa nào không khai thì hòa theo mã hàng hóa tăng dần.
+SORT_TIES = {key: part_tie_getter(role) for key, role in PART_SORT_ROLES.items()}
+
 #  Khóa cột của bảng sản phẩm được phép xếp (whitelist); khóa lạ → xếp theo mã hàng hóa. Số lấy từ `ProductCost` (đúng con số hiện).
 SORT_GETTERS = {
     "hh_code": lambda bom, cost: fold_text(bom.hh_code), "hh_name": lambda bom, cost: fold_text(bom.hh_name),
@@ -65,6 +86,7 @@ SORT_GETTERS = {
     "diff_bottle": lambda bom, cost: cost.diff_bottle, "diff_carton": lambda bom, cost: cost.diff_carton,
     "cost_old_carton": lambda bom, cost: cost.cost_old_carton, "cost_applied_carton": lambda bom, cost: cost.cost_applied_carton,
     "pct": lambda bom, cost: cost.pct, "trend": lambda bom, cost: int(cost.trend),
+    **PART_SORT_GETTERS,
 }
 IMPACT_BOM_COLUMNS = (PackagingBom.hh_code, PackagingBom.hh_name, PackagingBom.legal_name, *(getattr(PackagingBom, c) for c in PART_COLUMNS),
                       PackagingBom.carton_qty)
@@ -77,26 +99,32 @@ def _matches(bom, terms: list[str]) -> bool:
 
 
 def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc",
-                     getters: dict = SORT_GETTERS) -> list[tuple]:
-    """Lọc theo `q` rồi xếp `(bom, cost)`: ô trống xuống CUỐI cả hai chiều, khóa phụ là mã hàng hóa tăng dần (luật §8).
+                     getters: dict = SORT_GETTERS, filters: ImpactFilters | None = None) -> list[tuple]:
+    """Lọc theo `q` (+ `filters` nâng cao) rồi xếp `(bom, cost)`: ô trống xuống CUỐI cả hai chiều, khóa phụ là mã hàng hóa
+    tăng dần (luật §8; cột thành phần: mã thành phần rồi mã hàng hóa, xem `SORT_TIES`).
 
     `getters` = bảng khóa cột được phép xếp của màn gọi (mặc định: của Tác động giá); khóa lạ → xếp theo mã hàng hóa.
     """
     terms = fold_text(q).split()
     if terms:
         items = [it for it in items if _matches(it[0], terms)]
-    getter = getters.get(sort_by, getters["hh_code"])
-    return sort_blank_last(items, lambda it: getter(*it), lambda it: it[0].hh_code, desc=sort_dir == "desc")
+    items = filter_products(items, filters)
+    known = sort_by in getters
+    getter = getters[sort_by if known else "hh_code"]
+    tie = SORT_TIES.get(sort_by) if known else None
+    return sort_blank_last(items, lambda it: getter(*it), (lambda it: tie(*it)) if tie else (lambda it: it[0].hh_code),
+                           desc=sort_dir == "desc")
 
 
 def compute_impact(db: Session, codes: list[str], assumed: dict[str, Decimal], *, date_from: date | None = None,
                    date_to: date | None = None, scope_cond=None, page: int | None = None, page_size: int = 50,
-                   q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc") -> dict:
+                   q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc", filters: ImpactFilters | None = None) -> dict:
     """`{selected, kpis, products, products_total}`. Mã không có trong định mức nào vẫn trả 200 với `products` rỗng.
 
     Chi phí của MỌI sản phẩm bị ảnh hưởng tính trong bộ nhớ (cần cho KPI toàn bộ), còn `products` chỉ dựng dòng cho trang
-    được hỏi: `page=None` = tất cả (xuất Excel), ngược lại cắt `page` / `page_size` SAU khi lọc `q` và xếp `sort_by` / `sort_dir`.
-    `products_total` = số sản phẩm sau lọc `q`; `kpis.affected_products` = số sản phẩm bị ảnh hưởng (chưa lọc `q`).
+    được hỏi: `page=None` = tất cả (xuất Excel), ngược lại cắt `page` / `page_size` SAU khi lọc `q` + `filters` (lọc nâng cao) và
+    xếp `sort_by` / `sort_dir`. `products_total` = số sản phẩm sau các bộ lọc; `kpis.affected_products` = số sản phẩm bị ảnh
+    hưởng (chưa lọc gì) — hiệu hai số là "Đang lọc x / M" của giao diện.
     """
     chosen = set(codes)
     bom_rows = db.execute(select(*IMPACT_BOM_COLUMNS).where(or_(*[getattr(PackagingBom, c).in_(chosen) for c in PART_COLUMNS]))
@@ -130,7 +158,7 @@ def compute_impact(db: Session, codes: list[str], assumed: dict[str, Decimal], *
             "max_increase_carton": num(max(cartons)) if cartons else None,
             "max_increase_bottle": num(max(bottles)) if bottles else None}
 
-    arranged = arrange_products(items, q=q, sort_by=sort_by, sort_dir=sort_dir)
+    arranged = arrange_products(items, q=q, sort_by=sort_by, sort_dir=sort_dir, filters=filters)
     window = arranged if page is None else arranged[(page - 1) * page_size:page * page_size]
     return {"selected": selected, "kpis": kpis, "products": [product_row(bom, cost, names) for bom, cost in window],
             "products_total": len(arranged)}

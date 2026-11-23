@@ -36,8 +36,9 @@ def product_overview(filters: dict = Depends(overview_filters), page: int = Quer
     `cost_new_bottle`, `diff_bottle`, `pct`, `cost_old_carton`, `cost_applied_carton` = chi phí / thùng mới, `diff_carton`,
     `trend`, `warnings`). `trend` (mã số) = 1 tăng · 2 giảm · 3 không đổi · 4 chưa có giá (thiếu giá chai thì chi phí rỗng).
     Bộ lọc: `q` (mã HH, tên, tên pháp lý, mã thành phần, không phân biệt dấu), `trend=all|up|down|flat|missing`. `sort_by` trong
-    `hh_code, hh_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct, diff_carton` (khóa lạ -> `hh_code`), ô trống
-    xuống cuối cả hai chiều. `page_size` <= 500. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` nhưng chưa lọc
+    `hh_code, hh_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct, diff_carton` và năm cột thành phần
+    `part_bottle, part_cap, part_label, part_carton_label, part_carton` (giá mới của thành phần, hòa theo mã thành phần rồi mã HH;
+    khóa lạ -> `hh_code`), ô trống xuống cuối cả hai chiều. `page_size` <= 500. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` nhưng chưa lọc
     `trend`; `total` = số dòng sau cả hai bộ lọc. Quyền `packaging_cost.read`; giá chỉ tính trên các dòng sổ giá thuộc pháp
     nhân người xem được thấy. Năm truy vấn cố định bất kể số sản phẩm.
     """

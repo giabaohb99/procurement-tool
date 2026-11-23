@@ -2,7 +2,7 @@
  * duoc-CR-784 — cột của tab Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…", đầy đủ ở tooltip) để bảng không phình.
  *
  * Cột bật `sortable` gửi `sort_by` = khóa cột lên máy chủ — khóa phải nằm trong `SORT_KEYS` của
- * `packaging_cost/history_service.py` (`date, code, name, supplier, qty, price, amount, vat, source`). "Lần" và
+ * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source`). "Lần" và
  * "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không bật `sortable` khi máy chủ chưa nhận khóa).
  * Số lượng kèm ĐVT trong một ô; nguồn + số ĐMH chung một cột. Dòng đơn giá 0 mờ đi (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở".
  */
@@ -76,6 +76,14 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
         width: singleCode ? 220 : 140,
         sortable: true,
         cell: (row) => row.supplier || <EmptyDash />,
+      },
+      {
+        // Kho nhập hàng của lần mua (chép theo dòng sổ giá). Một dòng, cắt bằng "…"; đầy đủ ở tooltip.
+        key: 'warehouse',
+        header: 'Kho',
+        width: 190,
+        sortable: true,
+        cell: (row) => row.warehouse || <EmptyDash />,
       },
       {
         key: 'qty',

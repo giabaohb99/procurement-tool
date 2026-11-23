@@ -17,6 +17,11 @@ export interface DataTableColumn<T> {
    * (sắp xếp) quanh chỗ này, nên bên trong cứ đặt nút / ô tick bình thường.
    */
   headerContent?: ReactNode
+  /**
+   * Lời chú hiện khi rê chuột lên TÊN cột (thuộc tính `title`). Khác `headerContent`: tên cột vẫn là chữ thường nên bấm vào
+   * vẫn sắp xếp / kéo đổi vị trí được — dùng khi chỉ cần giải thích cột (vd "Xếp theo giá mới của thành phần", duoc-CR-784).
+   */
+  headerTitle?: string
   /** Nội dung ô. Trả `null`/chuỗi rỗng thì bảng tự hiện dấu gạch ngang. */
   cell: (row: T) => ReactNode
   /** Độ rộng ban đầu (px). Bỏ trống = cột co giãn theo phần còn lại. */

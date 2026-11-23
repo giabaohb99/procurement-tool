@@ -28,6 +28,20 @@ export interface PackagingImpactRequest {
   sort_by?: string
   sort_dir?: 'asc' | 'desc'
   q?: string
+  /** Lọc nâng cao của bảng sản phẩm (máy chủ lọc; KPI không đổi; Xuất Excel + bản in theo cùng bộ lọc). */
+  trend?: Exclude<PackagingOverviewTrend, 'all'>
+  /** Vai trò (1..5) mà sản phẩm có MÃ ĐÃ CHỌN — một trong các vai trò. */
+  part_roles?: number[]
+  carton_qty_min?: number
+  carton_qty_max?: number
+  diff_bottle_min?: number
+  diff_bottle_max?: number
+  diff_carton_min?: number
+  diff_carton_max?: number
+  cost_new_bottle_min?: number
+  cost_new_bottle_max?: number
+  /** Chỉ sản phẩm đang có ít nhất một cảnh báo. */
+  warnings_only?: boolean
 }
 
 export interface PackagingSelectedCode {
@@ -224,6 +238,8 @@ export interface PackagingHistoryRow {
   group: string
   supplier_code: string
   supplier: string
+  /** Tên kho nhập hàng của lần mua (chép theo dòng sổ giá); rỗng = không biết kho. */
+  warehouse: string
   qty: number | null
   unit: string
   price: number | null

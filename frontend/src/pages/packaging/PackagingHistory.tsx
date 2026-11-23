@@ -9,6 +9,7 @@ import { downloadExport, fetchCodeOptions, fetchHhOptions, fetchHistory } from '
 import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
+import { historyPrintHref } from '../../utils/packaging-print'
 import {
   buildHistoryParams, buildHistorySearch, buildHistorySummary, EMPTY_HISTORY_FILTERS, nextSort,
   parseHistorySearch, sortCodeOptions, type HistoryFilters, type HistorySelection,
@@ -119,6 +120,12 @@ export default function PackagingHistory() {
           <h2 className="page-title" style={{ margin: 0 }}>Lịch sử mua hàng</h2>
           <div className="pkg-hint">Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá chưa VAT (VND), là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn.</div>
         </div>
+        {/* In = xem (quyền đọc). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
+        {can('packaging_cost', 'read') && (
+          <button className="btn outline" onClick={() => window.open(historyPrintHref(filterParams), '_blank')}>
+            <i className="ti ti-printer" />In
+          </button>
+        )}
         {can('packaging_cost', 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel}>
             <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}

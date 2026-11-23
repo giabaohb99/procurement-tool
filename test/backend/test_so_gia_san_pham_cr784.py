@@ -272,6 +272,49 @@ def test_dry_run_khong_ghi(db):
     assert stats["inserted"] == 2 and db.query(func.count(ProductPriceLedger.id)).scalar() == 0
 
 
+# ── Tên kho trên dòng sổ (duoc-CR-784) ──────────────────────────────────────────
+def _kho(db):
+    from app.modules.catalog.model import Warehouse
+    db.add(Warehouse(code="HL", name="Kho Hà Long", created_by=1, updated_by=1))
+    db.commit()
+
+
+def test_nguon_2_lay_ten_kho_tu_danh_muc_hoac_giu_ma_va_cap_nhat_khi_doi_kho(db):
+    _kho(db)
+    po = make_po(db, status="approved")
+    a = make_item(db, po, warehouse_code="HL")
+    b = make_item(db, po, warehouse_code="MA_LA")            # mã không có trong danh mục: giữ chính mã
+    c = make_item(db, po, warehouse_code="")
+    sync.sync_po_price_ledger(db, po)
+    names = {r.source_id: r.warehouse_name for r in ledger_rows(db)}
+    assert names == {a.id: "Kho Hà Long", b.id: "MA_LA", c.id: None}
+    a.warehouse_code = ""
+    db.commit()
+    assert sync.sync_po_price_ledger(db, po)["updated"] == 1
+    assert {r.source_id: r.warehouse_name for r in ledger_rows(db)}[a.id] is None
+
+
+def test_nguon_1_lay_ten_kho_tu_extra_cua_dong_lich_su_ca_luc_chen_moi_lan_nap_lai(db):
+    import json
+    _kho(db)
+    po = make_po(db, status="approved")
+    it = make_item(db, po, warehouse_code="HL", progress_status="completed")
+    snapshot_line(db, po, it)                                 # đường thật: chụp lịch sử + ghi sổ nguồn 1
+    db.commit()
+    assert [r.warehouse_name for r in ledger_rows(db, source_type=HISTORY)] == ["Kho Hà Long"]
+    # dòng lịch sử cũ (đã có trong sổ từ trước khi sổ có cột kho) được điền khi nạp lại
+    ph = db.query(PurchaseHistory).one()
+    ph.extra = json.dumps({"warehouse_code": "HL"})
+    ledger_rows(db, source_type=HISTORY)[0].warehouse_name = None
+    db.commit()
+    assert sync.sync_history_ledger(db)["updated_warehouse"] == 1
+    assert [r.warehouse_name for r in ledger_rows(db, source_type=HISTORY)] == ["Kho Hà Long"]
+    assert sync.sync_history_ledger(db)["updated_warehouse"] == 0   # chạy lại không đổi gì
+    ph.extra = "không phải JSON"                               # JSON hỏng: coi như không có kho, không nổ
+    db.commit()
+    assert sync.history_warehouse_code(ph) == ""
+
+
 # ── Script nạp lại ──────────────────────────────────────────────────────────────
 def test_script_backfill_chay_thu_roi_ghi_roi_check_exit_0(db, capsys):
     from scripts import backfill_product_price_ledger as script

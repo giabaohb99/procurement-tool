@@ -6,20 +6,32 @@ import TableScroll from '../TableScroll'
 import { useTableColumns } from '../../hooks/useTableColumns'
 import type { PackagingImpactProduct } from '../../api/packaging-cost-types'
 import { buildProductColumns } from './PackagingProductColumns'
+import PackagingImpactAdvancedFilter from './PackagingImpactAdvancedFilter'
+import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
 
 /**
  * Bảng SẢN PHẨM BỊ ẢNH HƯỞNG: máy chủ phân trang + tìm + xếp (chọn cả nhóm nhãn có thể ra hàng nghìn sản phẩm).
- * Bảng chỉ vẽ MỘT trang; thao tác của người dùng báo ngược lên màn qua các callback.
+ * Bảng chỉ vẽ MỘT trang; thao tác của người dùng báo ngược lên màn qua các callback. Tìm + Lọc nâng cao + xếp cả năm cột thành
+ * phần đều làm ở máy chủ; KPI luôn tính trên toàn bộ tập nên khi đang lọc, thanh công cụ nói rõ "Đang lọc: x / M sản phẩm".
  */
 export default function PackagingImpactProductsTable({
-  rows, total, loading, failed, keyword, onKeyword, sortBy, sortDir, onSort, page, pageSize, onPage,
+  rows, total, affected, loading, failed, keyword, onKeyword, filters, filterCount, onFilters, onResetFilters,
+  sortBy, sortDir, onSort, page, pageSize, onPage,
 }: {
   rows: PackagingImpactProduct[] | undefined
   total: number
+  /** Số sản phẩm bị ảnh hưởng CHƯA lọc (`kpis.affected_products`) — mẫu số của "Đang lọc: x / M". */
+  affected?: number
   loading: boolean
   failed: boolean
   keyword: string
   onKeyword: (v: string) => void
+  /** Lọc nâng cao ĐANG ÁP + số nhóm điều kiện đang bật. */
+  filters: ImpactAdvancedFilters
+  filterCount: number
+  onFilters: (next: ImpactAdvancedFilters) => void
+  /** Xóa cả từ khóa lẫn lọc nâng cao (giữ cột xếp). */
+  onResetFilters: () => void
   sortBy: string
   sortDir: 'asc' | 'desc'
   onSort: (key: string) => void
@@ -33,13 +45,20 @@ export default function PackagingImpactProductsTable({
   const table = useTableColumns('packaging-impact-products', columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
   const list = rows ?? []
+  //  Rỗng vì bộ lọc ≠ rỗng vì chưa có gì: hai câu khác nhau.
+  const filtersActive = keyword !== '' || filterCount > 0
 
   return (
     <div>
       <TableToolbar {...table}>
-        <div style={{ flex: 1, textAlign: 'left' }}>
+        <div className="pkg-row" style={{ flex: 1, textAlign: 'left' }}>
           <input aria-label="Tìm sản phẩm" placeholder="Tìm mã HH, tên, mã thành phần…" value={keyword}
             style={{ width: 320, maxWidth: '100%', height: 34 }} onChange={(e) => onKeyword(e.target.value)} />
+          <PackagingImpactAdvancedFilter value={filters} onApply={onFilters} />
+          {filtersActive && affected != null && !loading && (
+            <span role="status" className="pkg-hint">Đang lọc: <b>{total.toLocaleString('vi-VN')}</b> / {affected.toLocaleString('vi-VN')} sản phẩm</span>
+          )}
+          {filtersActive && <button type="button" className="btn ghost" onClick={onResetFilters}><i className="ti ti-filter-off" />Xóa lọc</button>}
         </div>
       </TableToolbar>
       <TableScroll>
@@ -51,7 +70,7 @@ export default function PackagingImpactProductsTable({
             {list.length === 0 && (
               <tr><td colSpan={table.columns.length} className="table-empty">
                 {failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…'
-                  : keyword ? 'Không có sản phẩm khớp từ khóa.' : 'Không có sản phẩm nào dùng các mã đã chọn.'}
+                  : filtersActive ? 'Không có sản phẩm nào khớp từ khóa / bộ lọc.' : 'Không có sản phẩm nào dùng các mã đã chọn.'}
               </td></tr>
             )}
           </tbody>

@@ -130,6 +130,24 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            //  duoc-CR-784 — bản in Lịch sử mua hàng: lọc đi bằng query string, trang tự nạp ĐỦ mọi dòng (không phân trang).
+            path: appRoutes.procurement.packagingHistoryPrint,
+            lazy: guardedPrintLazy(appRoutes.procurement.packagingHistoryPrint, async () => {
+              const { PackagingHistoryPrintPage } = await import('@/modules/procurement/pages/packaging-history-print-page')
+              return PackagingHistoryPrintPage
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
+            //  duoc-CR-784 — bản in Tác động giá bao bì: mã + giá giả định đi bằng query string, trang tự nạp ĐỦ mọi sản phẩm.
+            path: appRoutes.procurement.packagingImpactPrint,
+            lazy: guardedPrintLazy(appRoutes.procurement.packagingImpactPrint, async () => {
+              const { PackagingImpactPrintPage } = await import('@/modules/procurement/pages/packaging-impact-print-page')
+              return PackagingImpactPrintPage
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.finance.paymentRequestPrint(':id'),
             lazy: guardedPrintLazy(appRoutes.finance.paymentRequestPrint(':id'), async () => {
               const { PaymentRequestPrintPage } = await import('@/modules/finance/pages/payment-request-print-page')

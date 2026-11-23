@@ -4,7 +4,9 @@ NĂM truy vấn cố định bất kể số mã, số lần hiển thị `n` ha
   1. cột mã thành phần của định mức; 2. mã có báo giá — hai truy vấn này dựng tập mã VTBB, cùng luật với Bảng giá;
   3. sổ giá `price > 0`: `latest_priced_query.latest_priced_by_code` lấy `n` lần gần nhất (ngày giảm, doc_id giảm, id giảm) kèm
      `COUNT(*)` = số lần có giá — một câu, không hàm cửa sổ;
-  4. `tab_product` (tên / nhóm / ĐVT);  5. `tab_supplier` (tên nhà cung cấp của đúng các lần mua được hiện).
+  4. `tab_product` (tên / nhóm / ĐVT);  5. `tab_supplier` (tên nhà cung cấp của đúng các lần mua được hiện;
+     dòng sổ Misa mang sẵn `supplier_name` — thắng tên tra theo mã vì mã Misa không nằm trong `tab_supplier`).
+Mốc sổ Misa được áp trong `latest_priced_by_code` (xem `product_price/misa_cutoff.py`).
 ĐVT lấy ở danh mục sản phẩm, trống thì lấy ở lần mua gần nhất có ghi ĐVT.
 Lần 1 = lần mua CÓ GIÁ gần nhất (bỏ dòng đơn giá 0); cùng ngày thì id lớn hơn là gần hơn. Khoảng ngày mua lọc TRƯỚC khi xếp
 hạng (chỉ các lần mua trong khoảng mới được tính). Lọc nhà cung cấp / biến động / ngưỡng + xếp tại máy chủ (luật §8).
@@ -52,7 +54,7 @@ def _ratio(newer: float | None, older: float | None) -> float | None:
 
 def _row(code: str, info: tuple[str, str, str], count: int, points: list[dict], names: dict[str, str], n: int) -> dict:
     purchases = [{"date": iso(p["date"]), "supplier_code": p["supplier_code"],
-                  "supplier": supplier_label(names.get(p["supplier_code"]), p["supplier_code"]),
+                  "supplier": supplier_label(p.get("supplier_name") or names.get(p["supplier_code"]), p["supplier_code"]),
                   "qty": num(p["qty"], 3), "price": num(p["price"])} for p in points]
     prices = [p["price"] for p in purchases]
     name, group, unit = info
@@ -144,7 +146,8 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
     points: dict[str, list[dict]] = {}
     counts: dict[str, int] = {}
     for code, entry in latest.items():
-        points[code] = [{"price": r.price, "qty": r.qty, "unit": r.unit, "date": r.price_date, "supplier_code": r.supplier_code}
+        points[code] = [{"price": r.price, "qty": r.qty, "unit": r.unit, "date": r.price_date, "supplier_code": r.supplier_code,
+                       "supplier_name": r.supplier_name}
                         for r in entry.rows]
         counts[code] = int(entry.stats[0])
     #  Chỉ mã có giá (mặc định): không dựng dòng cho hàng chục nghìn mã định mức chưa có lần mua nào rồi mới bỏ đi.

@@ -122,7 +122,8 @@ def test_xep_o_trong_xuong_cuoi_hai_chieu_khoa_phu_ma_hh(db, world):
 
 def test_khoa_xep_la_ve_ma_hh_va_moi_khoa_cua_man_deu_co():
     assert set(OVERVIEW_SORT_GETTERS) == {"hh_code", "hh_name", "carton_qty", "cost_old_bottle", "cost_new_bottle",
-                                          "diff_bottle", "pct", "diff_carton"}
+                                          "diff_bottle", "pct", "diff_carton", "part_bottle", "part_cap", "part_label",
+                                          "part_carton_label", "part_carton"}      # năm cột thành phần: xếp theo giá mới
 
 
 def test_khoa_xep_la_khong_vo_loi(db, world):

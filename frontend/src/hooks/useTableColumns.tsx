@@ -10,6 +10,7 @@ export type TableColumn<T = any> = {
   key: string                                  // định danh cột (dùng để lưu bề rộng + trạng thái ẩn/hiện)
   label: React.ReactNode                       // nhãn header (thường là chuỗi; cột tick chọn đặt ô checkbox)
   sort?: string                                // tên field để sắp xếp; bỏ trống = cột không sort được
+  sortTitle?: string                           // lời chú khi rê chuột lên tiêu đề cột sort được (mặc định "Bấm để sắp xếp")
   width?: number | string                      // bề rộng mặc định (bảng table-layout: fixed)
   align?: 'left' | 'center' | 'right'          // canh lề cho cả header và ô dữ liệu
   fixed?: boolean                              // luôn hiện, không cho ẩn (cột chọn / thao tác)

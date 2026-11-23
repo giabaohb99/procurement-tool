@@ -1,15 +1,25 @@
 """Schema vào của `POST /api/packaging-cost/impact` (duoc-CR-784): tối đa 500 mã, giá giả định >= 0, khoảng ngày hợp lệ, và
-tham số phân trang / tìm / xếp của BẢNG SẢN PHẨM (làm ở máy chủ — KPI vẫn tính trên toàn bộ tập bị ảnh hưởng)."""
+tham số phân trang / tìm / lọc nâng cao / xếp của BẢNG SẢN PHẨM (làm ở máy chủ — KPI vẫn tính trên toàn bộ tập bị ảnh hưởng)."""
 from datetime import date
-from typing import Optional
+from decimal import Decimal
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.modules.employee.field_limits import Str50
 from app.modules.product_price.schema import MAX_YEAR, MIN_YEAR, PriceAmount
 
+from .impact_filters import ImpactFilters
+
 MAX_CODES = 500
 MAX_PAGE_SIZE = 500
+#  Trần của các ô khoảng số (đồng / quy cách): rộng hơn mọi giá bao bì thật, chặn giá trị phi lý và vô cực / NaN.
+RANGE_LIMIT = 1e12
+MAX_CARTON_QTY = 1_000_000
+ROLE_VALUES = (1, 2, 3, 4, 5)   # `PackagingRole`
+
+#  Ô khoảng số: biên có thể âm (chênh lệch giảm), không nhận NaN / vô cực.
+RangeBound = Annotated[Optional[float], Field(ge=-RANGE_LIMIT, le=RANGE_LIMIT, allow_inf_nan=False)]
 
 
 class ImpactRequest(BaseModel):
@@ -23,6 +33,27 @@ class ImpactRequest(BaseModel):
     sort_by: str = Field("hh_code", max_length=30)
     sort_dir: str = Field("asc", pattern="^(asc|desc)$")
     q: str = Field("", max_length=100)
+    # Lọc nâng cao của bảng sản phẩm (lọc trong bộ nhớ, sau khi tính chi phí; KPI không đổi; xuất Excel theo cùng bộ lọc).
+    trend: Literal["all", "up", "down", "flat", "missing"] = "all"
+    part_roles: list[int] = Field(default_factory=list, max_length=len(ROLE_VALUES))
+    carton_qty_min: Optional[int] = Field(None, ge=0, le=MAX_CARTON_QTY)
+    carton_qty_max: Optional[int] = Field(None, ge=0, le=MAX_CARTON_QTY)
+    diff_bottle_min: RangeBound = None
+    diff_bottle_max: RangeBound = None
+    diff_carton_min: RangeBound = None
+    diff_carton_max: RangeBound = None
+    cost_new_bottle_min: RangeBound = None
+    cost_new_bottle_max: RangeBound = None
+    warnings_only: bool = False
+
+    @field_validator("part_roles")
+    @classmethod
+    def _clean_roles(cls, v: list[int]) -> list[int]:
+        """Vai trò hợp lệ là 1..5 (`PackagingRole`); bỏ trùng, giữ thứ tự."""
+        bad = [r for r in v if r not in ROLE_VALUES]
+        if bad:
+            raise ValueError(f"Vai trò thành phần không hợp lệ: {bad[:5]}")
+        return list(dict.fromkeys(v))
 
     @field_validator("codes")
     @classmethod
@@ -50,7 +81,20 @@ class ImpactRequest(BaseModel):
     def _consistent(self):
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValueError("Từ ngày không được sau Đến ngày")
+        for name in ("carton_qty", "diff_bottle", "diff_carton", "cost_new_bottle"):
+            low, high = getattr(self, f"{name}_min"), getattr(self, f"{name}_max")
+            if low is not None and high is not None and low > high:
+                raise ValueError(f"Khoảng lọc không hợp lệ ({name}): giá trị nhỏ nhất lớn hơn giá trị lớn nhất")
         stray = sorted(set(self.assumed_prices) - set(self.codes))
         if stray:
             raise ValueError(f"Giá giả định cho mã chưa chọn: {', '.join(stray[:10])}")
         return self
+
+    def to_filters(self) -> ImpactFilters:
+        """Gom các trường lọc nâng cao thành `ImpactFilters` cho `compute_impact`."""
+        def bounds(name: str):
+            low, high = getattr(self, f"{name}_min"), getattr(self, f"{name}_max")
+            return (None if low is None else Decimal(str(low)), None if high is None else Decimal(str(high)))
+        return ImpactFilters(trend=self.trend, part_roles=frozenset(self.part_roles), carton_qty=bounds("carton_qty"),
+                             diff_bottle=bounds("diff_bottle"), diff_carton=bounds("diff_carton"),
+                             cost_new_bottle=bounds("cost_new_bottle"), warnings_only=self.warnings_only)

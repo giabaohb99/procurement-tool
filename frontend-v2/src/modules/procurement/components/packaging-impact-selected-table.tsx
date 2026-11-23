@@ -1,23 +1,21 @@
 /**
  * duoc-CR-784 — bảng MÃ ĐÃ CHỌN của màn Tác động giá: giá cũ / mới, ô giá giả định (nền vàng như bản
  * mẫu), chênh lệch, số SP dùng, min–max theo sổ giá và ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng
- * thì ô ngưỡng tô đỏ và ghi chú nói rõ — người chọn mã thấy ngay giá NCC báo có vượt trần không.
+ * thì ô ngưỡng tô đỏ và ghi chú nói rõ — người chọn mã thấy ngay giá NCC báo có vượt trần không. Chip nhóm (Chai · Nắp ·
+ * Nhãn · Nhãn thùng · Thùng) trên thanh công cụ chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
  */
 import { X } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
-import { PACKAGING_COST_WARNING_CODE } from '@/shared/constants/statuses'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
+import { cn } from '@/shared/utils/cn'
 
 import type { PackagingSelectedCode } from '../types/packaging-cost-types'
 import { isOutsidePriceLimit } from '../utils/packaging-price-format'
-import {
-  joinPackagingWarnings,
-  normalizeWarnings,
-  packagingWarningText,
-} from '../utils/packaging-warning-text'
+import { buildSelectedGroupChips, resolveSelectedGroup } from '../utils/packaging-selected-groups'
+import { buildSelectedCodeNote } from '../utils/packaging-warning-text'
 import { PackagingCodeLink } from './packaging-code-link'
 import { DiffText, PercentText, PriceText, RangeText } from './packaging-price-cells'
 import { dropLimitColumn } from '../config/packaging-feature-flags'
@@ -35,27 +33,6 @@ interface PackagingImpactSelectedTableProps {
   toolbar?: ReactNode
 }
 
-/** Câu ghi chú của một mã: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi). */
-function buildNote(row: PackagingSelectedCode, applied: number | null): string {
-  //  Bỏ cảnh báo ngưỡng của máy chủ rồi tự tính lại theo giá đang gõ — máy chủ chỉ biết giá đã gửi
-  //  (trễ 400 ms), để nguyên thì vừa gõ về trong ngưỡng mà ô vẫn báo "vượt trần" thêm một nhịp.
-  const limitKinds: number[] = [
-    PACKAGING_COST_WARNING_CODE.BELOW_FLOOR,
-    PACKAGING_COST_WARNING_CODE.ABOVE_CEILING,
-  ]
-  const serverNotes = normalizeWarnings(row.warnings).filter((w) => !limitKinds.includes(w.kind))
-  const notes = [joinPackagingWarnings(serverNotes)]
-  if (isNumber(applied) && isNumber(row.floor) && applied < row.floor)
-    notes.push(packagingWarningText({ kind: PACKAGING_COST_WARNING_CODE.BELOW_FLOOR }))
-  if (isNumber(applied) && isNumber(row.ceiling) && applied > row.ceiling)
-    notes.push(packagingWarningText({ kind: PACKAGING_COST_WARNING_CODE.ABOVE_CEILING }))
-  return notes.filter(Boolean).join('; ')
-}
-
-function isNumber(value: number | null | undefined): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
-}
-
 export function PackagingImpactSelectedTable({
   rows,
   isLoading,
@@ -65,6 +42,14 @@ export function PackagingImpactSelectedTable({
   onRemove,
   toolbar,
 }: PackagingImpactSelectedTableProps) {
+  const [pickedGroup, setPickedGroup] = useState('')
+  const chips = useMemo(() => buildSelectedGroupChips(rows), [rows])
+  //  Nhóm đã chọn mà bị bỏ hết mã thì tự về "Tất cả" (suy ra lúc vẽ, không cần effect).
+  const group = resolveSelectedGroup(pickedGroup, chips)
+  const shownRows = useMemo(
+    () => (group ? rows?.filter((row) => row.group === group) : rows),
+    [rows, group],
+  )
   const columns = useMemo<DataTableColumn<PackagingSelectedCode>[]>(() => {
     const appliedOf = (row: PackagingSelectedCode) => assumed[row.code] ?? row.new
     return dropLimitColumn<DataTableColumn<PackagingSelectedCode>>([
@@ -165,7 +150,7 @@ export function PackagingImpactSelectedTable({
         width: 140,
         wrap: true,
         cell: (row) => (
-          <span className="text-xs text-destructive">{buildNote(row, appliedOf(row))}</span>
+          <span className="text-xs text-destructive">{buildSelectedCodeNote(row, appliedOf(row))}</span>
         ),
       },
       {
@@ -199,13 +184,39 @@ export function PackagingImpactSelectedTable({
         idColumn={false}
         fillHeight
         columns={columns}
-        rows={rows}
+        rows={shownRows}
         getRowId={(row) => row.code}
         isLoading={isLoading}
         isError={isError}
         emptyMessage="Các mã đã chọn chưa có trong định mức nào."
         storageKey="procurement.packaging-impact-selected"
-        toolbar={toolbar}
+        toolbar={
+          <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+            {toolbar}
+            {/*  Một nhóm duy nhất thì không có gì để lọc. */}
+            {chips.length > 1 && (
+              <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc mã đã chọn theo nhóm">
+                {[{ group: '', label: 'Tất cả', count: rows?.length ?? 0 }, ...chips.map((chip) => ({ ...chip, label: chip.group }))].map(
+                  (chip) => (
+                    <button
+                      key={chip.group || 'all'}
+                      type="button"
+                      aria-pressed={group === chip.group}
+                      onClick={() => setPickedGroup(chip.group)}
+                      className={cn(
+                        'h-7 rounded-full border px-3 text-xs hover:bg-accent',
+                        group === chip.group &&
+                          'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                      )}
+                    >
+                      {chip.label} ({chip.count.toLocaleString('vi-VN')})
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+        }
       />
     </div>
   )

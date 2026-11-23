@@ -42,10 +42,10 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
 
     `mode=code`: `codes` (lặp được, tối đa 200; rỗng = mọi mã VTBB của cụm giá). `mode=product`: `hh_codes` (tối đa 200; rỗng
     = mọi sản phẩm có định mức) -> các mã thành phần của định mức, mỗi dòng kèm `roles` (mã vai trò chai / nắp / nhãn /
-    nhãn thùng / thùng). Bộ lọc: `q` (mã, tên sản phẩm, mã / tên nhà cung cấp), `supplier` (lặp được), `date_from` /
-    `date_to`. `sort_by` trong `date, code, name, supplier, qty, price, amount, vat, source` (khóa lạ -> `date` giảm), ô
+    nhãn thùng / thùng). Bộ lọc: `q` (mã, tên sản phẩm, mã / tên nhà cung cấp, tên kho), `supplier` (lặp được), `date_from` /
+    `date_to`. `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (khóa lạ -> `date` giảm), ô
     trống xuống cuối. Nguồn: sổ giá hai nguồn (`source_type` 1 = lịch sử mua, 2 = dòng ĐMH đang mở); dòng đơn giá 0 vẫn
-    hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước
+    hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập hàng, rỗng nếu không biết), `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước
     của cùng mã (không phụ thuộc bộ lọc), `seq` = số thứ tự lần mua của mã, `doc_id` / `po_code` = ĐMH nguồn (0 / rỗng nếu
     dữ liệu cũ không có). Trả `stats` (trên TOÀN BỘ tập đã lọc: `purchase_count, priced_count, qty_total, weighted_avg`
     gia quyền theo số lượng, `min, max, supplier_count, first_date, last_date`), `series` (đúng một mã được chọn: tối đa 1.000

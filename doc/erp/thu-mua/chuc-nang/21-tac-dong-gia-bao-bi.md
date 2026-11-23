@@ -37,8 +37,16 @@ sản phẩm (mã HH) nào đổi theo, đổi bao nhiêu — để quyết nh�
 |---|---|---|
 | 1 — Lịch sử mua hàng | mỗi dòng `tab_purchase_history` (hệ thống và dữ liệu cũ nạp vào) | chỉ chèn, không sửa (dòng lịch sử bị xóa khi nạp lại dữ liệu cũ thì dòng sổ xóa theo) |
 | 2 — Dòng đơn mua hàng (màn ghi *ĐMH đang mở*) | ĐMH đã duyệt trở đi, chưa xóa mềm; dòng chưa hủy, có mã hàng, chưa sang lịch sử | sửa giá / SL / VAT / NCC / ngày / tỷ giá thì cập nhật đúng dòng; dòng sang lịch sử, bị hủy, đơn bị hủy duyệt thì xóa |
+| 3 — Sổ Misa (nạp TẠM) | `scripts/import_misa_price_ledger.py` nạp từ báo cáo HTML của chủ dự án (sổ chi tiết mua hàng Misa 2025 – 06/2026), mỗi dòng Misa một dòng sổ (`source_id` = id dòng Misa), kèm tên NCC chép theo dòng (`supplier_name`) vì mã NCC Misa không nằm trong danh mục nhà cung cấp | chạy lại thì cập nhật đúng dòng (idempotent); `--purge` xóa hết dòng nguồn 3 và mốc → trả hành vi cũ |
 
 Dòng đơn giá 0 vẫn ghi (đếm số lần mua), tầng tính giá bỏ qua. Báo giá **không** vào sổ giá.
+
+**Mốc cắt sổ Misa** (chủ dự án chốt tạm: *coi báo cáo HTML là dữ liệu đúng, chạy giá theo đó*). Nạp xong, ngày lớn nhất của dòng
+Misa (hiện là 30/06/2026) được ghi vào `tab_setting` khóa `misa_price_cutoff`. Từ đó MỌI phép tính giá — giá cũ / mới, hai lần
+mua gần nhất, số lần mua, ngày cuối, min / max, Tổng hợp theo sản phẩm, Giá mua gần nhất, Lịch sử mua hàng, ba công cụ AI —
+chỉ xét **dòng Misa có ngày <= mốc** và, sau mốc, **chỉ lần mua của ĐMH thật trên ERP** (dòng ĐMH đã duyệt và lịch sử mua có gắn ĐMH); lịch sử cũ nạp từ Excel khảo sát (`source='legacy'`, nhiều dòng sai ngày / sai giá) bị bỏ hẳn khi có mốc. Đối chiếu 23/11/2026 trên dữ liệu máy local: Tổng hợp 1.000 sản phẩm ra Tăng 239 · Giảm 251 · Không đổi 510 · Chưa có giá 0, khớp tuyệt đối báo cáo HTML. Chưa có mốc (chưa nạp hoặc đã
+gỡ) thì hành vi y hệt trước đây. Điều kiện là một biểu thức SQL dùng chung (`product_price/misa_cutoff.py`, áp bên trong
+`latest_priced_by_code` và `build_history`), nên không thêm truy vấn nào. Nhãn nguồn hiện **Sổ Misa**.
 
 **Giá cũ / giá mới** (`product_price/price_state_service.py`):
 
@@ -130,8 +138,13 @@ tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có c�
   mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm.
 - Dòng tóm tắt (trên toàn bộ tập lọc): Số lần mua, Số NCC, Khoảng ngày; đúng một mã thì thêm Tổng SL, Giá BQ gia quyền, Thấp
   nhất, Cao nhất, và biểu đồ *Diễn biến đơn giá*.
-- Cột: Lần, Ngày mua, Mã VTBB, Tên vật tư, [Vai trò], Nhà cung cấp, Số lượng, Đơn giá, Thành tiền, So lần trước, Nguồn (mã ĐMH
-  bấm được, nhãn *ĐMH đang mở*). Dòng giá 0 hiện nhưng không tính KPI / biểu đồ. Xuất Excel tối đa 5.000 dòng.
+- Cột: Lần, Ngày mua, Mã VTBB, Tên vật tư, [Vai trò], Nhà cung cấp, **Kho**, Số lượng, Đơn giá, Thành tiền, So lần trước, Nguồn
+  (mã ĐMH bấm được, nhãn *ĐMH đang mở*). Dòng giá 0 hiện nhưng không tính KPI / biểu đồ. Xuất Excel tối đa 5.000 dòng.
+- **Kho** (bổ sung 23/11/2026 theo ý kiến chủ dự án: *thiếu cột kho so với file của Ms.Mi*): tên kho nhập hàng của lần mua. Dòng
+  Misa lấy từ cột kho của sổ chi tiết mua hàng (vd *KHO NCC_HÀ LONG*, *Kho VTBB DEGO Cần Thơ*); dòng của ERP lấy từ kho trên dòng
+  ĐMH (tên trong danh mục kho theo mã kho; mã không có trong danh mục thì hiện chính mã); không biết kho thì để trống. Ô tìm tìm
+  được cả theo tên kho, bấm tiêu đề cột để xếp (ô trống luôn xuống cuối), có trong bản in và trong Excel (cột *Kho* ngay sau
+  *Nhà cung cấp*). Chưa có bộ lọc theo kho.
 
 ## 7. Định mức bao bì và nhập từ Excel
 
@@ -164,7 +177,7 @@ Bảng `tab_packaging_bom`, mỗi mã HH một dòng; Thu mua tự khai.
 - Phạm vi: `SCOPE_FIELDS["packaging_cost"] = {"company": "company_id"}` đo trên sổ giá — giá tính theo pháp nhân người xem
   được thấy. Định mức, báo giá là danh mục dùng chung (`scoped=False`).
 - Giới hạn: một chai một bộ chai / nắp / nhãn (chưa có số lượng thành phần); mỗi mã HH một định mức, chưa có phiên bản (Q7
-  treo); đơn giá hiểu là giá một cái theo ĐVT danh mục (Q3 treo); giá từ lịch sử mua của ERP, chưa nạp MISA (Q1).
+  treo); đơn giá hiểu là giá một cái theo ĐVT danh mục (Q3 treo); giá từ lịch sử mua của ERP; riêng giai đoạn tới mốc cắt (30/06/2026) lấy TẠM từ sổ Misa nạp bằng script (xem mục 1, Q1).
 - **Phạm vi chưa làm / cố ý ẩn:** ngưỡng giá sàn / trần (`/api/product-price-limits`, cảnh báo 6 / 7) có backend nhưng giao diện
   tắt bằng công tắc `PACKAGING_LIMITS_ENABLED = false` ở cả hai bản (người chủ chốt 21/11 "tạm thời chưa xài") — bài HDSD
   không nhắc; bật lại thì bổ sung mục 4 và bài Bảng giá. Ba công cụ AI cho Trợ lý / bot / cổng MCP

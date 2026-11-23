@@ -1,0 +1,121 @@
+/*
+ * duoc-CR-784 — CSS của các BẢN IN cụm Giá bao bì (Lịch sử mua hàng, Tác động giá), chép từ bản mẫu HTML của người chủ
+ * ("Bao cao gia NVL san xuat - 11.2026.html"): thanh đầu có logo + dải màu xanh lá → xanh dương, ô lọc, thẻ số liệu viền
+ * trên xanh chanh, bảng đầu xanh navy, font Montserrat. Hai chỗ KHÁC bản mẫu theo luật màu của hệ: chênh lệch TĂNG xanh lá,
+ * GIẢM đỏ (bản mẫu làm ngược). Chân trang thương hiệu chỉ hiện trên màn hình, ẩn khi in — đúng như `@media print` của bản mẫu.
+ *
+ * MỌI luật nằm dưới gốc `.pp` nên không rò sang phần còn lại của ứng dụng; tệp được nạp dạng chuỗi (`?raw`) và gắn bằng
+ * thẻ <style> chỉ khi trang in đang mở (không import thường: `@page` toàn cục sẽ đổi khổ giấy của MỌI phiếu in khác).
+ * Cùng nội dung với bản v2 (`frontend-v2/.../packaging-print.css`) — sửa một bên thì sửa cả hai.
+ * Cỡ chữ nhỏ hơn bản mẫu ~15% để bảng 12-14 cột lọt khổ A4 ngang.
+ *
+ * KHÔNG dùng `table-layout: fixed`: Chrome in ra thiếu trang (chỉ còn trang đầu, phần sau bị cắt) khi bảng cố định chia trang.
+ */
+.pp {
+  --navy: #0f3b6e; --green: #0b6a3a; --lime: #7fd148; --blue: #00aeef; --muted: #5a5a5a; --faint: #8c939c;
+  --line: #e0e5ec; --line-2: #eef1f5; --text: #14202e; --brand-soft: #e6eef7; --accent-soft: #e8f5ec;
+  --up: #0b6a3a; --down: #c0392b; --warn: #9a6b00; --warn-bg: #fff6db; --input: #fffbe6;
+  min-height: 100vh; background: #f5f7fa; color: var(--text);
+  font: 12.5px/1.45 'Montserrat', 'Segoe UI', Roboto, Arial, sans-serif;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.pp *, .pp *::before, .pp *::after { box-sizing: border-box; }
+.pp h1, .pp h4, .pp p { margin: 0; }
+
+/* Thanh nút trên màn hình (ẩn khi in) */
+.pp-bar { max-width: 297mm; margin: 0 auto; padding: 12px 20px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pp-app { max-width: 297mm; margin: 0 auto; padding: 0 20px 24px; }
+
+/* Đầu trang: logo | crumb + tên báo cáo | giờ in; gạch chân dải màu */
+.pp-topbar { display: flex; align-items: center; gap: 14px; padding: 12px 0; position: relative; }
+.pp-topbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--green), var(--lime) 45%, var(--blue));
+}
+.pp-logo { height: 42px; width: auto; display: block; }
+.pp-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--line); }
+.pp-crumb { font-size: 10.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.2px; }
+.pp-title { font-size: 18px; font-weight: 800; margin-top: 2px; color: var(--navy); letter-spacing: 0.3px; }
+.pp-spacer { flex: 1; }
+.pp-meta { text-align: right; font-size: 10px; line-height: 1.5; color: var(--muted); white-space: nowrap; }
+.pp-body { padding-top: 12px; }
+
+.pp .panel { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 59, 110, 0.06); }
+.pp .gap { margin-top: 10px; }
+
+/* Ô lọc (chỉ đọc): chip hai chế độ, ô mã chọn nhiều, ô giá trị */
+.pp .pfilters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; padding: 12px 14px; }
+.pp .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: auto; margin: 0; }
+.pp .field label { display: block; margin: 0; font-size: 11px; color: var(--muted); font-weight: 600; }
+.pp .ms { flex: 1 1 420px; }
+.pp .ms-box { min-height: 32px; border: 1px solid var(--line); border-radius: 6px; background: #fff; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; align-items: center; }
+.pp .ms-box .ph { color: var(--faint); padding: 0 4px; }
+.pp .mchip { display: inline-flex; align-items: center; background: var(--accent-soft); color: var(--green); border-radius: 4px; padding: 2px 8px; font: 600 11px ui-monospace, Consolas, monospace; }
+.pp .mchip.more { background: var(--line-2); color: var(--muted); }
+.pp .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pp .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 600; }
+.pp .chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.pp .info { padding: 0 14px 12px; color: var(--muted); font-size: 11.5px; }
+.pp .info b { color: var(--text); }
+.pp .note { font-size: 11px; color: var(--warn); }
+.pp .banner { margin: 10px 0 0; padding: 6px 10px; border: 1px solid #f59e0b; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-size: 11.5px; }
+
+/* Thẻ số liệu: viền trên xanh chanh, số navy to */
+.pp .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 10px 0; }
+.pp .kpi { padding: 10px 12px; border-top: 3px solid var(--lime); break-inside: avoid; }
+.pp .kpi .k { font-size: 11px; color: var(--muted); font-weight: 600; }
+.pp .kpi .v { color: var(--navy); font-size: 19px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.pp .kpi .v.long { font-size: 12.5px; line-height: 1.3; margin-top: 6px; }
+.pp .kpi .s { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
+
+/* Biểu đồ đơn giá */
+.pp .chart { padding: 10px 14px; margin-bottom: 10px; break-inside: avoid; }
+.pp .chart h4 { margin-bottom: 6px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.pp .chart svg { display: block; width: 100%; height: auto; }
+
+/* Thanh tiêu đề bảng + bảng */
+.pp .tbar { display: flex; gap: 10px; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.pp .tbar .ttl { font-weight: 700; }
+.pp .tbar .cnt { color: var(--muted); font-size: 12px; }
+.pp table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11.5px; }
+/* Đặt đủ mọi thuộc tính của ô bảng (kể cả chữ hoa, nền xen kẽ, đậm nhạt) để luật bảng toàn cục của ứng dụng chủ không lọt vào. */
+.pp table thead th, .pp table tbody td { padding: 6px 8px; border-right: none; text-align: left; vertical-align: middle; letter-spacing: normal; text-transform: none; }
+.pp table tbody td { border-bottom: 1px solid var(--line-2); color: var(--text); font-size: 11.5px; font-weight: 400; background: transparent; }
+.pp table tbody tr, .pp table tbody tr:nth-child(even), .pp table tbody tr:hover { background: transparent !important; }
+.pp table thead th { background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--navy); position: static; }
+.pp td.n, .pp th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pp th.n { white-space: normal; }
+.pp td.c, .pp th.c { text-align: center; }
+.pp td.code { font-family: ui-monospace, Consolas, monospace; font-size: 11px; white-space: nowrap; }
+.pp .up { color: var(--up); font-weight: 600; }
+.pp .down { color: var(--down); font-weight: 600; }
+.pp .faint { color: var(--faint); }
+.pp tr.zero td { color: var(--faint); }
+.pp td.pc { white-space: nowrap; line-height: 1.3; }
+.pp td.pc small { font-size: 11px; }
+.pp td.hl { background: #eaf7dc !important; font-weight: 700; color: var(--green); }
+.pp td.name { min-width: 170px; }
+.pp td.wh { min-width: 90px; max-width: 190px; }
+.pp td.nt { min-width: 130px; }
+.pp .cell-inp { display: inline-block; min-width: 76px; padding: 3px 8px; text-align: right; border: 1px solid var(--line); border-radius: 5px; background: var(--input); }
+.pp .pbadge { display: inline-block; border: 1px solid #d97706; border-radius: 3px; padding: 0 4px; margin-right: 4px; font-size: 10px; color: var(--warn); background: var(--warn-bg); white-space: nowrap; }
+.pp .empty { padding: 24px; text-align: center; color: var(--muted); }
+
+/* Chân trang thương hiệu: chỉ trên màn hình */
+.pp-bfoot { margin-top: 24px; background: var(--navy); color: #fff; }
+.pp-bfoot svg { display: block; width: 100%; height: 28px; background: #f5f7fa; }
+.pp-bfoot .in { max-width: 297mm; margin: 0 auto; padding: 12px 20px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 12px; letter-spacing: 2px; }
+.pp-bfoot .tag { color: var(--lime); font-weight: 600; }
+.pp-bfoot .kw { color: var(--blue); font-weight: 500; }
+.pp-bfoot .kw i { color: #5c7fa8; font-style: normal; margin: 0 6px; }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { margin: 0 !important; background: #fff !important; }
+  .pp { background: #fff; min-height: 0; }
+  .pp .no-print, .pp-bar, .pp-bfoot { display: none !important; }
+  .pp-app { max-width: none; padding: 0; }
+  .pp .panel { box-shadow: none; }
+  .pp thead { display: table-header-group; }
+  .pp tr { break-inside: avoid; page-break-inside: avoid; }
+}

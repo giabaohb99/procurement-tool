@@ -11,19 +11,18 @@ hướng, lọc xu hướng, xếp và cắt trang đều SAU khi tính xong, n�
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.packaging_price_codes import CostTrend
 from app.modules.product_price.price_state_service import get_price_states
 
 from .cost_service import compute_product_cost
-from .impact_service import IMPACT_BOM_COLUMNS, SORT_GETTERS, arrange_products, bom_codes, product_row
+from .impact_filters import TREND_FILTERS
+from .impact_service import IMPACT_BOM_COLUMNS, PART_SORT_GETTERS, SORT_GETTERS, arrange_products, bom_codes, product_row
 from .model import PackagingBom
 
-#  Bộ lọc xu hướng của màn (mã chữ của URL) → mã số xu hướng của `CostTrend`; "all" không lọc.
-TREND_FILTERS = {"up": CostTrend.UP, "down": CostTrend.DOWN, "flat": CostTrend.SAME, "missing": CostTrend.NO_PRICE}
 #  Khóa cột được phép xếp (whitelist); khóa lạ → xếp theo mã hàng hóa. `cost_new_bottle` = giá mới (không giả định).
 OVERVIEW_SORT_GETTERS = {
     **{k: SORT_GETTERS[k] for k in ("hh_code", "hh_name", "carton_qty", "cost_old_bottle", "diff_bottle", "diff_carton", "pct")},
     "cost_new_bottle": lambda bom, cost: cost.cost_new_bottle,
+    **PART_SORT_GETTERS,       # năm cột thành phần xếp theo giá mới của thành phần (không giả định nên bằng giá đang áp)
 }
 
 

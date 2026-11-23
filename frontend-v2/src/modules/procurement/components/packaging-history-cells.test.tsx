@@ -13,6 +13,7 @@ const row = (over: Partial<PackagingHistoryRow> = {}): PackagingHistoryRow => ({
   group: 'Chai',
   supplier_code: 'NCC01',
   supplier: 'Nhựa',
+  warehouse: 'Kho DEGO Cần Thơ',
   qty: 100,
   unit: 'Cái',
   price: 130,

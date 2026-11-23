@@ -1,7 +1,7 @@
 """Bộ mã của màn Tác động giá bao bì (duoc-CR-784) — nguồn dòng sổ giá, vai trò thành phần, xu hướng, cảnh báo.
 
 Thuần stdlib: `code_sets.py` phải nạp được khi chạy `scripts/gen_status_ts.py`. Số đã cấp KHÔNG ĐỔI, KHÔNG TÁI DÙNG
-(luật R2, QĐ-11). Số 3 của `PriceSourceType` để trống cho nguồn giao dịch mới về sau (vd sổ chi tiết mua hàng MISA).
+(luật R2, QĐ-11). Số 3 của `PriceSourceType` = sổ chi tiết mua hàng MISA (nạp tạm bằng `scripts/import_misa_price_ledger.py`).
 """
 from enum import IntEnum
 
@@ -13,6 +13,7 @@ class PriceSourceType(IntEnum):
 
     PURCHASE_HISTORY = 1   # lịch sử mua hàng (dòng ĐMH đã hoàn thành hoặc dữ liệu cũ nạp từ Excel) — chỉ chèn
     PO_LINE = 2            # dòng đơn mua hàng đã duyệt, chưa hoàn thành — có rồi thì cập nhật
+    MISA = 3               # sổ chi tiết mua hàng MISA (nạp tạm, tới mốc `misa_price_cutoff`) — chỉ chèn, gỡ được bằng --purge
 
 
 class PackagingRole(IntEnum):
@@ -49,6 +50,7 @@ class CostWarning(IntEnum):
 PRICE_SOURCE_TYPE_LABELS = {
     PriceSourceType.PURCHASE_HISTORY: "Lịch sử mua hàng",
     PriceSourceType.PO_LINE: "Dòng đơn mua hàng",
+    PriceSourceType.MISA: "Sổ Misa",
 }
 PACKAGING_ROLE_LABELS = {
     PackagingRole.BOTTLE: "Chai", PackagingRole.CAP: "Nắp", PackagingRole.LABEL: "Nhãn",

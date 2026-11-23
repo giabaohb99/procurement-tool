@@ -9,6 +9,7 @@ import {
   type PackagingImpactTableState,
 } from '../hooks/use-packaging-impact-table-state'
 import type { PackagingImpactProduct } from '../types/packaging-cost-types'
+import { EMPTY_IMPACT_FILTERS } from '../utils/packaging-impact-filters'
 import { PackagingImpactProductsTable } from './packaging-impact-products-table'
 
 const product = (over: Partial<PackagingImpactProduct> = {}): PackagingImpactProduct => ({
@@ -38,6 +39,10 @@ function makeView(over: Partial<PackagingImpactTableState> = {}): PackagingImpac
     keyword: '',
     setKeyword: vi.fn(),
     query: '',
+    filters: EMPTY_IMPACT_FILTERS,
+    setFilters: vi.fn(),
+    filterCount: 0,
+    resetFilters: vi.fn(),
     sortBy: '',
     sortDir: 'asc',
     setSort: vi.fn(),
@@ -53,6 +58,7 @@ function renderTable(
   rows: PackagingImpactProduct[],
   view: PackagingImpactTableState = makeView(),
   total = rows.length,
+  affected?: number,
 ) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -61,6 +67,7 @@ function renderTable(
         <PackagingImpactProductsTable
           rows={rows}
           total={total}
+          affected={affected}
           isLoading={false}
           isError={false}
           view={view}
@@ -142,8 +149,41 @@ describe('PackagingImpactProductsTable', () => {
     )
     expect(screen.getByText('Không có sản phẩm nào dùng các mã đã chọn.')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Tìm sản phẩm'), 'khong co')
-    expect(await screen.findByText('Không có sản phẩm khớp từ khóa.')).toBeInTheDocument()
+    expect(await screen.findByText('Không có sản phẩm nào khớp từ khóa / bộ lọc.')).toBeInTheDocument()
     await user.clear(screen.getByLabelText('Tìm sản phẩm'))
     expect(await screen.findByText('Không có sản phẩm nào dùng các mã đã chọn.')).toBeInTheDocument()
+  })
+
+  it('sorts on the server by the applied price of each component column, one key per column', async () => {
+    const user = userEvent.setup()
+    const view = makeView()
+    renderTable([product()], view)
+    expect(screen.getAllByTitle('Xếp theo giá mới của thành phần')).toHaveLength(5)
+    for (const [label, key] of [
+      ['Chai', 'part_bottle'],
+      ['Nắp', 'part_cap'],
+      ['Nhãn', 'part_label'],
+      ['Nhãn thùng (giá /thùng)', 'part_carton_label'],
+      ['Thùng (giá /thùng)', 'part_carton'],
+    ] as const) {
+      await user.click(screen.getByText(label))
+      expect(view.setSort).toHaveBeenLastCalledWith(key, 'asc')
+    }
+  })
+
+  it('says how many products pass the filters out of all affected ones, and only while filtering', () => {
+    renderTable([product()], makeView({ filterCount: 2 }), 12, 1234)
+    expect(screen.getByRole('status')).toHaveTextContent('Đang lọc: 12 / 1.234 sản phẩm')
+  })
+
+  it('shows no "Đang lọc" line when nothing is filtered, and the badge counts active conditions', () => {
+    renderTable([product()], makeView(), 12, 1234)
+    expect(screen.queryByText(/Đang lọc/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lọc nâng cao/ })).not.toHaveTextContent(/\d/)
+  })
+
+  it('tells "filtered out" from "nothing selected" when only the advanced filter is on', () => {
+    renderTable([], makeView({ filterCount: 1 }), 0, 50)
+    expect(screen.getByText('Không có sản phẩm nào khớp từ khóa / bộ lọc.')).toBeInTheDocument()
   })
 })

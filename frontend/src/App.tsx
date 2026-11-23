@@ -56,6 +56,8 @@ import PackagingProductOverview from './pages/packaging/PackagingProductOverview
 import PackagingPriceList from './pages/packaging/PackagingPriceList'
 import PackagingLastPrices from './pages/packaging/PackagingLastPrices'
 import PackagingHistory from './pages/packaging/PackagingHistory'
+import PrintPackagingHistory from './pages/PrintPackagingHistory'
+import PrintPackagingImpact from './pages/PrintPackagingImpact'
 
 // bao-CR-728 — chuông "xuất xong" của lô xuất Tra cứu thị trường (bao-CR-718) ghi link đường v2
 // `/procurement/customs-prices/exports/<id>`; người dùng bản cũ bấm chuông thì chuyển sang màn lô của bản này.
@@ -88,6 +90,9 @@ export default function App() {
           {/* bao-CR-347: bản in giá vốn lô hàng nhập khẩu — nhiều đơn một tờ nên lọc bằng query
               string (codes / date_from / date_to / mode), không có `:id`. */}
           <Route path="/print/import-landed-cost" element={<Protected><PrintImportLandedCost /></Protected>} />
+          {/* duoc-CR-784: bản in cụm Giá bao bì — lọc đi bằng query string, trang tự nạp ĐỦ mọi dòng (không phân trang). */}
+          <Route path="/print/packaging-history" element={<Protected><PackagingGate><PrintPackagingHistory /></PackagingGate></Protected>} />
+          <Route path="/print/packaging-impact" element={<Protected><PackagingGate><PrintPackagingImpact /></PackagingGate></Protected>} />
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />

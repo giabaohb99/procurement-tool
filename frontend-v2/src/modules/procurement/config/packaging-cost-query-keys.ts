@@ -28,6 +28,11 @@ export const packagingCostKeys = {
   productOverview: (params: PackagingOverviewParams) =>
     [ROOT, 'packagingCost', 'productOverview', params] as const,
   history: (params: PackagingHistoryParams) => [ROOT, 'packagingCost', 'history', params] as const,
+  /** Bản in: nạp ĐỦ mọi dòng của bộ lọc (không có page) nên khóa riêng, không đụng khóa danh sách. */
+  historyPrint: (params: PackagingHistoryParams) =>
+    [ROOT, 'packagingCost', 'historyPrint', params] as const,
+  impactPrint: (body: PackagingImpactRequest) =>
+    [ROOT, 'packagingCost', 'impactPrint', body] as const,
   hhOptions: () => [ROOT, 'packagingCost', 'hhOptions'] as const,
   limit: (code: string) => [ROOT, 'packagingCost', 'limit', code] as const,
 }

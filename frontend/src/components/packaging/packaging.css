@@ -176,3 +176,22 @@ tbody tr.pkg-zero td { color: var(--muted); }
   flex-shrink: 0; font-size: 17px; }
 .pkg-stat-label { font-size: 13px; font-weight: 500; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pkg-stat-val { font-weight: 700; line-height: 1.15; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ── Lọc nâng cao của bảng sản phẩm bị ảnh hưởng (Tác động giá) + chip nhóm của bảng mã đã chọn ── */
+.pkg-badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
+  margin-left: 6px; border-radius: 999px; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700;
+}
+.btn.secondary .pkg-badge { background: var(--teal-dark); }
+.pkg-filter-panel {
+  position: fixed; z-index: 200; max-width: calc(100vw - 16px); max-height: calc(100vh - 80px); overflow-y: auto;
+  background: #fff; border: 1px solid #e9edf7; border-radius: 14px; box-shadow: 0 18px 40px rgba(112, 144, 176, 0.22);
+  padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 14px;
+}
+.pkg-filter-sec { display: flex; flex-direction: column; gap: 6px; }
+.pkg-filter-lbl { font-size: 13px; font-weight: 600; color: var(--navy); }
+.pkg-filter-range { display: grid; grid-template-columns: 190px 1fr 1fr; align-items: center; gap: 8px; margin-bottom: 4px; }
+.pkg-filter-range input { height: 32px; width: 100%; min-width: 0; }
+.pkg-filter-err { grid-column: 1 / -1; }
+.pkg-filter-foot { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+.pkg-pills.small .pkg-pill { height: 28px; padding: 0 12px; font-size: 12.5px; }

@@ -44,6 +44,14 @@ export const PRINT_ROUTE_ACCESS: Readonly<Record<string, PrintRouteAccess>> = {
     entity: 'report',
     action: 'read', // GET /api/reports/import-landed-cost
   },
+  [appRoutes.procurement.packagingHistoryPrint]: {
+    entity: 'packaging_cost',
+    action: 'read', // GET /api/packaging-cost/history (in là xem, không đòi quyền export)
+  },
+  [appRoutes.procurement.packagingImpactPrint]: {
+    entity: 'packaging_cost',
+    action: 'read', // POST /api/packaging-cost/impact (đọc thuần, đòi quyền đọc)
+  },
   [appRoutes.finance.paymentRequestPrint(':id')]: {
     entity: 'payment_request',
     action: 'print', // GET /api/payment-requests/{id}/print

@@ -94,7 +94,7 @@ export function PackagingHistoryToolbar({
           <Input
             className="pl-9"
             aria-label="Tìm lần mua"
-            placeholder="Tìm mã, tên, nhà cung cấp…"
+            placeholder="Tìm mã, tên, nhà cung cấp, kho…"
             value={filters.q}
             onChange={(event) => patch({ q: event.target.value })}
           />
