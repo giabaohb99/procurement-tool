@@ -115,7 +115,7 @@ export function PackagingImpactSelectedTable({
         align: 'right',
         cell: (row) => <PercentText value={row.pct} />,
       },
-      { key: 'usage', header: 'Số SP', width: 80, align: 'right', cell: (row) => row.usage },
+      { key: 'usage', header: 'Số SP bị ảnh hưởng', width: 104, align: 'right', cell: (row) => row.usage },
       //  Min và Max tách hai cột (người chủ chốt 21/11/2026) — giá thấp / cao nhất trong sổ giá của mã.
       {
         key: 'min',

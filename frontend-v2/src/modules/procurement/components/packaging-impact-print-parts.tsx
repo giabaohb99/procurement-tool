@@ -78,7 +78,7 @@ export function PrintImpactSelection({ codes, extras, rows }: PrintImpactSelecti
               <th className="n">Giá giả định</th>
               <th className="n">Chênh lệch</th>
               <th className="n">%</th>
-              <th className="n">Số SP</th>
+              <th className="n">Số SP bị ảnh hưởng</th>
               <th className="n">Min</th>
               <th className="n">Max</th>
               <th>Ghi chú</th>

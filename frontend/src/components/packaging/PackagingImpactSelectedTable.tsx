@@ -46,7 +46,7 @@ export default function PackagingImpactSelectedTable({
       },
       { key: 'diff', label: 'Chênh lệch', width: 110, align: 'right', cell: (r) => <DiffText value={r.diff} bold /> },
       { key: 'pct', label: '%', width: 80, align: 'right', cell: (r) => <PctText value={r.pct} /> },
-      { key: 'usage', label: 'Số SP', width: 70, align: 'right', cell: (r) => r.usage },
+      { key: 'usage', label: 'Số SP bị ảnh hưởng', width: 104, align: 'right', cell: (r) => r.usage },
       //  Min và Max tách hai cột — giá thấp / cao nhất trong sổ giá của mã.
       { key: 'min', label: 'Min', width: 100, align: 'right', cell: (r) => <PriceText value={r.min} /> },
       { key: 'max', label: 'Max', width: 100, align: 'right', cell: (r) => <PriceText value={r.max} /> },

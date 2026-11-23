@@ -42,7 +42,7 @@ export function PrintImpactSelection({ codes, extras, rows }: {
           <thead>
             <tr>
               <th>Mã</th><th>Tên vật tư</th><th>Nhóm</th><th className="n">Giá cũ</th><th className="n">Giá mới</th><th className="n">Giá giả định</th>
-              <th className="n">Chênh lệch</th><th className="n">%</th><th className="n">Số SP</th><th className="n">Min</th><th className="n">Max</th><th>Ghi chú</th>
+              <th className="n">Chênh lệch</th><th className="n">%</th><th className="n">Số SP bị ảnh hưởng</th><th className="n">Min</th><th className="n">Max</th><th>Ghi chú</th>
             </tr>
           </thead>
           <tbody>

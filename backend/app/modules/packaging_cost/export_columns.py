@@ -55,7 +55,7 @@ def _selected_columns() -> list[Col]:
             Col("unit", "ĐVT", width=7), Col("old", "Giá cũ", "price", 11), Col("new", "Giá mới\n(bảng giá)", "price", 11),
             Col("assumed", "Giá giả định", "price", 11), Col("applied", "Giá áp dụng", "price", 11),
             Col("diff", "Chênh lệch", "price", 11), Col("pct", "%", "percent", 9),
-            Col("usage", "Số SP\nđang dùng", "int", 9), Col("warn_text", "Cảnh báo", width=34)]
+            Col("usage", "Số SP bị\nảnh hưởng", "int", 10), Col("warn_text", "Cảnh báo", width=34)]
 
 
 def _product_columns(new_word: str = "áp dụng") -> tuple[list[Col], set[str], dict]:
