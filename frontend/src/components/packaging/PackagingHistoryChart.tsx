@@ -65,7 +65,7 @@ export default function PackagingHistoryChart({ series, subject }: { series: rea
   return (
     <div className="pkg-chart" ref={boxRef}>
       <div className="pkg-chart-title">
-        Diễn biến đơn giá qua các lần mua{subject && ` — ${subject}`} <span>({series.length} lần có giá)</span>
+        Diễn biến đơn giá qua các lần mua (VNĐ){subject && ` — ${subject}`} <span>({series.length} lần có giá)</span>
       </div>
       <svg width={width} height={HEIGHT} role="img" aria-label="Biểu đồ diễn biến đơn giá" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {geo.yTicks.map((t) => (

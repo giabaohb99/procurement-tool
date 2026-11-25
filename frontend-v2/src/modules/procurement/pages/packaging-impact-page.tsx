@@ -115,7 +115,7 @@ export function PackagingImpactPage() {
     <PageContainer className="space-y-4">
       <PageHeader
         title="Tác động tăng giá bao bì"
-        description="Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá."
+        description="Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá. Đơn vị VNĐ, chưa VAT."
         actions={
           <>
             <DateRangePicker

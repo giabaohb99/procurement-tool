@@ -58,7 +58,7 @@ export default function PackagingLastPrices() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Giá mua gần nhất</h2>
-          <div className="pkg-hint">Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (chưa VAT, VND). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua.</div>
+          <div className="pkg-hint">Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua.</div>
         </div>
         {can('packaging_cost', 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel}>

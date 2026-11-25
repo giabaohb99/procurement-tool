@@ -73,7 +73,7 @@ export default function PackagingProductOverview() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Tổng hợp theo sản phẩm</h2>
-          <div className="pkg-hint">Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được.</div>
+          <div className="pkg-hint">Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT.</div>
         </div>
         {can('packaging_cost', 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel}>

@@ -125,7 +125,7 @@ export default function PackagingPriceList() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Bảng giá VTBB</h2>
-          <div className="pkg-hint">Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất.</div>
+          <div className="pkg-hint">Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.</div>
         </div>
         <div style={{ width: 280 }}>
           <DateRangePicker block value={range} placeholder="Khoảng ngày tính min – max"

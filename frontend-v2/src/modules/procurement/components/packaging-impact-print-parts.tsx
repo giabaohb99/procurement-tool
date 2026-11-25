@@ -177,7 +177,7 @@ export function PrintImpactProducts({
     <div className="panel gap">
       <div className="tbar">
         <span className="ttl">Sản phẩm sử dụng các mã đã chọn</span>
-        <span className="cnt">{matched.toLocaleString('vi-VN')} sản phẩm</span>
+        <span className="cnt">{matched.toLocaleString('vi-VN')} sản phẩm · Đơn vị VNĐ, chưa VAT</span>
       </div>
       {rows.length === 0 ? (
         <p className="empty">{empty}</p>

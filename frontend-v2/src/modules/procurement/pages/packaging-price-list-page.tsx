@@ -101,7 +101,7 @@ export function PackagingPriceListPage() {
     <PageContainer fill>
       <PageHeader
         title="Bảng giá VTBB"
-        description="Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất."
+        description="Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT."
         actions={
           <>
             <DateRangePicker

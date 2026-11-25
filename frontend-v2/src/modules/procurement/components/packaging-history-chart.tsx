@@ -66,7 +66,7 @@ export function PackagingHistoryChart({ series, subject, className }: PackagingH
   return (
     <div className={className}>
       <p className="mb-1 text-sm font-medium">
-        Diễn biến đơn giá qua các lần mua{subject && ` — ${subject}`}{' '}
+        Diễn biến đơn giá qua các lần mua (VNĐ){subject && ` — ${subject}`}{' '}
         <span className="font-normal text-muted-foreground">({series.length} lần có giá)</span>
       </p>
       <ResponsiveContainer width="100%" height={150}>

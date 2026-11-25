@@ -99,7 +99,7 @@ export default function PackagingImpact() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Tác động tăng giá bao bì</h2>
-          <div className="pkg-hint">Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá.</div>
+          <div className="pkg-hint">Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá. Đơn vị VNĐ, chưa VAT.</div>
         </div>
         <div style={{ width: 280 }}>
           <DateRangePicker block value={range} placeholder="Khoảng ngày tính min – max"

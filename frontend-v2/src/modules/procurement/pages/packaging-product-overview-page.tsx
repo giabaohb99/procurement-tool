@@ -112,7 +112,7 @@ export function PackagingProductOverviewPage() {
     <PageContainer fill>
       <PageHeader
         title="Tổng hợp theo sản phẩm"
-        description="Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được."
+        description="Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT."
         actions={
           can('packaging_cost', 'export') && (
             <Button

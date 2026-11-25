@@ -90,7 +90,7 @@ export default function PackagingLastPricesToolbar({
         <Toggle label="Chỉ mã đã có giá" checked={filters.onlyPriced} onChange={(onlyPriced) => patch({ onlyPriced })} />
         <Toggle label="Chỉ mã đang dùng trong định mức" checked={filters.bomOnly} onChange={(bomOnly) => patch({ bomOnly })} />
         <Toggle label="Hiện số lượng" checked={filters.showQty} onChange={(showQty) => patch({ showQty })} />
-        <span className="pkg-hint">Đơn giá chưa VAT, đơn vị VND. Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn.</span>
+        <span className="pkg-hint">Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.</span>
       </div>
     </div>
   )

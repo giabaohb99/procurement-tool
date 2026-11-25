@@ -99,7 +99,7 @@ export function PackagingHistoryPage() {
     <PageContainer fill>
       <PageHeader
         title="Lịch sử mua hàng"
-        description="Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá chưa VAT (VND), là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn."
+        description="Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn."
         actions={
           <>
             {/* In = xem, nên gác theo quyền đọc (không đòi quyền xuất). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}

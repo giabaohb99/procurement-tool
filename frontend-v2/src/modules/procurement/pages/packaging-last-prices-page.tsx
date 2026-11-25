@@ -91,7 +91,7 @@ export function PackagingLastPricesPage() {
     <PageContainer fill>
       <PageHeader
         title="Giá mua gần nhất"
-        description="Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (chưa VAT, VND). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua."
+        description="Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua."
         actions={
           can('packaging_cost', 'export') && (
             <Button

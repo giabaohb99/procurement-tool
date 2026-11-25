@@ -227,7 +227,7 @@ export function PackagingLastPricesToolbar({
           onChange={(showQty) => patch({ showQty })}
         />
         <span className="text-xs text-muted-foreground">
-          Đơn giá chưa VAT, đơn vị VND. Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn.
+          Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
         </span>
       </div>
     </div>
