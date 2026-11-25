@@ -17,9 +17,9 @@ Nhãn nút / tiêu đề cột chép từ mã màn (21/11/2026): `packaging-impa
 `frontend/src/layouts/AppLayout.tsx`, `frontend/src/config/packaging-cruds.tsx`, `frontend/src/pages/ImportBatchDetail.tsx`.
 Nhãn cảnh báo / xu hướng / vai trò lấy từ `backend/app/core/packaging_price_codes.py`.
 
-CỐ Ý KHÔNG VIẾT: ngưỡng giá sàn / trần (công tắc `PACKAGING_LIMITS_ENABLED = false`, người chủ chốt 21/11/2026 "tạm thời
-chưa xài") — nút Ngưỡng, cột Sàn – Trần, ô Chỉ mã ngoài ngưỡng, cảnh báo Dưới ngưỡng sàn / Vượt ngưỡng trần. Bật lại thì
-thêm vào bài Bảng giá VTBB + tài liệu 21. Màn danh sách Báo giá VTBB ẩn khỏi menu: chỉ nhắc đường vào trong bài Bảng giá.
+KHÔNG CÓ trong bài: ngưỡng giá sàn / trần — người chủ chốt 21/11/2026 "tạm thời chưa xài", rồi 25/11/2026 chốt XÓA HẲN (phase 04,
+migration `cleanup784`): nút Ngưỡng, cột Sàn – Trần, ô Chỉ mã ngoài ngưỡng, cảnh báo Dưới ngưỡng sàn / Vượt ngưỡng trần không còn
+trên giao diện nên bài cũng không nhắc. Màn danh sách Báo giá VTBB ẩn khỏi menu: chỉ nhắc đường vào trong bài Bảng giá.
 
 Chạy trong container api (KHÔNG chạy trên prod — prod đồng bộ Help Center theo đợt riêng):
     docker compose exec -T api python scripts/seed_help_gia_bao_bi_cr784.py --dry-run   # in cây + kiểm tiêu đề, không ghi
@@ -413,7 +413,7 @@ TREE = {
 }
 
 EXPECTED_ARTICLES = 9
-#  Chuỗi không được lọt vào bài: tên khóa ngưỡng (đang tắt) — bật lại thì bỏ khỏi đây và viết bài.
+#  Chuỗi không được lọt vào bài: tên khóa ngưỡng (đã bỏ hẳn ở phase 04) — chặn lỡ tay chép lại câu cũ.
 FORBIDDEN_SNIPPETS = ("Sàn – Trần", "ngưỡng sàn", "ngưỡng trần", "Ngưỡng giá", "Chỉ mã ngoài ngưỡng")
 
 
@@ -430,7 +430,7 @@ def check_unique_titles() -> None:
     too_long = [n["title"] for n in nodes if len(n.get("summary") or "") > 255]
     assert not too_long, f"Tóm tắt quá 255 ký tự: {too_long}"
     leaked = [(n["title"], s) for n in nodes for s in FORBIDDEN_SNIPPETS if s.lower() in n["content"].lower()]
-    assert not leaked, f"Bài nhắc tới ngưỡng giá đang tắt: {leaked}"
+    assert not leaked, f"Bài nhắc tới ngưỡng giá đã bỏ: {leaked}"
     slugs = {slugify(t): t for t in titles}
     assert len(slugs) == len(titles), "Hai bài trong cây trùng slug"
     db = SessionLocal()

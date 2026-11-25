@@ -3,6 +3,7 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | planner | Nháp | duoc-CR-784 |
+| 2 | 25/11/2026 | fullstack | **Xong trên nhánh `duoc-cr784-opt-p04` (chưa commit, CHƯA lên dev)** — migration `cleanup784` | duoc-CR-784 |
 
 Ưu tiên P3 · 4,5 giờ (2,5 + 2 gỡ ngưỡng) · cần phase 03 (cùng migration `opt784`).
 
@@ -88,8 +89,64 @@ DROP `tab_product_price_limit` (xuống: dựng lại bảng rỗng). Chỉ khi 
 ## Việc cần làm
 - [x] Chốt C6: bỏ hẳn ngưỡng (25/11/2026)
 - [x] Chốt C7 (VAT Misa NULL), C9 (không làm bảng tóm tắt) — 25/11/2026
-- [ ] Chốt C5 (khóa duy nhất báo giá)
-- [ ] Gỡ ngưỡng sàn / trần (backend, v1, v2, Excel, Trợ lý / MCP, tài liệu)
-- [ ] `synced_at` một nguồn giờ
-- [ ] Chặn hai đường nạp Misa đá nhau
-- [ ] (C7 = A) VAT Misa NULL
+- [x] Chốt C5 (khóa duy nhất báo giá) — làm ở phase 03
+- [x] Gỡ ngưỡng sàn / trần (backend, v1, v2, Excel, Trợ lý / MCP, tài liệu)
+- [x] `synced_at` một nguồn giờ
+- [x] Chặn hai đường nạp Misa đá nhau
+- [x] (C7 = A) VAT Misa NULL
+- [x] Sửa lỗi sẵn có của phase 02: ô chọn nhà cung cấp Giá mua gần nhất đổi thứ tự / tên giữa các lần chạy
+
+## Kết quả thực hiện (25/11/2026)
+### Đã gỡ (C6)
+| Khu | Gỡ gì |
+|---|---|
+| Model / API | `ProductPriceLimit` (model), `LimitCreate` / `LimitUpdate` / `LimitOut` + `_check_floor_ceiling` (schema), `limit_router` + hàm `_limit_*` trong `quote_limit_controller.py` (giữ `quote_router`; tên tệp giữ để khỏi đổi đường dẫn), mục khai ở `main.py`, bí danh nhật ký `packaging_cost_limit` ở `audit/controller.py` |
+| Tính giá | truy vấn ngưỡng + `floor` / `ceiling` của `PriceState` (`get_price_states` còn tối đa 4 truy vấn, trước 5); `price_warnings(price, purchase_unit)` bỏ tham số `applied` và hai luật 6 / 7; `breach_only` (tham số + `BREACH` + nhánh đường nhanh) ở `price_list_service` / `impact_controller` (gửi lên vẫn được nhận, bị bỏ qua); `floor` / `ceiling` khỏi `impact_service.selected_row` và `price_list_service._row` / `SORT_KEYS` |
+| Bộ mã | `CostWarning.BELOW_FLOOR` (6) / `ABOVE_CEILING` (7) và nhãn khỏi `packaging_price_codes.py` — ghi chú số đã cấp, KHÔNG tái dùng; `gen_status_ts.py` chạy lại (`statuses.ts` bớt 4 dòng) |
+| Excel / Trợ lý | hai cột `floor` / `ceiling` ở `PRICE_LIST_COLUMNS`; `floor_price` / `ceiling_price` ở `packaging_cost_format.py`; mô tả công cụ `packaging_price_lookup` |
+| v1 | xóa `utils/packaging-flags.ts`, `PackagingLimitModal.tsx`; bỏ `isOutsideLimit`, `COST_WARNING_KIND`, `selectedCodeNote` (thay bằng `joinWarnings`), `RangeText`, cột / nút / ô lọc / `breachOnly`, kiểu `PackagingPriceLimit`, `fetchPriceLimit` / `savePriceLimit` |
+| v2 | xóa `config/packaging-feature-flags.ts`, `components/packaging-price-limit-dialog.tsx`; bỏ `isOutsidePriceLimit`, `buildSelectedCodeNote`, `RangeText`, khóa query `limit`, hook `usePackagingPriceLimit` / `useSavePackagingPriceLimit`, `fetchPackagingPriceLimit` / `savePackagingPriceLimit`, kiểu `PackagingPriceLimit`, cột / ô lọc / `breachOnly`, trường `floor` / `ceiling` / `breach_only` |
+| Tài liệu | `21-tac-dong-gia-bao-bi.md` (bảng cảnh báo, mục nguồn Misa, mục "Đã bỏ hẳn"), `01-yeu-cau-chuc-nang.md`, `api.md` (bỏ 5 hàng ngưỡng + hàng 25/11), `doc/agent-hub/06-cong-mcp.md`, chú thích HDSD `seed_help_gia_bao_bi_cr784.py` (chỉ chữ, KHÔNG chạy). Cẩm nang Trợ lý (`10-quy-trinh-thu-mua.md`) và `02-danh-sach-api-tool.md` không nhắc ngưỡng nên không đổi |
+
+### Migration `cleanup784` (viết tay, `down_revision = quotesrc784`, một đầu)
+Lên: DROP `tab_product_price_limit` (in số dòng bị bỏ); `tab_product_price_ledger.vat` cho phép NULL VÀ bỏ mặc định 0 của CSDL (cột NULL = không biết, ghi thiếu `vat` không được tự thành 0%); `UPDATE ... SET vat = NULL WHERE source_type = 3`. Xuống: `vat NULL -> 0`, NOT NULL + mặc định 0 trở lại, dựng lại `tab_product_price_limit` RỖNG đúng cấu trúc `pkgcost784` (đã so `SHOW CREATE TABLE`: chỉ khác bộ đếm AUTO_INCREMENT). Chạy thật trên bản sao MySQL local (`p04_scratch`, đã xóa): lên / xuống / lên lại sạch; trước-lên và sau-xuống trùng `SHOW CREATE TABLE` sổ giá + băm nội dung sổ; sau-lên và sau-lên-lại trùng.
+
+### VAT dòng Misa (C7 = A)
+Cả hai đường nạp (`misa_ledger_import.build_misa_rows` và `misa_xlsx_import.read_rows`) ghi `vat = None`. Mô hình bỏ `default=0` của `vat` (ORM coi `None` là "chưa gán" nên sẽ ghi 0 thay NULL — phát hiện qua bài kiểm). Chỗ đọc `vat` duy nhất là `history_page_rows.row_to_item` (`num(None)` trả `None`) + khóa xếp `vat` (`build_blank_last_order` dồn NULL xuống cuối cả hai chiều) + cột Excel *VAT (%)* (ô trống); không chỗ nào tính số học trên VAT sổ giá; giao diện v1 / v2 không có cột VAT ở Lịch sử mua hàng (kiểu đã là `number | null`).
+
+### `synced_at`
+Bỏ `default=datetime.utcnow`; còn `server_default=func.now()` (khớp `DEFAULT CURRENT_TIMESTAMP` của CSDL). Mọi nơi ghi đè dùng `func.now()` (`ledger_sync_service._apply`, hai chỗ cập nhật kho / thành tiền, `UPDATE ... reopen`, `misa_ledger_import` nhánh cập nhật, `misa_xlsx_import` nhánh bổ sung thành tiền). Bài canh grep không cho `synced_at = datetime...` quay lại.
+
+### Hai đường nạp Misa đá nhau
+- `source_id` của Misa: script HTML = id dòng Misa trong tệp; module 6 (xlsx) = số thứ tự trong sổ (`max + 1`). KHÔNG trỏ chứng từ. Ghi ở chú thích đầu `product_price/model.py`, `misa_ledger_import.py`, `misa_xlsx_import.py`, tài liệu 21.
+- Chốt chặn: `misa_ledger_import.ensure_no_xlsx_misa_rows(db)` gọi đầu `import_misa_rows` — ném `MisaSourceError` (script in `LỖI: ...`, thoát mã 2, kể cả khi chạy thử) nếu sổ CÓ dòng Misa VÀ tồn tại lô module 6 `mode = ghi thật`, `status = xong`. Sổ chưa có dòng Misa (kể cả sau `--purge --apply`) thì qua dù lô cũ còn; lô chạy thử / lỗi không chặn. Đã chạy script thật trên bản sao MySQL: bị chặn → `--purge --apply` → nạp lại được.
+- Giới hạn đã biết: lô module 6 từng ghi thật rồi sổ Misa bị gỡ, sau đó nạp lại bằng HTML → qua (vì sổ trống). Ngược lại lô module 6 cũ + nạp HTML mới + sổ có dòng → bị chặn dù dòng hiện có do HTML nạp (hiếm; cách gỡ: `--purge --apply`).
+- **Cho phase 07:** sổ giá KHÔNG lưu dòng Misa nào thuộc lô nhập nào, `source_id` của module 6 chỉ là số thứ tự (không mã hóa id lô) nên chưa nhận diện được từng dòng. Muốn "xóa theo lô" cho module 6 phase 07 phải tự thêm cột `import_batch_id` trên `tab_product_price_ledger` (module 6 ghi id lô lúc chèn; dòng cũ = 0 = không rõ lô; HTML script = 0). Không làm ở phase này (tránh làm quá tay, dữ liệu dev 5.041 dòng Misa nạp từ HTML không gán lại được).
+
+### Sai khác so với kế hoạch
+| Chỗ | Kế hoạch | Thực hiện |
+|---|---|---|
+| Migration | `opt784` | `cleanup784` (mỗi phase một migration, xem plan.md) |
+| Cột `vat` | cho phép NULL | thêm: bỏ cả mặc định 0 của CSDL + bỏ `default=0` của ORM (xem trên) |
+| `price_warnings` | bỏ hai luật | bỏ luôn tham số `applied` (thành thừa), sửa năm chỗ gọi |
+| Mục 3 "hằng độ dài dùng chung" thay `200` lặp ở ba tệp | có | KHÔNG làm: `MAX_SUPPLIER_NAME` / `MAX_WAREHOUSE_NAME` đã là hằng dùng chung ở `misa_ledger_import.py`; chỗ lặp còn lại chỉ là `String(200)` trong model (YAGNI) |
+| Chú thích đầu `model.py` | cập nhật bảng nguồn | đã cập nhật (ba nguồn + nghĩa `source_id` Misa + VAT) |
+| Sửa thêm | — | `last_prices_service`: `supplier_options` chọn tên nhỏ nhất theo (bỏ dấu, chữ gốc) cho mỗi mã NCC và `build_last_prices` duyệt `sorted(all_codes)` (lỗi tập không có thứ tự của phase 02) |
+
+### Đối chiếu cũ / mới (bản sao MySQL local 11.560 dòng sổ giá, mã cũ + lược đồ cũ so với mã mới + đã migrate)
+Giống hệt từng số: Tác động 500 mã (+ giá giả định, trang 2, Excel), Tổng hợp theo sản phẩm (1.000 SP, lọc có cảnh báo, Excel), Bảng giá (bom / all, xếp theo số, theo khoảng ngày; 1.135 / 2.927 mã), Giá mua gần nhất (535 / 2.909 mã), Lịch sử theo mã (1.568 dòng), theo sản phẩm (346 dòng), 5 công cụ Trợ lý. Chỉ khác ở phần ĐÃ DỰ KIẾN: (1) không còn `floor` / `ceiling` / `floor_price` / `ceiling_price` (23.272 chỗ); (2) không cảnh báo 6 / 7 (không dòng nào phát ra: 0 dòng ngưỡng); (3) VAT dòng Misa `0 -> null` (3.796 chỗ trong các lượt hỏi Lịch sử) và Excel Lịch sử ô VAT trống (349 + 321 ô); `sort_by=vat` đổi thứ tự vì NULL xuống cuối (cùng tập dòng, nội dung từng dòng giống hệt); (4) Excel Bảng giá bớt hai cột; (5) ô nhà cung cấp của Giá mua gần nhất: mã `1801356017` có hai tên (tên Misa và tên danh mục) — bản cũ chọn một tên tùy thứ tự tập (vì thế thứ tự danh sách đổi nhịp), bản mới luôn chọn tên nhỏ nhất ("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ THÀNH CÔNG"); các dòng của bảng không đổi.
+
+### Kiểm thử
+- Backend (container api, mã nhánh này): `-k "cr784 or cr789 or don_dep"` 688 bài qua, 4 bỏ qua (sẵn có); thêm `test_pham_vi_khai_du_b07`, `test_canh_do_dai_o_chu_cr538`, `test_status_catalog_b01`, `test_dong_bo_giao_dien_v2`, `test_pham_vi_luat_bat_bien`, `test_assistant_pham_vi_doc`, `test_pham_vi_bo_may_duyet_xuyen_suot`, `test_assistant_tool_router`, `test_assistant_tools`, `test_agent_hub_cong_mcp_cr207`, `test_assistant_tool_audit` 216 qua; ruff `app` + hai tệp đổi 0 lỗi. Bài mới `test_don_dep_so_gia_nguong_vat_misa_cr784.py` (29 bài: VAT NULL cả hai đường nạp + API Lịch sử + xếp + Excel, `synced_at` server, chốt chặn Misa, thứ tự NCC, migration SQLite lên / xuống / lên lại + một đầu), thêm bài đường ngưỡng 404 (`test_bao_gia_nguong_gia_cr784.py`) và cảnh báo 6 / 7 không phát ra (`test_tac_dong_gia_bao_bi_cr784.py`); sửa số truy vấn 4 -> 3 / 5 -> 4 (`test_trang_thai_gia_theo_ma_cr784.py`).
+- Frontend: v2 `tsc` 0 lỗi, `eslint` các tệp đổi 0 lỗi, `vitest src/modules/procurement` 1.810 bài xanh; v1 `tsc` đúng 4 lỗi cũ.
+
+### Câu đọc kiểm TRƯỚC khi lên dev (chỉ đọc)
+```sql
+-- 1) Số dòng ngưỡng sẽ bị bỏ. Local = 0 (bảng từng có một dòng rồi đã xóa). MONG ĐỢI trên dev: 0
+SELECT COUNT(*) FROM tab_product_price_limit;
+-- 2) VAT dòng Misa trước khi đổi. Local: 5.041 dòng, đều 0,00
+SELECT COUNT(*), MIN(vat), MAX(vat) FROM tab_product_price_ledger WHERE source_type = 3;
+-- 3) Lô module 6 từng ghi thật (quyết định chốt chặn Misa có chặn script HTML hay không)
+SELECT id, status, mode, created_at FROM tab_import_batch WHERE module = 6 ORDER BY id;
+```
+Lên dev: sao lưu DB dev, chạy ba câu trên (câu 1 phải 0), gộp, khởi động lại `api` (`alembic upgrade head` tự chạy `cleanup784`, log in `[cleanup784] ...`), kiểm `SHOW COLUMNS FROM tab_product_price_ledger LIKE 'vat'` (Null = YES, Default = NULL), `SHOW TABLES LIKE 'tab_product_price_limit'` rỗng; mở Bảng giá VTBB (cả hai giao diện) thấy không còn cột Sàn – Trần / nút Ngưỡng. Quay lui: `alembic downgrade -1`.

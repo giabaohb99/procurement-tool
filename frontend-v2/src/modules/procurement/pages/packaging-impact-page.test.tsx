@@ -20,7 +20,7 @@ function impactResult(): PackagingImpactResult {
     selected: [
       {
         code: 'CPT0105', name: 'Chai 450ml', group: 'Chai', unit: 'Cái', old: 1000, new: 1100, assumed: null,
-        applied: 1100, diff: 100, pct: 0.1, usage: 2, min: 900, max: 1100, floor: null, ceiling: null,
+        applied: 1100, diff: 100, pct: 0.1, usage: 2, min: 900, max: 1100,
       },
     ],
     kpis: {

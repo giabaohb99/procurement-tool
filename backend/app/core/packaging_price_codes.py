@@ -65,8 +65,8 @@ class CostWarning(IntEnum):
     MISSING_COMPONENT_PRICE = 3   # có mã thành phần nhưng chưa có giá
     MISSING_CARTON_QTY = 4        # có nhãn thùng / thùng mà quy cách thùng bằng 0
     UNIT_MISMATCH = 5             # ĐVT lúc mua khác ĐVT danh mục
-    BELOW_FLOOR = 6               # giá đang dùng thấp hơn ngưỡng sàn
-    ABOVE_CEILING = 7             # giá đang dùng vượt ngưỡng trần
+    #  6 (dưới ngưỡng sàn) và 7 (vượt ngưỡng trần) ĐÃ BỎ cùng bảng ngưỡng (duoc-CR-784 phase 04, migration `cleanup784`): số đã cấp,
+    #  KHÔNG tái dùng cho cảnh báo khác — dữ liệu / bản in / nhật ký cũ có thể còn mang hai số này.
 
 
 PRICE_SOURCE_TYPE_LABELS = {
@@ -89,8 +89,6 @@ COST_WARNING_LABELS = {
     CostWarning.MISSING_COMPONENT_PRICE: "Thiếu giá thành phần",
     CostWarning.MISSING_CARTON_QTY: "Thiếu quy cách thùng",
     CostWarning.UNIT_MISMATCH: "ĐVT mua khác ĐVT danh mục",
-    CostWarning.BELOW_FLOOR: "Dưới ngưỡng sàn",
-    CostWarning.ABOVE_CEILING: "Vượt ngưỡng trần",
 }
 
 

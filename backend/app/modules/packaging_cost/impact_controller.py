@@ -2,7 +2,7 @@
 
 Gác khóa `packaging_cost` (read / export). Phạm vi dữ liệu theo PHÁP NHÂN đo trên SỔ GIÁ: `scope_condition(...)` dựng điều
 kiện trên `ProductPriceLedger.company_id` và đưa xuống `get_price_states` — giá cũ / mới / min / max chỉ tính trên các dòng sổ
-người xem được thấy. Định mức / báo giá / ngưỡng là danh mục dùng chung nên không lọc.
+người xem được thấy. Định mức / báo giá là danh mục dùng chung nên không lọc.
 """
 from datetime import date
 from decimal import Decimal
@@ -77,28 +77,27 @@ def _check_list_params(date_from: date | None, date_to: date | None, sort_dir: s
         raise HTTPException(422, "sort_dir chỉ nhận asc hoặc desc")
 
 
-def _price_list(db: Session, user, action: str, *, q, group, scope, breach_only, date_from, date_to, sort_by, sort_dir):
+def _price_list(db: Session, user, action: str, *, q, group, scope, date_from, date_to, sort_by, sort_dir):
     _check_list_params(date_from, date_to, sort_dir)
-    return build_price_list(db, q=q, group=group, scope=scope, breach_only=breach_only, date_from=date_from,
+    return build_price_list(db, q=q, group=group, scope=scope, date_from=date_from,
                             date_to=date_to, sort_by=sort_by, sort_dir=sort_dir, scope_cond=_scope(db, user, action))
 
 
 @router.get("/price-list")
 def price_list(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
-               scope: str = Query("bom", pattern="^(bom|all)$"), breach_only: bool = False,
+               scope: str = Query("bom", pattern="^(bom|all)$"),
                date_from: date | None = None, date_to: date | None = None,
                sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
                page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
                db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    """Bảng giá VTBB: mỗi mã vật tư một dòng (giá cũ / mới / chênh, số sản phẩm dùng, báo giá, ngưỡng).
+    """Bảng giá VTBB: mỗi mã vật tư một dòng (giá cũ / mới / chênh, số sản phẩm dùng, báo giá).
 
-    `scope=bom` = mã thành phần của định mức ∪ mã có báo giá; `scope=all` = thêm mọi mã có trong sổ giá. `breach_only` chỉ
-    lấy mã đang dưới sàn / vượt trần. Lọc + xếp (`sort_by` trong khóa cho phép, ô trống xuống cuối) tại máy chủ rồi mới
+    `scope=bom` = mã thành phần của định mức ∪ mã có báo giá; `scope=all` = thêm mọi mã có trong sổ giá. Lọc + xếp (`sort_by` trong khóa cho phép, ô trống xuống cuối) tại máy chủ rồi mới
     phân trang; xếp theo cột danh mục (`code, name, group, unit`) thì chỉ tính giá cho các mã của trang (nhanh khi sổ giá lớn).
     Quyền `packaging_cost.read`.
     """
     _check_list_params(date_from, date_to, sort_dir)
-    items, total = build_price_list_page(db, page=page, page_size=page_size, q=q, group=group, scope=scope, breach_only=breach_only,
+    items, total = build_price_list_page(db, page=page, page_size=page_size, q=q, group=group, scope=scope,
                                          date_from=date_from, date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code",
                                          sort_dir=sort_dir, scope_cond=_scope(db, user, "read"))
     return success({"items": items, "total": total})
@@ -106,12 +105,12 @@ def price_list(q: str = Query("", max_length=100), group: str = Query("", max_le
 
 @router.get("/price-list/export")
 def price_list_export(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
-                      scope: str = Query("bom", pattern="^(bom|all)$"), breach_only: bool = False,
+                      scope: str = Query("bom", pattern="^(bom|all)$"),
                       date_from: date | None = None, date_to: date | None = None,
                       sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
                       db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
     """Xuất Excel Bảng giá VTBB theo đúng bộ lọc + thứ tự đang xem (không phân trang). Quyền `packaging_cost.export`."""
-    rows = _price_list(db, user, "export", q=q, group=group, scope=scope, breach_only=breach_only, date_from=date_from,
+    rows = _price_list(db, user, "export", q=q, group=group, scope=scope, date_from=date_from,
                        date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code", sort_dir=sort_dir)
     return xl.xlsx_download(xl.build_price_list_workbook(rows), "bang-gia-vtbb")
 

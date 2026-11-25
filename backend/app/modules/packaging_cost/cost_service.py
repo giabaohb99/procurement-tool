@@ -29,8 +29,6 @@ class PriceLike(Protocol):
     old: Decimal | None
     new: Decimal | None
     unit: str
-    floor: Decimal | None
-    ceiling: Decimal | None
 
 
 @dataclass
@@ -70,18 +68,13 @@ def fold_text(text: str | None) -> str:
     return "".join(c for c in folded if unicodedata.category(c) != "Mn").replace("đ", "d")
 
 
-def price_warnings(price: PriceLike | None, applied: Decimal | None, purchase_unit: str = "") -> list[CostWarning]:
-    """Cảnh báo cấp mã vật tư: ĐVT mua khác danh mục (5) · dưới sàn (6) · vượt trần (7)."""
+def price_warnings(price: PriceLike | None, purchase_unit: str = "") -> list[CostWarning]:
+    """Cảnh báo cấp mã vật tư: chỉ còn ĐVT mua khác danh mục (5). Cảnh báo dưới sàn (6) / vượt trần (7) đã bỏ cùng bảng ngưỡng."""
     out: list[CostWarning] = []
     if price is None:
         return out
     if purchase_unit and price.unit and fold_text(purchase_unit) != fold_text(price.unit):
         out.append(CostWarning.UNIT_MISMATCH)
-    if applied is not None:
-        if price.floor is not None and applied < price.floor:
-            out.append(CostWarning.BELOW_FLOOR)
-        if price.ceiling is not None and applied > price.ceiling:
-            out.append(CostWarning.ABOVE_CEILING)
     return out
 
 
@@ -152,5 +145,5 @@ def _product_warnings(parts, qty, prices, purchase_units):
         out.append((CostWarning.MISSING_CARTON_QTY, None))
     for part in parts:
         if part.code:
-            out += [(w, part.role) for w in price_warnings(prices.get(part.code), part.applied, purchase_units.get(part.code, ""))]
+            out += [(w, part.role) for w in price_warnings(prices.get(part.code), purchase_units.get(part.code, ""))]
     return out

@@ -1,8 +1,8 @@
 /**
  * duoc-CR-784 — BẢNG GIÁ VTBB (bám `renderPrices` của bản mẫu): mỗi mã một dòng với số lần mua, hai lần mua
- * gần nhất, báo giá mới nhất, giá cũ / mới theo luật của kế hoạch, min–max theo khoảng ngày, ngưỡng
- * sàn–trần và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ (luật §8) — tham số xếp đi kèm bộ lọc
- * nên Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá mới, đặt Ngưỡng.
+ * gần nhất, báo giá mới nhất, giá cũ / mới theo luật của kế hoạch, min–max theo khoảng ngày
+ * và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ (luật §8) — tham số xếp đi kèm bộ lọc
+ * nên Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá mới.
  */
 import { FileDown, Loader2, Plus } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
@@ -25,7 +25,6 @@ import {
   type PriceListFilters,
 } from '../components/packaging-price-list-toolbar'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
-import { PackagingPriceLimitDialog } from '../components/packaging-price-limit-dialog'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
 import { PACKAGING_QUOTE_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
@@ -34,7 +33,7 @@ import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-
 import type { PackagingPriceListParams, PackagingPriceRow } from '../types/packaging-cost-types'
 import { collectPackagingGroups } from '../utils/packaging-code-match'
 
-const EMPTY_FILTERS: PriceListFilters = { q: '', group: '', scope: 'bom', breachOnly: false }
+const EMPTY_FILTERS: PriceListFilters = { q: '', group: '', scope: 'bom' }
 
 export function PackagingPriceListPage() {
   const { can } = usePermission()
@@ -45,7 +44,6 @@ export function PackagingPriceListPage() {
   const [pageSize, setPageSize] = useState(50)
   const debouncedQ = useDebouncedValue(filters.q, 350)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)
-  const [limitRow, setLimitRow] = useState<PackagingPriceRow | null>(null)
   const [exporting, setExporting] = useState(false)
   const once = useSingleFlight()
 
@@ -55,13 +53,12 @@ export function PackagingPriceListPage() {
       q: debouncedQ.trim() || undefined,
       group: filters.group || undefined,
       scope: filters.scope,
-      breach_only: filters.breachOnly || undefined,
       date_from: range.from || undefined,
       date_to: range.to || undefined,
       //  Nhịp thứ ba của tiêu đề cột trả khóa rỗng = thôi xếp → KHÔNG gửi, để máy chủ xếp mặc định.
       ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
     }),
-    [debouncedQ, filters.group, filters.scope, filters.breachOnly, range, sortBy, sortDir],
+    [debouncedQ, filters.group, filters.scope, range, sortBy, sortDir],
   )
   const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
   const list = usePackagingPriceList({ ...filterParams, page, page_size: pageSize })
@@ -73,16 +70,13 @@ export function PackagingPriceListPage() {
   const openQuote = useCallback((row: PackagingPriceRow) => setQuoteCode(row.code), [])
   const columns = usePackagingPriceListColumns({
     canQuote: can('packaging_cost', 'create'),
-    canLimit: can('packaging_cost', 'create') || can('packaging_cost', 'write'),
     onQuote: openQuote,
-    onLimit: setLimitRow,
   })
 
   const filtersActive =
     filters.q !== '' ||
     filters.group !== '' ||
     filters.scope !== 'bom' ||
-    filters.breachOnly ||
     Boolean(range.from || range.to)
 
   const exportExcel = () =>
@@ -177,13 +171,6 @@ export function PackagingPriceListPage() {
           open
           defaultCode={quoteCode || undefined}
           onOpenChange={(open) => !open && setQuoteCode(null)}
-        />
-      )}
-      {limitRow && (
-        <PackagingPriceLimitDialog
-          code={limitRow.code}
-          name={limitRow.name}
-          onClose={() => setLimitRow(null)}
         />
       )}
     </PageContainer>

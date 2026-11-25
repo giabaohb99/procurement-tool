@@ -1,13 +1,15 @@
-"""Trạng thái giá theo mã hàng: giá cũ / mới, 2 lần mua gần nhất, báo giá, min / max, ngưỡng (duoc-CR-784, phase 04).
+"""Trạng thái giá theo mã hàng: giá cũ / mới, 2 lần mua gần nhất, báo giá, min / max (duoc-CR-784, phase 04).
 
-Hàm lõi `get_price_states` chạy TỐI ĐA 5 truy vấn (4 khi mọi mã cùng một tầng) bất kể số mã (luật "API báo cáo phải nhanh nhất"):
+Ngưỡng sàn / trần đã BỎ (migration `cleanup784`, chủ dự án chốt C6): không còn truy vấn ngưỡng, `PriceState` không có `floor` / `ceiling`.
+
+Hàm lõi `get_price_states` chạy TỐI ĐA 4 truy vấn (3 khi mọi mã cùng một tầng) bất kể số mã (luật "API báo cáo phải nhanh nhất"):
   1. sổ giá — `latest_priced_query.latest_priced_by_code` (một câu mỗi tầng: tầng đủ số gộp + tầng nhẹ cho mã không cần min / max),
      MỘT câu cho cả hai việc: số gộp theo mã (đếm MỌI dòng kể cả giá 0,
      ngày mua cuối, min / max giá trong `[date_from, date_to]` — khoảng ngày CHỈ áp cho min / max, KHÔNG áp cho cũ / mới) và
      hai lần mua có giá (`price > 0`) gần nhất → lần mua gần nhất + lần trước đó. Không dùng hàm cửa sổ (xem module đó);
   2. báo giá mới nhất theo mã — kể cả `valid_from` ở tương lai (Q2 đã chốt 20/11: báo giá sắp áp dụng tính ngay là giá mới
      để xem trước tác động);
-  3. ngưỡng sàn / trần (bỏ qua ở chế độ `new_only`);  4. `tab_product` (tên, nhóm, ĐVT).
+  3. `tab_product` (tên, nhóm, ĐVT).
 
 Thứ tự "gần nhất": ngày mua giảm, rồi `doc_id` (id ĐMH) giảm, rồi id dòng sổ giảm. Trước `srcmerge784` `doc_id` phải đứng TRƯỚC id vì dòng
 nguồn 2 (dòng ĐMH) bị xóa rồi nguồn 1 (lịch sử) chèn lại với id MỚI hơn; nay dòng ĐMH giữ id suốt đời nên lý do đó hết, nhưng thứ tự
@@ -31,7 +33,7 @@ from app.modules.product.model import Product
 
 from .latest_priced_query import LedgerRow, latest_priced_by_code
 from .model import ProductPriceLedger as L
-from .model import ProductPriceLimit, ProductPriceQuote
+from .model import ProductPriceQuote
 
 
 @dataclass
@@ -69,8 +71,6 @@ class PriceState:
     last_date: date | None = None
     min: Decimal | None = None
     max: Decimal | None = None
-    floor: Decimal | None = None
-    ceiling: Decimal | None = None
 
 
 def derive_old_new(p1: PricePoint | None, p2: PricePoint | None, quote: QuotePoint | None):
@@ -91,14 +91,14 @@ def _point(r: LedgerRow) -> PricePoint:
 def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None = None, date_from: date | None = None,
                      date_to: date | None = None, scope_cond=None, also: set[str] | None = None,
                      new_only: bool = False, stats_codes: set[str] | None = None) -> dict[str, PriceState]:
-    """`{mã: PriceState}` — tối đa 5 truy vấn.
+    """`{mã: PriceState}` — tối đa 4 truy vấn.
 
-    `codes=None` = mọi mã có dữ liệu (sổ giá / báo giá / ngưỡng). `also` = mã phải có mặt dù chưa có dữ liệu giá nào (vd mã
+    `codes=None` = mọi mã có dữ liệu (sổ giá / báo giá). `also` = mã phải có mặt dù chưa có dữ liệu giá nào (vd mã
     thành phần của định mức) — chúng vẫn có tên / nhóm / ĐVT và `old = new = None`. `as_of` (mặc định None = không lọc) loại
     dòng sổ giá có ngày SAU mốc đó khỏi cũ / mới / số lần / min / max — công tắc cho Q5 (ngày dòng cũ ở tương lai).
 
     `new_only=True` = chế độ NHẸ chỉ để lấy `new` (ô chọn mã): chỉ lần mua gần nhất, KHÔNG số gộp (đếm / min / max / ngày cuối
-    / ngưỡng không có nghĩa) và `old` luôn None — bỏ hẳn lượt quét toàn sổ nên rẻ hơn nhiều khi sổ giá lớn.
+    không có nghĩa) và `old` luôn None — bỏ hẳn lượt quét toàn sổ nên rẻ hơn nhiều khi sổ giá lớn.
 
     `stats_codes` (tập con của `codes`) = chỉ các mã này được tính SỐ GỘP (số lần mua, ngày cuối, min / max); mã còn lại chỉ có
     cũ / mới / hai lần mua (đủ để tính chi phí) — tiết kiệm lượt quét toàn bộ dòng của các mã thành phần mà màn không hiện min / max.
@@ -137,14 +137,6 @@ def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None 
     q_inner = q_inner.subquery()
     quotes = db.execute(select(q_inner).where(q_inner.c.rn == 1)).all()
 
-    # 3) ngưỡng (chế độ `new_only` không cần — ô chọn mã không hiện sàn / trần)
-    limits = []
-    if not new_only:
-        lim_q = select(ProductPriceLimit.product_code, ProductPriceLimit.floor_price, ProductPriceLimit.ceiling_price)
-        if codes is not None:
-            lim_q = lim_q.where(ProductPriceLimit.product_code.in_(codes or {""}))
-        limits = db.execute(lim_q).all()
-
     states: dict[str, PriceState] = {}
 
     def state(code: str) -> PriceState:
@@ -161,9 +153,6 @@ def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None 
             st.p2 = _point(entry.rows[1])
     for r in quotes:
         state(r.product_code).quote = QuotePoint(r.price, r.valid_from, r.supplier_code or "")
-    for code, floor, ceiling in limits:
-        st = state(code)
-        st.floor, st.ceiling = floor, ceiling
     for code in also:
         state(code)
     for st in states.values():
@@ -171,7 +160,7 @@ def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None 
         if new_only:
             st.old = None
 
-    # 4) tên / nhóm / ĐVT danh mục
+    # 3) tên / nhóm / ĐVT danh mục
     info = {c: (n or "", g or "", u or "") for c, n, g, u in
             db.query(Product.code, Product.name, Product.item_group, Product.unit).filter(Product.code.in_(set(states) or {""})).all()}
     for code, st in states.items():

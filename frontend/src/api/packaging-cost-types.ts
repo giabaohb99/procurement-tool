@@ -59,8 +59,6 @@ export interface PackagingSelectedCode {
   usage: number
   min: number | null
   max: number | null
-  floor: number | null
-  ceiling: number | null
   warnings?: PackagingWarningInput[]
 }
 
@@ -183,8 +181,6 @@ export interface PackagingPriceRow {
   usage: number
   min: number | null
   max: number | null
-  floor: number | null
-  ceiling: number | null
   warnings?: PackagingWarningInput[]
 }
 
@@ -192,7 +188,6 @@ export interface PackagingPriceListParams {
   q?: string
   group?: string
   scope?: 'bom' | 'all'
-  breach_only?: boolean
   date_from?: string
   date_to?: string
   sort_by?: string
@@ -350,11 +345,3 @@ export interface PackagingHistoryParams {
 
 export interface PackagingHhOption { code: string; name: string }
 
-/** Ngưỡng giá sàn / trần một mã (`/api/product-price-limits`). */
-export interface PackagingPriceLimit {
-  id: number
-  product_code: string
-  floor_price: number | null
-  ceiling_price: number | null
-  note: string
-}

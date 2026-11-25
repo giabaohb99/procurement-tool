@@ -8,7 +8,7 @@ Không tính lại gì: gọi đúng dịch vụ của màn Giá bao bì (`packa
 `product_price.price_state_service.get_price_states`, `latest_priced_query.latest_priced_by_code`) nên số khớp màn web.
 
 Gác như màn web: khóa `packaging_cost.read` (giá vốn bao bì, nhạy cảm — không có thì `denied`), và phạm vi PHÁP NHÂN đo trên
-sổ giá (`last_prices_controller.view_scope`) — giá chỉ tính trên các dòng sổ người hỏi được thấy. Định mức / báo giá / ngưỡng
+sổ giá (`last_prices_controller.view_scope`) — giá chỉ tính trên các dòng sổ người hỏi được thấy. Định mức / báo giá
 là danh mục dùng chung, không lọc (như màn). Mã ngoài phạm vi và mã không tồn tại trả CÙNG một hình: không có giá nào.
 Số truy vấn cố định theo lượt (không theo số mã / số sản phẩm).
 """
@@ -201,7 +201,7 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
     suppliers = _supplier_names(ctx.db, sup_codes)
     usage = _usage(ctx.db, codes)
     items = [fmt.lookup_row(states[c], usage[c], rows_of[c], suppliers,
-                            price_warnings(states[c], states[c].new, states[c].p1.unit if states[c].p1 else ""))
+                            price_warnings(states[c], states[c].p1.unit if states[c].p1 else ""))
              for c in codes]
     no_data = [c for c in codes if states[c].new is None and not states[c].name]
     out = {**base, "items": items, "total": len(items), "has_more": has_more,
@@ -300,7 +300,7 @@ PACKAGING_PRICE_IMPACT_SPEC = ToolSpec(
 PACKAGING_PRICE_LOOKUP_SPEC = ToolSpec(
     name="packaging_price_lookup",
     description=("Tra giá vật tư bao bì (VTBB) theo mã hoặc chữ tìm: giá cũ / giá mới, lần mua gần nhất (ngày, NCC, giá), "
-                 "lần trước, báo giá mới nhất, min / max, ngưỡng sàn / trần, số sản phẩm đang dùng, và n lần mua gần nhất. "
+                 "lần trước, báo giá mới nhất, min / max, số sản phẩm đang dùng, và n lần mua gần nhất. "
                  "Dùng cho câu kiểu giá mua gần nhất của nhãn NHG0713, 5 lần mua gần nhất của CPT0075, chai này giá bao "
                  "nhiêu. Giá trước VAT, VND."),
     parameters={"type": "object", "properties": {

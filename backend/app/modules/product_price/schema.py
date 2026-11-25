@@ -1,9 +1,9 @@
-"""Schema ghi / đọc của báo giá + ngưỡng giá (duoc-CR-784). Mọi `String(n)` có `max_length` đúng n (backend-input-limits)."""
+"""Schema ghi / đọc của báo giá (duoc-CR-784; ngưỡng sàn / trần đã bỏ ở phase 04). Mọi `String(n)` có `max_length` đúng n (backend-input-limits)."""
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.modules.employee.field_limits import Str50, Str500
 
@@ -65,44 +65,3 @@ class QuoteOut(BaseModel):
     source_type: int
     source_id: int
 
-
-def _check_floor_ceiling(floor, ceiling) -> None:
-    if floor is not None and ceiling is not None and floor > ceiling:
-        raise ValueError("Ngưỡng sàn không được lớn hơn ngưỡng trần")
-
-
-class LimitCreate(BaseModel):
-    product_code: Str50
-    floor_price: Optional[PriceAmount] = None
-    ceiling_price: Optional[PriceAmount] = None
-    note: Str500 = ""
-
-    _code = field_validator("product_code")(_check_code)
-
-    @model_validator(mode="after")
-    def _floor_le_ceiling(self):
-        _check_floor_ceiling(self.floor_price, self.ceiling_price)
-        return self
-
-
-class LimitUpdate(BaseModel):
-    product_code: Optional[Str50] = None
-    floor_price: Optional[PriceAmount] = None
-    ceiling_price: Optional[PriceAmount] = None
-    note: Optional[Str500] = None
-
-    _code = field_validator("product_code")(_check_code)
-
-    @model_validator(mode="after")
-    def _floor_le_ceiling(self):
-        _check_floor_ceiling(self.floor_price, self.ceiling_price)
-        return self
-
-
-class LimitOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    product_code: str
-    floor_price: Optional[Decimal] = None
-    ceiling_price: Optional[Decimal] = None
-    note: str

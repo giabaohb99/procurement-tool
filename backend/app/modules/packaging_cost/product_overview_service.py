@@ -38,7 +38,7 @@ def build_product_overview(db: Session, *, q: str = "", trend: str = "all", sort
     if not bom_rows:
         return {"items": [], "total": 0, "counts": counts}
     needed = set().union(*(bom_codes(b) for b in bom_rows))
-    states = get_price_states(db, needed, scope_cond=scope_cond, also=needed, stats_codes=set())   # chỉ cần cũ / mới + ngưỡng
+    states = get_price_states(db, needed, scope_cond=scope_cond, also=needed, stats_codes=set())   # chỉ cần cũ / mới
     units = {c: s.p1.unit for c, s in states.items() if s.p1}
     names = {c: s.name for c, s in states.items()}
 

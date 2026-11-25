@@ -49,14 +49,3 @@ export function packagingDiffTone(value: Num): string | undefined {
   if (!isNumber(value) || Math.abs(value) < 1e-6) return undefined
   return value > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
 }
-
-/**
- * Giá đang dùng có ra ngoài ngưỡng sàn / trần không. Ngưỡng `null` = không đặt, bỏ qua phía đó;
- * ngưỡng 0 vẫn là ngưỡng thật (sàn 0 thì không giá nào dưới được, trần 0 thì mọi giá dương đều vượt).
- */
-export function isOutsidePriceLimit(price: Num, floor: Num, ceiling: Num): boolean {
-  if (!isNumber(price)) return false
-  if (isNumber(floor) && price < floor) return true
-  if (isNumber(ceiling) && price > ceiling) return true
-  return false
-}

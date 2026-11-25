@@ -6,28 +6,26 @@ import TableHead, { TableCells, TableColGroup } from '../../components/TableHead
 import TableScroll from '../../components/TableScroll'
 import TableToolbar from '../../components/TableToolbar'
 import { toast } from '../../components/toast'
-import PackagingLimitModal from '../../components/packaging/PackagingLimitModal'
 import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingQuoteModal from '../../components/packaging/PackagingQuoteModal'
-import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText, RangeText } from '../../components/packaging/PackagingCells'
+import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText } from '../../components/packaging/PackagingCells'
 import { IMPORT_MODULE_PACKAGING_QUOTE, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
 import type { PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import { fmtDateStr } from '../../utils/datetime'
-import { isOutsideLimit, joinWarnings } from '../../utils/packaging-price'
+import { joinWarnings } from '../../utils/packaging-price'
 import { collectGroups, nextSort } from '../../utils/packaging-query'
 import '../../components/packaging/packaging.css'
-import { PACKAGING_LIMITS_ENABLED } from '../../utils/packaging-flags'
 
-interface Filters { q: string; group: string; scope: 'bom' | 'all'; breachOnly: boolean }
-const EMPTY: Filters = { q: '', group: '', scope: 'bom', breachOnly: false }
+interface Filters { q: string; group: string; scope: 'bom' | 'all' }
+const EMPTY: Filters = { q: '', group: '', scope: 'bom' }
 
 /**
  * Màn BẢNG GIÁ VTBB: mỗi mã một dòng với số lần mua, hai lần mua gần nhất, báo giá mới nhất, giá cũ / mới, min–max theo
- * khoảng ngày, ngưỡng sàn–trần và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ — tham số xếp đi kèm bộ lọc nên
- * Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá, đặt Ngưỡng.
+ * khoảng ngày và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ — tham số xếp đi kèm bộ lọc nên
+ * Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá.
  */
 export default function PackagingPriceList() {
   const { can } = useAuth()
@@ -39,11 +37,9 @@ export default function PackagingPriceList() {
   const [pageSize, setPageSize] = useState(50)
   const [groups, setGroups] = useState<string[]>([])
   const [quoteCode, setQuoteCode] = useState<string | null>(null)   // '' = mở "Báo giá mới" chưa khóa mã
-  const [limitRow, setLimitRow] = useState<PackagingPriceRow | null>(null)
   const [exporting, setExporting] = useState(false)
   const q = useDebouncedValue(filters.q, 350).trim()
   const canQuote = can('packaging_cost', 'create')
-  const canLimit = can('packaging_cost', 'create') || can('packaging_cost', 'write')
 
   //  Nhóm cho chip lấy từ mã đang dùng trong định mức.
   useEffect(() => { fetchCodeOptions().then((d) => setGroups(collectGroups(d))).catch(() => {}) }, [])
@@ -53,11 +49,10 @@ export default function PackagingPriceList() {
     q: q || undefined,
     group: filters.group || undefined,
     scope: filters.scope,
-    breach_only: filters.breachOnly || undefined,
     date_from: range.from || undefined,
     date_to: range.to || undefined,
     ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
-  }), [q, filters.group, filters.scope, filters.breachOnly, range, sortBy, sortDir])
+  }), [q, filters.group, filters.scope, range, sortBy, sortDir])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchPriceList(params), JSON.stringify(params))
 
@@ -92,10 +87,6 @@ export default function PackagingPriceList() {
     //  Min và Max tách hai cột, mỗi cột xếp theo đúng giá trị nó hiện.
     { key: 'min', label: 'Min', width: 100, align: 'right', sort: 'min', cell: (r) => <PriceText value={r.min} /> },
     { key: 'max', label: 'Max', width: 100, align: 'right', sort: 'max', cell: (r) => <PriceText value={r.max} /> },
-    ...(PACKAGING_LIMITS_ENABLED ? [{
-      key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right' as const, sort: 'floor',
-      cell: (r: PackagingPriceRow) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(r.new, r.floor, r.ceiling)} />,
-    }] : []),
     { key: 'usage', label: 'Số SP đang dùng', width: 100, align: 'right', sort: 'usage', cell: (r) => r.usage },
     { key: 'note', label: 'Ghi chú', width: 200, defaultHidden: true, cell: (r) => <span className="pkg-err">{joinWarnings(r.warnings)}</span> },
     {
@@ -103,11 +94,10 @@ export default function PackagingPriceList() {
       cell: (r) => (
         <span className="pkg-actions">
           {canQuote && <button className="btn outline sm" onClick={() => setQuoteCode(r.code)}>Báo giá</button>}
-          {canLimit && PACKAGING_LIMITS_ENABLED && <button className="btn ghost sm" onClick={() => setLimitRow(r)}>Ngưỡng</button>}
         </span>
       ),
     },
-  ], [canQuote, canLimit])
+  ], [canQuote])
   const table = useTableColumns('packaging-price-list', columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
   const rows = list.data?.items ?? []
@@ -159,12 +149,6 @@ export default function PackagingPriceList() {
               <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
               <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
             </div>
-            {PACKAGING_LIMITS_ENABLED && (
-              <label className="pkg-switch">
-                <input type="checkbox" checked={filters.breachOnly} onChange={(e) => patch({ breachOnly: e.target.checked })} />
-                Chỉ mã ngoài ngưỡng
-              </label>
-            )}
             {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
           </div>
         </TableToolbar>
@@ -190,9 +174,6 @@ export default function PackagingPriceList() {
 
       {quoteCode !== null && (
         <PackagingQuoteModal defaultCode={quoteCode || undefined} onClose={() => setQuoteCode(null)} onSaved={list.reload} />
-      )}
-      {limitRow && (
-        <PackagingLimitModal code={limitRow.code} name={limitRow.name} onClose={() => setLimitRow(null)} onSaved={list.reload} />
       )}
     </div>
   )

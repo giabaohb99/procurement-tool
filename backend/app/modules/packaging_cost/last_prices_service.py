@@ -84,8 +84,16 @@ def group_counts(rows: list[dict]) -> list[dict]:
 
 
 def supplier_options(rows: list[dict]) -> list[dict]:
-    """`[{code, name}]` nhà cung cấp xuất hiện trong các lần mua đang hiện — cho ô chọn nhiều, xếp theo tên."""
-    found = {p["supplier_code"]: p["supplier"] for r in rows for p in r["purchases"] if p["supplier_code"]}
+    """`[{code, name}]` nhà cung cấp xuất hiện trong các lần mua đang hiện — cho ô chọn nhiều, xếp theo tên.
+
+    Một mã NCC có thể mang nhiều tên (tên chép theo dòng Misa khác tên danh mục): chọn tên nhỏ nhất theo (chữ bỏ dấu, chữ gốc)
+    để kết quả KHÔNG phụ thuộc thứ tự dòng đầu vào (trước đây tên cuối cùng duyệt được thắng, mà dòng đi ra từ một tập mã)."""
+    labels: dict[str, set[str]] = {}
+    for r in rows:
+        for p in r["purchases"]:
+            if p["supplier_code"]:
+                labels.setdefault(p["supplier_code"], set()).add(p["supplier"])
+    found = {c: min(names, key=lambda name: (fold_text(name), name)) for c, names in labels.items()}
     return [{"code": c, "name": found[c]} for c in sorted(found, key=lambda c: (fold_text(found[c]), c))]
 
 
@@ -156,7 +164,7 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
     supplier_codes = {p["supplier_code"] for pts in points.values() for p in pts if p["supplier_code"]}
     names = dict(db.query(Supplier.code, Supplier.name).filter(Supplier.code.in_(supplier_codes or {""})).all())
 
-    rows = [_row(c, info.get(c, ("", "", "")), counts.get(c, 0), points.get(c, []), names, n) for c in all_codes]
+    rows = [_row(c, info.get(c, ("", "", "")), counts.get(c, 0), points.get(c, []), names, n) for c in sorted(all_codes)]
     if only_priced:
         rows = [r for r in rows if r["purchase_count"] > 0]
     chips, supplier_list = group_counts(rows), supplier_options(rows)

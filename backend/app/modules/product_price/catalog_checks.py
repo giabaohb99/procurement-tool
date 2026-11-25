@@ -1,4 +1,4 @@
-"""Chốt chặn dữ liệu chung của báo giá / ngưỡng giá / định mức bao bì (duoc-CR-784): mã phải có trong danh mục.
+"""Chốt chặn dữ liệu chung của báo giá / định mức bao bì (duoc-CR-784): mã phải có trong danh mục.
 
 Trả 422 kèm câu tiếng Việt (không phải 500 / 400 chung chung). Mỗi hàm gom MỘT truy vấn cho cả danh sách mã.
 """

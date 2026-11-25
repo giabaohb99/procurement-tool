@@ -155,7 +155,7 @@ ENTITIES = [
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
     "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
-    # Giá bao bì (duoc-CR-784): màn Tác động giá + Bảng giá VTBB + Báo giá + Ngưỡng giá + Định mức bao bì. MỘT khóa cho cả
+    # Giá bao bì (duoc-CR-784): màn Tác động giá + Bảng giá VTBB + Báo giá + Định mức bao bì. MỘT khóa cho cả
     # cụm vì cùng một nhóm người dùng; chứa GIÁ VỐN bao bì nên KHÔNG dùng lại `product.read` / `purchase_history` (ai xem
     # sản phẩm cũng xem được giá mua). Phạm vi theo pháp nhân đo trên SỔ GIÁ (`tab_product_price_ledger.company_id`).
     "packaging_cost",

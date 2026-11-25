@@ -6,7 +6,7 @@ from app.core.packaging_price_codes import LedgerLineStage, PackagingRole, Price
 from app.modules.packaging_cost.bom_parts_service import codes_from_fields, set_bom_codes
 from app.modules.packaging_cost.model import PackagingBom, PackagingBomPart, role_field
 from app.modules.product.model import Product
-from app.modules.product_price.model import ProductPriceLedger, ProductPriceLimit, ProductPriceQuote
+from app.modules.product_price.model import ProductPriceLedger, ProductPriceQuote
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 
 
@@ -59,10 +59,10 @@ def ledger_rows(db, **flt):
 
 
 def add_ledger(db, code, price, on, *, source_type=PriceSourceType.PURCHASE_HISTORY, source_id=None, supplier="NCC01",
-               company_id=1, unit="Cái", qty=100, doc_id=0, warehouse=None, amount=None, line_stage=None):
+               company_id=1, unit="Cái", qty=100, doc_id=0, warehouse=None, amount=None, line_stage=None, vat="theo-nguon"):
     """Dòng sổ giá dựng thẳng (bài kiểm tầng tính giá không cần đi qua ĐMH). `amount` = thành tiền (None = chưa có).
 
-    `line_stage` mặc định theo nguồn: dòng ĐMH (`PO_LINE`) = đang mở, còn lại (lịch sử cũ, Misa) = đã chốt. Lần mua ĐÃ HOÀN THÀNH của hệ
+    `vat` mặc định 8, riêng dòng Misa là NULL (Misa không có VAT, phase 04). `line_stage` mặc định theo nguồn: dòng ĐMH (`PO_LINE`) = đang mở, còn lại (lịch sử cũ, Misa) = đã chốt. Lần mua ĐÃ HOÀN THÀNH của hệ
     thống = `source_type=PO_LINE, line_stage=LedgerLineStage.FINAL` (từ `srcmerge784` không còn là nguồn 1).
     """
     n = db.query(ProductPriceLedger).count() + 1
@@ -70,7 +70,8 @@ def add_ledger(db, code, price, on, *, source_type=PriceSourceType.PURCHASE_HIST
         LedgerLineStage.OPEN if int(source_type) == PriceSourceType.PO_LINE else LedgerLineStage.FINAL)
     row = ProductPriceLedger(source_type=int(source_type), source_id=source_id or (9000 + n), line_stage=int(stage), doc_id=doc_id,
                              product_code=code, supplier_code=supplier, company_id=company_id,
-                             price_date=date.fromisoformat(on), price=Decimal(str(price)), vat=Decimal(8),
+                             price_date=date.fromisoformat(on), price=Decimal(str(price)),
+                             vat=(None if int(source_type) == PriceSourceType.MISA else Decimal(8)) if vat == "theo-nguon" else vat,
                              qty=Decimal(qty), unit=unit, warehouse_name=warehouse,
                              amount=None if amount is None else Decimal(str(amount)))
     db.add(row)
@@ -84,13 +85,6 @@ def add_quote(db, code, price, valid_from, supplier=""):
     db.add(q)
     db.commit()
     return q
-
-
-def add_limit(db, code, floor=None, ceiling=None):
-    row = ProductPriceLimit(product_code=code, floor_price=floor, ceiling_price=ceiling, created_by=1, updated_by=1)
-    db.add(row)
-    db.commit()
-    return row
 
 
 def add_products(db, *codes_names_units):

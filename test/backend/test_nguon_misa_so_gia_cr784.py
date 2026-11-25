@@ -76,7 +76,7 @@ def test_dung_dong_so_gia_tu_dong_misa():
     assert [r["source_id"] for r in rows] == [1, 2, 3, 4] and {r["source_type"] for r in rows} == {MISA}
     first = rows[0]
     assert first["supplier_name"] == "CÔNG TY A" and first["supplier_code"] == "NCC0019"       # bỏ đuôi " - VTBB"
-    assert (first["unit"], first["company_id"], first["doc_id"], first["vat"]) == ("Cái", 7, 0, Decimal("0"))
+    assert (first["unit"], first["company_id"], first["doc_id"], first["vat"]) == ("Cái", 7, 0, None)      # Misa không có VAT: NULL
     assert rows[2]["price"] == 0 and stats["zero_price"] == 1                                  # None -> 0, vẫn nạp để đếm lần mua
     assert rows[3]["price"] == Decimal("4000.5") and rows[3]["supplier_name"] == "CÔNG TY A"
     assert stats["max_date"] == date(2026, 6, 30) and stats["min_date"] == date(2025, 9, 20)

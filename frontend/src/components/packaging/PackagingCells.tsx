@@ -37,18 +37,6 @@ export function PctText({ value }: { value: Num }) {
   return <span className="pkg-num" style={{ color: diffColor(value) }}>{t}</span>
 }
 
-/** Hai số "a – b" trong một ô (sàn–trần); cả hai trống thì gạch; `danger` tô đỏ khi giá ra ngoài ngưỡng. */
-export function RangeText({ low, high, danger }: { low: Num; high: Num; danger?: boolean }) {
-  const a = priceText(low)
-  const b = priceText(high)
-  if (!a && !b) return <Dash />
-  return (
-    <span className="pkg-num" style={danger ? { color: PKG_DOWN_COLOR, fontWeight: 700 } : undefined}>
-      {a || '…'} – {b || '…'}
-    </span>
-  )
-}
-
 /**
  * Ô MÃ bấm được: mã VTBB mở Lịch sử mua hàng của đúng mã đó (`?codes=`); `product` = mã HÀNG HÓA, mở lịch sử ở chế độ
  * "Theo mã sản phẩm" (`?hh=`, mọi mã thành phần của định mức).

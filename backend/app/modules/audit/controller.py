@@ -28,11 +28,10 @@ router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 #  `help_article` (không có khóa `faq` trong ENTITIES). Thiếu dòng này thì màn
 #  "Lịch sử" của Help Center mất sạch phần FAQ sau khi gác.
 #  duoc-CR-717: Chính sách nghỉ phép và Ngày cấm nghỉ ghi nhật ký dưới tên riêng nhưng gác bằng `leave_type`.
-#  duoc-CR-784: định mức bao bì / báo giá / ngưỡng giá ghi nhật ký dưới tên riêng (`audit_entity` của `make_crud_router`) nhưng gác
+#  duoc-CR-784: định mức bao bì / báo giá ghi nhật ký dưới tên riêng (`audit_entity` của `make_crud_router`) nhưng gác
 #  bằng khóa `packaging_cost`.
 PERMISSION_KEY_ALIAS = {"faq": "help_article", "leave_policy": "leave_type", "leave_block_period": "leave_type",
-                        "packaging_bom": "packaging_cost", "packaging_cost_quote": "packaging_cost",
-                        "packaging_cost_limit": "packaging_cost"}
+                        "packaging_bom": "packaging_cost", "packaging_cost_quote": "packaging_cost"}
 
 #  ⚠️ BẢNG NHÃN TỪNG NẰM Ở ĐÂY (khoảng 50 dòng) — đã dời sang
 #  `core/action_catalog.py` (bao-CR-358 / NT-4). Ở đó mỗi mã khai một dòng gồm

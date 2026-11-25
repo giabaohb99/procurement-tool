@@ -4,7 +4,6 @@ import {
   formatPackagingDiff,
   formatPackagingPercent,
   formatPackagingPrice,
-  isOutsidePriceLimit,
   packagingDiffTone,
 } from './packaging-price-format'
 
@@ -42,23 +41,5 @@ describe('packagingDiffTone', () => {
     expect(packagingDiffTone(1e-9)).toBeUndefined()
     expect(packagingDiffTone(-1e-9)).toBeUndefined()
     expect(packagingDiffTone(0.01)).toContain('emerald')
-  })
-})
-
-describe('isOutsidePriceLimit', () => {
-  it('flags prices below the floor or above the ceiling', () => {
-    expect(isOutsidePriceLimit(90, 100, null)).toBe(true)
-    expect(isOutsidePriceLimit(130, null, 120)).toBe(true)
-    expect(isOutsidePriceLimit(110, 100, 120)).toBe(false)
-  })
-
-  it('treats the limits themselves as inside', () => {
-    expect(isOutsidePriceLimit(100, 100, 120)).toBe(false)
-    expect(isOutsidePriceLimit(120, 100, 120)).toBe(false)
-  })
-
-  it('treats a 0 ceiling as a real limit, and a missing price as never outside', () => {
-    expect(isOutsidePriceLimit(1, null, 0)).toBe(true)
-    expect(isOutsidePriceLimit(null, 100, 120)).toBe(false)
   })
 })

@@ -163,7 +163,7 @@
 /* Lịch sử mua hàng: dòng đơn giá 0 (không có giá) mờ đi, không làm nhiễu cột */
 tbody tr.pkg-zero td { color: var(--muted); }
 
-/* Nút thao tác trên dòng bảng (Báo giá / Ngưỡng): một dòng, không xuống chữ */
+/* Nút thao tác trên dòng bảng (Báo giá): một dòng, không xuống chữ */
 .pkg-actions { display: inline-flex; gap: 4px; }
 .pkg-actions .btn { white-space: nowrap; }
 

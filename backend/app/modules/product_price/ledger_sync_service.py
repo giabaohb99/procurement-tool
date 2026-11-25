@@ -156,7 +156,7 @@ def _apply(row: ProductPriceLedger, values: dict) -> None:
     """Ghi `values` lên một dòng sổ ĐÃ CÓ (id giữ nguyên) và đóng dấu giờ đồng bộ."""
     for k, v in values.items():
         setattr(row, k, v)
-    row.synced_at = datetime.utcnow()
+    row.synced_at = func.now()
 
 
 def record_history_row(db: Session, ph: PurchaseHistory, exchange_rate=1) -> bool:
@@ -246,7 +246,7 @@ def _refresh_history_warehouse(db: Session, wh_names: dict[str, str]) -> int:
             wanted = warehouse_label(history_warehouse_code(ph), wh_names)
             if row.warehouse_name != wanted:
                 row.warehouse_name = wanted
-                row.synced_at = datetime.utcnow()
+                row.synced_at = func.now()
                 count += 1
         db.flush()
 
@@ -271,7 +271,7 @@ def _refresh_history_amount(db: Session) -> int:
             wanted = history_amount(ph, rate) if row.price > 0 else None
             if wanted is not None:
                 row.amount = wanted
-                row.synced_at = datetime.utcnow()
+                row.synced_at = func.now()
                 count += 1
         db.flush()
 
@@ -298,7 +298,7 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
     reopen_ids = [r[0] for r in db.query(L.id).filter(
         L.source_type == SRC_PO, L.line_stage == FINAL, ~select(PH.id).where(PH.po_item_id == L.source_id).exists()).all()]
     for i in range(0, len(reopen_ids), BATCH):
-        db.execute(update(L).where(L.id.in_(reopen_ids[i:i + BATCH])).values(line_stage=OPEN, amount=None))
+        db.execute(update(L).where(L.id.in_(reopen_ids[i:i + BATCH])).values(line_stage=OPEN, amount=None, synced_at=func.now()))
     stats["reopened"] = len(reopen_ids)
 
     # 3) dòng lịch sử chưa có dòng sổ (chèn `FINAL`) hoặc dòng sổ còn đang mở (nâng lên `FINAL` bằng số chụp). Danh mục kho nạp MỘT

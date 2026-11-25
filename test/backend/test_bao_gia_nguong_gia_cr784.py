@@ -1,18 +1,20 @@
-"""duoc-CR-784 phase 03 — CRUD báo giá + ngưỡng giá: schema (trần độ dài, giá âm, ngày), chốt danh mục, quyền 403/422/400."""
+"""duoc-CR-784 phase 03 — CRUD báo giá: schema (trần độ dài, giá âm, ngày), chốt danh mục, quyền 403/422/400. Phase 04 BỎ phần ngưỡng
+sàn / trần (đường `/api/product-price-limits` phải là 404)."""
 from datetime import date
 from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
 
-from app.modules.product_price.model import ProductPriceLimit, ProductPriceQuote
-from app.modules.product_price.schema import LimitCreate, LimitUpdate, QuoteCreate, QuoteUpdate
+from app.main import app
+from app.modules.product_price.model import ProductPriceQuote
+from app.modules.product_price.schema import QuoteCreate, QuoteUpdate
 from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
-from so_gia_factory_cr784 import add_limit, add_products, add_quote
+from so_gia_factory_cr784 import add_products, add_quote
 
-QUOTES, LIMITS = "/api/product-price-quotes", "/api/product-price-limits"
+QUOTES, LIMITS = "/api/product-price-quotes", "/api/product-price-limits"     # LIMITS: đã bỏ, chỉ để khẳng định 404
 
 
 @pytest.fixture
@@ -38,12 +40,7 @@ def test_schema_bao_gia_chan_gia_tri_vo_ly(bad):
         QuoteCreate(**{"product_code": "CPT0075", "price": 100, "valid_from": "2026-11-01", **bad})
 
 
-def test_schema_nguong_san_lon_hon_tran_bi_chan_ca_tao_lan_sua():
-    with pytest.raises(ValidationError):
-        LimitCreate(product_code="CPT0075", floor_price=10, ceiling_price=5)
-    with pytest.raises(ValidationError):
-        LimitUpdate(floor_price=10, ceiling_price=5)
-    assert LimitCreate(product_code="CPT0075", floor_price=5, ceiling_price=5).floor_price == Decimal(5)
+def test_schema_bao_gia_cap_nhat_rong_khong_ghi_gi():
     assert QuoteUpdate().model_dump(exclude_unset=True) == {}
 
 
@@ -51,7 +48,7 @@ def test_schema_nguong_san_lon_hon_tran_bi_chan_ca_tao_lan_sua():
 def test_khong_co_quyen_la_403(db, seed, client_as):  # noqa: F811
     client = client_as(db.get(User, seed.u_req_id))
     assert client.get(QUOTES).status_code == 403
-    assert client.post(LIMITS, json={"product_code": "CPT0075"}).status_code == 403
+    assert client.post(QUOTES, json={"product_code": "CPT0075"}).status_code == 403
 
 
 def test_chi_co_quyen_xem_thi_khong_tao_khong_xoa(db, seed, cap_quyen, client_as):  # noqa: F811
@@ -109,26 +106,22 @@ def test_xoa_bao_gia_va_404(api, db):
     assert api.delete(f"{QUOTES}/{q.id}").status_code == 404
 
 
-# ── Ngưỡng giá ──────────────────────────────────────────────────────────────────
-def test_tao_nguong_va_trung_ma_la_400(api, db):
-    ok = api.post(LIMITS, json={"product_code": "CPT0075", "floor_price": 900, "ceiling_price": 1200})
-    assert ok.status_code == 201 and ok.json()["data"]["product_name"] == "Chai 1L"
-    dup = api.post(LIMITS, json={"product_code": "CPT0075", "floor_price": 1})
-    assert dup.status_code == 400
-    assert db.query(ProductPriceLimit).count() == 1
+# ── Ngưỡng giá đã bỏ (phase 04, C6) ─────────────────────────────────────────────
+def test_duong_nguong_gia_khong_con_la_404_ca_khi_co_du_quyen(api):
+    """Router `/api/product-price-limits` đã gỡ: mọi phương thức, kể cả đường chi tiết, phải 404 (không phải 403 / 405)."""
+    assert api.get(LIMITS).status_code == 404
+    assert api.post(LIMITS, json={"product_code": "CPT0075", "floor_price": 1}).status_code == 404
+    assert api.get(f"{LIMITS}/1").status_code == 404
+    assert api.patch(f"{LIMITS}/1", json={"floor_price": 1}).status_code == 404
+    assert api.delete(f"{LIMITS}/1").status_code == 404
+    assert not [r.path for r in app.routes if "price-limit" in getattr(r, "path", "")]
 
 
-def test_nguong_san_lon_hon_tran_la_422_ke_ca_khi_sua_lech_mot_ben(api, db):
-    assert api.post(LIMITS, json={"product_code": "CPT0075", "floor_price": 10, "ceiling_price": 5}).status_code == 422
-    lim = add_limit(db, "CPT0075", floor=100, ceiling=200)
-    # chỉ gửi tran=50 → so với sàn đang lưu 100 → vẫn phải chặn
-    res = api.patch(f"{LIMITS}/{lim.id}", json={"ceiling_price": 50})
-    assert res.status_code == 422 and "sàn" in res.text
-    assert api.patch(f"{LIMITS}/{lim.id}", json={"floor_price": None}).status_code == 200   # bỏ sàn được
-
-
-def test_nguong_ma_khong_co_trong_danh_muc_la_422(api):
-    assert api.post(LIMITS, json={"product_code": "KHONG_CO"}).status_code == 422
+def test_model_va_schema_nguong_khong_con():
+    import app.modules.product_price.model as model
+    import app.modules.product_price.schema as schema
+    assert not hasattr(model, "ProductPriceLimit")
+    assert not any(n.startswith("Limit") for n in dir(schema))
 
 
 def test_danh_sach_loc_theo_ma(api, db):
@@ -148,11 +141,12 @@ def test_impact_request_cat_khoang_trang_khoa_gia_gia_dinh_va_chan_khoa_la_va_qu
         ImpactRequest(codes=[f"C{i}" for i in range(500)], assumed_prices={f"C{i}": 1 for i in range(501)})
 
 
-def test_ten_entity_nhat_ky_cua_ba_danh_muc_quy_ve_khoa_packaging_cost():
-    """`audit_entity` của ba CRUD phải có trong PERMISSION_KEY_ALIAS, kẻo màn Nhật ký hỏi quyền theo tên không có trong bảng quyền."""
+def test_ten_entity_nhat_ky_cua_hai_danh_muc_quy_ve_khoa_packaging_cost():
+    """`audit_entity` của hai CRUD (định mức, báo giá) phải có trong PERMISSION_KEY_ALIAS, kẻo màn Nhật ký hỏi quyền theo tên không có trong bảng quyền."""
     from app.modules.audit.controller import PERMISSION_KEY_ALIAS
     from app.modules.packaging_cost.bom_controller import router as bom_router
-    from app.modules.product_price.quote_limit_controller import limit_router, quote_router
-    for name in ("packaging_bom", "packaging_cost_quote", "packaging_cost_limit"):
+    from app.modules.product_price.quote_limit_controller import quote_router
+    for name in ("packaging_bom", "packaging_cost_quote"):
         assert PERMISSION_KEY_ALIAS[name] == "packaging_cost"
-    assert bom_router and quote_router and limit_router
+    assert "packaging_cost_limit" not in PERMISSION_KEY_ALIAS
+    assert bom_router and quote_router

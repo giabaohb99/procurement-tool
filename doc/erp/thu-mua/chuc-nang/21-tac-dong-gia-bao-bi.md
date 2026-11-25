@@ -41,7 +41,7 @@ Trước đó cùng một lần mua nằm ở hai dòng (nguồn 2 khi đang m�
 |---|---|---|---|
 | 1 — Lịch sử mua hàng CŨ (nạp Excel) | `tab_purchase_history.id`, chỉ dòng không có ĐMH | mỗi dòng lịch sử cũ (`po_item_id` trống) | chỉ chèn, luôn *Đã chốt* (dòng lịch sử bị xóa khi nạp lại dữ liệu cũ thì dòng sổ xóa theo) |
 | 2 — Dòng đơn mua hàng của ERP (màn ghi *ĐMH đang mở* khi `line_stage` = 1) | `tab_po_item.id` | ĐMH đã duyệt trở đi, chưa xóa mềm; dòng chưa hủy, có mã hàng | *Đang mở*: sửa giá / SL / VAT / NCC / ngày / tỷ giá thì cập nhật đúng dòng, dòng bị hủy / đơn bị hủy duyệt thì xóa. Hoàn thành dòng ĐMH: cập nhật CHÍNH dòng đó bằng số chụp của lịch sử mua (giá, SL, VAT, ĐVT, kho, thành tiền) rồi *Đã chốt* — dòng đã chốt không bị đồng bộ đụng nữa, kể cả khi ĐMH sau đó bị hủy / xóa mềm |
-| 3 — Sổ Misa (nạp TẠM) — luôn *Đã chốt* | `scripts/import_misa_price_ledger.py` nạp từ báo cáo HTML của chủ dự án (sổ chi tiết mua hàng Misa 2025 – 06/2026), mỗi dòng Misa một dòng sổ (`source_id` = id dòng Misa), kèm tên NCC chép theo dòng (`supplier_name`) vì mã NCC Misa không nằm trong danh mục nhà cung cấp | chạy lại thì cập nhật đúng dòng (idempotent); `--purge` xóa hết dòng nguồn 3 và mốc → trả hành vi cũ |
+| 3 — Sổ Misa (nạp TẠM) — luôn *Đã chốt* | `scripts/import_misa_price_ledger.py` nạp từ báo cáo HTML của chủ dự án (sổ chi tiết mua hàng Misa 2025 – 06/2026), mỗi dòng Misa một dòng sổ (`source_id` = id dòng Misa), kèm tên NCC chép theo dòng (`supplier_name`) vì mã NCC Misa không nằm trong danh mục nhà cung cấp; **`vat` = NULL** (sổ chi tiết Misa không có VAT: NULL là *không biết*, không phải 0%, giao diện / Excel hiện ô trống — migration `cleanup784`, chủ dự án chốt C7 25/11/2026) | chạy lại thì cập nhật đúng dòng (idempotent); `--purge` xóa hết dòng nguồn 3 và mốc → trả hành vi cũ. **Script TỪ CHỐI chạy** (câu tiếng Việt, thoát mã 2) khi sổ đã có dòng Misa mà module 6 (nạp xlsx) từng ghi thật — script xóa mọi dòng Misa không có trong tệp còn module 6 đánh `source_id = max + 1`, trộn là mất dòng; muốn nạp lại từ HTML thì `--purge --apply` trước |
 
 Dòng đơn giá 0 vẫn ghi (đếm số lần mua), tầng tính giá bỏ qua. Báo giá **không** vào sổ giá.
 
@@ -102,7 +102,7 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
 | 3 | Thiếu giá thành phần (kèm vai trò) | có mã nhưng chưa có giá | phần đó tính 0 |
 | 4 | Thiếu quy cách thùng | có nhãn thùng / thùng mà quy cách 0 | phần thùng tính 0 |
 | 5 | ĐVT mua khác ĐVT danh mục | ĐVT lần mua gần nhất khác ĐVT danh mục (so sau bỏ dấu, chữ thường) | không, chỉ báo |
-| 6, 7 | Dưới ngưỡng sàn / Vượt ngưỡng trần | — | **đang tắt**, xem mục 8 |
+| 6, 7 | *(đã bỏ 25/11/2026 cùng bảng ngưỡng sàn / trần — số đã cấp, KHÔNG tái dùng)* | — | không còn phát ra; xem mục 8 |
 
 ## 3. Tổng hợp theo sản phẩm
 
@@ -219,7 +219,7 @@ Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging
 |---|---|---|---|
 | Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_cost.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
 | Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục. Nguồn báo giá: thêm mới và đè giá / VAT ghi (Nhập Excel, id đợt), đè chỉ ghi chú thì giữ nguồn |
-| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ |
+| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ. Dòng Misa ghi `vat = NULL`; `source_id` = số thứ tự trong sổ (`max + 1`), KHÔNG trỏ chứng từ nào; sổ giá chưa lưu dòng Misa thuộc lô nhập nào (làm ở phase 07 — xóa theo lô) |
 
 Mọi nút nhập còn đòi `import.create` + `import.read`. Tệp mẫu: `GET /api/imports/template?module=4|5|6` (sheet dữ liệu chỉ có
 tiêu đề + sheet *Hướng dẫn*; ví dụ đặt dưới dòng 6 để bộ đọc Misa không nhận nhầm). Mã: `packaging_cost/quote_import.py`,
@@ -257,9 +257,11 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
   được thấy. Định mức, báo giá là danh mục dùng chung (`scoped=False`).
 - Giới hạn: một chai một bộ chai / nắp / nhãn (chưa có số lượng thành phần); mỗi mã HH một định mức, chưa có phiên bản (Q7
   treo); đơn giá hiểu là giá một cái theo ĐVT danh mục (Q3 treo); giá từ lịch sử mua của ERP; riêng giai đoạn tới mốc cắt (30/06/2026) lấy TẠM từ sổ Misa nạp bằng script (xem mục 1, Q1).
-- **Phạm vi chưa làm / cố ý ẩn:** ngưỡng giá sàn / trần (`/api/product-price-limits`, cảnh báo 6 / 7) có backend nhưng giao diện
-  tắt bằng công tắc `PACKAGING_LIMITS_ENABLED = false` ở cả hai bản (người chủ chốt 21/11 "tạm thời chưa xài") — bài HDSD
-  không nhắc; bật lại thì bổ sung mục 4 và bài Bảng giá. Ba công cụ AI cho Trợ lý / bot / cổng MCP
+- **Đã bỏ hẳn:** ngưỡng giá sàn / trần. Từ 21/11 chỉ ẩn ở giao diện (công tắc `PACKAGING_LIMITS_ENABLED = false`); 25/11/2026 chủ dự án
+  chốt xóa hẳn (C6, phase 04, migration `cleanup784`): bảng `tab_product_price_limit`, đường `/api/product-price-limits`, cảnh báo 6 / 7,
+  tham số lọc `breach_only` (gửi lên thì bị bỏ qua), cột Excel *Ngưỡng sàn* / *Ngưỡng trần* của Bảng giá VTBB, trường
+  `floor` / `ceiling` ở Bảng giá, mã đã chọn và công cụ Trợ lý / MCP (`floor_price` / `ceiling_price`), nút / cột / ô lọc ở cả hai
+  giao diện. Min / Max tự tính từ sổ giá vẫn giữ nguyên. Cần lại thì làm lại (ước 3 – 4 giờ), đừng dựng lại bảng cũ. Ba công cụ AI cho Trợ lý / bot / cổng MCP
   (`packaging_price_impact`, `packaging_price_lookup`, `packaging_product_cost`, `assistant/tools/packaging_cost_tool.py`,
   bài kiểm `test_cong_cu_gia_bao_bi_cr784.py`) đang trong cùng đợt mã của duoc-CR-784: cẩm nang dặn trợ lý dùng công cụ nếu
   có trong danh sách, không thì chỉ màn Tác động giá bao bì. Bài HDSD chưa có mục hỏi Trợ lý về giá bao bì.

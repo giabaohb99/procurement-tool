@@ -17,7 +17,7 @@ import type {
 const ROOT = 'procurement'
 
 export const packagingCostKeys = {
-  /** Gốc chung — dọn sau khi ghi báo giá / ngưỡng / định mức (giá cũ-mới đổi theo). */
+  /** Gốc chung — dọn sau khi ghi báo giá / định mức (giá cũ-mới đổi theo). */
   all: [ROOT, 'packagingCost'] as const,
   codeOptions: () => [ROOT, 'packagingCost', 'codeOptions'] as const,
   impact: (body: PackagingImpactRequest) => [ROOT, 'packagingCost', 'impact', body] as const,
@@ -34,5 +34,4 @@ export const packagingCostKeys = {
   impactPrint: (body: PackagingImpactRequest) =>
     [ROOT, 'packagingCost', 'impactPrint', body] as const,
   hhOptions: () => [ROOT, 'packagingCost', 'hhOptions'] as const,
-  limit: (code: string) => [ROOT, 'packagingCost', 'limit', code] as const,
 }

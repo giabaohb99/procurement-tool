@@ -1,6 +1,7 @@
-"""CRUD báo giá + ngưỡng giá của màn Giá bao bì (duoc-CR-784, phase 03).
+"""CRUD báo giá của màn Giá bao bì (duoc-CR-784, phase 03). Ngưỡng sàn / trần đã bỏ (phase 04, migration `cleanup784`) — tên tệp giữ
+nguyên để khỏi đổi đường dẫn; router ngưỡng `/api/product-price-limits` không còn.
 
-Cả hai gác khóa `packaging_cost` bằng quyền HÀNH ĐỘNG (read / create / write / delete). Hai bảng là danh mục dùng chung —
+Gác khóa `packaging_cost` bằng quyền HÀNH ĐỘNG (read / create / write / delete). Báo giá là danh mục dùng chung —
 không có cột pháp nhân — nên dựng bằng `make_crud_router(scoped=False)`; phạm vi theo pháp nhân của khóa này đo trên SỔ
 GIÁ (`ProductPriceLedger.company_id`), áp ở `packaging_cost/impact_controller.py`.
 """
@@ -10,8 +11,8 @@ from app.core.crud import make_crud_router
 from app.core.packaging_price_codes import QUOTE_SOURCE_TYPE_LABELS, QuoteSourceType
 
 from . import catalog_checks as chk
-from .model import ProductPriceLimit, ProductPriceQuote
-from .schema import LimitCreate, LimitOut, LimitUpdate, QuoteCreate, QuoteOut, QuoteUpdate
+from .model import ProductPriceQuote
+from .schema import QuoteCreate, QuoteOut, QuoteUpdate
 
 ENTITY = "packaging_cost"
 TAG = "packaging-cost"
@@ -84,31 +85,3 @@ quote_router = _retag(make_crud_router(
     scoped=False, enrich_out=_quote_enrich, audit_entity="packaging_cost_quote",
     conflict_message=QUOTE_DUPLICATE_MESSAGE, conflict_status=409))
 
-
-# ── Ngưỡng giá ──────────────────────────────────────────────────────────────────
-def _limit_before_create(db, data) -> None:
-    chk.ensure_products_exist(db, [data.product_code])
-
-
-def _limit_before_update(db, obj, values) -> None:
-    chk.reject_null(values, ("product_code", "note"))
-    if "product_code" in values:
-        chk.ensure_products_exist(db, [values["product_code"]])
-    floor = values.get("floor_price", obj.floor_price)
-    ceiling = values.get("ceiling_price", obj.ceiling_price)
-    if floor is not None and ceiling is not None and floor > ceiling:
-        from fastapi import HTTPException
-        raise HTTPException(422, "Ngưỡng sàn không được lớn hơn ngưỡng trần")
-
-
-def _limit_enrich(db, rows: list[dict]) -> None:
-    info = chk.product_info(db, [r["product_code"] for r in rows])
-    for r in rows:
-        r["product_name"], r["product_unit"] = info.get(r["product_code"], ("", ""))
-
-
-limit_router = _retag(make_crud_router(
-    "/api/product-price-limits", ENTITY, ProductPriceLimit, LimitCreate, LimitUpdate, LimitOut,
-    filterable=["product_code", "note"], unique_field="product_code",
-    before_create=_limit_before_create, before_update=_limit_before_update,
-    scoped=False, enrich_out=_limit_enrich, audit_entity="packaging_cost_limit"))

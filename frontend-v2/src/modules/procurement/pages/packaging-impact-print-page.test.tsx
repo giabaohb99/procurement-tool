@@ -22,11 +22,11 @@ let failWith: Error | null = null
 const selected: PackagingSelectedCode[] = [
   {
     code: 'CPT0105', name: 'Chai 1L', group: 'Chai', unit: 'Cái', old: 1000, new: 1100, assumed: 1250,
-    applied: 1250, diff: 250, pct: 0.25, usage: 2, min: 900, max: 1300, floor: null, ceiling: null,
+    applied: 1250, diff: 250, pct: 0.25, usage: 2, min: 900, max: 1300,
   },
   {
     code: 'NAP0085', name: 'Nắp 28mm', group: 'Nắp', unit: 'Cái', old: 300, new: 300, assumed: null,
-    applied: 300, diff: 0, pct: 0, usage: 1, min: 280, max: 320, floor: null, ceiling: null,
+    applied: 300, diff: 0, pct: 0, usage: 1, min: 280, max: 320,
   },
 ]
 

@@ -256,8 +256,6 @@ export const PACKAGING_COST_WARNING: readonly StatusOption[] = [
   {"value": "3", "label": "Thiếu giá thành phần", "sort_order": 3, "is_terminal": false, "is_exception": false},
   {"value": "4", "label": "Thiếu quy cách thùng", "sort_order": 4, "is_terminal": false, "is_exception": false},
   {"value": "5", "label": "ĐVT mua khác ĐVT danh mục", "sort_order": 5, "is_terminal": false, "is_exception": false},
-  {"value": "6", "label": "Dưới ngưỡng sàn", "sort_order": 6, "is_terminal": false, "is_exception": false},
-  {"value": "7", "label": "Vượt ngưỡng trần", "sort_order": 7, "is_terminal": false, "is_exception": false},
 ]
 
 /** Vai trò thành phần bao bì */
@@ -539,8 +537,6 @@ export const PACKAGING_COST_WARNING_CODE = {
   MISSING_COMPONENT_PRICE: 3,
   MISSING_CARTON_QTY: 4,
   UNIT_MISMATCH: 5,
-  BELOW_FLOOR: 6,
-  ABOVE_CEILING: 7,
 } as const
 
 /** Vai trò thành phần bao bì — khóa → mã gửi lên backend. */

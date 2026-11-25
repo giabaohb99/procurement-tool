@@ -46,12 +46,6 @@ export function diffColor(v: Num): string | undefined {
   return v > 0 ? PKG_UP_COLOR : PKG_DOWN_COLOR
 }
 
-/** Giá có ra ngoài ngưỡng sàn / trần không (ngưỡng `null` = không đặt phía đó; 0 vẫn là ngưỡng thật). */
-export function isOutsideLimit(price: Num, floor: Num, ceiling: Num): boolean {
-  if (!isNum(price)) return false
-  return (isNum(floor) && price < floor) || (isNum(ceiling) && price > ceiling)
-}
-
 // ── Nhãn mã ─────────────────────────────────────────────────────────────────────
 // v1 không có tệp trạng thái sinh tự động: chép lại vài nhãn cần dùng từ
 // `backend/app/core/packaging_price_codes.py` (PackagingRole, CostWarning, PriceSourceType, CostTrend).
@@ -71,10 +65,10 @@ export function quoteSourceText(type: number | null | undefined, id: number | nu
   return type === QUOTE_SOURCE_EXCEL && id != null && id > 0 ? `${label} (lô #${id})` : label
 }
 
-export const COST_WARNING_KIND = { BELOW_FLOOR: 6, ABOVE_CEILING: 7 } as const
+//  Số 6 (dưới ngưỡng sàn) và 7 (vượt ngưỡng trần) ĐÃ BỎ cùng bảng ngưỡng (phase 04) — số đã cấp, KHÔNG tái dùng.
 const COST_WARNING_LABELS: Record<number, string> = {
   1: 'Thiếu giá chai', 2: 'Chưa khai mã thành phần', 3: 'Thiếu giá thành phần', 4: 'Thiếu quy cách thùng',
-  5: 'ĐVT mua khác ĐVT danh mục', 6: 'Dưới ngưỡng sàn', 7: 'Vượt ngưỡng trần',
+  5: 'ĐVT mua khác ĐVT danh mục',
 }
 /** `CostTrend` — xu hướng chi phí của một sản phẩm so với giá cũ. */
 export const COST_TREND = { UP: 1, DOWN: 2, SAME: 3, NO_PRICE: 4 } as const
@@ -98,13 +92,3 @@ export function warningText(w: PackagingWarning): string {
 /** Cột Ghi chú: mọi cảnh báo nối bằng "; ", bỏ câu trùng. */
 export const joinWarnings = (list: readonly PackagingWarningInput[] | null | undefined): string =>
   [...new Set(normalizeWarnings(list).map(warningText))].join('; ')
-
-/** Câu ghi chú một mã đã chọn: cảnh báo máy chủ gửi + câu ngoài ngưỡng tính tại chỗ (giá giả định chưa kịp gửi, trễ 400 ms). */
-export function selectedCodeNote(row: PackagingSelectedCode, applied: number | null): string {
-  //  Bỏ cảnh báo ngưỡng của máy chủ rồi tự tính lại theo giá đang gõ: vừa gõ về trong ngưỡng mà ô vẫn báo "vượt trần" thêm một nhịp là sai.
-  const limitKinds: number[] = [COST_WARNING_KIND.BELOW_FLOOR, COST_WARNING_KIND.ABOVE_CEILING]
-  const notes = [joinWarnings(normalizeWarnings(row.warnings).filter((w) => !limitKinds.includes(w.kind)))]
-  if (isNum(applied) && isNum(row.floor) && applied < row.floor) notes.push(warningText({ kind: COST_WARNING_KIND.BELOW_FLOOR }))
-  if (isNum(applied) && isNum(row.ceiling) && applied > row.ceiling) notes.push(warningText({ kind: COST_WARNING_KIND.ABOVE_CEILING }))
-  return notes.filter(Boolean).join('; ')
-}

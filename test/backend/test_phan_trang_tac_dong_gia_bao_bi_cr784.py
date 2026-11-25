@@ -208,7 +208,7 @@ def test_duong_nhanh_chi_tinh_gia_cho_ma_cua_trang_va_khong_doi_so_truy_van(db, 
     assert len(sqls) <= 7
     states_sql = [s for s in sqls if "tab_product_price_ledger" in s]
     assert states_sql, "đường nhanh vẫn phải đọc sổ giá cho các mã của trang"
-    # đường đầy đủ (xếp theo số / chỉ mã vi phạm / scope=all) vẫn đúng và vẫn <= 7 truy vấn
-    for kw in ({"sort_by": "diff"}, {"breach_only": True}, {"scope": "all"}):
+    # đường đầy đủ (xếp theo số / scope=all) vẫn đúng và vẫn <= 7 truy vấn
+    for kw in ({"sort_by": "diff"}, {"scope": "all"}):
         _, sqls = count_queries(db, lambda kw=kw: build_price_list_page(db, page=1, page_size=2, **kw))
         assert len(sqls) <= 7

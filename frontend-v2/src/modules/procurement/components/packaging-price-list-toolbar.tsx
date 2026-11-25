@@ -1,22 +1,18 @@
 /**
  * duoc-CR-784 — thanh lọc của Bảng giá VTBB: ô tìm (gõ tên nhóm hoặc mã / tên), chip nhóm, phạm vi mã
- * (chỉ mã trong định mức hay mọi mã có trong sổ giá) và công tắc "chỉ mã ngoài ngưỡng".
+ * (chỉ mã trong định mức hay mọi mã có trong sổ giá).
  */
 import { Search } from 'lucide-react'
 
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Switch } from '@/shared/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 import { cn } from '@/shared/utils/cn'
-import { PACKAGING_LIMITS_ENABLED } from '../config/packaging-feature-flags'
 
 export interface PriceListFilters {
   q: string
   /** Rỗng = mọi nhóm. */
   group: string
   scope: 'bom' | 'all'
-  breachOnly: boolean
 }
 
 interface PackagingPriceListToolbarProps {
@@ -76,19 +72,6 @@ export function PackagingPriceListToolbar({
         <ToggleGroupItem value="bom">Mã trong định mức</ToggleGroupItem>
         <ToggleGroupItem value="all">Mọi mã có giá</ToggleGroupItem>
       </ToggleGroup>
-
-      {PACKAGING_LIMITS_ENABLED && (
-        <div className="flex items-center gap-2">
-          <Switch
-            id="price-breach-only"
-            checked={filters.breachOnly}
-            onCheckedChange={(breachOnly) => patch({ breachOnly })}
-          />
-          <Label htmlFor="price-breach-only" className="text-sm font-normal">
-            Chỉ mã ngoài ngưỡng
-          </Label>
-        </div>
-      )}
     </div>
   )
 }

@@ -2,7 +2,7 @@
  * duoc-CR-784 — các khối của bản in Tác động giá bao bì, dựng theo bản mẫu HTML: khối ô lọc (ô mã chọn + dòng thông tin) liền
  * bảng MÃ ĐÃ CHỌN (đầu navy, ô giá giả định nền vàng), rồi khối SẢN PHẨM BỊ ẢNH HƯỞNG (ô thành phần ghi mã + giá, mã đang chọn
  * tô xanh nhạt). Cùng cột + định dạng với màn hình (dùng lại hàm định dạng, nhãn vai trò, câu ghi chú). Bảng mã đã chọn không
- * có cột "Sàn – Trần": ngưỡng đang tắt (`PACKAGING_LIMITS_ENABLED`). Chênh lệch TĂNG xanh, GIẢM đỏ (luật màu của hệ).
+ * có cột "Sàn – Trần": ngưỡng đã bỏ hẳn (phase 04). Chênh lệch TĂNG xanh, GIẢM đỏ (luật màu của hệ).
  */
 import { PACKAGING_PART_COLUMNS } from '../config/packaging-part-columns'
 import type {
@@ -16,7 +16,6 @@ import {
   formatPackagingPrice,
 } from '../utils/packaging-price-format'
 import {
-  buildSelectedCodeNote,
   joinPackagingWarnings,
   packagingRoleLabel,
 } from '../utils/packaging-warning-text'
@@ -121,7 +120,7 @@ export function PrintImpactSelection({ codes, extras, rows }: PrintImpactSelecti
                   <Price value={row.max} />
                 </td>
                 <td className="nt">
-                  <span className="note">{buildSelectedCodeNote(row, row.applied)}</span>
+                  <span className="note">{joinPackagingWarnings(row.warnings)}</span>
                 </td>
               </tr>
             ))}

@@ -27,8 +27,7 @@ PRICE_LIST_COLUMNS = [
     Col("last_purchase_price", "Giá mua\ngần nhất", "price", 11), Col("last_purchase_date", "Mua gần nhất", "date", 12),
     Col("prev_purchase_price", "Giá mua\nlần trước", "price", 11), Col("usage", "Số SP\nđang dùng", "int", 9),
     Col("purchase_count", "Số lần\nmua", "int", 8), Col("last_date", "Ngày mua cuối", "date", 12),
-    Col("min", "Giá thấp nhất", "price", 11), Col("max", "Giá cao nhất", "price", 11), Col("floor", "Ngưỡng sàn", "price", 11),
-    Col("ceiling", "Ngưỡng trần", "price", 11), Col("quote_price", "Báo giá mới", "price", 11),
+    Col("min", "Giá thấp nhất", "price", 11), Col("max", "Giá cao nhất", "price", 11), Col("quote_price", "Báo giá mới", "price", 11),
     Col("quote_from", "Ngày hiệu lực\nbáo giá", "date", 12), Col("warn_text", "Cảnh báo", width=34),
 ]
 #  Màu chữ: giá mới đậm navy, chênh lệch / phần trăm tăng xanh giảm đỏ (cùng luật với màn hình).

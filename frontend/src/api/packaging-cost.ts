@@ -10,12 +10,11 @@ import type {
   PackagingCodeOption, PackagingHhOption, PackagingHistoryParams, PackagingHistoryResult,
   PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
   PackagingOverviewParams, PackagingOverviewResult,
-  PackagingPriceLimit, PackagingPriceListParams, PackagingPriceRow,
+  PackagingPriceListParams, PackagingPriceRow,
 } from './packaging-cost-types'
 
 const BASE = '/api/packaging-cost'
 export const PACKAGING_QUOTE_API = '/api/product-price-quotes'
-export const PACKAGING_LIMIT_API = '/api/product-price-limits'
 export const PACKAGING_BOM_API = '/api/packaging-boms'
 /** `ImportModule.PACKAGING_BOM` ở `backend/app/modules/import_tool/model.py`. */
 export const IMPORT_MODULE_PACKAGING_BOM = 4
@@ -66,27 +65,6 @@ export async function fetchProductOverview(params: PackagingOverviewParams): Pro
 export async function fetchHistory(params: PackagingHistoryParams): Promise<PackagingHistoryResult> {
   const r = await api.get(`${BASE}/history`, { params })
   return r.data.data
-}
-
-/** Ngưỡng của MỘT mã; chưa đặt thì `null`. */
-export async function fetchPriceLimit(code: string): Promise<PackagingPriceLimit | null> {
-  const r = await api.get(PACKAGING_LIMIT_API, { params: { product_code: code, page_size: 50 } })
-  //  Bộ lọc `product_code` là LIKE: lấy nhiều dòng rồi so đúng mã — mã dài hơn (`NAP00851`) có thể che dòng của `NAP0085`.
-  const items: PackagingPriceLimit[] = r.data.data?.items ?? []
-  return items.find((it) => it.product_code === code) ?? null
-}
-
-export interface PriceLimitPayload {
-  product_code: string
-  floor_price: number | null
-  ceiling_price: number | null
-  note: string
-}
-
-/** Có rồi thì sửa, chưa có thì tạo (mỗi mã đúng một dòng ngưỡng). */
-export async function savePriceLimit(id: number | null, payload: PriceLimitPayload): Promise<void> {
-  if (id) await api.patch(`${PACKAGING_LIMIT_API}/${id}`, payload)
-  else await api.post(PACKAGING_LIMIT_API, payload)
 }
 
 export interface QuotePayload {

@@ -5,7 +5,7 @@
  * CRUD riêng (phase 03) — báo giá và định mức đi qua lớp `shared/crud`, ở đây chỉ còn ngưỡng (một
  * dòng mỗi mã, tra theo `product_code`).
  */
-import { apiGet, apiPatch, apiPost, downloadFile, httpClient } from '@/core/api'
+import { apiGet, apiPost, downloadFile, httpClient } from '@/core/api'
 import { filenameFromContentDisposition } from '@/core/api/download-file'
 
 import { readBlobErrorMessage } from './customs-api'
@@ -20,14 +20,12 @@ import type {
   PackagingLastPricesResult,
   PackagingOverviewParams,
   PackagingOverviewResult,
-  PackagingPriceLimit,
   PackagingPriceListParams,
   PackagingPriceListResult,
 } from '../types/packaging-cost-types'
 
 const BASE = '/api/packaging-cost'
 export const PACKAGING_QUOTE_API = '/api/product-price-quotes'
-export const PACKAGING_LIMIT_API = '/api/product-price-limits'
 export const PACKAGING_BOM_API = '/api/packaging-boms'
 
 /** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
@@ -131,28 +129,4 @@ export async function exportPackagingImpact(body: PackagingImpactRequest) {
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }
-}
-
-/** Ngưỡng của MỘT mã; chưa đặt thì `null`. */
-export async function fetchPackagingPriceLimit(code: string): Promise<PackagingPriceLimit | null> {
-  const res = await apiGet<{ items: PackagingPriceLimit[] }>(PACKAGING_LIMIT_API, {
-    params: { product_code: code, page_size: 50 },
-  })
-  //  `apply_filters` lọc LIKE với cột chuỗi nên lấy nhiều dòng rồi so đúng mã: chỉ lấy 1 dòng thì mã dài hơn có dòng mới
-  //  hơn (`NAP00851`) che mất dòng của `NAP0085`, hộp thoại tưởng chưa có ngưỡng và tạo trùng (máy chủ trả 400).
-  return res.items.find((item) => item.product_code === code) ?? null
-}
-
-export interface PackagingPriceLimitPayload {
-  product_code: string
-  floor_price: number | null
-  ceiling_price: number | null
-  note: string
-}
-
-/** Có rồi thì sửa, chưa có thì tạo (mỗi mã đúng một dòng ngưỡng). */
-export function savePackagingPriceLimit(id: number | null, payload: PackagingPriceLimitPayload) {
-  return id
-    ? apiPatch<PackagingPriceLimit>(`${PACKAGING_LIMIT_API}/${id}`, payload)
-    : apiPost<PackagingPriceLimit>(PACKAGING_LIMIT_API, payload)
 }

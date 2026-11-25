@@ -1,4 +1,4 @@
-"""Sổ giá sản phẩm + báo giá + ngưỡng giá (duoc-CR-784, tính năng Tác động giá bao bì).
+"""Sổ giá sản phẩm + báo giá (duoc-CR-784, tính năng Tác động giá bao bì).
 
 `tab_product` là bảng VARIANT, KHÔNG được gắn cột giá (`mo-hinh-du-lieu-san-pham.md` §11) — nên mọi bảng giá là bảng
 riêng, nối bằng CHUỖI `product_code` (không FK), đúng nếp bảy bảng ở §2 của tài liệu đó.
@@ -6,7 +6,16 @@ riêng, nối bằng CHUỖI `product_code` (không FK), đúng nếp bảy bả
 - `ProductPriceLedger` — sổ giá ĐÃ GIAO DỊCH (dẫn xuất, dựng lại được bằng `scripts/backfill_product_price_ledger.py`).
   Báo giá KHÔNG vào đây: báo giá là giá dự kiến, trộn vào thì min / max và "lần mua gần nhất" sai nghĩa.
 - `ProductPriceQuote` — báo giá của nhà cung cấp theo ngày hiệu lực (nhiều dòng mỗi mã).
-- `ProductPriceLimit` — ngưỡng sàn / trần đặt tay, MỘT dòng mỗi mã.
+
+Bảng ngưỡng sàn / trần (`tab_product_price_limit`) đã BỎ HẲN ở migration `cleanup784` (chủ dự án chốt C6, 25/11/2026); min / max tự
+tính từ sổ giá vẫn giữ. Cần lại thì làm lại, đừng dựng lại bảng cũ.
+
+Ba nguồn của sổ giá (`source_type`, bộ mã `PriceSourceType`):
+  1 = lịch sử mua hàng nạp từ Excel cũ — `source_id` = `tab_purchase_history.id`;
+  2 = dòng ĐMH — `source_id` = `tab_po_item.id` (MỘT dòng sổ suốt đời, `line_stage` đổi 1 -> 2 khi hoàn thành);
+  3 = sổ chi tiết mua hàng Misa — `source_id` KHÔNG trỏ chứng từ nào: là số thứ tự trong sổ. Script HTML dùng id dòng Misa
+      trong tệp, module 6 (xlsx) tự đánh `max + 1`, nên hai đường KHÔNG trộn được (xem `misa_ledger_import.ensure_no_xlsx_misa_rows`).
+      Dòng Misa có `vat = NULL` (Misa không có VAT trong sổ chi tiết — NULL = không biết, KHÔNG phải 0%).
 """
 from datetime import date, datetime
 from decimal import Decimal
@@ -57,14 +66,17 @@ class ProductPriceLedger(Base):
     price_date: Mapped[date] = mapped_column(Date)
     # VNĐ, CHƯA VAT = giá dòng x tỉ giá của dòng.
     price: Mapped[Decimal] = mapped_column(Numeric(18, 4), default=0)
-    vat: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)       # % VAT của dòng
+    # % VAT của dòng; NULL = không biết (dòng Misa — Misa không có VAT trong sổ chi tiết, KHÔNG phải 0%): giao diện hiện trống. KHÔNG đặt `default=`: ORM coi None là chưa gán nên sẽ ghi 0 thay NULL — nơi ghi phải đặt `vat` rõ.
+    vat: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     qty: Mapped[Decimal] = mapped_column(Numeric(18, 3), default=0)
     # Thành tiền của lần mua, VNĐ, CHƯA VAT: nguồn Misa = cột "Giá trị" của sổ chi tiết mua hàng (Misa làm tròn từng dòng nên có
     # thể khác giá x số lượng vài chục đồng); dòng đã chốt từ lịch sử mua = tiền của dòng lịch sử bỏ VAT, quy VNĐ. NULL = chưa có / không biết
     # -> giao diện dùng giá x số lượng (cùng luật `gia_tri ?? gia x sl` của bản mẫu HTML). Dòng ĐMH đang mở luôn NULL.
     amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     unit: Mapped[str] = mapped_column(String(25), default="")             # ĐVT lúc mua — cảnh báo lệch ĐVT danh mục
-    synced_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), default=datetime.utcnow)
+    # MỘT nguồn giờ: đồng hồ máy chủ CSDL (cùng nguồn với `created_at` / `updated_at` của mọi bảng khác). Lúc chèn lấy `server_default`;
+    # lúc ghi đè nơi ghi phải gán `func.now()` (không dùng giờ Python — lệch múi giờ so với máy chủ CSDL).
+    synced_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class ProductPriceQuote(Base, AuditMixin):
@@ -90,13 +102,3 @@ class ProductPriceQuote(Base, AuditMixin):
     source_type: Mapped[int] = mapped_column(SmallInteger, default=QuoteSourceType.MANUAL)
     source_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
-
-class ProductPriceLimit(Base, AuditMixin):
-    """Ngưỡng sàn / trần đặt tay của một mã — bảng riêng, một giá trị mỗi mã (không gắn vào báo giá)."""
-
-    __tablename__ = "tab_product_price_limit"
-
-    product_code: Mapped[str] = mapped_column(String(50), unique=True)
-    floor_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
-    ceiling_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
-    note: Mapped[str] = mapped_column(String(500), default="")

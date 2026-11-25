@@ -11,7 +11,8 @@ gán cho mọi dòng: --company-id hoặc biến COMPANY_ID (mặc định 1, c�
 
 Nạp xong: sổ giá có thêm dòng nguồn 3 (Sổ Misa) và `tab_setting.misa_price_cutoff` = ngày lớn nhất của dòng Misa; từ đó mọi phép
 tính giá chỉ xét Misa tới mốc + nguồn lịch sử mua hàng / dòng ĐMH SAU mốc. `--purge` xóa dòng nguồn 3 + mốc → như chưa nạp.
-Chạy lại bao nhiêu lần cũng ra cùng kết quả (idempotent). Chi tiết quy tắc: `app/modules/product_price/misa_ledger_import.py`.
+Chạy lại bao nhiêu lần cũng ra cùng kết quả (idempotent). Dòng Misa ghi `vat = NULL` (không biết). Script TỪ CHỐI chạy khi sổ đã có
+dòng Misa do màn Quản lý Import (module 6, xlsx) nạp — hai đường đánh `source_id` khác nhau; gỡ sạch bằng `--purge --apply` rồi nạp lại. Chi tiết quy tắc: `app/modules/product_price/misa_ledger_import.py`.
 """
 import argparse
 import os
@@ -60,7 +61,13 @@ def main() -> int:
                 print("LỖI: tệp không có dòng mua hàng hợp lệ nào — không nạp")
                 return 2
             _print(f"[{mode}] đọc tệp:", parsed)
-            _print(f"[{mode}] ghi sổ giá (nguồn 3, pháp nhân {args.company_id}):", import_misa_rows(db, rows))
+            try:
+                written = import_misa_rows(db, rows)
+            except MisaSourceError as exc:      # sổ đã có dòng Misa do module 6 (xlsx) nạp — không trộn được
+                db.rollback()
+                print(f"LỖI: {exc}")
+                return 2
+            _print(f"[{mode}] ghi sổ giá (nguồn 3, pháp nhân {args.company_id}):", written)
         print(f"  mốc sổ Misa sau khi chạy: {get_misa_cutoff(db)}")
         db.commit() if args.apply else db.rollback()
     except Exception:

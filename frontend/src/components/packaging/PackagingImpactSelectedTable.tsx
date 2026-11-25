@@ -5,14 +5,13 @@ import TableToolbar from '../TableToolbar'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingSelectedCode } from '../../api/packaging-cost-types'
 import { PRICE_DECIMALS } from '../../utils/money'
-import { isOutsideLimit, selectedCodeNote } from '../../utils/packaging-price'
-import { CodeLink, DiffText, OneLine, PctText, PriceText, RangeText } from './PackagingCells'
-import { PACKAGING_LIMITS_ENABLED } from '../../utils/packaging-flags'
+import { joinWarnings } from '../../utils/packaging-price'
+import { CodeLink, DiffText, OneLine, PctText, PriceText } from './PackagingCells'
 import { buildSelectedGroupChips, resolveSelectedGroup } from '../../utils/packaging-selected-groups'
 
 /**
  * Bảng MÃ ĐÃ CHỌN của màn Tác động giá: giá cũ / mới, ô giá giả định (nền vàng), chênh lệch, số SP dùng, min / max
- * theo sổ giá, ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng thì ô ngưỡng tô đỏ và ghi chú nói rõ. Chip nhóm (Chai · Nắp ·
+ * theo sổ giá (ngưỡng sàn–trần đã bỏ ở phase 04). Chip nhóm (Chai · Nắp ·
  * Nhãn · Nhãn thùng · Thùng) trên thanh công cụ chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
  */
 export default function PackagingImpactSelectedTable({
@@ -28,7 +27,6 @@ export default function PackagingImpactSelectedTable({
   onRemove: (code: string) => void
 }) {
   const columns = useMemo<TableColumn<PackagingSelectedCode>[]>(() => {
-    const appliedOf = (r: PackagingSelectedCode) => assumed[r.code] ?? r.new
     return [
       { key: 'code', label: 'Mã', width: 110, fixed: true, cell: (r) => <CodeLink code={r.code} /> },
       { key: 'name', label: 'Tên vật tư', width: 240, cell: (r) => <OneLine>{r.name}</OneLine> },
@@ -50,13 +48,9 @@ export default function PackagingImpactSelectedTable({
       //  Min và Max tách hai cột — giá thấp / cao nhất trong sổ giá của mã.
       { key: 'min', label: 'Min', width: 100, align: 'right', cell: (r) => <PriceText value={r.min} /> },
       { key: 'max', label: 'Max', width: 100, align: 'right', cell: (r) => <PriceText value={r.max} /> },
-      ...(PACKAGING_LIMITS_ENABLED ? [{
-        key: 'limit', label: 'Sàn – Trần', width: 140, align: 'right' as const,
-        cell: (r: PackagingSelectedCode) => <RangeText low={r.floor} high={r.ceiling} danger={isOutsideLimit(appliedOf(r), r.floor, r.ceiling)} />,
-      }] : []),
       {
         key: 'note', label: 'Ghi chú', width: 170,
-        cell: (r) => <span className="pkg-err" title={selectedCodeNote(r, appliedOf(r))}>{selectedCodeNote(r, appliedOf(r))}</span>,
+        cell: (r) => <span className="pkg-err" title={joinWarnings(r.warnings)}>{joinWarnings(r.warnings)}</span>,
       },
       {
         key: 'remove', label: '', width: 44, align: 'center', fixed: true,

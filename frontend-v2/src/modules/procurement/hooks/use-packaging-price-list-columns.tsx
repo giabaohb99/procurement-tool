@@ -17,29 +17,18 @@ import {
   EmptyDash,
   PercentText,
   PriceText,
-  RangeText,
 } from '../components/packaging-price-cells'
 import type { PackagingPriceRow } from '../types/packaging-cost-types'
-import { isOutsidePriceLimit } from '../utils/packaging-price-format'
 import { joinPackagingWarnings } from '../utils/packaging-warning-text'
-import { dropLimitColumn, PACKAGING_LIMITS_ENABLED } from '../config/packaging-feature-flags'
 
 interface PriceListColumnOptions {
   canQuote: boolean
-  canLimit: boolean
   onQuote: (row: PackagingPriceRow) => void
-  onLimit: (row: PackagingPriceRow) => void
 }
 
-export function usePackagingPriceListColumns({
-  canQuote,
-  canLimit,
-  onQuote,
-  onLimit,
-}: PriceListColumnOptions) {
+export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListColumnOptions) {
   return useMemo<DataTableColumn<PackagingPriceRow>[]>(
-    () =>
-      dropLimitColumn<DataTableColumn<PackagingPriceRow>>([
+    () => [
         {
           key: 'code',
           header: 'Mã VTBB',
@@ -166,21 +155,6 @@ export function usePackagingPriceListColumns({
           cell: (row) => <PriceText value={row.max} />,
         },
         {
-          key: 'limit',
-          header: 'Sàn – Trần',
-          width: 140,
-          align: 'right',
-          sortable: true,
-          sortKey: 'floor',
-          cell: (row) => (
-            <RangeText
-              low={row.floor}
-              high={row.ceiling}
-              danger={isOutsidePriceLimit(row.new, row.floor, row.ceiling)}
-            />
-          ),
-        },
-        {
           key: 'usage',
           header: 'Số SP đang dùng',
           width: 100,
@@ -217,21 +191,10 @@ export function usePackagingPriceListColumns({
                   Báo giá
                 </Button>
               )}
-              {canLimit && PACKAGING_LIMITS_ENABLED && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7"
-                  onClick={() => onLimit(row)}
-                >
-                  Ngưỡng
-                </Button>
-              )}
             </div>
           ),
         },
-      ]),
-    [canQuote, canLimit, onQuote, onLimit],
+    ],
+    [canQuote, onQuote],
   )
 }

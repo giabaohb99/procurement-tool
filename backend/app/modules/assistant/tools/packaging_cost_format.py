@@ -71,7 +71,7 @@ def selected_code_row(row: dict) -> dict:
             "old_price": row["old"], "new_price": row["new"], "assumed_price": row["assumed"],
             "applied_price": row["applied"], "price_diff": row["diff"], "pct_change": pct_change(row["pct"]),
             "products_using": row["usage"], "min_price": row["min"], "max_price": row["max"],
-            "floor_price": row["floor"], "ceiling_price": row["ceiling"], "last_purchase_date": row["last_date"],
+            "last_purchase_date": row["last_date"],
             "warnings": warning_labels(row["warnings"]), "history_url": history_url(codes=[row["code"]])}
 
 
@@ -131,8 +131,7 @@ def lookup_row(st, usage: int, recent: list, suppliers: dict[str, str], warnings
             "old_price": _num(st.old), "new_price": _num(st.new), "new_price_source": source, "price_diff": _num(diff),
             "pct_change": pct_change(diff / st.old) if diff is not None and st.old else None,
             "last_purchase": purchase_point(st.p1, suppliers), "prev_purchase": purchase_point(st.p2, suppliers),
-            "quote": quote, "purchase_count": st.purchase_count, "min_price": _num(st.min), "max_price": _num(st.max),
-            "floor_price": _num(st.floor), "ceiling_price": _num(st.ceiling), "products_using": usage,
+            "quote": quote, "purchase_count": st.purchase_count, "min_price": _num(st.min), "max_price": _num(st.max), "products_using": usage,
             "recent_purchases": [purchase_point(p, suppliers) for p in recent],
             "warnings": warning_labels([int(w) for w in warnings]), "history_url": history_url(codes=[st.code])}
 

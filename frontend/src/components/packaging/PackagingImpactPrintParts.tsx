@@ -1,13 +1,13 @@
 import type { PackagingImpactProduct, PackagingPart, PackagingSelectedCode } from '../../api/packaging-cost-types'
-import { diffText, joinWarnings, pctText, priceText, roleLabel, selectedCodeNote } from '../../utils/packaging-price'
+import { diffText, joinWarnings, pctText, priceText, roleLabel } from '../../utils/packaging-price'
 import { PrintDash } from './PackagingPrintShell'
 import { PrintChipsBox } from './PackagingPrintWidgets'
 
 /**
  * duoc-CR-784 — các khối của bản in Tác động giá bao bì (bản v1), dựng theo bản mẫu HTML: khối ô lọc (ô mã chọn nhiều + dòng
  * thông tin) liền bảng MÃ ĐÃ CHỌN (đầu navy, ô giá giả định nền vàng), rồi khối SẢN PHẨM BỊ ẢNH HƯỞNG (ô thành phần ghi mã +
- * giá, mã đang chọn tô xanh nhạt). Cùng cột + định dạng với màn hình. Bảng mã đã chọn không có cột "Sàn – Trần": ngưỡng đang
- * tắt (`PACKAGING_LIMITS_ENABLED`). Chênh lệch TĂNG xanh, GIẢM đỏ (luật màu của hệ).
+ * giá, mã đang chọn tô xanh nhạt). Cùng cột + định dạng với màn hình. Bảng mã đã chọn không có cột "Sàn – Trần": ngưỡng đã
+ * bỏ hẳn (phase 04). Chênh lệch TĂNG xanh, GIẢM đỏ (luật màu của hệ).
  */
 
 type Num = number | null | undefined
@@ -59,7 +59,7 @@ export function PrintImpactSelection({ codes, extras, rows }: {
                 <td className="n">{r.usage}</td>
                 <td className="n"><Price value={r.min} /></td>
                 <td className="n"><Price value={r.max} /></td>
-                <td className="nt"><span className="note">{selectedCodeNote(r, r.applied)}</span></td>
+                <td className="nt"><span className="note">{joinWarnings(r.warnings)}</span></td>
               </tr>
             ))}
           </tbody>

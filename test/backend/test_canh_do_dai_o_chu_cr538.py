@@ -173,9 +173,8 @@ TARGETS.update({
     **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
     "ai_plan.PlanRejectIn": ["AiPlanProposal"],
     **_same("work", "WorkTaskType", "TaskTypeCreate", "TaskTypeUpdate"),   # duoc-CR-666
-    #  duoc-CR-784: báo giá + ngưỡng giá (phân hệ có ba model nên khai tay); định mức bao bì chỉ một model nên tự ghép
+    #  duoc-CR-784: báo giá (phân hệ product_price có hai model nên khai tay); định mức bao bì chỉ một model nên tự ghép
     **_same("product_price", "ProductPriceQuote", "QuoteCreate", "QuoteUpdate"),
-    **_same("product_price", "ProductPriceLimit", "LimitCreate", "LimitUpdate"),
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).

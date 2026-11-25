@@ -42,26 +42,6 @@ export function PercentText({ value }: { value: Num }) {
   return <span className={cn('tabular-nums', packagingDiffTone(value))}>{text}</span>
 }
 
-/** Hai số "a – b" trong một ô (min–max, sàn–trần); cả hai trống thì gạch. */
-export function RangeText({
-  low,
-  high,
-  danger = false,
-}: {
-  low: Num
-  high: Num
-  danger?: boolean
-}) {
-  const a = formatPackagingPrice(low)
-  const b = formatPackagingPrice(high)
-  if (!a && !b) return <EmptyDash />
-  return (
-    <span className={cn('tabular-nums', danger && 'font-semibold text-destructive')}>
-      {a || '…'} – {b || '…'}
-    </span>
-  )
-}
-
 /**
  * Xu hướng chi phí của một sản phẩm (mã `CostTrend`): chữ + màu theo chiều (tăng xanh, giảm đỏ — cùng luật với ô chênh lệch);
  * không đổi / chưa có giá để màu mờ. Tăng kèm gợi ý "cần xem lại giá bán" ở chú giải.

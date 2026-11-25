@@ -360,7 +360,7 @@ BB4_CONTROLLER_MIEN_TRU = {
                                                       "ProductPriceLedger, 'packaging_cost', …) và truyền scope_cond vào "
                                                       "build_product_overview; bài dò tên hàm trong tệp không thấy vì lời "
                                                       "gọi nằm ở tệp kia",
-    "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá + ngưỡng sàn/trần — danh mục dùng chung, không có cột "
+    "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá — danh mục dùng chung, không có cột "
                                                "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_cost', …) "
                                                "từng route. Giá chỉ ĐI VÀO màn Tác động qua `get_price_states` (có scope_cond)",
     # -- không có dữ liệu theo dòng để lọc --

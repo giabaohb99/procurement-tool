@@ -1,7 +1,6 @@
 /**
  * duoc-CR-784 — bảng MÃ ĐÃ CHỌN của màn Tác động giá: giá cũ / mới, ô giá giả định (nền vàng như bản
- * mẫu), chênh lệch, số SP dùng, min–max theo sổ giá và ngưỡng sàn–trần. Giá đang dùng ra ngoài ngưỡng
- * thì ô ngưỡng tô đỏ và ghi chú nói rõ — người chọn mã thấy ngay giá NCC báo có vượt trần không. Chip nhóm (Chai · Nắp ·
+ * mẫu), chênh lệch, số SP dùng và min–max theo sổ giá (ngưỡng sàn–trần đã bỏ ở phase 04). Chip nhóm (Chai · Nắp ·
  * Nhãn · Nhãn thùng · Thùng) trên thanh công cụ chỉ ẩn dòng của bảng này — danh sách mã đã chọn và phép tính không đổi.
  */
 import { X } from 'lucide-react'
@@ -13,12 +12,10 @@ import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import { cn } from '@/shared/utils/cn'
 
 import type { PackagingSelectedCode } from '../types/packaging-cost-types'
-import { isOutsidePriceLimit } from '../utils/packaging-price-format'
 import { buildSelectedGroupChips, resolveSelectedGroup } from '../utils/packaging-selected-groups'
-import { buildSelectedCodeNote } from '../utils/packaging-warning-text'
+import { joinPackagingWarnings } from '../utils/packaging-warning-text'
 import { PackagingCodeLink } from './packaging-code-link'
-import { DiffText, PercentText, PriceText, RangeText } from './packaging-price-cells'
-import { dropLimitColumn } from '../config/packaging-feature-flags'
+import { DiffText, PercentText, PriceText } from './packaging-price-cells'
 
 interface PackagingImpactSelectedTableProps {
   rows: PackagingSelectedCode[] | undefined
@@ -51,8 +48,7 @@ export function PackagingImpactSelectedTable({
     [rows, group],
   )
   const columns = useMemo<DataTableColumn<PackagingSelectedCode>[]>(() => {
-    const appliedOf = (row: PackagingSelectedCode) => assumed[row.code] ?? row.new
-    return dropLimitColumn<DataTableColumn<PackagingSelectedCode>>([
+    return [
       {
         key: 'code',
         header: 'Mã',
@@ -132,25 +128,12 @@ export function PackagingImpactSelectedTable({
         cell: (row) => <PriceText value={row.max} />,
       },
       {
-        key: 'limit',
-        header: 'Sàn – Trần',
-        width: 120,
-        align: 'right',
-        cell: (row) => (
-          <RangeText
-            low={row.floor}
-            high={row.ceiling}
-            danger={isOutsidePriceLimit(appliedOf(row), row.floor, row.ceiling)}
-          />
-        ),
-      },
-      {
         key: 'note',
         header: 'Ghi chú',
         width: 140,
         wrap: true,
         cell: (row) => (
-          <span className="text-xs text-destructive">{buildSelectedCodeNote(row, appliedOf(row))}</span>
+          <span className="text-xs text-destructive">{joinPackagingWarnings(row.warnings)}</span>
         ),
       },
       {
@@ -172,7 +155,7 @@ export function PackagingImpactSelectedTable({
           </Button>
         ),
       },
-    ])
+    ]
   }, [assumed, onAssumedChange, onRemove])
 
   return (

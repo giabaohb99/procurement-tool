@@ -22,8 +22,6 @@ const row = (over: Partial<PackagingSelectedCode> = {}): PackagingSelectedCode =
   usage: 12,
   min: 950,
   max: 1150,
-  floor: null,
-  ceiling: null,
   warnings: [],
   ...over,
 })
@@ -88,19 +86,17 @@ describe('PackagingImpactSelectedTable', () => {
     expect(onAssumedChange).toHaveBeenLastCalledWith('CPT0105', null)
   })
 
-  it('flags an assumed price above the ceiling before the server answers', async () => {
-    const { user } = renderTable([row({ floor: 800, ceiling: 1200 })])
-    expect(screen.queryByText(/Vượt ngưỡng trần/)).not.toBeInTheDocument()
-    await user.type(screen.getByLabelText('Giá giả định CPT0105'), '1500')
-    expect(screen.getByText(/Vượt ngưỡng trần/)).toBeInTheDocument()
+  it('has no floor-ceiling column any more and never invents a limit warning from the typed price', async () => {
+    //  Ngưỡng sàn / trần đã bỏ ở phase 04: giá giả định cao đến đâu ghi chú cũng chỉ là cảnh báo máy chủ gửi.
+    const { user } = renderTable([row({ warnings: [] })])
+    expect(screen.queryByRole('columnheader', { name: /Sàn/ })).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Giá giả định CPT0105'), '1500000')
+    expect(screen.queryByText(/ngưỡng/i)).not.toBeInTheDocument()
   })
 
-  it('drops a stale server ceiling warning once the typed price is back inside the limits', async () => {
-    //  Máy chủ đã báo vượt trần (mã 7) cho giá cũ 1.300; người dùng gõ 1.000 — chưa kịp gửi lại.
-    const { user } = renderTable([row({ new: 1300, floor: 800, ceiling: 1200, warnings: [7] })])
-    expect(screen.getByText(/Vượt ngưỡng trần/)).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Giá giả định CPT0105'), '1000')
-    expect(screen.queryByText(/Vượt ngưỡng trần/)).not.toBeInTheDocument()
+  it('shows the warnings the server sent in the note cell', () => {
+    renderTable([row({ warnings: [5] })])
+    expect(screen.getByText('ĐVT mua khác ĐVT danh mục')).toBeInTheDocument()
   })
 
   it('shows a real dash for a code without any price, not an empty cell', () => {

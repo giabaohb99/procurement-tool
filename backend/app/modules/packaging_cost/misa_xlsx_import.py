@@ -11,6 +11,10 @@ trên sổ không còn trong tệp thì bỏ. Nạp lại cùng tệp lần hai 
 Misa (`misa_cutoff.py`): tới mốc chỉ dùng Misa, sau mốc chỉ dùng đơn mua hàng ERP. Chạy thử thì lùi toàn bộ; chưa có hoàn tác
 (nạp lại tệp đúng để sửa).
 
+VAT: sổ chi tiết Misa không có VAT nên dòng Misa ghi `vat = NULL` (không biết, giao diện hiện trống). `source_id` = số thứ tự trong sổ
+(`max + 1`), KHÔNG trỏ chứng từ; script HTML (`import_misa_price_ledger`) dùng id dòng Misa nên KHÔNG chạy được sau module này
+(`misa_ledger_import.ensure_no_xlsx_misa_rows`). Dòng nào thuộc lô nào chưa lưu — phase 07.
+
 THÀNH TIỀN: cột "Giá trị" (tùy chọn, như `importExcel` của bản mẫu: chỉ nhận số khác 0 ở dòng CÓ giá) ghi vào `amount` của dòng sổ.
 Nạp lại cùng tệp thì dòng trùng khớp giữ nguyên id nhưng được BỔ SUNG / SỬA `amount` theo tệp (không tạo dòng trùng) — đây là cách điền
 thành tiền cho các dòng Misa đã nạp từ trước khi sổ giá có cột này. Tệp không có cột "Giá trị" thì không đụng `amount` của dòng cũ.
@@ -141,7 +145,7 @@ def read_rows(wb, out: ImportLogCollector, company_id: int) -> tuple[list[dict],
                 "supplier_code": clean(cell(row, "supplier_code")).upper()[:MAX_SUPPLIER_CODE],
                 "supplier_name": name or None,
                 "warehouse_name": clean(cell(row, "warehouse"))[:MAX_WAREHOUSE_NAME] or None,
-                "price_date": day, "price": price, "vat": Decimal("0.00"), "qty": qty, "amount": amount,
+                "price_date": day, "price": price, "vat": None, "qty": qty, "amount": amount,
                 "unit": clean(cell(row, "unit"))[:MAX_UNIT], "_row": ri, "_sheet": ws.title,
                 "_has_amount": idx.get("amount", -1) >= 0}))
     found.sort(key=lambda t: t[0])
@@ -189,6 +193,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 filled += 1
                 if apply:
                     mate.amount = r["amount"]
+                    mate.synced_at = func.now()
             continue
         to_insert[k] -= 1
         inserted += 1

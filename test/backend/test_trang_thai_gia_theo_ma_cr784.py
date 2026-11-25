@@ -6,7 +6,7 @@ from decimal import Decimal
 from app.core.packaging_price_codes import PriceSourceType
 from app.modules.product_price.price_state_service import derive_old_new, get_price_states
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote
 
 D = Decimal
 
@@ -92,12 +92,12 @@ def test_min_max_theo_khoang_ngay_chi_ap_cho_min_max_khong_ap_cho_cu_moi(db):
     assert (whole.min, whole.max) == (D(50), D(200))
 
 
-def test_nguong_va_ten_nhom_dvt_danh_muc_duoc_gan(db):
+def test_ten_nhom_dvt_danh_muc_duoc_gan(db):
     add_products(db, ("A", "Chai A", "Cái"))
-    add_limit(db, "A", floor=80, ceiling=300)
     add_ledger(db, "A", 100, "2026-01-01")
     st = _states(db, {"A"})["A"]
-    assert (st.name, st.group, st.unit, st.floor, st.ceiling) == ("Chai A", "Chai", "Cái", D(80), D(300))
+    assert (st.name, st.group, st.unit) == ("Chai A", "Chai", "Cái")
+    assert not hasattr(st, "floor") and not hasattr(st, "ceiling")      # ngưỡng sàn / trần đã bỏ (phase 04)
 
 
 def test_also_giu_ma_chua_co_du_lieu_va_codes_none_lay_het(db):
@@ -131,7 +131,7 @@ def test_nguon_dong_sao_chep_vao_diem_gia(db):
     assert (p.source_type, p.doc_id, p.supplier_code, p.unit) == (2, 7, "NCC9", "Kg")
 
 
-def test_so_truy_van_la_4_bat_ke_so_ma(db):
+def test_so_truy_van_la_3_bat_ke_so_ma(db):
     add_products(db, *[(f"M{i}", f"Mã {i}", "Cái") for i in range(60)])
     for i in range(60):
         add_ledger(db, f"M{i}", 100 + i, "2026-01-01")
@@ -140,7 +140,7 @@ def test_so_truy_van_la_4_bat_ke_so_ma(db):
     _, one = count_queries(db, lambda: _states(db, {"M1"}))
     _, many = count_queries(db, lambda: _states(db, {f"M{i}" for i in range(60)}))
     _, everything = count_queries(db, lambda: _states(db, None))
-    assert len(one) == len(many) == len(everything) == 4      # sổ giá (một câu) · báo giá · ngưỡng · danh mục
+    assert len(one) == len(many) == len(everything) == 3      # sổ giá (một câu) · báo giá · danh mục (ngưỡng đã bỏ ở phase 04: trước là 4)
 
 
 def test_derive_old_new_thuan():
@@ -161,16 +161,16 @@ def _world(db):
     add_quote(db, "B", 70, "2026-06-01")
 
 
-def test_new_only_cho_dung_gia_moi_khong_so_gop_va_it_truy_van_hon(db):
+def test_new_only_cho_dung_gia_moi_khong_so_gop(db):
     _world(db)
     full = _states(db, {"A", "B", "C"})
     light = _states(db, {"A", "B", "C"}, new_only=True)
     assert {c: s.new for c, s in light.items()} == {c: s.new for c, s in full.items()} == {"A": D(120), "B": D(70), "C": D(30)}
-    assert all(s.old is None and s.purchase_count == 0 and s.min is None and s.floor is None for s in light.values())
+    assert all(s.old is None and s.purchase_count == 0 and s.min is None for s in light.values())
     assert light["A"].name == "Chai A" and light["B"].quote.price == D(70)       # tên + báo giá vẫn có
     _, full_sql = count_queries(db, lambda: _states(db, {"A", "B", "C"}))
     _, light_sql = count_queries(db, lambda: _states(db, {"A", "B", "C"}, new_only=True))
-    assert len(light_sql) == len(full_sql) - 1                                    # bỏ truy vấn ngưỡng
+    assert len(light_sql) == len(full_sql) == 3                                   # chế độ nhẹ chỉ nhẹ ở sổ giá (một lần mua gần nhất), cùng số truy vấn
 
 
 def test_stats_codes_chi_ma_duoc_chon_co_so_gop_con_lai_van_dung_cu_moi(db):
@@ -183,7 +183,7 @@ def test_stats_codes_chi_ma_duoc_chon_co_so_gop_con_lai_van_dung_cu_moi(db):
     assert (tiered["A"].purchase_count, tiered["A"].min, tiered["A"].max) == (3, D(100), D(120))
     assert (tiered["C"].purchase_count, tiered["C"].min, tiered["C"].max) == (0, None, None)     # mã tầng nhẹ: không số gộp
     _, sqls = count_queries(db, lambda: _states(db, {"A", "B", "C"}, stats_codes={"A"}))
-    assert len(sqls) == 5                                                                        # hai tầng sổ giá + báo giá + ngưỡng + danh mục
+    assert len(sqls) == 4                                                                        # hai tầng sổ giá + báo giá + danh mục
 
 
 def test_stats_codes_rong_hoac_ngoai_tap_khong_vo_loi(db):

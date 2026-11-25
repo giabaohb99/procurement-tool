@@ -16,7 +16,7 @@ from app.modules.packaging_cost.price_list_service import build_price_list
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote, build_bom, read_report_sheet
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom, read_report_sheet
 
 D = Decimal
 IMPACT, PRICE_LIST, OPTIONS = "/api/packaging-cost/impact", "/api/packaging-cost/price-list", "/api/packaging-cost/code-options"
@@ -51,9 +51,9 @@ def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
 
 
 # ── Công thức (hàm thuần) ───────────────────────────────────────────────────────
-def _price(old, new=None, unit="Cái", floor=None, ceiling=None):
+def _price(old, new=None, unit="Cái"):
     return SimpleNamespace(old=None if old is None else D(old), new=None if (new if new is not None else old) is None
-                           else D(new if new is not None else old), unit=unit, floor=floor, ceiling=ceiling)
+                           else D(new if new is not None else old), unit=unit)
 
 
 def _bom_ns(**over):
@@ -123,12 +123,23 @@ def test_xu_huong_giam_va_khong_doi():
     assert same.trend == CostTrend.SAME and same.diff_bottle == D(0)
 
 
-def test_canh_bao_nguong_va_lech_dvt():
-    p = _price(100, floor=D(120), ceiling=D(150), unit="Cái")
-    assert price_warnings(p, D(100), "Cái") == [CostWarning.BELOW_FLOOR]
-    assert price_warnings(p, D(200), "Kg") == [CostWarning.UNIT_MISMATCH, CostWarning.ABOVE_CEILING]
-    assert price_warnings(p, D(130), "CÁI ") == []          # không phân biệt hoa thường / khoảng trắng
-    assert price_warnings(None, D(1), "x") == []
+def test_canh_bao_cap_ma_chi_con_lech_dvt():
+    p = _price(100, unit="Cái")
+    assert price_warnings(p, "Kg") == [CostWarning.UNIT_MISMATCH]
+    assert price_warnings(p, "CÁI ") == []          # không phân biệt hoa thường / khoảng trắng
+    assert price_warnings(p, "") == []
+    assert price_warnings(None, "x") == []
+
+
+def test_canh_bao_nguong_da_bo_so_6_7_khong_con_trong_bo_ma_va_khong_bao_gio_phat_ra(db, world):
+    """duoc-CR-784 phase 04 (C6): số 6 / 7 đã cấp, không tái dùng; giá có ra khỏi khoảng nào cũng không sinh cảnh báo."""
+    from app.core.packaging_price_codes import COST_WARNING_LABELS
+    assert {int(w) for w in CostWarning} == {1, 2, 3, 4, 5} and {int(w) for w in COST_WARNING_LABELS} == {1, 2, 3, 4, 5}
+    assert not hasattr(CostWarning, "BELOW_FLOOR") and not hasattr(CostWarning, "ABOVE_CEILING")
+    selected = compute_impact(db, ["CPT0105"], {"CPT0105": D(1)})["selected"][0]
+    assert selected["warnings"] == [] and "floor" not in selected and "ceiling" not in selected
+    for r in build_price_list(db, scope="all"):
+        assert not ({6, 7} & set(r["warnings"])) and "floor" not in r and "ceiling" not in r
 
 
 # ── Dịch vụ + KPI ───────────────────────────────────────────────────────────────
@@ -168,11 +179,9 @@ def test_ma_chua_co_gia_nao_canh_bao_thieu_gia(db, world):
     assert sel["warnings"] == [int(CostWarning.MISSING_COMPONENT_PRICE)] and sel["applied"] is None
 
 
-def test_min_max_nguong_trong_selected(db, world):
-    add_limit(db, "CPT0105", floor=1200, ceiling=1300)
+def test_min_max_tu_tinh_trong_selected(db, world):
     sel = compute_impact(db, ["CPT0105"], {})["selected"][0]
-    assert (sel["min"], sel["max"], sel["floor"], sel["ceiling"]) == (1000, 1100, 1200, 1300)
-    assert sel["warnings"] == [int(CostWarning.BELOW_FLOOR)]     # giá áp dụng 1100 < sàn 1200
+    assert (sel["min"], sel["max"]) == (1000, 1100) and sel["warnings"] == []
 
 
 # ── Số truy vấn ─────────────────────────────────────────────────────────────────
@@ -262,12 +271,11 @@ def test_bang_gia_dong_gia_cu_moi_chenh_so_sp_dung(api):
 
 def test_bang_gia_co_bao_gia_loc_xep_phan_trang(api, db):
     add_quote(db, "NAP0085", 260, "2026-07-01")
-    add_limit(db, "NAP0085", floor=100, ceiling=250)
     rows = api.get(PRICE_LIST, params={"sort_by": "diff", "sort_dir": "desc"}).json()["data"]["items"]
     assert [r["code"] for r in rows[:2]] == ["CPT0105", "NAP0085"]                 # chênh 100 rồi 60; còn lại chênh 0
     nap = rows[1]
-    assert nap["quote"]["price"] == 260 and nap["diff"] == 60 and nap["warnings"] == [int(CostWarning.ABOVE_CEILING)]
-    assert [r["code"] for r in api.get(PRICE_LIST, params={"breach_only": True}).json()["data"]["items"]] == ["NAP0085"]
+    assert nap["quote"]["price"] == 260 and nap["diff"] == 60 and nap["warnings"] == []
+    assert "floor" not in nap and "ceiling" not in nap
     assert api.get(PRICE_LIST, params={"q": "thung"}).json()["data"]["total"] == 2           # bỏ dấu: Thùng + Nhãn thùng
     assert api.get(PRICE_LIST, params={"group": "chai"}).json()["data"]["total"] == 5
     page = api.get(PRICE_LIST, params={"page": 2, "page_size": 2}).json()["data"]

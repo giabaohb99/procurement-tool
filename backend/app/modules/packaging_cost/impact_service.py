@@ -46,13 +46,13 @@ def product_row(bom: BomRow, cost: ProductCost, names: dict[str, str]) -> dict:
 def selected_row(code: str, st: PriceState, assumed: Decimal | None, usage: int) -> dict:
     applied = assumed if assumed is not None else st.new
     diff = (applied - st.old) if applied is not None and st.old is not None else None
-    warnings = [int(w) for w in price_warnings(st, applied, st.p1.unit if st.p1 else "")]
+    warnings = [int(w) for w in price_warnings(st, st.p1.unit if st.p1 else "")]
     if applied is None:
         warnings.append(int(CostWarning.MISSING_COMPONENT_PRICE))   # mã đã chọn mà chưa có giá nào
     return {"code": code, "name": st.name, "group": st.group or OTHER_GROUP, "unit": st.unit, "old": num(st.old),
             "new": num(st.new), "assumed": num(assumed), "applied": num(applied), "diff": num(diff),
             "pct": num(diff / st.old, 6) if diff is not None and st.old else None, "usage": usage,
-            "min": num(st.min), "max": num(st.max), "floor": num(st.floor), "ceiling": num(st.ceiling),
+            "min": num(st.min), "max": num(st.max),
             "last_date": iso(st.last_date), "warnings": warnings}
 
 
