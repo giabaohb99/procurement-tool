@@ -6,7 +6,7 @@
  * lệch con số với màn. Biểu đồ là SVG tĩnh (không phải recharts): recharts đo khung bằng JS lúc chạy, đổi sang khổ giấy có thể
  * ra biểu đồ sai cỡ hoặc rỗng.
  */
-import { PACKAGING_ROLE, PRICE_SOURCE_TYPE_CODE } from '@/shared/constants/statuses'
+import { PRICE_SOURCE_TYPE_CODE } from '@/shared/constants/statuses'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity } from '@/shared/utils/format-money'
 
@@ -15,14 +15,13 @@ import type {
   PackagingHistoryPoint,
   PackagingHistoryRow,
 } from '../types/packaging-cost-types'
+import { historyRoleText, historyRowKey } from '../utils/packaging-history'
 import {
   formatPackagingDiff,
   formatPackagingPercent,
   formatPackagingPrice,
 } from '../utils/packaging-price-format'
 import { PrintChipsBox, PrintDash } from './packaging-print-widgets'
-
-const ROLE_LABEL = new Map(PACKAGING_ROLE.map((role) => [Number(role.value), role.label]))
 
 interface PrintHistoryFiltersProps {
   mode: PackagingHistoryMode
@@ -155,10 +154,6 @@ export function PrintPriceChart({ series }: { series: readonly PackagingHistoryP
   )
 }
 
-function roleText(row: PackagingHistoryRow): string {
-  return row.roles.map((role) => ROLE_LABEL.get(role) ?? String(role)).join(', ')
-}
-
 function DiffCell({ row }: { row: PackagingHistoryRow }) {
   const diff = formatPackagingDiff(row.diff)
   if (!diff) return <PrintDash />
@@ -180,15 +175,20 @@ interface PrintHistoryTableProps {
   total: number
 }
 
-/** Bảng "Toàn bộ lịch sử mua hàng" — cùng cột với màn hình. */
+/**
+ * Bảng "Toàn bộ lịch sử mua hàng" — cùng cột, cùng thứ tự với màn hình. Chế độ sản phẩm (bản mẫu `renderHistBySP`): Mã SP ·
+ * Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...; chế độ mã: Lần · Ngày mua · Mã VTBB...
+ */
 export function PrintHistoryTable({ rows, productMode, singleCode, total }: PrintHistoryTableProps) {
   return (
     <div className="panel gap">
       <div className="tbar">
         <span className="ttl">Toàn bộ lịch sử mua hàng</span>
-        <span className="cnt">{total.toLocaleString('vi-VN')} lần mua</span>
         <span className="cnt">
-          · Giá chưa VAT (VNĐ), bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn
+          {total.toLocaleString('vi-VN')} {productMode ? 'dòng' : 'lần mua'}
+        </span>
+        <span className="cnt">
+          · Giá chưa VAT (VNĐ), bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn · Lần 1 = lần mua gần nhất của mã
         </span>
       </div>
       {rows.length === 0 ? (
@@ -197,16 +197,24 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: Prin
         <table>
           <thead>
             <tr>
+              {productMode && (
+                <>
+                  <th>Mã SP</th>
+                  <th>Tên sản phẩm</th>
+                  <th>Thành phần</th>
+                  <th>Mã VTBB</th>
+                  <th>Tên vật tư</th>
+                </>
+              )}
               <th className="c">Lần</th>
               <th>Ngày mua</th>
-              <th>Mã VTBB</th>
-              {!singleCode && <th>Tên vật tư</th>}
-              {productMode && <th>Vai trò</th>}
+              {!productMode && <th>Mã VTBB</th>}
+              {!productMode && !singleCode && <th>Tên vật tư</th>}
               <th>Nhà cung cấp</th>
               <th>Kho</th>
               <th className="n">Số lượng</th>
               <th className="n">Đơn giá</th>
-              <th className="n">Thành tiền</th>
+              <th className="n">Giá trị mua</th>
               <th className="n">So lần trước</th>
               <th>Nguồn</th>
             </tr>
@@ -215,22 +223,33 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: Prin
             {rows.map((row) => {
               const quantity = formatQuantity(row.qty)
               const openPo = row.source_type === PRICE_SOURCE_TYPE_CODE.PO_LINE
+              const materialName = row.name || <span className="faint">(chưa có tên)</span>
               return (
-                <tr key={row.id} className={row.price === 0 ? 'zero' : undefined}>
+                <tr key={historyRowKey(row)} className={row.price === 0 ? 'zero' : undefined}>
+                  {productMode && (
+                    <>
+                      <td className="code">
+                        <b>{row.hh_code}</b>
+                      </td>
+                      <td className="name">{row.hh_name || <span className="faint">(chưa có tên)</span>}</td>
+                      <td>{historyRoleText(row) || <PrintDash />}</td>
+                      <td className="code">{row.code}</td>
+                      <td className="name">{materialName}</td>
+                    </>
+                  )}
                   <td className="c">
                     <b>{row.seq}</b>
                   </td>
                   <td>{row.date ? formatDate(row.date) : <PrintDash />}</td>
-                  <td className="code">{row.code}</td>
-                  {!singleCode && <td className="name">{row.name || <span className="faint">(chưa có tên)</span>}</td>}
-                  {productMode && <td>{roleText(row) || <PrintDash />}</td>}
+                  {!productMode && <td className="code">{row.code}</td>}
+                  {!productMode && !singleCode && <td className="name">{materialName}</td>}
                   <td>{row.supplier || <PrintDash />}</td>
                   <td className="wh">{row.warehouse || <PrintDash />}</td>
                   <td className="n">{quantity ? `${quantity}${row.unit ? ` ${row.unit}` : ''}` : <PrintDash />}</td>
                   <td className="n">
                     {row.price === 0 ? '0' : <b>{formatPackagingPrice(row.price) || <PrintDash />}</b>}
                   </td>
-                  <td className="n">{row.price ? formatPackagingPrice(row.amount) || <PrintDash /> : <PrintDash />}</td>
+                  <td className="n">{formatPackagingPrice(row.amount) || <PrintDash />}</td>
                   <td className="n">
                     <DiffCell row={row} />
                   </td>

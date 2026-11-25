@@ -41,6 +41,13 @@ sản phẩm (mã HH) nào đổi theo, đổi bao nhiêu — để quyết nh�
 
 Dòng đơn giá 0 vẫn ghi (đếm số lần mua), tầng tính giá bỏ qua. Báo giá **không** vào sổ giá.
 
+**Thành tiền của dòng sổ** (`amount`, VNĐ, chưa VAT; bổ sung 25/11/2026): lịch sử mua hàng cần hiện *Giá trị mua* đúng bằng số
+Misa chứ không phải giá x số lượng (Misa làm tròn từng dòng: dòng 2326 NHG3790 ngày 18/08/2025 là 7.121.169, còn 9.204 x 773,7 =
+7.121.134,8). Nguồn 3 lấy từ cột *Giá trị* của sổ chi tiết mua hàng (Nạp Excel sổ Misa hoặc tệp HTML / JSON); nguồn 1 lấy tiền của
+dòng lịch sử, bỏ VAT, nhân tỷ giá; nguồn 2 (ĐMH đang mở) để trống vì tiền trên dòng ĐMH chỉ tính theo số lượng ĐÃ NHẬN, lệch với số
+lượng đặt đang hiện. Chỗ nào cần giá trị thì dùng *thành tiền khi có, không thì giá x số lượng* (đúng luật `gia_tri ?? gia x sl`
+của bản mẫu); dòng đơn giá 0 không có giá trị.
+
 **Mốc cắt sổ Misa** (chủ dự án chốt tạm: *coi báo cáo HTML là dữ liệu đúng, chạy giá theo đó*). Nạp xong, ngày lớn nhất của dòng
 Misa (hiện là 30/06/2026) được ghi vào `tab_setting` khóa `misa_price_cutoff`. Từ đó MỌI phép tính giá — giá cũ / mới, hai lần
 mua gần nhất, số lần mua, ngày cuối, min / max, Tổng hợp theo sản phẩm, Giá mua gần nhất, Lịch sử mua hàng, ba công cụ AI —
@@ -139,8 +146,13 @@ Màn `/procurement/packaging-cost/history` (cũ `/packaging-cost/history`), đư
 của cụm là mở màn này. Bài HDSD: *Giá NVL sản xuất — Xem lịch sử mua và biểu đồ giá của một mã*. Khác tab Lịch sử mua hàng ở chi
 tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có cả dòng ĐMH đang mở.
 
-- Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (mọi thành phần của định mức, thêm cột Vai trò); tối đa 200
-  mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm.
+- Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (tối đa 200 mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm).
+  Chế độ sản phẩm y bản mẫu: **mỗi dòng = một lần mua x một (sản phẩm, thành phần)** — mã chai dùng ở 275 sản phẩm thì MỘT lần mua
+  ra 275 dòng, mỗi dòng ghi rõ Mã SP, Tên sản phẩm và Thành phần (chai / nắp / nhãn / nhãn thùng / thùng); mã xuất hiện hai vai trò
+  trong cùng một sản phẩm chỉ tính một lần. Thứ tự mặc định: ngày mới → cũ, rồi mã sản phẩm, rồi thành phần. Ô tìm tìm cả mã / tên
+  sản phẩm lẫn tên thành phần; mọi cột xếp được, phân trang tại máy chủ (không bao giờ nạp cả chục nghìn dòng).
+- **Cột Lần** (đổi 25/11/2026 theo bản mẫu): *Lần 1 = lần mua gần nhất của mã*, tăng dần về lần cũ; đếm trên TOÀN BỘ lịch sử của
+  mã (không phụ thuộc bộ lọc, kể cả dòng giá 0), nên ở chế độ sản phẩm mọi dòng của cùng một lần mua mang cùng số Lần.
 - Thẻ số liệu (trên toàn bộ tập lọc), trình bày y bản mẫu HTML (thẻ trắng, viền trên xanh lá, số to, một dòng phụ; chốt
   23/11/2026), ở cả màn hình lẫn bản in:
   - Đúng một mã: *Tổng số lần mua* (dòng phụ: khoảng ngày) · *Tổng số lượng mua* (ĐVT) · *Tổng giá trị mua* (giá x SL của
@@ -149,9 +161,14 @@ tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có c�
     nhất) · *Số nhà cung cấp*; kèm biểu đồ *Diễn biến đơn giá*.
   - Nhiều mã / mọi mã: *Số mã đã chọn* (số mã có lịch sử mua) hoặc *Số mã hàng* · *Tổng số lần mua* · *Tổng giá trị mua* ·
     *Số nhà cung cấp*.
-  - Theo mã sản phẩm: *Số sản phẩm* · *Mã vật tư liên quan* · *Số dòng lịch sử* · *Số nhà cung cấp*.
-- Cột: Lần, Ngày mua, Mã VTBB, Tên vật tư, [Vai trò], Nhà cung cấp, **Kho**, Số lượng, Đơn giá, Thành tiền, So lần trước, Nguồn
-  (mã ĐMH bấm được, nhãn *ĐMH đang mở*). Dòng giá 0 hiện nhưng không tính KPI / biểu đồ. Xuất Excel tối đa 5.000 dòng.
+  - Theo mã sản phẩm: *Số sản phẩm* (đã chọn / tất cả; số sản phẩm có định mức) · *Mã vật tư liên quan* · *Số dòng lịch sử* (dòng
+    đã nhân theo sản phẩm; dòng phụ: khoảng ngày) · *Số nhà cung cấp*.
+  - *Tổng giá trị mua* và *BQ gia quyền* cộng đúng **Giá trị mua** của từng lần có giá (thành tiền Misa khi có), BQ gia quyền =
+    tổng giá trị / tổng số lượng của các lần có giá.
+- Cột (chế độ mã): Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, **Kho**, Số lượng, Đơn giá, **Giá trị mua**, So lần trước,
+  Nguồn (mã ĐMH bấm được, nhãn *ĐMH đang mở*). Chế độ sản phẩm theo thứ tự bản mẫu: **Mã SP, Tên sản phẩm, Thành phần, Mã VTBB,
+  Tên vật tư, Lần, Ngày mua**, rồi các cột còn lại. Giống nhau ở màn hình, bản in và Excel, cả hai giao diện. Dòng giá 0 hiện
+  nhưng không tính KPI / biểu đồ và không có Giá trị mua. Xuất Excel tối đa 5.000 dòng.
 - **Kho** (bổ sung 23/11/2026 theo ý kiến chủ dự án: *thiếu cột kho so với file của Ms.Mi*): tên kho nhập hàng của lần mua. Dòng
   Misa lấy từ cột kho của sổ chi tiết mua hàng (vd *KHO NCC_HÀ LONG*, *Kho VTBB DEGO Cần Thơ*); dòng của ERP lấy từ kho trên dòng
   ĐMH (tên trong danh mục kho theo mã kho; mã không có trong danh mục thì hiện chính mã); không biết kho thì để trống. Ô tìm tìm
@@ -177,7 +194,7 @@ Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging
 |---|---|---|---|
 | Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_cost.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
 | Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục |
-| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa |
+| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ |
 
 Mọi nút nhập còn đòi `import.create` + `import.read`. Tệp mẫu: `GET /api/imports/template?module=4|5|6` (sheet dữ liệu chỉ có
 tiêu đề + sheet *Hướng dẫn*; ví dụ đặt dưới dòng 6 để bộ đọc Misa không nhận nhầm). Mã: `packaging_cost/quote_import.py`,

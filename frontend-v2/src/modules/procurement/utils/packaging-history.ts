@@ -6,6 +6,7 @@
  * Tác động giá là mở đúng lịch sử của mã đó — và để gửi link cho người khác.
  */
 import { appRoutes } from '@/shared/constants/app-routes'
+import { PACKAGING_ROLE } from '@/shared/constants/statuses'
 import { formatDate } from '@/shared/utils/format-date'
 
 import type {
@@ -13,6 +14,18 @@ import type {
   PackagingHistoryParams,
   PackagingHistoryPoint,
 } from '../types/packaging-cost-types'
+
+const ROLE_LABEL = new Map(PACKAGING_ROLE.map((role) => [Number(role.value), role.label]))
+
+/** "Chai" / "Nắp"... — thành phần của dòng trong định mức sản phẩm (chế độ sản phẩm); chế độ mã không có vai trò thì rỗng. */
+export function historyRoleText(row: { role: number | null }): string {
+  return row.role === null ? '' : (ROLE_LABEL.get(row.role) ?? String(row.role))
+}
+
+/** Khóa dòng của bảng: chế độ sản phẩm một dòng sổ giá hiện ở nhiều sản phẩm nên `id` một mình không duy nhất. */
+export function historyRowKey(row: { id: number; hh_code: string }): string {
+  return row.hh_code ? `${row.hh_code}:${row.id}` : String(row.id)
+}
 
 /** Trần số mã một lượt — khớp `MAX_CODES` của máy chủ (`history_service.py`). */
 export const PACKAGING_HISTORY_MAX_CODES = 200

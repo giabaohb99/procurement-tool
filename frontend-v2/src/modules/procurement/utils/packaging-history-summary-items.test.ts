@@ -20,6 +20,7 @@ const stats = (over: Partial<PackagingHistoryStats> = {}): PackagingHistoryStats
   last_date: '2025-11-08',
   amount_total: 434726851,
   code_count: 1,
+  product_count: 0,
   unit: 'Cái',
   first_price: 2477,
   last_price: 2477,
@@ -119,7 +120,7 @@ describe('buildHistorySummary — many codes, all codes, by product', () => {
   })
 
   it('switches to product cards in product mode', () => {
-    const items = buildHistorySummary(stats({ code_count: 4 }), {
+    const items = buildHistorySummary(stats({ code_count: 4, product_count: 2 }), {
       singleCode: false,
       mode: 'product',
       selectedCount: 2,
@@ -132,6 +133,15 @@ describe('buildHistorySummary — many codes, all codes, by product', () => {
     ])
     expect(items[0]).toMatchObject({ value: '2', sub: 'đã chọn' })
     expect(items[1].value).toBe('4')
+  })
+
+  it('counts products from the server when nothing is selected (template: "tất cả")', () => {
+    const [first] = buildHistorySummary(stats({ product_count: 1000 }), {
+      singleCode: false,
+      mode: 'product',
+      selectedCount: 0,
+    })
+    expect(first).toMatchObject({ label: 'Số sản phẩm', value: '1.000', sub: 'tất cả' })
   })
 
   it('has no date line when there are no purchases at all (edge: empty result)', () => {

@@ -37,6 +37,7 @@ import {
   buildHistoryParams,
   buildHistorySearch,
   EMPTY_HISTORY_FILTERS,
+  historyRowKey,
   parseHistorySearch,
   type PackagingHistoryFilters,
   type PackagingHistorySelection,
@@ -157,12 +158,12 @@ export function PackagingHistoryPage() {
           />
         )}
         <DataTable
-          //  Dòng khóa theo id dòng sổ giá nhưng không phải cột "ID" của bản ghi: tắt cột ID tự thêm.
+          //  Dòng khóa theo (sản phẩm, id dòng sổ giá) nhưng không phải cột "ID" của bản ghi: tắt cột ID tự thêm.
           idColumn={false}
           fillHeight
           columns={columns}
           rows={list.data?.items}
-          getRowId={(row) => String(row.id)}
+          getRowId={historyRowKey}
           isLoading={list.isLoading}
           isError={list.isError}
           emptyMessage={
@@ -186,7 +187,7 @@ export function PackagingHistoryPage() {
             total: list.data?.total ?? 0,
             onPageChange: setPage,
             onPageSizeChange: setPageSize,
-            unitLabel: 'lần mua',
+            unitLabel: isProduct ? 'dòng' : 'lần mua',
           }}
         />
       </Card>

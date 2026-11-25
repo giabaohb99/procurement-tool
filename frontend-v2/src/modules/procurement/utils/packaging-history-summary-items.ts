@@ -127,9 +127,12 @@ function buildProductItems(
   selectedCount: number,
 ): HistorySummaryItem[] {
   return [
-    selectedCount > 0
-      ? { label: 'Số sản phẩm', value: countText(selectedCount), sub: 'đã chọn' }
-      : { label: 'Số sản phẩm', value: 'Tất cả', sub: 'mọi sản phẩm có định mức' },
+    //  Số sản phẩm có định mức trong phạm vi chọn (máy chủ đếm); "đã chọn" / "tất cả" như bản mẫu.
+    {
+      label: 'Số sản phẩm',
+      value: countText(stats.product_count ?? selectedCount),
+      sub: selectedCount > 0 ? 'đã chọn' : 'tất cả',
+    },
     {
       label: 'Mã vật tư liên quan',
       value: countText(stats.code_count ?? 0),

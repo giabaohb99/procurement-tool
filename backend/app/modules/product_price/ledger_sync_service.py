@@ -8,6 +8,9 @@ Luật sổ giá:
   VAT / NCC / ngày / tỉ giá thì cập nhật đúng dòng sổ (id giữ nguyên). Dòng vào lịch sử thì dòng nguồn 2 của nó bị xóa.
 - Giá sổ = giá dòng x tỉ giá (VNĐ, chưa VAT). Lịch sử cũ coi là VNĐ. Dòng giá 0 vẫn ghi (đếm "số lần mua"), tầng tính giá
   (`price_state_service`) bỏ qua.
+- Thành tiền `amount` (VNĐ, chưa VAT): nguồn 1 = `tab_purchase_history.amount` (đã gồm VAT, tính theo SL thực nhận lúc dòng hoàn
+  thành) bỏ VAT rồi x tỉ giá; = 0 / trống thì NULL. Nguồn 2 luôn NULL: `tab_po_item.amount` chỉ tính trên SL ĐÃ NHẬN nên với đơn
+  đang mở nó lệch với SL đặt đang hiện — màn hình dùng giá x SL đặt. Nguồn 3 (Misa) lấy từ cột "Giá trị" của tệp.
 
 Lỗi ở hook KHÔNG được chặn luồng mua hàng: `sync_po_price_ledger` bọc try / except + log, giống `_sync_pr`.
 """
@@ -34,6 +37,8 @@ MAX_WAREHOUSE_NAME = 200              # cột `warehouse_name` String(200); tên
 MAX_PRICE = Decimal("9999999999999")  # cột Numeric(18,4): quá trần thì bỏ dòng thay vì làm nổ cả lượt lưu ĐMH
 BATCH = 1000
 _Q4 = Decimal("0.0001")
+_Q2 = Decimal("0.01")
+MAX_AMOUNT = Decimal("9999999999999999")   # cột Numeric(18,2): quá trần thì để NULL (màn hình dùng giá x SL)
 
 
 def parse_ledger_date(text: str | None) -> date | None:
@@ -53,6 +58,15 @@ def _rate(value) -> Decimal:
 
 def _to_vnd(price, rate) -> Decimal:
     return (Decimal(str(price or 0)) * _rate(rate)).quantize(_Q4)
+
+
+def history_amount(ph: PurchaseHistory, rate) -> Decimal | None:
+    """Thành tiền VNĐ CHƯA VAT của dòng lịch sử = tiền dòng (đã gồm VAT) / (1 + VAT%) x tỉ giá; 0 / trống / quá trần -> None."""
+    gross = Decimal(str(ph.amount or 0))
+    if gross == 0:
+        return None
+    value = (gross / (1 + Decimal(str(ph.vat or 0)) / 100) * _rate(rate)).quantize(_Q2)
+    return value if abs(value) < MAX_AMOUNT else None
 
 
 def warehouse_label(code: str | None, names: dict[str, str] | None = None) -> str | None:
@@ -89,6 +103,7 @@ def values_from_history(ph: PurchaseHistory, rate, warehouse_names: dict[str, st
             "product_code": ph.product_code.strip(), "supplier_code": ph.supplier_code or "",
             "company_id": ph.company_id or 0, "price_date": price_date, "price": price,
             "vat": Decimal(str(ph.vat or 0)), "qty": Decimal(str(ph.qty_order or 0)), "unit": ph.unit or "",
+            "amount": history_amount(ph, rate) if price > 0 else None,
             "warehouse_name": warehouse_label(history_warehouse_code(ph), warehouse_names)}
 
 
@@ -223,6 +238,30 @@ def _refresh_history_warehouse(db: Session, wh_names: dict[str, str]) -> int:
         db.flush()
 
 
+def _refresh_history_amount(db: Session) -> int:
+    """Điền `amount` cho dòng sổ nguồn 1 ĐÃ CÓ mà chưa có thành tiền (chèn từ trước khi sổ có cột này).
+
+    Chỉ quét dòng sổ `amount IS NULL` mà dòng lịch sử có tiền khác 0, theo lô khóa id; tỉ giá lấy LEFT JOIN `tab_po_item`
+    (thiếu -> 1) như lúc chèn. Dòng tính ra None (tiền 0 / quá trần) vẫn NULL và không bị quét lại trong cùng lượt.
+    """
+    src1, count, last_id = int(PriceSourceType.PURCHASE_HISTORY), 0, 0
+    L, PH = ProductPriceLedger, PurchaseHistory
+    while True:
+        rows = (db.query(PH, L, POItem.exchange_rate).join(L, (L.source_type == src1) & (L.source_id == PH.id))
+                .outerjoin(POItem, POItem.id == PH.po_item_id)
+                .filter(PH.id > last_id, L.amount.is_(None), PH.amount != 0).order_by(PH.id.asc()).limit(BATCH).all())
+        if not rows:
+            return count
+        for ph, row, rate in rows:
+            last_id = max(last_id, ph.id)
+            wanted = history_amount(ph, rate) if row.price > 0 else None
+            if wanted is not None:
+                row.amount = wanted
+                row.synced_at = datetime.utcnow()
+                count += 1
+        db.flush()
+
+
 def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
     """Toàn bảng: xóa dòng sổ nguồn 1 mồ côi, chèn dòng lịch sử còn thiếu (lô 1000), xóa nguồn 2 đã có lịch sử.
 
@@ -265,6 +304,7 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
         db.flush()
     db.flush()
     stats["updated_warehouse"] = _refresh_history_warehouse(db, wh_names)
+    stats["updated_amount"] = _refresh_history_amount(db)
     # 4) dòng nguồn 2 mà `po_item_id` đã có dòng lịch sử TRONG SỔ -> xóa (lịch sử là bản chốt cuối). Chạy SAU bước 3 để lịch sử
     #    vừa chèn đã có mặt; dòng lịch sử hỏng (không vào sổ) thì KHÔNG xóa dòng ĐMH — giá không được biến mất.
     hist = aliased(L)

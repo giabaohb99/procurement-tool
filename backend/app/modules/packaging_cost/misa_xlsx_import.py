@@ -10,8 +10,12 @@ khoảng, so theo nội dung (ngày, mã, NCC, kho, ĐVT, số lượng, đơn g
 trên sổ không còn trong tệp thì bỏ. Nạp lại cùng tệp lần hai là "không đổi gì". Xong cập nhật MỐC = ngày lớn nhất của mọi dòng
 Misa (`misa_cutoff.py`): tới mốc chỉ dùng Misa, sau mốc chỉ dùng đơn mua hàng ERP. Chạy thử thì lùi toàn bộ; chưa có hoàn tác
 (nạp lại tệp đúng để sửa).
+
+THÀNH TIỀN: cột "Giá trị" (tùy chọn, như `importExcel` của bản mẫu: chỉ nhận số khác 0 ở dòng CÓ giá) ghi vào `amount` của dòng sổ.
+Nạp lại cùng tệp thì dòng trùng khớp giữ nguyên id nhưng được BỔ SUNG / SỬA `amount` theo tệp (không tạo dòng trùng) — đây là cách điền
+thành tiền cho các dòng Misa đã nạp từ trước khi sổ giá có cột này. Tệp không có cột "Giá trị" thì không đụng `amount` của dòng cũ.
 """
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -127,14 +131,19 @@ def read_rows(wb, out: ImportLogCollector, company_id: int) -> tuple[list[dict],
             if price <= 0:
                 price = Decimal("0.0000")
                 stats["zero_price"] += 1
+            #  Thành tiền chỉ có nghĩa ở dòng có giá; 0 / trống / số quá lớn = chưa có (màn hình dùng giá x số lượng).
+            amount = parse_decimal(cell(row, "amount"), "0.01") if price > 0 else None
+            if amount is not None and (amount == 0 or abs(amount) >= MAX_DECIMAL):
+                amount = None
             name = _VTBB_SUFFIX.sub("", clean(cell(row, "supplier_name")))[:MAX_SUPPLIER_NAME]
             found.append(((day, si, ri), {
                 "source_type": SOURCE, "doc_id": 0, "product_code": code, "company_id": company_id,
                 "supplier_code": clean(cell(row, "supplier_code")).upper()[:MAX_SUPPLIER_CODE],
                 "supplier_name": name or None,
                 "warehouse_name": clean(cell(row, "warehouse"))[:MAX_WAREHOUSE_NAME] or None,
-                "price_date": day, "price": price, "vat": Decimal("0.00"), "qty": qty,
-                "unit": clean(cell(row, "unit"))[:MAX_UNIT], "_row": ri, "_sheet": ws.title}))
+                "price_date": day, "price": price, "vat": Decimal("0.00"), "qty": qty, "amount": amount,
+                "unit": clean(cell(row, "unit"))[:MAX_UNIT], "_row": ri, "_sheet": ws.title,
+                "_has_amount": idx.get("amount", -1) >= 0}))
     found.sort(key=lambda t: t[0])
     return [r for _, r in found], stats
 
@@ -155,8 +164,12 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
 
     #  Bỏ dòng sổ không còn trong tệp (đúng số bản thừa của từng nội dung).
     deleted = 0
+    kept_rows: dict[tuple, list[L]] = defaultdict(list)       # dòng sổ GIỮ LẠI theo nội dung — để bổ sung thành tiền
     for r in in_range:
         k = _key(r)
+        if to_delete[k] <= 0:
+            kept_rows[k].append(r)
+            continue
         if to_delete[k] > 0:
             to_delete[k] -= 1
             deleted += 1
@@ -166,10 +179,16 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                     f"Bỏ lần mua {r.price_date:%d/%m/%Y} {r.product_code} giá {r.price:,.0f} (không còn trong tệp)".replace(",", "."),
                     r.product_code)
     next_id = int(db.query(func.max(L.source_id)).filter(L.source_type == SOURCE).scalar() or 0)
-    inserted = 0
+    inserted = filled = 0
     for r in rows:
         k = _key(r)
         if to_insert[k] <= 0:
+            #  Dòng trùng khớp: giữ id, chỉ đồng bộ thành tiền với tệp (khi tệp có cột "Giá trị").
+            mate = kept_rows[k].pop() if kept_rows[k] else None
+            if mate is not None and r["_has_amount"] and mate.amount != r["amount"]:
+                filled += 1
+                if apply:
+                    mate.amount = r["amount"]
             continue
         to_insert[k] -= 1
         inserted += 1
@@ -186,7 +205,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     new_cutoff = max(d for d in (hi, outside_max) if d is not None)
     if apply:
         set_misa_cutoff(db, new_cutoff)
-    out.counts.update(created=inserted, deleted=deleted, skipped=kept)
+    out.counts.update(created=inserted, updated=filled, deleted=deleted, skipped=kept - filled)
     skipped = ", ".join(f"{label} {_vn(stats[k])}" for k, label in (
         ("no_code", "không có mã"), ("excluded", "mã PPA / CKC / CPM / CPN"), ("zero_qty", "số lượng 0"),
         ("bad_date", "sai ngày"), ("bad_number", "số / mã lỗi")) if stats[k])
@@ -194,7 +213,9 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                    else f"Mốc sổ Misa mới: {new_cutoff:%d/%m/%Y}.")
     summary = (f"Tệp có {_vn(len(rows))} lần mua từ {lo:%d/%m/%Y} đến {hi:%d/%m/%Y} "
                f"({_vn(len(rows) - stats['zero_price'])} có đơn giá). Trong khoảng ngày này: giữ {_vn(kept)}, thêm "
-               f"{_vn(inserted)}, bỏ {_vn(deleted)}; dòng Misa ngoài khoảng giữ nguyên. {cutoff_text}"
+               f"{_vn(inserted)}, bỏ {_vn(deleted)}"
+               + (f", cập nhật thành tiền {_vn(filled)}" if filled else "")
+               + f"; dòng Misa ngoài khoảng giữ nguyên. {cutoff_text}"
                + (f" Đã bỏ qua: {skipped}." if skipped else ""))
     out.logs.insert(0, {"sheet": out.sheet, "row_no": 0, "level": int(LogLevel.INFO), "category": "misa_summary",
                         "message": summary, "ref_key": "", "target_code": ""})

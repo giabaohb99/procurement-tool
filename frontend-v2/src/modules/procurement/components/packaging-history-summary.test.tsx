@@ -16,6 +16,7 @@ const STATS: PackagingHistoryStats = {
   last_date: '2025-11-07',
   amount_total: 457991000,
   code_count: 1,
+  product_count: 0,
   unit: 'Cái',
   first_price: 2377,
   last_price: 2500,

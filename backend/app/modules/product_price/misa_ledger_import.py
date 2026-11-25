@@ -3,7 +3,8 @@
 Nguồn: tệp HTML `Bao cao gia NVL san xuat - 11.2026.html` (một tệp tự chứa, `window.VTBB_DEMO = {...}` trong thẻ script) hoặc tệp
 JSON cùng cấu trúc: `vtbb` {mã: [tên, nhóm, ĐVT]} · `mua` [[id, ngày YYYY-MM-DD, tên NCC, mã VTBB, số lượng, đơn giá (VNĐ, chưa
 VAT; None / 0 = chưa có giá), mã NCC, kho, thành tiền]]. Mỗi dòng `mua` thành MỘT dòng sổ giá `source_type = MISA (3)`,
-`source_id = id dòng Misa`, `doc_id = 0`, `vat = 0`, `warehouse_name` = kho (chỉ số 7). Giá 0 vẫn vào sổ (đếm số lần mua như các nguồn khác, không xếp hạng).
+`source_id = id dòng Misa`, `doc_id = 0`, `vat = 0`, `warehouse_name` = kho (chỉ số 7), `amount` = thành tiền (chỉ số 8, chỉ khi dòng có
+giá và thành tiền khác 0 — như bản mẫu HTML; thiếu thì NULL, màn hình dùng giá x số lượng). Giá 0 vẫn vào sổ (đếm số lần mua như các nguồn khác, không xếp hạng).
 
 Idempotent: có `(source_type, source_id)` rồi thì cập nhật nếu khác, chưa có thì chèn; dòng Misa nằm trong sổ mà tệp không còn thì
 xóa (tệp là nguồn đúng). Nạp xong ghi MỐC = ngày lớn nhất của dòng Misa vào `tab_setting` (`misa_cutoff.py`) để nguồn 1 / 2 chỉ còn
@@ -88,6 +89,7 @@ def build_misa_rows(data: dict, company_id: int) -> tuple[list[dict], dict]:
             continue
         misa_id, day, name, code, qty, price, supplier_code = raw[:7]
         warehouse = raw[7] if len(raw) > 7 else None           # chỉ số 7 = kho (tệp cũ không có thì để trống)
+        amount_raw = raw[8] if len(raw) > 8 else None          # chỉ số 8 = thành tiền (tệp cũ không có thì NULL)
         try:
             price_date = date.fromisoformat(str(day).strip()[:10])
         except ValueError:
@@ -104,12 +106,13 @@ def build_misa_rows(data: dict, company_id: int) -> tuple[list[dict], dict]:
         if price_value <= 0:
             price_value = Decimal("0.0000")
             stats["zero_price"] += 1
+        amount = _decimal(amount_raw, places="0.01") if price_value > 0 else None
         out[misa_id] = {"source_type": SOURCE, "source_id": misa_id, "doc_id": 0, "product_code": code,
                         "supplier_code": _clean_text(supplier_code, MAX_SUPPLIER_CODE),
                         "supplier_name": _VTBB_SUFFIX.sub("", _clean_text(name, MAX_SUPPLIER_NAME + 20))[:MAX_SUPPLIER_NAME] or None,
                         "warehouse_name": _clean_text(warehouse, MAX_WAREHOUSE_NAME) or None,
                         "company_id": company_id, "price_date": price_date, "price": price_value, "vat": Decimal("0.00"),
-                        "qty": qty_value, "unit": units.get(code, "")}
+                        "qty": qty_value, "amount": amount or None, "unit": units.get(code, "")}
     rows = [out[k] for k in sorted(out)]
     if rows:
         stats["min_date"] = min(r["price_date"] for r in rows)

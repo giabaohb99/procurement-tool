@@ -5,7 +5,7 @@ Chạy TRONG container api. Mặc định là CHẠY THỬ (không ghi), chỉ g
     docker compose exec -T api python -m scripts.backfill_product_price_ledger --apply    # ghi thật
     docker compose exec -T api python -m scripts.backfill_product_price_ledger --check    # exit 1 nếu sổ giá còn lệch
 
-Các bước: (1) `sync_history_ledger` — xóa dòng nguồn 1 mồ côi, chèn dòng lịch sử còn thiếu, điền tên kho cho dòng đã có, xóa dòng nguồn 2 đã có lịch
+Các bước: (1) `sync_history_ledger` — xóa dòng nguồn 1 mồ côi, chèn dòng lịch sử còn thiếu, điền tên kho + thành tiền (`amount`, bỏ VAT) cho dòng đã có, xóa dòng nguồn 2 đã có lịch
 sử; (2) với MỌI ĐMH được tính (và đơn còn dòng nguồn 2 cũ) gọi `sync_po_price_ledger(commit=False)` theo lô 200 đơn.
 Là bộ hòa giải: sổ giá là dữ liệu dẫn xuất nên chạy lại bao nhiêu lần cũng ra cùng kết quả (idempotent).
 """
@@ -45,7 +45,7 @@ def run(db, apply: bool) -> dict:
 
 def changes_of(stats: dict) -> int:
     """Số thay đổi cần làm để sổ giá khớp nguồn — 0 nghĩa là sổ đã khớp."""
-    keys = ("inserted", "updated_warehouse", "deleted_orphans", "deleted_covered_po_lines", "po_inserted", "po_updated", "po_deleted")
+    keys = ("inserted", "updated_warehouse", "updated_amount", "deleted_orphans", "deleted_covered_po_lines", "po_inserted", "po_updated", "po_deleted")
     return sum(stats.get(k, 0) for k in keys)
 
 

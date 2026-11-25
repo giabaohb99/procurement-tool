@@ -66,14 +66,14 @@ def test_mot_ma_moi_nhat_truoc_kem_lan_mua_va_chenh_so_voi_lan_co_gia_truoc(api)
     data = _get(api, codes=["CPT0105"])
     rows = data["items"]
     assert [r["date"] for r in rows] == ["2026-05-01", "2026-04-15", "2026-04-01", "2026-03-01", "2026-02-01", "2026-01-01"]
-    assert [r["seq"] for r in rows] == [6, 5, 4, 3, 2, 1]
+    assert [r["seq"] for r in rows] == [1, 2, 3, 4, 5, 6]          # Lần 1 = GẦN NHẤT (bản mẫu HTML), tăng dần về lần mua cũ
     by_date = {r["date"]: r for r in rows}
     assert by_date["2026-05-01"]["prev_price"] == 120 and by_date["2026-05-01"]["diff"] == 10      # bỏ qua dòng giá 0 ngày 15/4
     assert by_date["2026-05-01"]["pct"] == pytest.approx(10 / 120, abs=1e-6)
     assert by_date["2026-03-01"]["diff"] == -5
     assert by_date["2026-01-01"]["prev_price"] is None and by_date["2026-01-01"]["diff"] is None
     zero = by_date["2026-04-15"]
-    assert (zero["price"], zero["diff"], zero["pct"], zero["amount"]) == (0, None, None, 0)
+    assert (zero["price"], zero["diff"], zero["pct"], zero["amount"]) == (0, None, None, None)      # giá 0 = không có giá trị mua
     assert by_date["2026-04-01"]["prev_price"] == 105       # lần liền trước của 1/4 là 1/3, không phải dòng giá 0 (sau nó)
 
 
@@ -192,27 +192,30 @@ def test_o_chon_nha_cung_cap_chi_theo_pham_vi_ma_khong_theo_q_hay_nha_cung_cap(a
     assert [s["code"] for s in _get(api, codes=["NAP0085"])["suppliers"]] == ["NCC_LA"]
 
 
-# ── Chế độ sản phẩm ─────────────────────────────────────────────────────────────
-def test_che_do_san_pham_mo_rong_thanh_phan_dinh_muc_kem_vai_tro(api):
+# ── Chế độ sản phẩm (chi tiết hơn ở test_lich_su_theo_san_pham_cr784.py) ─────────────────────────
+def test_che_do_san_pham_mo_rong_thanh_phan_dinh_muc_kem_san_pham_va_vai_tro(api):
     data = _get(api, mode="product", hh_codes=["HH0001"], page_size=500)
     assert {r["code"] for r in data["items"]} == {"CPT0105", "NAP0085"}            # NHG0001 chưa có lần mua
-    roles = {r["code"]: r["roles"] for r in data["items"]}
-    assert roles["CPT0105"] == [int(PackagingRole.BOTTLE)] and roles["NAP0085"] == [int(PackagingRole.CAP)]
+    assert {r["hh_code"] for r in data["items"]} == {"HH0001"}
+    roles = {r["code"]: r["role"] for r in data["items"]}
+    assert roles["CPT0105"] == int(PackagingRole.BOTTLE) and roles["NAP0085"] == int(PackagingRole.CAP)
     assert data["series"] is None
 
 
-def test_che_do_san_pham_mot_ma_hai_vai_tro_va_khong_co_dinh_muc_thi_rong(api):
-    both = _get(api, mode="product", hh_codes=["HH0001", "HH0002"])["items"]
-    assert {r["code"]: r["roles"] for r in both}["CPT0105"] == [int(PackagingRole.BOTTLE), int(PackagingRole.CAP)]
+def test_che_do_san_pham_mot_ma_hai_vai_tro_trong_cung_san_pham_chi_tinh_mot_lan_va_khong_co_dinh_muc_thi_rong(api):
+    both = _get(api, mode="product", hh_codes=["HH0001", "HH0002"], page_size=500)["items"]
+    hh2 = [r for r in both if r["hh_code"] == "HH0002"]
+    assert len(hh2) == 6 and {r["role"] for r in hh2} == {int(PackagingRole.BOTTLE)}      # chai + nắp cùng mã: một dòng, vai trò nhỏ nhất
     none = _get(api, mode="product", hh_codes=["HH9999"])
     assert none["items"] == [] and none["total"] == 0 and none["stats"]["purchase_count"] == 0 and none["suppliers"] == []
     all_products = _get(api, mode="product", page_size=500)
     assert {r["code"] for r in all_products["items"]} == {"CPT0105", "NAP0085"}
+    assert all_products["total"] == 13               # HH0001: 6 + 1; HH0002: 6 (chai CPT0105)
 
 
 def test_che_do_ma_bo_qua_hh_codes_va_nguoc_lai(api):
     assert {r["code"] for r in _get(api, mode="code", codes=["NAP0085"], hh_codes=["HH0001"])["items"]} == {"NAP0085"}
-    assert all(r["roles"] == [] for r in _get(api, mode="code", codes=["CPT0105"])["items"])
+    assert all(r["role"] is None and r["hh_code"] == "" for r in _get(api, mode="code", codes=["CPT0105"])["items"])
 
 
 # ── Xếp + phân trang ────────────────────────────────────────────────────────────
@@ -272,7 +275,7 @@ def test_pham_vi_cong_ty_khong_thay_lan_mua_cua_phap_nhan_khac_ke_ca_trong_chenh
     data = client_as(db.get(User, seed.u_req_id)).get(URL, params={"codes": ["CPT0105"]}).json()["data"]
     assert data["total"] == 6 and data["stats"]["max"] == 130 and len(data["series"]) == 5
     by_date = {r["date"]: r for r in data["items"]}
-    assert by_date["2026-04-01"]["prev_price"] == 105 and by_date["2026-04-01"]["seq"] == 4      # không nhìn thấy dòng 999
+    assert by_date["2026-04-01"]["prev_price"] == 105 and by_date["2026-04-01"]["seq"] == 3      # không nhìn thấy dòng 999 (mới hơn: 15/4 + 1/5)
     cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
     full = client_as(db.get(User, seed.u_req_id)).get(URL, params={"codes": ["CPT0105"]}).json()["data"]
     assert full["total"] == 7 and full["stats"]["max"] == 999
@@ -290,7 +293,7 @@ def test_xuat_excel_dung_bo_loc_thu_tu_va_cot_vai_tro_cua_che_do_san_pham(api):
     assert res.status_code == 200 and res.headers["content-type"] == XLSX
     ws = openpyxl.load_workbook(BytesIO(res.content)).active
     head, rows = read_report_sheet(ws)
-    assert head[:3] == ["Ngày mua", "Mã VTBB", "Tên vật tư"] and "Thành phần" not in head
+    assert head[:4] == ["Lần", "Ngày mua", "Mã VTBB", "Tên vật tư"] and "Thành phần" not in head
     assert len(rows) == 6
     prices = [r[head.index("Đơn giá")].value for r in rows]
     assert prices == sorted(prices) and prices[0] == 0
@@ -302,7 +305,8 @@ def test_xuat_excel_dung_bo_loc_thu_tu_va_cot_vai_tro_cua_che_do_san_pham(api):
     assert ws.freeze_panes == "D5" and ws.auto_filter.ref == f"A4:{ws.cell(row=4, column=len(head)).column_letter}10"
     product = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"mode": "product", "hh_codes": ["HH0001"]}).content)).active
     head2, rows2 = read_report_sheet(product)
-    assert "Thành phần" in head2 and {r[head2.index("Thành phần")].value for r in rows2} == {"Chai", "Nắp"}
+    assert head2[:7] == ["Mã SP", "Tên sản phẩm", "Thành phần", "Mã VTBB", "Tên vật tư", "Lần", "Ngày mua"]
+    assert {r[head2.index("Thành phần")].value for r in rows2} == {"Chai", "Nắp"}
     assert product["A1"].value.endswith("LỊCH SỬ MUA HÀNG THEO SẢN PHẨM")
 
 
@@ -370,4 +374,4 @@ def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world)
     add_ledger(db, "C0000", 5, "2026-01-02", warehouse="Kho A")
     _, big_kho = count_queries(db, lambda: build_history(db, q="kho", sort_by="warehouse", sort_dir="asc", page_size=50))
     assert len(big_kho) == 3                                      # tìm + xếp theo kho không thêm truy vấn
-    assert len(big_busy) == 3 and len(big_prod) == 4              # nhiều mã = không biểu đồ; chế độ sản phẩm + truy vấn định mức
+    assert len(big_busy) == 3 and len(big_prod) == 3              # nhiều mã = không biểu đồ; chế độ sản phẩm nối cặp trong SQL, không thêm truy vấn

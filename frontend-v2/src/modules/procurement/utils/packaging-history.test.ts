@@ -5,6 +5,8 @@ import {
   buildHistoryParams,
   buildHistorySearch,
   EMPTY_HISTORY_FILTERS,
+  historyRoleText,
+  historyRowKey,
   PACKAGING_HISTORY_MAX_CODES,
   packagingHistoryHref,
   packagingHistoryProductHref,
@@ -161,5 +163,19 @@ describe('chart helpers', () => {
     const [low, high] = priceAxisDomain([2377, 2500])
     expect(low).toBeGreaterThan(2000)
     expect(high).toBeLessThan(2800)
+  })
+})
+
+describe('historyRowKey / historyRoleText (product mode rows)', () => {
+  it('keys a product-mode row by (product, ledger id) because one purchase shows once per product', () => {
+    expect(historyRowKey({ id: 7, hh_code: 'HH0001' })).toBe('HH0001:7')
+    expect(historyRowKey({ id: 7, hh_code: 'HH0002' })).not.toBe(historyRowKey({ id: 7, hh_code: 'HH0001' }))
+    expect(historyRowKey({ id: 7, hh_code: '' })).toBe('7')
+  })
+
+  it('names the component of a row and is empty in code mode', () => {
+    expect(historyRoleText({ role: 1 })).toBe('Chai')
+    expect(historyRoleText({ role: 2 })).toBe('Nắp')
+    expect(historyRoleText({ role: null })).toBe('')
   })
 })

@@ -29,8 +29,10 @@ const MAX_QUERY_LENGTH = 100
 /** Mã dài hơn thì máy chủ trả 422 (`Str50`) — bỏ ngay từ URL. */
 const MAX_CODE_LENGTH = 50
 
-/** Khóa xếp của Lịch sử mua hàng — khớp `SORT_KEYS` của `history_service.py`. */
-const HISTORY_SORT_KEYS = ['date', 'code', 'name', 'supplier', 'qty', 'price', 'amount', 'vat', 'source']
+/** Khóa xếp của Lịch sử mua hàng — khớp `SORT_KEYS` của `history_service.py` (ba khóa cuối chỉ có ở chế độ sản phẩm). */
+const HISTORY_SORT_KEYS = [
+  'date', 'code', 'name', 'supplier', 'warehouse', 'qty', 'price', 'amount', 'vat', 'source', 'hh_code', 'hh_name', 'role',
+]
 /** Khóa xếp bảng sản phẩm của Tác động — khớp `SORT_GETTERS` của `impact_service.py`. */
 const IMPACT_SORT_KEYS = [
   'hh_code', 'hh_name', 'carton_qty', 'cost_old_bottle', 'cost_applied_bottle', 'diff_bottle', 'diff_carton',

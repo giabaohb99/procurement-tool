@@ -39,7 +39,7 @@ MISA_COLUMNS = [
     ("ĐVT", 8, "Đơn vị tính."),
     ("Số lượng", 12, "Bắt buộc, khác 0; dòng số lượng 0 bị bỏ qua."),
     ("Đơn giá", 12, "Bắt buộc có cột. VNĐ chưa VAT; trống hoặc 0 vẫn nhận (đếm lần mua, không làm giá)."),
-    ("Giá trị", 14, "Thành tiền (chỉ để đối chiếu)."),
+    ("Giá trị", 14, "Thành tiền của lần mua, hiện ở cột Giá trị mua của Lịch sử mua hàng; trống / 0 thì dùng đơn giá x số lượng. Nạp lại cùng tệp sẽ bổ sung thành tiền cho dòng đã nạp."),
 ]
 MISA_EXAMPLE = [["17/01/2025", "NCC38", "CÔNG TY CỔ PHẦN PHL - VTBB", "KHO NCC_HÀ LONG", "CET0028",
                  "Chai PAPE tròn cổ 43 240,250ml (40gr) logo IDA màu trắng", "Cái", 12000, 4724, 56688000]]

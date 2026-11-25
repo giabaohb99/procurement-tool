@@ -21,17 +21,21 @@ export const HISTORY_PRINT_ROW_CAP = 5000
 /** Trần độ dài ô từ khóa — khớp `max_length=100` của máy chủ (dài hơn là 422). */
 const MAX_QUERY_LENGTH = 100
 
-/** Khóa xếp máy chủ nhận — khớp `SORT_KEYS` của `packaging_cost/history_service.py`. */
+/** Khóa xếp máy chủ nhận — khớp `SORT_KEYS` của `packaging_cost/history_service.py` (ba khóa cuối chỉ có ở chế độ sản phẩm). */
 export const HISTORY_SORT_KEYS: readonly string[] = [
   'date',
   'code',
   'name',
   'supplier',
+  'warehouse',
   'qty',
   'price',
   'amount',
   'vat',
   'source',
+  'hh_code',
+  'hh_name',
+  'role',
 ]
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/

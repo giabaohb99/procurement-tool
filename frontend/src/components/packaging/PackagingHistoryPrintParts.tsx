@@ -1,7 +1,7 @@
 import type { PackagingHistoryMode, PackagingHistoryPoint, PackagingHistoryRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
 import { amountText, diffText, PRICE_SOURCE_PO_LINE, pctText, priceText, qtyText } from '../../utils/packaging-price'
-import { rolesText } from '../../utils/packaging-query'
+import { historyRoleText, historyRowKey } from '../../utils/packaging-query'
 import { PrintDash } from './PackagingPrintShell'
 import { PrintChipsBox } from './PackagingPrintWidgets'
 
@@ -106,7 +106,11 @@ function DiffCell({ row }: { row: PackagingHistoryRow }) {
   return <span className={(row.diff ?? 0) > 0 ? 'up' : 'down'}>{d}{p && ` (${p})`}</span>
 }
 
-/** Bảng "Toàn bộ lịch sử mua hàng" — cùng cột với màn hình. `total` là số lần mua theo máy chủ (lớn hơn số dòng nếu bản in bị cắt). */
+/**
+ * Bảng "Toàn bộ lịch sử mua hàng" — cùng cột, cùng thứ tự với màn hình. Chế độ sản phẩm (bản mẫu `renderHistBySP`): Mã SP · Tên
+ * sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...; chế độ mã: Lần · Ngày mua · Mã VTBB... `total` là số dòng theo
+ * máy chủ (lớn hơn số dòng nếu bản in bị cắt).
+ */
 export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
   rows: readonly PackagingHistoryRow[]
   productMode: boolean
@@ -117,17 +121,18 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
     <div className="panel gap">
       <div className="tbar">
         <span className="ttl">Toàn bộ lịch sử mua hàng</span>
-        <span className="cnt">{total.toLocaleString('vi-VN')} lần mua</span>
-        <span className="cnt">· Giá chưa VAT (VNĐ), bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn</span>
+        <span className="cnt">{total.toLocaleString('vi-VN')} {productMode ? 'dòng' : 'lần mua'}</span>
+        <span className="cnt">· Giá chưa VAT (VNĐ), bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn · Lần 1 = lần mua gần nhất của mã</span>
       </div>
       {rows.length === 0 ? <p className="empty">Không có lần mua nào khớp bộ lọc.</p> : (
         <table>
           <thead>
             <tr>
-              <th className="c">Lần</th><th>Ngày mua</th><th>Mã VTBB</th>
-              {!singleCode && <th>Tên vật tư</th>}
-              {productMode && <th>Vai trò</th>}
-              <th>Nhà cung cấp</th><th>Kho</th><th className="n">Số lượng</th><th className="n">Đơn giá</th><th className="n">Thành tiền</th>
+              {productMode && <><th>Mã SP</th><th>Tên sản phẩm</th><th>Thành phần</th><th>Mã VTBB</th><th>Tên vật tư</th></>}
+              <th className="c">Lần</th><th>Ngày mua</th>
+              {!productMode && <th>Mã VTBB</th>}
+              {!productMode && !singleCode && <th>Tên vật tư</th>}
+              <th>Nhà cung cấp</th><th>Kho</th><th className="n">Số lượng</th><th className="n">Đơn giá</th><th className="n">Giá trị mua</th>
               <th className="n">So lần trước</th><th>Nguồn</th>
             </tr>
           </thead>
@@ -135,18 +140,27 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
             {rows.map((r) => {
               const qty = qtyText(r.qty)
               const openPo = r.source_type === PRICE_SOURCE_PO_LINE
+              const materialName = r.name || <span className="faint">(chưa có tên)</span>
               return (
-                <tr key={r.id} className={r.price === 0 ? 'zero' : undefined}>
+                <tr key={historyRowKey(r)} className={r.price === 0 ? 'zero' : undefined}>
+                  {productMode && (
+                    <>
+                      <td className="code"><b>{r.hh_code}</b></td>
+                      <td className="name">{r.hh_name || <span className="faint">(chưa có tên)</span>}</td>
+                      <td>{historyRoleText(r) || <PrintDash />}</td>
+                      <td className="code">{r.code}</td>
+                      <td className="name">{materialName}</td>
+                    </>
+                  )}
                   <td className="c"><b>{r.seq}</b></td>
                   <td>{r.date ? fmtDateStr(r.date) : <PrintDash />}</td>
-                  <td className="code">{r.code}</td>
-                  {!singleCode && <td className="name">{r.name || <span className="faint">(chưa có tên)</span>}</td>}
-                  {productMode && <td>{rolesText(r.roles) || <PrintDash />}</td>}
+                  {!productMode && <td className="code">{r.code}</td>}
+                  {!productMode && !singleCode && <td className="name">{materialName}</td>}
                   <td>{r.supplier || <PrintDash />}</td>
                   <td className="wh">{r.warehouse || <PrintDash />}</td>
                   <td className="n">{qty ? `${qty}${r.unit ? ` ${r.unit}` : ''}` : <PrintDash />}</td>
                   <td className="n">{r.price === 0 ? '0' : <b>{priceText(r.price) || <PrintDash />}</b>}</td>
-                  <td className="n">{r.price ? amountText(r.amount) || <PrintDash /> : <PrintDash />}</td>
+                  <td className="n">{amountText(r.amount) || <PrintDash />}</td>
                   <td className="n"><DiffCell row={r} /></td>
                   <td>{openPo && <span className="pbadge">ĐMH đang mở</span>}{r.doc_id > 0 && (r.po_code || `#${r.doc_id}`)}</td>
                 </tr>

@@ -301,15 +301,15 @@ TREE = {
 <ol>
 <li>Nút <strong>Theo mã VTBB</strong> (mặc định) hoặc <strong>Theo mã sản phẩm</strong>.</li>
 <li>Theo mã VTBB: bấm ô chọn, gõ mã, tên hoặc tên nhóm để chọn một hay nhiều mã. Để trống là xem mọi mã VTBB.</li>
-<li>Theo mã sản phẩm: chọn mã HH, màn hiện mọi lần mua của các thành phần trong định mức sản phẩm đó, kèm cột <strong>Vai trò</strong> (Chai, Nắp…).</li>
+<li>Theo mã sản phẩm: chọn mã HH (để trống là mọi sản phẩm có định mức). <strong>Mỗi dòng là một lần mua của một thành phần trong định mức của một sản phẩm</strong>: ví dụ mã chai dùng cho 275 sản phẩm thì một lần mua hiện thành 275 dòng, mỗi dòng ghi rõ <strong>Mã SP</strong>, <strong>Tên sản phẩm</strong> và <strong>Thành phần</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng). Sắp mặc định: ngày mới nhất trước, rồi mã sản phẩm, rồi thành phần; bấm tiêu đề cột để xếp lại. Ô tìm tìm được cả mã, tên sản phẩm và tên thành phần.</li>
 <li>Lọc thêm: <strong>Nhà cung cấp</strong>, <strong>Khoảng ngày mua</strong>, ô <strong>Tìm mã, tên, nhà cung cấp…</strong>.</li>
 </ol>
 
 <h2>Đọc kết quả</h2>
 <ul>
-<li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng xanh, giảm đỏ, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã hoặc mọi mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp. Chế độ theo mã sản phẩm: Số sản phẩm, Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp.</li>
+<li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng xanh, giảm đỏ, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã hoặc mọi mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp. Chế độ theo mã sản phẩm: Số sản phẩm (đã chọn hoặc tất cả), Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp. Tổng giá trị mua và giá bình quân gia quyền cộng đúng cột <strong>Giá trị mua</strong> của từng lần.</li>
 <li><strong>Biểu đồ Diễn biến đơn giá</strong> hiện khi chọn đúng một mã: mỗi điểm là một lần mua có giá, rê chuột để xem ngày, đơn giá, nhà cung cấp, số lượng.</li>
-<li>Bảng, mới nhất trước: Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, <strong>Kho</strong> (kho nhập hàng; lần mua trong Sổ Misa lấy kho của Misa, lần mua trên ERP lấy kho của dòng đơn mua hàng), Số lượng, Đơn giá, Thành tiền, <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (mã đơn mua hàng bấm để mở đơn, hoặc chữ <em>Sổ Misa</em>). Ô tìm tìm được cả theo tên kho; bấm tiêu đề cột Kho để xếp.</li>
+<li>Bảng, mới nhất trước: <strong>Lần</strong> (<strong>Lần 1 là lần mua gần nhất của mã</strong>, số càng lớn càng cũ; tính trên toàn bộ lịch sử của mã, không đổi khi bạn lọc), Ngày mua, Mã VTBB, Tên vật tư (chế độ theo mã sản phẩm thêm ba cột Mã SP, Tên sản phẩm, Thành phần ở đầu bảng), Nhà cung cấp, <strong>Kho</strong> (kho nhập hàng; lần mua trong Sổ Misa lấy kho của Misa, lần mua trên ERP lấy kho của dòng đơn mua hàng), Số lượng, Đơn giá, <strong>Giá trị mua</strong> (thành tiền của lần mua: lần mua trong Sổ Misa là số <em>Giá trị</em> trên sổ Misa, có thể lệch vài chục đồng so với đơn giá nhân số lượng vì Misa làm tròn từng dòng; lần mua khác thì lấy đơn giá nhân số lượng; lần đơn giá 0 để trống), <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (mã đơn mua hàng bấm để mở đơn, hoặc chữ <em>Sổ Misa</em>). Ô tìm tìm được cả theo tên kho; bấm tiêu đề cột Kho để xếp.</li>
 <li>Nhãn <strong>ĐMH đang mở</strong>: dòng của đơn mua hàng đã duyệt, chưa hoàn thành; giá còn có thể đổi nếu đơn được sửa.</li>
 <li>Lần mua đơn giá 0 vẫn hiện để đối chiếu, nhưng không tính vào giá bình quân, thấp nhất, cao nhất và biểu đồ.</li>
 </ul>
@@ -317,12 +317,13 @@ TREE = {
 
 <h2>Nạp sổ Misa</h2>
 <ol>
-<li>Xuất <strong>Sổ chi tiết mua hàng</strong> từ Misa ra Excel, giữ nguyên tiêu đề cột của Misa (cần các cột Ngày, Mã hàng, Số lượng, Đơn giá; nên có Mã / Tên nhà cung cấp, Tên kho, ĐVT). Chưa có sẵn thì bấm <strong>Tải tệp mẫu</strong> trong hộp nạp.</li>
+<li>Xuất <strong>Sổ chi tiết mua hàng</strong> từ Misa ra Excel, giữ nguyên tiêu đề cột của Misa (cần các cột Ngày, Mã hàng, Số lượng, Đơn giá; nên có Mã / Tên nhà cung cấp, Tên kho, ĐVT và <strong>Giá trị</strong> là thành tiền để cột Giá trị mua khớp sổ Misa). Chưa có sẵn thì bấm <strong>Tải tệp mẫu</strong> trong hộp nạp.</li>
 <li>Bấm <strong>Nạp sổ Misa</strong> ở góc phải trên cùng, chọn tệp, bấm <strong>Chạy thử</strong>.</li>
 <li>Ở trang lô, đọc dòng tóm tắt đầu nhật ký: số lần mua trong tệp, khoảng ngày, số dòng <em>giữ / thêm / bỏ</em>, mốc sổ Misa cũ → mới, các dòng bị bỏ qua. Đúng thì bấm <strong>Ghi thật</strong>.</li>
 </ol>
 <ul>
 <li>Chỉ dữ liệu Misa <strong>trong khoảng ngày của tệp</strong> bị thay: lần mua trùng giữ nguyên, lần mua mới thêm, lần mua không còn trong tệp bị bỏ. Ngoài khoảng ngày giữ nguyên, nên nạp từng tháng cũng được.</li>
+<li>Cột <strong>Giá trị</strong> trong tệp được ghi làm Giá trị mua. Nạp lại <strong>cùng tệp</strong> thì các lần mua đã có được bổ sung hoặc sửa Giá trị mua theo tệp, không bị nhân đôi; nhật ký ghi dòng <em>cập nhật thành tiền</em>. Tệp không có cột Giá trị thì không đụng tới Giá trị mua đã có.</li>
 <li>Mã đầu PPA, CKC, CPM, CPN và dòng số lượng 0 bị bỏ qua (giống báo cáo HTML). Đơn giá trống vẫn nhận nhưng không làm giá.</li>
 <li>Mốc sổ Misa dời tới ngày lớn nhất đã nạp; giá các màn tính lại ngay.</li>
 <li>Cần quyền <strong>Sửa</strong> của Giá bao bì (vì đổi giá cả cụm) và quyền tạo, xem Quản lý Import. Lô nạp sổ Misa chưa hoàn tác được: nạp lại tệp đúng để sửa.</li>

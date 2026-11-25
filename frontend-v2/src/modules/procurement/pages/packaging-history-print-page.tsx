@@ -58,7 +58,7 @@ export function PackagingHistoryPrintPage() {
           />
           {data.capped && (
             <p role="status" className="banner">
-              {describeCappedPrint(data.total)}
+              {describeCappedPrint(data.total, productMode ? 'dòng' : 'lần mua')}
             </p>
           )}
           <PrintKpis

@@ -57,6 +57,12 @@ describe('buildHistoryPrintSearch / parseHistoryPrintSearch', () => {
     expect(parse('sort_by=date&sort_dir=sideways')).toMatchObject({ sort_by: 'date', sort_dir: 'desc' })
   })
 
+  it('keeps every sort key the server accepts, including warehouse and the product-mode columns', () => {
+    for (const key of ['warehouse', 'hh_code', 'hh_name', 'role', 'amount']) {
+      expect(parse(`mode=product&sort_by=${key}&sort_dir=asc`)).toMatchObject({ sort_by: key, sort_dir: 'asc' })
+    }
+  })
+
   it('caps codes at the server limit, drops duplicates and truncates the keyword', () => {
     const many = Array.from({ length: PACKAGING_HISTORY_MAX_CODES + 50 }, (_, i) => `C${i}`)
     expect(parse(`codes=${many.join(',')},C0`).codes).toHaveLength(PACKAGING_HISTORY_MAX_CODES)

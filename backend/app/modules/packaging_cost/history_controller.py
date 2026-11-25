@@ -40,18 +40,24 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
             user=Depends(require(ENTITY, "read"))):
     """Lịch sử mua hàng: từng lần mua của mã VTBB (hoặc thành phần của sản phẩm), mới nhất trước, kèm KPI và dữ liệu biểu đồ.
 
-    `mode=code`: `codes` (lặp được, tối đa 200; rỗng = mọi mã VTBB của cụm giá). `mode=product`: `hh_codes` (tối đa 200; rỗng
-    = mọi sản phẩm có định mức) -> các mã thành phần của định mức, mỗi dòng kèm `roles` (mã vai trò chai / nắp / nhãn /
-    nhãn thùng / thùng). Bộ lọc: `q` (mã, tên sản phẩm, mã / tên nhà cung cấp, tên kho), `supplier` (lặp được), `date_from` /
-    `date_to`. `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (khóa lạ -> `date` giảm), ô
-    trống xuống cuối. Nguồn: sổ giá hai nguồn (`source_type` 1 = lịch sử mua, 2 = dòng ĐMH đang mở); dòng đơn giá 0 vẫn
-    hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập hàng, rỗng nếu không biết), `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước
-    của cùng mã (không phụ thuộc bộ lọc), `seq` = số thứ tự lần mua của mã, `doc_id` / `po_code` = ĐMH nguồn (0 / rỗng nếu
-    dữ liệu cũ không có). Trả `stats` (trên TOÀN BỘ tập đã lọc: `purchase_count, priced_count, qty_total, weighted_avg`
-    gia quyền theo số lượng, `min, max, supplier_count, first_date, last_date`, `amount_total` = tổng giá x SL của lần có giá,
-    `code_count` = số mã có lần mua, `unit`, `first_price` / `last_price` = giá lần có giá đầu tiên / gần nhất), `series` (đúng một mã được chọn: tối đa 1.000
-    điểm giá cũ -> mới) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền `packaging_cost.read`; chỉ tính các dòng
-    sổ giá thuộc pháp nhân người xem được thấy.
+    `mode=code`: `codes` (lặp được, tối đa 200; rỗng = mọi mã VTBB của cụm giá), mỗi dòng một lần mua. `mode=product`: `hh_codes`
+    (tối đa 200; rỗng = mọi sản phẩm có định mức): mỗi dòng = một lần mua x MỘT cặp (sản phẩm, mã thành phần của định mức) — mã
+    dùng ở 275 sản phẩm thì một lần mua cho 275 dòng (bản mẫu `renderHistBySP`), kèm `hh_code` / `hh_name` / `role` (mã vai trò
+    chai / nắp / nhãn / nhãn thùng / thùng); mã xuất hiện hai vai trò trong cùng sản phẩm chỉ tính một lần (vai trò nhỏ nhất).
+    Thứ tự mặc định chế độ sản phẩm: ngày giảm dần -> mã sản phẩm -> thành phần. Bộ lọc: `q` (mã, tên vật tư, mã / tên nhà cung
+    cấp, tên kho; chế độ sản phẩm thêm mã / tên sản phẩm và tên thành phần), `supplier` (lặp được), `date_from` / `date_to`.
+    `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (+ `hh_code, hh_name, role` chỉ ở
+    chế độ sản phẩm; khóa lạ -> `date` giảm), ô trống xuống cuối. Nguồn: sổ giá ba nguồn (`source_type` 1 = lịch sử mua, 2 = dòng
+    ĐMH đang mở, 3 = sổ Misa); dòng đơn giá 0 vẫn hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập
+    hàng, rỗng nếu không biết), `amount` = GIÁ TRỊ MUA (thành tiền Misa khi có, không thì giá x số lượng; None ở dòng giá 0),
+    `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước của cùng mã (không phụ thuộc bộ lọc), `seq` = lần mua của mã
+    trên toàn bộ lịch sử trong phạm vi quyền, 1 = lần mua GẦN NHẤT, `doc_id` / `po_code` = ĐMH nguồn (0 / rỗng nếu dữ liệu cũ
+    không có). Trả `stats` (trên TOÀN BỘ tập đã lọc: `purchase_count` = số dòng, `priced_count, qty_total, weighted_avg` gia quyền
+    theo số lượng của giá trị mua, `min, max, supplier_count, first_date, last_date`, `amount_total` = tổng giá trị mua của lần
+    có giá, `code_count` = số mã có lần mua, `product_count` = số sản phẩm có định mức trong phạm vi chọn (chế độ sản phẩm),
+    `unit`, `first_price` / `last_price` = giá lần có giá đầu tiên / gần nhất, chế độ sản phẩm để trống), `series` (chế độ mã,
+    đúng một mã được chọn: tối đa 1.000 điểm giá cũ -> mới) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền
+    `packaging_cost.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
     """
     res = build_history(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, "read"))
     return success(res)

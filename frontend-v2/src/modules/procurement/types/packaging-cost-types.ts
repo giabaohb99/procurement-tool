@@ -359,8 +359,12 @@ export interface PackagingHistoryRow {
   /** VNĐ chưa VAT; 0 = dòng không có giá (không tính vào KPI / biểu đồ). */
   price: number | null
   vat: number | null
+  /**
+   * GIÁ TRỊ MUA của lần mua (VNĐ, chưa VAT): thành tiền Misa khi có, không thì giá x số lượng; null ở dòng đơn giá 0.
+   * Tổng giá trị mua + giá bình quân gia quyền của `stats` cộng đúng số này.
+   */
   amount: number | null
-  /** Mã `PriceSourceType`: 1 = lịch sử mua, 2 = dòng ĐMH đang mở. */
+  /** Mã `PriceSourceType`: 1 = lịch sử mua, 2 = dòng ĐMH đang mở, 3 = sổ Misa. */
   source_type: number
   /** Id ĐMH nguồn; 0 = dữ liệu cũ không có ĐMH. */
   doc_id: number
@@ -369,10 +373,13 @@ export interface PackagingHistoryRow {
   prev_price: number | null
   diff: number | null
   pct: number | null
-  /** Số thứ tự lần mua của mã (lần đầu tiên = 1). */
+  /** Lần mua của mã trên TOÀN BỘ lịch sử (không phụ thuộc bộ lọc): 1 = lần mua GẦN NHẤT, như bản mẫu HTML. */
   seq: number
-  /** Chế độ sản phẩm: mã `PackagingRole` mà mã này đóng trong định mức đã chọn. */
-  roles: number[]
+  /** Chế độ sản phẩm: sản phẩm của dòng (mỗi lần mua ra một dòng cho mỗi sản phẩm dùng mã); chế độ mã: rỗng. */
+  hh_code: string
+  hh_name: string
+  /** Chế độ sản phẩm: mã `PackagingRole` của thành phần (chai / nắp / nhãn / nhãn thùng / thùng); chế độ mã: null. */
+  role: number | null
 }
 
 export interface PackagingHistoryStats {
@@ -386,10 +393,12 @@ export interface PackagingHistoryStats {
   supplier_count: number
   first_date: string | null
   last_date: string | null
-  /** Tổng giá x số lượng của các lần mua CÓ GIÁ. */
+  /** Tổng GIÁ TRỊ MUA (thành tiền Misa, không thì giá x số lượng) của các lần mua CÓ GIÁ. */
   amount_total: number | null
   /** Số mã có lần mua trong tập lọc. */
   code_count: number
+  /** Chế độ sản phẩm: số sản phẩm có định mức trong phạm vi chọn (thẻ "Số sản phẩm"); chế độ mã: 0. */
+  product_count: number
   /** ĐVT trên sổ giá (có nghĩa khi xem một mã). */
   unit: string
   /** Giá của lần mua có giá đầu tiên / gần nhất trong tập lọc. */

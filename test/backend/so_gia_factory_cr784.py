@@ -38,13 +38,14 @@ def ledger_rows(db, **flt):
 
 
 def add_ledger(db, code, price, on, *, source_type=PriceSourceType.PURCHASE_HISTORY, source_id=None, supplier="NCC01",
-               company_id=1, unit="Cái", qty=100, doc_id=0, warehouse=None):
-    """Dòng sổ giá dựng thẳng (bài kiểm tầng tính giá không cần đi qua ĐMH)."""
+               company_id=1, unit="Cái", qty=100, doc_id=0, warehouse=None, amount=None):
+    """Dòng sổ giá dựng thẳng (bài kiểm tầng tính giá không cần đi qua ĐMH). `amount` = thành tiền (None = chưa có)."""
     n = db.query(ProductPriceLedger).count() + 1
     row = ProductPriceLedger(source_type=int(source_type), source_id=source_id or (9000 + n), doc_id=doc_id,
                              product_code=code, supplier_code=supplier, company_id=company_id,
                              price_date=date.fromisoformat(on), price=Decimal(str(price)), vat=Decimal(8),
-                             qty=Decimal(qty), unit=unit, warehouse_name=warehouse)
+                             qty=Decimal(qty), unit=unit, warehouse_name=warehouse,
+                             amount=None if amount is None else Decimal(str(amount)))
     db.add(row)
     db.commit()
     return row

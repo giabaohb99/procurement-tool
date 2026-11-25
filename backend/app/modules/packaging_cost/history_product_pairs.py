@@ -1,0 +1,43 @@
+"""Cặp (sản phẩm x thành phần) của Lịch sử mua hàng chế độ "Theo mã sản phẩm" (duoc-CR-784, bản mẫu `renderHistBySP`).
+
+Bản mẫu: với mỗi sản phẩm đã chọn (rỗng = mọi sản phẩm có định mức), lấy từng MÃ thành phần của định mức (chai, nắp, nhãn, nhãn
+thùng, thùng); một mã xuất hiện ở hai vai trò trong CÙNG sản phẩm chỉ tính MỘT lần, vai trò nhỏ nhất thắng (thứ tự chai -> thùng).
+Mỗi lần mua của mã đó cho ra MỘT dòng cho MỖI sản phẩm dùng nó — mã CPT0075 dùng ở 275 sản phẩm thì một lần mua thành 275 dòng.
+
+Ở đây dựng cặp đó thành MỘT truy vấn con để nối với sổ giá trong SQL (lọc / xếp / phân trang tại máy chủ, không kéo về Python):
+`pairs(hh_code, hh_name, code, role)`.
+"""
+from sqlalchemy import Subquery, func, literal, select, union_all
+
+from app.core.packaging_price_codes import PACKAGING_ROLE_LABELS, PackagingRole
+from app.modules.packaging_cost.cost_service import fold_text
+from app.modules.packaging_cost.impact_service import PART_COLUMNS
+from app.modules.packaging_cost.model import PackagingBom
+
+_ROLES = list(PackagingRole)          # cùng thứ tự với PART_COLUMNS
+
+
+def build_bom_pairs(hh_codes: list[str]) -> Subquery:
+    """Truy vấn con `(hh_code, hh_name, code, role)`: mỗi (sản phẩm, mã thành phần) đúng một dòng, `role` = mã `PackagingRole`
+    nhỏ nhất mà mã đó đóng trong sản phẩm. `hh_codes` rỗng = mọi sản phẩm có định mức."""
+    parts = []
+    for column, role in zip(PART_COLUMNS, _ROLES):
+        code = getattr(PackagingBom, column)
+        part = select(PackagingBom.hh_code.label("hh_code"), PackagingBom.hh_name.label("hh_name"), code.label("code"),
+                      literal(int(role)).label("role")).where(code != "")
+        parts.append(part.where(PackagingBom.hh_code.in_(hh_codes)) if hh_codes else part)
+    merged = union_all(*parts).subquery()
+    return (select(merged.c.hh_code, merged.c.hh_name, merged.c.code, func.min(merged.c.role).label("role"))
+            .group_by(merged.c.hh_code, merged.c.hh_name, merged.c.code).subquery())
+
+
+def count_bom_products(hh_codes: list[str]):
+    """Truy vấn con vô hướng: số sản phẩm có định mức trong phạm vi chọn (thẻ "Số sản phẩm" của bản mẫu)."""
+    query = select(func.count(func.distinct(PackagingBom.hh_code)))
+    return (query.where(PackagingBom.hh_code.in_(hh_codes)) if hh_codes else query).scalar_subquery()
+
+
+def matching_roles(needle: str) -> list[int]:
+    """Mã vai trò có nhãn chứa `needle` (không phân biệt dấu / hoa thường) — ô tìm chữ khớp cả cột "Thành phần"."""
+    folded = fold_text(needle)
+    return [int(role) for role, label in PACKAGING_ROLE_LABELS.items() if folded and folded in fold_text(label)]

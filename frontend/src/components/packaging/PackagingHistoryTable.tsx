@@ -9,7 +9,7 @@ import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingHistoryRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
 import { diffColor, diffText, pctText, PRICE_SOURCE_PO_LINE, qtyText } from '../../utils/packaging-price'
-import { rolesText } from '../../utils/packaging-query'
+import { historyRoleText, historyRowKey } from '../../utils/packaging-query'
 import { AmountText, CodeLink, Dash, OneLine, PriceText } from './PackagingCells'
 import './packaging.css'
 
@@ -46,8 +46,10 @@ function SourceCell({ row }: { row: PackagingHistoryRow }) {
 
 /**
  * Bảng lần mua của màn Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…"). Cột bật xếp gửi `sort_by` = khóa cột lên máy chủ
- * (`date, code, name, supplier, warehouse, qty, price, amount, vat, source`); "Lần" và "So lần trước" tính theo từng mã nên chưa xếp
- * được. Một mã: bỏ cột Tên (đã có ở tiêu đề biểu đồ) nhường chỗ cho nhà cung cấp.
+ * (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `hh_code, hh_name, role` ở chế độ sản phẩm); "Lần" và
+ * "So lần trước" tính theo từng mã nên chưa xếp được. Một mã: bỏ cột Tên (đã có ở tiêu đề biểu đồ) nhường chỗ cho nhà cung cấp.
+ * Giá trị mua = thành tiền Misa khi có, không thì giá x số lượng (máy chủ tính). Chế độ sản phẩm: mỗi dòng = một lần mua x một
+ * (sản phẩm, thành phần), khóa dòng là (sản phẩm, id).
  */
 export default function PackagingHistoryTable({
   rows, total, productMode, singleCode, sortBy, sortDir, onSort, page, pageSize, onPage, onReload, summary, empty,
@@ -67,13 +69,20 @@ export default function PackagingHistoryTable({
   empty: ReactNode
 }) {
   const columns = useMemo<TableColumn<PackagingHistoryRow>[]>(() => {
-    const cols: TableColumn<PackagingHistoryRow>[] = [
-      { key: 'seq', label: 'Lần', width: 55, align: 'right', cell: (r) => <span className="pkg-muted pkg-num">{r.seq}</span> },
-      { key: 'date', label: 'Ngày mua', width: 110, sort: 'date', fixed: true, cell: (r) => (r.date ? fmtDateStr(r.date) : <Dash />) },
-      { key: 'code', label: 'Mã VTBB', width: 110, sort: 'code', cell: (r) => <CodeLink code={r.code} /> },
-    ]
-    if (!singleCode) cols.push({ key: 'name', label: 'Tên vật tư', width: 200, sort: 'name', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) })
-    if (productMode) cols.push({ key: 'role', label: 'Vai trò', width: 110, cell: (r) => rolesText(r.roles) || <Dash /> })
+    const seq: TableColumn<PackagingHistoryRow> = { key: 'seq', label: 'Lần', width: 55, align: 'right', cell: (r) => <span className="pkg-muted pkg-num">{r.seq}</span> }
+    const date: TableColumn<PackagingHistoryRow> = { key: 'date', label: 'Ngày mua', width: 110, sort: 'date', fixed: true, cell: (r) => (r.date ? fmtDateStr(r.date) : <Dash />) }
+    const code: TableColumn<PackagingHistoryRow> = { key: 'code', label: 'Mã VTBB', width: 110, sort: 'code', cell: (r) => <CodeLink code={r.code} /> }
+    const name: TableColumn<PackagingHistoryRow> = { key: 'name', label: 'Tên vật tư', width: 200, sort: 'name', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) }
+    //  Chế độ sản phẩm (bản mẫu `renderHistBySP`): Mã SP · Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...;
+    //  chế độ mã: Lần · Ngày mua · Mã VTBB...; một mã thì bỏ cột Tên (đã có ở tiêu đề biểu đồ).
+    const cols: TableColumn<PackagingHistoryRow>[] = productMode
+      ? [
+          { key: 'hh_code', label: 'Mã SP', width: 110, sort: 'hh_code', cell: (r) => <b>{r.hh_code}</b> },
+          { key: 'hh_name', label: 'Tên sản phẩm', width: 220, sort: 'hh_name', cell: (r) => (r.hh_name ? <OneLine>{r.hh_name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
+          { key: 'role', label: 'Thành phần', width: 110, sort: 'role', cell: (r) => historyRoleText(r) || <Dash /> },
+          code, name, seq, date,
+        ]
+      : [seq, date, code, ...(singleCode ? [] : [name])]
     cols.push(
       { key: 'supplier', label: 'Nhà cung cấp', width: singleCode ? 260 : 190, sort: 'supplier', cell: (r) => (r.supplier ? <OneLine>{r.supplier}</OneLine> : <Dash />) },
       { key: 'warehouse', label: 'Kho', width: 190, sort: 'warehouse', cell: (r) => (r.warehouse ? <OneLine>{r.warehouse}</OneLine> : <Dash />) },
@@ -85,7 +94,7 @@ export default function PackagingHistoryTable({
         },
       },
       { key: 'price', label: 'Đơn giá', width: 110, align: 'right', sort: 'price', cell: (r) => <PriceCell row={r} /> },
-      { key: 'amount', label: 'Thành tiền', width: 130, align: 'right', sort: 'amount', cell: (r) => <AmountText value={r.price ? r.amount : null} /> },
+      { key: 'amount', label: 'Giá trị mua', width: 130, align: 'right', sort: 'amount', cell: (r) => <AmountText value={r.amount} /> },
       { key: 'diff', label: 'So lần trước', width: 150, align: 'right', cell: (r) => <DiffCell row={r} /> },
       { key: 'source', label: 'Nguồn', width: 170, sort: 'source', cell: (r) => <SourceCell row={r} /> },
     )
@@ -106,7 +115,7 @@ export default function PackagingHistoryTable({
           <TableHead columns={table.columns} startResize={table.startResize} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.id} className={r.price === 0 ? 'pkg-zero' : undefined}><TableCells columns={table.columns} row={r} index={i} /></tr>
+              <tr key={historyRowKey(r)} className={r.price === 0 ? 'pkg-zero' : undefined}><TableCells columns={table.columns} row={r} index={i} /></tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">{empty}</td></tr>}
           </tbody>

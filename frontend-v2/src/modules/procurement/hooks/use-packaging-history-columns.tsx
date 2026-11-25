@@ -2,13 +2,16 @@
  * duoc-CR-784 — cột của tab Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…", đầy đủ ở tooltip) để bảng không phình.
  *
  * Cột bật `sortable` gửi `sort_by` = khóa cột lên máy chủ — khóa phải nằm trong `SORT_KEYS` của
- * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source`). "Lần" và
- * "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không bật `sortable` khi máy chủ chưa nhận khóa).
- * Số lượng kèm ĐVT trong một ô; nguồn + số ĐMH chung một cột. Dòng đơn giá 0 mờ đi (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở".
+ * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `hh_code,
+ * hh_name, role` chỉ ở chế độ sản phẩm). "Lần" và "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không
+ * bật `sortable` khi máy chủ chưa nhận khóa). Số lượng kèm ĐVT trong một ô; nguồn + số ĐMH chung một cột. Dòng đơn giá 0 mờ đi
+ * (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở".
+ *
+ * Chế độ "Theo sản phẩm" (bản mẫu `renderHistBySP`): mỗi dòng = một lần mua x một (sản phẩm, thành phần), các cột đầu theo thứ
+ * tự bản mẫu: Mã SP · Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...; chế độ mã: Lần · Ngày mua · Mã VTBB...
  */
 import { useMemo } from 'react'
 import type { DataTableColumn } from '@/shared/data-table'
-import { PACKAGING_ROLE } from '@/shared/constants/statuses'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity } from '@/shared/utils/format-money'
 
@@ -16,59 +19,73 @@ import { PackagingCodeLink } from '../components/packaging-code-link'
 import { DiffCell, PriceCell, SourceCell } from '../components/packaging-history-cells'
 import { EmptyDash, PriceText } from '../components/packaging-price-cells'
 import type { PackagingHistoryRow } from '../types/packaging-cost-types'
+import { historyRoleText } from '../utils/packaging-history'
 
-const ROLE_LABEL = new Map(PACKAGING_ROLE.map((role) => [Number(role.value), role.label]))
-
-/** "Chai, Nắp" — vai trò mã này đóng trong định mức các sản phẩm đã chọn. */
-function roleText(row: PackagingHistoryRow): string {
-  return row.roles.map((role) => ROLE_LABEL.get(role) ?? String(role)).join(', ')
+const seqColumn: DataTableColumn<PackagingHistoryRow> = {
+  key: 'seq',
+  header: 'Lần',
+  width: 55,
+  align: 'right',
+  cell: (row) => <span className="text-muted-foreground tabular-nums">{row.seq}</span>,
 }
+
+const dateColumn: DataTableColumn<PackagingHistoryRow> = {
+  key: 'date',
+  header: 'Ngày mua',
+  width: 120,
+  sortable: true,
+  sortDescFirst: true,
+  hideable: false,
+  cell: (row) => (row.date ? formatDate(row.date) : <EmptyDash />),
+}
+
+const codeColumn: DataTableColumn<PackagingHistoryRow> = {
+  key: 'code',
+  header: 'Mã VTBB',
+  width: 105,
+  sortable: true,
+  cell: (row) => <PackagingCodeLink code={row.code} />,
+}
+
+const nameColumn: DataTableColumn<PackagingHistoryRow> = {
+  key: 'name',
+  header: 'Tên vật tư',
+  width: 160,
+  sortable: true,
+  cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
+}
+
+/** Ba cột đầu của chế độ sản phẩm (bản mẫu: Mã SP · Tên sản phẩm · Thành phần). */
+const productColumns: DataTableColumn<PackagingHistoryRow>[] = [
+  {
+    key: 'hh_code',
+    header: 'Mã SP',
+    width: 110,
+    sortable: true,
+    cell: (row) => <span className="font-medium">{row.hh_code}</span>,
+  },
+  {
+    key: 'hh_name',
+    header: 'Tên sản phẩm',
+    width: 200,
+    sortable: true,
+    cell: (row) => row.hh_name || <span className="text-muted-foreground">(chưa có tên)</span>,
+  },
+  {
+    key: 'role',
+    header: 'Thành phần',
+    width: 110,
+    sortable: true,
+    cell: (row) => historyRoleText(row) || <EmptyDash />,
+  },
+]
 
 export function usePackagingHistoryColumns(productMode: boolean, singleCode: boolean) {
   return useMemo<DataTableColumn<PackagingHistoryRow>[]>(() => {
-    const columns: DataTableColumn<PackagingHistoryRow>[] = [
-      {
-        key: 'seq',
-        header: 'Lần',
-        width: 55,
-        align: 'right',
-        cell: (row) => <span className="text-muted-foreground tabular-nums">{row.seq}</span>,
-      },
-      {
-        key: 'date',
-        header: 'Ngày mua',
-        width: 120,
-        sortable: true,
-        sortDescFirst: true,
-        hideable: false,
-        cell: (row) => (row.date ? formatDate(row.date) : <EmptyDash />),
-      },
-      {
-        key: 'code',
-        header: 'Mã VTBB',
-        width: 105,
-        sortable: true,
-        cell: (row) => <PackagingCodeLink code={row.code} />,
-      },
-    ]
     //  Một mã: tên giống nhau ở mọi dòng (đã có ở ô chọn + tiêu đề biểu đồ) — bỏ cột để nhường chỗ cho nhà cung cấp.
-    if (!singleCode) {
-      columns.push({
-        key: 'name',
-        header: 'Tên vật tư',
-        width: 160,
-        sortable: true,
-        cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
-      })
-    }
-    if (productMode) {
-      columns.push({
-        key: 'role',
-        header: 'Vai trò',
-        width: 110,
-        cell: (row) => roleText(row) || <EmptyDash />,
-      })
-    }
+    const columns: DataTableColumn<PackagingHistoryRow>[] = productMode
+      ? [...productColumns, codeColumn, nameColumn, seqColumn, dateColumn]
+      : [seqColumn, dateColumn, codeColumn, ...(singleCode ? [] : [nameColumn])]
     columns.push(
       {
         key: 'supplier',
@@ -113,13 +130,14 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
         cell: (row) => <PriceCell row={row} />,
       },
       {
+        // Giá trị mua = thành tiền Misa khi có, không thì giá x số lượng (máy chủ tính); dòng giá 0 không có giá trị.
         key: 'amount',
-        header: 'Thành tiền',
+        header: 'Giá trị mua',
         width: 120,
         align: 'right',
         sortable: true,
         sortDescFirst: true,
-        cell: (row) => <PriceText value={row.price ? row.amount : null} />,
+        cell: (row) => <PriceText value={row.amount} />,
       },
       {
         key: 'diff',

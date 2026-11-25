@@ -127,8 +127,11 @@ export function buildHistoryParams(
   }
 }
 
-/** "Chai, Nắp" — vai trò mã này đóng trong định mức các sản phẩm đã chọn. */
-export const rolesText = (roles: readonly number[]): string => roles.map(roleLabel).join(', ')
+/** "Chai" / "Nắp"... — thành phần của dòng trong định mức sản phẩm (chế độ sản phẩm); chế độ mã không có vai trò thì rỗng. */
+export const historyRoleText = (row: { role: number | null }): string => (row.role === null ? '' : roleLabel(row.role))
+
+/** Khóa dòng của bảng: chế độ sản phẩm một dòng sổ giá hiện ở nhiều sản phẩm nên `id` một mình không duy nhất. */
+export const historyRowKey = (row: { id: number; hh_code: string }): string => (row.hh_code ? `${row.hh_code}:${row.id}` : String(row.id))
 
 /**
  * Trục giá nới ra hai đầu một đoạn (10% biên độ, tối thiểu 2% giá) — đường giá không dính sát khung, giá đi ngang vẫn có

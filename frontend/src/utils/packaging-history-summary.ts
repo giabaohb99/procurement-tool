@@ -82,9 +82,8 @@ export function buildHistorySummary(s: PackagingHistoryStats, ctx: HistorySummar
   const codes = s.code_count ?? 0
   if (ctx.mode === 'product') {
     return [
-      ctx.selectedCount > 0
-        ? { label: 'Số sản phẩm', value: countText(ctx.selectedCount), sub: 'đã chọn' }
-        : { label: 'Số sản phẩm', value: 'Tất cả', sub: 'mọi sản phẩm có định mức' },
+      //  Số sản phẩm có định mức trong phạm vi chọn (máy chủ đếm); "đã chọn" / "tất cả" như bản mẫu.
+      { label: 'Số sản phẩm', value: countText(s.product_count ?? ctx.selectedCount), sub: ctx.selectedCount > 0 ? 'đã chọn' : 'tất cả' },
       { label: 'Mã vật tư liên quan', value: countText(codes), sub: 'chai, nắp, nhãn, nhãn thùng, thùng' },
       purchaseCount(s, 'Số dòng lịch sử'),
       suppliers(s),

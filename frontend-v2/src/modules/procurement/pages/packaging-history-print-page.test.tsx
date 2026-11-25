@@ -39,7 +39,9 @@ const row = (id: number, over: Partial<PackagingHistoryRow> = {}): PackagingHist
   diff: 200,
   pct: 0.2,
   seq: id,
-  roles: [],
+  hh_code: '',
+  hh_name: '',
+  role: null,
   ...over,
 })
 
@@ -55,6 +57,7 @@ const stats = {
   last_date: '2026-05-01',
   amount_total: 9904500,
   code_count: 1,
+  product_count: 0,
   unit: 'Cái',
   first_price: 1000,
   last_price: 1200,
@@ -72,8 +75,13 @@ vi.mock('@/core/api', async (importOriginal) => {
       const size = Number(params.page_size)
       const start = (page - 1) * size
       const count = Math.max(0, Math.min(size, total - start))
+      const product =
+        params.mode === 'product' ? { hh_code: 'HH0417.1', hh_name: 'Flower Top 450ml', role: 1 } : {}
       const items = Array.from({ length: count }, (_, i) =>
-        row(start + i + 1, i === 0 && page === 1 ? { po_code: 'PO00012', doc_id: 12, source_type: 2 } : {}),
+        row(start + i + 1, {
+          ...product,
+          ...(i === 0 && page === 1 ? { po_code: 'PO00012', doc_id: 12, source_type: 2 } : {}),
+        }),
       )
       const result: PackagingHistoryResult = {
         items,
@@ -171,11 +179,27 @@ describe('PackagingHistoryPrintPage', () => {
     expect(calls).toHaveLength(10)
   }, 20000)
 
-  it('adds the role column in product mode and survives a hostile URL', async () => {
+  it('lays out product mode like the template (product, component, material, Lần, date) and survives a hostile URL', async () => {
     total = 1
     build('mode=product&hh_codes=HH0417.1&sort_by=evil&date_from=never')
-    const header = await screen.findByRole('columnheader', { name: 'Vai trò' })
-    expect(within(header.closest('table') as HTMLElement).getAllByRole('row')).toHaveLength(2)
+    const header = await screen.findByRole('columnheader', { name: 'Thành phần' })
+    const table = header.closest('table') as HTMLElement
+    expect(within(table).getAllByRole('row')).toHaveLength(2)
+    expect(within(table).getAllByRole('columnheader').slice(0, 7).map((th) => th.textContent)).toEqual([
+      'Mã SP',
+      'Tên sản phẩm',
+      'Thành phần',
+      'Mã VTBB',
+      'Tên vật tư',
+      'Lần',
+      'Ngày mua',
+    ])
+    expect(within(table).getByRole('columnheader', { name: 'Giá trị mua' })).toBeInTheDocument()
+    expect(within(within(table).getAllByRole('row')[1]).getAllByRole('cell').slice(0, 3).map((td) => td.textContent)).toEqual([
+      'HH0417.1',
+      'Flower Top 450ml',
+      'Chai',
+    ])
     expect(calls[0].params).toMatchObject({ mode: 'product', hh_codes: ['HH0417.1'] })
     expect(calls[0].params.sort_by).toBeUndefined()
     expect(calls[0].params.date_from).toBeUndefined()

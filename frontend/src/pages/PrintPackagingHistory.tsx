@@ -39,7 +39,7 @@ export default function PrintPackagingHistory() {
         <>
           <PrintHistoryFilters mode={params.mode} codes={codes} first={data.items[0]} singleCode={singleCode}
             extras={describeHistoryFilters(params, data.suppliers)} />
-          {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.total, 'lần mua')}</p>}
+          {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.total, productMode ? 'dòng' : 'lần mua')}</p>}
           <PrintKpis items={buildHistorySummary(data.stats, { singleCode, mode: params.mode, selectedCount: codes.length })} />
           {series && series.length > 0 && <PrintPriceChart series={series} />}
           <PrintHistoryTable rows={data.items} productMode={productMode} singleCode={singleCode} total={data.total} />

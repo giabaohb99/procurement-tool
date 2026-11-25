@@ -198,10 +198,16 @@ def build_last_prices_workbook(rows: list[dict], n: int = 5, show_qty: bool = Fa
 
 
 def _history_columns(product_mode: bool) -> list[Col]:
-    cols = [Col("date", "Ngày mua", "date", 12), Col("code", "Mã VTBB", width=11), Col("name", "Tên vật tư", width=40)]
+    """Cột Excel của Lịch sử mua hàng. Chế độ sản phẩm theo đúng thứ tự bản mẫu HTML: Mã SP · Tên sản phẩm · Thành phần · Mã VTBB ·
+    Tên vật tư · Lần · Ngày..., mỗi dòng = một lần mua x một (sản phẩm, thành phần); chế độ mã: Lần · Ngày · Mã VTBB · Tên vật tư..."""
+    code = [Col("code", "Mã VTBB", width=11), Col("name", "Tên vật tư", width=40)]
+    seq = Col("seq", "Lần", "int", 6)
     if product_mode:
-        cols.append(Col("role_text", "Thành phần", width=12))
-    return cols + [Col("supplier_code", "Mã NCC", width=12), Col("supplier", "Nhà cung cấp", width=36),
+        head = [Col("hh_code", "Mã SP", width=12), Col("hh_name", "Tên sản phẩm", width=40),
+                Col("role_text", "Thành phần", width=12), *code, seq, Col("date", "Ngày mua", "date", 12)]
+    else:
+        head = [seq, Col("date", "Ngày mua", "date", 12), *code]
+    return head + [Col("supplier_code", "Mã NCC", width=12), Col("supplier", "Nhà cung cấp", width=36),
                    Col("warehouse", "Kho", width=20), Col("unit", "ĐVT", width=7),
                    Col("qty", "Số lượng", "qty", 11), Col("price", "Đơn giá", "price", 11), Col("vat", "VAT (%)", "decimal", 8),
                    Col("amount", "Giá trị mua", "money", 15), Col("diff", "Chênh lệch so\nlần có giá trước", "price", 14),
@@ -209,15 +215,20 @@ def _history_columns(product_mode: bool) -> list[Col]:
 
 
 def build_history_workbook(rows: list[dict], product_mode: bool = False) -> bytes:
-    """Một sheet "Lịch sử mua hàng": cùng bộ lọc + thứ tự đang xem; chế độ sản phẩm thêm cột Thành phần của mã."""
+    """Một sheet "Lịch sử mua hàng": cùng bộ lọc + thứ tự đang xem; chế độ sản phẩm có thêm Mã SP / Tên sản phẩm / Thành phần."""
     check_row_limit(len(rows))
-    flat = [{**r, "role_text": ", ".join(PACKAGING_ROLE_LABELS[PackagingRole(x)] for x in r["roles"]),
+    flat = [{**r, "role_text": PACKAGING_ROLE_LABELS[PackagingRole(r["role"])] if r["role"] else "",
              "source_text": PRICE_SOURCE_TYPE_LABELS[PriceSourceType(r["source_type"])]} for r in rows]
     codes = len({r["code"] for r in rows})
+    if product_mode:
+        note = f"{_count(len({r['hh_code'] for r in rows}))} sản phẩm · {_count(codes)} mã VTBB · {_count(len(rows))} dòng lịch sử"
+    else:
+        note = f"{_count(codes)} mã · {_count(len(rows))} lần mua"
+    note += " · Lần 1 = lần mua gần nhất của mã"
     wb = Workbook()
     ws = wb.active
     ws.title = "Lịch sử mua hàng"
     write_report_sheet(ws, subject="Lịch sử mua hàng theo sản phẩm" if product_mode else "Lịch sử mua hàng",
-                       note=f"{_count(codes)} mã · {_count(len(rows))} lần mua", columns=_history_columns(product_mode),
-                       rows=flat, tones={"price": bold_tone, **_DIFF_TONES}, freeze_cols=3)
+                       note=note, columns=_history_columns(product_mode), rows=flat,
+                       tones={"price": bold_tone, **_DIFF_TONES}, freeze_cols=1 if product_mode else 3)
     return _save(wb)

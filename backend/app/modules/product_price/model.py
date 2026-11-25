@@ -50,6 +50,10 @@ class ProductPriceLedger(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(18, 4), default=0)
     vat: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)       # % VAT của dòng
     qty: Mapped[Decimal] = mapped_column(Numeric(18, 3), default=0)
+    # Thành tiền của lần mua, VNĐ, CHƯA VAT: nguồn Misa = cột "Giá trị" của sổ chi tiết mua hàng (Misa làm tròn từng dòng nên có
+    # thể khác giá x số lượng vài chục đồng); nguồn 1 = tiền của dòng lịch sử bỏ VAT, quy VNĐ. NULL = chưa có / không biết
+    # -> giao diện dùng giá x số lượng (cùng luật `gia_tri ?? gia x sl` của bản mẫu HTML). Nguồn 2 (ĐMH đang mở) luôn NULL.
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     unit: Mapped[str] = mapped_column(String(25), default="")             # ĐVT lúc mua — cảnh báo lệch ĐVT danh mục
     synced_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), default=datetime.utcnow)
 
