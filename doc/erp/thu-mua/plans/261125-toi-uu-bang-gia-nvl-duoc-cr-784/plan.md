@@ -42,6 +42,7 @@ Các tệp phase 03–06 còn ghi `opt784` — đọc là "migration của phase
 | 04 | [Cột, chỉ mục, bỏ ngưỡng, dọn nhỏ](phase-04-cot-chi-muc-nguong-don-dep.md) | 4,5 | 03 | C5, C6, C7, C9 đã chốt |
 | 05 | [Tài liệu, bài kiểm, phát hành](phase-05-tai-lieu-kiem-phat-hanh.md) | 2 | 02–04, 06 | chưa |
 | 06 | [Đổi tên `hh_code` / `hh_name` sang `fg_code` / `fg_name`](phase-06-doi-ten-hh-sang-fg.md) | 4 | 01 đã gộp; chung `opt784` | C8 đã chốt (đổi) |
+| 07 | [Đánh dấu lô nhập trên định mức + xóa dữ liệu theo lô](phase-07-danh-dau-lo-nhap-va-xoa-theo-lo.md) | 3 | 03 | đã duyệt 25/11, chờ làm |
 
 Một người giữ 02 → 03 → 04 → 06 nối tiếp: cả ba sửa `product_price/model.py`, `core/packaging_price_codes.py` (mỗi phase một
 migration riêng nối tiếp, xem mục *Thời điểm*; luật "chỉ mục gom một migration" áp trong phạm vi từng phase). Không phase nào chạy song song với phase 01 vì bộ dựng dữ liệu kiểm
