@@ -1,5 +1,5 @@
-// duoc-CR-784 — màn Tác động giá: ba thẻ số liệu nằm giữa ô chọn mã và bảng mã đã chọn; bấm thẻ "Tăng nhiều nhất /thùng"
-// xếp bảng sản phẩm theo chênh /thùng giảm dần (đi tới máy chủ trong thân POST /impact) rồi cuộn tới bảng.
+// duoc-CR-784 — màn Tác động giá: ba thẻ số liệu đầu màn đã BỎ theo người chủ (23/11/2026, bản in vẫn giữ thẻ).
+// Bài này canh để thẻ không quay lại và bảng sản phẩm vẫn để máy chủ xếp mặc định theo mã HH.
 // Chặn ở tầng `@/core/api` (luật testing.md); ô chọn mã thay bằng một nút vì cách chọn mã đã có bài kiểm riêng.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -73,33 +73,20 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
 })
 
-describe('PackagingImpactPage summary cards', () => {
-  it('shows nothing until a code is chosen, then the three cards', async () => {
+describe('PackagingImpactPage without summary cards', () => {
+  it('does not render the removed cards after a code is chosen', async () => {
     build()
+    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
     expect(screen.queryByText('Tăng nhiều nhất /thùng')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
-    expect(await screen.findByText('Tăng nhiều nhất /thùng')).toBeInTheDocument()
-    expect(screen.getByText('Mã đã chọn')).toBeInTheDocument()
-    expect(screen.getByText('Sản phẩm bị ảnh hưởng')).toBeInTheDocument()
-    expect(screen.getByText('+4.000')).toBeInTheDocument()
-  })
-
-  it('sorts the products table by per-carton rise (desc) and scrolls to it when the card is clicked', async () => {
-    build()
-    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
-    await userEvent.click(await screen.findByRole('button', { name: /Tăng nhiều nhất \/thùng/ }))
-    await waitFor(() =>
-      expect(bodies[bodies.length - 1]).toMatchObject({ sort_by: 'diff_carton', sort_dir: 'desc', page: 1 }),
-    )
-    expect(bodies[0]).not.toHaveProperty('sort_by')     // chưa bấm thì máy chủ xếp mặc định theo mã HH
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
-  })
-
-  it('has no clickable card when no product rises', async () => {
-    topProduct = null
-    build()
-    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
-    expect(await screen.findByText('Không có sản phẩm tăng')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Tăng nhiều nhất/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Không có sản phẩm tăng')).not.toBeInTheDocument()
+  })
+
+  it('lets the server sort products by default (no sort_by in the first POST /impact)', async () => {
+    build()
+    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
+    expect(bodies[0]).not.toHaveProperty('sort_by')
   })
 })

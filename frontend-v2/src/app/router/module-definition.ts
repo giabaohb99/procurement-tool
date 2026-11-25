@@ -109,7 +109,8 @@ export interface ModuleNavItem {
   crossModule?: boolean
   /**
    * Tiêu đề nhóm trên menu trái (vd "Danh mục", "Nghiệp vụ"). Các mục cùng chuỗi
-   * này gom lại dưới một tiêu đề. Bỏ trống = đứng riêng ở đầu menu, không tiêu đề.
+   * này gom lại dưới một tiêu đề. Bỏ trống = đứng riêng ở đầu menu, không tiêu đề; mục bỏ trống khai SAU một
+   * nhóm thì thành khối không tiêu đề ngay tại chỗ khai (xem `app/layouts/build-nav-sections.ts`).
    */
   group?: string
   /**

@@ -27,6 +27,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/shared/ui/sidebar'
+import { buildNavSections } from './build-nav-sections'
 import { SidebarResizeHandle } from './sidebar-resize-handle'
 import { SidebarVersionFooter } from './sidebar-version-footer'
 
@@ -113,7 +114,8 @@ const groupLabelClass =
  *
  * Đầu menu là logo, bấm vào về màn chọn phân hệ. Bên dưới là các màn hình của
  * phân hệ: mục không nhóm đứng trước (không tiêu đề), rồi tới từng nhóm theo
- * `group` khai trong `routes.tsx`.
+ * `group` khai trong `routes.tsx`. Mục không nhóm khai SAU một nhóm thì đứng đúng
+ * chỗ khai, thành một khối không tiêu đề — xem `buildNavSections`.
  */
 export function ModuleSidebar({
   module,
@@ -131,9 +133,8 @@ export function ModuleSidebar({
   //  ⚠️ `hidden` lọc ở ĐÂY thôi, không lọc trong `visibleNavItems`: mục ẩn vẫn
   //  phải giữ khóa quyền của nó cho `canAccessRoute`. Xem `ModuleNavItem.hidden`.
   const visibleItems = visibleNavItems(module, can, navCtx).filter((item) => !item.hidden)
-  // Mục không khai `group` đứng đầu, không tiêu đề — thường là "Tổng quan".
-  const ungrouped = visibleItems.filter((item) => !item.group)
-  const groups = groupByLabel(visibleItems.filter((item) => item.group))
+  //  Khối đầu (không tiêu đề) luôn có — thường là "Tổng quan"; các khối sau theo thứ tự khai báo.
+  const [leadingSection, ...sections] = buildNavSections(visibleItems)
 
   /** Ngăn kéo trên màn hẹp phải tự đóng sau khi chọn; màn rộng thì giữ nguyên. */
   const closeOnMobile = () => {
@@ -201,17 +202,17 @@ export function ModuleSidebar({
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {ungrouped.map((item) => (
+              {leadingSection.items.map((item) => (
                 <NavItemRenderer key={item.path} item={item} onNavigate={closeOnMobile} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {groups.map(([label, items]) => (
+        {sections.map(({ key, label, items }) => (
           // `mt-5` tách nhóm rõ hơn khoảng cách giữa các mục trong cùng nhóm.
-          <SidebarGroup key={label} className="mt-5 p-0">
-            <SidebarGroupLabel className={groupLabelClass}>{label}</SidebarGroupLabel>
+          <SidebarGroup key={key} className="mt-5 p-0">
+            {label && <SidebarGroupLabel className={groupLabelClass}>{label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {items.map((item) => (
@@ -292,6 +293,13 @@ function NavMenuItemWithSub({
   }
 
   const handleParentClick = () => {
+    //  duoc-CR-784 (25/11/2026, người chủ báo ở Tra cứu thị trường): đang đứng ở trong mục cha thì bấm dòng cha chỉ
+    //  THU / MỞ menu con tại chỗ, không chuyển trang — trước đây luôn `setIsOpen(true)` nên mở ra rồi không thu lại
+    //  được. Menu thu về rail (chỉ còn biểu tượng) thì menu con không hiện, nên vẫn giữ lối cũ: đi tới mục con đầu.
+    if (isAnyActive && (isMobile || state === 'expanded')) {
+      setIsOpen((prev) => !prev)
+      return
+    }
     setIsOpen(true)
     const targetPath = item.children?.[0]?.path ?? item.path
     navigate(targetPath)
@@ -422,14 +430,4 @@ function NavMenuItem({
       </NavLink>
     </SidebarMenuItem>
   )
-}
-
-/** Gom mục theo `group`, giữ nguyên thứ tự khai báo trong `routes.tsx`. */
-function groupByLabel(items: ModuleNavItem[]): [string, ModuleNavItem[]][] {
-  const map = new Map<string, ModuleNavItem[]>()
-  for (const item of items) {
-    const key = item.group as string
-    map.set(key, [...(map.get(key) ?? []), item])
-  }
-  return [...map.entries()]
 }

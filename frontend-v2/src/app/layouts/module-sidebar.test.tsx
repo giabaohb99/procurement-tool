@@ -144,6 +144,76 @@ describe('ModuleSidebar with submenu', () => {
     expect(chevron).not.toHaveClass('-rotate-90')
     expect(screen.getByTestId('current-path')).toHaveTextContent('/test/leave-calendar')
   })
+
+  //  duoc-CR-784 (25/11/2026): bấm DÒNG CHA khi đang ở một mục con phải thu / mở được (trước chỉ mở, không thu).
+  it('collapses then expands the submenu when clicking the parent while a child is active, without navigating', () => {
+    function RouteWatcher() {
+      const { pathname } = useLocation()
+      return <div data-testid="current-path">{pathname}</div>
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/test/leave-calendar']}>
+        <SidebarProvider>
+          <ModuleSidebar module={testModule} onResizeWidth={vi.fn()} />
+          <RouteWatcher />
+        </SidebarProvider>
+      </MemoryRouter>,
+    )
+
+    const parentButton = screen.getByRole('button', { name: /nghỉ phép/i })
+    const chevron = parentButton.querySelector('svg.lucide-chevron-down')!
+    expect(chevron).not.toHaveClass('-rotate-90')
+    expect(screen.getByText('Lịch nghỉ')).toBeInTheDocument()
+
+    fireEvent.click(parentButton)
+    expect(chevron).toHaveClass('-rotate-90')
+    expect(screen.queryByText('Lịch nghỉ')).not.toBeInTheDocument()
+    //  Thu lại thì dòng cha sáng thay cho mục con đang xem.
+    expect(parentButton).toHaveAttribute('data-active', 'true')
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/test/leave-calendar')
+
+    fireEvent.click(parentButton)
+    expect(chevron).not.toHaveClass('-rotate-90')
+    expect(screen.getByText('Lịch nghỉ')).toBeInTheDocument()
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/test/leave-calendar')
+  })
+})
+
+//  duoc-CR-784: mục không `group` khai SAU một nhóm (cụm Giá nguyên vật liệu sản xuất) đứng đúng chỗ, không tiêu đề.
+describe('ModuleSidebar sections', () => {
+  it('renders an ungrouped parent declared between two groups in place, without a group label', () => {
+    const sectionsModule: ErpModule = {
+      ...testModule,
+      nav: [
+        { label: 'Tổng quan', path: '/test', end: true },
+        { label: 'Đơn mua', path: '/test/orders', group: 'Mua hàng' },
+        {
+          label: 'Giá nguyên vật liệu',
+          path: '/test/cost',
+          icon: CalendarOff,
+          children: [{ label: 'Tác động', path: '/test/cost', end: true }],
+        },
+        { label: 'Phiếu khảo sát', path: '/test/surveys', group: 'Khảo sát' },
+      ],
+    }
+    const { container } = render(
+      <MemoryRouter initialEntries={['/test']}>
+        <SidebarProvider>
+          <ModuleSidebar module={sectionsModule} onResizeWidth={vi.fn()} />
+        </SidebarProvider>
+      </MemoryRouter>,
+    )
+
+    const labels = [...container.querySelectorAll('[data-sidebar="group-label"]')].map((el) => el.textContent)
+    expect(labels).toEqual(['Mua hàng', 'Khảo sát'])
+    const order = ['Tổng quan', 'Đơn mua', 'Giá nguyên vật liệu', 'Phiếu khảo sát'].map((text) =>
+      screen.getByText(text),
+    )
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
 })
 
 //  duoc-CR-754: mục `childrenAsTabs` vẽ thành MỘT dòng — mục con là dải tab trên trang, không phải submenu.

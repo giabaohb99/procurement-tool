@@ -201,6 +201,11 @@ body.col-resizing {
   font-weight: 650;
 }
 
+/* Nhóm không tiêu đề ở giữa menu (vd cụm Giá nguyên vật liệu sản xuất): chừa khoảng như một nhóm có tiêu đề. */
+.nav-group-plain {
+  margin-top: 12px;
+}
+
 .nav-group-title {
   font-size: 11px;
   text-transform: uppercase;

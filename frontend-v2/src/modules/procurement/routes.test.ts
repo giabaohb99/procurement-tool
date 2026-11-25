@@ -25,10 +25,14 @@ const PACKAGING_PATHS = [
 /** Báo giá VTBB ẩn khỏi menu (21/11/2026) nhưng đường dẫn vẫn gác quyền như các màn khác. */
 const PACKAGING_MENU_PATHS = PACKAGING_PATHS.filter((path) => path !== appRoutes.procurement.packagingQuotes)
 
+const PACKAGING_PARENT_LABEL = 'Giá nguyên vật liệu sản xuất'
+
+/** 25/11/2026: cụm là MỘT mục cha có menu con (vẽ như Tra cứu thị trường) — trả các mục con được vẽ. */
 function packagingMenu(can: ReturnType<typeof grants>) {
-  return visibleNavItems(procurementModule as ErpModule, can)
-    .filter((item) => item.group === 'Giá nguyên vật liệu sản xuất' && !item.hidden)
-    .map((item) => item.path)
+  const parent = visibleNavItems(procurementModule as ErpModule, can).find(
+    (item) => item.label === PACKAGING_PARENT_LABEL,
+  )
+  return (parent?.children ?? []).filter((child) => !child.hidden).map((child) => child.path)
 }
 
 describe('Giá bao bì menu (packaging_cost)', () => {
@@ -53,11 +57,18 @@ describe('Giá bao bì menu (packaging_cost)', () => {
     }
   })
 
-  it('marks the root item end:true so it does not light up on the sub-screens', () => {
-    const root = procurementModule.nav.find(
-      (item) => item.path === appRoutes.procurement.packagingImpact,
-    )
+  it('marks the root child end:true so it does not light up on the sub-screens', () => {
+    const parent = procurementModule.nav.find((item) => item.label === PACKAGING_PARENT_LABEL)
+    const root = parent?.children?.find((child) => child.path === appRoutes.procurement.packagingImpact)
     expect(root?.end).toBe(true)
+  })
+
+  it('renders as one parent item outside the Mua hàng group, right after it and before Khảo sát', () => {
+    const nav = procurementModule.nav
+    const parentIndex = nav.findIndex((item) => item.label === PACKAGING_PARENT_LABEL)
+    expect(nav[parentIndex]?.group).toBeUndefined()
+    expect(nav[parentIndex - 1]?.group).toBe('Mua hàng')
+    expect(nav[parentIndex + 1]?.group).toBe('Khảo sát')
   })
 
   it('registers a route for every menu path', () => {

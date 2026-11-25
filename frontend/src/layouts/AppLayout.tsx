@@ -175,21 +175,31 @@ const NAV_GROUPS: NavGroup[] = [
     // duoc-CR-784 — cụm riêng "Giá nguyên vật liệu sản xuất" (người chủ chốt 21/11/2026: tách khỏi Mua hàng, đổi tên từ
     // "Giá bao bì"). Mọi mục gác khóa quyền riêng `packaging_cost`. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có),
     // trang /product-price-quotes vẫn vào được và sáng mục Bảng giá VTBB.
-    title: "Giá nguyên vật liệu sản xuất",
-    key: "gianvl",
+    // 25/11/2026 (người chủ chốt): cụm vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng, các mục con thụt
+    // vào có vạch dọc, sổ ra khi đang đứng ở một mục con. Nhóm không tiêu đề (bỏ `key` để trạng thái thu gọn cũ
+    // của nhóm "gianvl" trong localStorage không giấu mất mục cha), vị trí vẫn ở giữa Mua hàng và Khảo sát.
     items: [
-      { to: "/packaging-cost/impact", label: "Tác động giá bao bì", icon: "ti-trending-up", entity: "packaging_cost" },
-      { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum", entity: "packaging_cost" },
       {
-        to: "/packaging-cost/price-list",
-        label: "Bảng giá VTBB",
-        icon: "ti-list-details",
+        to: "/packaging-cost",
+        label: "Giá nguyên vật liệu sản xuất",
+        icon: "ti-coins",
         entity: "packaging_cost",
-        matchPaths: ["/product-price-quotes"],
+        // Định mức bao bì là route CRUD chung, không nằm dưới /packaging-cost; Báo giá VTBB ẩn khỏi menu.
+        matchPaths: ["/packaging-boms", "/product-price-quotes"],
+        children: [
+          { to: "/packaging-cost/impact", label: "Tác động giá bao bì", icon: "ti-trending-up", isDefault: true },
+          { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum" },
+          {
+            to: "/packaging-cost/price-list",
+            label: "Bảng giá VTBB",
+            icon: "ti-list-details",
+            matchPaths: ["/product-price-quotes"],
+          },
+          { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
+          { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
+          { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2" },
+        ],
       },
-      { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history", entity: "packaging_cost" },
-      { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline", entity: "packaging_cost" },
-      { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2", entity: "packaging_cost" },
     ],
   },
   {
@@ -367,6 +377,10 @@ const isNavChildActive = (c: NavChild, parentTo: string, pathname: string) =>
  * Mục menu có menu con (duoc-CR-491). Đang ở trong mục cha thì sổ các mục con ra và mục con đang
  * xem sáng lên (mục cha thôi sáng để không có hai dòng cùng sáng); ở ngoài thì chỉ còn dòng cha,
  * bấm vào là mở mục con đầu tiên. Mục con nào người dùng không được xem thì không vẽ.
+ *
+ * 25/11/2026 (duoc-CR-784, người chủ báo): đang ở trong mục cha mà bấm dòng cha thì THU / MỞ menu con tại chỗ,
+ * không chuyển trang — trước đây bấm lại chỉ mở chứ không thu được. Thu lại thì dòng cha sáng thay cho mục con
+ * đang xem (để vẫn biết mình đang ở đâu). Mỗi lần chuyển trang vào trong mục cha thì tự mở lại.
  */
 function NavParent({ item, pathname, can, onPick }: {
   item: NavItem;
@@ -377,19 +391,35 @@ function NavParent({ item, pathname, can, onPick }: {
   const inside = isActive(pathname, item.to)
     || !!item.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const children = (item.children ?? []).filter((c) => !c.visible || c.visible(can));
+  const [open, setOpen] = useState(inside);
+  // Đổi trang thì đồng bộ lại theo đường dẫn (mẫu "chỉnh state khi prop đổi" của React, không dùng effect).
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (prevPath !== pathname) {
+    setPrevPath(pathname);
+    setOpen(inside);
+  }
+  const expanded = inside && open;
   return (
     <>
       <Link
         to={children[0]?.to ?? item.to}
-        onClick={onPick}
-        className="nav-item"
-        aria-expanded={inside}
+        onClick={(e) => {
+          if (inside) {
+            // Đang ở trong mục cha: bấm dòng cha chỉ thu / mở, giữ nguyên trang đang xem.
+            e.preventDefault();
+            setOpen((v) => !v);
+            return;
+          }
+          onPick();
+        }}
+        className={"nav-item" + (inside && !open ? " active" : "")}
+        aria-expanded={expanded}
       >
         <i className={"ti " + item.icon} />
         <span style={{ flex: 1 }}>{item.label}</span>
-        <i className={"ti " + (inside ? "ti-chevron-down" : "ti-chevron-right")} style={{ fontSize: 13 }} />
+        <i className={"ti " + (expanded ? "ti-chevron-down" : "ti-chevron-right")} style={{ fontSize: 13 }} />
       </Link>
-      {inside && (
+      {expanded && (
         <div className="nav-sub">
           {children.map((c) => {
             const active = isNavChildActive(c, item.to, pathname);
@@ -571,7 +601,9 @@ export default function AppLayout() {
           if (items.length === 0) return null;
           const isCol = !!g.key && !!collapsed[g.key];
           return (
-            <div key={gi}>
+            // Nhóm không tiêu đề đứng giữa menu (cụm Giá nguyên vật liệu sản xuất) cách nhóm trên một khoảng,
+            // để mục cha không bị đọc thành mục cuối của Mua hàng.
+            <div key={gi} className={!g.title && gi > 0 ? "nav-group-plain" : undefined}>
               {g.title && (
                 <button
                   className="nav-group-title toggle"
