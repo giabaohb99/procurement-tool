@@ -10,12 +10,13 @@ import pytest
 from app.core.packaging_price_codes import CostTrend, CostWarning, PackagingRole
 from app.modules.packaging_cost.cost_service import compute_product_cost, fold_text, price_warnings
 from app.modules.packaging_cost.impact_service import compute_impact
-from app.modules.packaging_cost.model import PackagingBom
+from app.modules.packaging_cost.bom_parts_service import BomRow
+from app.modules.packaging_cost.model import PackagingBom, PackagingBomPart, role_field
 from app.modules.packaging_cost.price_list_service import build_price_list
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote, read_report_sheet
+from so_gia_factory_cr784 import add_ledger, add_limit, add_products, add_quote, build_bom, read_report_sheet
 
 D = Decimal
 IMPACT, PRICE_LIST, OPTIONS = "/api/packaging-cost/impact", "/api/packaging-cost/price-list", "/api/packaging-cost/code-options"
@@ -25,7 +26,7 @@ def _bom(db, hh="HH0417.1", **over) -> PackagingBom:
     base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="NDT0001", carton_code="THU0001", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
-    row = PackagingBom(**base)
+    row = build_bom(**base)
     db.add(row)
     db.commit()
     return row
@@ -56,9 +57,10 @@ def _price(old, new=None, unit="Cái", floor=None, ceiling=None):
 
 
 def _bom_ns(**over):
+    """Định mức trong bộ nhớ (`BomRow`) dựng từ trường phẳng — hàm tính chi phí chỉ cần `carton_qty` + `code_of(loại)`."""
     base = dict(bottle_code="C", cap_code="N", label_code="L", carton_label_code="NT", carton_code="T", carton_qty=40)
     base.update(over)
-    return SimpleNamespace(**base)
+    return BomRow("HH", "", "", base["carton_qty"], {int(role): base[role_field(role)] for role in PackagingRole if base[role_field(role)]})
 
 
 PRICES = {"C": _price(1000, 1100), "N": _price(200), "L": _price(300), "NT": _price(400), "T": _price(8000)}
@@ -160,7 +162,7 @@ def test_kpi_giam_va_ma_khong_co_trong_dinh_muc_van_200(db, world):
 
 def test_ma_chua_co_gia_nao_canh_bao_thieu_gia(db, world):
     add_products(db, ("NAP0099", "Nắp mới", "Cái"))
-    db.query(PackagingBom).update({PackagingBom.cap_code: "NAP0099"})
+    db.query(PackagingBomPart).filter(PackagingBomPart.part_type == int(PackagingRole.CAP)).update({PackagingBomPart.part_code: "NAP0099"})
     db.commit()
     sel = compute_impact(db, ["NAP0099"], {})["selected"][0]
     assert sel["warnings"] == [int(CostWarning.MISSING_COMPONENT_PRICE)] and sel["applied"] is None

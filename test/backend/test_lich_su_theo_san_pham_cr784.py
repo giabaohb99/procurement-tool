@@ -13,7 +13,7 @@ from app.modules.packaging_cost.model import PackagingBom
 from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
-from so_gia_factory_cr784 import add_ledger, add_products, read_report_sheet
+from so_gia_factory_cr784 import add_ledger, add_products, build_bom, read_report_sheet
 
 URL = "/api/packaging-cost/history"
 
@@ -22,7 +22,7 @@ def _bom(db, hh, **over):
     base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="", label_code="", carton_label_code="",
                 carton_code="", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
-    db.add(PackagingBom(**base))
+    db.add(build_bom(**base))
     db.commit()
 
 

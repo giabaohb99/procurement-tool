@@ -136,14 +136,12 @@ def _search_codes(db, q: str, limit: int) -> tuple[list[str], bool]:
     đúng chữ tìm đứng đầu."""
     from sqlalchemy import and_, case, or_, select, union
 
-    from app.modules.packaging_cost.impact_service import PART_COLUMNS
-    from app.modules.packaging_cost.model import PackagingBom
+    from app.modules.packaging_cost.bom_parts_service import component_codes_query
     from app.modules.product.model import Product
     from app.modules.product_price.model import ProductPriceLedger, ProductPriceQuote
 
     terms = q.split()
-    universe = union(*[select(getattr(PackagingBom, c)) for c in PART_COLUMNS], select(ProductPriceQuote.product_code),
-                     select(ProductPriceLedger.product_code))
+    universe = union(component_codes_query(), select(ProductPriceQuote.product_code), select(ProductPriceLedger.product_code))
     match = and_(*[or_(Product.code.contains(t, autoescape=True), Product.name.contains(t, autoescape=True)) for t in terms])
     rows = (db.query(Product.code).filter(match, Product.code.in_(select(universe.subquery().c[0])))
             .order_by(case((Product.code == q, 0), else_=1), Product.code).limit(limit + 1).all())
@@ -153,17 +151,10 @@ def _search_codes(db, q: str, limit: int) -> tuple[list[str], bool]:
 
 def _usage(db, codes: list[str]) -> dict[str, int]:
     """Số sản phẩm có định mức dùng mỗi mã (một truy vấn)."""
-    from sqlalchemy import or_
+    from app.modules.packaging_cost.bom_parts_service import usage_by_code
 
-    from app.modules.packaging_cost.impact_service import PART_COLUMNS
-    from app.modules.packaging_cost.model import PackagingBom
-
-    cols = [getattr(PackagingBom, c) for c in PART_COLUMNS]
-    wanted, out = set(codes), dict.fromkeys(codes, 0)
-    for row in db.query(*cols).filter(or_(*[c.in_(wanted) for c in cols])).all():
-        for code in {c for c in row if c} & wanted:
-            out[code] += 1
-    return out
+    counted = usage_by_code(db, codes)
+    return {code: counted.get(code, 0) for code in codes}
 
 
 def _supplier_names(db, codes: set[str]) -> dict[str, str]:
@@ -228,14 +219,12 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
 def _costs_of_products(db, hh_codes: list[str], scope) -> list[dict]:
     """Chi phí bao bì của ĐÚNG các mã hàng hóa đã hỏi — cùng các bước của `build_product_overview` (định mức → trạng thái giá
     của mọi thành phần → `compute_product_cost` → `product_row`) nhưng chỉ đọc định mức của các mã đó, nên rẻ."""
-    from sqlalchemy import select
-
+    from app.modules.packaging_cost.bom_parts_service import load_bom_rows
     from app.modules.packaging_cost.cost_service import compute_product_cost
-    from app.modules.packaging_cost.impact_service import IMPACT_BOM_COLUMNS, bom_codes, product_row
-    from app.modules.packaging_cost.model import PackagingBom
+    from app.modules.packaging_cost.impact_service import bom_codes, product_row
     from app.modules.product_price.price_state_service import get_price_states
 
-    boms = db.execute(select(*IMPACT_BOM_COLUMNS).where(PackagingBom.hh_code.in_(hh_codes)).order_by(PackagingBom.hh_code)).all()
+    boms = load_bom_rows(db, hh_codes=hh_codes)
     if not boms:
         return []
     needed = set().union(*(bom_codes(b) for b in boms))

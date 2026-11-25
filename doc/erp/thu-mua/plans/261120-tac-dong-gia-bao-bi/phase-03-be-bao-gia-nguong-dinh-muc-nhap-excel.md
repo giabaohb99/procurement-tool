@@ -11,7 +11,7 @@
 |---|---|---|---|
 | `/api/product-price-quotes` | quote | không (nhiều dòng mỗi mã) — kiểm `make_crud_router` nhận `None`, nếu không thì `before_create` tự kiểm | `before_create/update`: `product_code` có trong `tab_product`; `supplier_code` rỗng hoặc có trong `tab_supplier`; `price >= 0`; `valid_from` trong 2000–2100 |
 | `/api/product-price-limits` | limit | `product_code` | mã có trong `tab_product`; `floor <= ceiling` khi có cả hai; giá >= 0 |
-| `/api/packaging-boms` | BOM | `hh_code` | 5 mã thành phần rỗng hoặc có trong `tab_product`; `carton_qty` 0–100000; `bottle_code` bắt buộc |
+| `/api/packaging-boms` | BOM | `hh_code` | 5 mã thành phần rỗng hoặc có trong `tab_product`; `carton_qty` 0–100000; `bottle_code` bắt buộc; từ 25/11/2026 năm mã ghi sang `tab_packaging_bom_part` qua `virtual_fields` + `after_create` / `before_update` của bộ sinh (API giữ trường phẳng) |
 
 - Schema: mọi `String(n)` có `max_length` đúng n (`backend-input-limits.md`); tiền `Field(ge=0, le=1e12)`. Danh sách lọc
   theo `product_code`, `supplier_code`, `hh_code`, `q` (LIKE tên).

@@ -84,6 +84,10 @@ def _same(module: str, model: str, *names: str) -> dict[str, list[str]]:
 
 
 TARGETS.update({
+    #  duoc-CR-784 (25/11/2026): phân hệ giá bao bì nay có HAI model chữ (đầu phiếu + thành phần) nên không còn tự ghép theo "một model".
+    #  Mã thành phần (`bottle_code`...) là trường phẳng ghi sang `tab_packaging_bom_part.part_code` (String 50) — độ dài 50 của từng
+    #  trường được canh ở `test_dinh_muc_bao_bi_cr784.py::test_schema_dinh_muc_chan_chuoi_dai_hon_cot`.
+    **_same("packaging_cost", "PackagingBom", "BomCreate", "BomUpdate", "ImpactRequest"),
     **_same("employee", "EmployeeWorkHistory", "WorkHistoryIn", "WorkHistoryUpdate"),
     #  duoc-CR-676: ba nhóm ô yêu cầu sửa hồ sơ mượn cột của hồ sơ nhân sự; thân gửi + lý do từ chối ghi vào bảng yêu cầu.
     **_same("employee", "Employee", "PersonalChange", "BankChange", "DocumentsChange"),

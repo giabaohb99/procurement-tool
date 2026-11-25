@@ -2,10 +2,31 @@
 from datetime import date
 from decimal import Decimal
 
-from app.core.packaging_price_codes import PriceSourceType
+from app.core.packaging_price_codes import PackagingRole, PriceSourceType
+from app.modules.packaging_cost.bom_parts_service import codes_from_fields, set_bom_codes
+from app.modules.packaging_cost.model import PackagingBom, PackagingBomPart, role_field
 from app.modules.product.model import Product
 from app.modules.product_price.model import ProductPriceLedger, ProductPriceLimit, ProductPriceQuote
 from app.modules.purchase_order.model import POItem, PurchaseOrder
+
+
+CODE_FIELDS = tuple(role_field(role) for role in PackagingRole)
+
+
+def build_bom(**fields) -> PackagingBom:
+    """Định mức bao bì dựng từ trường PHẲNG của API (`bottle_code`, `cap_code`...): đầu phiếu + dòng thành phần (mã rỗng thì không
+    tạo dòng). CHƯA `add` / `commit` — nơi gọi tự quyết, như khi còn dựng thẳng `PackagingBom(...)`."""
+    header = {k: v for k, v in fields.items() if k not in CODE_FIELDS}
+    bom = PackagingBom(**header)
+    set_bom_codes(bom, codes_from_fields(fields))
+    return bom
+
+
+def bom_codes_of(db, hh_code: str) -> dict[int, str]:
+    """`{loại thành phần: mã}` đang lưu trong bảng thành phần của một mã hàng hóa (đọc thẳng DB, không qua thuộc tính chỉ đọc)."""
+    rows = (db.query(PackagingBomPart.part_type, PackagingBomPart.part_code).join(PackagingBom, PackagingBom.id == PackagingBomPart.bom_id)
+            .filter(PackagingBom.hh_code == hh_code).all())
+    return {int(t): c for t, c in rows}
 
 
 def make_po(db, **over) -> PurchaseOrder:

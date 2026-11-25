@@ -16,7 +16,7 @@ from app.modules.packaging_cost.model import PackagingBom
 from app.modules.packaging_cost.schema import BomCreate, BomUpdate
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
-from so_gia_factory_cr784 import add_ledger, add_products
+from so_gia_factory_cr784 import add_ledger, add_products, build_bom
 
 BOMS = "/api/packaging-boms"
 
@@ -37,7 +37,7 @@ def _bom(db, **over) -> PackagingBom:
     base = dict(hh_code="HH0417.1", hh_name="Flower Top", bottle_code="CPT0105", cap_code="NAP0085", carton_qty=40,
                 created_by=1, updated_by=1)
     base.update(over)
-    row = PackagingBom(**base)
+    row = build_bom(**base)
     db.add(row)
     db.commit()
     return row

@@ -13,7 +13,7 @@ from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote, read_report_sheet
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom, read_report_sheet
 
 URL = "/api/packaging-cost/last-prices"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -23,7 +23,7 @@ def _bom(db, hh="HH0001", **over) -> PackagingBom:
     base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="", carton_code="", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
-    row = PackagingBom(**base)
+    row = build_bom(**base)
     db.add(row)
     db.commit()
     return row

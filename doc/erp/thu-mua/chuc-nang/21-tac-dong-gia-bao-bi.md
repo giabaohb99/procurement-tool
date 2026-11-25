@@ -211,7 +211,7 @@ tiêu đề + sheet *Hướng dẫn*; ví dụ đặt dưới dòng 6 để bộ
 ## 7. Định mức bao bì và nhập từ Excel
 
 Màn `/procurement/packaging-cost/boms` (cũ `/packaging-boms`). Bài HDSD: *Giá bao bì — Khai và nhập định mức bao bì từ Excel*.
-Bảng `tab_packaging_bom`, mỗi mã HH một dòng; Thu mua tự khai.
+Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_packaging_bom_part` (thành phần: loại + mã vật tư, nối bằng id; từ 25/11/2026, trước đó là năm cột mã trên chính `tab_packaging_bom`); Thu mua tự khai. Thêm loại thành phần mới (vd màng co) chỉ là thêm một loại, không đổi bảng.
 
 | Trường | Bắt buộc | Ghi chú |
 |---|---|---|

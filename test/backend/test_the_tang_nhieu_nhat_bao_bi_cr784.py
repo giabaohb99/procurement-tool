@@ -7,7 +7,7 @@ import pytest
 
 from app.modules.packaging_cost.impact_service import compute_impact
 from app.modules.packaging_cost.model import PackagingBom
-from so_gia_factory_cr784 import add_ledger, add_products
+from so_gia_factory_cr784 import add_ledger, add_products, build_bom
 
 D = Decimal
 NO_PARTS = dict(cap_code="", label_code="", carton_label_code="", carton_code="")
@@ -17,7 +17,7 @@ def _bom(db, hh: str, qty: int, **over) -> None:
     base = dict(hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="", carton_label_code="",
                 carton_code="", carton_qty=qty, created_by=1, updated_by=1)
     base.update(over)
-    db.add(PackagingBom(hh_code=hh, **base))
+    db.add(build_bom(hh_code=hh, **base))
     db.commit()
 
 

@@ -117,7 +117,9 @@ def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default
     """
     col = getattr(model, sort_by, None) if sort_by else None
     # chỉ cho phép cột vật lý trong bảng, tránh sort theo relationship/hybrid/method
-    valid = col is not None and sort_by in model.__table__.columns
+    #  Ngoại lệ có chủ đích: trường tính (truy vấn con chỉ đọc) mà model tự khai trong `SORTABLE_COMPUTED` — vd mã thành phần
+    #  của định mức bao bì (duoc-CR-784); vẫn là biểu thức SQL của model, không nhận chuỗi tùy ý.
+    valid = col is not None and (sort_by in model.__table__.columns or sort_by in getattr(model, "SORTABLE_COMPUTED", ()))
     if valid:
         order = build_blank_last_order(col, str(sort_dir).lower())
         id_column = getattr(model, "id", None) if sort_by != "id" else None

@@ -68,7 +68,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
                      sort_nulls_last=(), csv_import=True, audit_entity=None, after_update=None,
-                     scoped=True, enrich_out=None):
+                     scoped=True, enrich_out=None, virtual_fields=(), after_create=None):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
@@ -84,6 +84,10 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     - `scoped=False` (duoc-CR-784) — danh mục DÙNG CHUNG mà khóa quyền của nó lọc phạm vi trên một bảng KHÁC (vd định
       mức / báo giá / ngưỡng của khóa `packaging_cost`, phạm vi đo trên sổ giá): bảng này không có cột pháp nhân nên
       `apply_scope` / `get_scoped` không dựng được điều kiện. Cổng chỉ còn là quyền hành động (`require`).
+    - `virtual_fields` + `after_create(db, obj, data)` (duoc-CR-784, chuẩn hóa định mức bao bì) — danh mục có trường của API KHÔNG
+      phải cột của bảng (vd `bottle_code` nay nằm ở bảng thành phần). Trường khai trong `virtual_fields` bị bỏ khỏi `Model(**...)` lúc
+      tạo và khỏi `setattr` lúc sửa; việc ghi chúng ra nơi khác do `after_create` (sau `db.add`, trước commit, cùng giao dịch) và
+      `before_update` / `after_update` lo.
     - `enrich_out(db, rows)` — gắn thêm trường hiển thị (tên, ĐVT…) vào các dòng đầu ra, gom MỘT truy vấn cho cả trang.
 
     Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
@@ -159,8 +163,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                 raise HTTPException(400, f"{unique_field} đã tồn tại")
         if before_create:
             before_create(db, data)
-        o = Model(**data.model_dump(), created_by=user.id, updated_by=user.id)
+        o = Model(**{k: v for k, v in data.model_dump().items() if k not in virtual_fields},
+                  created_by=user.id, updated_by=user.id)
         db.add(o)
+        if after_create:
+            after_create(db, o, data)
         commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
                            else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
@@ -180,7 +187,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             before_update(db, o, values)
         before_values = {k: getattr(o, k, None) for k in values} if after_update else {}
         for k, v in values.items():
-            setattr(o, k, v)
+            if k not in virtual_fields:
+                setattr(o, k, v)
         o.updated_by = user.id
         conflict_message = f"{unique_field} đã tồn tại" if unique_field else "Dữ liệu vi phạm ràng buộc duy nhất"
         if after_update:

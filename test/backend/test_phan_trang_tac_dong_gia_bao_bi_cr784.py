@@ -12,7 +12,7 @@ from app.modules.packaging_cost.price_list_service import STATIC_SORT_KEYS, buil
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote, column_values
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom, column_values
 
 D = Decimal
 IMPACT = "/api/packaging-cost/impact"
@@ -26,7 +26,7 @@ def _bom(db, i: int, **over) -> PackagingBom:
             "cap_code": "NAP1", "label_code": "", "carton_label_code": "", "carton_code": "", "carton_qty": 10 + i,
             "created_by": 1, "updated_by": 1}
     base.update(over)
-    row = PackagingBom(**base)
+    row = build_bom(**base)
     db.add(row)
     return row
 
@@ -182,7 +182,7 @@ def price_world(db):
     add_quote(db, "N1", 35, "2026-08-01")
     add_quote(db, "ONLYQ", 5, "2026-08-01")        # có báo giá nhưng không có trong danh mục
     for i, (bottle, cap, label) in enumerate((("C1", "N1", "L1"), ("C2", "N1", ""), ("C1", "", "L1"), ("GHOST", "N1", "L1"))):
-        db.add(PackagingBom(hh_code=f"HH{i}", hh_name=f"SP {i}", bottle_code=bottle, cap_code=cap, label_code=label,
+        db.add(build_bom(hh_code=f"HH{i}", hh_name=f"SP {i}", bottle_code=bottle, cap_code=cap, label_code=label,
                             carton_code="T1" if i == 0 else "", carton_qty=12, created_by=1, updated_by=1))
     db.commit()
 

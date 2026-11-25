@@ -5,6 +5,7 @@ from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.packaging_price_codes import PackagingRole
 from app.modules.employee.field_limits import Str50
 from app.modules.product_price.schema import MAX_YEAR, MIN_YEAR, PriceAmount
 
@@ -15,7 +16,7 @@ MAX_PAGE_SIZE = 500
 #  Trần của các ô khoảng số (đồng / quy cách): rộng hơn mọi giá bao bì thật, chặn giá trị phi lý và vô cực / NaN.
 RANGE_LIMIT = 1e12
 MAX_CARTON_QTY = 1_000_000
-ROLE_VALUES = (1, 2, 3, 4, 5)   # `PackagingRole`
+ROLE_VALUES = tuple(int(role) for role in PackagingRole)
 
 #  Ô khoảng số: biên có thể âm (chênh lệch giảm), không nhận NaN / vô cực.
 RangeBound = Annotated[Optional[float], Field(ge=-RANGE_LIMIT, le=RANGE_LIMIT, allow_inf_nan=False)]
@@ -48,7 +49,7 @@ class ImpactRequest(BaseModel):
     @field_validator("part_roles")
     @classmethod
     def _clean_roles(cls, v: list[int]) -> list[int]:
-        """Vai trò hợp lệ là 1..5 (`PackagingRole`); bỏ trùng, giữ thứ tự."""
+        """Vai trò hợp lệ là một số của `PackagingRole` (hiện 1..5); bỏ trùng, giữ thứ tự."""
         bad = [r for r in v if r not in ROLE_VALUES]
         if bad:
             raise ValueError(f"Vai trò thành phần không hợp lệ: {bad[:5]}")

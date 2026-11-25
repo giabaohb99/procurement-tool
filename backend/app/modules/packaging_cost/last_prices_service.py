@@ -24,8 +24,8 @@ from app.modules.product_price.model import ProductPriceQuote
 from app.modules.supplier.model import Supplier
 
 from .cost_service import fold_text
-from .impact_service import OTHER_GROUP, PART_COLUMNS
-from .model import PackagingBom
+from .bom_parts_service import usage_by_code
+from .impact_service import OTHER_GROUP
 from .numbers import iso, num
 from .price_list_service import sort_rows
 
@@ -127,9 +127,7 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
     chip đứng yên khi gõ tìm (như bản mẫu).
     """
     n = max(2, min(int(n), MAX_N))
-    comps: set[str] = set()
-    for row in db.query(*[getattr(PackagingBom, c) for c in PART_COLUMNS]).all():
-        comps.update(c for c in row if c)
+    comps = set(usage_by_code(db))     # mã thành phần của mọi định mức (gom ở SQL, không kéo từng dòng định mức về)
     quoted = {c for (c,) in db.query(ProductPriceQuote.product_code).distinct().all()}
     universe = comps if bom_only else comps | quoted
     codes = None if (scope == "all" and not bom_only) else universe

@@ -41,9 +41,8 @@ from .cost_service import fold_text
 from .history_page_rows import (  # noqa: F401  (SORT_KEYS: nơi khác import từ đây)
     AMOUNT_EXPR, PRODUCT_SORT_KEYS, SORT_KEYS, build_order, join_pairs, load_page_rows, row_to_item, supplier_name_expr)
 from .history_product_pairs import build_bom_pairs, build_pair_counts, count_bom_products, pair_text_conds
-from .impact_service import PART_COLUMNS
 from .last_prices_service import supplier_label
-from .model import PackagingBom
+from .bom_parts_service import component_codes_query
 from .numbers import iso, num
 
 MAX_CODES = 200
@@ -52,8 +51,7 @@ SERIES_CAP = 1000
 
 def _universe_codes():
     """Mọi mã VTBB của cụm giá: thành phần của định mức ∪ mã có báo giá (cùng tập với "Giá mua gần nhất" phạm vi bom)."""
-    parts = [select(getattr(PackagingBom, c)).where(getattr(PackagingBom, c) != "") for c in PART_COLUMNS]
-    return union(*parts, select(ProductPriceQuote.product_code))
+    return union(component_codes_query(), select(ProductPriceQuote.product_code))
 
 
 def _ledger_text_match(needle: str) -> list:

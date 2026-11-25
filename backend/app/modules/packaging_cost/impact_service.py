@@ -1,8 +1,8 @@
 """Tác động giá bao bì: chọn các mã chai / nắp / nhãn / nhãn thùng / thùng (kèm giá giả định) → sản phẩm bị ảnh hưởng
 (duoc-CR-784, phase 04). Đúng `renderImpact()` của bản mẫu.
 
-SÁU truy vấn cố định bất kể số mã đã chọn / số dòng định mức: (1) định mức có dùng ít nhất một mã đã chọn (chỉ các cột cần,
-không cột kiểm toán), (2–6) năm truy vấn của `get_price_states` cho mọi mã thành phần (sổ giá hai tầng: mã đã chọn có đủ
+SÁU truy vấn cố định bất kể số mã đã chọn / số dòng định mức: (1) định mức có dùng ít nhất một mã đã chọn (đầu phiếu nối
+bảng thành phần, chỉ các cột cần, không cột kiểm toán), (2–6) năm truy vấn của `get_price_states` cho mọi mã thành phần (sổ giá hai tầng: mã đã chọn có đủ
 min / max, mã thành phần khác chỉ lấy cũ / mới). "Số sản phẩm dùng" mỗi mã đã chọn đếm
 ngay từ (1) — không cần truy vấn riêng. Phân trang / tìm / xếp bảng sản phẩm làm ở máy chủ SAU khi tính xong chi phí (KPI cần
 toàn bộ tập bị ảnh hưởng), nên số truy vấn không đổi theo trang.
@@ -10,27 +10,25 @@ toàn bộ tập bị ảnh hưởng), nên số truy vấn không đổi theo t
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.core.packaging_price_codes import CostTrend, CostWarning
+from app.core.packaging_price_codes import CostTrend, CostWarning, PackagingRole
 from app.modules.product_price.price_state_service import PriceState, get_price_states
 
+from .bom_parts_service import BomRow, load_bom_rows
 from .cost_service import ProductCost, compute_product_cost, fold_text, price_warnings
 from .impact_filters import ImpactFilters, filter_products
-from .model import PackagingBom
 from .numbers import iso, num
 from .sorting import sort_blank_last
 
-PART_COLUMNS = ("bottle_code", "cap_code", "label_code", "carton_label_code", "carton_code")
 OTHER_GROUP = "Khác"
 
 
-def bom_codes(bom: PackagingBom) -> set[str]:
-    return {c for c in (getattr(bom, col) for col in PART_COLUMNS) if c}
+def bom_codes(bom: BomRow) -> set[str]:
+    return bom.code_set()
 
 
-def product_row(bom: PackagingBom, cost: ProductCost, names: dict[str, str]) -> dict:
+def product_row(bom: BomRow, cost: ProductCost, names: dict[str, str]) -> dict:
     """Một dòng `products[]` của hợp đồng API — số kèm mã, KHÔNG gửi câu tiếng Việt."""
     return {
         "hh_code": bom.hh_code, "hh_name": bom.hh_name, "legal_name": bom.legal_name, "carton_qty": cost.carton_qty,
@@ -58,22 +56,28 @@ def selected_row(code: str, st: PriceState, assumed: Decimal | None, usage: int)
             "last_date": iso(st.last_date), "warnings": warnings}
 
 
+def _part_of(cost: ProductCost, role: int):
+    """Thành phần của `cost` ở loại `role` (`PackagingRole`)."""
+    return next(p for p in cost.parts if int(p.role) == role)
+
+
 def part_price_getter(role: int):
-    """Khóa xếp của cột thành phần `role` (1..5): giá ĐANG ÁP của thành phần đó — con số kéo chi phí (giá mới, hoặc giá giả
+    """Khóa xếp của cột thành phần `role` (`PackagingRole`): giá ĐANG ÁP của thành phần đó — con số kéo chi phí (giá mới, hoặc giá giả
     định nếu mã được chọn kèm giá). Sản phẩm không có mã ở vai trò đó, hoặc mã chưa có giá → trống → xuống cuối cả hai chiều."""
     def getter(bom, cost):
-        part = cost.parts[role - 1]
+        part = _part_of(cost, role)
         return part.applied if part.code else None
     return getter
 
 
 def part_tie_getter(role: int):
     """Khóa phụ khi xếp theo cột thành phần: mã thành phần rồi mã hàng hóa (cùng giá thì gom các sản phẩm dùng chung một mã)."""
-    return lambda bom, cost: (cost.parts[role - 1].code, bom.hh_code)
+    return lambda bom, cost: (_part_of(cost, role).code, bom.hh_code)
 
 
-#  Khóa xếp cột thành phần → vai trò (`PackagingRole`). Đặt tên theo tên cột định mức, không theo số, cho URL dễ đọc.
-PART_SORT_ROLES = {"part_bottle": 1, "part_cap": 2, "part_label": 3, "part_carton_label": 4, "part_carton": 5}
+#  Khóa xếp cột thành phần → vai trò (`PackagingRole`), dựng từ enum: `part_bottle`, `part_cap`, `part_label`, `part_carton_label`,
+#  `part_carton` (đặt theo tên loại, không theo số, cho URL dễ đọc). Thêm loại mới vào enum thì có khóa xếp mới.
+PART_SORT_ROLES = {f"part_{role.name.lower()}": int(role) for role in PackagingRole}
 PART_SORT_GETTERS = {key: part_price_getter(role) for key, role in PART_SORT_ROLES.items()}
 #  Khóa phụ riêng của từng khóa xếp; khóa nào không khai thì hòa theo mã hàng hóa tăng dần.
 SORT_TIES = {key: part_tie_getter(role) for key, role in PART_SORT_ROLES.items()}
@@ -88,8 +92,6 @@ SORT_GETTERS = {
     "pct": lambda bom, cost: cost.pct, "trend": lambda bom, cost: int(cost.trend),
     **PART_SORT_GETTERS,
 }
-IMPACT_BOM_COLUMNS = (PackagingBom.hh_code, PackagingBom.hh_name, PackagingBom.legal_name, *(getattr(PackagingBom, c) for c in PART_COLUMNS),
-                      PackagingBom.carton_qty)
 
 
 def max_increase_product(items: list[tuple]) -> dict | None:
@@ -138,8 +140,7 @@ def compute_impact(db: Session, codes: list[str], assumed: dict[str, Decimal], *
     hưởng (chưa lọc gì) — hiệu hai số là "Đang lọc x / M" của giao diện.
     """
     chosen = set(codes)
-    bom_rows = db.execute(select(*IMPACT_BOM_COLUMNS).where(or_(*[getattr(PackagingBom, c).in_(chosen) for c in PART_COLUMNS]))
-                          .order_by(PackagingBom.hh_code)).all()
+    bom_rows = load_bom_rows(db, uses_codes=chosen)
     needed = chosen.union(*(bom_codes(b) for b in bom_rows)) if bom_rows else set(chosen)
     states = get_price_states(db, needed, date_from=date_from, date_to=date_to, scope_cond=scope_cond, also=needed,
                               stats_codes=chosen)   # min / max chỉ hiện ở các mã ĐÃ CHỌN; mã thành phần khác chỉ cần cũ / mới

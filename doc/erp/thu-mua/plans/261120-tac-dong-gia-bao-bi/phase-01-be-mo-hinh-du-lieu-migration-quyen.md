@@ -41,9 +41,18 @@ Ràng buộc: `uq_ppl_source (source_type, source_id)`; index PHỦ `ix_ppl_code
 N(18,4) NULL, `note` S500. Bảng riêng, không gắn vào báo giá: ngưỡng là **một giá trị mỗi mã**, báo giá có nhiều dòng theo
 thời gian — gắn vào báo giá thì không biết dòng nào giữ ngưỡng, và xóa báo giá là mất ngưỡng.
 
-**`tab_packaging_bom`** — AuditMixin. `hh_code` S50 **unique**, `hh_name` S255, `legal_name` S255, `bottle_code`,
-`cap_code`, `label_code`, `carton_label_code`, `carton_code` (S50 default ""), `carton_qty` Integer default 0 (0 = chưa
-có). Index đơn trên 5 cột mã thành phần (tra "sản phẩm nào dùng mã X").
+**`tab_packaging_bom`** — AuditMixin. ĐẦU PHIẾU: `hh_code` S50 **unique**, `hh_name` S255, `legal_name` S255, `carton_qty`
+Integer default 0 (0 = chưa có).
+
+**`tab_packaging_bom_part`** (migration `bompart784`, 25/11/2026) — THÀNH PHẦN của định mức. Bản đầu (`pkgcost784`) để năm
+cột mã `bottle_code`, `cap_code`, `label_code`, `carton_label_code`, `carton_code` ngay trên `tab_packaging_bom` kèm năm
+chỉ mục đơn; chủ dự án chốt chuẩn hóa ("thêm cái type rồi gắn thêm id vô") để thêm loại thành phần mới không phải đổi bảng:
+`id` BIGINT PK · `bom_id` BIGINT FK -> `tab_packaging_bom.id` **ON DELETE CASCADE** (đây là liên kết bằng id) · `part_type`
+SMALLINT = `PackagingRole` (1 chai · 2 nắp · 3 nhãn · 4 nhãn thùng · 5 thùng; luật R2) · `part_code` S50 (chuỗi mã vật tư,
+không FK). Duy nhất `(bom_id, part_type)` — hiện mỗi loại một mã; bỏ ràng buộc này là cho phép nhiều mã một loại. Chỉ mục phủ
+`ix_pbom_part_code (part_code, part_type, bom_id)` (tra ngược "sản phẩm nào dùng mã X, ở vai trò nào"). Mã rỗng không thành dòng. Migration sao dữ liệu từ năm cột rồi xóa
+cột + chỉ mục cũ; `downgrade` tạo lại và sao ngược. Hình dạng API `/api/packaging-boms` không đổi (vẫn trường phẳng
+`bottle_code`...); mã tính toán đi qua `packaging_cost/bom_parts_service.py`.
 
 ### Vì sao báo giá không là nguồn 3 của sổ giá
 Sổ giá là **giá đã giao dịch** (min/max, số lần mua, 2 lần gần nhất). Báo giá là giá **dự kiến**; trộn vào thì min/max và

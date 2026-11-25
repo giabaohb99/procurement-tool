@@ -21,6 +21,7 @@ EPS = Decimal("0.000001")
 PER_CARTON = frozenset({PackagingRole.CARTON_LABEL, PackagingRole.CARTON})
 #  Nắp / nhãn không có mã là thiếu dữ liệu; nhãn thùng / thùng không có mã là bình thường (sản phẩm không đóng thùng riêng).
 WARN_WHEN_NO_CODE = frozenset({PackagingRole.CAP, PackagingRole.LABEL})
+#  Loại thành phần THÊM SAU (chưa nằm trong hai tập trên) mặc định: tính theo chai, không cảnh báo khi thiếu mã — muốn khác thì thêm vào tập tương ứng.
 
 
 class PriceLike(Protocol):
@@ -86,7 +87,7 @@ def price_warnings(price: PriceLike | None, applied: Decimal | None, purchase_un
 
 def compute_product_cost(bom, prices: dict[str, PriceLike], overrides: dict[str, Decimal | None] | None = None,
                          purchase_units: dict[str, str] | None = None) -> ProductCost:
-    """`bom` cần `bottle_code, cap_code, label_code, carton_label_code, carton_code, carton_qty`.
+    """`bom` cần `carton_qty` và `code_of(role)` (xem `bom_parts_service.BomRow`); duyệt MỌI loại trong `PackagingRole` theo thứ tự số.
 
     `overrides` = `{mã đã chọn: giá giả định hoặc None}` — mã có trong dict là "đã chọn" (`selected=True`), giá giả định
     (khác None) thay `new`. `purchase_units` = `{mã: ĐVT lần mua gần nhất}` cho cảnh báo lệch ĐVT.
@@ -94,25 +95,25 @@ def compute_product_cost(bom, prices: dict[str, PriceLike], overrides: dict[str,
     overrides = overrides or {}
     purchase_units = purchase_units or {}
     qty = int(bom.carton_qty or 0)
-    columns = ((PackagingRole.BOTTLE, bom.bottle_code), (PackagingRole.CAP, bom.cap_code),
-               (PackagingRole.LABEL, bom.label_code), (PackagingRole.CARTON_LABEL, bom.carton_label_code),
-               (PackagingRole.CARTON, bom.carton_code))
     parts: list[PartCost] = []
-    for role, code in columns:
-        code = code or ""
+    for role in PackagingRole:
+        code = bom.code_of(role) or ""
         p = prices.get(code) if code else None
         old, new = (p.old, p.new) if p else (None, None)
         selected = code in overrides if code else False
         assumed = overrides.get(code) if selected else None
         parts.append(PartCost(role, code, old, new, assumed if assumed is not None else new, selected))
 
+    bottle_part = next(p for p in parts if p.role == PackagingRole.BOTTLE)
+    others = [p for p in parts if p.role != PackagingRole.BOTTLE]
+
     def total_raw(field_name: str) -> Decimal | None:
         """Tổng CHƯA làm tròn — chênh lệch / thùng nhân số thô rồi mới làm tròn (bản mẫu nhân số thô)."""
-        bottle = getattr(parts[0], field_name)
+        bottle = getattr(bottle_part, field_name)
         if bottle is None:
             return None            # thiếu giá chai → chi phí rỗng
         s = Decimal(bottle)
-        for part in parts[1:]:
+        for part in others:
             v = getattr(part, field_name) or Decimal(0)
             s += (v / qty if qty else Decimal(0)) if part.role in PER_CARTON else v
         return s
@@ -138,10 +139,10 @@ def compute_product_cost(bom, prices: dict[str, PriceLike], overrides: dict[str,
 
 def _product_warnings(parts, qty, prices, purchase_units):
     out: list[tuple[CostWarning, PackagingRole | None]] = []
-    bottle = parts[0]
+    bottle = next(p for p in parts if p.role == PackagingRole.BOTTLE)
     if bottle.old is None:
         out.append((CostWarning.MISSING_BOTTLE_PRICE, PackagingRole.BOTTLE))
-    for part in parts[1:]:
+    for part in (p for p in parts if p.role != PackagingRole.BOTTLE):
         if not part.code:
             if part.role in WARN_WHEN_NO_CODE:
                 out.append((CostWarning.MISSING_COMPONENT_CODE, part.role))

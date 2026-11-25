@@ -10,28 +10,22 @@ Mỗi lần mua của mã đó cho ra MỘT dòng cho MỖI sản phẩm dùng n
 Số gộp (thẻ tóm tắt, ô chọn nhà cung cấp) KHÔNG nối 55 nghìn dòng đã nhân: mỗi dòng sổ giá nhân với số cặp của mã (`pair_counts`:
 `n` = số cặp, `m` = số cặp khớp chữ tìm) rồi cộng có trọng số — cùng kết quả, chỉ đọc ~11 nghìn dòng sổ giá.
 """
-from sqlalchemy import Subquery, case, func, literal, or_, select, union_all
+from sqlalchemy import Subquery, case, func, or_, select
 
-from app.core.packaging_price_codes import PACKAGING_ROLE_LABELS, PackagingRole
+from app.core.packaging_price_codes import PACKAGING_ROLE_LABELS
 from app.modules.packaging_cost.cost_service import fold_text
-from app.modules.packaging_cost.impact_service import PART_COLUMNS
-from app.modules.packaging_cost.model import PackagingBom
-
-_ROLES = list(PackagingRole)          # cùng thứ tự với PART_COLUMNS
+from app.modules.packaging_cost.model import PackagingBom, PackagingBomPart
 
 
 def build_bom_pairs(hh_codes: list[str]) -> Subquery:
     """Truy vấn con `(hh_code, hh_name, code, role)`: mỗi (sản phẩm, mã thành phần) đúng một dòng, `role` = mã `PackagingRole`
     nhỏ nhất mà mã đó đóng trong sản phẩm. `hh_codes` rỗng = mọi sản phẩm có định mức."""
-    parts = []
-    for column, role in zip(PART_COLUMNS, _ROLES):
-        code = getattr(PackagingBom, column)
-        part = select(PackagingBom.hh_code.label("hh_code"), PackagingBom.hh_name.label("hh_name"), code.label("code"),
-                      literal(int(role)).label("role")).where(code != "")
-        parts.append(part.where(PackagingBom.hh_code.in_(hh_codes)) if hh_codes else part)
-    merged = union_all(*parts).subquery()
-    return (select(merged.c.hh_code, merged.c.hh_name, merged.c.code, func.min(merged.c.role).label("role"))
-            .group_by(merged.c.hh_code, merged.c.hh_name, merged.c.code).subquery())
+    query = (select(PackagingBom.hh_code.label("hh_code"), PackagingBom.hh_name.label("hh_name"),
+                    PackagingBomPart.part_code.label("code"), func.min(PackagingBomPart.part_type).label("role"))
+             .join(PackagingBomPart, PackagingBomPart.bom_id == PackagingBom.id).where(PackagingBomPart.part_code != ""))
+    if hh_codes:
+        query = query.where(PackagingBom.hh_code.in_(hh_codes))
+    return query.group_by(PackagingBom.hh_code, PackagingBom.hh_name, PackagingBomPart.part_code).subquery()
 
 
 def count_bom_products(hh_codes: list[str]):

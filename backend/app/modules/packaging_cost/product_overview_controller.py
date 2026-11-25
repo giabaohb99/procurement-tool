@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.database import get_db
+from app.core.packaging_price_codes import PackagingRole
 from app.core.response import success
 
 from . import export_columns as xl
@@ -20,6 +21,11 @@ from .product_overview_service import build_product_overview
 ENTITY = "packaging_cost"
 router = APIRouter()
 
+#  `part_roles=1,3`: danh sách loại thành phần cách nhau dấu phẩy, dựng từ `PackagingRole` (thêm loại mới là tự nhận).
+_ROLE_ALT = "|".join(str(int(role)) for role in PackagingRole)
+ROLES_PATTERN = f"^(({_ROLE_ALT})(,({_ROLE_ALT})){{0,{len(PackagingRole) - 1}}})?$"
+ROLES_MAX_LENGTH = 3 * len(PackagingRole)      # tối đa hai chữ số mỗi loại + dấu phẩy
+
 
 #  Biên của các ô khoảng số: có thể âm (chênh lệch giảm), chặn NaN / vô cực — cùng trần với thân `POST /impact`.
 def _bound():
@@ -28,7 +34,7 @@ def _bound():
 
 def overview_filters(q: str = Query("", max_length=100), trend: str = Query("all", pattern="^(all|up|down|flat|missing)$"),
                      sort_by: str = Query("hh_code", max_length=30), sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
-                     part_roles: str = Query("", pattern="^([1-5](,[1-5]){0,4})?$", max_length=9),
+                     part_roles: str = Query("", pattern=ROLES_PATTERN, max_length=ROLES_MAX_LENGTH),
                      carton_qty_min: int | None = Query(None, ge=0, le=MAX_CARTON_QTY),
                      carton_qty_max: int | None = Query(None, ge=0, le=MAX_CARTON_QTY),
                      cost_old_bottle_min: float | None = _bound(), cost_old_bottle_max: float | None = _bound(),

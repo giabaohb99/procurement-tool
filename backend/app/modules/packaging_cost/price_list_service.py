@@ -14,8 +14,8 @@ from app.modules.product_price.model import ProductPriceQuote
 from app.modules.product_price.price_state_service import PriceState, get_price_states
 
 from .cost_service import fold_text, price_warnings
-from .impact_service import OTHER_GROUP, PART_COLUMNS
-from .model import PackagingBom
+from .bom_parts_service import usage_by_code
+from .impact_service import OTHER_GROUP
 from .numbers import iso, num
 from .sorting import sort_blank_last
 
@@ -58,10 +58,7 @@ def sort_rows(rows: list[dict], sort_by: str, sort_dir: str, allowed: set[str] =
 
 def _component_usage(db: Session) -> tuple[dict[str, int], set[str]]:
     """`(số sản phẩm dùng mỗi mã thành phần, mã có báo giá)` — hai truy vấn, dựng tập mã VTBB."""
-    usage: dict[str, int] = {}
-    for row in db.query(*[getattr(PackagingBom, c) for c in PART_COLUMNS]).all():
-        for code in {c for c in row if c}:
-            usage[code] = usage.get(code, 0) + 1
+    usage = usage_by_code(db)
     quoted = {c for (c,) in db.query(ProductPriceQuote.product_code).distinct().all()}
     return usage, quoted
 

@@ -11,7 +11,7 @@ from app.modules.packaging_cost.model import PackagingBom
 from app.modules.supplier.model import Supplier
 from app.modules.user.model import User
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, add_quote
+from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom
 
 TOOLS = ("packaging_price_impact", "packaging_price_lookup", "packaging_product_cost")
 
@@ -20,7 +20,7 @@ def _bom(db, hh="HH0417.1", **over):
     base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="NDT0001", carton_code="THU0001", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
-    db.add(PackagingBom(**base))
+    db.add(build_bom(**base))
     db.commit()
 
 

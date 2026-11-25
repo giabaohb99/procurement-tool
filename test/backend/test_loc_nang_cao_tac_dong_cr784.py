@@ -14,7 +14,7 @@ from app.modules.packaging_cost.model import PackagingBom
 from app.modules.user.model import User
 from hdld_factory import client_as  # noqa: F401  (fixture)
 from lich_lam_viec_factory import count_queries
-from so_gia_factory_cr784 import add_ledger, add_products, column_values
+from so_gia_factory_cr784 import add_ledger, add_products, build_bom, column_values
 
 D = Decimal
 IMPACT = "/api/packaging-cost/impact"
@@ -24,7 +24,7 @@ ASSUMED = {"BA": D(130), "BB": D(150), "T1": D(180)}
 
 
 def _bom(db, hh, bottle, cap, label, carton_label, carton, qty):
-    db.add(PackagingBom(hh_code=hh, hh_name=f"Sản phẩm {hh}", legal_name="", bottle_code=bottle, cap_code=cap, label_code=label,
+    db.add(build_bom(hh_code=hh, hh_name=f"Sản phẩm {hh}", legal_name="", bottle_code=bottle, cap_code=cap, label_code=label,
                         carton_label_code=carton_label, carton_code=carton, carton_qty=qty, created_by=1, updated_by=1))
 
 
