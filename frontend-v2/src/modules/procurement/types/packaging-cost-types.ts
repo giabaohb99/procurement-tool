@@ -326,6 +326,10 @@ export interface PackagingQuote extends Record<string, unknown> {
   vat: number
   valid_from: string
   note: string
+  /** Nguồn báo giá (bộ mã `quote_source_type`): 1 = nhập tay (`source_id` 0), 2 = nhập Excel (`source_id` = id đợt nhập). Máy chủ ghi. */
+  source_type?: number
+  source_id?: number
+  source_label?: string
   updated_at?: string
 }
 

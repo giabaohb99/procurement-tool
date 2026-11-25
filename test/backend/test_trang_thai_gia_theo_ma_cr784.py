@@ -48,8 +48,8 @@ def test_bao_gia_hieu_luc_o_tuong_lai_tinh_ngay_la_gia_moi_q2(db):
 
 def test_nhieu_bao_gia_lay_cai_valid_from_muon_nhat_hoa_ngay_lay_id_lon(db):
     add_ledger(db, "A", 100, "2026-01-01")
-    add_quote(db, "A", 120, "2026-05-01")
-    add_quote(db, "A", 130, "2026-05-01")     # cùng ngày → id lớn hơn
+    add_quote(db, "A", 120, "2026-05-01", supplier="NCC01")
+    add_quote(db, "A", 130, "2026-05-01", supplier="NCC02")     # cùng ngày, khác NCC (cùng NCC bị khóa duy nhất chặn) → id lớn hơn
     add_quote(db, "A", 999, "2026-04-01")
     assert _states(db, {"A"})["A"].new == D(130)
 

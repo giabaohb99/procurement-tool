@@ -327,6 +327,12 @@ export const PRICE_SOURCE_TYPE: readonly StatusOption[] = [
   {"value": "3", "label": "Sổ Misa", "sort_order": 3, "is_terminal": false, "is_exception": false},
 ]
 
+/** Nguồn báo giá VTBB */
+export const QUOTE_SOURCE_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Nhập tay", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Nhập Excel", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
 /** Báo cáo */
 export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "1", "label": "Báo cáo mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -553,6 +559,12 @@ export const PRICE_SOURCE_TYPE_CODE = {
   MISA: 3,
 } as const
 
+/** Nguồn báo giá VTBB — khóa → mã gửi lên backend. */
+export const QUOTE_SOURCE_TYPE_CODE = {
+  MANUAL: 1,
+  EXCEL_IMPORT: 2,
+} as const
+
 /** Chức năng được bấm — khóa → mã gửi lên backend. */
 export const UI_ACTION_CODE = {
   COLUMN_TOGGLE: 1,
@@ -657,6 +669,7 @@ export const STATUS_SETS = {
   po_progress_status: PO_PROGRESS_STATUS,
   pr_line_status: PR_LINE_STATUS,
   price_source_type: PRICE_SOURCE_TYPE,
+  quote_source_type: QUOTE_SOURCE_TYPE,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
   ui_action: UI_ACTION,

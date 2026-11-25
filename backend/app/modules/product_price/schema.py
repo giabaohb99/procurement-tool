@@ -61,6 +61,9 @@ class QuoteOut(BaseModel):
     vat: Decimal
     valid_from: date
     note: str
+    # Do MÁY ghi (nhập tay = 1 / id 0; nhập Excel = 2 / id đợt nhập) — hai ô này KHÔNG nằm trong QuoteCreate / QuoteUpdate.
+    source_type: int
+    source_id: int
 
 
 def _check_floor_ceiling(floor, ceiling) -> None:

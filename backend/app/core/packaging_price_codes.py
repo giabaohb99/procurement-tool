@@ -27,6 +27,17 @@ class LedgerLineStage(IntEnum):
     FINAL = 2   # đã chốt (lịch sử mua đã chụp, dữ liệu cũ, sổ Misa): đồng bộ không đụng nữa
 
 
+class QuoteSourceType(IntEnum):
+    """Báo giá VTBB do đâu mà có — cột `tab_product_price_quote.source_type` (SMALLINT, NOT NULL, duoc-CR-784 phase 03).
+
+    Số 3 để dành cho "phương án YCBG đã chọn" (chủ dự án chốt C2 25/11/2026): chưa có đường tự tạo báo giá từ YCBG nên chưa khai;
+    khi làm thì thêm số 3, KHÔNG dùng số 3 cho việc khác.
+    """
+
+    MANUAL = 1         # gõ ở hộp Báo giá mới / sửa ở màn Báo giá VTBB; `source_id` = 0 (không có chứng từ gốc, C3)
+    EXCEL_IMPORT = 2   # nhập Excel (Quản lý Import, module 5); `source_id` = tab_import_batch.id của đợt ghi giá cuối (C4)
+
+
 class PackagingRole(IntEnum):
     """Vai trò của một mã trong định mức bao bì của một mã hàng hóa."""
 
@@ -64,6 +75,7 @@ PRICE_SOURCE_TYPE_LABELS = {
     PriceSourceType.MISA: "Sổ Misa",
 }
 LEDGER_LINE_STAGE_LABELS = {LedgerLineStage.OPEN: "Đang mở", LedgerLineStage.FINAL: "Đã chốt"}
+QUOTE_SOURCE_TYPE_LABELS = {QuoteSourceType.MANUAL: "Nhập tay", QuoteSourceType.EXCEL_IMPORT: "Nhập Excel"}
 PACKAGING_ROLE_LABELS = {
     PackagingRole.BOTTLE: "Chai", PackagingRole.CAP: "Nắp", PackagingRole.LABEL: "Nhãn",
     PackagingRole.CARTON_LABEL: "Nhãn thùng", PackagingRole.CARTON: "Thùng",
@@ -88,6 +100,7 @@ def _set(name: str, title: str, labels: dict) -> CodeSet:
 
 PRICE_SOURCE_TYPE_SET = _set("price_source_type", "Nguồn dòng sổ giá", PRICE_SOURCE_TYPE_LABELS)
 LEDGER_LINE_STAGE_SET = _set("ledger_line_stage", "Giai đoạn dòng sổ giá", LEDGER_LINE_STAGE_LABELS)
+QUOTE_SOURCE_TYPE_SET = _set("quote_source_type", "Nguồn báo giá VTBB", QUOTE_SOURCE_TYPE_LABELS)
 PACKAGING_ROLE_SET = _set("packaging_role", "Vai trò thành phần bao bì", PACKAGING_ROLE_LABELS)
 COST_TREND_SET = _set("packaging_cost_trend", "Xu hướng chi phí bao bì", COST_TREND_LABELS)
 COST_WARNING_SET = _set("packaging_cost_warning", "Cảnh báo chi phí bao bì", COST_WARNING_LABELS)

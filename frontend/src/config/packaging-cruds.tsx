@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom'
 import type { CrudConfig } from './cruds'
 import PackagingExcelImportButton from '../components/packaging/PackagingExcelImportButton'
 import { IMPORT_MODULE_PACKAGING_BOM, PACKAGING_BOM_API, PACKAGING_QUOTE_API } from '../api/packaging-cost'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtPrice } from '../utils/money'
-import { PACKAGING_ROLE_LABELS } from '../utils/packaging-price'
+import { PACKAGING_ROLE_LABELS, QUOTE_SOURCE_EXCEL, quoteSourceText } from '../utils/packaging-price'
 
 /**
  * duoc-CR-784 — hai danh mục của cụm Giá bao bì khai báo kiểu CRUD chung của bản v1 (gộp vào `cruds` ở `config/cruds.tsx`):
@@ -52,6 +53,14 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
       { key: 'vat', label: 'VAT %', render: (r) => Number(r.vat) },
       { key: 'valid_from', label: 'Ngày hiệu lực', render: (r) => fmtDateStr(r.valid_from) },
       { key: 'note', label: 'Ghi chú' },
+      // Nguồn do máy chủ ghi (nhập tay / nhập Excel); không xếp được vì chữ "(lô #N)" ghép ở giao diện. Nhập Excel bấm mở đợt nhập.
+      { key: 'source', label: 'Nguồn', noSort: true, render: (r) => {
+        const text = quoteSourceText(r.source_type, r.source_id)
+        if (!text) return null
+        return r.source_type === QUOTE_SOURCE_EXCEL && r.source_id > 0
+          ? <Link to={`/import-batches/${r.source_id}`} onClick={(e) => e.stopPropagation()}>{text}</Link>
+          : text
+      } },
       { key: 'updated_at', label: 'Cập nhật', render: (r) => fmtDateTime(r.updated_at) || '—', defaultHidden: true },
     ],
     filters: [

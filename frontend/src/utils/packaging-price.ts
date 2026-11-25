@@ -60,6 +60,17 @@ export function isOutsideLimit(price: Num, floor: Num, ceiling: Num): boolean {
 export const PACKAGING_ROLE_LABELS: Record<number, string> = {
   1: 'Chai', 2: 'Nắp', 3: 'Nhãn', 4: 'Nhãn thùng', 5: 'Thùng',
 }
+/** `QuoteSourceType` — nguồn báo giá VTBB (số 3 để dành cho YCBG). Cùng chữ với `frontend-v2` (`packaging-quote-source.ts`). */
+export const QUOTE_SOURCE_LABELS: Record<number, string> = { 1: 'Nhập tay', 2: 'Nhập Excel' }
+export const QUOTE_SOURCE_EXCEL = 2
+
+/** Chữ cột "Nguồn" của Báo giá VTBB: "Nhập tay" / "Nhập Excel (lô #N)". */
+export function quoteSourceText(type: number | null | undefined, id: number | null | undefined): string {
+  if (type == null) return ''
+  const label = QUOTE_SOURCE_LABELS[type] ?? `Mã ${type}`
+  return type === QUOTE_SOURCE_EXCEL && id != null && id > 0 ? `${label} (lô #${id})` : label
+}
+
 export const COST_WARNING_KIND = { BELOW_FLOOR: 6, ABOVE_CEILING: 7 } as const
 const COST_WARNING_LABELS: Record<number, string> = {
   1: 'Thiếu giá chai', 2: 'Chưa khai mã thành phần', 3: 'Thiếu giá thành phần', 4: 'Thiếu quy cách thùng',

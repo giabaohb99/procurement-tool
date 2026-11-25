@@ -5,7 +5,9 @@ tiêu đề (không theo vị trí): **Mã VTBB** · **Đơn giá** · **Ngày h
 Đơn giá VNĐ chưa VAT theo ĐVT danh mục; VAT ghi 8 (= 8%), không ghi 0,08.
 
 Khóa một báo giá = (mã VTBB, mã NCC, ngày hiệu lực): có rồi thì cập nhật đơn giá / VAT / ghi chú (chạy thử liệt kê cũ → mới),
-chưa có thì thêm. Báo giá trên hệ thống không có trong tệp GIỮ NGUYÊN. Mã VTBB phải có trong danh mục sản phẩm (cùng luật với
+chưa có thì thêm. Nguồn của báo giá (phase 03, chủ dự án chốt C2 / C4): thêm mới → (`EXCEL_IMPORT`, id đợt nhập); cập nhật ĐƠN GIÁ hoặc
+VAT → nguồn đổi sang đợt này (giá đang dùng đến từ lần ghi cuối; vết cũ ở nhật ký đợt); chỉ đổi ghi chú thì nguồn giữ nguyên.
+Báo giá trên hệ thống không có trong tệp GIỮ NGUYÊN. Mã VTBB phải có trong danh mục sản phẩm (cùng luật với
 hộp Báo giá mới). Chạy thử thì lùi toàn bộ; không hỗ trợ hoàn tác (sửa / xóa báo giá ở màn Báo giá VTBB).
 """
 from datetime import date, datetime
@@ -13,6 +15,7 @@ from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
+from app.core.packaging_price_codes import QuoteSourceType
 from app.modules.import_tool.catalog_import import ImportValidationError, _persist
 from app.modules.import_tool.model import ImportBatch, LogLevel
 from app.modules.product.model import Product
@@ -186,7 +189,8 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             out.counts["created"] += 1
             out.log(i, LogLevel.INFO, "quote_new", f"Thêm báo giá {label}: {format_vn_number(vals['price'])}", code)
             if apply:
-                db.add(ProductPriceQuote(created_by=uid, updated_by=uid, **vals))
+                db.add(ProductPriceQuote(created_by=uid, updated_by=uid, source_type=int(QuoteSourceType.EXCEL_IMPORT),
+                                         source_id=batch.id, **vals))
             continue
         diffs = [f"{name}: {_show(getattr(old, col))} → {_show(vals[col])}" for col, name in
                  (("price", "Đơn giá"), ("vat", "VAT"), ("note", "Ghi chú")) if getattr(old, col) != vals[col]]
@@ -194,11 +198,14 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             out.counts["skipped"] += 1
             continue
         out.counts["updated"] += 1
+        price_or_vat_changed = old.price != vals["price"] or old.vat != vals["vat"]
         out.log(i, LogLevel.INFO, "quote_update", f"Cập nhật báo giá {label}: " + "; ".join(diffs), code)
         if apply:
             for col in ("price", "vat", "note"):
                 setattr(old, col, vals[col])
             old.updated_by = uid
+            if price_or_vat_changed:
+                old.source_type, old.source_id = int(QuoteSourceType.EXCEL_IMPORT), batch.id
     out.note_dropped()
     if not apply:
         db.rollback()

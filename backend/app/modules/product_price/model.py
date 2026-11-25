@@ -15,6 +15,7 @@ from sqlalchemy import BigInteger, Date, DateTime, Index, Numeric, SmallInteger,
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
+from app.core.packaging_price_codes import QuoteSourceType
 
 
 class ProductPriceLedger(Base):
@@ -70,7 +71,12 @@ class ProductPriceQuote(Base, AuditMixin):
     """Báo giá của nhà cung cấp cho một mã hàng, hiệu lực từ `valid_from`. Giá VNĐ, chưa VAT."""
 
     __tablename__ = "tab_product_price_quote"
-    __table_args__ = (Index("ix_ppq_code_from", "product_code", "valid_from", "id"),)
+    __table_args__ = (
+        Index("ix_ppq_code_from", "product_code", "valid_from", "id"),
+        # Khóa của một báo giá = (mã, NCC, ngày hiệu lực) — chính khóa nhập Excel vẫn dùng (migration `quotesrc784`, chủ dự án chốt C5).
+        UniqueConstraint("product_code", "supplier_code", "valid_from", name="uq_ppq_key"),
+        Index("ix_ppq_source", "source_type", "source_id"),    # tra "báo giá của đợt nhập X"
+    )
 
     product_code: Mapped[str] = mapped_column(String(50))
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
@@ -78,6 +84,11 @@ class ProductPriceQuote(Base, AuditMixin):
     vat: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)
     valid_from: Mapped[date] = mapped_column(Date)
     note: Mapped[str] = mapped_column(String(500), default="")
+    # QuoteSourceType: 1 = nhập tay (`source_id` = 0) · 2 = nhập Excel (`source_id` = tab_import_batch.id của đợt ghi giá / VAT cuối).
+    # NOT NULL, KHÔNG server default (migration `quotesrc784` bỏ): nơi ghi báo giá phải đặt rõ. Mặc định phía Python chỉ để đường CRUD
+    # tạo tay không phải viết lại; schema ghi KHÔNG nhận hai trường này từ người dùng.
+    source_type: Mapped[int] = mapped_column(SmallInteger, default=QuoteSourceType.MANUAL)
+    source_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
 class ProductPriceLimit(Base, AuditMixin):

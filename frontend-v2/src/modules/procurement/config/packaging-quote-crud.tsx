@@ -9,6 +9,7 @@ import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 
 import { PACKAGING_QUOTE_API } from '../api/packaging-cost-api'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
+import { PackagingQuoteSourceCell } from '../components/packaging-quote-source-cell'
 import { PriceText } from '../components/packaging-price-cells'
 import { packagingCostKeys } from './packaging-cost-query-keys'
 import type { PackagingQuote } from '../types/packaging-cost-types'
@@ -84,6 +85,13 @@ export const PACKAGING_QUOTE_CRUD_CONFIG: CrudConfig<PackagingQuote> = {
       cell: (row) => formatDate(row.valid_from),
     },
     { key: 'note', header: 'Ghi chú', width: 220, wrap: true, cell: (row) => row.note },
+    {
+      // Chỉ xem, không xếp: máy chủ ghi, không phải ô người dùng gõ; chữ "(lô #N)" ghép ở giao diện nên không có khóa xếp khớp.
+      key: 'source',
+      header: 'Nguồn',
+      width: 150,
+      cell: (row) => <PackagingQuoteSourceCell row={row} />,
+    },
     {
       key: 'updated_at',
       header: 'Cập nhật',

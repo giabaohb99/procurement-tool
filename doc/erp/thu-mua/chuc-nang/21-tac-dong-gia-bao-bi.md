@@ -139,6 +139,15 @@ nhập báo giá của nhà cung cấp*.
 - Màn danh sách **Báo giá VTBB** (`/procurement/packaging-cost/quotes`, cũ `/product-price-quotes`) **ẩn khỏi menu**
   (người chủ chốt 21/11: bản mẫu không có tab này) nhưng vẫn gác quyền `packaging_cost`. v2 sửa trong hộp (**Lưu thay
   đổi**), bản cũ sửa ở trang chi tiết chung (**Lưu**, **Xóa**).
+- **Nguồn và khóa duy nhất của báo giá** (25/11/2026, phase 03 của kế hoạch tối ưu [261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md),
+  migration `quotesrc784`, chưa lên dev). Mỗi báo giá có `source_type` (bộ mã `quote_source_type`: **1 Nhập tay**, **2 Nhập Excel**; số 3 để dành
+  cho phương án YCBG, chưa làm) và `source_id` (nhập tay = 0, nhập Excel = id đợt nhập ở Quản lý Import), cả hai KHÔNG rỗng và do máy
+  chủ ghi — người dùng không gõ được. Nhập tay (hộp *Báo giá mới* / *Sửa*) → (1, 0). Nhập Excel thêm mới → (2, đợt này); nhập Excel
+  ĐÈ đơn giá hoặc VAT của báo giá đã có → nguồn đổi sang đợt này (nguồn = lần ghi giá cuối; vết cũ nằm ở nhật ký các đợt), chỉ đè ghi chú
+  thì nguồn giữ nguyên. Sửa ở form đổi đơn giá / VAT / mã / NCC / ngày hiệu lực → trở về (1, 0); chỉ sửa ghi chú thì giữ. Khóa duy nhất
+  **(mã VTBB, mã NCC, ngày hiệu lực)** (`uq_ppq_key`, chính khóa nhập Excel vẫn dùng): tạo hoặc sửa thành khóa đã có là **409** *Đã có
+  báo giá cùng mã, NCC và ngày hiệu lực*. Danh sách Báo giá VTBB có cột **Nguồn** (chỉ xem, không xếp): *Nhập tay* hoặc *Nhập Excel (lô
+  #N)*, bản v2 bấm vào lô mở đợt nhập đó; bản cũ cũng bấm được. Bảng giá VTBB, cột *Báo giá mới* và mọi con số tính giá KHÔNG đổi.
 
 ## 5. Giá mua gần nhất
 
@@ -209,7 +218,7 @@ Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging
 | Loại (module) | Nút / màn | Quyền | Luật |
 |---|---|---|---|
 | Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_cost.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
-| Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục |
+| Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục. Nguồn báo giá: thêm mới và đè giá / VAT ghi (Nhập Excel, id đợt), đè chỉ ghi chú thì giữ nguồn |
 | Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ |
 
 Mọi nút nhập còn đòi `import.create` + `import.read`. Tệp mẫu: `GET /api/imports/template?module=4|5|6` (sheet dữ liệu chỉ có

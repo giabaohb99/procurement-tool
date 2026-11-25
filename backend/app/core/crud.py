@@ -29,8 +29,8 @@ def remove_or_mark_deleted(db: Session, obj, user_id: int) -> bool:
     return False
 
 
-def commit_or_conflict(db: Session, message: str) -> None:
-    """`db.commit()` nhưng đổi vi phạm RÀNG BUỘC DUY NHẤT thành lỗi 400 đọc được.
+def commit_or_conflict(db: Session, message: str, status_code: int = 400) -> None:
+    """`db.commit()` nhưng đổi vi phạm RÀNG BUỘC DUY NHẤT thành lỗi 400 (hoặc `status_code`, vd 409) đọc được.
 
     ⚠️ Không thừa với chốt kiểm trùng ở trên nó. Chốt đó là một câu `SELECT` rồi
     mới `INSERT`, nên hai lệnh gửi sát nhau đều thấy "chưa có" rồi cùng ghi —
@@ -47,7 +47,7 @@ def commit_or_conflict(db: Session, message: str) -> None:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, message)
+        raise HTTPException(status_code, message)
 
 
 def _label(entity: str) -> str:
@@ -68,7 +68,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
                      sort_nulls_last=(), csv_import=True, audit_entity=None, after_update=None,
-                     scoped=True, enrich_out=None, virtual_fields=(), after_create=None):
+                     scoped=True, enrich_out=None, virtual_fields=(), after_create=None,
+                     conflict_message=None, conflict_status=400):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
@@ -88,6 +89,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
       phải cột của bảng (vd `bottle_code` nay nằm ở bảng thành phần). Trường khai trong `virtual_fields` bị bỏ khỏi `Model(**...)` lúc
       tạo và khỏi `setattr` lúc sửa; việc ghi chúng ra nơi khác do `after_create` (sau `db.add`, trước commit, cùng giao dịch) và
       `before_update` / `after_update` lo.
+    - `conflict_message` / `conflict_status` (duoc-CR-784, báo giá) — câu và mã HTTP khi `commit` đụng ràng buộc duy nhất NHIỀU cột
+      (mặc định "Dữ liệu vi phạm ràng buộc duy nhất" / 400; báo giá trùng khóa dùng 409). Chỉ có tác dụng khi `unique_field` trống.
     - `enrich_out(db, rows)` — gắn thêm trường hiển thị (tên, ĐVT…) vào các dòng đầu ra, gom MỘT truy vấn cho cả trang.
 
     Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
@@ -169,7 +172,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         if after_create:
             after_create(db, o, data)
         commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
-                           else "Dữ liệu vi phạm ràng buộc duy nhất")
+                           else conflict_message or "Dữ liệu vi phạm ràng buộc duy nhất",
+                           400 if unique_field else conflict_status)
         db.refresh(o)
         record(db, user.id, log_entity, o.id, "create")
         return success(out_rows(db, [o])[0], "Đã tạo", 201)
@@ -190,14 +194,16 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             if k not in virtual_fields:
                 setattr(o, k, v)
         o.updated_by = user.id
-        conflict_message = f"{unique_field} đã tồn tại" if unique_field else "Dữ liệu vi phạm ràng buộc duy nhất"
+        update_conflict = (f"{unique_field} đã tồn tại" if unique_field
+                           else conflict_message or "Dữ liệu vi phạm ràng buộc duy nhất")
+        update_status = 400 if unique_field else conflict_status
         if after_update:
             try:
                 after_update(db, o, before_values, user)     # hook có thể `flush` → vi phạm duy nhất nổ ở đây
             except IntegrityError:
                 db.rollback()
-                raise HTTPException(400, conflict_message)
-        commit_or_conflict(db, conflict_message)
+                raise HTTPException(update_status, update_conflict)
+        commit_or_conflict(db, update_conflict, update_status)
         db.refresh(o)
         record(db, user.id, log_entity, oid, "update")
         return success(out_rows(db, [o])[0], "Đã cập nhật")

@@ -3,8 +3,9 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | planner | Nháp | duoc-CR-784 |
+| 2 | 25/11/2026 | fullstack | **Xong trên nhánh `duoc-cr784-opt-p03`** (chưa commit, CHƯA lên dev) — migration `quotesrc784` | duoc-CR-784 |
 
-Ưu tiên P2 · 4 giờ · cần phase 02 (cùng `product_price/model.py`, cùng migration `opt784`).
+Ưu tiên P2 · 4 giờ · cần phase 02 (cùng `product_price/model.py`; migration riêng `quotesrc784` nối sau `srcmerge784`).
 
 ## Liên kết
 - `backend/app/modules/product_price/model.py::ProductPriceQuote`, `schema.py`, `quote_limit_controller.py`
@@ -53,7 +54,7 @@ nhân thì là việc khác.
 - Giao diện: cột "Nguồn" chỉ xem ở màn Báo giá VTBB (v2 `packaging-quote-crud.tsx`; v1 `packaging-cruds.tsx` — cụm này chạy cả hai
   bản), nguồn Excel bấm mở đợt nhập ở Quản lý Import. API chỉ THÊM trường nên bản nào chưa sửa vẫn chạy.
 
-## Migration (`opt784`, phần báo giá)
+## Migration (kế hoạch ban đầu — thực hiện: `quotesrc784`, xem mục *Kết quả thực hiện* ở cuối)
 Lên:
 1. Đếm trước (chỉ đọc, ghi vào log migration): số dòng, số nhóm trùng `(mã, NCC, valid_from)`.
 2. `add_column` hai cột với `server_default` tạm `1` / `0`.
@@ -84,8 +85,52 @@ Xuống: bỏ chỉ mục + hai cột (dòng đã xóa ở bước 4 không tr�
 
 ## Việc cần làm
 - [x] Chủ dự án chốt C2: chỉ Nhập tay + Nhập Excel (25/11/2026)
-- [ ] Chủ dự án chốt C3–C5
-- [ ] Bộ mã `QuoteSourceType` + sinh TS
-- [ ] Cột, khóa, migration + hàm điền lại có bài kiểm
-- [ ] CRUD + nhập Excel ghi nguồn; 409 trùng khóa
-- [ ] Cột Nguồn ở v1 + v2
+- [x] Chủ dự án chốt C3–C5 (25/11/2026, cả ba chọn A)
+- [x] Bộ mã `QuoteSourceType` + sinh TS (`gen_status_ts`: `QUOTE_SOURCE_TYPE`, `QUOTE_SOURCE_TYPE_CODE`)
+- [x] Cột, khóa, migration `quotesrc784` + hàm điền lại có bài kiểm (SQLite lên / xuống / lên lại; MySQL 8 trên bản sao local)
+- [x] CRUD + nhập Excel ghi nguồn; 409 trùng khóa
+- [x] Cột Nguồn ở v1 + v2
+- [ ] Lên dev: sao lưu, chạy câu đọc kiểm trùng khóa, khởi động lại api (xem *Việc cần làm khi lên dev*)
+
+## Kết quả thực hiện (25/11/2026)
+
+### Đã làm, và chỗ khác kế hoạch
+| Hạng mục | Thực hiện | Khác kế hoạch? |
+|---|---|---|
+| Bộ mã | `QuoteSourceType` (1 `MANUAL` "Nhập tay", 2 `EXCEL_IMPORT` "Nhập Excel") ở `core/packaging_price_codes.py`, đăng ký bộ `quote_source_type`, TS sinh bằng `scripts/gen_status_ts.py` | không |
+| Cột | `source_type` SMALLINT NOT NULL, `source_id` BIGINT NOT NULL, KHÔNG server default ở CSDL (mặc định Python `MANUAL` / 0 chỉ để CRUD tạo tay không phải viết lại); khóa `uq_ppq_key (product_code, supplier_code, valid_from)`; chỉ mục `ix_ppq_source` | không |
+| Migration | `quotesrc784`, `down_revision = srcmerge784` (đã kiểm chỉ còn một đầu), viết tay, chạy MySQL + SQLite | id khác (`opt784` ban đầu); xem bên dưới |
+| Điền lại nguồn | khớp `tab_import_log` (xem dưới) | **khác**: kế hoạch khớp theo `created_at` trong `[started_at, finished_at]` của đợt; thực hiện khớp theo thời điểm dòng nhật ký (cùng đồng hồ CSDL với `updated_at` của báo giá), vì `started_at` / `finished_at` ghi bằng `utcnow()` của Python còn `created_at` / `updated_at` bằng `now()` của MySQL — lệch múi giờ thì cửa sổ sai. Thêm: nhận cả báo giá bị Excel ĐÈ giá (C4), không chỉ báo giá Excel tạo |
+| Trùng khóa lúc lên | **khác**: kế hoạch ghi "giữ id lớn nhất, xóa còn lại"; thực hiện theo yêu cầu của chủ dự án là DỪNG kèm câu báo rõ, KHÔNG xóa dòng nào (MySQL không hoàn tác DDL nên kiểm trước mọi thay đổi cấu trúc) | khác |
+| Form tạo trùng | chốt kiểm trước ở `quote_limit_controller._ensure_quote_key_free` → **409** *Đã có báo giá cùng mã, NCC và ngày hiệu lực*; hai người gửi sát nhau thì `uq_ppq_key` nổ lúc commit và cũng ra 409 nhờ hai tham số mới `conflict_message` / `conflict_status` của `make_crud_router` / `commit_or_conflict` (mặc định vẫn 400 cho mọi danh mục khác) | thêm sửa `core/crud.py` (nhỏ, tương thích ngược) vì `commit_or_conflict` luôn là 400 |
+| Form sửa | đổi đơn giá / VAT → `(1, 0)`; chỉ đổi ghi chú → giữ nguồn; sửa sang khóa đã có → 409 | **thêm**: đổi mã / NCC / ngày hiệu lực cũng về `(1, 0)` (dòng không còn là dòng đã nhập từ Excel) |
+| Nhập Excel | thêm → `(2, batch.id)`; đè ĐƠN GIÁ hoặc VAT → `(2, batch.id)` của đợt này (C4); đè chỉ ghi chú → giữ nguồn; chạy thử không ghi gì | theo bài kiểm của kế hoạch ("đè chỉ ghi chú → không đổi") |
+| API | `source_type`, `source_id` (QuoteOut) + `source_label` (enrich, nhãn bộ mã); `QuoteCreate` / `QuoteUpdate` không có hai trường, gửi lên bị bỏ qua | không |
+| Giao diện | cột **Nguồn** (chỉ xem, không xếp) ở v2 `packaging-quote-crud.tsx` + `PackagingQuoteSourceCell` và v1 `packaging-cruds.tsx`; chữ "Nhập tay" / "Nhập Excel (lô #N)", bấm lô mở đợt nhập (`/system/imports/:id` v2, `/import-batches/:id` v1) | không |
+| Số liệu tính giá | không đổi (không đụng `price_state_service`, bảng giá, tác động) | — |
+
+### Quy tắc điền lại nguồn của migration (`backfill_quote_sources`)
+Nhật ký nhập lấy từ `tab_import_log` của đợt `module = 5`, `mode = 1` (ghi thật), `status = 2` (xong), `category` `quote_new` / `quote_update`, đọc khóa `(mã, NCC, ngày hiệu lực)` từ chính câu nhật ký (`Thêm / Cập nhật báo giá MÃ · NCC X · từ dd/mm/yyyy: ...`). Với mỗi báo giá:
+1. "Lần chạm cuối của Excel" = dòng nhật ký cùng khóa mà đợt do người = `updated_by` của báo giá và thời điểm cách `updated_at` không quá 300 giây. Không có (đã sửa tay sau đó, hoặc nhật ký không còn) → `(1, 0)`; chạm của HAI đợt → khớp mơ hồ → `(1, 0)`, in số mơ hồ.
+2. Nguồn = lần GHI GIÁ (thêm mới, hoặc cập nhật có "Đơn giá:" / "VAT:") muộn nhất không sau lần chạm cuối → `(2, id đợt)`. Đợt chạy thử không tính.
+Giới hạn đã biết: nhật ký INFO chỉ giữ 300 dòng mỗi đợt nên đợt lớn có thể khớp thiếu — phần thiếu ở lại `(1, 0)`. Dev / local hiện 0 báo giá nên chưa ảnh hưởng. Xuống (`downgrade`) bỏ hai chỉ mục + hai cột, mất dữ liệu nguồn, giữ nguyên mọi dòng báo giá.
+
+### Câu đọc kiểm trước khi lên dev (chỉ đọc)
+```sql
+-- 1) Số báo giá hiện có (local = 0; dev chưa đo)
+SELECT COUNT(*) FROM tab_product_price_quote;
+-- 2) Nhóm trùng khóa (mã, NCC, ngày hiệu lực). KẾT QUẢ MONG ĐỢI: 0 dòng. Có dòng nào thì migration DỪNG, gộp / xóa tay rồi chạy lại.
+SELECT product_code, supplier_code, valid_from, COUNT(*) AS so_dong, GROUP_CONCAT(id) AS cac_id
+FROM tab_product_price_quote GROUP BY product_code, supplier_code, valid_from HAVING COUNT(*) > 1;
+-- 3) Các đợt nhập báo giá sẽ được dùng để điền lại nguồn (chỉ tham khảo)
+SELECT id, created_by, status, mode, created_at FROM tab_import_batch WHERE module = 5 ORDER BY id;
+```
+(MySQL so sánh mã không phân biệt hoa thường, đúng như khóa duy nhất sẽ làm — `cpt0075` và `CPT0075` là một nhóm.)
+
+### Việc cần làm khi lên dev
+1. Sao lưu database dev. 2. Chạy ba câu đọc trên; nhóm trùng khóa phải bằng 0. 3. Gộp migration lên `erp-v2`, khởi động lại `api` (`alembic upgrade head` tự chạy `quotesrc784`; log in `[quotesrc784] nguồn báo giá: ...`). 4. Kiểm: `SHOW COLUMNS FROM tab_product_price_quote LIKE 'source%'` (NOT NULL, không default) + `SHOW INDEX` thấy `uq_ppq_key`, `ix_ppq_source`. 5. Màn Báo giá VTBB v2 + v1: cột Nguồn hiện; thử tạo hai báo giá cùng khóa → báo 409. Quay lui: `alembic downgrade -1` (mất nguồn, giữ dòng).
+
+### Kiểm thử (25/11/2026)
+- Backend: `test_bao_gia_nguon_va_khoa_duy_nhat_cr784.py` 19 bài (bộ mã, form (1,0), schema không nhận nguồn, 409 tạo / sửa, đổi nguồn khi sửa, Excel thêm / đè giá / đè ghi chú / chạy thử, khóa ở CSDL, bài canh mọi `ProductPriceQuote(` phải truyền nguồn, migration SQLite lên / xuống / lên lại + điền lại + dừng khi trùng, một đầu migration); sửa `test_trang_thai_gia_theo_ma_cr784.py` (hòa ngày nay phải khác NCC). `-k "cr784 or cr789"` + `test_pham_vi_khai_du_b07` + `test_canh_do_dai_o_chu_cr538` + `test_status_catalog_b01` + `test_dong_bo_giao_dien_v2` xanh; ruff `app` 0 lỗi.
+- MySQL 8 (bản sao local `p03_scratch`, đã xóa): lên / xuống / lên lại sạch, điền lại đúng (2 Excel, 2 tay), trùng khóa (kể cả khác hoa thường) → dừng, không đổi cấu trúc.
+- Frontend: v2 `tsc` 0 lỗi, `eslint` các tệp đổi 0 lỗi, `vitest src/modules/procurement` 1.813 bài xanh; v1 `tsc` đúng 4 lỗi cũ.
