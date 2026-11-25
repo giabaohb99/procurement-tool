@@ -41,6 +41,7 @@ class LedgerRow:
     source_type: int
     doc_id: int
     supplier_name: str = ""     # tên nhà cung cấp chép theo dòng (nguồn Misa); trống = tra `tab_supplier` theo mã
+    line_stage: int = 0         # LedgerLineStage: 1 đang mở / 2 đã chốt (cùng `source_type` cho ra nhãn "Nguồn")
 
 
 @dataclass
@@ -64,7 +65,7 @@ def uses_lateral(db: Session) -> bool:
 def _detail_columns(outer):
     return [outer.id.label("l_id"), outer.price.label("l_price"), outer.qty.label("l_qty"), outer.unit.label("l_unit"),
             outer.price_date.label("l_date"), outer.supplier_code.label("l_supplier"), outer.source_type.label("l_source"),
-            outer.doc_id.label("l_doc"), outer.supplier_name.label("l_supplier_name")]
+            outer.doc_id.label("l_doc"), outer.supplier_name.label("l_supplier_name"), outer.line_stage.label("l_stage")]
 
 
 def _lateral_statement(n: int, where: list, rank_conds: list, agg_cols: list | None, agg_conds: list | None):
@@ -136,7 +137,7 @@ def latest_priced_by_code(db: Session, n: int, *, codes: set[str] | None, rank_c
             entry.rows.append(LedgerRow(id=int(m["l_id"]), price=m["l_price"], qty=m["l_qty"], unit=m["l_unit"] or "",
                                         price_date=m["l_date"], supplier_code=m["l_supplier"] or "",
                                         source_type=int(m["l_source"]), doc_id=int(m["l_doc"] or 0),
-                                        supplier_name=m["l_supplier_name"] or ""))
+                                        supplier_name=m["l_supplier_name"] or "", line_stage=int(m["l_stage"] or 0)))
     for entry in result.values():
         entry.rows.sort(key=lambda row: (row.price_date, row.doc_id, row.id), reverse=True)
         del entry.rows[n:]

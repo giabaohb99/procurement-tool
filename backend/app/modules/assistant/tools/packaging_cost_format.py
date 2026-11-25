@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS,
-                                            PRICE_SOURCE_TYPE_LABELS, CostTrend, CostWarning, PackagingRole)
+from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS, CostTrend,
+                                            CostWarning, PackagingRole, price_source_text)
 
 CURRENCY = "VND"
 PRICE_BASIS = "Đơn giá / chi phí trước VAT, đơn vị VND."
@@ -114,7 +114,7 @@ def purchase_point(point, suppliers: dict[str, str]) -> dict | None:
     day = getattr(point, "date", None) or getattr(point, "price_date", None)
     out = {"date": _iso(day), "price": _num(point.price), "unit": point.unit or "",
            "supplier_code": point.supplier_code, "supplier": _supplier_of(point, suppliers),
-           "source_label": PRICE_SOURCE_TYPE_LABELS.get(point.source_type, "")}
+           "source_label": price_source_text(point.source_type, getattr(point, "line_stage", 0)) if point.source_type else ""}
     if getattr(point, "qty", None) is not None:
         out["qty"] = round(float(point.qty), 3)
     return out

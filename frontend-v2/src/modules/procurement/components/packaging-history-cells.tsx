@@ -5,7 +5,6 @@
 import { Link } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
-import { PRICE_SOURCE_TYPE_CODE } from '@/shared/constants/statuses'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/utils/cn'
 
@@ -47,7 +46,7 @@ export function DiffCell({ row }: { row: PackagingHistoryRow }) {
 
 /** Nhãn "ĐMH đang mở" (giá còn có thể đổi) + số ĐMH nguồn bấm được; dữ liệu cũ không có ĐMH thì để trống. */
 export function SourceCell({ row }: { row: PackagingHistoryRow }) {
-  const isOpenPo = row.source_type === PRICE_SOURCE_TYPE_CODE.PO_LINE
+  const isOpenPo = row.is_open
   if (!isOpenPo && row.doc_id <= 0) return null
   return (
     <span className="flex items-center gap-2">

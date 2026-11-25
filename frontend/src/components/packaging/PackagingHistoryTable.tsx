@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingHistoryRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
-import { diffColor, diffText, pctText, PRICE_SOURCE_PO_LINE, qtyText } from '../../utils/packaging-price'
+import { diffColor, diffText, pctText, qtyText } from '../../utils/packaging-price'
 import { historyRoleText, historyRowKey } from '../../utils/packaging-query'
 import { AmountText, CodeLink, Dash, OneLine, PriceText } from './PackagingCells'
 import './packaging.css'
@@ -32,7 +32,7 @@ function DiffCell({ row }: { row: PackagingHistoryRow }) {
 
 /** Nhãn "ĐMH đang mở" (giá còn có thể đổi) + số ĐMH nguồn bấm được; dữ liệu cũ không có ĐMH thì để trống. */
 function SourceCell({ row }: { row: PackagingHistoryRow }) {
-  const open = row.source_type === PRICE_SOURCE_PO_LINE
+  const open = row.is_open
   if (!open && row.doc_id <= 0) return null
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

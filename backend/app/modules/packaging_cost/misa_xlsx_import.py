@@ -26,7 +26,7 @@ from app.modules.import_tool.catalog_import import ImportValidationError, _persi
 from app.modules.import_tool.model import ImportBatch, LogLevel
 from app.modules.product_price.misa_cutoff import get_misa_cutoff, set_misa_cutoff
 from app.modules.product_price.misa_ledger_import import (MAX_CODE, MAX_DECIMAL, MAX_SUPPLIER_CODE, MAX_SUPPLIER_NAME,
-                                                          MAX_UNIT, MAX_WAREHOUSE_NAME, SOURCE, _VTBB_SUFFIX)
+                                                          MAX_UNIT, MAX_WAREHOUSE_NAME, SOURCE, FINAL_STAGE, _VTBB_SUFFIX)
 from app.modules.product_price.model import ProductPriceLedger as L
 from app.modules.product_price.schema import MAX_YEAR, MIN_YEAR
 
@@ -137,7 +137,7 @@ def read_rows(wb, out: ImportLogCollector, company_id: int) -> tuple[list[dict],
                 amount = None
             name = _VTBB_SUFFIX.sub("", clean(cell(row, "supplier_name")))[:MAX_SUPPLIER_NAME]
             found.append(((day, si, ri), {
-                "source_type": SOURCE, "doc_id": 0, "product_code": code, "company_id": company_id,
+                "source_type": SOURCE, "line_stage": FINAL_STAGE, "doc_id": 0, "product_code": code, "company_id": company_id,
                 "supplier_code": clean(cell(row, "supplier_code")).upper()[:MAX_SUPPLIER_CODE],
                 "supplier_name": name or None,
                 "warehouse_name": clean(cell(row, "warehouse"))[:MAX_WAREHOUSE_NAME] or None,

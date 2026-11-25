@@ -2,6 +2,10 @@
 
 Thuần stdlib: `code_sets.py` phải nạp được khi chạy `scripts/gen_status_ts.py`. Số đã cấp KHÔNG ĐỔI, KHÔNG TÁI DÙNG
 (luật R2, QĐ-11). Số 3 của `PriceSourceType` = sổ chi tiết mua hàng MISA (nạp tạm bằng `scripts/import_misa_price_ledger.py`).
+
+Từ migration `srcmerge784` (25/11/2026) nguồn 1 (lịch sử mua) và nguồn 2 (dòng ĐMH) là CÙNG một lần mua của hệ thống: dòng ĐMH là MỘT
+dòng sổ theo `po_item_id` suốt đời, cột `line_stage` (`LedgerLineStage`) cho biết còn đang mở hay đã chốt; nguồn 1 chỉ còn dữ liệu cũ
+nạp từ Excel. Chữ người dùng thấy ("Nguồn" của Lịch sử mua hàng) vì thế tính từ cặp (nguồn, giai đoạn) — `price_source_text`.
 """
 from enum import IntEnum
 
@@ -11,9 +15,16 @@ from app.core.status_catalog import Code, CodeSet, register
 class PriceSourceType(IntEnum):
     """Dòng sổ giá lấy từ đâu — cột `tab_product_price_ledger.source_type` (SMALLINT)."""
 
-    PURCHASE_HISTORY = 1   # lịch sử mua hàng (dòng ĐMH đã hoàn thành hoặc dữ liệu cũ nạp từ Excel) — chỉ chèn
-    PO_LINE = 2            # dòng đơn mua hàng đã duyệt, chưa hoàn thành — có rồi thì cập nhật
+    PURCHASE_HISTORY = 1   # lịch sử mua hàng CŨ nạp từ Excel (`po_item_id` trống) — chỉ chèn; `source_id` = tab_purchase_history.id
+    PO_LINE = 2            # dòng đơn mua hàng ERP, đang mở lẫn đã hoàn thành (theo `line_stage`); `source_id` = tab_po_item.id
     MISA = 3               # sổ chi tiết mua hàng MISA (nạp tạm, tới mốc `misa_price_cutoff`) — chỉ chèn, gỡ được bằng --purge
+
+
+class LedgerLineStage(IntEnum):
+    """Giai đoạn của dòng sổ giá — cột `tab_product_price_ledger.line_stage` (SMALLINT)."""
+
+    OPEN = 1    # dòng ĐMH đã duyệt, chưa hoàn thành: giá còn có thể đổi, `sync_po_price_ledger` cập nhật theo ĐMH
+    FINAL = 2   # đã chốt (lịch sử mua đã chụp, dữ liệu cũ, sổ Misa): đồng bộ không đụng nữa
 
 
 class PackagingRole(IntEnum):
@@ -48,10 +59,11 @@ class CostWarning(IntEnum):
 
 
 PRICE_SOURCE_TYPE_LABELS = {
-    PriceSourceType.PURCHASE_HISTORY: "Lịch sử mua hàng",
-    PriceSourceType.PO_LINE: "Dòng đơn mua hàng",
+    PriceSourceType.PURCHASE_HISTORY: "Lịch sử mua hàng cũ (nạp Excel)",
+    PriceSourceType.PO_LINE: "Đơn mua hàng ERP",
     PriceSourceType.MISA: "Sổ Misa",
 }
+LEDGER_LINE_STAGE_LABELS = {LedgerLineStage.OPEN: "Đang mở", LedgerLineStage.FINAL: "Đã chốt"}
 PACKAGING_ROLE_LABELS = {
     PackagingRole.BOTTLE: "Chai", PackagingRole.CAP: "Nắp", PackagingRole.LABEL: "Nhãn",
     PackagingRole.CARTON_LABEL: "Nhãn thùng", PackagingRole.CARTON: "Thùng",
@@ -75,6 +87,25 @@ def _set(name: str, title: str, labels: dict) -> CodeSet:
 
 
 PRICE_SOURCE_TYPE_SET = _set("price_source_type", "Nguồn dòng sổ giá", PRICE_SOURCE_TYPE_LABELS)
+LEDGER_LINE_STAGE_SET = _set("ledger_line_stage", "Giai đoạn dòng sổ giá", LEDGER_LINE_STAGE_LABELS)
 PACKAGING_ROLE_SET = _set("packaging_role", "Vai trò thành phần bao bì", PACKAGING_ROLE_LABELS)
 COST_TREND_SET = _set("packaging_cost_trend", "Xu hướng chi phí bao bì", COST_TREND_LABELS)
 COST_WARNING_SET = _set("packaging_cost_warning", "Cảnh báo chi phí bao bì", COST_WARNING_LABELS)
+
+
+#  Chữ cột "Nguồn" của Lịch sử mua hàng (màn hình, Excel, in): không đổi so với trước khi gộp nguồn — ĐMH đang mở = "Dòng đơn mua hàng",
+#  lần mua đã chốt của ERP và dữ liệu cũ = "Lịch sử mua hàng", Misa = "Sổ Misa".
+SOURCE_TEXT_OPEN_PO = "Dòng đơn mua hàng"
+SOURCE_TEXT_HISTORY = "Lịch sử mua hàng"
+
+
+def is_open_po_line(source_type: int, line_stage: int) -> bool:
+    """Dòng sổ là dòng ĐMH còn mở (giao diện hiện nhãn "ĐMH đang mở")."""
+    return int(source_type) == PriceSourceType.PO_LINE and int(line_stage) == LedgerLineStage.OPEN
+
+
+def price_source_text(source_type: int, line_stage: int) -> str:
+    """Nhãn "Nguồn" hiện cho người dùng, tính từ cặp (nguồn, giai đoạn)."""
+    if int(source_type) == PriceSourceType.MISA:
+        return PRICE_SOURCE_TYPE_LABELS[PriceSourceType.MISA]
+    return SOURCE_TEXT_OPEN_PO if is_open_po_line(source_type, line_stage) else SOURCE_TEXT_HISTORY

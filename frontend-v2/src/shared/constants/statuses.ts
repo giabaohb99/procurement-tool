@@ -235,6 +235,12 @@ export const LEAVE_TYPE: readonly StatusOption[] = [
   {"value": "recuperation", "label": "Nghỉ dưỡng sức phục hồi sức khỏe", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Giai đoạn dòng sổ giá */
+export const LEDGER_LINE_STAGE: readonly StatusOption[] = [
+  {"value": "1", "label": "Đang mở", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đã chốt", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
 /** Xu hướng chi phí bao bì */
 export const PACKAGING_COST_TREND: readonly StatusOption[] = [
   {"value": "1", "label": "Tăng", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -316,8 +322,8 @@ export const PR_LINE_STATUS: readonly StatusOption[] = [
 
 /** Nguồn dòng sổ giá */
 export const PRICE_SOURCE_TYPE: readonly StatusOption[] = [
-  {"value": "1", "label": "Lịch sử mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
-  {"value": "2", "label": "Dòng đơn mua hàng", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "1", "label": "Lịch sử mua hàng cũ (nạp Excel)", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đơn mua hàng ERP", "sort_order": 2, "is_terminal": false, "is_exception": false},
   {"value": "3", "label": "Sổ Misa", "sort_order": 3, "is_terminal": false, "is_exception": false},
 ]
 
@@ -506,6 +512,12 @@ export const JOB_RUN_STATUS_CODE = {
   SKIPPED: 4,
 } as const
 
+/** Giai đoạn dòng sổ giá — khóa → mã gửi lên backend. */
+export const LEDGER_LINE_STAGE_CODE = {
+  OPEN: 1,
+  FINAL: 2,
+} as const
+
 /** Xu hướng chi phí bao bì — khóa → mã gửi lên backend. */
 export const PACKAGING_COST_TREND_CODE = {
   UP: 1,
@@ -634,6 +646,7 @@ export const STATUS_SETS = {
   labor_contract_variable_type: LABOR_CONTRACT_VARIABLE_TYPE,
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
+  ledger_line_stage: LEDGER_LINE_STAGE,
   packaging_cost_trend: PACKAGING_COST_TREND,
   packaging_cost_warning: PACKAGING_COST_WARNING,
   packaging_role: PACKAGING_ROLE,

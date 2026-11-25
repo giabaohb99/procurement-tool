@@ -8,6 +8,7 @@ from sqlalchemy import and_, case, func, inspect, select, tuple_
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.util import ClauseAdapter
 
+from app.core.packaging_price_codes import LedgerLineStage, PriceSourceType, is_open_po_line
 from app.core.sort_order import build_blank_last_order
 from app.modules.product.model import Product
 from app.modules.product_price.model import ProductPriceLedger as L
@@ -22,6 +23,10 @@ PRODUCT_SORT_KEYS = ("hh_code", "hh_name", "role")
 SORT_KEYS = ("date", "code", "name", "supplier", "warehouse", "qty", "price", "amount", "vat", "source", *PRODUCT_SORT_KEYS)
 #  Giá trị mua hiện ra: thành tiền Misa khi có, không thì giá x SL; dòng đơn giá 0 không có giá trị (NULL, xuống cuối khi xếp).
 AMOUNT_EXPR = case((L.price > 0, func.coalesce(L.amount, L.price * L.qty)))
+#  Khóa xếp "Nguồn" theo ĐÚNG nhãn đang hiện (`price_source_text`): 1 Lịch sử mua hàng (lần mua đã chốt của ERP + dữ liệu cũ) < 2 Dòng đơn
+#  mua hàng (ĐMH đang mở) < 3 Sổ Misa — cùng thứ tự bản cũ khi nguồn 1 / 2 còn tách theo `source_type`.
+SOURCE_RANK_EXPR = case((L.source_type == int(PriceSourceType.MISA), 3),
+                        ((L.source_type == int(PriceSourceType.PO_LINE)) & (L.line_stage == int(LedgerLineStage.OPEN)), 2), else_=1)
 
 
 def supplier_name_expr():
@@ -59,7 +64,7 @@ def build_order(sort_by: str, sort_dir: str, pairs=None) -> list:
     columns = {"code": (L.product_code, True), "name": (Product.name, True), "supplier": (supplier_name, True),
                "warehouse": (func.nullif(func.trim(L.warehouse_name), ""), True),
                "qty": (L.qty, False), "price": (L.price, False), "amount": (AMOUNT_EXPR, False),
-               "vat": (L.vat, False), "source": (L.source_type, False)}
+               "vat": (L.vat, False), "source": (SOURCE_RANK_EXPR, False)}
     if product:
         columns |= {"hh_code": (pairs.c.hh_code, True), "hh_name": (pairs.c.hh_name, True), "role": (pairs.c.role, False)}
     expr, is_text = columns[sort_by]
@@ -101,7 +106,7 @@ def _load_page_details(db: Session, ids: list[int], scope_cond) -> dict:
                   .order_by(prev.price_date.desc(), prev.doc_id.desc(), prev.id.desc()).limit(1).scalar_subquery())
     #  Lần = số lần mua MỚI HƠN của cùng mã + 1: lần gần nhất là lần 1 (bản mẫu HTML), không phụ thuộc bộ lọc.
     seq = select(func.count(newer.id)).where(_after(newer), *scope_new).scalar_subquery()
-    query = (select(L.id, L.price_date, L.product_code, L.supplier_code, L.qty, L.unit, L.price, L.vat, L.source_type,
+    query = (select(L.id, L.price_date, L.product_code, L.supplier_code, L.qty, L.unit, L.price, L.vat, L.source_type, L.line_stage,
                     L.doc_id, Product.name, Product.item_group, supplier_name_expr(), L.warehouse_name,
                     PurchaseOrder.code, prev_price, seq, AMOUNT_EXPR).select_from(L)
              .outerjoin(Product, Product.code == L.product_code).outerjoin(Supplier, Supplier.code == L.supplier_code)
@@ -120,14 +125,16 @@ def load_page_rows(db: Session, conds: list, order: list, scope_cond, limit: int
 
 
 def row_to_item(r) -> dict:
-    (row_id, day, code, supplier_code, qty, unit, price, vat, source_type, doc_id, name, group, supplier, warehouse,
+    (row_id, day, code, supplier_code, qty, unit, price, vat, source_type, line_stage, doc_id, name, group, supplier, warehouse,
      po_code, prev_price, ordinal, amount, hh_code, hh_name, role) = r
     diff = float(price) - float(prev_price) if price and prev_price is not None else None
     return {"id": row_id, "date": iso(day), "code": code, "name": name or "", "group": group or "",
             "supplier_code": supplier_code, "supplier": supplier_label(supplier, supplier_code) if supplier_code else "",
             "warehouse": (warehouse or "").strip(), "qty": num(qty, 3), "unit": unit or "", "price": num(price),
             "vat": num(vat, 2),
-            "amount": num(amount, 2), "source_type": int(source_type), "doc_id": int(doc_id or 0),
+            "amount": num(amount, 2), "source_type": int(source_type), "line_stage": int(line_stage),
+            #  Cờ "ĐMH đang mở" cho giao diện (v1 + v2 + bản in): dòng ĐMH chưa hoàn thành, giá còn có thể đổi.
+            "is_open": is_open_po_line(source_type, line_stage), "doc_id": int(doc_id or 0),
             "po_code": po_code or "", "prev_price": num(prev_price), "diff": num(diff, 4),
             "pct": num(diff / float(prev_price), 6) if diff is not None and prev_price else None,
             "seq": int(ordinal or 0) + 1,

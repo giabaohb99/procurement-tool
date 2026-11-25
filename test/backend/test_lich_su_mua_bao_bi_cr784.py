@@ -6,7 +6,7 @@ from io import BytesIO
 import openpyxl
 import pytest
 
-from app.core.packaging_price_codes import PackagingRole, PriceSourceType
+from app.core.packaging_price_codes import LedgerLineStage, PackagingRole, PriceSourceType
 from app.modules.packaging_cost.history_service import SORT_KEYS, build_history
 from app.modules.packaging_cost.model import PackagingBom
 from app.modules.supplier.model import Supplier
@@ -85,8 +85,10 @@ def test_dong_dmh_dang_mo_mang_nguon_va_so_dmh_dong_cu_khong_co(db, api):
     rows = {r["date"]: r for r in _get(api, codes=["CPT0105"])["items"]}
     assert rows["2026-05-01"]["source_type"] == int(PriceSourceType.PO_LINE) and rows["2026-05-01"]["po_code"] == "PO-HIST-1"
     assert rows["2026-05-01"]["doc_id"] == po.id
+    assert (rows["2026-05-01"]["line_stage"], rows["2026-05-01"]["is_open"]) == (int(LedgerLineStage.OPEN), True)
     assert rows["2026-02-01"]["source_type"] == int(PriceSourceType.PURCHASE_HISTORY)
     assert rows["2026-02-01"]["doc_id"] == 0 and rows["2026-02-01"]["po_code"] == ""
+    assert (rows["2026-02-01"]["line_stage"], rows["2026-02-01"]["is_open"]) == (int(LedgerLineStage.FINAL), False)
 
 
 def test_chenh_khong_phu_thuoc_bo_loc_ngay_va_ten_nha_cung_cap_bo_duoi_vtbb(api):

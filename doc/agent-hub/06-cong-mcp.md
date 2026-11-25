@@ -312,7 +312,8 @@ Nhãn ý định: `tra_cuu.san_pham`. Không có tool ghi (nhập báo giá / s�
 
 Nguồn giá (cập nhật 23/11/2026): sổ giá có thêm nguồn `source_type` 3 **Sổ Misa** (sổ chi tiết mua hàng Misa tới 30/06/2026);
 khi có mốc `misa_price_cutoff` thì tới mốc chỉ dùng dòng Misa, sau mốc chỉ dùng đơn mua hàng thật trên ERP. Ba tool đi qua đúng
-hàm của màn nên tự theo luật này: `source_label` của lần mua có thể là *Lịch sử mua hàng*, *Dòng đơn mua hàng* hoặc *Sổ Misa*,
+hàm của màn nên tự theo luật này: `source_label` của lần mua có thể là *Lịch sử mua hàng*, *Dòng đơn mua hàng* hoặc *Sổ Misa*
+(từ 25/11/2026 tính từ cặp nguồn + giai đoạn của dòng sổ — ĐMH đang mở = *Dòng đơn mua hàng*, lần mua đã chốt của ERP và dữ liệu cũ = *Lịch sử mua hàng*; chữ không đổi),
 `supplier` lấy tên chép theo dòng Misa khi mã NCC Misa không có trong danh mục. Không đổi tham số hay hình dạng kết quả.
 
 ### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)

@@ -33,6 +33,8 @@ const row = (id: number, over: Partial<PackagingHistoryRow> = {}): PackagingHist
   vat: 0.08,
   amount: 1_800_000,
   source_type: 1,
+  line_stage: 2,
+  is_open: false,
   doc_id: 0,
   po_code: '',
   prev_price: 1000,
@@ -80,7 +82,7 @@ vi.mock('@/core/api', async (importOriginal) => {
       const items = Array.from({ length: count }, (_, i) =>
         row(start + i + 1, {
           ...product,
-          ...(i === 0 && page === 1 ? { po_code: 'PO00012', doc_id: 12, source_type: 2 } : {}),
+          ...(i === 0 && page === 1 ? { po_code: 'PO00012', doc_id: 12, source_type: 2, line_stage: 1, is_open: true } : {}),
         }),
       )
       const result: PackagingHistoryResult = {

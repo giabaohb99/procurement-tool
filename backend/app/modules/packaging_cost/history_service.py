@@ -1,8 +1,8 @@
 """Lịch sử mua hàng của cụm Giá bao bì: từng lần mua của một / nhiều mã VTBB, hoặc của các thành phần trong định mức
 của một / nhiều sản phẩm (duoc-CR-784, tab "Lịch sử mua hàng" của bản mẫu `histRows` + `renderLast5` + `renderHistBySP`).
 
-Đọc THẲNG sổ giá `tab_product_price_ledger` (cả hai nguồn: lịch sử mua + dòng ĐMH đã duyệt chưa hoàn thành, trường
-`source_type` để giao diện đánh dấu "ĐMH đang mở"). Lịch sử là bản chụp bất biến — không có đường sửa giá ở đây.
+Đọc THẲNG sổ giá `tab_product_price_ledger` (dòng ĐMH đang mở + đã chốt, lịch sử cũ, sổ Misa; trường `is_open` /
+`line_stage` để giao diện đánh dấu "ĐMH đang mở"). Lịch sử là bản chụp bất biến — không có đường sửa giá ở đây.
 
 Số truy vấn CỐ ĐỊNH (tối đa 5) bất kể số mã / số dòng / bộ lọc:
   1. số gộp trên TOÀN BỘ tập đã lọc (số lần mua, tổng SL, tổng giá trị, giá bình quân gia quyền, min / max, số NCC, khoảng ngày);

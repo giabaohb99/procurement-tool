@@ -56,8 +56,8 @@ def test_nap_lai_json_bo_sung_thanh_tien_cho_dong_da_nap_khong_tao_dong_trung(db
 def test_lich_su_hien_gia_tri_misa_khong_phai_gia_nhan_so_luong_va_tong_cong_dung_gia_tri_do(db):
     add_products(db, ("NHG3790", "Nhãn", "Cái"))
     import_misa_rows(db, build_misa_rows(_src(ROW_2326), 1)[0])
-    add_ledger(db, "NHG3790", 100, "2025-09-01", qty=10, doc_id=7)      # sau mốc Misa, từ ĐMH thật, không có thành tiền: giá x SL
-    add_ledger(db, "NHG3790", 0, "2025-09-02", qty=5, doc_id=8)                                             # giá 0: không có giá trị
+    add_ledger(db, "NHG3790", 100, "2025-09-01", qty=10, doc_id=7, source_type=PriceSourceType.PO_LINE)      # sau mốc Misa, từ ĐMH thật, không có thành tiền: giá x SL
+    add_ledger(db, "NHG3790", 0, "2025-09-02", qty=5, doc_id=8, source_type=PriceSourceType.PO_LINE)        # giá 0: không có giá trị
     db.commit()
     res = build_history(db, codes=["NHG3790"])
     by_date = {r["date"]: r for r in res["items"]}

@@ -20,6 +20,8 @@ const row = (over: Partial<PackagingHistoryRow> = {}): PackagingHistoryRow => ({
   vat: 8,
   amount: 13000,
   source_type: 1,
+  line_stage: 2,
+  is_open: false,
   doc_id: 0,
   po_code: '',
   prev_price: 120,
@@ -74,7 +76,7 @@ describe('DiffCell', () => {
 
 describe('SourceCell', () => {
   it('marks an open purchase-order line and links its order', () => {
-    inRouter(<SourceCell row={row({ source_type: 2, doc_id: 77, po_code: 'PO00077' })} />)
+    inRouter(<SourceCell row={row({ source_type: 2, line_stage: 1, is_open: true, doc_id: 77, po_code: 'PO00077' })} />)
     expect(screen.getByText('ĐMH đang mở')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'PO00077' })).toHaveAttribute(
       'href',
@@ -83,7 +85,7 @@ describe('SourceCell', () => {
   })
 
   it('links a finished order without the badge, and renders nothing for legacy rows without an order', () => {
-    const { container, rerender } = inRouter(<SourceCell row={row({ doc_id: 5, po_code: '' })} />)
+    const { container, rerender } = inRouter(<SourceCell row={row({ source_type: 2, doc_id: 5, po_code: '' })} />)
     expect(screen.queryByText('ĐMH đang mở')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '#5' })).toBeInTheDocument()
     rerender(

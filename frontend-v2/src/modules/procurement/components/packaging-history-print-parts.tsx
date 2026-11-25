@@ -6,7 +6,6 @@
  * lệch con số với màn. Biểu đồ là SVG tĩnh (không phải recharts): recharts đo khung bằng JS lúc chạy, đổi sang khổ giấy có thể
  * ra biểu đồ sai cỡ hoặc rỗng.
  */
-import { PRICE_SOURCE_TYPE_CODE } from '@/shared/constants/statuses'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity } from '@/shared/utils/format-money'
 
@@ -222,7 +221,7 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: Prin
           <tbody>
             {rows.map((row) => {
               const quantity = formatQuantity(row.qty)
-              const openPo = row.source_type === PRICE_SOURCE_TYPE_CODE.PO_LINE
+              const openPo = row.is_open
               const materialName = row.name || <span className="faint">(chưa có tên)</span>
               return (
                 <tr key={historyRowKey(row)} className={row.price === 0 ? 'zero' : undefined}>

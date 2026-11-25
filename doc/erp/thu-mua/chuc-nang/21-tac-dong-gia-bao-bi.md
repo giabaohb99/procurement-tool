@@ -33,25 +33,30 @@ sản phẩm (mã HH) nào đổi theo, đổi bao nhiêu — để quyết nh�
 
 **Sổ giá** (`tab_product_price_ledger`, tự gom, không nhập tay):
 
-| Nguồn (`PriceSourceType`) | Vào sổ khi nào | Đổi thế nào |
-|---|---|---|
-| 1 — Lịch sử mua hàng | mỗi dòng `tab_purchase_history` (hệ thống và dữ liệu cũ nạp vào) | chỉ chèn, không sửa (dòng lịch sử bị xóa khi nạp lại dữ liệu cũ thì dòng sổ xóa theo) |
-| 2 — Dòng đơn mua hàng (màn ghi *ĐMH đang mở*) | ĐMH đã duyệt trở đi, chưa xóa mềm; dòng chưa hủy, có mã hàng, chưa sang lịch sử | sửa giá / SL / VAT / NCC / ngày / tỷ giá thì cập nhật đúng dòng; dòng sang lịch sử, bị hủy, đơn bị hủy duyệt thì xóa |
-| 3 — Sổ Misa (nạp TẠM) | `scripts/import_misa_price_ledger.py` nạp từ báo cáo HTML của chủ dự án (sổ chi tiết mua hàng Misa 2025 – 06/2026), mỗi dòng Misa một dòng sổ (`source_id` = id dòng Misa), kèm tên NCC chép theo dòng (`supplier_name`) vì mã NCC Misa không nằm trong danh mục nhà cung cấp | chạy lại thì cập nhật đúng dòng (idempotent); `--purge` xóa hết dòng nguồn 3 và mốc → trả hành vi cũ |
+Từ 25/11/2026 (migration `srcmerge784`, chủ dự án chốt gộp) **một lần mua của hệ thống là MỘT dòng sổ** theo dòng ĐMH, giữ nguyên id từ lúc
+duyệt đến lúc hoàn thành; cột `line_stage` (`LedgerLineStage`: 1 Đang mở · 2 Đã chốt) cho biết dòng còn đổi theo ĐMH hay đã đóng băng.
+Trước đó cùng một lần mua nằm ở hai dòng (nguồn 2 khi đang mở, bị xóa rồi chèn lại thành nguồn 1 lúc hoàn thành).
+
+| Nguồn (`PriceSourceType`) | `source_id` | Vào sổ khi nào | Đổi thế nào |
+|---|---|---|---|
+| 1 — Lịch sử mua hàng CŨ (nạp Excel) | `tab_purchase_history.id`, chỉ dòng không có ĐMH | mỗi dòng lịch sử cũ (`po_item_id` trống) | chỉ chèn, luôn *Đã chốt* (dòng lịch sử bị xóa khi nạp lại dữ liệu cũ thì dòng sổ xóa theo) |
+| 2 — Dòng đơn mua hàng của ERP (màn ghi *ĐMH đang mở* khi `line_stage` = 1) | `tab_po_item.id` | ĐMH đã duyệt trở đi, chưa xóa mềm; dòng chưa hủy, có mã hàng | *Đang mở*: sửa giá / SL / VAT / NCC / ngày / tỷ giá thì cập nhật đúng dòng, dòng bị hủy / đơn bị hủy duyệt thì xóa. Hoàn thành dòng ĐMH: cập nhật CHÍNH dòng đó bằng số chụp của lịch sử mua (giá, SL, VAT, ĐVT, kho, thành tiền) rồi *Đã chốt* — dòng đã chốt không bị đồng bộ đụng nữa, kể cả khi ĐMH sau đó bị hủy / xóa mềm |
+| 3 — Sổ Misa (nạp TẠM) — luôn *Đã chốt* | `scripts/import_misa_price_ledger.py` nạp từ báo cáo HTML của chủ dự án (sổ chi tiết mua hàng Misa 2025 – 06/2026), mỗi dòng Misa một dòng sổ (`source_id` = id dòng Misa), kèm tên NCC chép theo dòng (`supplier_name`) vì mã NCC Misa không nằm trong danh mục nhà cung cấp | chạy lại thì cập nhật đúng dòng (idempotent); `--purge` xóa hết dòng nguồn 3 và mốc → trả hành vi cũ |
 
 Dòng đơn giá 0 vẫn ghi (đếm số lần mua), tầng tính giá bỏ qua. Báo giá **không** vào sổ giá.
 
 **Thành tiền của dòng sổ** (`amount`, VNĐ, chưa VAT; bổ sung 25/11/2026): lịch sử mua hàng cần hiện *Giá trị mua* đúng bằng số
 Misa chứ không phải giá x số lượng (Misa làm tròn từng dòng: dòng 2326 NHG3790 ngày 18/08/2025 là 7.121.169, còn 9.204 x 773,7 =
-7.121.134,8). Nguồn 3 lấy từ cột *Giá trị* của sổ chi tiết mua hàng (Nạp Excel sổ Misa hoặc tệp HTML / JSON); nguồn 1 lấy tiền của
-dòng lịch sử, bỏ VAT, nhân tỷ giá; nguồn 2 (ĐMH đang mở) để trống vì tiền trên dòng ĐMH chỉ tính theo số lượng ĐÃ NHẬN, lệch với số
+7.121.134,8). Nguồn 3 lấy từ cột *Giá trị* của sổ chi tiết mua hàng (Nạp Excel sổ Misa hoặc tệp HTML / JSON); dòng đã chốt từ lịch sử
+mua (nguồn 1 và dòng ĐMH hoàn thành) lấy tiền của dòng lịch sử, bỏ VAT, nhân tỷ giá; dòng ĐMH đang mở để trống vì tiền trên dòng ĐMH chỉ tính theo số lượng ĐÃ NHẬN, lệch với số
 lượng đặt đang hiện. Chỗ nào cần giá trị thì dùng *thành tiền khi có, không thì giá x số lượng* (đúng luật `gia_tri ?? gia x sl`
 của bản mẫu); dòng đơn giá 0 không có giá trị.
 
 **Mốc cắt sổ Misa** (chủ dự án chốt tạm: *coi báo cáo HTML là dữ liệu đúng, chạy giá theo đó*). Nạp xong, ngày lớn nhất của dòng
 Misa (hiện là 30/06/2026) được ghi vào `tab_setting` khóa `misa_price_cutoff`. Từ đó MỌI phép tính giá — giá cũ / mới, hai lần
 mua gần nhất, số lần mua, ngày cuối, min / max, Tổng hợp theo sản phẩm, Giá mua gần nhất, Lịch sử mua hàng, ba công cụ AI —
-chỉ xét **dòng Misa có ngày <= mốc** và, sau mốc, **chỉ lần mua của ĐMH thật trên ERP** (dòng ĐMH đã duyệt và lịch sử mua có gắn ĐMH); lịch sử cũ nạp từ Excel khảo sát (`source='legacy'`, nhiều dòng sai ngày / sai giá) bị bỏ hẳn khi có mốc. Đối chiếu 23/11/2026 trên dữ liệu máy local: Tổng hợp 1.000 sản phẩm ra Tăng 239 · Giảm 251 · Không đổi 510 · Chưa có giá 0, khớp tuyệt đối báo cáo HTML. Chưa có mốc (chưa nạp hoặc đã
+chỉ xét **dòng Misa có ngày <= mốc** và, sau mốc, **chỉ lần mua của ĐMH thật trên ERP** (nguồn 2: dòng ĐMH đang mở và đã chốt; từ `srcmerge784`
+điều kiện chỉ còn `source_type = 2`, không còn mẹo `doc_id > 0`); lịch sử cũ nạp từ Excel khảo sát (`source='legacy'`, nhiều dòng sai ngày / sai giá) bị bỏ hẳn khi có mốc. Đối chiếu 23/11/2026 trên dữ liệu máy local: Tổng hợp 1.000 sản phẩm ra Tăng 239 · Giảm 251 · Không đổi 510 · Chưa có giá 0, khớp tuyệt đối báo cáo HTML. Chưa có mốc (chưa nạp hoặc đã
 gỡ) thì hành vi y hệt trước đây. Điều kiện là một biểu thức SQL dùng chung (`product_price/misa_cutoff.py`, áp bên trong
 `latest_priced_by_code` và `build_history`), nên không thêm truy vấn nào. Nhãn nguồn hiện **Sổ Misa**.
 
@@ -152,7 +157,10 @@ mua gần nhất*.
 
 Màn `/procurement/packaging-cost/history` (cũ `/packaging-cost/history`), đường dẫn sâu `?codes=` / `?hh=`. Bấm mã ở mọi bảng
 của cụm là mở màn này. Bài HDSD: *Giá NVL sản xuất — Xem lịch sử mua và biểu đồ giá của một mã*. Khác tab Lịch sử mua hàng ở chi
-tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có cả dòng ĐMH đang mở.
+tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có cả dòng ĐMH đang mở. Mỗi dòng trả thêm `line_stage` và cờ `is_open`
+(25/11/2026): nhãn *ĐMH đang mở* hiện đúng khi `is_open` (cả hai giao diện, bản in). Cột Nguồn (màn hình, Excel) giữ nguyên chữ:
+*Dòng đơn mua hàng* = ĐMH đang mở, *Lịch sử mua hàng* = lần mua đã chốt của ERP và dữ liệu cũ, *Sổ Misa*; khóa xếp Nguồn theo thứ tự
+đó (lịch sử < ĐMH đang mở < Misa).
 
 - Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (tối đa 200 mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm).
   Chế độ sản phẩm y bản mẫu: **mỗi dòng = một lần mua x một (sản phẩm, thành phần)** — mã chai dùng ở 275 sản phẩm thì MỘT lần mua

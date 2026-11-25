@@ -35,9 +35,13 @@ class ProductPriceLedger(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    # PriceSourceType: 1 = tab_purchase_history.id · 2 = tab_po_item.id · 3 = id dòng sổ chi tiết mua hàng Misa
+    # PriceSourceType: 1 = tab_purchase_history.id (CHỈ lịch sử cũ nạp Excel, `po_item_id` trống) · 2 = tab_po_item.id (dòng ĐMH, đang mở
+    # lẫn đã hoàn thành — MỘT dòng sổ suốt đời, id giữ nguyên) · 3 = id dòng sổ chi tiết mua hàng Misa
     source_type: Mapped[int] = mapped_column(SmallInteger)
     source_id: Mapped[int] = mapped_column(BigInteger)
+    # LedgerLineStage: 1 = Đang mở (dòng ĐMH chưa hoàn thành, còn đổi theo ĐMH) · 2 = Đã chốt (bản chụp lúc hoàn thành, nguồn 1, nguồn 3).
+    # Không có mặc định: nơi ghi phải đặt rõ (migration `srcmerge784` bỏ `server_default`).
+    line_stage: Mapped[int] = mapped_column(SmallInteger)
     # Id ĐMH (0 với dữ liệu cũ không có ĐMH) — để đồng bộ theo đơn và mở ngược chứng từ.
     doc_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     product_code: Mapped[str] = mapped_column(String(50))
@@ -55,8 +59,8 @@ class ProductPriceLedger(Base):
     vat: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)       # % VAT của dòng
     qty: Mapped[Decimal] = mapped_column(Numeric(18, 3), default=0)
     # Thành tiền của lần mua, VNĐ, CHƯA VAT: nguồn Misa = cột "Giá trị" của sổ chi tiết mua hàng (Misa làm tròn từng dòng nên có
-    # thể khác giá x số lượng vài chục đồng); nguồn 1 = tiền của dòng lịch sử bỏ VAT, quy VNĐ. NULL = chưa có / không biết
-    # -> giao diện dùng giá x số lượng (cùng luật `gia_tri ?? gia x sl` của bản mẫu HTML). Nguồn 2 (ĐMH đang mở) luôn NULL.
+    # thể khác giá x số lượng vài chục đồng); dòng đã chốt từ lịch sử mua = tiền của dòng lịch sử bỏ VAT, quy VNĐ. NULL = chưa có / không biết
+    # -> giao diện dùng giá x số lượng (cùng luật `gia_tri ?? gia x sl` của bản mẫu HTML). Dòng ĐMH đang mở luôn NULL.
     amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     unit: Mapped[str] = mapped_column(String(25), default="")             # ĐVT lúc mua — cảnh báo lệch ĐVT danh mục
     synced_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), default=datetime.utcnow)

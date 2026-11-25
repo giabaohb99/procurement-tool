@@ -9,16 +9,16 @@ Hàm lõi `get_price_states` chạy TỐI ĐA 5 truy vấn (4 khi mọi mã cùn
      để xem trước tác động);
   3. ngưỡng sàn / trần (bỏ qua ở chế độ `new_only`);  4. `tab_product` (tên, nhóm, ĐVT).
 
-Thứ tự "gần nhất": ngày mua giảm, rồi `doc_id` (id ĐMH) giảm, rồi id dòng sổ giảm. `doc_id` đứng TRƯỚC id vì dòng nguồn 2
-(dòng ĐMH) bị xóa rồi nguồn 1 (lịch sử) chèn lại với id MỚI hơn — nếu hòa ngày chỉ so id thì lần 1 / lần 2 đổi chỗ chỉ vì dòng
-chuyển nguồn; `doc_id` giữ nguyên qua lần chuyển đó. Hai dòng cùng ngày, cùng ĐMH, cùng mã thì còn lại id (hiếm, chấp nhận).
+Thứ tự "gần nhất": ngày mua giảm, rồi `doc_id` (id ĐMH) giảm, rồi id dòng sổ giảm. Trước `srcmerge784` `doc_id` phải đứng TRƯỚC id vì dòng
+nguồn 2 (dòng ĐMH) bị xóa rồi nguồn 1 (lịch sử) chèn lại với id MỚI hơn; nay dòng ĐMH giữ id suốt đời nên lý do đó hết, nhưng thứ tự
+này GIỮ NGUYÊN (đổi thì phải đổi chỉ mục phủ `ix_ppl_code_latest` và kết quả lần 1 / lần 2 của hai ĐMH cùng ngày đổi chỗ).
 
 Luật cũ / mới (đúng `build()` của bản mẫu): có báo giá → mới = báo giá, cũ = lần mua có giá gần nhất (không có lần mua thì cũ =
 mới); không báo giá → mới = lần mua gần nhất, cũ = lần trước đó (chỉ một lần mua thì cũ = mới). Phạm vi dữ liệu: `scope_cond`
 là điều kiện phạm vi của khóa `packaging_cost` trên sổ giá — giá chỉ tính trên các dòng người xem được thấy.
 
 Mốc sổ Misa (`misa_cutoff.py`) được áp BÊN TRONG `latest_priced_by_code` — mọi số của hàm này (cũ / mới, p1 / p2, số lần mua,
-ngày cuối, min / max) chỉ xét dòng còn hiệu lực: Misa tới mốc, nguồn 1 / 2 sau mốc. Chưa có mốc = như cũ.
+ngày cuối, min / max) chỉ xét dòng còn hiệu lực: Misa tới mốc, dòng ĐMH (nguồn 2) sau mốc. Chưa có mốc = như cũ.
 """
 from dataclasses import dataclass
 from datetime import date
@@ -44,6 +44,7 @@ class PricePoint:
     source_type: int = 0
     doc_id: int = 0
     supplier_name: str = ""      # tên nhà cung cấp chép theo dòng sổ (nguồn Misa); trống = tra `tab_supplier` theo mã
+    line_stage: int = 0          # LedgerLineStage của dòng sổ (đang mở / đã chốt)
 
 
 @dataclass
@@ -83,7 +84,8 @@ def derive_old_new(p1: PricePoint | None, p2: PricePoint | None, quote: QuotePoi
 
 def _point(r: LedgerRow) -> PricePoint:
     return PricePoint(price=r.price, date=r.price_date, supplier_code=r.supplier_code, unit=r.unit,
-                      source_type=r.source_type, doc_id=r.doc_id, supplier_name=r.supplier_name)
+                      source_type=r.source_type, doc_id=r.doc_id, supplier_name=r.supplier_name,
+                      line_stage=r.line_stage)
 
 
 def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None = None, date_from: date | None = None,

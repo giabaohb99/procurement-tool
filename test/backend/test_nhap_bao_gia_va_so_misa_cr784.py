@@ -8,7 +8,7 @@ import openpyxl
 import pytest
 from fastapi import HTTPException
 
-from app.core.packaging_price_codes import PriceSourceType
+from app.core.packaging_price_codes import LedgerLineStage, PriceSourceType
 from app.modules.import_tool import controller as imp_ctl
 from app.modules.import_tool import service as imp_service
 from app.modules.import_tool.catalog_import import ImportValidationError
@@ -175,13 +175,13 @@ def test_misa_nap_mot_thang_khong_dung_toi_dong_ngoai_khoang_va_moc_khong_lui(db
 
 
 def test_misa_khong_dung_toi_nguon_khac_va_moc_doi_theo_tep(db, seed, catalog):
-    add_ledger(db, "CET0028", 3000, "2026-08-01", source_type=PriceSourceType.PURCHASE_HISTORY, doc_id=9)
+    add_ledger(db, "CET0028", 3000, "2026-08-01", source_type=PriceSourceType.PO_LINE, line_stage=LedgerLineStage.FINAL, doc_id=9)
     set_misa_cutoff(db, date(2025, 12, 31))
     db.commit()
     later = list(R3)
     _run(db, seed, misa_xlsx_import, ImportModule.PACKAGING_MISA, _misa([later]))
     assert get_misa_cutoff(db) == date(2026, 6, 30)
-    assert db.query(L).filter(L.source_type == int(PriceSourceType.PURCHASE_HISTORY)).count() == 1
+    assert db.query(L).filter(L.source_type == int(PriceSourceType.PO_LINE)).count() == 1
 
 
 def test_misa_tieu_de_khong_o_dong_dau_va_sai_tep_bi_chan(db, seed):
