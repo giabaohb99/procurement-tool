@@ -201,9 +201,10 @@ body.col-resizing {
   font-weight: 650;
 }
 
-/* Nhóm không tiêu đề ở giữa menu (vd cụm Giá nguyên vật liệu sản xuất): chừa khoảng như một nhóm có tiêu đề. */
+/* Nhóm không tiêu đề ở giữa menu (vd cụm Giá nguyên vật liệu sản xuất): nối liền mục trên, không chừa khoảng
+   (người chủ chốt 25/11/2026: khoảng hở làm menu rời rạc). */
 .nav-group-plain {
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 .nav-group-title {

@@ -210,8 +210,9 @@ export function ModuleSidebar({
         </SidebarGroup>
 
         {sections.map(({ key, label, items }) => (
-          // `mt-5` tách nhóm rõ hơn khoảng cách giữa các mục trong cùng nhóm.
-          <SidebarGroup key={key} className="mt-5 p-0">
+          // `mt-5` tách nhóm có tiêu đề; khối không tiêu đề (cụm Giá nguyên vật liệu sản xuất) nối liền khối trên
+          // bằng `mt-1` = khoảng giữa hai mục, người chủ chốt 25/11/2026 vì khoảng hở làm menu rời rạc.
+          <SidebarGroup key={key} className={cn(label ? 'mt-5' : 'mt-1', 'p-0')}>
             {label && <SidebarGroupLabel className={groupLabelClass}>{label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">

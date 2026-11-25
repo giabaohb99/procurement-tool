@@ -195,14 +195,14 @@ export const procurementModule: ErpModule = {
     },
     //  duoc-CR-784 — cụm Giá nguyên vật liệu sản xuất (tên chốt 21/11/2026, trước là Giá bao bì), khóa RIÊNG `packaging_cost`
     //  (giá vốn bao bì, nhạy cảm). 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng,
-    //  mục con thụt vào có vạch dọc. Mục cha KHÔNG khai `group` và đứng sau nhóm Mua hàng nên thanh bên vẽ nó thành một
-    //  khối không tiêu đề ngay tại chỗ (xem `app/layouts/build-nav-sections.ts`) — vẫn tách khỏi Mua hàng.
+    //  mục con thụt vào có vạch dọc — và nằm CHUNG nhóm Mua hàng, ngay sau Tra cứu thị trường (người chủ chốt cùng ngày).
     //  Mục con Tác động ở đường gốc của cụm nên phải `end: true`, không thì nó sáng lây khi đứng ở các mục con khác.
     {
       label: 'Giá nguyên vật liệu sản xuất',
       path: appRoutes.procurement.packagingImpact,
       icon: Coins,
       entity: 'packaging_cost',
+      group: 'Mua hàng',
       children: [
         {
           label: 'Tác động giá bao bì',
@@ -296,7 +296,7 @@ export const procurementModule: ErpModule = {
       icon: UserCheck,
       entity: 'category_assignee',
       manage: true,
-      group: 'Cấu hình',
+      //  25/11/2026 (người chủ chốt): bỏ tiêu đề nhóm "Cấu hình" — hai mục danh mục nối tiếp nhóm Tài chính, không tiêu đề.
     },
     // bao-CR-453 — danh mục loại chi phí thu mua
     {
@@ -305,7 +305,6 @@ export const procurementModule: ErpModule = {
       icon: PackagePlus,
       entity: 'purchase_cost_type',
       manage: true,
-      group: 'Cấu hình',
     },
     // bao-CR-501: ba danh mục của Tra cứu thị trường — hóa chất theo văn bản (bao-CR-470), từ
     // khóa nhãn + từ đồng nghĩa (bao-CR-494 / 495) — đã dời vào thẻ "Cấu hình" của chính màn

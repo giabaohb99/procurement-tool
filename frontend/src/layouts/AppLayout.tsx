@@ -169,16 +169,10 @@ const NAV_GROUPS: NavGroup[] = [
           })),
         ],
       },
-    ],
-  },
-  {
-    // duoc-CR-784 — cụm riêng "Giá nguyên vật liệu sản xuất" (người chủ chốt 21/11/2026: tách khỏi Mua hàng, đổi tên từ
-    // "Giá bao bì"). Mọi mục gác khóa quyền riêng `packaging_cost`. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có),
-    // trang /product-price-quotes vẫn vào được và sáng mục Bảng giá VTBB.
-    // 25/11/2026 (người chủ chốt): cụm vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng, các mục con thụt
-    // vào có vạch dọc, sổ ra khi đang đứng ở một mục con. Nhóm không tiêu đề (bỏ `key` để trạng thái thu gọn cũ
-    // của nhóm "gianvl" trong localStorage không giấu mất mục cha), vị trí vẫn ở giữa Mua hàng và Khảo sát.
-    items: [
+      // duoc-CR-784 — cụm "Giá nguyên vật liệu sản xuất" (tên chốt 21/11/2026, trước là "Giá bao bì"). Mọi mục gác khóa
+      // quyền riêng `packaging_cost`. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có), trang /product-price-quotes vẫn
+      // vào được và sáng mục Bảng giá VTBB. 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có
+      // biểu tượng, mục con thụt vào có vạch dọc — và dời vào CHUNG nhóm Mua hàng, ngay sau Tra cứu thị trường.
       {
         to: "/packaging-cost",
         label: "Giá nguyên vật liệu sản xuất",
@@ -601,8 +595,7 @@ export default function AppLayout() {
           if (items.length === 0) return null;
           const isCol = !!g.key && !!collapsed[g.key];
           return (
-            // Nhóm không tiêu đề đứng giữa menu (cụm Giá nguyên vật liệu sản xuất) cách nhóm trên một khoảng,
-            // để mục cha không bị đọc thành mục cuối của Mua hàng.
+            // Nhóm không tiêu đề đứng giữa menu (cụm Giá nguyên vật liệu sản xuất) nối liền nhóm trên, không chừa khoảng.
             <div key={gi} className={!g.title && gi > 0 ? "nav-group-plain" : undefined}>
               {g.title && (
                 <button

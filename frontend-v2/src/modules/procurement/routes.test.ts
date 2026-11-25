@@ -63,12 +63,11 @@ describe('Giá bao bì menu (packaging_cost)', () => {
     expect(root?.end).toBe(true)
   })
 
-  it('renders as one parent item outside the Mua hàng group, right after it and before Khảo sát', () => {
+  it('sits inside the Mua hàng group right after Tra cứu thị trường', () => {
     const nav = procurementModule.nav
     const parentIndex = nav.findIndex((item) => item.label === PACKAGING_PARENT_LABEL)
-    expect(nav[parentIndex]?.group).toBeUndefined()
-    expect(nav[parentIndex - 1]?.group).toBe('Mua hàng')
-    expect(nav[parentIndex + 1]?.group).toBe('Khảo sát')
+    expect(nav[parentIndex]?.group).toBe('Mua hàng')
+    expect(nav[parentIndex - 1]?.label).toBe('Tra cứu thị trường')
   })
 
   it('registers a route for every menu path', () => {
