@@ -32,7 +32,7 @@ hoặc phát hành cả chuỗi một lần. Thứ tự gộp: nhánh định m�
 ## Các phase
 | # | Phase | Giờ | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|
-| 01 | [Định mức tách thành phần + việc nối tiếp](phase-01-dinh-muc-bao-bi-thanh-phan-dang-lam.md) | 0,5 thêm | — | **xong mã 25/11, chờ duyệt commit** — kết quả cũ / mới giống hệt, 796 bài kiểm qua |
+| 01 | [Định mức tách thành phần + việc nối tiếp](phase-01-dinh-muc-bao-bi-thanh-phan-dang-lam.md) | 0,5 thêm | — | **xong, đã commit lên `erp-v2` 25/11** (chưa deploy dev) — kết quả cũ / mới giống hệt, 796 bài kiểm qua |
 | 02 | [Sổ giá: gộp nguồn lịch sử + dòng ĐMH theo `po_item_id`](phase-02-so-gia-gop-nguon-lich-su-va-dong-dmh.md) | 8 | 01 đã gộp | C1 đã chốt (gộp) |
 | 03 | [Báo giá: `source_type` / `source_id` NOT NULL + khóa duy nhất](phase-03-bao-gia-nguon-bat-buoc.md) | 4 | 02 (cùng migration, cùng `model.py`) | C2 đã chốt; chờ C3, C4 |
 | 04 | [Cột, chỉ mục, bỏ ngưỡng, dọn nhỏ](phase-04-cot-chi-muc-nguong-don-dep.md) | 4,5 | 03 | C6, C7, C9 đã chốt; chờ C5 |

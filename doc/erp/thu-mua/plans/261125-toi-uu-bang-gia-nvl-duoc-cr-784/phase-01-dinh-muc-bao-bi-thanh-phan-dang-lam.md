@@ -3,10 +3,9 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | planner | Nháp | duoc-CR-784 |
-| 2 | 25/11/2026 | điều phối | **Xong mã, chờ duyệt commit** | duoc-CR-784 |
+| 2 | 25/11/2026 | điều phối | **Xong, đã commit `erp-v2`** (chưa deploy dev) | duoc-CR-784 |
 
-Trạng thái: **XONG MÃ (25/11/2026), CHƯA COMMIT** — ở worktree `/Users/tmduoc/.claude/jobs/adfea3fb/tmp/bom784` (nhánh
-`duoc-cr784-bom-parts`), chờ chủ dự án gật để commit, đẩy `erp-v2`, sao lưu DB dev rồi deploy. Xem mục *Kết quả* bên dưới.
+Trạng thái: **XONG, ĐÃ COMMIT lên `erp-v2` (25/11/2026)**, chưa deploy dev — cần sao lưu DB dev trước khi deploy. Xem mục *Kết quả* bên dưới.
 
 ## Kết quả (25/11/2026)
 **Đã làm gì và vì sao.** Định mức cũ là một dòng mỗi mã HH với 5 cột mã cố định; thêm loại thành phần mới (PET, phôi, màng
@@ -59,4 +58,5 @@ phiếu bằng id (`bom_id`) đúng ý chủ dự án — thêm loại mới ch�
 ## Việc cần làm
 - [x] Gửi agent định mức hai ý 1–2 ở trên (đã làm cả hai)
 - [x] Tách bảng thành phần, migration `bompart784`, so kết quả cũ / mới giống hệt, bài kiểm (25/11/2026)
-- [ ] Chủ dự án gật → commit, đẩy `erp-v2`, sao lưu DB dev, deploy (revision cuối: `bompart784`, `opt784` trỏ vào đây)
+- [x] Commit, đẩy `erp-v2` (25/11/2026; revision cuối: `bompart784`, `opt784` trỏ vào đây)
+- [ ] Sao lưu DB dev, deploy dev
