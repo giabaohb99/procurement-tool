@@ -381,8 +381,12 @@ export interface PackagingHistoryRow {
    * Tổng giá trị mua + giá bình quân gia quyền của `stats` cộng đúng số này.
    */
   amount: number | null
-  /** Mã `PriceSourceType`: 1 = lịch sử mua, 2 = dòng ĐMH đang mở, 3 = sổ Misa. */
+  /** Mã `PriceSourceType`: 1 = lịch sử cũ nạp Excel, 2 = dòng ĐMH của ERP (đang mở lẫn đã chốt), 3 = sổ Misa. */
   source_type: number
+  /** Mã `LedgerLineStage`: 1 = đang mở, 2 = đã chốt. */
+  line_stage: number
+  /** Dòng ĐMH còn đang mở (giá có thể còn đổi): giao diện hiện nhãn "ĐMH đang mở". */
+  is_open: boolean
   /** Id ĐMH nguồn; 0 = dữ liệu cũ không có ĐMH. */
   doc_id: number
   po_code: string

@@ -10,11 +10,13 @@ created: 2026-11-25
 ---
 
 # Tối ưu bảng cụm Giá NVL sản xuất (duoc-CR-784)
-Trạng thái kế hoạch: **đang làm** (chưa viết mã, chờ chủ dự án chốt câu hỏi)
+Trạng thái kế hoạch: **đang làm** — phase 01 và 02 xong (đã làm trên nhánh, chưa deploy dev), phase 03–06 chờ làm tuần tự
+(chủ dự án duyệt triển khai 25/11/2026: "triển khai tối ưu từ từ theo plan")
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | planner | Nháp | duoc-CR-784 (kế hoạch gốc [261120](../261120-tac-dong-gia-bao-bi/plan.md)), bao-CR-789 |
+| 2 | 25/11/2026 | fullstack | Phase 02 xong; **đổi cách chia migration**: mỗi phase một migration viết tay riêng (không gộp một `opt784`) để phát hành từng phase | duoc-CR-784 |
 
 Yêu cầu 25/11: tối ưu bốn bảng (giá, ngưỡng, cột), soát `source_type` / `source_id`, "LSMH và ĐMH hình như là 1", báo giá
 phải có nguồn không NULL. Đã soát mã ở `origin/erp-v2 @f1a8b80c2` + nhánh định mức đang làm; số liệu local ở phase 02 / 03.
@@ -25,22 +27,24 @@ phải có nguồn không NULL. Đã soát mã ở `origin/erp-v2 @f1a8b80c2` + 
 Đọc kèm, KHÔNG sửa cấu trúc: `tab_purchase_history`, `tab_po_item`, `tab_import_batch`, `tab_setting` (mốc `misa_price_cutoff`).
 
 ## Thời điểm: làm TRƯỚC khi CR-784 lên prod
-Migration CR-784 (`pkgcost784` → `ppld784`, sắp có `bompart784`) chưa có trên `main`; prod chưa có dòng nào. Đổi cấu trúc bây giờ
-chỉ phải chuyển dữ liệu dev + local. Báo bao-CR-789 (đang soát để lên prod): giữ đợt prod tới khi migration `opt784` vào `erp-v2`,
-hoặc phát hành cả chuỗi một lần. Thứ tự gộp: nhánh định mức (`bompart784`) trước, rồi `opt784` (revises `bompart784`).
+Migration CR-784 (`pkgcost784` → `ppld784` → `bompart784` → `srcmerge784`) chưa có trên `main`; prod chưa có dòng nào. Đổi cấu trúc bây giờ
+chỉ phải chuyển dữ liệu dev + local. Báo bao-CR-789 (đang soát để lên prod): giữ đợt prod tới khi cả chuỗi vào `erp-v2`, hoặc phát hành cả
+chuỗi một lần. **Cập nhật 25/11/2026:** kế hoạch ban đầu gộp phase 02–06 vào MỘT migration `opt784`; đổi thành **mỗi phase một migration
+viết tay**, nối tiếp nhau (phase 02 = `srcmerge784`, `down_revision = bompart784`; các phase sau đặt id theo phase và trỏ vào phase trước).
+Các tệp phase 03–06 còn ghi `opt784` — đọc là "migration của phase đó".
 
 ## Các phase
 | # | Phase | Giờ | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|
 | 01 | [Định mức tách thành phần + việc nối tiếp](phase-01-dinh-muc-bao-bi-thanh-phan-dang-lam.md) | 0,5 thêm | — | **xong, đã commit lên `erp-v2` 25/11** (chưa deploy dev) — kết quả cũ / mới giống hệt, 796 bài kiểm qua |
-| 02 | [Sổ giá: gộp nguồn lịch sử + dòng ĐMH theo `po_item_id`](phase-02-so-gia-gop-nguon-lich-su-va-dong-dmh.md) | 8 | 01 đã gộp | C1 đã chốt (gộp) |
-| 03 | [Báo giá: `source_type` / `source_id` NOT NULL + khóa duy nhất](phase-03-bao-gia-nguon-bat-buoc.md) | 4 | 02 (cùng migration, cùng `model.py`) | C2 đã chốt; chờ C3, C4 |
-| 04 | [Cột, chỉ mục, bỏ ngưỡng, dọn nhỏ](phase-04-cot-chi-muc-nguong-don-dep.md) | 4,5 | 03 | C6, C7, C9 đã chốt; chờ C5 |
+| 02 | [Sổ giá: gộp nguồn lịch sử + dòng ĐMH theo `po_item_id`](phase-02-so-gia-gop-nguon-lich-su-va-dong-dmh.md) | 8 | 01 đã gộp | **xong trên nhánh `duoc-cr784-opt-p02` 25/11** (chưa commit / deploy) — migration `srcmerge784`; kết quả cũ / mới giống hệt trên bản sao dữ liệu, 1.005 bài kiểm backend + 1.806 bài vitest + tsc v1 / v2 qua |
+| 03 | [Báo giá: `source_type` / `source_id` NOT NULL + khóa duy nhất](phase-03-bao-gia-nguon-bat-buoc.md) | 4 | 02 (cùng `model.py`; migration riêng nối sau `srcmerge784`) | C2, C3, C4, C5 đã chốt (A) — làm sau phase 02 |
+| 04 | [Cột, chỉ mục, bỏ ngưỡng, dọn nhỏ](phase-04-cot-chi-muc-nguong-don-dep.md) | 4,5 | 03 | C5, C6, C7, C9 đã chốt |
 | 05 | [Tài liệu, bài kiểm, phát hành](phase-05-tai-lieu-kiem-phat-hanh.md) | 2 | 02–04, 06 | chưa |
 | 06 | [Đổi tên `hh_code` / `hh_name` sang `fg_code` / `fg_name`](phase-06-doi-ten-hh-sang-fg.md) | 4 | 01 đã gộp; chung `opt784` | C8 đã chốt (đổi) |
 
-Một người giữ 02 → 03 → 04 → 06 nối tiếp: cả ba sửa `product_price/model.py`, `core/packaging_price_codes.py` và CHUNG một tệp
-migration `opt784` (luật "chỉ mục gom một migration"). Không phase nào chạy song song với phase 01 vì bộ dựng dữ liệu kiểm
+Một người giữ 02 → 03 → 04 → 06 nối tiếp: cả ba sửa `product_price/model.py`, `core/packaging_price_codes.py` (mỗi phase một
+migration riêng nối tiếp, xem mục *Thời điểm*; luật "chỉ mục gom một migration" áp trong phạm vi từng phase). Không phase nào chạy song song với phase 01 vì bộ dựng dữ liệu kiểm
 `test/backend/so_gia_factory_cr784.py` đang bị nhánh định mức sửa.
 
 ## Luồng dữ liệu
@@ -59,17 +63,17 @@ SAU    tab_po_item --sync--> sổ nguồn 2, line_stage = Đang mở; hoàn thà
 |---|---|---|---|---|
 | C1 | Gộp nguồn 1 + 2? | Gộp: dòng ĐMH là MỘT dòng sổ theo `po_item_id` suốt đời, thêm `line_stage`; nguồn 1 chỉ còn legacy | Giữ ba nguồn, chỉ ghi rõ tài liệu | **ĐÃ CHỐT 25/11: A, gộp** |
 | C2 | Bộ nguồn báo giá | 1 Nhập tay, 2 Nhập Excel (số 3 để dành YCBG khi cần) | Thêm luôn 3 = phương án YCBG đã chọn + đường tự tạo báo giá | **ĐÃ CHỐT 25/11: A** (1 Nhập tay, 2 Nhập Excel, số 3 để dành YCBG) |
-| C3 | `source_id` của báo giá nhập tay | 0 = không có chứng từ gốc (cùng nếp `doc_id = 0`) | Bắt đính kèm tệp báo giá NCC, `source_id` = id tệp | **A** |
-| C4 | Nhập Excel đè giá báo giá đã có | Nguồn = lần ghi giá cuối (đổi sang đợt nhập) | Nguồn = nơi tạo, không đổi | **A** (biết giá đang dùng đến từ đâu; vết cũ ở nhật ký) |
-| C5 | Khóa duy nhất báo giá `(mã, NCC, ngày hiệu lực)` | Thêm (form trùng báo 409, Excel đã dùng khóa này) | Không | **A** |
+| C3 | `source_id` của báo giá nhập tay | 0 = không có chứng từ gốc (cùng nếp `doc_id = 0`) | Bắt đính kèm tệp báo giá NCC, `source_id` = id tệp | **ĐÃ CHỐT 25/11: A** (`source_id` = 0 cho nhập tay) — làm ở phase 03 |
+| C4 | Nhập Excel đè giá báo giá đã có | Nguồn = lần ghi giá cuối (đổi sang đợt nhập) | Nguồn = nơi tạo, không đổi | **ĐÃ CHỐT 25/11: A** (biết giá đang dùng đến từ đâu; vết cũ ở nhật ký) — làm ở phase 03 |
+| C5 | Khóa duy nhất báo giá `(mã, NCC, ngày hiệu lực)` | Thêm (form trùng báo 409, Excel đã dùng khóa này) | Không | **ĐÃ CHỐT 25/11: A** (thêm khóa duy nhất) — làm ở phase 03 |
 | C6 | Bảng ngưỡng (đang tắt) | Giữ nguyên, không đổi cấu trúc | Xóa bảng + mã tới khi cần | **ĐÃ CHỐT 25/11: xóa hẳn** (bảng, API, cảnh báo 6/7, cột Excel, trường công cụ AI, phần ẩn ở v1 + v2) |
 | C7 | VAT dòng Misa (luôn 0 = không biết) | Để NULL = không biết, giao diện hiện trống | Giữ 0 | **ĐÃ CHỐT 25/11: A, để NULL** |
 | C8 | Đổi tên `hh_code` / `hh_name` (định danh tiếng Việt) | Đổi thành `fg_code` / `fg_name` như `tab_po_item` | Giữ (đổi API cả v1, v2, AI, mẫu Excel) | **ĐÃ CHỐT 25/11: A, đổi sang tiếng Anh** (`fg_code` / `fg_name`) — [phase 06](phase-06-doi-ten-hh-sang-fg.md) |
 | C9 | Bảng tóm tắt "giá gần nhất mỗi mã" | Không làm (đo 0,24 s trên dev) | Làm bảng tóm tắt theo pháp nhân x mã | **ĐÃ CHỐT 25/11: không làm** |
 
 ## Quay lui
-Một revision `opt784`, `downgrade` đảo đủ: sổ giá tách lại nguồn 1 cho dòng Đã chốt (nối `tab_purchase_history.po_item_id`), bỏ
-`line_stage`; báo giá bỏ hai cột + khóa; dựng lại bảng ngưỡng rỗng; đổi `fg_code` / `fg_name` về `hh_code` / `hh_name`. Sổ giá là dữ liệu dẫn xuất: sai gì thì `scripts/backfill_product_price_ledger.py`
+Mỗi phase một revision, `downgrade` đảo đủ: phase 02 (`srcmerge784`) tách lại nguồn 1 cho dòng Đã chốt (nối `tab_purchase_history.po_item_id`),
+bỏ `line_stage`; phase 03 báo giá bỏ hai cột + khóa; phase 04 dựng lại bảng ngưỡng rỗng; phase 06 đổi `fg_code` / `fg_name` về `hh_code` / `hh_name`. Sổ giá là dữ liệu dẫn xuất: sai gì thì `scripts/backfill_product_price_ledger.py`
 dựng lại. Mã: revert commit của phase. Prod chưa có bảng nên không có quay lui trên prod.
 
 ## Tiêu chí xong

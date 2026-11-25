@@ -274,8 +274,12 @@ export interface PackagingHistoryRow {
   vat: number | null
   /** GIÁ TRỊ MUA (VNĐ, chưa VAT): thành tiền Misa khi có, không thì giá x số lượng; null ở dòng đơn giá 0. */
   amount: number | null
-  /** Mã `PriceSourceType`: 1 = lịch sử mua, 2 = dòng ĐMH đang mở, 3 = sổ Misa. */
+  /** Mã `PriceSourceType`: 1 = lịch sử cũ nạp Excel, 2 = dòng ĐMH của ERP (đang mở lẫn đã chốt), 3 = sổ Misa. */
   source_type: number
+  /** Mã `LedgerLineStage`: 1 = đang mở, 2 = đã chốt. */
+  line_stage: number
+  /** Dòng ĐMH còn đang mở (giá có thể còn đổi): giao diện hiện nhãn "ĐMH đang mở". */
+  is_open: boolean
   doc_id: number
   po_code: string
   prev_price: number | null

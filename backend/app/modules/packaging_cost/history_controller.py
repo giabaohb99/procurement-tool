@@ -47,8 +47,9 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
     Thứ tự mặc định chế độ sản phẩm: ngày giảm dần -> mã sản phẩm -> thành phần. Bộ lọc: `q` (mã, tên vật tư, mã / tên nhà cung
     cấp, tên kho; chế độ sản phẩm thêm mã / tên sản phẩm và tên thành phần), `supplier` (lặp được), `date_from` / `date_to`.
     `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (+ `hh_code, hh_name, role` chỉ ở
-    chế độ sản phẩm; khóa lạ -> `date` giảm), ô trống xuống cuối. Nguồn: sổ giá ba nguồn (`source_type` 1 = lịch sử mua, 2 = dòng
-    ĐMH đang mở, 3 = sổ Misa); dòng đơn giá 0 vẫn hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập
+    chế độ sản phẩm; khóa lạ -> `date` giảm), ô trống xuống cuối. Nguồn: sổ giá ba nguồn (`source_type` 1 = lịch sử cũ nạp Excel, 2 = dòng
+    ĐMH của ERP, 3 = sổ Misa) kèm `line_stage` (1 = đang mở, 2 = đã chốt) và cờ `is_open` (= dòng ĐMH đang mở, giao diện hiện nhãn
+    "ĐMH đang mở"); khóa xếp `source` theo nhãn hiện: lịch sử < ĐMH đang mở < Misa; dòng đơn giá 0 vẫn hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập
     hàng, rỗng nếu không biết), `amount` = GIÁ TRỊ MUA (thành tiền Misa khi có, không thì giá x số lượng; None ở dòng giá 0),
     `prev_price` / `diff` / `pct` so với lần mua CÓ GIÁ liền trước của cùng mã (không phụ thuộc bộ lọc), `seq` = lần mua của mã
     trên toàn bộ lịch sử trong phạm vi quyền, 1 = lần mua GẦN NHẤT, `doc_id` / `po_code` = ĐMH nguồn (0 / rỗng nếu dữ liệu cũ

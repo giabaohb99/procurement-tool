@@ -4,15 +4,15 @@ Chủ dự án chốt tạm: dữ liệu báo cáo Misa là đúng cho tới ng�
 Từ đó mọi phép tính giá (cũ / mới, hai lần mua gần nhất, min / max, số lần mua, lịch sử, ma trận giá gần nhất, tác động) xét:
 
   * dòng nguồn 3 (Misa) có ngày  <= mốc;
-  * dòng ĐƠN MUA HÀNG THẬT có ngày  > mốc: nguồn 2 (dòng ĐMH) hoặc nguồn 1 mà lịch sử mua hàng là `source = 'system'` (sổ giá
-    ghi `doc_id` = id ĐMH > 0);
-  * dòng lịch sử CŨ (`source = 'legacy'`, nạp từ Excel, `doc_id = 0`, nhiều dòng sai ngày tương lai) BỊ BỎ HẲN khi mốc đang bật.
+  * dòng ĐƠN MUA HÀNG THẬT có ngày  > mốc: nguồn 2 (dòng ĐMH, đang mở lẫn đã chốt — từ `srcmerge784` lần mua hoàn thành của hệ thống
+    cũng nằm ở nguồn 2, trước đó nó là nguồn 1 với `doc_id` > 0 nên điều kiện phải viết thêm vế `doc_id > 0`, nay bỏ);
+  * dòng lịch sử CŨ (nguồn 1, `source = 'legacy'`, nạp từ Excel, `doc_id = 0`, nhiều dòng sai ngày tương lai) BỊ BỎ HẲN khi mốc đang bật.
 
 Chưa có mốc (chưa nạp Misa, hoặc đã `--purge`) thì điều kiện luôn đúng — hành vi y hệt khi chưa có nguồn Misa.
 
 Điều kiện là MỘT biểu thức SQL có truy vấn con vô hướng đọc `tab_setting` (không phụ thuộc bảng sổ giá nên MySQL tính một lần),
 nhờ đó KHÔNG thêm lượt truy vấn nào: số truy vấn cố định của các màn giá giữ nguyên. Dùng `DATE(...)` ở cả hai bên để so ngày với
-chuỗi `YYYY-MM-DD` giống nhau trên MySQL (thật) và SQLite (bài kiểm). `source_type` và `doc_id` đều nằm trong chỉ mục phủ `ix_ppl_code_latest`.
+chuỗi `YYYY-MM-DD` giống nhau trên MySQL (thật) và SQLite (bài kiểm). `source_type` nằm trong chỉ mục phủ `ix_ppl_code_latest`.
 """
 from datetime import date
 
@@ -37,12 +37,11 @@ def cutoff_value_subquery():
 
 def misa_cutoff_condition() -> ColumnElement:
     """Điều kiện dựng trên `ProductPriceLedger`: đúng với mọi dòng khi chưa có mốc; có mốc thì Misa <= mốc, còn sau mốc chỉ nhận
-    dòng ĐMH thật (nguồn 2 hoặc `doc_id > 0`) — dòng lịch sử cũ không ĐMH bị loại."""
+    dòng ĐMH thật (nguồn 2) — dòng lịch sử cũ không ĐMH (nguồn 1) bị loại."""
     cutoff = cutoff_value_subquery()
     return or_(cutoff.is_(None),
                and_(L.source_type == MISA, L.price_date <= cutoff),
-               and_(L.source_type != MISA, L.price_date > cutoff,
-                    or_(L.source_type == PO_LINE, L.doc_id > 0)))
+               and_(L.source_type == PO_LINE, L.price_date > cutoff))
 
 
 def with_misa_cutoff(scope_cond=None) -> ColumnElement:

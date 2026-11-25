@@ -12,8 +12,8 @@ from fastapi.responses import Response
 from openpyxl import Workbook
 
 from app.core.export_xlsx import VN_OFFSET, Col, check_row_limit, guard_workbook
-from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS,
-                                            PRICE_SOURCE_TYPE_LABELS, CostTrend, CostWarning, PackagingRole, PriceSourceType)
+from app.core.packaging_price_codes import (COST_TREND_LABELS, COST_WARNING_LABELS, PACKAGING_ROLE_LABELS, CostTrend,
+                                            CostWarning, PackagingRole, price_source_text)
 
 from .last_prices_service import flatten_for_export
 from .report_xlsx_writer import Group, bold_tone, change_tone, sign_tone, write_report_sheet
@@ -218,7 +218,7 @@ def build_history_workbook(rows: list[dict], product_mode: bool = False) -> byte
     """Một sheet "Lịch sử mua hàng": cùng bộ lọc + thứ tự đang xem; chế độ sản phẩm có thêm Mã SP / Tên sản phẩm / Thành phần."""
     check_row_limit(len(rows))
     flat = [{**r, "role_text": PACKAGING_ROLE_LABELS[PackagingRole(r["role"])] if r["role"] else "",
-             "source_text": PRICE_SOURCE_TYPE_LABELS[PriceSourceType(r["source_type"])]} for r in rows]
+             "source_text": price_source_text(r["source_type"], r["line_stage"])} for r in rows]
     codes = len({r["code"] for r in rows})
     if product_mode:
         note = f"{_count(len({r['hh_code'] for r in rows}))} sản phẩm · {_count(codes)} mã VTBB · {_count(len(rows))} dòng lịch sử"

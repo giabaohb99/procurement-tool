@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import func
 from sqlalchemy.dialects import mysql
 
-from app.core.packaging_price_codes import PRICE_SOURCE_TYPE_LABELS, PriceSourceType
+from app.core.packaging_price_codes import PRICE_SOURCE_TYPE_LABELS, LedgerLineStage, PriceSourceType
 from app.modules.assistant.tools.packaging_cost_format import purchase_point
 from app.modules.packaging_cost.history_service import build_history
 from app.modules.packaging_cost.last_prices_service import build_last_prices
@@ -152,12 +152,16 @@ def test_moc_cat_bo_lich_su_truoc_moc_va_giu_dmh_sau_moc(db, mixed):
 
 
 def test_lich_su_cu_sau_moc_bi_bo_con_dong_he_thong_sau_moc_duoc_tinh(db, mixed):
+    """Bỏ mẹo `doc_id > 0` (srcmerge784): sau mốc chỉ nguồn 2 được tính — dòng đã chốt của ERP có, lịch sử cũ nguồn 1 không (kể cả khi
+    nó mang `doc_id > 0` do dữ liệu hỏng)."""
     data, _, _ = mixed
     _import(db, data)
     add_ledger(db, "A", 555, "2026-12-03", source_type=PriceSourceType.PURCHASE_HISTORY, doc_id=0)      # lịch sử cũ, ngày tương lai sai
-    add_ledger(db, "A", 160, "2026-09-01", source_type=PriceSourceType.PURCHASE_HISTORY, doc_id=42)     # lịch sử hệ thống (có ĐMH)
+    add_ledger(db, "A", 556, "2026-12-04", source_type=PriceSourceType.PURCHASE_HISTORY, doc_id=99)     # lịch sử cũ mang doc_id > 0: vẫn bị loại
+    # lần mua ĐÃ HOÀN THÀNH của hệ thống: từ srcmerge784 là dòng ĐMH (nguồn 2) giai đoạn đã chốt, không còn là nguồn 1 + doc_id > 0
+    add_ledger(db, "A", 160, "2026-09-01", source_type=PriceSourceType.PO_LINE, line_stage=LedgerLineStage.FINAL, doc_id=42)
     st = _states(db, ["A"])["A"]
-    assert (st.new, st.old, st.p1.source_type, st.p1.doc_id) == (160, 150, 1, 42)
+    assert (st.new, st.old, st.p1.source_type, st.p1.doc_id) == (160, 150, 2, 42)
     assert st.purchase_count == 4 and st.max == 160 and st.last_date == date(2026, 9, 1)             # 100, 120, 150, 160 (không có 555 / 999)
     hist = build_history(db, mode="code", codes=["A"], page=1, page_size=50)
     assert [i["price"] for i in hist["items"]] == [160, 150, 120, 100]
@@ -165,7 +169,7 @@ def test_lich_su_cu_sau_moc_bi_bo_con_dong_he_thong_sau_moc_duoc_tinh(db, mixed)
     assert [p["price"] for p in last["purchases"]] == [160, 150, 120, 100]
     purge_misa_rows(db)
     db.commit()
-    assert _states(db, ["A"])["A"].purchase_count == 4                                               # gỡ mốc: lịch sử cũ trở lại
+    assert _states(db, ["A"])["A"].purchase_count == 5                                               # gỡ mốc: lịch sử cũ trở lại (999, 555, 556, 150, 160)
 
 
 def test_dong_misa_sau_moc_bi_loai_dong_nguon_khac_dung_moc_duoc_tinh(db, mixed):

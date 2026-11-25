@@ -8,7 +8,7 @@ from .ledger_sync_service import parse_ledger_date
 
 
 def new_stats() -> dict:
-    return {"inserted": 0, "updated_warehouse": 0, "updated_amount": 0, "deleted_orphans": 0, "deleted_covered_po_lines": 0, "skipped_bad_row": 0, "skipped_bad_date": 0,
+    return {"inserted": 0, "updated_warehouse": 0, "updated_amount": 0, "deleted_orphans": 0, "reopened": 0, "finalized": 0, "skipped_bad_row": 0, "skipped_bad_date": 0,
             "future_date": 0, "zero_price": 0, "foreign_currency": 0, "missing_po_item": 0, "ledger_rows": 0}
 
 

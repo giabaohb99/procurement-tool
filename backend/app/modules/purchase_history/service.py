@@ -74,7 +74,7 @@ def snapshot_line(db: Session, po, item) -> PurchaseHistory | None:
 
 
 def _record_in_price_ledger(db: Session, history: PurchaseHistory, item) -> None:
-    """duoc-CR-784: dòng lịch sử mới đi vào SỔ GIÁ (nguồn 1) và dòng nguồn 2 cùng `po_item_id` bị xóa.
+    """duoc-CR-784: dòng lịch sử mới CHỐT dòng sổ giá của dòng ĐMH đó (cùng id, số chụp, giai đoạn `FINAL`) — không xóa / chèn lại.
 
     Cần `flush` để có `history.id`. Lỗi ở phần sổ giá chỉ ghi log — KHÔNG được làm mất dòng lịch sử hay chặn luồng
     tiến độ mua hàng (sổ giá dựng lại được bằng `scripts/backfill_product_price_ledger.py`).

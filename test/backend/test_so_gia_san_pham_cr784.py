@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import func
 
-from app.core.packaging_price_codes import PriceSourceType
+from app.core.packaging_price_codes import LedgerLineStage, PriceSourceType
 from app.modules.product_price import ledger_sync_service as sync
 from app.modules.product_price.model import ProductPriceLedger
 from app.modules.purchase_history.model import PurchaseHistory
@@ -16,7 +16,8 @@ from app.modules.purchase_order.schema import POItemIn, POUpdate
 from so_gia_factory_cr784 import ledger_rows, make_item, make_po
 
 PO_LINE = int(PriceSourceType.PO_LINE)
-HISTORY = int(PriceSourceType.PURCHASE_HISTORY)
+HISTORY = int(PriceSourceType.PURCHASE_HISTORY)      # từ srcmerge784: CHỈ lịch sử cũ nạp Excel (`po_item_id` trống)
+OPEN, FINAL = int(LedgerLineStage.OPEN), int(LedgerLineStage.FINAL)
 
 
 def _approve(db, po, user=1):
@@ -39,7 +40,7 @@ def test_duyet_don_thi_vao_so_bo_duyet_thi_ra_khoi_so(db):
     rows = ledger_rows(db)
     assert len(rows) == 1
     r = rows[0]
-    assert (r.source_type, r.source_id, r.doc_id) == (PO_LINE, it.id, po.id)
+    assert (r.source_type, r.source_id, r.doc_id, r.line_stage) == (PO_LINE, it.id, po.id, OPEN)
     assert (r.product_code, r.supplier_code, r.company_id) == ("CPT0075", "NCC01", 1)
     assert r.price_date == date(2026, 10, 1)
     assert (r.price, r.vat, r.qty, r.unit) == (Decimal("1000"), Decimal("8"), Decimal("1000"), "Cái")
@@ -147,24 +148,26 @@ def test_gia_doi_ngoai_hook_reprice_duoc_hoa_giai_khi_dong_bo(db):
     assert (row.id, row.price) == (first_id, Decimal("1500"))
 
 
-# ── Lịch sử mua hàng: nguồn 1, thay thế nguồn 2 ─────────────────────────────────
-def test_dong_vao_completed_thi_co_nguon_1_va_mat_nguon_2(db):
+# ── Lịch sử mua hàng: dòng ĐMH được CHỐT tại chỗ (srcmerge784) ───────────────────
+def test_dong_vao_completed_thi_cung_dong_so_duoc_chot_giu_id_khong_xoa_chen_lai(db):
     po = make_po(db, status="approved")
     it = make_item(db, po, price=1000, progress_status="doc_sent", qty_received=1000, invoice_no="HD1")
     sync.sync_po_price_ledger(db, po)
-    assert [r.source_type for r in ledger_rows(db)] == [PO_LINE]
+    first = ledger_rows(db)[0]
+    assert (first.source_type, first.source_id, first.line_stage, first.amount) == (PO_LINE, it.id, OPEN, None)
 
     it.progress_status = "completed"
     snapshot_line(db, po, it)
     db.commit()
     rows = ledger_rows(db)
-    assert [r.source_type for r in rows] == [HISTORY]
-    ph = db.query(PurchaseHistory).one()
-    assert rows[0].source_id == ph.id and rows[0].price == Decimal("1000")
+    assert len(rows) == 1 and rows[0].id == first.id                       # cùng id: không xóa rồi chèn lại
+    assert (rows[0].source_type, rows[0].source_id, rows[0].line_stage, rows[0].doc_id) == (PO_LINE, it.id, FINAL, po.id)
+    assert rows[0].price == Decimal("1000") and rows[0].amount == Decimal("1000000.00")      # 1.080.000 gồm VAT 8% -> 1.000.000
+    assert db.query(PurchaseHistory).count() == 1 and not [r for r in rows if r.source_type == HISTORY]
 
-    # đồng bộ lại sau khi dòng đã có lịch sử: không dựng lại nguồn 2
-    sync.sync_po_price_ledger(db, po)
-    assert [r.source_type for r in ledger_rows(db)] == [HISTORY]
+    # đồng bộ lại sau khi đã chốt: không đụng dòng nào
+    assert sync.sync_po_price_ledger(db, po) == {"inserted": 0, "updated": 0, "deleted": 0}
+    assert [(r.id, r.line_stage) for r in ledger_rows(db)] == [(first.id, FINAL)]
 
 
 def test_snapshot_ngoai_te_quy_vnd(db):
@@ -172,7 +175,8 @@ def test_snapshot_ngoai_te_quy_vnd(db):
     it = make_item(db, po, price=2, currency="USD", exchange_rate=25000, progress_status="completed")
     snapshot_line(db, po, it)
     db.commit()
-    assert ledger_rows(db, source_type=HISTORY)[0].price == Decimal("50000")
+    row = ledger_rows(db, source_type=PO_LINE)[0]
+    assert row.price == Decimal("50000") and row.line_stage == FINAL
 
 
 def test_loi_so_gia_khong_chan_dong_lich_su(db, monkeypatch):
@@ -191,7 +195,7 @@ def test_loi_csdl_giua_chung_so_gia_chi_lui_phan_so_gia(db, monkeypatch):
     """bao-CR-789: lỗi CSDL GIỮA CHỪNG phần sổ giá (đã thêm dòng rồi mới hỏng) chỉ lùi phần sổ giá trong savepoint; dòng
     lịch sử vẫn lưu và phiên commit tiếp được (trước đây phiên có thể kẹt trạng thái lỗi)."""
     def half_then_boom(db_, ph, *_a, **_k):
-        db_.add(ProductPriceLedger(source_type=HISTORY, source_id=ph.id, product_code="X", price=1,
+        db_.add(ProductPriceLedger(source_type=HISTORY, source_id=ph.id, line_stage=FINAL, product_code="X", price=1,
                                    price_date=date(2026, 1, 1)))
         db_.flush()
         raise RuntimeError("giả lập lỗi sau khi đã ghi một phần sổ giá")
@@ -241,7 +245,7 @@ def test_nap_lai_legacy_xoa_mo_coi_chen_moi_chay_lan_hai_khong_doi(db):
     assert sorted(r.price for r in ledger_rows(db)) == [Decimal("200"), Decimal("950"), Decimal("950")]
 
     third = sync.sync_history_ledger(db)
-    assert (third["inserted"], third["deleted_orphans"], third["deleted_covered_po_lines"]) == (0, 0, 0)
+    assert (third["inserted"], third["deleted_orphans"], third["finalized"], third["reopened"]) == (0, 0, 0, 0)
 
 
 def test_sync_history_dem_ngay_tuong_lai_gia_0_ngay_hong(db):
@@ -270,17 +274,53 @@ def test_sync_history_ti_gia_lay_tu_dong_dmh_va_dem_thieu(db):
     assert stats["foreign_currency"] == 1 and stats["missing_po_item"] == 1
 
 
-def test_sync_history_xoa_nguon_2_da_co_lich_su(db):
+def test_sync_history_nang_dong_dmh_dang_mo_len_chot_giu_nguyen_id(db):
     po = make_po(db, status="approved")
     it = make_item(db, po)
     sync.sync_po_price_ledger(db, po)
+    first = ledger_rows(db)[0]
     db.add(PurchaseHistory(po_item_id=it.id, po_id=po.id, source="system", product_code="CPT0075", supplier_code="NCC01",
-                           company_id=1, order_date="2026-10-01", price=1000, vat=8, qty_order=1, created_by=0,
+                           company_id=1, order_date="2026-10-01", price=1100, vat=8, qty_order=1, amount=1188, created_by=0,
                            updated_by=0))
     db.commit()
     stats = sync.sync_history_ledger(db)
-    assert stats["deleted_covered_po_lines"] == 1
-    assert [r.source_type for r in ledger_rows(db)] == [HISTORY]
+    db.commit()
+    assert (stats["finalized"], stats["inserted"]) == (1, 0)
+    rows = ledger_rows(db)
+    assert [(r.id, r.source_type, r.source_id, r.line_stage, r.price) for r in rows] == [
+        (first.id, PO_LINE, it.id, FINAL, Decimal("1100"))]        # số chụp của lịch sử thay giá đang mở
+    assert (rows[0].qty, rows[0].amount) == (Decimal("1"), Decimal("1100.00"))
+    again = sync.sync_history_ledger(db)
+    assert (again["finalized"], again["inserted"], again["reopened"], again["deleted_orphans"]) == (0, 0, 0, 0)
+
+
+def test_sync_history_chen_dong_chot_cho_dmh_chua_tung_vao_so(db):
+    po = make_po(db, status="approved")
+    it = make_item(db, po)
+    db.add(PurchaseHistory(po_item_id=it.id, po_id=po.id, source="system", product_code="CPT0075", supplier_code="NCC01",
+                           company_id=1, order_date="2026-10-01", price=1000, vat=8, qty_order=1, created_by=0, updated_by=0))
+    db.commit()
+    assert sync.sync_history_ledger(db)["inserted"] == 1
+    assert [(r.source_type, r.source_id, r.line_stage) for r in ledger_rows(db)] == [(PO_LINE, it.id, FINAL)]
+
+
+def test_sync_history_dong_chot_khong_con_lich_su_tro_ve_dang_mo_roi_dmh_quyet(db):
+    """Hiếm: hoàn tác nhập ĐMH xóa dòng lịch sử. Dòng đã chốt trả về đang mở; ĐMH còn thì ở lại, đã hết đủ điều kiện thì bị gỡ."""
+    po = make_po(db, status="approved")
+    it = make_item(db, po, progress_status="doc_sent")
+    sync.sync_po_price_ledger(db, po)
+    it.progress_status = "completed"
+    snapshot_line(db, po, it)
+    db.commit()
+    assert [r.line_stage for r in ledger_rows(db)] == [FINAL]
+    db.query(PurchaseHistory).delete()
+    db.commit()
+    stats = sync.sync_history_ledger(db)
+    db.commit()
+    assert stats["reopened"] == 1 and [r.line_stage for r in ledger_rows(db)] == [OPEN]
+    po.status = "cancelled"
+    db.commit()
+    assert sync.sync_po_price_ledger(db, po)["deleted"] == 1 and ledger_rows(db) == []
 
 
 def test_dry_run_khong_ghi(db):
@@ -311,21 +351,21 @@ def test_nguon_2_lay_ten_kho_tu_danh_muc_hoac_giu_ma_va_cap_nhat_khi_doi_kho(db)
     assert {r.source_id: r.warehouse_name for r in ledger_rows(db)}[a.id] is None
 
 
-def test_nguon_1_lay_ten_kho_tu_extra_cua_dong_lich_su_ca_luc_chen_moi_lan_nap_lai(db):
+def test_dong_chot_lay_ten_kho_tu_extra_cua_dong_lich_su_ca_luc_chen_moi_lan_nap_lai(db):
     import json
     _kho(db)
     po = make_po(db, status="approved")
     it = make_item(db, po, warehouse_code="HL", progress_status="completed")
     snapshot_line(db, po, it)                                 # đường thật: chụp lịch sử + ghi sổ nguồn 1
     db.commit()
-    assert [r.warehouse_name for r in ledger_rows(db, source_type=HISTORY)] == ["Kho Hà Long"]
+    assert [r.warehouse_name for r in ledger_rows(db, source_type=PO_LINE)] == ["Kho Hà Long"]
     # dòng lịch sử cũ (đã có trong sổ từ trước khi sổ có cột kho) được điền khi nạp lại
     ph = db.query(PurchaseHistory).one()
     ph.extra = json.dumps({"warehouse_code": "HL"})
-    ledger_rows(db, source_type=HISTORY)[0].warehouse_name = None
+    ledger_rows(db, source_type=PO_LINE)[0].warehouse_name = None
     db.commit()
     assert sync.sync_history_ledger(db)["updated_warehouse"] == 1
-    assert [r.warehouse_name for r in ledger_rows(db, source_type=HISTORY)] == ["Kho Hà Long"]
+    assert [r.warehouse_name for r in ledger_rows(db, source_type=PO_LINE)] == ["Kho Hà Long"]
     assert sync.sync_history_ledger(db)["updated_warehouse"] == 0   # chạy lại không đổi gì
     ph.extra = "không phải JSON"                               # JSON hỏng: coi như không có kho, không nổ
     db.commit()
@@ -376,10 +416,10 @@ def test_lich_su_hong_ngay_khong_xoa_dong_dmh_giu_gia_trong_so(db):
     po.order_date = "2026-10-01"               # đơn được sửa lại ngày hợp lệ sau đó (lịch sử vẫn giữ ngày hỏng)
     db.commit()
     sync.sync_po_price_ledger(db, po)
-    assert [r.source_type for r in ledger_rows(db)] == [PO_LINE]       # dòng ĐMH còn nguyên, giá không biến mất
+    assert [(r.source_type, r.line_stage) for r in ledger_rows(db)] == [(PO_LINE, OPEN)]       # dòng ĐMH còn nguyên, giá không biến mất
 
 
-def test_sync_history_dem_lich_su_hong_ngay_va_khong_xoa_nguon_2(db):
+def test_sync_history_dem_lich_su_hong_ngay_va_giu_dong_dmh_dang_mo(db):
     po = make_po(db, status="approved")
     it = make_item(db, po)
     sync.sync_po_price_ledger(db, po)
@@ -388,12 +428,12 @@ def test_sync_history_dem_lich_su_hong_ngay_va_khong_xoa_nguon_2(db):
                            updated_by=0))
     db.commit()
     stats = sync.sync_history_ledger(db)
-    assert (stats["skipped_bad_date"], stats["skipped_bad_row"], stats["deleted_covered_po_lines"]) == (1, 1, 0)
-    assert [r.source_type for r in ledger_rows(db)] == [PO_LINE]
+    assert (stats["skipped_bad_date"], stats["skipped_bad_row"], stats["finalized"]) == (1, 1, 0)
+    assert [(r.source_type, r.line_stage) for r in ledger_rows(db)] == [(PO_LINE, OPEN)]
 
 
 def test_hoa_ngay_dong_chuyen_tu_dmh_sang_lich_su_khong_doi_cho_lan_1_lan_2(db):
-    """Hai ĐMH cùng ngày, cùng mã: dòng của ĐMH cũ chuyển sang lịch sử (id sổ mới lớn hơn) vẫn là lần 2."""
+    """Hai ĐMH cùng ngày, cùng mã: dòng của ĐMH cũ hoàn thành (nay giữ id, trước đây bị chèn lại với id mới lớn hơn) vẫn là lần 2."""
     from app.modules.product_price.price_state_service import get_price_states
     old_po = make_po(db, code="PO1", status="approved")
     new_po = make_po(db, code="PO2", misa_code="M2", status="approved")
@@ -406,6 +446,6 @@ def test_hoa_ngay_dong_chuyen_tu_dmh_sang_lich_su_khong_doi_cho_lan_1_lan_2(db):
     a.progress_status = "completed"
     snapshot_line(db, old_po, a)
     db.commit()
-    assert {r.source_type for r in ledger_rows(db, doc_id=old_po.id)} == {HISTORY}
+    assert {(r.source_type, r.line_stage) for r in ledger_rows(db, doc_id=old_po.id)} == {(PO_LINE, FINAL)}
     after = get_price_states(db, {"CPT0075"})["CPT0075"]
     assert (after.p1.price, after.p2.price) == (Decimal(1000), Decimal(900))

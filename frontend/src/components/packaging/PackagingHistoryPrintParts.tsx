@@ -1,6 +1,6 @@
 import type { PackagingHistoryMode, PackagingHistoryPoint, PackagingHistoryRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
-import { amountText, diffText, PRICE_SOURCE_PO_LINE, pctText, priceText, qtyText } from '../../utils/packaging-price'
+import { amountText, diffText, pctText, priceText, qtyText } from '../../utils/packaging-price'
 import { historyRoleText, historyRowKey } from '../../utils/packaging-query'
 import { PrintDash } from './PackagingPrintShell'
 import { PrintChipsBox } from './PackagingPrintWidgets'
@@ -139,7 +139,7 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
           <tbody>
             {rows.map((r) => {
               const qty = qtyText(r.qty)
-              const openPo = r.source_type === PRICE_SOURCE_PO_LINE
+              const openPo = r.is_open
               const materialName = r.name || <span className="faint">(chưa có tên)</span>
               return (
                 <tr key={historyRowKey(r)} className={r.price === 0 ? 'zero' : undefined}>

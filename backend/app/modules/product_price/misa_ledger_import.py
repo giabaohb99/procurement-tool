@@ -21,12 +21,13 @@ from pathlib import Path
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
-from app.core.packaging_price_codes import PriceSourceType
+from app.core.packaging_price_codes import LedgerLineStage, PriceSourceType
 
 from .misa_cutoff import set_misa_cutoff
 from .model import ProductPriceLedger as L
 
 SOURCE = int(PriceSourceType.MISA)
+FINAL_STAGE = int(LedgerLineStage.FINAL)   # dòng Misa luôn là dòng đã chốt
 BATCH = 1000
 _MARKER = re.compile(r"window\.VTBB_DEMO\s*=\s*")
 _VTBB_SUFFIX = re.compile(r"\s*-\s*VTBB\s*$", re.IGNORECASE)
@@ -107,7 +108,7 @@ def build_misa_rows(data: dict, company_id: int) -> tuple[list[dict], dict]:
             price_value = Decimal("0.0000")
             stats["zero_price"] += 1
         amount = _decimal(amount_raw, places="0.01") if price_value > 0 else None
-        out[misa_id] = {"source_type": SOURCE, "source_id": misa_id, "doc_id": 0, "product_code": code,
+        out[misa_id] = {"source_type": SOURCE, "source_id": misa_id, "line_stage": FINAL_STAGE, "doc_id": 0, "product_code": code,
                         "supplier_code": _clean_text(supplier_code, MAX_SUPPLIER_CODE),
                         "supplier_name": _VTBB_SUFFIX.sub("", _clean_text(name, MAX_SUPPLIER_NAME + 20))[:MAX_SUPPLIER_NAME] or None,
                         "warehouse_name": _clean_text(warehouse, MAX_WAREHOUSE_NAME) or None,
