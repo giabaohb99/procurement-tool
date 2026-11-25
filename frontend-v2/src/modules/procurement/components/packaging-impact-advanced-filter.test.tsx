@@ -6,10 +6,17 @@ import { describe, expect, it } from 'vitest'
 import { EMPTY_IMPACT_FILTERS, type ImpactAdvancedFilters } from '../utils/packaging-impact-filters'
 import { PackagingImpactAdvancedFilter } from './packaging-impact-advanced-filter'
 
-function Harness({ onChange }: { onChange?: (value: ImpactAdvancedFilters) => void }) {
+function Harness({
+  onChange,
+  variant,
+}: {
+  onChange?: (value: ImpactAdvancedFilters) => void
+  variant?: 'impact' | 'overview'
+}) {
   const [value, setValue] = useState(EMPTY_IMPACT_FILTERS)
   return (
     <PackagingImpactAdvancedFilter
+      variant={variant}
       value={value}
       onApply={(next) => {
         setValue(next)
@@ -55,5 +62,28 @@ describe('PackagingImpactAdvancedFilter', () => {
     await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: 'Lọc nâng cao' }))
     expect(screen.getByLabelText('Quy cách thùng từ')).toHaveValue('')
+  })
+
+  it('overview variant: no trend section, six ranges including CP cũ and % chênh, roles by presence', async () => {
+    const user = userEvent.setup()
+    const applied: ImpactAdvancedFilters[] = []
+    render(<Harness variant="overview" onChange={(next) => applied.push(next)} />)
+    await user.click(screen.getByRole('button', { name: 'Lọc nâng cao' }))
+    expect(screen.queryByRole('group', { name: 'Xu hướng chi phí' })).not.toBeInTheDocument()
+    expect(screen.getByText('Có mã ở vai trò')).toBeInTheDocument()
+    expect(screen.getByLabelText('CP bao bì/chai cũ từ')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('% chênh từ'), '5')
+    await user.click(screen.getByRole('button', { name: 'Nắp' }))
+    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    expect(applied[0]).toMatchObject({ roles: [2], pct: { min: '5', max: '' } })
+    expect(screen.getByRole('button', { name: /Lọc nâng cao/ })).toHaveTextContent('2')
+  })
+
+  it('impact variant keeps the trend section and the original four ranges', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+    await user.click(screen.getByRole('button', { name: 'Lọc nâng cao' }))
+    expect(screen.getByRole('group', { name: 'Xu hướng chi phí' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('% chênh từ')).not.toBeInTheDocument()
   })
 })

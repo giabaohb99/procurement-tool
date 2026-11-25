@@ -104,7 +104,15 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
 Màn `/procurement/packaging-cost/products` (cũ `/packaging-cost/products`). Bài HDSD: *Giá bao bì — Rà chi phí bao bì của
 mọi sản phẩm*. Mọi mã HH có định mức, giá cũ so với giá mới hiện hành, không có giá giả định.
 
-- Chip **Tất cả / Tăng / Giảm / Không đổi / Chưa có giá** kèm số đếm (đếm sau lọc từ khóa, chưa lọc xu hướng).
+- Thanh lọc **một hàng** (chốt 25/11/2026): bên trái ô tìm + chip, bên phải nút **Lọc nâng cao**, **Cột**, **Tải lại**
+  (màn hẹp thì ô tìm + chip xuống dòng trước). Nút Xuất Excel vẫn ở đầu trang.
+- Chip **Tất cả / Tăng / Giảm / Không đổi / Chưa có giá** kèm số đếm (đếm sau lọc từ khóa và lọc nâng cao, chưa lọc xu hướng).
+- **Lọc nâng cao** (cùng hộp với màn Tác động giá, bỏ mục Xu hướng vì đã có chip): **Có mã ở vai trò** (Chai, Nắp, Nhãn, Nhãn
+  thùng, Thùng; chọn nhiều = một trong các vai trò, xét theo mã có trong định mức), khoảng **Từ – Đến** cho Quy cách thùng,
+  CP bao bì/chai cũ, CP bao bì/chai mới, Tăng/giảm /chai, Tăng/giảm /thùng, % chênh (so với số một chữ số lẻ đang hiện), và ô
+  **Chỉ sản phẩm có cảnh báo**. Điều kiện ghép bằng VÀ; sản phẩm chưa có giá chai bị loại khi bật một khoảng. Nút hiện số nhóm
+  điều kiện đang bật; **Xóa lọc** ở thanh lọc xóa cả ô tìm, chip và lọc nâng cao. Lọc tại máy chủ nên bảng, số đếm chip, phân
+  trang và Xuất Excel cùng một bộ lọc.
 - Cột: Mã HH (bấm → Lịch sử mua hàng theo mã sản phẩm), Tên hàng hóa, Quy cách, CP cũ /chai, CP mới /chai, Chênh /chai,
   Chênh /thùng, % chênh, Xu hướng, năm ô thành phần (mã bấm được), Ghi chú.
 - Ô tìm *Tìm mã HH, tên, mã thành phần…*; xếp + phân trang tại máy chủ; **Xuất Excel** tối đa 5.000 dòng.

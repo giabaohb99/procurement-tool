@@ -13,6 +13,8 @@ import type { PackagingImpactProduct, PackagingOverviewTrend } from '../../api/p
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { useTableColumns, type TableColumn } from '../../hooks/useTableColumns'
+import { EMPTY_IMPACT_FILTERS, countAdvancedFilters } from '../../utils/packaging-impact-filters'
+import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
 import { buildOverviewParams } from '../../utils/packaging-overview'
 import { nextSort } from '../../utils/packaging-query'
 import '../../components/packaging/packaging.css'
@@ -33,6 +35,7 @@ export default function PackagingProductOverview() {
   const { can } = useAuth()
   const [keyword, setKeyword] = useState('')
   const [trend, setTrend] = useState<PackagingOverviewTrend>('all')
+  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
@@ -41,7 +44,8 @@ export default function PackagingProductOverview() {
   const q = useDebouncedValue(keyword, 350)
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
-  const filterParams = useMemo(() => buildOverviewParams(trend, q, { by: sortBy, dir: sortDir }), [trend, q, sortBy, sortDir])
+  const filterParams = useMemo(
+    () => buildOverviewParams(trend, q, { by: sortBy, dir: sortDir }, advanced), [trend, q, sortBy, sortDir, advanced])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchProductOverview(params), JSON.stringify(params))
 
@@ -51,8 +55,8 @@ export default function PackagingProductOverview() {
   const table = useTableColumns('packaging-product-overview', columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
 
-  const filtersActive = trend !== 'all' || keyword.trim() !== ''
-  const reset = () => { setKeyword(''); setTrend('all'); setPage(1) }
+  const filtersActive = trend !== 'all' || keyword.trim() !== '' || countAdvancedFilters(advanced, 'overview') > 0
+  const reset = () => { setKeyword(''); setTrend('all'); setAdvanced(EMPTY_IMPACT_FILTERS); setPage(1) }
   const onSort = (key: string) => { const s = nextSort(sortBy, sortDir, key); setSortBy(s.by); setSortDir(s.dir); setPage(1) }
 
   async function exportExcel() {
@@ -79,12 +83,12 @@ export default function PackagingProductOverview() {
       </div>
 
       <div className="card table-card">
-        <PackagingOverviewToolbar keyword={keyword} onKeyword={(v) => { setKeyword(v); setPage(1) }}
-          trend={trend} onTrend={(v) => { setTrend(v); setPage(1) }} counts={list.data?.counts} />
+        {/* Thanh lọc nằm CÙNG hàng với nút Cột / Tải lại của bảng (người chủ báo dải trống giữa hai hàng, 25/11/2026). */}
         <TableToolbar {...table} onRefresh={list.reload}>
-          <div style={{ flex: 1, textAlign: 'left' }}>
-            {filtersActive && <button className="btn ghost" onClick={reset}><i className="ti ti-rotate" />Xóa lọc</button>}
-          </div>
+          <PackagingOverviewToolbar keyword={keyword} onKeyword={(v) => { setKeyword(v); setPage(1) }}
+            trend={trend} onTrend={(v) => { setTrend(v); setPage(1) }} counts={list.data?.counts}
+            advanced={advanced} onAdvanced={(v) => { setAdvanced(v); setPage(1) }}
+            filtersActive={filtersActive} onReset={reset} />
         </TableToolbar>
         <TableScroll>
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>

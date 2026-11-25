@@ -1,7 +1,6 @@
 """Schema vào của `POST /api/packaging-cost/impact` (duoc-CR-784): tối đa 500 mã, giá giả định >= 0, khoảng ngày hợp lệ, và
 tham số phân trang / tìm / lọc nâng cao / xếp của BẢNG SẢN PHẨM (làm ở máy chủ — KPI vẫn tính trên toàn bộ tập bị ảnh hưởng)."""
 from datetime import date
-from decimal import Decimal
 from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -9,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.modules.employee.field_limits import Str50
 from app.modules.product_price.schema import MAX_YEAR, MIN_YEAR, PriceAmount
 
-from .impact_filters import ImpactFilters
+from .impact_filters import ImpactFilters, check_range, make_range
 
 MAX_CODES = 500
 MAX_PAGE_SIZE = 500
@@ -82,9 +81,7 @@ class ImpactRequest(BaseModel):
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValueError("Từ ngày không được sau Đến ngày")
         for name in ("carton_qty", "diff_bottle", "diff_carton", "cost_new_bottle"):
-            low, high = getattr(self, f"{name}_min"), getattr(self, f"{name}_max")
-            if low is not None and high is not None and low > high:
-                raise ValueError(f"Khoảng lọc không hợp lệ ({name}): giá trị nhỏ nhất lớn hơn giá trị lớn nhất")
+            check_range(name, getattr(self, f"{name}_min"), getattr(self, f"{name}_max"))
         stray = sorted(set(self.assumed_prices) - set(self.codes))
         if stray:
             raise ValueError(f"Giá giả định cho mã chưa chọn: {', '.join(stray[:10])}")
@@ -93,8 +90,7 @@ class ImpactRequest(BaseModel):
     def to_filters(self) -> ImpactFilters:
         """Gom các trường lọc nâng cao thành `ImpactFilters` cho `compute_impact`."""
         def bounds(name: str):
-            low, high = getattr(self, f"{name}_min"), getattr(self, f"{name}_max")
-            return (None if low is None else Decimal(str(low)), None if high is None else Decimal(str(high)))
+            return make_range(getattr(self, f"{name}_min"), getattr(self, f"{name}_max"))
         return ImpactFilters(trend=self.trend, part_roles=frozenset(self.part_roles), carton_qty=bounds("carton_qty"),
                              diff_bottle=bounds("diff_bottle"), diff_carton=bounds("diff_carton"),
                              cost_new_bottle=bounds("cost_new_bottle"), warnings_only=self.warnings_only)

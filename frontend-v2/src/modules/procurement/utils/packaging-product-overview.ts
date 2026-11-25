@@ -11,6 +11,7 @@ import type {
   PackagingOverviewParams,
   PackagingOverviewTrend,
 } from '../types/packaging-cost-types'
+import { overviewFiltersToParams, type ImpactAdvancedFilters } from './packaging-impact-filters'
 import { costTrendLabel } from './packaging-warning-text'
 
 export const OVERVIEW_TREND_CHIPS: readonly {
@@ -50,13 +51,15 @@ export function overviewChipLabel(
   return count == null ? chip.label : `${chip.label} (${count.toLocaleString('vi-VN')})`
 }
 
-/** Bộ lọc + thứ tự màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). */
+/** Bộ lọc (kể cả lọc nâng cao) + thứ tự màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). */
 export function buildOverviewParams(
   trend: PackagingOverviewTrend,
   search: string,
   sort: { by: string; dir: 'asc' | 'desc' },
+  advanced?: ImpactAdvancedFilters,
 ): PackagingOverviewParams {
   return {
+    ...(advanced ? overviewFiltersToParams(advanced) : {}),
     q: search.trim() || undefined,
     trend: trend === 'all' ? undefined : trend,
     //  Chưa chọn cột xếp thì KHÔNG gửi — máy chủ xếp mặc định theo mã HH.

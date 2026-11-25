@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_IMPACT_FILTERS } from './packaging-impact-filters'
 import { buildOverviewParams, OVERVIEW_TREND_CHIPS, overviewChipLabel } from './packaging-product-overview'
 
 describe('OVERVIEW_TREND_CHIPS', () => {
@@ -43,5 +44,19 @@ describe('buildOverviewParams', () => {
       sort_by: 'diff_carton',
       sort_dir: 'desc',
     })
+  })
+
+  it('merges the advanced filters without the trend and omits them when empty', () => {
+    expect(buildOverviewParams('up', '', { by: '', dir: 'asc' }, EMPTY_IMPACT_FILTERS)).toEqual({
+      q: undefined,
+      trend: 'up',
+    })
+    expect(
+      buildOverviewParams('all', 'x', { by: '', dir: 'asc' }, {
+        ...EMPTY_IMPACT_FILTERS,
+        roles: [3],
+        pct: { min: '5', max: '' },
+      }),
+    ).toEqual({ q: 'x', trend: undefined, part_roles: '3', pct_min: 5 })
   })
 })

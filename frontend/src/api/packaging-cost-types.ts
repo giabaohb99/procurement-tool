@@ -104,6 +104,23 @@ export interface PackagingOverviewParams {
   sort_dir?: 'asc' | 'desc'
   page?: number
   page_size?: number
+  /** Lọc nâng cao: máy chủ lọc sau khi tính chi phí, số đếm chip theo cả các bộ lọc này. */
+  /** Vai trò (1..5) cách nhau dấu phẩy, vd "1,5": sản phẩm có MÃ ở một trong các vai trò đó. */
+  part_roles?: string
+  carton_qty_min?: number
+  carton_qty_max?: number
+  cost_old_bottle_min?: number
+  cost_old_bottle_max?: number
+  cost_new_bottle_min?: number
+  cost_new_bottle_max?: number
+  diff_bottle_min?: number
+  diff_bottle_max?: number
+  diff_carton_min?: number
+  diff_carton_max?: number
+  /** Đơn vị %, so với số một chữ số lẻ đang hiện ở cột "% chênh". */
+  pct_min?: number
+  pct_max?: number
+  warnings_only?: boolean
 }
 
 export interface PackagingOverviewResult {

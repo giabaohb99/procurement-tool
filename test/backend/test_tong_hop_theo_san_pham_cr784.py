@@ -9,6 +9,7 @@ import openpyxl
 import pytest
 
 from app.core.packaging_price_codes import CostTrend
+from app.modules.packaging_cost.impact_filters import ImpactFilters
 from app.modules.packaging_cost.model import PackagingBom
 from app.modules.packaging_cost.product_overview_service import OVERVIEW_SORT_GETTERS, build_product_overview
 from app.modules.user.model import User
@@ -154,6 +155,73 @@ def test_so_truy_van_khong_doi_theo_so_san_pham_trang_loc_xep(db, world):
     assert _rows(db)["counts"]["all"] == 206
 
 
+# ── Lọc nâng cao (dùng lại ImpactFilters của Tác động giá) ───────────────────────
+def _flt(**kw) -> ImpactFilters:
+    return ImpactFilters(roles_by_presence=True, **kw)
+
+
+def _rng(low, high):
+    from decimal import Decimal as D
+    return (None if low is None else D(low), None if high is None else D(high))
+
+
+@pytest.mark.parametrize("flt,expected", [
+    (_flt(part_roles=frozenset({5})), ["HH05"]),                                  # vai trò theo MÃ CÓ MẶT (không cần mã được chọn)
+    (_flt(part_roles=frozenset({1, 5})), ["HH01", "HH02", "HH03", "HH04", "HH05", "HH06"]),   # một trong các vai trò
+    (_flt(part_roles=frozenset({3})), []),                                        # không sản phẩm nào có nhãn
+    (_flt(carton_qty=_rng(12, 12)), ["HH05"]),
+    (_flt(cost_old_bottle=_rng(150, None)), ["HH05"]),                           # 110 < 150 <= 160; HH04 trống bị loại
+    (_flt(cost_old_bottle=_rng(None, 110)), ["HH01", "HH02", "HH03", "HH06"]),
+    (_flt(cost_new_bottle=_rng(100, 130)), ["HH01", "HH03", "HH06"]),
+    (_flt(diff_bottle=_rng(-30, -1)), ["HH02"]),
+    (_flt(diff_bottle=_rng(0, 0)), ["HH03", "HH06"]),
+    (_flt(diff_carton=_rng(240, None)), ["HH05"]),                               # 20 * 12
+    (_flt(pct=_rng(15, None)), ["HH01"]),                                        # HH01 +18,2% ; HH05 +12,5%
+    (_flt(pct=_rng(None, -10)), ["HH02"]),
+])
+def test_loc_nang_cao_tung_bo_loc(db, world, flt, expected):
+    res = _rows(db, filters=flt)
+    assert _codes(res) == expected and res["total"] == len(expected)
+
+
+def test_loc_chi_san_pham_co_canh_bao(db, world):
+    warned = [r["hh_code"] for r in _rows(db)["items"] if r["warnings"]]
+    assert "HH04" in warned and _codes(_rows(db, filters=_flt(warnings_only=True))) == warned
+    #  Ghép với khoảng CP/chai cũ: chỉ HH05 vừa có cảnh báo vừa cũ >= 150.
+    assert _codes(_rows(db, filters=_flt(warnings_only=True, cost_old_bottle=_rng(150, None)))) == [c for c in warned if c == "HH05"]
+
+
+def test_loc_nang_cao_ghep_nhieu_bo_loc_la_va(db, world):
+    assert _codes(_rows(db, filters=_flt(diff_bottle=_rng(1, None), part_roles=frozenset({5})))) == ["HH05"]
+    assert _rows(db, filters=_flt(diff_bottle=_rng(1, None), carton_qty=_rng(99, None)))["total"] == 0
+
+
+def test_so_dem_chip_theo_tim_kiem_va_loc_nang_cao_nhung_khong_theo_xu_huong(db, world):
+    flt = _flt(cost_old_bottle=_rng(100, 120))                  # HH01 HH02 HH03 HH06 (110); HH05 160 và HH04 (trống) bị loại
+    res = _rows(db, filters=flt, trend="up")
+    assert _codes(res) == ["HH01"] and res["total"] == 1
+    assert res["counts"] == {"all": 4, "up": 1, "down": 1, "flat": 2, "missing": 0}
+    assert _rows(db, filters=flt, q="hh0")["counts"]["all"] == 4 and _rows(db, filters=flt, q="hh01")["counts"]["all"] == 1
+
+
+def test_loc_nang_cao_bo_qua_xu_huong_trong_filters_va_khong_loc_thi_nguyen_tap(db, world):
+    assert _rows(db, filters=ImpactFilters(trend="up"))["total"] == 6          # xu hướng chỉ đi bằng tham số `trend`
+    assert _rows(db, filters=ImpactFilters())["total"] == 6 and _rows(db, filters=None)["total"] == 6
+
+
+def test_phan_tram_so_voi_so_mot_chu_so_le_dang_hien(db, world):
+    #  HH05: 20 / 160 = 12,5% đúng; HH01: 20 / 110 = 18,1818% hiện +18,2% → khoảng 18,2..18,2 trúng, 18,3.. thì không
+    assert _codes(_rows(db, filters=_flt(pct=_rng("18.2", "18.2")))) == ["HH01"]
+    assert _rows(db, filters=_flt(pct=_rng("18.3", None)))["total"] == 0
+    assert _codes(_rows(db, filters=_flt(pct=_rng("12.5", "12.5")))) == ["HH05"]
+
+
+def test_so_truy_van_khong_doi_khi_loc_nang_cao(db, world):
+    flt = _flt(part_roles=frozenset({1}), diff_bottle=_rng(-50, 50), pct=_rng(-50, 50), warnings_only=False)
+    plain = len(count_queries(db, lambda: _rows(db))[1])
+    assert len(count_queries(db, lambda: _rows(db, filters=flt, trend="up", q="hh", page=1, page_size=2))[1]) == plain
+
+
 # ── API: quyền, phạm vi, xuất Excel ─────────────────────────────────────────────
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
@@ -207,3 +275,40 @@ def test_xuat_excel_theo_bo_loc_va_thu_tu_bo_qua_phan_trang(api):
     assert rows[0][header.index("CP bao bì/chai mới")].value == 180
     _, none_rows = read_report_sheet(openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"trend": "missing"}).content))["Tổng hợp theo sản phẩm"])
     assert none_rows[0][header.index("CP bao bì/chai mới")].value is None      # ô trống, không phải 0
+
+
+# ── API: lọc nâng cao qua tham số truy vấn + xuất Excel cùng bộ lọc ─────────────────
+def test_api_loc_nang_cao_qua_tham_so(api):
+    def codes(**params):
+        res = api.get(URL, params=params)
+        assert res.status_code == 200, res.text
+        return [r["hh_code"] for r in res.json()["data"]["items"]]
+    assert codes(part_roles="5") == ["HH05"] and codes(part_roles="1,5") == [f"HH0{i}" for i in range(1, 7)]
+    assert codes(diff_bottle_min=-30, diff_bottle_max=-1) == ["HH02"] and codes(carton_qty_min=12) == ["HH05"]
+    assert codes(pct_min=15) == ["HH01"] and codes(cost_old_bottle_min=150, trend="up") == ["HH05"]
+    data = api.get(URL, params={"cost_old_bottle_max": 110, "trend": "flat"}).json()["data"]
+    assert data["counts"] == {"all": 4, "up": 1, "down": 1, "flat": 2, "missing": 0} and data["total"] == 2
+    assert api.get(URL, params={"warnings_only": "true"}).status_code == 200
+
+
+@pytest.mark.parametrize("params", [{"part_roles": "0"}, {"part_roles": "6"}, {"part_roles": "1,,2"}, {"part_roles": "1,2,3,4,5,1"},
+                                    {"part_roles": "a"}, {"carton_qty_min": -1}, {"carton_qty_max": 1_000_001},
+                                    {"carton_qty_min": "x"}, {"diff_bottle_min": "nan"}, {"pct_max": "inf"},
+                                    {"cost_old_bottle_min": 1e13}, {"pct_min": -1e13}, {"warnings_only": "maybe"},
+                                    {"carton_qty_min": 30, "carton_qty_max": 10}, {"pct_min": 5, "pct_max": 1},
+                                    {"cost_old_bottle_min": 2, "cost_old_bottle_max": 1}])
+def test_api_loc_nang_cao_sai_la_422(api, params):
+    assert api.get(URL, params=params).status_code == 422
+
+
+def test_api_khoang_am_bang_nhau_va_du_nam_vai_tro_hop_le(api):
+    assert api.get(URL, params={"diff_bottle_min": -100, "diff_bottle_max": -1}).status_code == 200
+    assert api.get(URL, params={"pct_min": 18.2, "pct_max": 18.2, "part_roles": "1,2,3,4,5"}).status_code == 200
+
+
+def test_xuat_excel_theo_loc_nang_cao(api):
+    res = api.get(URL + "/export", params={"diff_bottle_min": 1, "part_roles": "5", "page": 2, "page_size": 1})
+    assert res.status_code == 200
+    _, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content))["Tổng hợp theo sản phẩm"])
+    assert [r[0].value for r in rows] == ["HH05"]
+    assert api.get(URL + "/export", params={"pct_min": 5, "pct_max": 1}).status_code == 422

@@ -156,6 +156,32 @@ describe('PackagingProductOverviewPage', () => {
     expect(downloads[0].params).not.toHaveProperty('page_size')
   })
 
+  it('sends the advanced filter to the server, counts it on the badge and exports with it', async () => {
+    const user = userEvent.setup()
+    build()
+    await user.click(await screen.findByRole('button', { name: 'Lọc nâng cao' }))
+    await user.click(screen.getByRole('button', { name: 'Chai' }))
+    await user.type(screen.getByLabelText('% chênh từ'), '5')
+    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await waitFor(() => expect(lastParams()).toMatchObject({ part_roles: '1', pct_min: 5, page: 1 }))
+    expect(screen.getByRole('button', { name: /Lọc nâng cao/ })).toHaveTextContent('2')
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+    await waitFor(() => expect(downloads).toHaveLength(1))
+    expect(downloads[0].params).toMatchObject({ part_roles: '1', pct_min: 5 })
+    expect(downloads[0].params).not.toHaveProperty('page')
+  })
+
+  it('clears the advanced filter with "Xóa lọc"', async () => {
+    const user = userEvent.setup()
+    build()
+    await user.click(await screen.findByRole('button', { name: 'Lọc nâng cao' }))
+    await user.click(screen.getByRole('button', { name: 'Chai' }))
+    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await waitFor(() => expect(lastParams()).toMatchObject({ part_roles: '1' }))
+    await user.click(await screen.findByRole('button', { name: /Xóa lọc/ }))
+    await waitFor(() => expect(lastParams()?.part_roles).toBeUndefined())
+  })
+
   it('hides the export button without packaging_cost.export', async () => {
     canExport = false
     build()

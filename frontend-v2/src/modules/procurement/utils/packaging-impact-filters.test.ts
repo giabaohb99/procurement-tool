@@ -4,10 +4,13 @@ import type { PackagingImpactRequest } from '../types/packaging-cost-types'
 import {
   EMPTY_IMPACT_FILTERS,
   appendImpactFilterSearch,
+  countAdvancedFilters,
   countImpactFilters,
   describeImpactAdvancedFilters,
   impactFiltersToRequest,
   invalidImpactRanges,
+  OVERVIEW_RANGE_FIELDS,
+  overviewFiltersToParams,
   parseImpactFilterSearch,
   parseRangeText,
   type ImpactAdvancedFilters,
@@ -79,6 +82,55 @@ describe('impactFiltersToRequest', () => {
 
   it('treats equal bounds as valid (an exact value)', () => {
     expect(invalidImpactRanges(filters({ cartonQty: { min: '24', max: '24' } }))).toEqual([])
+  })
+})
+
+describe('overview variant (Tổng hợp theo sản phẩm)', () => {
+  it('offers six ranges in column order and sends nothing for the empty set', () => {
+    expect(OVERVIEW_RANGE_FIELDS.map((field) => field.key)).toEqual([
+      'cartonQty',
+      'costOldBottle',
+      'costNewBottle',
+      'diffBottle',
+      'diffCarton',
+      'pct',
+    ])
+    expect(overviewFiltersToParams(EMPTY_IMPACT_FILTERS)).toEqual({})
+    expect(countAdvancedFilters(EMPTY_IMPACT_FILTERS, 'overview')).toBe(0)
+  })
+
+  it('maps roles to a comma list, ranges to *_min/_max and ignores the trend (it has its own chips)', () => {
+    const f = filters({
+      trend: 'up',
+      roles: [5, 1],
+      costOldBottle: { min: '1.000', max: '' },
+      pct: { min: '-5,5', max: '10' },
+      cartonQty: { min: '12', max: '' },
+      warningsOnly: true,
+    })
+    expect(overviewFiltersToParams(f)).toEqual({
+      part_roles: '1,5',
+      warnings_only: true,
+      carton_qty_min: 12,
+      cost_old_bottle_min: 1000,
+      pct_min: -5.5,
+      pct_max: 10,
+    })
+    //  roles + warnings + cartonQty + costOldBottle + pct = 5; xu hướng không đếm ở màn này, có đếm ở Tác động giá.
+    expect(countAdvancedFilters(f, 'overview')).toBe(5)
+    expect(countAdvancedFilters(f, 'impact')).toBe(4)
+  })
+
+  it('flags an inverted range of the new fields and does not send it', () => {
+    const f = filters({ pct: { min: '9', max: '1' }, costOldBottle: { min: '1', max: '2' } })
+    expect(invalidImpactRanges(f, OVERVIEW_RANGE_FIELDS)).toEqual(['pct'])
+    expect(overviewFiltersToParams(f)).toEqual({ cost_old_bottle_min: 1, cost_old_bottle_max: 2 })
+  })
+
+  it('keeps the two extra fields out of the Tác động giá request', () => {
+    const f = filters({ costOldBottle: { min: '1', max: '' }, pct: { min: '2', max: '' } })
+    expect(impactFiltersToRequest(f)).toEqual({})
+    expect(countImpactFilters(f)).toBe(0)
   })
 })
 

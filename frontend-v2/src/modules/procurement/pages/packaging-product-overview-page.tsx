@@ -27,6 +27,11 @@ import {
 } from '../config/packaging-product-columns'
 import { usePackagingProductOverview } from '../hooks/use-packaging-product-overview'
 import type { PackagingOverviewTrend } from '../types/packaging-cost-types'
+import {
+  EMPTY_IMPACT_FILTERS,
+  countAdvancedFilters,
+  type ImpactAdvancedFilters,
+} from '../utils/packaging-impact-filters'
 import { buildOverviewParams } from '../utils/packaging-product-overview'
 
 const DEFAULT_PAGE_SIZE = 100
@@ -54,6 +59,7 @@ export function PackagingProductOverviewPage() {
   const { can } = usePermission()
   const [keyword, setKeyword] = useState('')
   const [trend, setTrend] = useState<PackagingOverviewTrend>('all')
+  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -63,8 +69,8 @@ export function PackagingProductOverviewPage() {
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo(
-    () => buildOverviewParams(trend, debouncedKeyword, { by: sortBy, dir: sortDir }),
-    [trend, debouncedKeyword, sortBy, sortDir],
+    () => buildOverviewParams(trend, debouncedKeyword, { by: sortBy, dir: sortDir }, advanced),
+    [trend, debouncedKeyword, sortBy, sortDir, advanced],
   )
   const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
   const overview = usePackagingProductOverview({ ...filterParams, page, page_size: pageSize })
@@ -80,10 +86,14 @@ export function PackagingProductOverviewPage() {
     [],
   )
 
-  const filtersActive = trend !== 'all' || keyword.trim() !== ''
+  const filtersActive =
+    trend !== 'all' ||
+    keyword.trim() !== '' ||
+    countAdvancedFilters(advanced, 'overview') > 0
   const resetFilters = () => {
     setKeyword('')
     setTrend('all')
+    setAdvanced(EMPTY_IMPACT_FILTERS)
   }
 
   const exportExcel = () =>
@@ -148,6 +158,8 @@ export function PackagingProductOverviewPage() {
               trend={trend}
               onTrendChange={setTrend}
               counts={overview.data?.counts}
+              advanced={advanced}
+              onAdvancedChange={setAdvanced}
             />
           }
           pagination={{

@@ -1,5 +1,6 @@
 /**
- * duoc-CR-784 — nút + hộp thoại nhỏ LỌC NÂNG CAO của bảng sản phẩm bị ảnh hưởng (màn Tác động giá).
+ * duoc-CR-784 — nút + hộp thoại nhỏ LỌC NÂNG CAO của bảng sản phẩm bị ảnh hưởng (màn Tác động giá) và của màn Tổng hợp
+ * theo sản phẩm (`variant="overview"`: thêm ô CP/chai cũ + % chênh, bỏ mục xu hướng vì đã có chip riêng).
  *
  * Không dùng bộ lọc điều kiện chung (`@/shared/conditional-filter`): bộ đó đẩy `field__op=value` lên URL cho các màn danh
  * sách GET, còn bảng này lọc bằng THÂN `POST /impact` với vài điều kiện cố định (xu hướng, vai trò của mã đã chọn, bốn khoảng
@@ -19,11 +20,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
 import {
+  ADVANCED_FILTER_PROFILES,
   EMPTY_IMPACT_FILTERS,
   IMPACT_FILTER_ROLES,
-  IMPACT_RANGE_FIELDS,
-  countImpactFilters,
+  countAdvancedFilters,
   invalidImpactRanges,
+  type AdvancedFilterProfile,
+  type AdvancedFilterVariant,
   type ImpactAdvancedFilters,
   type ImpactRangeKey,
 } from '../utils/packaging-impact-filters'
@@ -34,14 +37,21 @@ interface PackagingImpactAdvancedFilterProps {
   /** Bộ lọc đang áp. */
   value: ImpactAdvancedFilters
   onApply: (next: ImpactAdvancedFilters) => void
+  /** Màn dùng hộp lọc; mặc định Tác động giá. */
+  variant?: AdvancedFilterVariant
 }
 
 const CHIP = 'h-8 rounded-full border px-3 text-sm hover:bg-accent'
 const CHIP_ON = 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
 
-export function PackagingImpactAdvancedFilter({ value, onApply }: PackagingImpactAdvancedFilterProps) {
+export function PackagingImpactAdvancedFilter({
+  value,
+  onApply,
+  variant = 'impact',
+}: PackagingImpactAdvancedFilterProps) {
   const [open, setOpen] = useState(false)
-  const count = countImpactFilters(value)
+  const profile = ADVANCED_FILTER_PROFILES[variant]
+  const count = countAdvancedFilters(value, variant)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -64,6 +74,7 @@ export function PackagingImpactAdvancedFilter({ value, onApply }: PackagingImpac
         {/*  Nội dung chỉ dựng khi mở → bản nháp luôn khởi tạo lại từ bộ lọc đang áp. */}
         <FilterForm
           initial={value}
+          profile={profile}
           onApply={(next) => {
             onApply(next)
             setOpen(false)
@@ -76,13 +87,15 @@ export function PackagingImpactAdvancedFilter({ value, onApply }: PackagingImpac
 
 function FilterForm({
   initial,
+  profile,
   onApply,
 }: {
   initial: ImpactAdvancedFilters
+  profile: AdvancedFilterProfile
   onApply: (next: ImpactAdvancedFilters) => void
 }) {
   const [draft, setDraft] = useState<ImpactAdvancedFilters>(initial)
-  const bad = invalidImpactRanges(draft)
+  const bad = invalidImpactRanges(draft, profile.rangeFields)
 
   const toggleRole = (role: number) =>
     setDraft((prev) => ({
@@ -94,27 +107,29 @@ function FilterForm({
 
   return (
     <>
-      <section className="space-y-1.5">
-        <Label>Xu hướng chi phí</Label>
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Xu hướng chi phí">
-          {OVERVIEW_TREND_CHIPS.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              title={chip.title}
-              aria-pressed={draft.trend === chip.value}
-              onClick={() => setDraft((prev) => ({ ...prev, trend: chip.value }))}
-              className={cn(CHIP, draft.trend === chip.value && CHIP_ON)}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-      </section>
+      {profile.showTrend && (
+        <section className="space-y-1.5">
+          <Label>Xu hướng chi phí</Label>
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Xu hướng chi phí">
+            {OVERVIEW_TREND_CHIPS.map((chip) => (
+              <button
+                key={chip.value}
+                type="button"
+                title={chip.title}
+                aria-pressed={draft.trend === chip.value}
+                onClick={() => setDraft((prev) => ({ ...prev, trend: chip.value }))}
+                className={cn(CHIP, draft.trend === chip.value && CHIP_ON)}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-1.5">
-        <Label>Có mã đã chọn ở vai trò</Label>
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Vai trò của mã đã chọn">
+        <Label>{profile.rolesLabel}</Label>
+        <div className="flex flex-wrap gap-1" role="group" aria-label={profile.rolesAriaLabel}>
           {IMPACT_FILTER_ROLES.map((role) => (
             <button
               key={role}
@@ -127,13 +142,11 @@ function FilterForm({
             </button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Chọn nhiều vai trò = sản phẩm có mã đã chọn ở một trong các vai trò đó.
-        </p>
+        <p className="text-xs text-muted-foreground">{profile.rolesHint}</p>
       </section>
 
       <section className="space-y-2">
-        {IMPACT_RANGE_FIELDS.map(({ key, label, unit }) => (
+        {profile.rangeFields.map(({ key, label, unit }) => (
           <div key={key} className="grid grid-cols-[11rem_1fr_1fr] items-center gap-2">
             <Label className="text-sm leading-tight">
               {label}{' '}

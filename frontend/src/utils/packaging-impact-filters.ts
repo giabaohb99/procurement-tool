@@ -4,8 +4,15 @@
  *
  * Ô khoảng số giữ DẠNG CHỮ trong biểu mẫu (để người dùng gõ dở "-" hay "1," không bị nuốt) và chỉ đổi sang số khi gửi đi.
  * Khoảng có "Từ" lớn hơn "Đến" bị báo lỗi tại ô và KHÔNG gửi (máy chủ sẽ trả 422).
+ *
+ * Dùng chung cho HAI màn qua `AdvancedFilterVariant`: Tác động giá (`impact`, thân `POST /impact`) và Tổng hợp theo sản
+ * phẩm (`overview`, tham số `GET /product-overview`; xu hướng đã có chip riêng nên không lặp trong hộp lọc).
  */
-import type { PackagingImpactRequest, PackagingOverviewTrend } from '../api/packaging-cost-types'
+import type {
+  PackagingImpactRequest,
+  PackagingOverviewParams,
+  PackagingOverviewTrend,
+} from '../api/packaging-cost-types'
 import { roleLabel } from './packaging-price'
 
 /** Vai trò thành phần (`PackagingRole`) theo thứ tự cột: Chai · Nắp · Nhãn · Nhãn thùng · Thùng. */
@@ -27,6 +34,9 @@ export interface ImpactAdvancedFilters {
   diffBottle: ImpactRangeText
   diffCarton: ImpactRangeText
   costNewBottle: ImpactRangeText
+  /** Chỉ màn Tổng hợp theo sản phẩm dùng. */
+  costOldBottle: ImpactRangeText
+  pct: ImpactRangeText
   warningsOnly: boolean
 }
 
@@ -39,23 +49,79 @@ export const EMPTY_IMPACT_FILTERS: ImpactAdvancedFilters = {
   diffBottle: EMPTY_RANGE,
   diffCarton: EMPTY_RANGE,
   costNewBottle: EMPTY_RANGE,
+  costOldBottle: EMPTY_RANGE,
+  pct: EMPTY_RANGE,
   warningsOnly: false,
 }
 
-export type ImpactRangeKey = 'cartonQty' | 'diffBottle' | 'diffCarton' | 'costNewBottle'
+export type ImpactRangeKey =
+  | 'cartonQty'
+  | 'diffBottle'
+  | 'diffCarton'
+  | 'costNewBottle'
+  | 'costOldBottle'
+  | 'pct'
 
-/** Nhãn + đơn vị hiện ở biểu mẫu / bản in của từng ô khoảng. */
-export const IMPACT_RANGE_FIELDS: readonly {
+interface RangeField {
   key: ImpactRangeKey
   label: string
   unit: string
   integer?: boolean
-}[] = [
-  { key: 'cartonQty', label: 'Quy cách thùng', unit: '', integer: true },
-  { key: 'diffBottle', label: 'Tăng/giảm /chai', unit: 'đ' },
-  { key: 'diffCarton', label: 'Tăng/giảm /thùng', unit: 'đ' },
-  { key: 'costNewBottle', label: 'CP bao bì/chai mới', unit: 'đ' },
+}
+
+const CARTON_QTY_FIELD: RangeField = { key: 'cartonQty', label: 'Quy cách thùng', unit: '', integer: true }
+const DIFF_BOTTLE_FIELD: RangeField = { key: 'diffBottle', label: 'Tăng/giảm /chai', unit: 'đ' }
+const DIFF_CARTON_FIELD: RangeField = { key: 'diffCarton', label: 'Tăng/giảm /thùng', unit: 'đ' }
+const COST_NEW_FIELD: RangeField = { key: 'costNewBottle', label: 'CP bao bì/chai mới', unit: 'đ' }
+const COST_OLD_FIELD: RangeField = { key: 'costOldBottle', label: 'CP bao bì/chai cũ', unit: 'đ' }
+const PCT_FIELD: RangeField = { key: 'pct', label: '% chênh', unit: '' }
+
+/** Nhãn + đơn vị hiện ở biểu mẫu / bản in của từng ô khoảng (Tác động giá). */
+export const IMPACT_RANGE_FIELDS: readonly RangeField[] = [
+  CARTON_QTY_FIELD,
+  DIFF_BOTTLE_FIELD,
+  DIFF_CARTON_FIELD,
+  COST_NEW_FIELD,
 ]
+
+/** Sáu ô khoảng của Tổng hợp theo sản phẩm, theo thứ tự cột của bảng. */
+export const OVERVIEW_RANGE_FIELDS: readonly RangeField[] = [
+  CARTON_QTY_FIELD,
+  COST_OLD_FIELD,
+  COST_NEW_FIELD,
+  DIFF_BOTTLE_FIELD,
+  DIFF_CARTON_FIELD,
+  PCT_FIELD,
+]
+
+/** Màn dùng hộp lọc nâng cao. */
+export type AdvancedFilterVariant = 'impact' | 'overview'
+
+/** Phần khác nhau giữa hai màn: ô khoảng nào, có mục xu hướng không, và cách gọi mục vai trò. */
+export interface AdvancedFilterProfile {
+  rangeFields: readonly RangeField[]
+  showTrend: boolean
+  rolesLabel: string
+  rolesAriaLabel: string
+  rolesHint: string
+}
+
+export const ADVANCED_FILTER_PROFILES: Record<AdvancedFilterVariant, AdvancedFilterProfile> = {
+  impact: {
+    rangeFields: IMPACT_RANGE_FIELDS,
+    showTrend: true,
+    rolesLabel: 'Có mã đã chọn ở vai trò',
+    rolesAriaLabel: 'Vai trò của mã đã chọn',
+    rolesHint: 'Chọn nhiều vai trò = sản phẩm có mã đã chọn ở một trong các vai trò đó.',
+  },
+  overview: {
+    rangeFields: OVERVIEW_RANGE_FIELDS,
+    showTrend: false,
+    rolesLabel: 'Có mã ở vai trò',
+    rolesAriaLabel: 'Vai trò của mã trong định mức',
+    rolesHint: 'Chọn nhiều vai trò = sản phẩm có mã ở một trong các vai trò đó trong định mức.',
+  },
+}
 
 /**
  * Chữ người gõ → số. Theo cách viết Việt: dấu chấm ngăn nghìn (bỏ), dấu phẩy là thập phân. Rỗng / không phải số hữu hạn /
@@ -78,18 +144,24 @@ function rangeBounds(range: ImpactRangeText, integer: boolean) {
 }
 
 /** Khóa các ô khoảng có "Từ" > "Đến" (báo lỗi tại ô, không gửi máy chủ). */
-export function invalidImpactRanges(filters: ImpactAdvancedFilters): ImpactRangeKey[] {
-  return IMPACT_RANGE_FIELDS.filter(({ key, integer }) => {
+export function invalidImpactRanges(
+  filters: ImpactAdvancedFilters,
+  fields: readonly RangeField[] = IMPACT_RANGE_FIELDS,
+): ImpactRangeKey[] {
+  return fields.filter(({ key, integer }) => {
     const { min, max } = rangeBounds(filters[key], Boolean(integer))
     return min != null && max != null && min > max
   }).map(({ key }) => key)
 }
 
-/** Bốn ô khoảng → cặp trường `_min` / `_max` của thân yêu cầu (bỏ ô trống, ô không hợp lệ, ô có Từ > Đến). */
-function rangesToRequest(filters: ImpactAdvancedFilters): Partial<PackagingImpactRequest> {
-  const bad = new Set(invalidImpactRanges(filters))
+/** Các ô khoảng → cặp trường `_min` / `_max` của yêu cầu (bỏ ô trống, ô không hợp lệ, ô có Từ > Đến). */
+function rangesToRequest(
+  filters: ImpactAdvancedFilters,
+  fields: readonly RangeField[] = IMPACT_RANGE_FIELDS,
+): Record<string, number> {
+  const bad = new Set(invalidImpactRanges(filters, fields))
   const out: Record<string, number> = {}
-  for (const { key, integer } of IMPACT_RANGE_FIELDS) {
+  for (const { key, integer } of fields) {
     if (bad.has(key)) continue
     const { min, max } = rangeBounds(filters[key], Boolean(integer))
     const field = RANGE_REQUEST_FIELD[key]
@@ -104,32 +176,58 @@ const RANGE_REQUEST_FIELD: Record<ImpactRangeKey, string> = {
   diffBottle: 'diff_bottle',
   diffCarton: 'diff_carton',
   costNewBottle: 'cost_new_bottle',
+  costOldBottle: 'cost_old_bottle',
+  pct: 'pct',
 }
 
 /** Bộ lọc biểu mẫu → các trường của thân `POST /impact` (chỉ trường có giá trị hợp lệ). */
 export function impactFiltersToRequest(
   filters: ImpactAdvancedFilters,
 ): Partial<PackagingImpactRequest> {
-  const out: Partial<PackagingImpactRequest> = rangesToRequest(filters)
+  const out: Partial<PackagingImpactRequest> = rangesToRequest(filters) as Partial<PackagingImpactRequest>
   if (filters.trend !== 'all') out.trend = filters.trend
   if (filters.roles.length) out.part_roles = [...filters.roles].sort((a, b) => a - b)
   if (filters.warningsOnly) out.warnings_only = true
   return out
 }
 
-/** Số điều kiện lọc nâng cao đang bật (mỗi nhóm một điều kiện) — số trên huy hiệu của nút "Lọc nâng cao". */
+/**
+ * Số điều kiện lọc nâng cao đang bật (mỗi nhóm một điều kiện) — số trên huy hiệu của nút "Lọc nâng cao". Màn Tổng hợp
+ * không đếm xu hướng (chip riêng đã hiện trạng thái đang chọn).
+ */
+export function countAdvancedFilters(
+  filters: ImpactAdvancedFilters,
+  variant: AdvancedFilterVariant = 'impact',
+): number {
+  const profile = ADVANCED_FILTER_PROFILES[variant]
+  const ranges = rangesToRequest(filters, profile.rangeFields)
+  const rangeGroups = profile.rangeFields.filter(
+    ({ key }) =>
+      ranges[`${RANGE_REQUEST_FIELD[key]}_min`] !== undefined ||
+      ranges[`${RANGE_REQUEST_FIELD[key]}_max`] !== undefined,
+  ).length
+  return (
+    rangeGroups +
+    (profile.showTrend && filters.trend !== 'all' ? 1 : 0) +
+    (filters.roles.length > 0 ? 1 : 0) +
+    (filters.warningsOnly ? 1 : 0)
+  )
+}
+
+/** Số điều kiện đang bật của màn Tác động giá. */
 export function countImpactFilters(filters: ImpactAdvancedFilters): number {
-  const request = impactFiltersToRequest(filters)
-  const has = (...keys: (keyof PackagingImpactRequest)[]) => keys.some((key) => request[key] !== undefined)
-  return [
-    has('trend'),
-    has('part_roles'),
-    has('carton_qty_min', 'carton_qty_max'),
-    has('diff_bottle_min', 'diff_bottle_max'),
-    has('diff_carton_min', 'diff_carton_max'),
-    has('cost_new_bottle_min', 'cost_new_bottle_max'),
-    has('warnings_only'),
-  ].filter(Boolean).length
+  return countAdvancedFilters(filters, 'impact')
+}
+
+/**
+ * Bộ lọc biểu mẫu → tham số `GET /product-overview` (chỉ trường có giá trị hợp lệ). Xu hướng KHÔNG nằm ở đây: nó đi bằng
+ * chip riêng của màn. `part_roles` là chuỗi `1,5` (GET không có thân; máy chủ nhận dấu phẩy).
+ */
+export function overviewFiltersToParams(filters: ImpactAdvancedFilters): Partial<PackagingOverviewParams> {
+  const out = rangesToRequest(filters, OVERVIEW_RANGE_FIELDS) as Partial<PackagingOverviewParams>
+  if (filters.roles.length) out.part_roles = [...filters.roles].sort((a, b) => a - b).join(',')
+  if (filters.warningsOnly) out.warnings_only = true
+  return out
 }
 
 /** Các khóa của thân yêu cầu thuộc lọc nâng cao (để bản in / bài kiểm liệt kê một chỗ). */

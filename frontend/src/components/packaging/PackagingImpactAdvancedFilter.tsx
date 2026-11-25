@@ -1,9 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  EMPTY_IMPACT_FILTERS, IMPACT_FILTER_ROLES, IMPACT_RANGE_FIELDS, countImpactFilters, invalidImpactRanges,
+  ADVANCED_FILTER_PROFILES, EMPTY_IMPACT_FILTERS, IMPACT_FILTER_ROLES, countAdvancedFilters, invalidImpactRanges,
 } from '../../utils/packaging-impact-filters'
-import type { ImpactAdvancedFilters, ImpactRangeKey } from '../../utils/packaging-impact-filters'
+import type {
+  AdvancedFilterProfile, AdvancedFilterVariant, ImpactAdvancedFilters, ImpactRangeKey,
+} from '../../utils/packaging-impact-filters'
 import { OVERVIEW_TREND_CHIPS } from '../../utils/packaging-overview'
 import { roleLabel } from '../../utils/packaging-price'
 import './packaging.css'
@@ -12,21 +14,25 @@ import './packaging.css'
 const PANEL_WIDTH = 460
 
 /**
- * duoc-CR-784 — nút + hộp LỌC NÂNG CAO của bảng sản phẩm bị ảnh hưởng (màn Tác động giá, bản v1). Biểu mẫu nhỏ: xu hướng,
+ * duoc-CR-784 — nút + hộp LỌC NÂNG CAO của bảng sản phẩm bị ảnh hưởng (màn Tác động giá, bản v1) và của màn Tổng hợp theo
+ * sản phẩm (`variant="overview"`: thêm ô CP/chai cũ + % chênh, bỏ mục xu hướng vì đã có chip riêng). Biểu mẫu nhỏ: xu hướng,
  * vai trò của mã đã chọn, bốn khoảng số, chỉ-có-cảnh-báo. Người dùng sửa trên BẢN NHÁP, bấm Áp dụng mới gửi máy chủ (gõ tới
  * đâu gọi tới đó thì mỗi phím một lượt tính lại). Nút hiện huy hiệu số nhóm điều kiện đang bật. Hộp vẽ qua portal để không bị
  * `overflow` của thẻ cắt (cùng nếp với menu chọn cột).
  */
-export default function PackagingImpactAdvancedFilter({ value, onApply }: {
+export default function PackagingImpactAdvancedFilter({ value, onApply, variant = 'impact' }: {
   /** Bộ lọc đang áp. */
   value: ImpactAdvancedFilters
   onApply: (next: ImpactAdvancedFilters) => void
+  /** Màn dùng hộp lọc; mặc định Tác động giá. */
+  variant?: AdvancedFilterVariant
 }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const count = countImpactFilters(value)
+  const profile = ADVANCED_FILTER_PROFILES[variant]
+  const count = countAdvancedFilters(value, variant)
 
   useLayoutEffect(() => {
     if (!open) return
@@ -67,7 +73,7 @@ export default function PackagingImpactAdvancedFilter({ value, onApply }: {
         <div ref={panelRef} className="pkg-filter-panel" role="dialog" aria-label="Lọc nâng cao"
           style={{ top: pos.top, left: pos.left, width: PANEL_WIDTH }}>
           {/*  Chỉ dựng khi mở → bản nháp luôn khởi tạo lại từ bộ lọc đang áp. */}
-          <FilterForm initial={value} onApply={(next) => { onApply(next); setOpen(false) }} />
+          <FilterForm initial={value} profile={profile} onApply={(next) => { onApply(next); setOpen(false) }} />
         </div>,
         document.body,
       )}
@@ -75,9 +81,11 @@ export default function PackagingImpactAdvancedFilter({ value, onApply }: {
   )
 }
 
-function FilterForm({ initial, onApply }: { initial: ImpactAdvancedFilters; onApply: (next: ImpactAdvancedFilters) => void }) {
+function FilterForm({ initial, profile, onApply }: {
+  initial: ImpactAdvancedFilters; profile: AdvancedFilterProfile; onApply: (next: ImpactAdvancedFilters) => void
+}) {
   const [draft, setDraft] = useState<ImpactAdvancedFilters>(initial)
-  const bad = invalidImpactRanges(draft)
+  const bad = invalidImpactRanges(draft, profile.rangeFields)
 
   const toggleRole = (role: number) =>
     setDraft((p) => ({ ...p, roles: p.roles.includes(role) ? p.roles.filter((r) => r !== role) : [...p.roles, role] }))
@@ -86,29 +94,31 @@ function FilterForm({ initial, onApply }: { initial: ImpactAdvancedFilters; onAp
 
   return (
     <>
-      <div className="pkg-filter-sec">
-        <div className="pkg-filter-lbl">Xu hướng chi phí</div>
-        <div className="pkg-pills" role="group" aria-label="Xu hướng chi phí">
-          {OVERVIEW_TREND_CHIPS.map((c) => (
-            <button key={c.value} type="button" title={c.title} className={'pkg-pill' + (draft.trend === c.value ? ' on' : '')}
-              aria-pressed={draft.trend === c.value} onClick={() => setDraft((p) => ({ ...p, trend: c.value }))}>{c.label}</button>
-          ))}
+      {profile.showTrend && (
+        <div className="pkg-filter-sec">
+          <div className="pkg-filter-lbl">Xu hướng chi phí</div>
+          <div className="pkg-pills" role="group" aria-label="Xu hướng chi phí">
+            {OVERVIEW_TREND_CHIPS.map((c) => (
+              <button key={c.value} type="button" title={c.title} className={'pkg-pill' + (draft.trend === c.value ? ' on' : '')}
+                aria-pressed={draft.trend === c.value} onClick={() => setDraft((p) => ({ ...p, trend: c.value }))}>{c.label}</button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="pkg-filter-sec">
-        <div className="pkg-filter-lbl">Có mã đã chọn ở vai trò</div>
-        <div className="pkg-pills" role="group" aria-label="Vai trò của mã đã chọn">
+        <div className="pkg-filter-lbl">{profile.rolesLabel}</div>
+        <div className="pkg-pills" role="group" aria-label={profile.rolesAriaLabel}>
           {IMPACT_FILTER_ROLES.map((role) => (
             <button key={role} type="button" className={'pkg-pill' + (draft.roles.includes(role) ? ' on' : '')}
               aria-pressed={draft.roles.includes(role)} onClick={() => toggleRole(role)}>{roleLabel(role)}</button>
           ))}
         </div>
-        <div className="pkg-hint">Chọn nhiều vai trò = sản phẩm có mã đã chọn ở một trong các vai trò đó.</div>
+        <div className="pkg-hint">{profile.rolesHint}</div>
       </div>
 
       <div className="pkg-filter-sec">
-        {IMPACT_RANGE_FIELDS.map(({ key, label, unit }) => (
+        {profile.rangeFields.map(({ key, label, unit }) => (
           <div key={key} className="pkg-filter-range">
             <span className="pkg-filter-lbl">{label}{unit && <span className="pkg-muted"> ({unit})</span>}</span>
             {(['min', 'max'] as const).map((side) => (

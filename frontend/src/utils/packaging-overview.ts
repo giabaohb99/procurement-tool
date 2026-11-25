@@ -3,6 +3,7 @@
  * Chip dùng mã CHỮ của URL (`up` / `down` / `flat` / `missing`) — khác mã SỐ `CostTrend` của từng dòng.
  */
 import type { PackagingOverviewCounts, PackagingOverviewParams, PackagingOverviewTrend } from '../api/packaging-cost-types'
+import { overviewFiltersToParams, type ImpactAdvancedFilters } from './packaging-impact-filters'
 import { COST_TREND, trendLabel } from './packaging-price'
 
 export const OVERVIEW_TREND_CHIPS: readonly { value: PackagingOverviewTrend; label: string; title: string }[] = [
@@ -19,11 +20,12 @@ export function overviewChipLabel(chip: { value: PackagingOverviewTrend; label: 
   return n == null ? chip.label : `${chip.label} (${n.toLocaleString('vi-VN')})`
 }
 
-/** Bộ lọc + thứ tự màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). */
+/** Bộ lọc (kể cả lọc nâng cao) + thứ tự màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). */
 export function buildOverviewParams(
-  trend: PackagingOverviewTrend, search: string, sort: { by: string; dir: 'asc' | 'desc' },
+  trend: PackagingOverviewTrend, search: string, sort: { by: string; dir: 'asc' | 'desc' }, advanced?: ImpactAdvancedFilters,
 ): PackagingOverviewParams {
   return {
+    ...(advanced ? overviewFiltersToParams(advanced) : {}),
     q: search.trim() || undefined,
     trend: trend === 'all' ? undefined : trend,
     //  Chưa chọn cột xếp thì KHÔNG gửi — máy chủ xếp mặc định theo mã HH.

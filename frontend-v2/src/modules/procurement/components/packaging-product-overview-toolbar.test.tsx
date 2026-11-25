@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { EMPTY_IMPACT_FILTERS } from '../utils/packaging-impact-filters'
 import { PackagingProductOverviewToolbar } from './packaging-product-overview-toolbar'
 
 const COUNTS = { all: 6, up: 2, down: 1, flat: 2, missing: 1 }
@@ -9,6 +10,7 @@ const COUNTS = { all: 6, up: 2, down: 1, flat: 2, missing: 1 }
 function setup(over: Partial<Parameters<typeof PackagingProductOverviewToolbar>[0]> = {}) {
   const onKeywordChange = vi.fn()
   const onTrendChange = vi.fn()
+  const onAdvancedChange = vi.fn()
   render(
     <PackagingProductOverviewToolbar
       keyword=""
@@ -16,10 +18,12 @@ function setup(over: Partial<Parameters<typeof PackagingProductOverviewToolbar>[
       trend="all"
       onTrendChange={onTrendChange}
       counts={COUNTS}
+      advanced={EMPTY_IMPACT_FILTERS}
+      onAdvancedChange={onAdvancedChange}
       {...over}
     />,
   )
-  return { onKeywordChange, onTrendChange, user: userEvent.setup() }
+  return { onKeywordChange, onTrendChange, onAdvancedChange, user: userEvent.setup() }
 }
 
 describe('PackagingProductOverviewToolbar', () => {
@@ -41,5 +45,13 @@ describe('PackagingProductOverviewToolbar', () => {
     expect(onTrendChange).toHaveBeenCalledWith('flat')
     await user.type(screen.getByLabelText('Tìm sản phẩm'), 'x')
     expect(onKeywordChange).toHaveBeenCalledWith('x')
+  })
+
+  it('puts the advanced filter button next to the search and chips (one row) and applies it', async () => {
+    const { onAdvancedChange, user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Lọc nâng cao' }))
+    await user.click(screen.getByRole('button', { name: 'Thùng' }))
+    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    expect(onAdvancedChange).toHaveBeenCalledWith(expect.objectContaining({ roles: [5] }))
   })
 })
