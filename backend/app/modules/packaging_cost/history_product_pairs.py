@@ -6,8 +6,11 @@ Mỗi lần mua của mã đó cho ra MỘT dòng cho MỖI sản phẩm dùng n
 
 Ở đây dựng cặp đó thành MỘT truy vấn con để nối với sổ giá trong SQL (lọc / xếp / phân trang tại máy chủ, không kéo về Python):
 `pairs(hh_code, hh_name, code, role)`.
+
+Số gộp (thẻ tóm tắt, ô chọn nhà cung cấp) KHÔNG nối 55 nghìn dòng đã nhân: mỗi dòng sổ giá nhân với số cặp của mã (`pair_counts`:
+`n` = số cặp, `m` = số cặp khớp chữ tìm) rồi cộng có trọng số — cùng kết quả, chỉ đọc ~11 nghìn dòng sổ giá.
 """
-from sqlalchemy import Subquery, func, literal, select, union_all
+from sqlalchemy import Subquery, case, func, literal, or_, select, union_all
 
 from app.core.packaging_price_codes import PACKAGING_ROLE_LABELS, PackagingRole
 from app.modules.packaging_cost.cost_service import fold_text
@@ -41,3 +44,19 @@ def matching_roles(needle: str) -> list[int]:
     """Mã vai trò có nhãn chứa `needle` (không phân biệt dấu / hoa thường) — ô tìm chữ khớp cả cột "Thành phần"."""
     folded = fold_text(needle)
     return [int(role) for role, label in PACKAGING_ROLE_LABELS.items() if folded and folded in fold_text(label)]
+
+
+def pair_text_conds(source, needle: str) -> list:
+    """Điều kiện tìm chữ ở CẤP CẶP: mã / tên sản phẩm và tên thành phần (Chai, Nắp...). `source` có cột hh_code, hh_name, role."""
+    conds = [source.c.hh_code.contains(needle, autoescape=True), source.c.hh_name.contains(needle, autoescape=True)]
+    if roles := matching_roles(needle):
+        conds.append(source.c.role.in_(roles))
+    return conds
+
+
+def build_pair_counts(pairs: Subquery, needle: str = "") -> Subquery:
+    """Truy vấn con `(code, n, m)`: mỗi mã thành phần một dòng, `n` = số cặp (sản phẩm, vai trò) dùng mã đó, `m` = số cặp khớp
+    chữ tìm `needle` (không có chữ tìm thì `m` = `n`)."""
+    matched = (func.sum(case((or_(*pair_text_conds(pairs, needle)), 1), else_=0)) if needle
+               else func.count())
+    return select(pairs.c.code, func.count().label("n"), matched.label("m")).group_by(pairs.c.code).subquery()

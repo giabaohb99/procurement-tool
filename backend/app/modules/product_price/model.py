@@ -28,6 +28,10 @@ class ProductPriceLedger(Base):
         # sẵn trong chỉ mục nên điều kiện giá > 0 và phạm vi pháp nhân không phải chạm bảng. Thay `ix_ppl_code_date`.
         # `source_type` nằm cuối chỉ mục để điều kiện mốc sổ Misa (`misa_cutoff.py`) cũng đọc được từ chỉ mục.
         Index("ix_ppl_code_latest", "product_code", "price_date", "doc_id", "id", "price", "company_id", "source_type"),
+        # Thứ tự "lần mua đầu / gần nhất" KHÔNG phân theo mã (duoc-CR-784, Lịch sử mua hàng): giá lần có giá đầu tiên / gần nhất của cả
+        # tập mã là `ORDER BY price_date, doc_id, id LIMIT 1` — có chỉ mục này MySQL đọc từ đầu / cuối chỉ mục rồi dừng ở dòng đầu
+        # thỏa điều kiện, thay vì xếp cả sổ (đo 2 lần x ~85 ms -> ~0 trên 11,6 nghìn dòng; sổ càng lớn càng lợi).
+        Index("ix_ppl_date_latest", "price_date", "doc_id", "id"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

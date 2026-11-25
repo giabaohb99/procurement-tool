@@ -94,6 +94,31 @@ def test_the_so_lieu_so_dong_ma_lien_quan_so_san_pham_va_so_nha_cung_cap(api):
     assert (empty["total"], empty["items"], empty["stats"]["product_count"], empty["suppliers"]) == (0, [], 0, [])
 
 
+@pytest.mark.parametrize("params", [
+    {}, {"hh_codes": ["HH0002"]}, {"hh_codes": ["HH0001", "HH0003"]}, {"q": "nap"}, {"q": "Việt"}, {"q": "HH0002"},
+    {"q": "nhãn"}, {"q": "chai", "hh_codes": ["HH0001", "HH0002"]}, {"supplier": ["NCC01"]},
+    {"date_from": "2026-02-01", "date_to": "2026-02-28", "q": "Sản phẩm"},
+])
+def test_so_gop_cong_co_trong_so_theo_cap_bang_dung_so_tu_cac_dong_da_nhan(db, api, params):
+    """Số gộp không nối từng cặp mà nhân dòng sổ giá với số cặp của mã: phải trùng số cộng tay từ MỌI dòng đã nhân của danh sách."""
+    add_products(db, ("TEM0009", "Tem dán", "Cái"))
+    add_ledger(db, "TEM0009", 0, "2026-03-05", qty=4)                  # giá 0: có dòng, không tính vào số có giá
+    _bom(db, "HH0004", label_code="TEM0009", cap_code="NAP0085")
+    data = _get(api, page_size=500, **params)
+    rows, stats = data["items"], data["stats"]
+    priced = [r for r in rows if r["price"] and r["price"] > 0]
+    assert len(rows) == data["total"] == stats["purchase_count"]
+    assert stats["priced_count"] == len(priced)
+    assert stats["code_count"] == len({r["code"] for r in rows})
+    assert stats["supplier_count"] == len({r["supplier_code"] for r in rows if r["supplier_code"]})
+    assert stats["qty_total"] == pytest.approx(sum(r["qty"] for r in rows))
+    assert stats["amount_total"] == pytest.approx(sum(r["amount"] or 0 for r in priced))
+    if priced:
+        assert (stats["min"], stats["max"]) == (min(r["price"] for r in priced), max(r["price"] for r in priced))
+        assert (stats["first_date"], stats["last_date"]) == (min(r["date"] for r in rows), max(r["date"] for r in rows))
+    assert {r["supplier_code"] for r in rows} <= {o["code"] for o in data["suppliers"]} | {""}
+
+
 def test_loc_chu_tim_ma_va_ten_san_pham_va_ten_thanh_phan(api):
     assert {r["hh_code"] for r in _get(api, q="HH0002")["items"]} == {"HH0002"}
     assert {r["hh_code"] for r in _get(api, q="Sản phẩm HH0003")["items"]} == {"HH0003"}

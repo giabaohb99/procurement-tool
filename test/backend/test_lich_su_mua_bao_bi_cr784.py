@@ -369,9 +369,12 @@ def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world)
     _, big_one = count_queries(db, lambda: build_history(db, codes=["CPT0105"]))
     _, big_busy = count_queries(db, lambda: build_history(db, codes=["CPT0105", "NAP0085"], **busy))
     _, big_prod = count_queries(db, lambda: build_history(db, mode="product", hh_codes=["HH0001"] + [f"HH1{i:04d}" for i in range(80)]))
-    assert len(small_all) == len(big_all) == 3                    # số gộp + ô chọn nhà cung cấp + trang dòng
-    assert len(small) == len(big_one) == 4                        # + truy vấn biểu đồ của đúng một mã
+    #  số gộp + ô chọn nhà cung cấp + trang dòng (khóa các dòng của trang, rồi chi tiết các dòng đó: lần / giá liền trước chỉ tính cho trang)
+    assert len(small_all) == len(big_all) == 4
+    assert len(small) == len(big_one) == 5                        # + truy vấn biểu đồ của đúng một mã
     add_ledger(db, "C0000", 5, "2026-01-02", warehouse="Kho A")
     _, big_kho = count_queries(db, lambda: build_history(db, q="kho", sort_by="warehouse", sort_dir="asc", page_size=50))
-    assert len(big_kho) == 3                                      # tìm + xếp theo kho không thêm truy vấn
-    assert len(big_busy) == 3 and len(big_prod) == 3              # nhiều mã = không biểu đồ; chế độ sản phẩm nối cặp trong SQL, không thêm truy vấn
+    _, big_busy_page1 = count_queries(db, lambda: build_history(db, codes=["CPT0105", "NAP0085"], **{**busy, "page": 1}))
+    assert len(big_busy_page1) == 4
+    assert len(big_kho) == 4                                      # tìm + xếp theo kho không thêm truy vấn
+    assert len(big_busy) <= 4 and len(big_prod) == 4         # trang rỗng (page=2 quá số dòng) bỏ bước chi tiết; nhiều mã = không biểu đồ; chế độ sản phẩm nối cặp trong SQL, không thêm truy vấn
