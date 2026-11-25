@@ -69,7 +69,7 @@ function build() {
 
 beforeEach(() => {
   bodies.length = 0
-  topProduct = { hh_code: 'HH0417.1', hh_name: 'Nước tương 450ml', diff_bottle: 100, diff_carton: 4000, carton_qty: 40 }
+  topProduct = { fg_code: 'HH0417.1', fg_name: 'Nước tương 450ml', diff_bottle: 100, diff_carton: 4000, carton_qty: 40 }
   Element.prototype.scrollIntoView = vi.fn()
 })
 

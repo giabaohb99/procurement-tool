@@ -216,7 +216,7 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
 
 
 # ── 3. Chi phí bao bì theo sản phẩm ─────────────────────────────────────────────
-def _costs_of_products(db, hh_codes: list[str], scope) -> list[dict]:
+def _costs_of_products(db, fg_codes: list[str], scope) -> list[dict]:
     """Chi phí bao bì của ĐÚNG các mã hàng hóa đã hỏi — cùng các bước của `build_product_overview` (định mức → trạng thái giá
     của mọi thành phần → `compute_product_cost` → `product_row`) nhưng chỉ đọc định mức của các mã đó, nên rẻ."""
     from app.modules.packaging_cost.bom_parts_service import load_bom_rows
@@ -224,7 +224,7 @@ def _costs_of_products(db, hh_codes: list[str], scope) -> list[dict]:
     from app.modules.packaging_cost.impact_service import bom_codes, product_row
     from app.modules.product_price.price_state_service import get_price_states
 
-    boms = load_bom_rows(db, hh_codes=hh_codes)
+    boms = load_bom_rows(db, fg_codes=fg_codes)
     if not boms:
         return []
     needed = set().union(*(bom_codes(b) for b in boms))
@@ -239,7 +239,7 @@ def packaging_product_cost(ctx: ToolContext, args: dict) -> dict:
 
     if not ctx.can(ENTITY):
         return denied(DENIED_WHAT)
-    hh_codes, err = _codes(args.get("hh_codes"), MAX_LOOKUP_CODES)
+    fg_codes, err = _codes(args.get("fg_codes"), MAX_LOOKUP_CODES)
     if err:
         return {"error": err.replace("Mã vật tư", "Mã hàng hóa")}
     q = " ".join(str(args.get("q") or "").split())[:Q_MAX_LEN]
@@ -250,13 +250,13 @@ def packaging_product_cost(ctx: ToolContext, args: dict) -> dict:
     page = _clamp(args.get("page"), 1, 1, 10000)
     base = {"currency": fmt.CURRENCY, "price_basis": fmt.PRICE_BASIS, "price_rule": fmt.OLD_NEW_RULE}
     scope = _scope(ctx)
-    if hh_codes:
-        rows = _costs_of_products(ctx.db, hh_codes, scope)
-        found = {r["hh_code"] for r in rows}
+    if fg_codes:
+        rows = _costs_of_products(ctx.db, fg_codes, scope)
+        found = {r["fg_code"] for r in rows}
         out = {**base, "items": [fmt.product_cost_row(r) for r in rows], "total": len(rows), "page": 1,
                "page_size": len(rows), "has_more": False, "url": fmt.PRODUCTS_URL,
                "note": "Chi phí bao bì / chai và / thùng theo giá cũ và giá mới (không giả định)."}
-        missing = [c for c in hh_codes if c not in found]
+        missing = [c for c in fg_codes if c not in found]
         if missing:
             out["no_bom_codes"] = missing
             out["note"] += " no_bom_codes = mã hàng hóa chưa có định mức bao bì."
@@ -318,13 +318,13 @@ PACKAGING_PRICE_LOOKUP_SPEC = ToolSpec(
 PACKAGING_PRODUCT_COST_SPEC = ToolSpec(
     name="packaging_product_cost",
     description=("Chi phí bao bì của sản phẩm (mã hàng hóa HH): chi phí / chai và / thùng theo giá cũ và giá mới, chênh "
-                 "lệch, xu hướng, từng thành phần (chai, nắp, nhãn, nhãn thùng, thùng) kèm giá. Truyền hh_codes để xem "
+                 "lệch, xu hướng, từng thành phần (chai, nắp, nhãn, nhãn thùng, thùng) kèm giá. Truyền fg_codes để xem "
                  "đúng sản phẩm, hoặc q / trend để lọc toàn bộ (vd những sản phẩm chi phí bao bì tăng). Giá trước VAT, VND."),
     parameters={"type": "object", "properties": {
-        "hh_codes": {**_CODES_PARAM, "maxItems": MAX_LOOKUP_CODES,
+        "fg_codes": {**_CODES_PARAM, "maxItems": MAX_LOOKUP_CODES,
                      "description": f"Mã hàng hóa cần xem (tối đa {MAX_LOOKUP_CODES})."},
         "q": {"type": "string", "maxLength": Q_MAX_LEN,
-              "description": "Lọc theo mã / tên sản phẩm / mã thành phần (khi không có hh_codes)."},
+              "description": "Lọc theo mã / tên sản phẩm / mã thành phần (khi không có fg_codes)."},
         "trend": {"type": "string", "enum": list(TRENDS),
                   "description": "up tăng, down giảm, flat không đổi, missing chưa có giá, all tất cả (mặc định)."},
         "limit": {"type": "integer", "minimum": 1, "maximum": MAX_ROWS,

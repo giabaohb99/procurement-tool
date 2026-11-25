@@ -62,7 +62,7 @@ def _product_columns(new_word: str = "áp dụng") -> tuple[list[Col], set[str],
 
     `new_word` = chữ gọi giá sau: "áp dụng" ở Tác động giá (có giá giả định), "mới" ở Tổng hợp theo sản phẩm.
     """
-    cols = [Col("hh_code", "Mã HH", width=11), Col("hh_name", "Tên hàng hoá", width=48),
+    cols = [Col("fg_code", "Mã HH", width=11), Col("fg_name", "Tên hàng hoá", width=48),
             Col("legal_name", "Tên pháp lý", width=22), Col("carton_qty", "Quy cách\nthùng", "int", 9)]
     alt, tones = set(), {}
     for role in PackagingRole:
@@ -202,7 +202,7 @@ def _history_columns(product_mode: bool) -> list[Col]:
     code = [Col("code", "Mã VTBB", width=11), Col("name", "Tên vật tư", width=40)]
     seq = Col("seq", "Lần", "int", 6)
     if product_mode:
-        head = [Col("hh_code", "Mã SP", width=12), Col("hh_name", "Tên sản phẩm", width=40),
+        head = [Col("fg_code", "Mã SP", width=12), Col("fg_name", "Tên sản phẩm", width=40),
                 Col("role_text", "Thành phần", width=12), *code, seq, Col("date", "Ngày mua", "date", 12)]
     else:
         head = [seq, Col("date", "Ngày mua", "date", 12), *code]
@@ -220,7 +220,7 @@ def build_history_workbook(rows: list[dict], product_mode: bool = False) -> byte
              "source_text": price_source_text(r["source_type"], r["line_stage"])} for r in rows]
     codes = len({r["code"] for r in rows})
     if product_mode:
-        note = f"{_count(len({r['hh_code'] for r in rows}))} sản phẩm · {_count(codes)} mã VTBB · {_count(len(rows))} dòng lịch sử"
+        note = f"{_count(len({r['fg_code'] for r in rows}))} sản phẩm · {_count(codes)} mã VTBB · {_count(len(rows))} dòng lịch sử"
     else:
         note = f"{_count(codes)} mã · {_count(len(rows))} lần mua"
     note += " · Lần 1 = lần mua gần nhất của mã"

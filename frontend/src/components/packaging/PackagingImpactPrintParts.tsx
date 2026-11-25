@@ -106,10 +106,10 @@ export function PrintImpactProducts({ rows, matched, empty }: { rows: readonly P
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.hh_code}>
+              <tr key={r.fg_code}>
                 <td className="c faint">{i + 1}</td>
-                <td className="code">{r.hh_code}</td>
-                <td className="name">{r.hh_name}</td>
+                <td className="code">{r.fg_code}</td>
+                <td className="name">{r.fg_name}</td>
                 <td className="n">{r.carton_qty ? r.carton_qty.toLocaleString('vi-VN') : <PrintDash />}</td>
                 {PART_COLUMNS.map((p) => <PartCell key={p.role} part={r.parts.find((x) => x.role === p.role)} />)}
                 <td className="n"><Price value={r.cost_old_bottle} /></td>

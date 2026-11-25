@@ -13,8 +13,8 @@ import { EMPTY_IMPACT_FILTERS } from '../utils/packaging-impact-filters'
 import { PackagingImpactProductsTable } from './packaging-impact-products-table'
 
 const product = (over: Partial<PackagingImpactProduct> = {}): PackagingImpactProduct => ({
-  hh_code: 'HH0417.1',
-  hh_name: 'Thuốc trừ sâu A 1 lít',
+  fg_code: 'HH0417.1',
+  fg_name: 'Thuốc trừ sâu A 1 lít',
   carton_qty: 40,
   parts: [
     { role: 1, code: 'CPT0105', old: 1000, new: 1100, applied: 1100, selected: true },
@@ -122,17 +122,17 @@ describe('PackagingImpactProductsTable', () => {
     const user = userEvent.setup()
     const view = makeView()
     renderTable(
-      [product({ hh_code: 'HH0999', hh_name: 'Z' }), product({ hh_code: 'HH0001', hh_name: 'A' })],
+      [product({ fg_code: 'HH0999', fg_name: 'Z' }), product({ fg_code: 'HH0001', fg_name: 'A' })],
       view,
     )
     await user.click(screen.getByText('Mã HH'))
-    expect(view.setSort).toHaveBeenCalledWith('hh_code', 'asc')
+    expect(view.setSort).toHaveBeenCalledWith('fg_code', 'asc')
     const codes = screen.getAllByText(/^HH\d{4}$/).map((el) => el.textContent)
     expect(codes).toEqual(['HH0999', 'HH0001'])
   })
 
   it('numbers rows from the page offset and takes the total from the server, not from the page rows', () => {
-    renderTable([product({ hh_code: 'HH0101' })], makeView({ page: 3, pageSize: 100 }), 4321)
+    renderTable([product({ fg_code: 'HH0101' })], makeView({ page: 3, pageSize: 100 }), 4321)
     const row = screen.getByText('HH0101').closest('tr') as HTMLTableRowElement
     expect(within(row).getByText('201')).toBeInTheDocument()
     expect(screen.getByText(/4\.321/)).toBeInTheDocument()

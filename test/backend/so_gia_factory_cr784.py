@@ -22,10 +22,10 @@ def build_bom(**fields) -> PackagingBom:
     return bom
 
 
-def bom_codes_of(db, hh_code: str) -> dict[int, str]:
+def bom_codes_of(db, fg_code: str) -> dict[int, str]:
     """`{loại thành phần: mã}` đang lưu trong bảng thành phần của một mã hàng hóa (đọc thẳng DB, không qua thuộc tính chỉ đọc)."""
     rows = (db.query(PackagingBomPart.part_type, PackagingBomPart.part_code).join(PackagingBom, PackagingBom.id == PackagingBomPart.bom_id)
-            .filter(PackagingBom.hh_code == hh_code).all())
+            .filter(PackagingBom.fg_code == fg_code).all())
     return {int(t): c for t, c in rows}
 
 

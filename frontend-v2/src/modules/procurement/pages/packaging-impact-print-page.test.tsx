@@ -31,8 +31,8 @@ const selected: PackagingSelectedCode[] = [
 ]
 
 const product = (n: number): PackagingImpactProduct => ({
-  hh_code: `HH${String(n).padStart(5, '0')}`,
-  hh_name: `Sản phẩm ${n}`,
+  fg_code: `HH${String(n).padStart(5, '0')}`,
+  fg_name: `Sản phẩm ${n}`,
   carton_qty: 12,
   parts: [
     { role: 1, code: 'CPT0105', old: 1000, new: 1100, applied: 1250, selected: true },
@@ -67,7 +67,7 @@ vi.mock('@/core/api', async (importOriginal) => {
           selected_count: 2, selected_by_group: { Chai: 1, Nắp: 1 }, assumed_count: 1,
           affected_products: total, increased: total, decreased: 0,
           max_increase_carton: 3000, max_increase_bottle: 250,
-          max_increase_product: { hh_code: 'HH0003', hh_name: 'Sản phẩm ba', diff_bottle: 250, diff_carton: 3000, carton_qty: 12 },
+          max_increase_product: { fg_code: 'HH0003', fg_name: 'Sản phẩm ba', diff_bottle: 250, diff_carton: 3000, carton_qty: 12 },
         },
         products: Array.from({ length: count }, (_, i) => product(start + i + 1)),
         products_total: total,

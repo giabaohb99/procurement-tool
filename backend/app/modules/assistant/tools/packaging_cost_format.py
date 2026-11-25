@@ -22,12 +22,12 @@ PRODUCTS_URL = "/procurement/packaging-cost/products"
 HISTORY_URL = "/procurement/packaging-cost/history"
 
 
-def history_url(*, codes: list[str] | None = None, hh: list[str] | None = None) -> str:
-    """Đường dẫn sâu của tab Lịch sử mua hàng (`?codes=` theo mã VTBB, `?hh=` theo mã sản phẩm)."""
+def history_url(*, codes: list[str] | None = None, fg: list[str] | None = None) -> str:
+    """Đường dẫn sâu của tab Lịch sử mua hàng (`?codes=` theo mã VTBB, `?fg=` theo mã sản phẩm)."""
     if codes:
         return f"{HISTORY_URL}?codes={quote(','.join(codes), safe=',')}"
-    if hh:
-        return f"{HISTORY_URL}?hh={quote(','.join(hh), safe=',')}"
+    if fg:
+        return f"{HISTORY_URL}?fg={quote(','.join(fg), safe=',')}"
     return HISTORY_URL
 
 
@@ -82,7 +82,7 @@ def _part(p: dict) -> dict:
 
 def impact_product_row(row: dict) -> dict:
     """Một sản phẩm bị ảnh hưởng (`impact_service.product_row`) → dòng gọn; chỉ kèm thành phần ĐÃ CHỌN của sản phẩm đó."""
-    return {"hh_code": row["hh_code"], "hh_name": row["hh_name"], "carton_qty": row["carton_qty"],
+    return {"fg_code": row["fg_code"], "fg_name": row["fg_name"], "carton_qty": row["carton_qty"],
             "cost_old_bottle": row["cost_old_bottle"], "cost_applied_bottle": row["cost_applied_bottle"],
             "diff_bottle": row["diff_bottle"], "pct_change": pct_change(row["pct"]),
             "cost_old_carton": row["cost_old_carton"], "cost_applied_carton": row["cost_applied_carton"],
@@ -138,7 +138,7 @@ def lookup_row(st, usage: int, recent: list, suppliers: dict[str, str], warnings
 
 def product_cost_row(row: dict) -> dict:
     """Một sản phẩm ở Tổng hợp theo sản phẩm (cùng hình `product_row`, không giá giả định) → dòng gọn kèm đủ thành phần."""
-    return {"hh_code": row["hh_code"], "hh_name": row["hh_name"], "legal_name": row["legal_name"],
+    return {"fg_code": row["fg_code"], "fg_name": row["fg_name"], "legal_name": row["legal_name"],
             "carton_qty": row["carton_qty"], "cost_old_bottle": row["cost_old_bottle"],
             "cost_new_bottle": row["cost_new_bottle"], "diff_bottle": row["diff_bottle"],
             "pct_change": pct_change(row["pct"]), "cost_old_carton": row["cost_old_carton"],
@@ -146,4 +146,4 @@ def product_cost_row(row: dict) -> dict:
             "trend": row["trend"], "trend_label": trend_label(row["trend"]),
             #  thành phần chưa khai mã thì bỏ (đã có trong `warnings` khi là nắp / nhãn) — kết quả gọn
             "parts": [{k: v for k, v in _part(p).items() if k != "applied_price"} for p in row["parts"] if p["code"]],
-            "warnings": warning_labels(row["warnings"]), "history_url": history_url(hh=[row["hh_code"]])}
+            "warnings": warning_labels(row["warnings"]), "history_url": history_url(fg=[row["fg_code"]])}

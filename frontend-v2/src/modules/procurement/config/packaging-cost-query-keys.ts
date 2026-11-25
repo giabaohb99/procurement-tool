@@ -33,5 +33,5 @@ export const packagingCostKeys = {
     [ROOT, 'packagingCost', 'historyPrint', params] as const,
   impactPrint: (body: PackagingImpactRequest) =>
     [ROOT, 'packagingCost', 'impactPrint', body] as const,
-  hhOptions: () => [ROOT, 'packagingCost', 'hhOptions'] as const,
+  fgOptions: () => [ROOT, 'packagingCost', 'fgOptions'] as const,
 }

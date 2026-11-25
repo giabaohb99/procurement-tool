@@ -22,7 +22,7 @@ BOTTLES = [f"B{i:02d}" for i in range(N)]
 
 
 def _bom(db, i: int, **over) -> PackagingBom:
-    base = {"hh_code": f"HH{i:03d}", "hh_name": f"Sản phẩm số {i}", "legal_name": f"Tên pháp lý {i}", "bottle_code": BOTTLES[i],
+    base = {"fg_code": f"HH{i:03d}", "fg_name": f"Sản phẩm số {i}", "legal_name": f"Tên pháp lý {i}", "bottle_code": BOTTLES[i],
             "cap_code": "NAP1", "label_code": "", "carton_label_code": "", "carton_code": "", "carton_qty": 10 + i,
             "created_by": 1, "updated_by": 1}
     base.update(over)
@@ -55,7 +55,7 @@ def _impact(db, **kw):
 def test_trang_cat_dung_va_kpi_tinh_tren_toan_bo_tap(db, world):
     full = _impact(db)
     page = _impact(db, page=2, page_size=10)
-    assert [p["hh_code"] for p in page["products"]] == [f"HH{i:03d}" for i in range(10, 20)]
+    assert [p["fg_code"] for p in page["products"]] == [f"HH{i:03d}" for i in range(10, 20)]
     assert page["products_total"] == N and len(full["products"]) == N
     assert page["kpis"] == full["kpis"] and page["kpis"]["affected_products"] == N and page["kpis"]["increased"] == N
     assert page["selected"] == full["selected"]
@@ -70,31 +70,31 @@ def test_trang_cuoi_le_trang_qua_ban_va_trang_xa_deu_rong_nhung_van_co_tong(db, 
 def test_xep_ho_tro_hai_chieu_o_trong_xuong_cuoi_khoa_phu_la_ma_hh(db, world):
     for direction in ("asc", "desc"):
         rows = _impact(db, sort_by="diff_carton", sort_dir=direction)["products"]
-        assert [r["hh_code"] for r in rows[-2:]] == ["HH005", "HH006"]            # không có quy cách → trống → cuối, mã tăng dần
+        assert [r["fg_code"] for r in rows[-2:]] == ["HH005", "HH006"]            # không có quy cách → trống → cuối, mã tăng dần
         filled = [r["diff_carton"] for r in rows[:-2]]
         assert filled == sorted(filled, reverse=(direction == "desc"))
     rows = _impact(db, sort_by="trend", sort_dir="desc")["products"]               # mọi sản phẩm cùng xu hướng → hòa → mã tăng dần
-    assert [r["hh_code"] for r in rows] == [f"HH{i:03d}" for i in range(N)]
+    assert [r["fg_code"] for r in rows] == [f"HH{i:03d}" for i in range(N)]
 
 
 def test_xep_theo_ten_bo_dau_va_khoa_la_roi_ve_ma_hh(db, world):
-    names = [p["hh_name"] for p in _impact(db, sort_by="hh_name", sort_dir="desc")["products"]]
+    names = [p["fg_name"] for p in _impact(db, sort_by="fg_name", sort_dir="desc")["products"]]
     assert names == sorted(names, reverse=True)
     for hostile in ("'; drop table tab_packaging_bom; --", "", "diff_bottle desc, id", "__class__"):
         rows = _impact(db, sort_by=hostile)["products"]
-        assert [r["hh_code"] for r in rows] == [f"HH{i:03d}" for i in range(N)]
+        assert [r["fg_code"] for r in rows] == [f"HH{i:03d}" for i in range(N)]
 
 
 def test_moi_khoa_xep_deu_chay_duoc():
-    assert set(SORT_GETTERS) >= {"hh_code", "hh_name", "carton_qty", "cost_old_bottle", "cost_applied_bottle", "diff_bottle",
+    assert set(SORT_GETTERS) >= {"fg_code", "fg_name", "carton_qty", "cost_old_bottle", "cost_applied_bottle", "diff_bottle",
                                  "diff_carton", "pct", "trend"}
 
 
 # ── Tìm kiếm ────────────────────────────────────────────────────────────────────
 def test_tim_khong_phan_biet_dau_theo_ten_ma_hh_ma_thanh_phan_va_ten_phap_ly(db, world):
-    assert [p["hh_code"] for p in _impact(db, q="san pham so 7")["products"]] == ["HH007", "HH017", "HH027"]   # bỏ dấu, khớp chuỗi con
+    assert [p["fg_code"] for p in _impact(db, q="san pham so 7")["products"]] == ["HH007", "HH017", "HH027"]   # bỏ dấu, khớp chuỗi con
     assert _impact(db, q="HH01")["products_total"] == 10                              # HH010..HH019
-    assert [p["hh_code"] for p in _impact(db, q="b07")["products"]] == ["HH007"]      # mã thành phần
+    assert [p["fg_code"] for p in _impact(db, q="b07")["products"]] == ["HH007"]      # mã thành phần
     assert _impact(db, q="phap ly 12")["products_total"] == 1                          # tên pháp lý
     assert _impact(db, q="nap1")["products_total"] == N                                # mã nắp chung
     assert _impact(db, q="so 7 nap1")["products_total"] == 3                           # nhiều từ khóa: tất cả đều phải khớp
@@ -120,7 +120,7 @@ def test_tim_trong_ket_hop_xep_va_trang(db, world):
 def test_so_truy_van_khong_doi_theo_trang_tim_xep(db, world):
     counts = set()
     for kw in ({}, {"page": 1, "page_size": 5}, {"page": 4, "page_size": 5, "q": "HH01", "sort_by": "diff_bottle"},
-               {"page": 99, "page_size": 500, "sort_by": "hh_name", "sort_dir": "desc"}):
+               {"page": 99, "page_size": 500, "sort_by": "fg_name", "sort_dir": "desc"}):
         _, sqls = count_queries(db, lambda kw=kw: _impact(db, **kw))
         counts.add(len(sqls))
     assert len(counts) == 1 and counts.pop() <= 6
@@ -142,8 +142,8 @@ def _body(**over):
 def test_api_mac_dinh_trang_1_50_dong_va_tra_products_total(api):
     data = api.post(IMPACT, json=_body()).json()["data"]
     assert len(data["products"]) == N and data["products_total"] == N               # 30 < 50
-    data = api.post(IMPACT, json=_body(page_size=7, page=2, sort_by="hh_code", sort_dir="desc")).json()["data"]
-    assert [p["hh_code"] for p in data["products"]] == [f"HH{i:03d}" for i in range(22, 15, -1)]
+    data = api.post(IMPACT, json=_body(page_size=7, page=2, sort_by="fg_code", sort_dir="desc")).json()["data"]
+    assert [p["fg_code"] for p in data["products"]] == [f"HH{i:03d}" for i in range(22, 15, -1)]
     assert data["kpis"]["affected_products"] == N
 
 
@@ -159,7 +159,7 @@ def test_api_tran_page_size_500_hop_le(api):
 
 
 def test_xuat_excel_bo_qua_phan_trang_nhung_theo_tim_va_xep(api):
-    res = api.post(IMPACT + "/export", json=_body(page=3, page_size=1, q="HH01", sort_by="hh_code", sort_dir="desc"))
+    res = api.post(IMPACT + "/export", json=_body(page=3, page_size=1, q="HH01", sort_by="fg_code", sort_dir="desc"))
     assert res.status_code == 200
     ws = openpyxl.load_workbook(BytesIO(res.content))["Sản phẩm bị ảnh hưởng"]
     assert column_values(ws, "Mã HH") == [f"HH{i:03d}" for i in range(19, 9, -1)]
@@ -182,7 +182,7 @@ def price_world(db):
     add_quote(db, "N1", 35, "2026-08-01")
     add_quote(db, "ONLYQ", 5, "2026-08-01")        # có báo giá nhưng không có trong danh mục
     for i, (bottle, cap, label) in enumerate((("C1", "N1", "L1"), ("C2", "N1", ""), ("C1", "", "L1"), ("GHOST", "N1", "L1"))):
-        db.add(build_bom(hh_code=f"HH{i}", hh_name=f"SP {i}", bottle_code=bottle, cap_code=cap, label_code=label,
+        db.add(build_bom(fg_code=f"HH{i}", fg_name=f"SP {i}", bottle_code=bottle, cap_code=cap, label_code=label,
                             carton_code="T1" if i == 0 else "", carton_qty=12, created_by=1, updated_by=1))
     db.commit()
 

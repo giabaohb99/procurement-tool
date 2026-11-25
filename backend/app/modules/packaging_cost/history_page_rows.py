@@ -19,7 +19,7 @@ from .last_prices_service import supplier_label
 from .numbers import iso, num
 
 #  Ba khóa cuối chỉ có ở chế độ sản phẩm (cột Mã SP / Tên sản phẩm / Thành phần); chế độ mã gặp chúng thì rơi về `date` giảm.
-PRODUCT_SORT_KEYS = ("hh_code", "hh_name", "role")
+PRODUCT_SORT_KEYS = ("fg_code", "fg_name", "role")
 SORT_KEYS = ("date", "code", "name", "supplier", "warehouse", "qty", "price", "amount", "vat", "source", *PRODUCT_SORT_KEYS)
 #  Giá trị mua hiện ra: thành tiền Misa khi có, không thì giá x SL; dòng đơn giá 0 không có giá trị (NULL, xuống cuối khi xếp).
 AMOUNT_EXPR = case((L.price > 0, func.coalesce(L.amount, L.price * L.qty)))
@@ -54,7 +54,7 @@ def build_order(sort_by: str, sort_dir: str, pairs=None) -> list:
     if sort_by not in SORT_KEYS or (sort_by in PRODUCT_SORT_KEYS and not product):
         sort_by, sort_dir = "date", "desc"
     desc = sort_dir == "desc"
-    tail = [pairs.c.hh_code.asc(), pairs.c.role.asc()] if product else []
+    tail = [pairs.c.fg_code.asc(), pairs.c.role.asc()] if product else []
     if sort_by == "date":      # cùng thứ tự "lần mua gần nhất" của `price_state_service`: ngày, doc_id, id
         day = [L.price_date.desc() if desc else L.price_date.asc()]
         rest = [(c.desc() if desc else c.asc()) for c in (L.doc_id, L.id)]
@@ -66,7 +66,7 @@ def build_order(sort_by: str, sort_dir: str, pairs=None) -> list:
                "qty": (L.qty, False), "price": (L.price, False), "amount": (AMOUNT_EXPR, False),
                "vat": (L.vat, False), "source": (SOURCE_RANK_EXPR, False)}
     if product:
-        columns |= {"hh_code": (pairs.c.hh_code, True), "hh_name": (pairs.c.hh_name, True), "role": (pairs.c.role, False)}
+        columns |= {"fg_code": (pairs.c.fg_code, True), "fg_name": (pairs.c.fg_name, True), "role": (pairs.c.role, False)}
     expr, is_text = columns[sort_by]
     return [*build_blank_last_order(expr, sort_dir, is_text=is_text), *tail, L.id.desc()]
 
@@ -90,7 +90,7 @@ def _load_page_keys(db: Session, conds: list, order: list, limit: int, offset: i
     TRƯỚC khi xếp + cắt trang — hơn 55 nghìn dòng x hai truy vấn con ở chế độ sản phẩm. Tách ra thì chúng chỉ chạy cho dòng của trang.
     `with_names`: chỉ nối tên vật tư / nhà cung cấp khi khóa xếp cần.
     """
-    cols = [L.id] + ([pairs.c.hh_code, pairs.c.hh_name, pairs.c.role] if pairs is not None else [])
+    cols = [L.id] + ([pairs.c.fg_code, pairs.c.fg_name, pairs.c.role] if pairs is not None else [])
     query = join_pairs(select(*cols).select_from(L), pairs)
     if with_names:
         query = query.outerjoin(Product, Product.code == L.product_code).outerjoin(Supplier, Supplier.code == L.supplier_code)
@@ -126,7 +126,7 @@ def load_page_rows(db: Session, conds: list, order: list, scope_cond, limit: int
 
 def row_to_item(r) -> dict:
     (row_id, day, code, supplier_code, qty, unit, price, vat, source_type, line_stage, doc_id, name, group, supplier, warehouse,
-     po_code, prev_price, ordinal, amount, hh_code, hh_name, role) = r
+     po_code, prev_price, ordinal, amount, fg_code, fg_name, role) = r
     diff = float(price) - float(prev_price) if price and prev_price is not None else None
     return {"id": row_id, "date": iso(day), "code": code, "name": name or "", "group": group or "",
             "supplier_code": supplier_code, "supplier": supplier_label(supplier, supplier_code) if supplier_code else "",
@@ -139,4 +139,4 @@ def row_to_item(r) -> dict:
             "pct": num(diff / float(prev_price), 6) if diff is not None and prev_price else None,
             "seq": int(ordinal or 0) + 1,
             #  Chế độ sản phẩm: sản phẩm + thành phần của dòng (chế độ mã: "" / None).
-            "hh_code": hh_code or "", "hh_name": hh_name or "", "role": int(role) if role else None}
+            "fg_code": fg_code or "", "fg_name": fg_name or "", "role": int(role) if role else None}

@@ -164,7 +164,7 @@ mua gần nhất*.
 
 ## 6. Lịch sử mua hàng (của cụm Giá bao bì)
 
-Màn `/procurement/packaging-cost/history` (cũ `/packaging-cost/history`), đường dẫn sâu `?codes=` / `?hh=`. Bấm mã ở mọi bảng
+Màn `/procurement/packaging-cost/history` (cũ `/packaging-cost/history`), đường dẫn sâu `?codes=` / `?fg=`. Bấm mã ở mọi bảng
 của cụm là mở màn này. Bài HDSD: *Giá NVL sản xuất — Xem lịch sử mua và biểu đồ giá của một mã*. Khác tab Lịch sử mua hàng ở chi
 tiết sản phẩm ([18](18-lich-su-mua-hang.md)): đọc sổ giá nên có cả dòng ĐMH đang mở. Mỗi dòng trả thêm `line_stage` và cờ `is_open`
 (25/11/2026): nhãn *ĐMH đang mở* hiện đúng khi `is_open` (cả hai giao diện, bản in). Cột Nguồn (màn hình, Excel) giữ nguyên chữ:
@@ -232,7 +232,7 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
 
 | Trường | Bắt buộc | Ghi chú |
 |---|---|---|
-| Mã HH (`hh_code`) | Có | không sửa sau khi tạo |
+| Mã HH (`fg_code`) | Có | không sửa sau khi tạo |
 | Quy cách thùng (chai / thùng) | Không (0) | 0 = chưa có, phần nhãn thùng / thùng không tính |
 | Tên hàng hóa, Tên pháp lý | Không | |
 | Mã chai | Có | |

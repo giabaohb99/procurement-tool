@@ -13,11 +13,11 @@ D = Decimal
 NO_PARTS = dict(cap_code="", label_code="", carton_label_code="", carton_code="")
 
 
-def _bom(db, hh: str, qty: int, **over) -> None:
-    base = dict(hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="", carton_label_code="",
+def _bom(db, fg: str, qty: int, **over) -> None:
+    base = dict(fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", label_code="", carton_label_code="",
                 carton_code="", carton_qty=qty, created_by=1, updated_by=1)
     base.update(over)
-    db.add(build_bom(hh_code=hh, **base))
+    db.add(build_bom(fg_code=fg, **base))
     db.commit()
 
 
@@ -40,7 +40,7 @@ def test_chon_dung_san_pham_tang_nhieu_nhat_theo_thung(db, world):
     _bom(db, "HH03", 10, **NO_PARTS)
     out = compute_impact(db, ["CPT0105"], {})
     top = out["kpis"]["max_increase_product"]
-    assert top == {"hh_code": "HH02", "hh_name": "Sản phẩm HH02", "diff_bottle": 100, "diff_carton": 4000, "carton_qty": 40}
+    assert top == {"fg_code": "HH02", "fg_name": "Sản phẩm HH02", "diff_bottle": 100, "diff_carton": 4000, "carton_qty": 40}
     assert out["kpis"]["max_increase_carton"] == top["diff_carton"]      # khớp số lớn nhất đã có
 
 
@@ -57,10 +57,10 @@ def test_hoa_theo_thung_thi_chenh_chai_lon_hon_thang_roi_toi_ma_hang_hoa(db, wor
     _bom(db, "HH01", 60, **NO_PARTS)
     _bom(db, "HH02", 40)
     top = _top(db, ["CPT0105", "NAP0085"], {"NAP0085": D(250)})
-    assert (top["hh_code"], top["diff_bottle"], top["diff_carton"]) == ("HH02", 150, 6000)
+    assert (top["fg_code"], top["diff_bottle"], top["diff_carton"]) == ("HH02", 150, 6000)
     #  Hòa cả hai số → mã hàng hóa nhỏ hơn.
     _bom(db, "HH00", 40)
-    assert _top(db, ["CPT0105", "NAP0085"], {"NAP0085": D(250)})["hh_code"] == "HH00"
+    assert _top(db, ["CPT0105", "NAP0085"], {"NAP0085": D(250)})["fg_code"] == "HH00"
 
 
 def test_khong_san_pham_nao_tang_thi_none(db, world):
@@ -75,11 +75,11 @@ def test_san_pham_khong_co_quy_cach_thung_khong_vao_thung_tang_nhieu_nhat(db, wo
     out = compute_impact(db, ["CPT0105"], {})
     assert out["kpis"]["increased"] == 1 and out["kpis"]["max_increase_product"] is None
     _bom(db, "HH02", 5, **NO_PARTS)
-    assert _top(db, ["CPT0105"])["hh_code"] == "HH02"
+    assert _top(db, ["CPT0105"])["fg_code"] == "HH02"
 
 
 def test_the_khong_doi_theo_bo_loc_va_trang(db, world):
     _bom(db, "HH01", 20, **NO_PARTS)
     _bom(db, "HH02", 40, **NO_PARTS)
     out = compute_impact(db, ["CPT0105"], {}, q="HH01", page=1, page_size=1)
-    assert out["products_total"] == 1 and out["kpis"]["max_increase_product"]["hh_code"] == "HH02"
+    assert out["products_total"] == 1 and out["kpis"]["max_increase_product"]["fg_code"] == "HH02"

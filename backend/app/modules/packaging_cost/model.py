@@ -45,11 +45,15 @@ class PackagingBomPart(Base):
 
 class PackagingBom(Base, AuditMixin):
     __tablename__ = "tab_packaging_bom"
+    __table_args__ = (Index("ix_pbom_import_batch", "import_batch_id"),)     # tra "định mức của lô nhập X" (xóa theo lô)
 
-    hh_code: Mapped[str] = mapped_column(String(50), unique=True)       # mã hàng hóa thành phẩm
-    hh_name: Mapped[str] = mapped_column(String(255), default="")
+    fg_code: Mapped[str] = mapped_column(String(50), unique=True)       # mã hàng hóa thành phẩm
+    fg_name: Mapped[str] = mapped_column(String(255), default="")
     legal_name: Mapped[str] = mapped_column(String(255), default="")    # tên pháp lý
     carton_qty: Mapped[int] = mapped_column(Integer, default=0)         # quy cách thùng (chai / thùng), 0 = chưa có
+    # Lô nhập Excel (`tab_import_batch.id`, module 4) TẠO hoặc SỬA dòng này lần cuối; 0 = nhập tay / form. Form sửa tay KHÔNG đổi cột này
+    # (duoc-CR-784 phase 07) — dùng để xem trước và xóa dữ liệu theo lô (`batch_purge_service.py`).
+    import_batch_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
 
     #  Xóa đầu phiếu thì xóa luôn các dòng thành phần (ORM lo cả khi DB không bật khóa ngoại — SQLite của bộ test).
     parts: Mapped[list[PackagingBomPart]] = relationship(cascade="all, delete-orphan", lazy="select",

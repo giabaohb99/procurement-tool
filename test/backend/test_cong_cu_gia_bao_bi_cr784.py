@@ -16,8 +16,8 @@ from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom
 TOOLS = ("packaging_price_impact", "packaging_price_lookup", "packaging_product_cost")
 
 
-def _bom(db, hh="HH0417.1", **over):
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
+def _bom(db, fg="HH0417.1", **over):
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="NDT0001", carton_code="THU0001", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
     db.add(build_bom(**base))
@@ -50,7 +50,7 @@ def _run(ctx, name, args):
 
 def test_thieu_quyen_ca_ba_cong_cu_bi_tu_choi(db, seed, world):
     user = db.get(User, seed.u_req_id)
-    for name, args in zip(TOOLS, ({"codes": ["CPT0105"]}, {"codes": ["CPT0105"]}, {"hh_codes": ["HH0417.1"]})):
+    for name, args in zip(TOOLS, ({"codes": ["CPT0105"]}, {"codes": ["CPT0105"]}, {"fg_codes": ["HH0417.1"]})):
         out = T.run_tool(db, user, name, args)
         assert out.get("denied") is True and "giá bao bì" in out["reason"], name
 
@@ -100,15 +100,15 @@ def test_tra_gia_bang_chu_tim_va_ma_khong_co(ctx):
 
 
 def test_chi_phi_bao_bi_theo_san_pham(ctx, db):
-    out = _run(ctx, "packaging_product_cost", {"hh_codes": ["HH0417.1", "HH9999"]})
+    out = _run(ctx, "packaging_product_cost", {"fg_codes": ["HH0417.1", "HH9999"]})
     row = out["items"][0]
     assert (row["cost_old_bottle"], row["cost_new_bottle"], row["diff_bottle"]) == (1710, 1810, 100)
     assert (row["cost_old_carton"], row["cost_new_carton"], row["trend_label"]) == (68400, 72400, "Tăng")
     assert [p["role_label"] for p in row["parts"]] == ["Chai", "Nắp", "Nhãn", "Nhãn thùng", "Thùng"]
-    assert out["no_bom_codes"] == ["HH9999"] and "hh=HH0417.1" in row["history_url"]
-    _bom(db, hh="HH0500", bottle_code="CPT0999")                              # chai chưa có giá → missing
+    assert out["no_bom_codes"] == ["HH9999"] and "fg=HH0417.1" in row["history_url"]
+    _bom(db, fg="HH0500", bottle_code="CPT0999")                              # chai chưa có giá → missing
     up = _run(ctx, "packaging_product_cost", {"trend": "up"})
-    assert [r["hh_code"] for r in up["items"]] == ["HH0417.1"] and up["counts"]["missing"] == 1
+    assert [r["fg_code"] for r in up["items"]] == ["HH0417.1"] and up["counts"]["missing"] == 1
     assert _run(ctx, "packaging_product_cost", {"trend": "missing"})["items"][0]["warnings"] == ["Thiếu giá chai"]
 
 
@@ -127,7 +127,7 @@ def test_pham_vi_phap_nhan_ca_ba_cong_cu(db, seed, cap_quyen, world):
     #  mã chỉ có giá ở pháp nhân khác: cùng hình với mã chưa có giá nào (không lộ 777)
     assert (other["new_price"], other["last_purchase"], other["recent_purchases"], other["purchase_count"]) == (None, None, [], 0)
     assert "777" not in str(look)
-    cost = _run(ctx, "packaging_product_cost", {"hh_codes": ["HH0417.1"]})
+    cost = _run(ctx, "packaging_product_cost", {"fg_codes": ["HH0417.1"]})
     assert cost["items"][0]["cost_new_bottle"] == 1810
     assert _run(ctx, "packaging_product_cost", {})["items"][0]["cost_new_bottle"] == 1810
 
@@ -142,7 +142,7 @@ def test_pham_vi_phap_nhan_ca_ba_cong_cu(db, seed, cap_quyen, world):
     ("packaging_price_lookup", {}, "Cần mã"),
     ("packaging_price_lookup", {"codes": [f"C{i}" for i in range(21)]}, "Tối đa 20"),
     ("packaging_product_cost", {"trend": "lung tung"}, "trend chỉ nhận"),
-    ("packaging_product_cost", {"hh_codes": ["H" * 60]}, "Mã hàng hóa"),
+    ("packaging_product_cost", {"fg_codes": ["H" * 60]}, "Mã hàng hóa"),
 ])
 def test_tham_so_sai_tra_loi_ro_khong_vo(ctx, name, args, hint):
     out = _run(ctx, name, args)

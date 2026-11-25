@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, Loader2, Undo2, Upload } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, Trash2, Undo2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -25,6 +25,7 @@ import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { formatDateTime } from '@/shared/utils/format-date'
 
+import { ImportBatchPurgeDialog } from '../components/import-batch-purge-dialog'
 import { ImportStatusBadge } from '../components/import-status-badge'
 import {
   IMPORT_CATEGORY_LABELS,
@@ -36,6 +37,7 @@ import {
   IMPORT_MODE_DRY_RUN,
   IMPORT_MODE_LABELS,
   IMPORT_MODULE_LABELS,
+  IMPORT_MODULES_WITH_PURGE,
   IMPORT_MODULES_WITHOUT_REVERT,
   IMPORT_STATUS_DONE,
   IMPORT_STATUS_FAILED,
@@ -94,6 +96,7 @@ export function ImportDetailPage() {
   const [logPageSize, setLogPageSize] = useState<number>(appConfig.defaultPageSize)
   const [confirmRevert, setConfirmRevert] = useState(false)
   const [confirmCommit, setConfirmCommit] = useState(false)
+  const [purgeOpen, setPurgeOpen] = useState(false)
 
   const { data: batch, isLoading, isError } = useImportBatch(id)
   const logParams = {
@@ -122,6 +125,15 @@ export function ImportDetailPage() {
     batch.mode === IMPORT_MODE_APPLY &&
     !IMPORT_MODULES_WITHOUT_REVERT.includes(batch.module) &&
     can('import', 'delete')
+
+  // Lô cụm Giá NVL (định mức / báo giá / sổ Misa) đã ghi thật: xóa dữ liệu theo lô (duoc-CR-784 phase 07), có xem trước.
+  const canPurge =
+    !!batch &&
+    batch.status === IMPORT_STATUS_DONE &&
+    batch.mode === IMPORT_MODE_APPLY &&
+    IMPORT_MODULES_WITH_PURGE.includes(batch.module) &&
+    can('import', 'read') &&
+    can('packaging_cost', 'delete')
 
   // Bản chạy thử đã hoàn tất -> cho phép "Ghi thật" (thử → xem → ghi).
   const canCommit =
@@ -228,6 +240,17 @@ export function ImportDetailPage() {
                   <Upload className="size-4" />
                 )}
                 Ghi thật
+              </Button>
+            )}
+            {canPurge && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-rose-500 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                onClick={() => setPurgeOpen(true)}
+              >
+                <Trash2 className="size-4" />
+                Xóa dữ liệu của lô này
               </Button>
             )}
             {canRevert && (
@@ -361,6 +384,8 @@ export function ImportDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {canPurge && <ImportBatchPurgeDialog batchId={id} open={purgeOpen} onOpenChange={setPurgeOpen} />}
 
       <AlertDialog open={confirmCommit} onOpenChange={setConfirmCommit}>
         <AlertDialogContent>

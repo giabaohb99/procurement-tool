@@ -66,10 +66,10 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
   unitLabel: 'định mức',
   apiPath: PACKAGING_BOM_API,
   storageKey: 'procurement.packaging-boms',
-  searchParam: 'hh_code',
+  searchParam: 'fg_code',
   searchPlaceholder: 'Tìm theo mã HH…',
-  defaultSort: { by: 'hh_code', dir: 'asc' },
-  getItemName: (row) => `định mức ${row.hh_code}`,
+  defaultSort: { by: 'fg_code', dir: 'asc' },
+  getItemName: (row) => `định mức ${row.fg_code}`,
   openFormOnRowClick: true,
   deleteInForm: true,
   dialogMaxWidth: 'sm:max-w-2xl',
@@ -77,21 +77,21 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
   renderToolbarExtra: () => <PackagingExcelImportButton kind={PACKAGING_BOM_IMPORT} />,
   columns: [
     {
-      key: 'hh_code',
+      key: 'fg_code',
       header: 'Mã HH',
       width: 110,
       sortable: true,
       hideable: false,
       defaultPinned: true,
-      cell: (row) => <span className="font-semibold tabular-nums">{row.hh_code}</span>,
+      cell: (row) => <span className="font-semibold tabular-nums">{row.fg_code}</span>,
     },
     {
-      key: 'hh_name',
+      key: 'fg_name',
       header: 'Tên hàng hóa',
       width: 240,
       wrap: true,
       sortable: true,
-      cell: (row) => row.hh_name,
+      cell: (row) => row.fg_name,
     },
     {
       key: 'legal_name',
@@ -127,8 +127,8 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
   ],
   filterConfig: {
     fields: [
-      { name: 'hh_code', label: 'Mã HH', type: 'text' },
-      { name: 'hh_name', label: 'Tên hàng hóa', type: 'text' },
+      { name: 'fg_code', label: 'Mã HH', type: 'text' },
+      { name: 'fg_name', label: 'Tên hàng hóa', type: 'text' },
       ...PACKAGING_PART_COLUMNS.map((part) => ({
         name: part.field,
         label: `Mã ${packagingRoleLabel(part.role).toLowerCase()}`,
@@ -137,7 +137,7 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
     ],
   },
   formFields: [
-    { name: 'hh_code', label: 'Mã HH', type: 'text', required: true, readonlyOnEdit: true },
+    { name: 'fg_code', label: 'Mã HH', type: 'text', required: true, readonlyOnEdit: true },
     {
       name: 'carton_qty',
       label: 'Quy cách thùng (chai / thùng)',
@@ -145,7 +145,7 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
       defaultValue: 0,
       hint: '0 = chưa có — phần nhãn thùng / thùng sẽ không tính được.',
     },
-    { name: 'hh_name', label: 'Tên hàng hóa', type: 'text', fullWidth: true },
+    { name: 'fg_name', label: 'Tên hàng hóa', type: 'text', fullWidth: true },
     { name: 'legal_name', label: 'Tên pháp lý', type: 'text', fullWidth: true },
     ...PART_FORM_FIELDS,
   ],

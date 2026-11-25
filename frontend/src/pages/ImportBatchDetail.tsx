@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { IMPORT_MODULE, IMPORT_MODE, statusBadge } from './ImportBatches'
 import { PACKAGING_IMPORT_MODULES } from '../api/packaging-cost'
+import PackagingBatchPurgeModal from '../components/packaging/PackagingBatchPurgeModal'
 
 const LEVEL: Record<number, { l: string; c: string }> = {
   0: { l: 'Info', c: '#64748b' }, 1: { l: 'Cảnh báo', c: '#d97706' },
@@ -69,6 +70,8 @@ export default function ImportBatchDetail() {
   // duoc-CR-784 — lô Định mức bao bì: tải từ màn Định mức bao bì luôn CHẠY THỬ trước; xem nhật ký xong bấm "Ghi thật"
   // để tạo lô ghi thật dùng lại đúng tệp (POST /api/imports/{id}/commit). Chỉ bật cho module này.
   const [committing, setCommitting] = useState(false)
+  // duoc-CR-784 phase 07 — xóa dữ liệu theo lô (định mức / báo giá / sổ Misa): có xem trước, dòng sửa tay tách riêng.
+  const [purgeOpen, setPurgeOpen] = useState(false)
   async function commit() {
     if (!window.confirm('Ghi thật dữ liệu từ bản chạy thử này? Hệ thống chạy lại đúng tệp ở chế độ Ghi và lưu vào hệ thống.')) return
     setCommitting(true)
@@ -98,7 +101,12 @@ export default function ImportBatchDetail() {
             <i className="ti ti-device-floppy" />{committing ? 'Đang gửi…' : 'Ghi thật'}
           </button>
         )}
-        {/* Lô cụm giá bao bì (định mức, báo giá, sổ Misa) chưa hỗ trợ hoàn tác (backend trả 400) nên không bày nút. */}
+        {PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 1 && can('import', 'read') && can('packaging_cost', 'delete') && (
+          <button className="btn ghost" style={{ color: '#dc2626' }} onClick={() => setPurgeOpen(true)}>
+            <i className="ti ti-trash" />Xóa dữ liệu của lô này
+          </button>
+        )}
+        {/* Lô cụm giá bao bì (định mức, báo giá, sổ Misa) không có "Hoàn tác" (backend trả 400); thay bằng nút xóa theo lô ở trên. */}
         {!PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 1 && can('import', 'delete') && (
           <button className="btn ghost" style={{ color: '#dc2626' }} onClick={revert} disabled={reverting}>
             <i className="ti ti-arrow-back-up" />{reverting ? 'Đang hoàn tác…' : 'Hoàn tác'}
@@ -155,6 +163,8 @@ export default function ImportBatchDetail() {
           </tbody>
         </table>
       </div>
+      <PackagingBatchPurgeModal batchId={b.id} open={purgeOpen} onClose={() => setPurgeOpen(false)}
+        onDone={() => { setPurgeOpen(false); loadBatch() }} />
       <Pagination page={page} pageSize={pageSize} total={total} onChange={(p, ps) => { setPage(p); setPageSize(ps) }} />
     </div>
   )

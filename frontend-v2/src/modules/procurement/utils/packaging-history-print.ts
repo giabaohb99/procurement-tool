@@ -33,8 +33,8 @@ export const HISTORY_SORT_KEYS: readonly string[] = [
   'amount',
   'vat',
   'source',
-  'hh_code',
-  'hh_name',
+  'fg_code',
+  'fg_name',
   'role',
 ]
 
@@ -65,7 +65,7 @@ export function buildHistoryPrintSearch(params: PackagingHistoryParams): string 
   const search = new URLSearchParams()
   search.set('mode', params.mode)
   if (params.codes?.length) search.set('codes', params.codes.join(','))
-  if (params.hh_codes?.length) search.set('hh_codes', params.hh_codes.join(','))
+  if (params.fg_codes?.length) search.set('fg_codes', params.fg_codes.join(','))
   if (params.q) search.set('q', params.q)
   for (const supplier of params.supplier ?? []) search.append('supplier', supplier)
   if (params.date_from) search.set('date_from', params.date_from)
@@ -86,7 +86,7 @@ export function packagingHistoryPrintHref(params: PackagingHistoryParams): strin
 export function parseHistoryPrintSearch(search: URLSearchParams): PackagingHistoryParams {
   const mode = search.get('mode') === 'product' ? 'product' : 'code'
   const codes = splitList(search.get('codes'))
-  const hh = splitList(search.get('hh_codes'))
+  const fg = splitList(search.get('fg_codes'))
   const q = (search.get('q') ?? '').trim().slice(0, MAX_QUERY_LENGTH)
   const suppliers = [
     ...new Set(
@@ -102,7 +102,7 @@ export function parseHistoryPrintSearch(search: URLSearchParams): PackagingHisto
     mode,
     //  Chỉ giữ mã của chế độ đang bật — giống `buildHistoryParams`, máy chủ không phải đoán mã nào còn hiệu lực.
     codes: mode === 'code' && codes.length ? codes : undefined,
-    hh_codes: mode === 'product' && hh.length ? hh : undefined,
+    fg_codes: mode === 'product' && fg.length ? fg : undefined,
     q: q || undefined,
     supplier: suppliers.length ? suppliers : undefined,
     date_from: validDate(search.get('date_from')),

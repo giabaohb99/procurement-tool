@@ -36,7 +36,7 @@ export function PackagingHistoryPrintPage() {
   const first = data?.items[0]
 
   const status = query.isError ? 'error' : data ? 'ready' : 'loading'
-  const codes = (productMode ? params.hh_codes : params.codes) ?? []
+  const codes = (productMode ? params.fg_codes : params.codes) ?? []
   return (
     <PackagingPrintShell
       subtitle="Lịch sử mua hàng"

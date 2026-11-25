@@ -204,10 +204,10 @@ export function PrintImpactProducts({
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={row.hh_code}>
+              <tr key={row.fg_code}>
                 <td className="c faint">{index + 1}</td>
-                <td className="code">{row.hh_code}</td>
-                <td className="name">{row.hh_name}</td>
+                <td className="code">{row.fg_code}</td>
+                <td className="name">{row.fg_name}</td>
                 <td className="n">{row.carton_qty ? row.carton_qty.toLocaleString('vi-VN') : <PrintDash />}</td>
                 {PACKAGING_PART_COLUMNS.map((part) => (
                   <PartCell key={part.role} part={row.parts.find((item) => item.role === part.role)} />

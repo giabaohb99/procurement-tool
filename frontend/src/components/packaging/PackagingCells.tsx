@@ -39,7 +39,7 @@ export function PctText({ value }: { value: Num }) {
 
 /**
  * Ô MÃ bấm được: mã VTBB mở Lịch sử mua hàng của đúng mã đó (`?codes=`); `product` = mã HÀNG HÓA, mở lịch sử ở chế độ
- * "Theo mã sản phẩm" (`?hh=`, mọi mã thành phần của định mức).
+ * "Theo mã sản phẩm" (`?fg=`, mọi mã thành phần của định mức).
  */
 export function CodeLink({ code, product }: { code: string; product?: boolean }) {
   return (

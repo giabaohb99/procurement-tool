@@ -21,13 +21,13 @@ from .impact_service import PART_SORT_GETTERS, SORT_GETTERS, arrange_products, b
 
 #  Khóa cột được phép xếp (whitelist); khóa lạ → xếp theo mã hàng hóa. `cost_new_bottle` = giá mới (không giả định).
 OVERVIEW_SORT_GETTERS = {
-    **{k: SORT_GETTERS[k] for k in ("hh_code", "hh_name", "carton_qty", "cost_old_bottle", "diff_bottle", "diff_carton", "pct")},
+    **{k: SORT_GETTERS[k] for k in ("fg_code", "fg_name", "carton_qty", "cost_old_bottle", "diff_bottle", "diff_carton", "pct")},
     "cost_new_bottle": lambda bom, cost: cost.cost_new_bottle,
     **PART_SORT_GETTERS,       # năm cột thành phần xếp theo giá mới của thành phần (không giả định nên bằng giá đang áp)
 }
 
 
-def build_product_overview(db: Session, *, q: str = "", trend: str = "all", sort_by: str = "hh_code", sort_dir: str = "asc",
+def build_product_overview(db: Session, *, q: str = "", trend: str = "all", sort_by: str = "fg_code", sort_dir: str = "asc",
                            filters: ImpactFilters | None = None, page: int | None = None, page_size: int = 50,
                            scope_cond=None) -> dict:
     """`{items, total, counts}`. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` + lọc nâng cao `filters`

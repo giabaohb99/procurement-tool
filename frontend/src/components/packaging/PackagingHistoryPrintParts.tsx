@@ -145,8 +145,8 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
                 <tr key={historyRowKey(r)} className={r.price === 0 ? 'zero' : undefined}>
                   {productMode && (
                     <>
-                      <td className="code"><b>{r.hh_code}</b></td>
-                      <td className="name">{r.hh_name || <span className="faint">(chưa có tên)</span>}</td>
+                      <td className="code"><b>{r.fg_code}</b></td>
+                      <td className="name">{r.fg_name || <span className="faint">(chưa có tên)</span>}</td>
                       <td>{historyRoleText(r) || <PrintDash />}</td>
                       <td className="code">{r.code}</td>
                       <td className="name">{materialName}</td>

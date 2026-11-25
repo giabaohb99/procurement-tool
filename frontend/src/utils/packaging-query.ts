@@ -1,6 +1,6 @@
 /**
  * duoc-CR-784 — luật thuần của cụm Giá bao bì (bản v1): tìm mã kiểu bản mẫu, đường dẫn sâu của Lịch sử mua
- * hàng (`?codes=` / `?hh=`), bộ lọc màn hình → tham số máy chủ và trục biểu đồ
+ * hàng (`?codes=` / `?fg=`), bộ lọc màn hình → tham số máy chủ và trục biểu đồ
  * (thẻ số liệu ở `packaging-history-summary.ts`).
  */
 import type {
@@ -73,7 +73,7 @@ export const collectSearchGroups = (options: readonly PackagingCodeOption[], rol
 
 // ── Lịch sử mua hàng: đường dẫn sâu + tham số ──────────────────────────────────
 
-export interface HistorySelection { mode: PackagingHistoryMode; codes: string[]; hh: string[] }
+export interface HistorySelection { mode: PackagingHistoryMode; codes: string[]; fg: string[] }
 export interface HistoryFilters { q: string; suppliers: string[]; from: string; to: string }
 export const EMPTY_HISTORY_FILTERS: HistoryFilters = { q: '', suppliers: [], from: '', to: '' }
 
@@ -84,22 +84,22 @@ function splitCodes(raw: string | null): string[] {
   return [...seen].slice(0, PACKAGING_HISTORY_MAX_CODES)
 }
 
-/** Đọc lựa chọn từ URL. `mode` nói rõ thì theo `mode`; không nói thì chỉ có `hh` là chế độ sản phẩm, còn lại chế độ mã. */
+/** Đọc lựa chọn từ URL. `mode` nói rõ thì theo `mode`; không nói thì chỉ có `fg` là chế độ sản phẩm, còn lại chế độ mã. */
 export function parseHistorySearch(search: URLSearchParams): HistorySelection {
-  const hh = splitCodes(search.get('hh'))
+  const fg = splitCodes(search.get('fg'))
   const codes = splitCodes(search.get('codes'))
   const explicit = search.get('mode')
   const mode: PackagingHistoryMode = explicit === 'product' || explicit === 'code'
-    ? explicit : hh.length > 0 && codes.length === 0 ? 'product' : 'code'
-  return { mode, codes, hh }
+    ? explicit : fg.length > 0 && codes.length === 0 ? 'product' : 'code'
+  return { mode, codes, fg }
 }
 
 /** Ghi lựa chọn ra chuỗi truy vấn; giữ CẢ HAI danh sách để đổi chế độ qua lại không mất lựa chọn bên kia. */
 export function buildHistorySearch(sel: HistorySelection): Record<string, string> {
   const out: Record<string, string> = {}
-  if (sel.mode === 'product' || sel.hh.length > 0) out.mode = sel.mode
+  if (sel.mode === 'product' || sel.fg.length > 0) out.mode = sel.mode
   if (sel.codes.length) out.codes = sel.codes.join(',')
-  if (sel.hh.length) out.hh = sel.hh.join(',')
+  if (sel.fg.length) out.fg = sel.fg.join(',')
   return out
 }
 
@@ -108,8 +108,8 @@ export const historyHref = (code: string): string =>
   `${PACKAGING_PATHS.history}?${new URLSearchParams({ codes: code }).toString()}`
 
 /** Đường dẫn tới Lịch sử mua hàng của MỘT sản phẩm (chế độ "Theo mã sản phẩm": mọi mã thành phần của định mức). */
-export const historyProductHref = (hhCode: string): string =>
-  `${PACKAGING_PATHS.history}?${new URLSearchParams({ hh: hhCode }).toString()}`
+export const historyProductHref = (fgCode: string): string =>
+  `${PACKAGING_PATHS.history}?${new URLSearchParams({ fg: fgCode }).toString()}`
 
 export function buildHistoryParams(
   sel: HistorySelection, f: HistoryFilters, search: string, sort: { by: string; dir: 'asc' | 'desc' },
@@ -118,7 +118,7 @@ export function buildHistoryParams(
   return {
     mode: sel.mode,
     codes: !isProduct && sel.codes.length ? sel.codes : undefined,
-    hh_codes: isProduct && sel.hh.length ? sel.hh : undefined,
+    fg_codes: isProduct && sel.fg.length ? sel.fg : undefined,
     q: search.trim() || undefined,
     supplier: f.suppliers.length ? f.suppliers : undefined,
     date_from: f.from || undefined,
@@ -131,7 +131,7 @@ export function buildHistoryParams(
 export const historyRoleText = (row: { role: number | null }): string => (row.role === null ? '' : roleLabel(row.role))
 
 /** Khóa dòng của bảng: chế độ sản phẩm một dòng sổ giá hiện ở nhiều sản phẩm nên `id` một mình không duy nhất. */
-export const historyRowKey = (row: { id: number; hh_code: string }): string => (row.hh_code ? `${row.hh_code}:${row.id}` : String(row.id))
+export const historyRowKey = (row: { id: number; fg_code: string }): string => (row.fg_code ? `${row.fg_code}:${row.id}` : String(row.id))
 
 /**
  * Trục giá nới ra hai đầu một đoạn (10% biên độ, tối thiểu 2% giá) — đường giá không dính sát khung, giá đi ngang vẫn có

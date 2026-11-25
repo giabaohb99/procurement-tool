@@ -19,8 +19,8 @@ URL = "/api/packaging-cost/last-prices"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-def _bom(db, hh="HH0001", **over) -> PackagingBom:
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
+def _bom(db, fg="HH0001", **over) -> PackagingBom:
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="", carton_code="", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
     row = build_bom(**base)

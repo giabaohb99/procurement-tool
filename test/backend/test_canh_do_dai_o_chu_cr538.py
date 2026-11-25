@@ -179,6 +179,7 @@ TARGETS.update({
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
 NO_TARGET = {
+    "packaging_cost.PurgeBody",   # duoc-CR-784 phase 07: chỉ mang cờ `include_edited` (xóa dữ liệu theo lô nhập) — không có cột chữ
     #  duoc-CR-761: khung giờ tròn (số, ràng 0..24 ở schema) + chép tuần (chỉ id người / ngày / cờ ghi đè) — không có cột chữ
     "work_schedule.SegmentIn", "work_schedule.ShiftCopyWeek",
     #  duoc-CR-694: một phần tử của cột JSON `extra_phones` — độ dài (20/50) ràng thẳng ở schema, không có cột chữ riêng

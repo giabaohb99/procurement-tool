@@ -2,8 +2,8 @@
  * duoc-CR-784 — cột của tab Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…", đầy đủ ở tooltip) để bảng không phình.
  *
  * Cột bật `sortable` gửi `sort_by` = khóa cột lên máy chủ — khóa phải nằm trong `SORT_KEYS` của
- * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `hh_code,
- * hh_name, role` chỉ ở chế độ sản phẩm). "Lần" và "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không
+ * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `fg_code,
+ * fg_name, role` chỉ ở chế độ sản phẩm). "Lần" và "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không
  * bật `sortable` khi máy chủ chưa nhận khóa). Số lượng kèm ĐVT trong một ô; nguồn + số ĐMH chung một cột. Dòng đơn giá 0 mờ đi
  * (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở".
  *
@@ -58,18 +58,18 @@ const nameColumn: DataTableColumn<PackagingHistoryRow> = {
 /** Ba cột đầu của chế độ sản phẩm (bản mẫu: Mã SP · Tên sản phẩm · Thành phần). */
 const productColumns: DataTableColumn<PackagingHistoryRow>[] = [
   {
-    key: 'hh_code',
+    key: 'fg_code',
     header: 'Mã SP',
     width: 110,
     sortable: true,
-    cell: (row) => <span className="font-medium">{row.hh_code}</span>,
+    cell: (row) => <span className="font-medium">{row.fg_code}</span>,
   },
   {
-    key: 'hh_name',
+    key: 'fg_name',
     header: 'Tên sản phẩm',
     width: 200,
     sortable: true,
-    cell: (row) => row.hh_name || <span className="text-muted-foreground">(chưa có tên)</span>,
+    cell: (row) => row.fg_name || <span className="text-muted-foreground">(chưa có tên)</span>,
   },
   {
     key: 'role',

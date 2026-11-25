@@ -31,11 +31,11 @@ const MAX_CODE_LENGTH = 50
 
 /** Khóa xếp của Lịch sử mua hàng — khớp `SORT_KEYS` của `history_service.py` (ba khóa cuối chỉ có ở chế độ sản phẩm). */
 const HISTORY_SORT_KEYS = [
-  'date', 'code', 'name', 'supplier', 'warehouse', 'qty', 'price', 'amount', 'vat', 'source', 'hh_code', 'hh_name', 'role',
+  'date', 'code', 'name', 'supplier', 'warehouse', 'qty', 'price', 'amount', 'vat', 'source', 'fg_code', 'fg_name', 'role',
 ]
 /** Khóa xếp bảng sản phẩm của Tác động — khớp `SORT_GETTERS` của `impact_service.py`. */
 const IMPACT_SORT_KEYS = [
-  'hh_code', 'hh_name', 'carton_qty', 'cost_old_bottle', 'cost_applied_bottle', 'diff_bottle', 'diff_carton',
+  'fg_code', 'fg_name', 'carton_qty', 'cost_old_bottle', 'cost_applied_bottle', 'diff_bottle', 'diff_carton',
   'cost_old_carton', 'cost_applied_carton', 'pct', 'trend',
   //  Năm cột thành phần: xếp theo giá đang áp của thành phần (hòa theo mã thành phần rồi mã HH).
   'part_bottle', 'part_cap', 'part_label', 'part_carton_label', 'part_carton',
@@ -81,7 +81,7 @@ export function buildHistoryPrintSearch(p: PackagingHistoryParams): string {
   const s = new URLSearchParams()
   s.set('mode', p.mode)
   if (p.codes?.length) s.set('codes', p.codes.join(','))
-  if (p.hh_codes?.length) s.set('hh_codes', p.hh_codes.join(','))
+  if (p.fg_codes?.length) s.set('fg_codes', p.fg_codes.join(','))
   if (p.q) s.set('q', p.q)
   ;(p.supplier ?? []).forEach((c) => s.append('supplier', c))
   if (p.date_from) s.set('date_from', p.date_from)
@@ -97,7 +97,7 @@ export const historyPrintHref = (p: PackagingHistoryParams): string =>
 export function parseHistoryPrintSearch(s: URLSearchParams): PackagingHistoryParams {
   const mode = s.get('mode') === 'product' ? 'product' : 'code'
   const codes = splitList(s.get('codes'), PACKAGING_HISTORY_MAX_CODES)
-  const hh = splitList(s.get('hh_codes'), PACKAGING_HISTORY_MAX_CODES)
+  const fg = splitList(s.get('fg_codes'), PACKAGING_HISTORY_MAX_CODES)
   const q = (s.get('q') ?? '').trim().slice(0, MAX_QUERY_LENGTH)
   const suppliers = [...new Set(s.getAll('supplier').map((v) => v.trim()).filter(Boolean))].slice(0, PACKAGING_HISTORY_MAX_CODES)
   const sortBy = s.get('sort_by')
@@ -105,7 +105,7 @@ export function parseHistoryPrintSearch(s: URLSearchParams): PackagingHistoryPar
   return {
     mode,
     codes: mode === 'code' && codes.length ? codes : undefined,
-    hh_codes: mode === 'product' && hh.length ? hh : undefined,
+    fg_codes: mode === 'product' && fg.length ? fg : undefined,
     q: q || undefined,
     supplier: suppliers.length ? suppliers : undefined,
     date_from: validDate(s.get('date_from')),

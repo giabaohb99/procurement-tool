@@ -28,8 +28,8 @@ const row = (over: Partial<PackagingHistoryRow> = {}): PackagingHistoryRow => ({
   diff: 10,
   pct: 10 / 120,
   seq: 6,
-  hh_code: '',
-  hh_name: '',
+  fg_code: '',
+  fg_name: '',
   role: null,
   ...over,
 })

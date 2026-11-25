@@ -54,7 +54,7 @@ export function PackagingImpactProductsTable({
       idColumn={false}
       columns={columns}
       rows={rows}
-      getRowId={(row) => row.hh_code}
+      getRowId={(row) => row.fg_code}
       isLoading={isLoading}
       isError={isError}
       emptyMessage={

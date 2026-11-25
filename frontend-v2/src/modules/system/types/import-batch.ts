@@ -64,3 +64,27 @@ export interface ImportLogListResponse {
   /** bao-CR-731: lô quá hạn giữ thì dòng mức Thông tin đã dọn — câu báo, rỗng nếu chưa dọn. */
   pruned_note?: string
 }
+
+/**
+ * Xem trước "Xóa dữ liệu của lô này" (`GET /api/imports/{id}/purge-preview`, duoc-CR-784 phase 07) — chỉ lô Định mức bao bì /
+ * Báo giá VTBB / Sổ Misa. `edited` = dòng đã bị sửa tay SAU khi nhập (mặc định giữ lại); `untouched = total - edited`.
+ */
+export interface ImportPurgePreview {
+  batch_id: number
+  module: number
+  /** Tên loại dòng để đặt vào câu: "định mức bao bì" · "báo giá VTBB" · "dòng sổ Misa". */
+  target_label: string
+  total: number
+  untouched: number
+  edited: number
+  /** Sổ Misa: xóa xong mốc sổ Misa được tính lại theo các dòng còn lại. */
+  recomputes_cutoff: boolean
+}
+
+/** Kết quả `POST /api/imports/{id}/purge`. */
+export interface ImportPurgeResult {
+  batch_id: number
+  deleted: number
+  kept_edited: number
+  message: string
+}

@@ -7,7 +7,7 @@
  */
 import { api } from './client'
 import type {
-  PackagingCodeOption, PackagingHhOption, PackagingHistoryParams, PackagingHistoryResult,
+  PackagingBatchPurgePreview, PackagingBatchPurgeResult, PackagingCodeOption, PackagingFgOption, PackagingHistoryParams, PackagingHistoryResult,
   PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
   PackagingOverviewParams, PackagingOverviewResult,
   PackagingPriceListParams, PackagingPriceRow,
@@ -27,6 +27,18 @@ export const PACKAGING_IMPORT_MODULES: readonly number[] = [
   IMPORT_MODULE_PACKAGING_BOM, IMPORT_MODULE_PACKAGING_QUOTE, IMPORT_MODULE_PACKAGING_MISA,
 ]
 
+/** Xem trước xóa dữ liệu theo lô nhập (định mức / báo giá / sổ Misa). */
+export async function fetchBatchPurgePreview(batchId: number | string): Promise<PackagingBatchPurgePreview> {
+  const r = await api.get(`/api/imports/${batchId}/purge-preview`)
+  return r.data.data
+}
+
+/** Xóa dữ liệu của lô; `includeEdited` = xóa luôn dòng đã sửa tay sau khi nhập. */
+export async function purgeBatchData(batchId: number | string, includeEdited: boolean): Promise<PackagingBatchPurgeResult> {
+  const r = await api.post(`/api/imports/${batchId}/purge`, { include_edited: includeEdited })
+  return r.data.data
+}
+
 /** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
 export async function fetchCodeOptions(): Promise<PackagingCodeOption[]> {
   const r = await api.get(`${BASE}/code-options`)
@@ -35,8 +47,8 @@ export async function fetchCodeOptions(): Promise<PackagingCodeOption[]> {
 }
 
 /** Sản phẩm (mã HH) có định mức bao bì — ô chọn của chế độ "Theo mã sản phẩm". */
-export async function fetchHhOptions(): Promise<PackagingHhOption[]> {
-  const r = await api.get(`${BASE}/hh-options`)
+export async function fetchFgOptions(): Promise<PackagingFgOption[]> {
+  const r = await api.get(`${BASE}/fg-options`)
   return r.data.data?.items ?? []
 }
 

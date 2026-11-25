@@ -692,6 +692,7 @@ export const queryKeys = {
     importDetail: (id: number | string) => ['system', 'imports', 'detail', id] as const,
     importLogs: (id: number | string, params?: Record<string, unknown>) =>
       ['system', 'imports', 'logs', id, params ?? {}] as const,
+    importPurgePreview: (id: number | string) => ['system', 'imports', 'purge-preview', id] as const,
     exports: (params?: Record<string, unknown>) => ['system', 'exports', params ?? {}] as const,
     exportEntities: () => ['system', 'exports', 'entities'] as const,
     exportDetail: (id: number | string) => ['system', 'exports', 'detail', id] as const,

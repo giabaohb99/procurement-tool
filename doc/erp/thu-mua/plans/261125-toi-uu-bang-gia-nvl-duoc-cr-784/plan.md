@@ -41,8 +41,8 @@ Các tệp phase 03–06 còn ghi `opt784` — đọc là "migration của phase
 | 03 | [Báo giá: `source_type` / `source_id` NOT NULL + khóa duy nhất](phase-03-bao-gia-nguon-bat-buoc.md) | 4 | 02 (cùng `model.py`; migration riêng nối sau `srcmerge784`) | **xong, đã commit + lên dev 25/11** (sao lưu DB dev trước, 0 trùng khóa) — migration `quotesrc784`; MySQL lên / xuống / lên lại sạch trên bản sao local, 19 bài kiểm mới + `cr784 or cr789` xanh, vitest procurement 1.813 bài + tsc v1 / v2 qua |
 | 04 | [Cột, chỉ mục, bỏ ngưỡng, dọn nhỏ](phase-04-cot-chi-muc-nguong-don-dep.md) | 4,5 | 03 | **xong, đã commit + lên dev 25/11** (sao lưu DB dev trước, 0 dòng ngưỡng) — migration `cleanup784`; bỏ hẳn ngưỡng sàn / trần (C6), VAT Misa NULL (C7), `synced_at` một nguồn giờ, chốt chặn Misa HTML vs module 6; MySQL lên / xuống / lên lại sạch trên bản sao, kết quả cũ / mới giống hệt (trừ phần đã bỏ), 688 + 216 bài kiểm backend, vitest procurement 1.810 bài + tsc v1 / v2 qua |
 | 05 | [Tài liệu, bài kiểm, phát hành](phase-05-tai-lieu-kiem-phat-hanh.md) | 2 | 02–04, 06 | chưa |
-| 06 | [Đổi tên `hh_code` / `hh_name` sang `fg_code` / `fg_name`](phase-06-doi-ten-hh-sang-fg.md) | 4 | 01 đã gộp; chung `opt784` | C8 đã chốt (đổi) |
-| 07 | [Đánh dấu lô nhập trên định mức + xóa dữ liệu theo lô](phase-07-danh-dau-lo-nhap-va-xoa-theo-lo.md) | 3 | 03 | đã duyệt 25/11, chờ làm |
+| 06 | [Đổi tên `hh_code` / `hh_name` sang `fg_code` / `fg_name`](phase-06-doi-ten-hh-sang-fg.md) | 4 | 01 đã gộp; chung `opt784` | **xong, đã commit + lên dev 25/11** (HDSD làm sau) |
+| 07 | [Đánh dấu lô nhập trên định mức + xóa dữ liệu theo lô](phase-07-danh-dau-lo-nhap-va-xoa-theo-lo.md) | 3 | 03 | **xong, đã commit + lên dev 25/11** (HDSD làm sau) |
 
 Một người giữ 02 → 03 → 04 → 06 nối tiếp: cả ba sửa `product_price/model.py`, `core/packaging_price_codes.py` (mỗi phase một
 migration riêng nối tiếp, xem mục *Thời điểm*; luật "chỉ mục gom một migration" áp trong phạm vi từng phase). Không phase nào chạy song song với phase 01 vì bộ dựng dữ liệu kiểm

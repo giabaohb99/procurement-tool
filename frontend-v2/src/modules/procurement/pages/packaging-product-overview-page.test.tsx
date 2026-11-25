@@ -21,8 +21,8 @@ const downloads: { url: string; params?: Record<string, unknown> }[] = []
 let canExport = true
 
 const product = (over: Partial<PackagingImpactProduct> = {}): PackagingImpactProduct => ({
-  hh_code: 'HH0417.1',
-  hh_name: 'Thuốc trừ sâu A 1 lít',
+  fg_code: 'HH0417.1',
+  fg_name: 'Thuốc trừ sâu A 1 lít',
   carton_qty: 40,
   parts: [
     { role: 1, code: 'CPT0105', old: 1000, new: 1100, applied: 1100, selected: false },
@@ -85,7 +85,7 @@ beforeEach(() => {
   result = {
     items: [
       product(),
-      product({ hh_code: 'HH0500', hh_name: 'Không có giá chai', trend: 4, cost_old_bottle: null,
+      product({ fg_code: 'HH0500', fg_name: 'Không có giá chai', trend: 4, cost_old_bottle: null,
         cost_new_bottle: null, cost_applied_bottle: null, diff_bottle: null, diff_carton: null, pct: null }),
     ],
     total: 2,
@@ -113,7 +113,7 @@ describe('PackagingProductOverviewPage', () => {
     expect(within(row).getByText('+7,7%')).toBeInTheDocument()
     expect(within(row).getByRole('link', { name: 'HH0417.1' })).toHaveAttribute(
       'href',
-      '/procurement/packaging-cost/history?hh=HH0417.1',
+      '/procurement/packaging-cost/history?fg=HH0417.1',
     )
     expect(within(row).getByRole('link', { name: 'CPT0105' })).toHaveAttribute(
       'href',

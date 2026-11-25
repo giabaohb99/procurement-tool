@@ -30,7 +30,7 @@ class ImpactRequest(BaseModel):
     # Bảng sản phẩm bị ảnh hưởng: phân trang + tìm + xếp tại máy chủ (xuất Excel bỏ qua `page` / `page_size`, vẫn theo `q` + xếp).
     page: int = Field(1, ge=1, le=100000)
     page_size: int = Field(50, ge=1, le=MAX_PAGE_SIZE)
-    sort_by: str = Field("hh_code", max_length=30)
+    sort_by: str = Field("fg_code", max_length=30)
     sort_dir: str = Field("asc", pattern="^(asc|desc)$")
     q: str = Field("", max_length=100)
     # Lọc nâng cao của bảng sản phẩm (lọc trong bộ nhớ, sau khi tính chi phí; KPI không đổi; xuất Excel theo cùng bộ lọc).

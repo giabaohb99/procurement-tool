@@ -73,8 +73,8 @@ export interface PackagingPart {
 }
 
 export interface PackagingImpactProduct {
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   legal_name?: string
   carton_qty: number
   parts: PackagingPart[]
@@ -131,8 +131,8 @@ export interface PackagingOverviewResult {
 
 /** Sản phẩm tăng chi phí /thùng nhiều nhất (thẻ "Tăng nhiều nhất /thùng") — trên TOÀN BỘ tập bị ảnh hưởng, không theo bộ lọc. */
 export interface PackagingMaxIncreaseProduct {
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   diff_bottle: number | null
   diff_carton: number
   carton_qty: number
@@ -283,8 +283,8 @@ export interface PackagingHistoryRow {
   /** Lần mua của mã trên TOÀN BỘ lịch sử (không phụ thuộc bộ lọc): 1 = lần mua GẦN NHẤT, như bản mẫu HTML. */
   seq: number
   /** Chế độ sản phẩm: sản phẩm của dòng (mỗi lần mua ra một dòng cho mỗi sản phẩm dùng mã); chế độ mã: rỗng. */
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   /** Chế độ sản phẩm: mã `PackagingRole` của thành phần (chai / nắp / nhãn / nhãn thùng / thùng); chế độ mã: null. */
   role: number | null
 }
@@ -332,7 +332,7 @@ export interface PackagingHistoryResult {
 export interface PackagingHistoryParams {
   mode: PackagingHistoryMode
   codes?: string[]
-  hh_codes?: string[]
+  fg_codes?: string[]
   q?: string
   supplier?: string[]
   date_from?: string
@@ -343,5 +343,20 @@ export interface PackagingHistoryParams {
   page_size?: number
 }
 
-export interface PackagingHhOption { code: string; name: string }
+export interface PackagingFgOption { code: string; name: string }
 
+
+/** Xem trước "Xóa dữ liệu của lô này" (`GET /api/imports/{id}/purge-preview`, duoc-CR-784 phase 07). */
+export interface PackagingBatchPurgePreview {
+  batch_id: number
+  module: number
+  /** "định mức bao bì" · "báo giá VTBB" · "dòng sổ Misa" — đặt vào câu thông báo. */
+  target_label: string
+  total: number
+  untouched: number
+  /** Dòng đã bị sửa tay SAU khi nhập (mặc định giữ lại). */
+  edited: number
+  recomputes_cutoff: boolean
+}
+
+export interface PackagingBatchPurgeResult { batch_id: number; deleted: number; kept_edited: number; message: string }

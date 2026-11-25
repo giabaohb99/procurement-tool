@@ -30,14 +30,14 @@ describe('buildHistoryPrintSearch / parseHistoryPrintSearch', () => {
   })
 
   it('round-trips product mode and keeps only the codes of the active mode', () => {
-    const params: PackagingHistoryParams = { mode: 'product', hh_codes: ['HH0417.1', 'HH0500'] }
+    const params: PackagingHistoryParams = { mode: 'product', fg_codes: ['HH0417.1', 'HH0500'] }
     const parsed = parse(buildHistoryPrintSearch(params))
     expect(parsed.mode).toBe('product')
-    expect(parsed.hh_codes).toEqual(['HH0417.1', 'HH0500'])
+    expect(parsed.fg_codes).toEqual(['HH0417.1', 'HH0500'])
     expect(parsed.codes).toBeUndefined()
-    // Link tay có cả hai danh sách: chế độ code thì bỏ hh_codes, chế độ product thì bỏ codes.
-    expect(parse('mode=code&codes=A&hh_codes=HH1')).toMatchObject({ codes: ['A'], hh_codes: undefined })
-    expect(parse('mode=product&codes=A&hh_codes=HH1')).toMatchObject({ codes: undefined, hh_codes: ['HH1'] })
+    // Link tay có cả hai danh sách: chế độ code thì bỏ fg_codes, chế độ product thì bỏ codes.
+    expect(parse('mode=code&codes=A&fg_codes=HH1')).toMatchObject({ codes: ['A'], fg_codes: undefined })
+    expect(parse('mode=product&codes=A&fg_codes=HH1')).toMatchObject({ codes: undefined, fg_codes: ['HH1'] })
   })
 
   it('keeps a supplier code that contains a comma as ONE value', () => {
@@ -58,7 +58,7 @@ describe('buildHistoryPrintSearch / parseHistoryPrintSearch', () => {
   })
 
   it('keeps every sort key the server accepts, including warehouse and the product-mode columns', () => {
-    for (const key of ['warehouse', 'hh_code', 'hh_name', 'role', 'amount']) {
+    for (const key of ['warehouse', 'fg_code', 'fg_name', 'role', 'amount']) {
       expect(parse(`mode=product&sort_by=${key}&sort_dir=asc`)).toMatchObject({ sort_by: key, sort_dir: 'asc' })
     }
   })
@@ -83,7 +83,7 @@ describe('describeHistoryFilters', () => {
       describeHistoryFilters(
         {
           mode: 'product',
-          hh_codes: ['HH1'],
+          fg_codes: ['HH1'],
           supplier: ['NCC01', 'ZZZ'],
           date_from: '2026-01-01',
           date_to: '2026-05-31',

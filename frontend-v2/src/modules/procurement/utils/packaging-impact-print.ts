@@ -32,8 +32,8 @@ const MAX_QUERY_LENGTH = 100
 
 /** Khóa xếp bảng sản phẩm máy chủ nhận — khớp `SORT_GETTERS` của `impact_service.py`. */
 export const IMPACT_SORT_KEYS: readonly string[] = [
-  'hh_code',
-  'hh_name',
+  'fg_code',
+  'fg_name',
   'carton_qty',
   'cost_old_bottle',
   'cost_applied_bottle',

@@ -92,8 +92,8 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
         description="Tệp DATA_CHAI.xlsx (sheet MAP_SP, hoặc data + DATA CHUNG). Hệ thống chạy thử trước — xem nhật ký từng dòng ở trang lô rồi mới bấm Ghi thật. Mã HH đã có thì cập nhật, chưa có thì tạo; dòng không có trong tệp giữ nguyên." />
     ),
     columns: [
-      { key: 'hh_code', label: 'Mã HH', render: (r) => <b>{r.hh_code}</b> },
-      { key: 'hh_name', label: 'Tên hàng hóa' },
+      { key: 'fg_code', label: 'Mã HH', render: (r) => <b>{r.fg_code}</b> },
+      { key: 'fg_name', label: 'Tên hàng hóa' },
       { key: 'legal_name', label: 'Tên pháp lý', defaultHidden: true },
       {
         key: 'carton_qty', label: 'Quy cách thùng',
@@ -103,18 +103,18 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
       { key: 'updated_at', label: 'Cập nhật', render: (r) => fmtDateTime(r.updated_at) || '—', defaultHidden: true },
     ],
     filters: [
-      { key: 'hh_code', label: 'Mã HH' }, { key: 'hh_name', label: 'Tên hàng hóa' },
+      { key: 'fg_code', label: 'Mã HH' }, { key: 'fg_name', label: 'Tên hàng hóa' },
       ...ROLE_FIELDS.map((p) => ({ key: p.key, label: `Mã ${PACKAGING_ROLE_LABELS[p.role].toLowerCase()}` })),
     ],
     detailChips: (row) => [
-      { icon: 'ti-hash', text: row.hh_code, cls: 'code' },
-      ...(row.hh_name ? [{ icon: 'ti-package', text: row.hh_name }] : []),
+      { icon: 'ti-hash', text: row.fg_code, cls: 'code' },
+      ...(row.fg_name ? [{ icon: 'ti-package', text: row.fg_name }] : []),
     ],
     fields: [
-      { key: 'hh_code', label: 'Mã HH', readonlyOnEdit: true, group: 'Hàng hóa' },
+      { key: 'fg_code', label: 'Mã HH', readonlyOnEdit: true, group: 'Hàng hóa' },
       { key: 'carton_qty', label: 'Quy cách thùng (chai / thùng)', type: 'number', default: 0, group: 'Hàng hóa',
         hint: '0 = chưa có — phần nhãn thùng / thùng sẽ không tính được.' },
-      { key: 'hh_name', label: 'Tên hàng hóa', fullWidth: true, group: 'Hàng hóa' },
+      { key: 'fg_name', label: 'Tên hàng hóa', fullWidth: true, group: 'Hàng hóa' },
       { key: 'legal_name', label: 'Tên pháp lý', fullWidth: true, group: 'Hàng hóa' },
       ...ROLE_FIELDS.map((p) => ({
         key: p.key, label: `Mã ${PACKAGING_ROLE_LABELS[p.role].toLowerCase()}`, group: 'Thành phần bao bì',

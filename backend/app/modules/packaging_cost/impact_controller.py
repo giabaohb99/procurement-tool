@@ -49,9 +49,9 @@ def impact(body: ImpactRequest, db: Session = Depends(get_db), user=Depends(requ
     Việt. Là đọc thuần (không ghi nhật ký). Quyền `packaging_cost.read`; giá chỉ tính trên các dòng sổ giá thuộc pháp nhân
     người xem được thấy. `kpis` tính trên TOÀN BỘ sản phẩm bị ảnh hưởng; bảng `products` phân trang tại máy chủ
     (`page`, `page_size` <= 500) sau khi lọc `q` (mã HH, tên, tên pháp lý, mã thành phần — không phân biệt dấu) và xếp
-    `sort_by` (`hh_code, hh_name, carton_qty, cost_old_bottle, cost_applied_bottle, diff_bottle, diff_carton,
+    `sort_by` (`fg_code, fg_name, carton_qty, cost_old_bottle, cost_applied_bottle, diff_bottle, diff_carton,
     cost_old_carton, cost_applied_carton, pct, trend` và năm cột thành phần `part_bottle, part_cap, part_label,
-    part_carton_label, part_carton` = giá đang áp của thành phần, hòa theo mã thành phần rồi mã HH; khóa lạ → `hh_code`)
+    part_carton_label, part_carton` = giá đang áp của thành phần, hòa theo mã thành phần rồi mã HH; khóa lạ → `fg_code`)
     theo `sort_dir`, ô trống xuống cuối. Lọc nâng cao (VÀ với nhau, sau khi tính chi phí): `trend` (`all|up|down|flat|missing`),
     `part_roles` (vai trò 1..5 mà sản phẩm có MÃ ĐÃ CHỌN, một trong các vai trò), khoảng `carton_qty_min/max`,
     `diff_bottle_min/max`, `diff_carton_min/max`, `cost_new_bottle_min/max` (biên đóng; dòng trống bị loại khi khoảng bật),

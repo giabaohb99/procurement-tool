@@ -22,8 +22,8 @@ D = Decimal
 IMPACT, PRICE_LIST, OPTIONS = "/api/packaging-cost/impact", "/api/packaging-cost/price-list", "/api/packaging-cost/code-options"
 
 
-def _bom(db, hh="HH0417.1", **over) -> PackagingBom:
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
+def _bom(db, fg="HH0417.1", **over) -> PackagingBom:
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="NDT0001", carton_code="THU0001", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
     row = build_bom(**base)
@@ -146,7 +146,7 @@ def test_canh_bao_nguong_da_bo_so_6_7_khong_con_trong_bo_ma_va_khong_bao_gio_pha
 def test_compute_impact_so_lieu_san_pham_va_kpi(db, world):
     _bom(db, "HH0417.2", cap_code="", label_code="", carton_label_code="", carton_code="", carton_qty=0)
     out = compute_impact(db, ["CPT0105", "NAP0085"], {"CPT0105": D(1500)})
-    assert [p["hh_code"] for p in out["products"]] == ["HH0417.1", "HH0417.2"]
+    assert [p["fg_code"] for p in out["products"]] == ["HH0417.1", "HH0417.2"]
     first = out["products"][0]
     assert (first["cost_old_bottle"], first["cost_applied_bottle"], first["diff_bottle"], first["diff_carton"]) == \
         (1710, 2210, 500, 20000)
@@ -210,7 +210,7 @@ def test_api_impact_tra_selected_kpis_products(api):
     data = res.json()["data"]
     assert set(data) == {"selected", "kpis", "products", "products_total"} and data["products_total"] == 1
     p = data["products"][0]
-    assert p["hh_code"] == "HH0417.1" and p["diff_carton"] == 20000
+    assert p["fg_code"] == "HH0417.1" and p["diff_carton"] == 20000
     assert p["parts"][0] == {"role": 1, "code": "CPT0105", "name": "Chai 450ml", "old": 1000, "new": 1100,
                              "applied": 1500, "selected": True}
     assert "message" not in p and all(isinstance(w["kind"], int) for w in p["warnings"])
@@ -330,7 +330,7 @@ XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def test_xuat_excel_tac_dong_hai_sheet_mo_duoc_va_chan_cong_thuc(api, db):
-    db.query(PackagingBom).update({PackagingBom.hh_name: "=HYPERLINK(\"http://x\")"})
+    db.query(PackagingBom).update({PackagingBom.fg_name: "=HYPERLINK(\"http://x\")"})
     db.commit()
     res = api.post(IMPACT + "/export", json={"codes": ["CPT0105"], "assumed_prices": {"CPT0105": 1500}})
     assert res.status_code == 200 and res.headers["content-type"] == XLSX

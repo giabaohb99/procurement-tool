@@ -15,12 +15,14 @@ export const IMPORT_MODULE_PACKAGING_BOM = 4
 // duoc-CR-784: báo giá VTBB + Sổ chi tiết mua hàng Misa (.xlsx) của cụm Giá NVL sản xuất.
 export const IMPORT_MODULE_PACKAGING_QUOTE = 5
 export const IMPORT_MODULE_PACKAGING_MISA = 6
-/** Ba loại nhập của cụm Giá NVL sản xuất: backend chưa hỗ trợ hoàn tác nên màn lô không bày nút Hoàn tác. */
+/** Ba loại nhập của cụm Giá NVL sản xuất: không có "Hoàn tác" (không lưu bản chụp), thay bằng "Xóa dữ liệu của lô này". */
 export const IMPORT_MODULES_WITHOUT_REVERT: readonly number[] = [
   IMPORT_MODULE_PACKAGING_BOM,
   IMPORT_MODULE_PACKAGING_QUOTE,
   IMPORT_MODULE_PACKAGING_MISA,
 ]
+/** Loại lô có nút "Xóa dữ liệu của lô này" (duoc-CR-784 phase 07) — cùng ba loại không hoàn tác. */
+export const IMPORT_MODULES_WITH_PURGE: readonly number[] = IMPORT_MODULES_WITHOUT_REVERT
 // Danh mục nền (Đ-13d) — khớp `ImportModule` ở backend.
 export const IMPORT_MODULE_COMPANY = 10
 export const IMPORT_MODULE_DEPARTMENT = 11

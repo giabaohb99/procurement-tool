@@ -93,8 +93,8 @@ export interface PackagingPart {
 
 /** Một sản phẩm bị ảnh hưởng (bảng dưới của màn Tác động). */
 export interface PackagingImpactProduct {
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   legal_name?: string
   carton_qty: number
   parts: PackagingPart[]
@@ -154,8 +154,8 @@ export interface PackagingOverviewResult {
 
 /** Sản phẩm tăng chi phí /thùng nhiều nhất (thẻ "Tăng nhiều nhất /thùng") — trên TOÀN BỘ tập bị ảnh hưởng, không theo bộ lọc. */
 export interface PackagingMaxIncreaseProduct {
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   diff_bottle: number | null
   diff_carton: number
   carton_qty: number
@@ -331,8 +331,8 @@ export interface PackagingQuote extends Record<string, unknown> {
 /** Định mức bao bì một mã HH (`/api/packaging-boms`). */
 export interface PackagingBom extends Record<string, unknown> {
   id: number
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   legal_name: string
   bottle_code: string
   cap_code: string
@@ -387,8 +387,8 @@ export interface PackagingHistoryRow {
   /** Lần mua của mã trên TOÀN BỘ lịch sử (không phụ thuộc bộ lọc): 1 = lần mua GẦN NHẤT, như bản mẫu HTML. */
   seq: number
   /** Chế độ sản phẩm: sản phẩm của dòng (mỗi lần mua ra một dòng cho mỗi sản phẩm dùng mã); chế độ mã: rỗng. */
-  hh_code: string
-  hh_name: string
+  fg_code: string
+  fg_name: string
   /** Chế độ sản phẩm: mã `PackagingRole` của thành phần (chai / nắp / nhãn / nhãn thùng / thùng); chế độ mã: null. */
   role: number | null
 }
@@ -440,7 +440,7 @@ export interface PackagingHistoryParams {
   /** Mã VTBB (chế độ `code`); rỗng = mọi mã VTBB của cụm giá. */
   codes?: string[]
   /** Mã sản phẩm (chế độ `product`); rỗng = mọi sản phẩm có định mức. */
-  hh_codes?: string[]
+  fg_codes?: string[]
   q?: string
   supplier?: string[]
   date_from?: string
@@ -451,8 +451,8 @@ export interface PackagingHistoryParams {
   page_size?: number
 }
 
-/** Sản phẩm có định mức cho ô chọn của chế độ sản phẩm (`GET /hh-options`). */
-export interface PackagingHhOption {
+/** Sản phẩm có định mức cho ô chọn của chế độ sản phẩm (`GET /fg-options`). */
+export interface PackagingFgOption {
   code: string
   name: string
 }

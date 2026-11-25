@@ -19,8 +19,8 @@ URL = "/api/packaging-cost/history"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-def _bom(db, hh="HH0001", **over) -> PackagingBom:
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
+def _bom(db, fg="HH0001", **over) -> PackagingBom:
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", label_code="NHG0001",
                 carton_label_code="", carton_code="", carton_qty=40, created_by=1, updated_by=1)
     base.update(over)
     row = build_bom(**base)
@@ -196,28 +196,28 @@ def test_o_chon_nha_cung_cap_chi_theo_pham_vi_ma_khong_theo_q_hay_nha_cung_cap(a
 
 # ── Chế độ sản phẩm (chi tiết hơn ở test_lich_su_theo_san_pham_cr784.py) ─────────────────────────
 def test_che_do_san_pham_mo_rong_thanh_phan_dinh_muc_kem_san_pham_va_vai_tro(api):
-    data = _get(api, mode="product", hh_codes=["HH0001"], page_size=500)
+    data = _get(api, mode="product", fg_codes=["HH0001"], page_size=500)
     assert {r["code"] for r in data["items"]} == {"CPT0105", "NAP0085"}            # NHG0001 chưa có lần mua
-    assert {r["hh_code"] for r in data["items"]} == {"HH0001"}
+    assert {r["fg_code"] for r in data["items"]} == {"HH0001"}
     roles = {r["code"]: r["role"] for r in data["items"]}
     assert roles["CPT0105"] == int(PackagingRole.BOTTLE) and roles["NAP0085"] == int(PackagingRole.CAP)
     assert data["series"] is None
 
 
 def test_che_do_san_pham_mot_ma_hai_vai_tro_trong_cung_san_pham_chi_tinh_mot_lan_va_khong_co_dinh_muc_thi_rong(api):
-    both = _get(api, mode="product", hh_codes=["HH0001", "HH0002"], page_size=500)["items"]
-    hh2 = [r for r in both if r["hh_code"] == "HH0002"]
+    both = _get(api, mode="product", fg_codes=["HH0001", "HH0002"], page_size=500)["items"]
+    hh2 = [r for r in both if r["fg_code"] == "HH0002"]
     assert len(hh2) == 6 and {r["role"] for r in hh2} == {int(PackagingRole.BOTTLE)}      # chai + nắp cùng mã: một dòng, vai trò nhỏ nhất
-    none = _get(api, mode="product", hh_codes=["HH9999"])
+    none = _get(api, mode="product", fg_codes=["HH9999"])
     assert none["items"] == [] and none["total"] == 0 and none["stats"]["purchase_count"] == 0 and none["suppliers"] == []
     all_products = _get(api, mode="product", page_size=500)
     assert {r["code"] for r in all_products["items"]} == {"CPT0105", "NAP0085"}
     assert all_products["total"] == 13               # HH0001: 6 + 1; HH0002: 6 (chai CPT0105)
 
 
-def test_che_do_ma_bo_qua_hh_codes_va_nguoc_lai(api):
-    assert {r["code"] for r in _get(api, mode="code", codes=["NAP0085"], hh_codes=["HH0001"])["items"]} == {"NAP0085"}
-    assert all(r["role"] is None and r["hh_code"] == "" for r in _get(api, mode="code", codes=["CPT0105"])["items"])
+def test_che_do_ma_bo_qua_fg_codes_va_nguoc_lai(api):
+    assert {r["code"] for r in _get(api, mode="code", codes=["NAP0085"], fg_codes=["HH0001"])["items"]} == {"NAP0085"}
+    assert all(r["role"] is None and r["fg_code"] == "" for r in _get(api, mode="code", codes=["CPT0105"])["items"])
 
 
 # ── Xếp + phân trang ────────────────────────────────────────────────────────────
@@ -255,14 +255,14 @@ def test_dau_vao_sai_tra_422(api):
     assert api.get(URL, params={"sort_dir": "up"}).status_code == 422
     assert api.get(URL, params={"page_size": 501}).status_code == 422
     assert api.get(URL, params={"codes": [f"C{i}" for i in range(201)]}).status_code == 422
-    assert api.get(URL, params={"hh_codes": [f"H{i}" for i in range(201)], "mode": "product"}).status_code == 422
+    assert api.get(URL, params={"fg_codes": [f"H{i}" for i in range(201)], "mode": "product"}).status_code == 422
     assert api.get(URL, params={"q": "x" * 101}).status_code == 422
 
 
 # ── Quyền + phạm vi ─────────────────────────────────────────────────────────────
 def test_khong_co_quyen_la_403_va_chi_doc_khong_xuat_duoc(db, seed, cap_quyen, client_as, world):  # noqa: F811
     assert client_as(db.get(User, seed.u_req_id)).get(URL).status_code == 403
-    assert client_as(db.get(User, seed.u_req_id)).get("/api/packaging-cost/hh-options").status_code == 403
+    assert client_as(db.get(User, seed.u_req_id)).get("/api/packaging-cost/fg-options").status_code == 403
     cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
     only_read = client_as(db.get(User, seed.u_req_id))
     assert only_read.get(URL).status_code == 200 and only_read.get(URL + "/export").status_code == 403
@@ -284,8 +284,8 @@ def test_pham_vi_cong_ty_khong_thay_lan_mua_cua_phap_nhan_khac_ke_ca_trong_chenh
 
 
 # ── Danh mục sản phẩm cho ô chọn ────────────────────────────────────────────────
-def test_hh_options_tra_ma_va_ten_san_pham_theo_ma(api):
-    items = api.get("/api/packaging-cost/hh-options").json()["data"]["items"]
+def test_fg_options_tra_ma_va_ten_san_pham_theo_ma(api):
+    items = api.get("/api/packaging-cost/fg-options").json()["data"]["items"]
     assert items == [{"code": "HH0001", "name": "Sản phẩm HH0001"}, {"code": "HH0002", "name": "Sản phẩm HH0002"}]
 
 
@@ -305,7 +305,7 @@ def test_xuat_excel_dung_bo_loc_thu_tu_va_cot_vai_tro_cua_che_do_san_pham(api):
     assert ws["A1"].value == "BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — LỊCH SỬ MUA HÀNG"
     assert ws["A2"].value.startswith("Dego Holding – Phòng Thu mua · Xuất ngày") and "1 mã · 6 lần mua" in ws["A2"].value
     assert ws.freeze_panes == "D5" and ws.auto_filter.ref == f"A4:{ws.cell(row=4, column=len(head)).column_letter}10"
-    product = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"mode": "product", "hh_codes": ["HH0001"]}).content)).active
+    product = openpyxl.load_workbook(BytesIO(api.get(URL + "/export", params={"mode": "product", "fg_codes": ["HH0001"]}).content)).active
     head2, rows2 = read_report_sheet(product)
     assert head2[:7] == ["Mã SP", "Tên sản phẩm", "Thành phần", "Mã VTBB", "Tên vật tư", "Lần", "Ngày mua"]
     assert {r[head2.index("Thành phần")].value for r in rows2} == {"Chai", "Nắp"}
@@ -370,7 +370,7 @@ def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world)
     assert res["total"] > 800 and len(res["items"]) == 500
     _, big_one = count_queries(db, lambda: build_history(db, codes=["CPT0105"]))
     _, big_busy = count_queries(db, lambda: build_history(db, codes=["CPT0105", "NAP0085"], **busy))
-    _, big_prod = count_queries(db, lambda: build_history(db, mode="product", hh_codes=["HH0001"] + [f"HH1{i:04d}" for i in range(80)]))
+    _, big_prod = count_queries(db, lambda: build_history(db, mode="product", fg_codes=["HH0001"] + [f"HH1{i:04d}" for i in range(80)]))
     #  số gộp + ô chọn nhà cung cấp + trang dòng (khóa các dòng của trang, rồi chi tiết các dòng đó: lần / giá liền trước chỉ tính cho trang)
     assert len(small_all) == len(big_all) == 4
     assert len(small) == len(big_one) == 5                        # + truy vấn biểu đồ của đúng một mã

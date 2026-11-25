@@ -69,8 +69,8 @@ export function PackagingHistoryToolbar({
             <PackagingCodePicker
               kind="product"
               options={productOptions}
-              value={selection.hh}
-              onChange={(hh) => onSelectionChange({ ...selection, hh })}
+              value={selection.fg}
+              onChange={(fg) => onSelectionChange({ ...selection, fg })}
               loading={optionsLoading}
               maxCodes={PACKAGING_HISTORY_MAX_CODES}
               emptyPlaceholder="Tất cả sản phẩm có định mức — gõ để chọn sản phẩm cụ thể"

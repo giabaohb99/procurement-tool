@@ -107,6 +107,32 @@ export function useCommitImport() {
   })
 }
 
+/** Xem trước xóa theo lô — chỉ tải khi hộp thoại mở (`enabled`), luôn lấy số mới nhất. */
+export function useImportPurgePreview(id: number, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.system.importPurgePreview(id),
+    queryFn: () => importApi.purgePreview(id),
+    enabled: enabled && Number.isFinite(id) && id > 0,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+/** Xóa dữ liệu của lô nhập (định mức / báo giá / sổ Misa). */
+export function usePurgeImport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, includeEdited }: { id: number; includeEdited: boolean }) =>
+      importApi.purge(id, includeEdited),
+    onSuccess: (res) => {
+      toast.success(`Đã xóa ${res.deleted} dòng của lô nhập`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
+    },
+    //  Lỗi đã được `httpClient` toast sẵn (POST) — không toast lần hai.
+  })
+}
+
 export function useDownloadImportFile() {
   return useMutation({
     mutationFn: ({ id, filename }: { id: number; filename: string }) =>

@@ -22,7 +22,7 @@ from .schema import BomCreate, BomOut, BomUpdate
 #  (loại, tên trường phẳng của API) — thứ tự hiển thị của một dòng định mức; dựng từ `PackagingRole`.
 PART_COLUMNS = tuple((role, role_field(role)) for role in PackagingRole)
 PART_FIELDS = tuple(field for _, field in PART_COLUMNS)
-NOT_NULL_COLUMNS = ("hh_code", "hh_name", "legal_name", *PART_FIELDS, "carton_qty")
+NOT_NULL_COLUMNS = ("fg_code", "fg_name", "legal_name", *PART_FIELDS, "carton_qty")
 
 
 def _before_create(db, data) -> None:
@@ -54,7 +54,7 @@ def _enrich(db, rows: list[dict]) -> None:
 
 router = _retag(make_crud_router(
     "/api/packaging-boms", ENTITY, PackagingBom, BomCreate, BomUpdate, BomOut,
-    filterable=["hh_code", "hh_name", "legal_name", *PART_FIELDS],
-    unique_field="hh_code", before_create=_before_create, before_update=_before_update,
+    filterable=["fg_code", "fg_name", "legal_name", *PART_FIELDS],
+    unique_field="fg_code", before_create=_before_create, before_update=_before_update,
     scoped=False, enrich_out=_enrich, audit_entity="packaging_bom",
     virtual_fields=PART_FIELDS, after_create=_after_create))

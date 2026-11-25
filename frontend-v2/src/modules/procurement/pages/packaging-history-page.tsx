@@ -3,7 +3,7 @@
  * của các thành phần trong định mức của một / nhiều sản phẩm; kèm dòng KPI và biểu đồ "Diễn biến đơn giá" khi chọn đúng một mã.
  *
  * Lịch sử là bản chụp BẤT BIẾN của sổ giá — không có ô sửa đơn giá (sai thì sửa ở ĐMH / nguồn nạp). Lọc + xếp + phân trang tại
- * MÁY CHỦ (luật §8). Lựa chọn mã nằm ở URL (`?codes=A,B` · `?hh=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
+ * MÁY CHỦ (luật §8). Lựa chọn mã nằm ở URL (`?codes=A,B` · `?fg=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
  */
 import { FileDown, Loader2, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -29,7 +29,7 @@ import { PackagingExcelImportButton } from '../components/packaging-excel-import
 import { PackagingHistoryToolbar } from '../components/packaging-history-toolbar'
 import { PACKAGING_MISA_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
-import { usePackagingHhOptions, usePackagingHistory } from '../hooks/use-packaging-history'
+import { usePackagingFgOptions, usePackagingHistory } from '../hooks/use-packaging-history'
 import { usePackagingHistoryColumns } from '../hooks/use-packaging-history-columns'
 import type { PackagingCodeOption } from '../types/packaging-cost-types'
 import { sortPackagingCodeOptions } from '../utils/packaging-code-match'
@@ -58,14 +58,14 @@ export function PackagingHistoryPage() {
   const isProduct = selection.mode === 'product'
 
   const codeOptionsQuery = usePackagingCodeOptions()
-  const hhOptionsQuery = usePackagingHhOptions(isProduct)
+  const fgOptionsQuery = usePackagingFgOptions(isProduct)
   const codeOptions = useMemo(
     () => sortPackagingCodeOptions(codeOptionsQuery.data ?? []),
     [codeOptionsQuery.data],
   )
   const productOptions = useMemo<PackagingCodeOption[]>(
-    () => (hhOptionsQuery.data ?? []).map((item) => ({ ...item, group: '', usage: 0, new: null })),
-    [hhOptionsQuery.data],
+    () => (fgOptionsQuery.data ?? []).map((item) => ({ ...item, group: '', usage: 0, new: null })),
+    [fgOptionsQuery.data],
   )
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
@@ -139,7 +139,7 @@ export function PackagingHistoryPage() {
           onFiltersChange={setFilters}
           codeOptions={codeOptions}
           productOptions={productOptions}
-          optionsLoading={isProduct ? hhOptionsQuery.isLoading : codeOptionsQuery.isLoading}
+          optionsLoading={isProduct ? fgOptionsQuery.isLoading : codeOptionsQuery.isLoading}
           suppliers={list.data?.suppliers ?? []}
         />
         {/* Thẻ số liệu đặt TRÊN biểu đồ (người chủ chốt 21/11/2026), không còn nằm trong thanh công cụ của bảng. */}
@@ -147,7 +147,7 @@ export function PackagingHistoryPage() {
           stats={list.data?.stats}
           singleCode={series !== null}
           mode={selection.mode}
-          selectedCount={isProduct ? selection.hh.length : selection.codes.length}
+          selectedCount={isProduct ? selection.fg.length : selection.codes.length}
         />
         {series && series.length > 0 && (
           <PackagingHistoryChart

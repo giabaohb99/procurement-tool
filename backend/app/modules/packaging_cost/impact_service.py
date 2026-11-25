@@ -31,7 +31,7 @@ def bom_codes(bom: BomRow) -> set[str]:
 def product_row(bom: BomRow, cost: ProductCost, names: dict[str, str]) -> dict:
     """Một dòng `products[]` của hợp đồng API — số kèm mã, KHÔNG gửi câu tiếng Việt."""
     return {
-        "hh_code": bom.hh_code, "hh_name": bom.hh_name, "legal_name": bom.legal_name, "carton_qty": cost.carton_qty,
+        "fg_code": bom.fg_code, "fg_name": bom.fg_name, "legal_name": bom.legal_name, "carton_qty": cost.carton_qty,
         "parts": [{"role": int(p.role), "code": p.code, "name": names.get(p.code, ""), "old": num(p.old),
                    "new": num(p.new), "applied": num(p.applied), "selected": p.selected} for p in cost.parts],
         "cost_old_bottle": num(cost.cost_old_bottle), "cost_new_bottle": num(cost.cost_new_bottle),
@@ -72,7 +72,7 @@ def part_price_getter(role: int):
 
 def part_tie_getter(role: int):
     """Khóa phụ khi xếp theo cột thành phần: mã thành phần rồi mã hàng hóa (cùng giá thì gom các sản phẩm dùng chung một mã)."""
-    return lambda bom, cost: (_part_of(cost, role).code, bom.hh_code)
+    return lambda bom, cost: (_part_of(cost, role).code, bom.fg_code)
 
 
 #  Khóa xếp cột thành phần → vai trò (`PackagingRole`), dựng từ enum: `part_bottle`, `part_cap`, `part_label`, `part_carton_label`,
@@ -84,7 +84,7 @@ SORT_TIES = {key: part_tie_getter(role) for key, role in PART_SORT_ROLES.items()
 
 #  Khóa cột của bảng sản phẩm được phép xếp (whitelist); khóa lạ → xếp theo mã hàng hóa. Số lấy từ `ProductCost` (đúng con số hiện).
 SORT_GETTERS = {
-    "hh_code": lambda bom, cost: fold_text(bom.hh_code), "hh_name": lambda bom, cost: fold_text(bom.hh_name),
+    "fg_code": lambda bom, cost: fold_text(bom.fg_code), "fg_name": lambda bom, cost: fold_text(bom.fg_name),
     "carton_qty": lambda bom, cost: cost.carton_qty or None,
     "cost_old_bottle": lambda bom, cost: cost.cost_old_bottle, "cost_applied_bottle": lambda bom, cost: cost.cost_applied_bottle,
     "diff_bottle": lambda bom, cost: cost.diff_bottle, "diff_carton": lambda bom, cost: cost.diff_carton,
@@ -100,18 +100,18 @@ def max_increase_product(items: list[tuple]) -> dict | None:
     rising = [(bom, cost) for bom, cost in items if cost.diff_carton is not None and cost.diff_carton > 0]
     if not rising:
         return None
-    bom, cost = min(rising, key=lambda it: (-it[1].diff_carton, -(it[1].diff_bottle or 0), it[0].hh_code))
-    return {"hh_code": bom.hh_code, "hh_name": bom.hh_name, "diff_bottle": num(cost.diff_bottle),
+    bom, cost = min(rising, key=lambda it: (-it[1].diff_carton, -(it[1].diff_bottle or 0), it[0].fg_code))
+    return {"fg_code": bom.fg_code, "fg_name": bom.fg_name, "diff_bottle": num(cost.diff_bottle),
             "diff_carton": num(cost.diff_carton), "carton_qty": cost.carton_qty}
 
 
 def _matches(bom, terms: list[str]) -> bool:
     """Mọi từ khóa (đã bỏ dấu) đều nằm trong mã HH + tên + tên pháp lý + mã thành phần — đúng ô tìm của bảng."""
-    haystack = fold_text(" ".join([bom.hh_code, bom.hh_name, bom.legal_name or "", *bom_codes(bom)]))
+    haystack = fold_text(" ".join([bom.fg_code, bom.fg_name, bom.legal_name or "", *bom_codes(bom)]))
     return all(term in haystack for term in terms)
 
 
-def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc",
+def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "fg_code", sort_dir: str = "asc",
                      getters: dict = SORT_GETTERS, filters: ImpactFilters | None = None) -> list[tuple]:
     """Lọc theo `q` (+ `filters` nâng cao) rồi xếp `(bom, cost)`: ô trống xuống CUỐI cả hai chiều, khóa phụ là mã hàng hóa
     tăng dần (luật §8; cột thành phần: mã thành phần rồi mã hàng hóa, xem `SORT_TIES`).
@@ -123,15 +123,15 @@ def arrange_products(items: list[tuple], *, q: str = "", sort_by: str = "hh_code
         items = [it for it in items if _matches(it[0], terms)]
     items = filter_products(items, filters)
     known = sort_by in getters
-    getter = getters[sort_by if known else "hh_code"]
+    getter = getters[sort_by if known else "fg_code"]
     tie = SORT_TIES.get(sort_by) if known else None
-    return sort_blank_last(items, lambda it: getter(*it), (lambda it: tie(*it)) if tie else (lambda it: it[0].hh_code),
+    return sort_blank_last(items, lambda it: getter(*it), (lambda it: tie(*it)) if tie else (lambda it: it[0].fg_code),
                            desc=sort_dir == "desc")
 
 
 def compute_impact(db: Session, codes: list[str], assumed: dict[str, Decimal], *, date_from: date | None = None,
                    date_to: date | None = None, scope_cond=None, page: int | None = None, page_size: int = 50,
-                   q: str = "", sort_by: str = "hh_code", sort_dir: str = "asc", filters: ImpactFilters | None = None) -> dict:
+                   q: str = "", sort_by: str = "fg_code", sort_dir: str = "asc", filters: ImpactFilters | None = None) -> dict:
     """`{selected, kpis, products, products_total}`. Mã không có trong định mức nào vẫn trả 200 với `products` rỗng.
 
     Chi phí của MỌI sản phẩm bị ảnh hưởng tính trong bộ nhớ (cần cho KPI toàn bộ), còn `products` chỉ dựng dòng cho trang

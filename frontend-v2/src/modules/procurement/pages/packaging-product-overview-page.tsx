@@ -134,7 +134,7 @@ export function PackagingProductOverviewPage() {
           fillHeight
           columns={columns}
           rows={rows}
-          getRowId={(row) => row.hh_code}
+          getRowId={(row) => row.fg_code}
           isLoading={overview.isLoading}
           isError={overview.isError}
           emptyMessage={

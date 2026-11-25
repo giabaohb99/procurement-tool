@@ -36,8 +36,8 @@ export default function PackagingHistoryToolbar({
         </div>
         <div style={{ flex: 1, minWidth: 320 }}>
           {isProduct ? (
-            <PackagingCodePicker kind="product" options={productOptions} value={selection.hh}
-              onChange={(hh) => onSelection({ ...selection, hh })} loading={optionsLoading} maxCodes={PACKAGING_HISTORY_MAX_CODES}
+            <PackagingCodePicker kind="product" options={productOptions} value={selection.fg}
+              onChange={(fg) => onSelection({ ...selection, fg })} loading={optionsLoading} maxCodes={PACKAGING_HISTORY_MAX_CODES}
               emptyPlaceholder="Tất cả sản phẩm có định mức — gõ để chọn sản phẩm cụ thể" />
           ) : (
             <PackagingCodePicker options={codeOptions} value={selection.codes}

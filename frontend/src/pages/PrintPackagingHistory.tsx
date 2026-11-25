@@ -32,7 +32,7 @@ export default function PrintPackagingHistory() {
   const series = data?.series ?? null
   const singleCode = series !== null
   const productMode = params.mode === 'product'
-  const codes = (productMode ? params.hh_codes : params.codes) ?? []
+  const codes = (productMode ? params.fg_codes : params.codes) ?? []
   return (
     <PackagingPrintShell subtitle="Lịch sử mua hàng" status={error ? 'error' : data ? 'ready' : 'loading'} errorMessage={error}>
       {data && (

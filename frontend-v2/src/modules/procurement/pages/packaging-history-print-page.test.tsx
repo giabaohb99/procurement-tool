@@ -41,8 +41,8 @@ const row = (id: number, over: Partial<PackagingHistoryRow> = {}): PackagingHist
   diff: 200,
   pct: 0.2,
   seq: id,
-  hh_code: '',
-  hh_name: '',
+  fg_code: '',
+  fg_name: '',
   role: null,
   ...over,
 })
@@ -78,7 +78,7 @@ vi.mock('@/core/api', async (importOriginal) => {
       const start = (page - 1) * size
       const count = Math.max(0, Math.min(size, total - start))
       const product =
-        params.mode === 'product' ? { hh_code: 'HH0417.1', hh_name: 'Flower Top 450ml', role: 1 } : {}
+        params.mode === 'product' ? { fg_code: 'HH0417.1', fg_name: 'Flower Top 450ml', role: 1 } : {}
       const items = Array.from({ length: count }, (_, i) =>
         row(start + i + 1, {
           ...product,
@@ -183,7 +183,7 @@ describe('PackagingHistoryPrintPage', () => {
 
   it('lays out product mode like the template (product, component, material, Lần, date) and survives a hostile URL', async () => {
     total = 1
-    build('mode=product&hh_codes=HH0417.1&sort_by=evil&date_from=never')
+    build('mode=product&fg_codes=HH0417.1&sort_by=evil&date_from=never')
     const header = await screen.findByRole('columnheader', { name: 'Thành phần' })
     const table = header.closest('table') as HTMLElement
     expect(within(table).getAllByRole('row')).toHaveLength(2)
@@ -202,7 +202,7 @@ describe('PackagingHistoryPrintPage', () => {
       'Flower Top 450ml',
       'Chai',
     ])
-    expect(calls[0].params).toMatchObject({ mode: 'product', hh_codes: ['HH0417.1'] })
+    expect(calls[0].params).toMatchObject({ mode: 'product', fg_codes: ['HH0417.1'] })
     expect(calls[0].params.sort_by).toBeUndefined()
     expect(calls[0].params.date_from).toBeUndefined()
   })

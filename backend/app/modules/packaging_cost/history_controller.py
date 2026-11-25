@@ -23,14 +23,14 @@ router = APIRouter()
 
 def history_filters(
     mode: str = Query("code", pattern="^(code|product)$"), codes: list[str] = Query([], max_length=MAX_CODES),
-    hh_codes: list[str] = Query([], max_length=MAX_CODES), q: str = Query("", max_length=100),
+    fg_codes: list[str] = Query([], max_length=MAX_CODES), q: str = Query("", max_length=100),
     supplier: list[str] = Query([], max_length=50), date_from: date | None = None, date_to: date | None = None,
     sort_by: str = Query("date", max_length=30), sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> dict:
     """Bộ tham số lọc + xếp dùng chung cho danh sách và Xuất Excel (cùng thứ tự)."""
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "Từ ngày không được sau Đến ngày")
-    return {"mode": mode, "codes": codes, "hh_codes": hh_codes, "q": q, "suppliers": supplier, "date_from": date_from,
+    return {"mode": mode, "codes": codes, "fg_codes": fg_codes, "q": q, "suppliers": supplier, "date_from": date_from,
             "date_to": date_to, "sort_by": sort_by, "sort_dir": sort_dir}
 
 
@@ -40,13 +40,13 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
             user=Depends(require(ENTITY, "read"))):
     """Lịch sử mua hàng: từng lần mua của mã VTBB (hoặc thành phần của sản phẩm), mới nhất trước, kèm KPI và dữ liệu biểu đồ.
 
-    `mode=code`: `codes` (lặp được, tối đa 200; rỗng = mọi mã VTBB của cụm giá), mỗi dòng một lần mua. `mode=product`: `hh_codes`
+    `mode=code`: `codes` (lặp được, tối đa 200; rỗng = mọi mã VTBB của cụm giá), mỗi dòng một lần mua. `mode=product`: `fg_codes`
     (tối đa 200; rỗng = mọi sản phẩm có định mức): mỗi dòng = một lần mua x MỘT cặp (sản phẩm, mã thành phần của định mức) — mã
-    dùng ở 275 sản phẩm thì một lần mua cho 275 dòng (bản mẫu `renderHistBySP`), kèm `hh_code` / `hh_name` / `role` (mã vai trò
+    dùng ở 275 sản phẩm thì một lần mua cho 275 dòng (bản mẫu `renderHistBySP`), kèm `fg_code` / `fg_name` / `role` (mã vai trò
     chai / nắp / nhãn / nhãn thùng / thùng); mã xuất hiện hai vai trò trong cùng sản phẩm chỉ tính một lần (vai trò nhỏ nhất).
     Thứ tự mặc định chế độ sản phẩm: ngày giảm dần -> mã sản phẩm -> thành phần. Bộ lọc: `q` (mã, tên vật tư, mã / tên nhà cung
     cấp, tên kho; chế độ sản phẩm thêm mã / tên sản phẩm và tên thành phần), `supplier` (lặp được), `date_from` / `date_to`.
-    `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (+ `hh_code, hh_name, role` chỉ ở
+    `sort_by` trong `date, code, name, supplier, warehouse, qty, price, amount, vat, source` (+ `fg_code, fg_name, role` chỉ ở
     chế độ sản phẩm; khóa lạ -> `date` giảm), ô trống xuống cuối. Nguồn: sổ giá ba nguồn (`source_type` 1 = lịch sử cũ nạp Excel, 2 = dòng
     ĐMH của ERP, 3 = sổ Misa) kèm `line_stage` (1 = đang mở, 2 = đã chốt) và cờ `is_open` (= dòng ĐMH đang mở, giao diện hiện nhãn
     "ĐMH đang mở"); khóa xếp `source` theo nhãn hiện: lịch sử < ĐMH đang mở < Misa; dòng đơn giá 0 vẫn hiện nhưng không tính vào KPI / biểu đồ. Mỗi dòng kèm `warehouse` (tên kho nhập
@@ -73,8 +73,8 @@ def history_export(filters: dict = Depends(history_filters), db: Session = Depen
                             "lich-su-mua-hang")
 
 
-@router.get("/hh-options")
-def hh_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+@router.get("/fg-options")
+def fg_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     """Ô chọn sản phẩm của Lịch sử mua hàng: mọi mã hàng hóa có định mức bao bì, kèm `{code, name}` (~1.000, không phân trang). Quyền `packaging_cost.read`."""
-    rows = db.query(PackagingBom.hh_code, PackagingBom.hh_name).order_by(PackagingBom.hh_code).all()
+    rows = db.query(PackagingBom.fg_code, PackagingBom.fg_name).order_by(PackagingBom.fg_code).all()
     return success({"items": [{"code": code, "name": name or ""} for code, name in rows]})

@@ -49,8 +49,8 @@ def api(db, seed, cap_quyen, client_as, catalog):  # noqa: F811
     return client_as(db.get(User, seed.u_req_id))
 
 
-def _bom(db, hh="HH0001", **over) -> PackagingBom:
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", bottle_code="CPT0105", cap_code="NAP0085", carton_qty=40,
+def _bom(db, fg="HH0001", **over) -> PackagingBom:
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", bottle_code="CPT0105", cap_code="NAP0085", carton_qty=40,
                 created_by=1, updated_by=1)
     base.update(over)
     row = build_bom(**base)
@@ -62,14 +62,14 @@ def _bom(db, hh="HH0001", **over) -> PackagingBom:
 # ── 1. Migration ────────────────────────────────────────────────────────────────
 OLD_SCHEMA = """
 CREATE TABLE tab_packaging_bom (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, hh_code VARCHAR(50) NOT NULL UNIQUE, hh_name VARCHAR(255) NOT NULL DEFAULT '',
+  id INTEGER PRIMARY KEY AUTOINCREMENT, fg_code VARCHAR(50) NOT NULL UNIQUE, fg_name VARCHAR(255) NOT NULL DEFAULT '',
   legal_name VARCHAR(255) NOT NULL DEFAULT '', bottle_code VARCHAR(50) NOT NULL DEFAULT '', cap_code VARCHAR(50) NOT NULL DEFAULT '',
   label_code VARCHAR(50) NOT NULL DEFAULT '', carton_label_code VARCHAR(50) NOT NULL DEFAULT '',
   carton_code VARCHAR(50) NOT NULL DEFAULT '', carton_qty INTEGER NOT NULL DEFAULT 0)
 """
 OLD_INDEXES = ("ix_pbom_bottle:bottle_code", "ix_pbom_cap:cap_code", "ix_pbom_label:label_code",
                "ix_pbom_carton_label:carton_label_code", "ix_pbom_carton:carton_code")
-OLD_ROWS = [  # (hh, chai, nắp, nhãn, nhãn thùng, thùng)
+OLD_ROWS = [  # (fg, chai, nắp, nhãn, nhãn thùng, thùng)
     ("HH1", "C1", "N1", "L1", "NT1", "T1"),      # đủ năm
     ("HH2", "C2", "", "", "", ""),               # chỉ chai
     ("HH3", "C1", "N2", "", "NT1", ""),          # thiếu nhãn + thùng, dùng lại mã chai C1
@@ -85,17 +85,17 @@ def old_conn():
         for spec in OLD_INDEXES:
             name, col = spec.split(":")
             conn.execute(sa.text(f"CREATE INDEX {name} ON tab_packaging_bom ({col})"))
-        for hh, *codes in OLD_ROWS:
-            conn.execute(sa.text("INSERT INTO tab_packaging_bom (hh_code, bottle_code, cap_code, label_code, carton_label_code, carton_code)"
-                                 " VALUES (:hh, :a, :b, :c, :d, :e)"), dict(hh=hh, **dict(zip("abcde", codes))))
+        for fg, *codes in OLD_ROWS:
+            conn.execute(sa.text("INSERT INTO tab_packaging_bom (fg_code, bottle_code, cap_code, label_code, carton_label_code, carton_code)"
+                                 " VALUES (:fg, :a, :b, :c, :d, :e)"), dict(fg=fg, **dict(zip("abcde", codes))))
     with engine.connect() as conn:
         yield conn
     engine.dispose()
 
 
 def _parts(conn):
-    rows = conn.execute(sa.text("SELECT b.hh_code, p.part_type, p.part_code FROM tab_packaging_bom_part p "
-                                "JOIN tab_packaging_bom b ON b.id = p.bom_id ORDER BY b.hh_code, p.part_type")).all()
+    rows = conn.execute(sa.text("SELECT b.fg_code, p.part_type, p.part_code FROM tab_packaging_bom_part p "
+                                "JOIN tab_packaging_bom b ON b.id = p.bom_id ORDER BY b.fg_code, p.part_type")).all()
     return [tuple(r) for r in rows]
 
 
@@ -125,7 +125,7 @@ def test_migration_upgrade_roi_downgrade_tra_dung_du_lieu(old_conn):
     _run(old_conn, mig.upgrade)
     insp = sa.inspect(old_conn)
     bom_cols = {c["name"] for c in insp.get_columns("tab_packaging_bom")}
-    assert bom_cols == {"id", "hh_code", "hh_name", "legal_name", "carton_qty"}           # năm cột mã đã bị bỏ
+    assert bom_cols == {"id", "fg_code", "fg_name", "legal_name", "carton_qty"}           # năm cột mã đã bị bỏ
     assert not {i["name"] for i in insp.get_indexes("tab_packaging_bom")} & {s.split(":")[0] for s in OLD_INDEXES}
     covering = next(i for i in insp.get_indexes("tab_packaging_bom_part") if i["name"] == "ix_pbom_part_code")
     assert covering["column_names"] == ["part_code", "part_type", "bom_id"]              # chỉ mục phủ cho tra ngược theo mã
@@ -136,7 +136,7 @@ def test_migration_upgrade_roi_downgrade_tra_dung_du_lieu(old_conn):
     assert "tab_packaging_bom_part" not in insp.get_table_names()
     assert {s.split(":")[0] for s in OLD_INDEXES} <= {i["name"] for i in insp.get_indexes("tab_packaging_bom")}
     back = [tuple(r) for r in old_conn.execute(sa.text(
-        "SELECT hh_code, bottle_code, cap_code, label_code, carton_label_code, carton_code FROM tab_packaging_bom ORDER BY hh_code"))]
+        "SELECT fg_code, bottle_code, cap_code, label_code, carton_label_code, carton_code FROM tab_packaging_bom ORDER BY fg_code"))]
     assert back == OLD_ROWS
 
 
@@ -144,13 +144,13 @@ def test_migration_xoa_dau_phieu_keo_theo_thanh_phan_khi_bat_khoa_ngoai(old_conn
     mig = _load_migration()
     _run(old_conn, mig.upgrade)
     old_conn.execute(sa.text("PRAGMA foreign_keys = ON"))
-    old_conn.execute(sa.text("DELETE FROM tab_packaging_bom WHERE hh_code = 'HH1'"))
+    old_conn.execute(sa.text("DELETE FROM tab_packaging_bom WHERE fg_code = 'HH1'"))
     assert [p for p in _parts(old_conn) if p[0] == "HH1"] == [] and len(_parts(old_conn)) == 4
 
 
 # ── 2. CRUD giữ bảng thành phần đồng bộ ─────────────────────────────────────────
 def test_tao_ghi_mot_dong_thanh_phan_cho_moi_ma_co_gia_tri(api, db):
-    res = api.post(BOMS, json={"hh_code": "HH9", "bottle_code": "CPT0105", "cap_code": "NAP0085", "label_code": "NHG0001", "carton_qty": 12})
+    res = api.post(BOMS, json={"fg_code": "HH9", "bottle_code": "CPT0105", "cap_code": "NAP0085", "label_code": "NHG0001", "carton_qty": 12})
     assert res.status_code == 201, res.text
     data = res.json()["data"]
     assert (data["bottle_code"], data["cap_code"], data["label_code"], data["carton_label_code"], data["carton_code"]) == \
@@ -176,7 +176,7 @@ def test_sua_doi_them_xoa_thanh_phan_va_day_moc_cap_nhat(api, db):
 
 def test_sua_rieng_ten_khong_dong_den_thanh_phan(api, db):
     row = _bom(db)
-    assert api.patch(f"{BOMS}/{row.id}", json={"hh_name": "Tên mới"}).status_code == 200
+    assert api.patch(f"{BOMS}/{row.id}", json={"fg_name": "Tên mới"}).status_code == 200
     assert bom_codes_of(db, "HH0001") == {1: "CPT0105", 2: "NAP0085"}
 
 
@@ -200,13 +200,13 @@ def test_loc_va_xep_danh_sach_theo_ma_thanh_phan_o_may_chu(api, db):
     _bom(db, "HH0002", cap_code="NAP0099")
     _bom(db, "HH0003", cap_code="")
     items = api.get(BOMS, params={"cap_code": "0099"}).json()["data"]["items"]
-    assert [i["hh_code"] for i in items] == ["HH0002"]
-    asc = [i["hh_code"] for i in api.get(BOMS, params={"sort_by": "cap_code", "sort_dir": "asc"}).json()["data"]["items"]]
-    desc = [i["hh_code"] for i in api.get(BOMS, params={"sort_by": "cap_code", "sort_dir": "desc"}).json()["data"]["items"]]
+    assert [i["fg_code"] for i in items] == ["HH0002"]
+    asc = [i["fg_code"] for i in api.get(BOMS, params={"sort_by": "cap_code", "sort_dir": "asc"}).json()["data"]["items"]]
+    desc = [i["fg_code"] for i in api.get(BOMS, params={"sort_by": "cap_code", "sort_dir": "desc"}).json()["data"]["items"]]
     assert asc[:2] == ["HH0001", "HH0002"] and asc[-1] == "HH0003"                  # ô trống luôn xuống cuối
     assert desc[:2] == ["HH0002", "HH0001"] and desc[-1] == "HH0003"
     op = api.get(BOMS, params={"cap_code__contains": "85"}).json()["data"]["items"]
-    assert [i["hh_code"] for i in op] == ["HH0001"]
+    assert [i["fg_code"] for i in op] == ["HH0001"]
 
 
 def test_sort_by_khong_nam_trong_danh_sach_cho_phep_bi_bo_qua(api, db):
@@ -229,8 +229,8 @@ def test_tra_nguoc_san_pham_nao_dung_ma_x(db, catalog):
     _bom(db, "HH0003", cap_code="NAP0099")
     assert svc.usage_by_code(db, ["NAP0085"]) == {"NAP0085": 2}                      # đếm theo SẢN PHẨM, không theo dòng thành phần
     assert svc.usage_by_code(db)["CPT0105"] == 2
-    assert [b.hh_code for b in svc.load_bom_rows(db, uses_codes=["NAP0099"])] == ["HH0003"]
-    assert [b.hh_code for b in svc.load_bom_rows(db, uses_codes=["NAP0085"])] == ["HH0001", "HH0002"]
+    assert [b.fg_code for b in svc.load_bom_rows(db, uses_codes=["NAP0099"])] == ["HH0003"]
+    assert [b.fg_code for b in svc.load_bom_rows(db, uses_codes=["NAP0085"])] == ["HH0001", "HH0002"]
     assert svc.load_bom_rows(db, uses_codes=[]) == []                                # rỗng nghĩa là KHÔNG ai dùng, không phải "tất cả"
     only = svc.load_bom_rows(db, uses_codes=["NAP0099"])[0]
     assert only.codes == {1: "CPT0105", 2: "NAP0099"} and only.code_of(PackagingRole.LABEL) == ""
@@ -241,7 +241,7 @@ def test_tac_dong_gia_dem_dung_so_san_pham_dung_ma(db, catalog):
     _bom(db, "HH0001")
     _bom(db, "HH0002")
     out = compute_impact(db, ["NAP0085"], {}, page=None)
-    assert out["selected"][0]["usage"] == 2 and [p["hh_code"] for p in out["products"]] == ["HH0001", "HH0002"]
+    assert out["selected"][0]["usage"] == 2 and [p["fg_code"] for p in out["products"]] == ["HH0001", "HH0002"]
 
 
 # ── 4. Thêm loại thành phần mới không đổi cấu trúc ──────────────────────────────

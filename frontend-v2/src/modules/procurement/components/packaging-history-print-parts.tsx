@@ -228,9 +228,9 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: Prin
                   {productMode && (
                     <>
                       <td className="code">
-                        <b>{row.hh_code}</b>
+                        <b>{row.fg_code}</b>
                       </td>
-                      <td className="name">{row.hh_name || <span className="faint">(chưa có tên)</span>}</td>
+                      <td className="name">{row.fg_name || <span className="faint">(chưa có tên)</span>}</td>
                       <td>{historyRoleText(row) || <PrintDash />}</td>
                       <td className="code">{row.code}</td>
                       <td className="name">{materialName}</td>

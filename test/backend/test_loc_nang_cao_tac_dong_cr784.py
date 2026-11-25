@@ -23,8 +23,8 @@ CODES = ["BA", "BB", "CA", "T1"]
 ASSUMED = {"BA": D(130), "BB": D(150), "T1": D(180)}
 
 
-def _bom(db, hh, bottle, cap, label, carton_label, carton, qty):
-    db.add(build_bom(hh_code=hh, hh_name=f"Sản phẩm {hh}", legal_name="", bottle_code=bottle, cap_code=cap, label_code=label,
+def _bom(db, fg, bottle, cap, label, carton_label, carton, qty):
+    db.add(build_bom(fg_code=fg, fg_name=f"Sản phẩm {fg}", legal_name="", bottle_code=bottle, cap_code=cap, label_code=label,
                         carton_label_code=carton_label, carton_code=carton, carton_qty=qty, created_by=1, updated_by=1))
 
 
@@ -48,8 +48,8 @@ def world(db):
     db.commit()
 
 
-def _hh(db, **kw):
-    return [p["hh_code"] for p in compute_impact(db, CODES, ASSUMED, **kw)["products"]]
+def _fg(db, **kw):
+    return [p["fg_code"] for p in compute_impact(db, CODES, ASSUMED, **kw)["products"]]
 
 
 def _flt(**kw) -> ImpactFilters:
@@ -62,7 +62,7 @@ def _range(low, high):
 
 # ── Công thức đúng như đã tính tay (nền cho mọi bài dưới) ────────────────────────
 def test_nen_so_lieu(db, world):
-    rows = {p["hh_code"]: p for p in compute_impact(db, CODES, ASSUMED)["products"]}
+    rows = {p["fg_code"]: p for p in compute_impact(db, CODES, ASSUMED)["products"]}
     assert rows["HH1"]["cost_applied_bottle"] == 160 and rows["HH1"]["diff_carton"] == 420 and rows["HH1"]["trend"] == 1
     assert rows["HH2"]["cost_applied_bottle"] == 167.5 and rows["HH2"]["diff_bottle"] == -47.5 and rows["HH2"]["trend"] == 2
     assert rows["HH3"]["trend"] == 3 and rows["HH3"]["diff_carton"] is None
@@ -71,14 +71,14 @@ def test_nen_so_lieu(db, world):
 
 # ── Từng bộ lọc ─────────────────────────────────────────────────────────────────
 def test_khong_loc_thi_khong_doi(db, world):
-    assert _hh(db, filters=_flt()) == _hh(db) == ["HH1", "HH2", "HH3", "HH4", "HH5"]
+    assert _fg(db, filters=_flt()) == _fg(db) == ["HH1", "HH2", "HH3", "HH4", "HH5"]
     assert not _flt().active and _flt(trend="up").active and _flt(warnings_only=True).active
 
 
 @pytest.mark.parametrize("trend,expected", [("all", ["HH1", "HH2", "HH3", "HH4", "HH5"]), ("up", ["HH1", "HH5"]),
                                             ("down", ["HH2"]), ("flat", ["HH3"]), ("missing", ["HH4"])])
 def test_loc_xu_huong(db, world, trend, expected):
-    assert _hh(db, filters=_flt(trend=trend)) == expected
+    assert _fg(db, filters=_flt(trend=trend)) == expected
 
 
 @pytest.mark.parametrize("roles,expected", [
@@ -89,7 +89,7 @@ def test_loc_xu_huong(db, world, trend, expected):
     ({1, 5}, ["HH1", "HH2", "HH5"]), ({3, 4}, []),      # nhiều vai trò = HOẶC
 ])
 def test_loc_ma_da_chon_o_vai_tro(db, world, roles, expected):
-    assert _hh(db, filters=_flt(part_roles=frozenset(roles))) == expected
+    assert _fg(db, filters=_flt(part_roles=frozenset(roles))) == expected
 
 
 def test_loc_vai_tro_phan_biet_chai_va_thung_khi_chon_khac(db, world):
@@ -101,7 +101,7 @@ def test_loc_vai_tro_phan_biet_chai_va_thung_khi_chon_khac(db, world):
 @pytest.mark.parametrize("low,high,expected", [(12, 12, ["HH1", "HH5"]), (13, None, ["HH2"]), (None, 12, ["HH1", "HH4", "HH5"]),
                                                (1, 24, ["HH1", "HH2", "HH4", "HH5"]), (100, None, [])])
 def test_loc_quy_cach_thung_va_o_trong_bi_loai(db, world, low, high, expected):
-    assert _hh(db, filters=_flt(carton_qty=_range(low, high))) == expected     # HH3 (không có quy cách) luôn bị loại
+    assert _fg(db, filters=_flt(carton_qty=_range(low, high))) == expected     # HH3 (không có quy cách) luôn bị loại
 
 
 @pytest.mark.parametrize("name,low,high,expected", [
@@ -112,20 +112,20 @@ def test_loc_quy_cach_thung_va_o_trong_bi_loai(db, world, low, high, expected):
     ("cost_new_bottle", 160, 160, ["HH1"]),                                          # biên đóng
 ])
 def test_loc_khoang_so(db, world, name, low, high, expected):
-    assert _hh(db, filters=_flt(**{name: _range(low, high)})) == expected
+    assert _fg(db, filters=_flt(**{name: _range(low, high)})) == expected
 
 
 def test_loc_chi_co_canh_bao(db, world):
-    assert _hh(db, filters=_flt(warnings_only=True)) == ["HH2", "HH4"]      # thiếu mã nhãn · thiếu giá chai
+    assert _fg(db, filters=_flt(warnings_only=True)) == ["HH2", "HH4"]      # thiếu mã nhãn · thiếu giá chai
 
 
 def test_ket_hop_nhieu_bo_loc_la_va(db, world):
-    assert _hh(db, filters=_flt(trend="up", carton_qty=_range(12, 12))) == ["HH1", "HH5"]
-    assert _hh(db, filters=_flt(trend="up", part_roles=frozenset({5}), warnings_only=True)) == []
-    assert _hh(db, filters=_flt(trend="down", warnings_only=True, diff_bottle=_range(None, 0))) == ["HH2"]
-    assert _hh(db, q="HH5", filters=_flt(trend="up")) == ["HH5"]            # cùng ô tìm
-    assert _hh(db, q="HH2", filters=_flt(trend="up")) == []
-    assert _hh(db, filters=_flt(trend="up", diff_bottle=_range(30, None)), sort_by="hh_code", sort_dir="desc") == ["HH5", "HH1"]
+    assert _fg(db, filters=_flt(trend="up", carton_qty=_range(12, 12))) == ["HH1", "HH5"]
+    assert _fg(db, filters=_flt(trend="up", part_roles=frozenset({5}), warnings_only=True)) == []
+    assert _fg(db, filters=_flt(trend="down", warnings_only=True, diff_bottle=_range(None, 0))) == ["HH2"]
+    assert _fg(db, q="HH5", filters=_flt(trend="up")) == ["HH5"]            # cùng ô tìm
+    assert _fg(db, q="HH2", filters=_flt(trend="up")) == []
+    assert _fg(db, filters=_flt(trend="up", diff_bottle=_range(30, None)), sort_by="fg_code", sort_dir="desc") == ["HH5", "HH1"]
 
 
 def test_loc_khong_doi_kpi_va_tong_so_dong_la_sau_loc(db, world):
@@ -133,24 +133,24 @@ def test_loc_khong_doi_kpi_va_tong_so_dong_la_sau_loc(db, world):
     out = compute_impact(db, CODES, ASSUMED, filters=_flt(trend="up"), page=1, page_size=1)
     assert out["kpis"] == full["kpis"] and out["kpis"]["affected_products"] == 5
     assert out["selected"] == full["selected"]
-    assert out["products_total"] == 2 and [p["hh_code"] for p in out["products"]] == ["HH1"]     # cắt trang SAU lọc
+    assert out["products_total"] == 2 and [p["fg_code"] for p in out["products"]] == ["HH1"]     # cắt trang SAU lọc
 
 
 # ── Xếp theo năm cột thành phần ─────────────────────────────────────────────────
 def test_xep_cot_chai_theo_gia_dang_ap_o_trong_cuoi_hai_chieu(db, world):
     #  Giá chai đang áp: HH1 130 · HH2 150 · HH3 300 · HH4 chưa có giá · HH5 130 (BA hòa nhau → mã HH tăng dần)
-    assert _hh(db, sort_by="part_bottle", sort_dir="asc") == ["HH1", "HH5", "HH2", "HH3", "HH4"]
-    assert _hh(db, sort_by="part_bottle", sort_dir="desc") == ["HH3", "HH2", "HH1", "HH5", "HH4"]
+    assert _fg(db, sort_by="part_bottle", sort_dir="asc") == ["HH1", "HH5", "HH2", "HH3", "HH4"]
+    assert _fg(db, sort_by="part_bottle", sort_dir="desc") == ["HH3", "HH2", "HH1", "HH5", "HH4"]
 
 
 def test_xep_cot_nhan_va_thung_o_trong_la_san_pham_khong_co_ma(db, world):
     for direction in ("asc", "desc"):
-        assert _hh(db, sort_by="part_label", sort_dir=direction)[-1] == "HH2"                   # HH2 không có nhãn → cuối
-        assert _hh(db, sort_by="part_carton_label", sort_dir=direction)[0] == "HH5"             # chỉ HH5 có nhãn thùng
-        assert _hh(db, sort_by="part_carton_label", sort_dir=direction)[1:] == ["HH1", "HH2", "HH3", "HH4"]
-        assert _hh(db, sort_by="part_carton", sort_dir=direction)[:3] == ["HH1", "HH2", "HH5"]  # T1 (180) hòa → mã HH tăng
-        assert _hh(db, sort_by="part_carton", sort_dir=direction)[3:] == ["HH3", "HH4"]
-        assert _hh(db, sort_by="part_cap", sort_dir=direction) == ["HH1", "HH2", "HH3", "HH4", "HH5"]  # CA 10 hòa hết
+        assert _fg(db, sort_by="part_label", sort_dir=direction)[-1] == "HH2"                   # HH2 không có nhãn → cuối
+        assert _fg(db, sort_by="part_carton_label", sort_dir=direction)[0] == "HH5"             # chỉ HH5 có nhãn thùng
+        assert _fg(db, sort_by="part_carton_label", sort_dir=direction)[1:] == ["HH1", "HH2", "HH3", "HH4"]
+        assert _fg(db, sort_by="part_carton", sort_dir=direction)[:3] == ["HH1", "HH2", "HH5"]  # T1 (180) hòa → mã HH tăng
+        assert _fg(db, sort_by="part_carton", sort_dir=direction)[3:] == ["HH3", "HH4"]
+        assert _fg(db, sort_by="part_cap", sort_dir=direction) == ["HH1", "HH2", "HH3", "HH4", "HH5"]  # CA 10 hòa hết
 
 
 def test_xep_thanh_phan_hoa_gia_theo_ma_thanh_phan_roi_ma_hh(db):
@@ -158,31 +158,31 @@ def test_xep_thanh_phan_hoa_gia_theo_ma_thanh_phan_roi_ma_hh(db):
     add_products(db, *[(c, f"Vật tư {c}", "Cái") for c in ("B1", "NZ", "NA")])
     for code, price in (("B1", 100), ("NZ", 10), ("NA", 10)):
         add_ledger(db, code, price, "2026-01-01")
-    for hh, cap in (("HHA", "NZ"), ("HHB", "NA"), ("HHC", "NZ"), ("HHD", "NA")):
-        _bom(db, hh, "B1", cap, "", "", "", 10)
+    for fg, cap in (("HHA", "NZ"), ("HHB", "NA"), ("HHC", "NZ"), ("HHD", "NA")):
+        _bom(db, fg, "B1", cap, "", "", "", 10)
     db.commit()
     for direction in ("asc", "desc"):
         rows = compute_impact(db, ["B1"], {}, sort_by="part_cap", sort_dir=direction)["products"]
-        assert [p["hh_code"] for p in rows] == ["HHB", "HHD", "HHA", "HHC"]
+        assert [p["fg_code"] for p in rows] == ["HHB", "HHD", "HHA", "HHC"]
 
 
 def test_xep_theo_gia_giang_dinh_khong_phai_gia_cu(db, world):
     """Đổi giả định BA từ 130 lên 500 thì HH1 / HH5 (dùng BA) nhảy xuống cuối cột chai: xếp theo giá ĐANG ÁP, không theo giá cũ 100."""
-    assert _hh(db, sort_by="part_bottle")[:2] == ["HH1", "HH5"]
+    assert _fg(db, sort_by="part_bottle")[:2] == ["HH1", "HH5"]
     out = compute_impact(db, CODES, {**ASSUMED, "BA": D(500)}, sort_by="part_bottle")["products"]
-    assert [p["hh_code"] for p in out] == ["HH2", "HH3", "HH1", "HH5", "HH4"]
+    assert [p["fg_code"] for p in out] == ["HH2", "HH3", "HH1", "HH5", "HH4"]
 
 
 def test_moi_khoa_xep_thanh_phan_deu_co_va_khoa_la_van_ve_ma_hh(db, world):
     assert set(PART_SORT_ROLES) == {"part_bottle", "part_cap", "part_label", "part_carton_label", "part_carton"}
-    assert _hh(db, sort_by="part_hacker") == ["HH1", "HH2", "HH3", "HH4", "HH5"]
+    assert _fg(db, sort_by="part_hacker") == ["HH1", "HH2", "HH3", "HH4", "HH5"]
 
 
 def test_xep_thanh_phan_ket_hop_loc_va_trang(db, world):
     out = compute_impact(db, CODES, ASSUMED, filters=_flt(carton_qty=_range(1, None)), sort_by="part_bottle", sort_dir="desc",
                          page=2, page_size=2)
     #  Sau lọc quy cách >= 1: HH1 HH2 HH4 HH5; xếp chai giảm: HH2 (150), HH1, HH5 (130), HH4 (trống) → trang 2 = HH5, HH4
-    assert out["products_total"] == 4 and [p["hh_code"] for p in out["products"]] == ["HH5", "HH4"]
+    assert out["products_total"] == 4 and [p["fg_code"] for p in out["products"]] == ["HH5", "HH4"]
 
 
 def test_so_truy_van_khong_doi_theo_loc_va_xep(db, world):
@@ -207,23 +207,23 @@ def _body(**over):
     return body
 
 
-def _api_hh(api, **over):
+def _api_fg(api, **over):
     res = api.post(IMPACT, json=_body(**over))
     assert res.status_code == 200, res.text
     return res.json()["data"]
 
 
 def test_api_loc_xu_huong_va_vai_tro_va_khoang(api):
-    data = _api_hh(api, trend="up")
-    assert [p["hh_code"] for p in data["products"]] == ["HH1", "HH5"] and data["products_total"] == 2
+    data = _api_fg(api, trend="up")
+    assert [p["fg_code"] for p in data["products"]] == ["HH1", "HH5"] and data["products_total"] == 2
     assert data["kpis"]["affected_products"] == 5 and data["kpis"]["increased"] == 2
-    assert _api_hh(api, part_roles=[3, 4])["products_total"] == 0
-    assert [p["hh_code"] for p in _api_hh(api, part_roles=[5, 5])["products"]] == ["HH1", "HH2", "HH5"]
-    assert [p["hh_code"] for p in _api_hh(api, cost_new_bottle_min=161, cost_new_bottle_max=200)["products"]] == ["HH2", "HH5"]
-    assert [p["hh_code"] for p in _api_hh(api, diff_carton_max=0)["products"]] == ["HH2"]
-    assert [p["hh_code"] for p in _api_hh(api, carton_qty_min=12, carton_qty_max=12)["products"]] == ["HH1", "HH5"]
-    assert [p["hh_code"] for p in _api_hh(api, warnings_only=True)["products"]] == ["HH2", "HH4"]
-    assert [p["hh_code"] for p in _api_hh(api, sort_by="part_bottle", sort_dir="desc")["products"]] == ["HH3", "HH2", "HH1", "HH5", "HH4"]
+    assert _api_fg(api, part_roles=[3, 4])["products_total"] == 0
+    assert [p["fg_code"] for p in _api_fg(api, part_roles=[5, 5])["products"]] == ["HH1", "HH2", "HH5"]
+    assert [p["fg_code"] for p in _api_fg(api, cost_new_bottle_min=161, cost_new_bottle_max=200)["products"]] == ["HH2", "HH5"]
+    assert [p["fg_code"] for p in _api_fg(api, diff_carton_max=0)["products"]] == ["HH2"]
+    assert [p["fg_code"] for p in _api_fg(api, carton_qty_min=12, carton_qty_max=12)["products"]] == ["HH1", "HH5"]
+    assert [p["fg_code"] for p in _api_fg(api, warnings_only=True)["products"]] == ["HH2", "HH4"]
+    assert [p["fg_code"] for p in _api_fg(api, sort_by="part_bottle", sort_dir="desc")["products"]] == ["HH3", "HH2", "HH1", "HH5", "HH4"]
 
 
 @pytest.mark.parametrize("over", [
@@ -258,7 +258,7 @@ def test_tong_hop_theo_san_pham_xep_cot_thanh_phan(api):
     def order(**q):
         res = api.get(OVERVIEW, params={"page_size": 50, **q})
         assert res.status_code == 200, res.text
-        return [p["hh_code"] for p in res.json()["data"]["items"]]
+        return [p["fg_code"] for p in res.json()["data"]["items"]]
     assert order(sort_by="part_bottle", sort_dir="asc") == ["HH1", "HH5", "HH2", "HH3", "HH4"]
     assert order(sort_by="part_bottle", sort_dir="desc") == ["HH3", "HH2", "HH1", "HH5", "HH4"]
     assert order(sort_by="part_carton_label", sort_dir="desc")[0] == "HH5"

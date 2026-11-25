@@ -52,9 +52,9 @@ export function buildProductColumns({ offset, newKey, compact, extraAfterCosts =
   }
   const lead: TableColumn<PackagingImpactProduct>[] = [
     { key: 'stt', label: 'STT', width: 56, align: 'center', fixed: true, cell: (_r, i) => offset + i + 1 },
-    { key: 'hh_code', label: 'Mã HH', width: 110, sort: 'hh_code', fixed: true,
-      cell: (r) => (compact ? <CodeLink code={r.hh_code} product /> : <b className="pkg-num">{r.hh_code}</b>) },
-    { key: 'hh_name', label: 'Tên hàng hóa', width: compact ? 220 : 250, sort: 'hh_name', cell: (r) => <OneLine>{r.hh_name}</OneLine> },
+    { key: 'fg_code', label: 'Mã HH', width: 110, sort: 'fg_code', fixed: true,
+      cell: (r) => (compact ? <CodeLink code={r.fg_code} product /> : <b className="pkg-num">{r.fg_code}</b>) },
+    { key: 'fg_name', label: 'Tên hàng hóa', width: compact ? 220 : 250, sort: 'fg_name', cell: (r) => <OneLine>{r.fg_name}</OneLine> },
     { key: 'carton_qty', label: 'Quy cách thùng', width: compact ? 112 : 100, align: 'right', sort: 'carton_qty',
       cell: (r) => (r.carton_qty ? r.carton_qty.toLocaleString('vi-VN') : <span className="pkg-muted">—</span>) },
   ]

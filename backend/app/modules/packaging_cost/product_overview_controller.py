@@ -33,7 +33,7 @@ def _bound():
 
 
 def overview_filters(q: str = Query("", max_length=100), trend: str = Query("all", pattern="^(all|up|down|flat|missing)$"),
-                     sort_by: str = Query("hh_code", max_length=30), sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
+                     sort_by: str = Query("fg_code", max_length=30), sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
                      part_roles: str = Query("", pattern=ROLES_PATTERN, max_length=ROLES_MAX_LENGTH),
                      carton_qty_min: int | None = Query(None, ge=0, le=MAX_CARTON_QTY),
                      carton_qty_max: int | None = Query(None, ge=0, le=MAX_CARTON_QTY),
@@ -73,9 +73,9 @@ def product_overview(filters: dict = Depends(overview_filters), page: int = Quer
     `carton_qty_min/max` (số nguyên), `cost_old_bottle_min/max`, `cost_new_bottle_min/max`, `diff_bottle_min/max`,
     `diff_carton_min/max` (đồng) và `pct_min/max` (đơn vị %, so với số một chữ số lẻ đang hiện), biên đóng, dòng có giá trị
     trống bị loại khi khoảng đó bật, biên dưới > biên trên là 422; `warnings_only` (chỉ sản phẩm đang có cảnh báo). `sort_by` trong
-    `hh_code, hh_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct, diff_carton` và năm cột thành phần
+    `fg_code, fg_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct, diff_carton` và năm cột thành phần
     `part_bottle, part_cap, part_label, part_carton_label, part_carton` (giá mới của thành phần, hòa theo mã thành phần rồi mã HH;
-    khóa lạ -> `hh_code`), ô trống xuống cuối cả hai chiều. `page_size` <= 500. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` + lọc nâng cao nhưng chưa lọc
+    khóa lạ -> `fg_code`), ô trống xuống cuối cả hai chiều. `page_size` <= 500. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` + lọc nâng cao nhưng chưa lọc
     `trend`; `total` = số dòng sau mọi bộ lọc. Quyền `packaging_cost.read`; giá chỉ tính trên các dòng sổ giá thuộc pháp
     nhân người xem được thấy. Năm truy vấn cố định bất kể số sản phẩm.
     """

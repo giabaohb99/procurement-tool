@@ -42,6 +42,8 @@ class ProductPriceLedger(Base):
         # tập mã là `ORDER BY price_date, doc_id, id LIMIT 1` — có chỉ mục này MySQL đọc từ đầu / cuối chỉ mục rồi dừng ở dòng đầu
         # thỏa điều kiện, thay vì xếp cả sổ (đo 2 lần x ~85 ms -> ~0 trên 11,6 nghìn dòng; sổ càng lớn càng lợi).
         Index("ix_ppl_date_latest", "price_date", "doc_id", "id"),
+        # Tra "dòng sổ Misa của lô nhập X" khi xóa theo lô (duoc-CR-784 phase 07) — gần như mọi dòng là 0 nên chỉ mục rất gọn.
+        Index("ix_ppl_import_batch", "import_batch_id"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -74,6 +76,9 @@ class ProductPriceLedger(Base):
     # -> giao diện dùng giá x số lượng (cùng luật `gia_tri ?? gia x sl` của bản mẫu HTML). Dòng ĐMH đang mở luôn NULL.
     amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     unit: Mapped[str] = mapped_column(String(25), default="")             # ĐVT lúc mua — cảnh báo lệch ĐVT danh mục
+    # Lô nhập Excel (`tab_import_batch.id`, module 6 — sổ chi tiết Misa) đã THÊM dòng này; 0 = không do lô nào (ĐMH, lịch sử cũ, script
+    # HTML). Dòng trùng khớp được giữ nguyên qua lần nạp sau vẫn mang id lô cũ (duoc-CR-784 phase 07).
+    import_batch_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     # MỘT nguồn giờ: đồng hồ máy chủ CSDL (cùng nguồn với `created_at` / `updated_at` của mọi bảng khác). Lúc chèn lấy `server_default`;
     # lúc ghi đè nơi ghi phải gán `func.now()` (không dùng giờ Python — lệch múi giờ so với máy chủ CSDL).
     synced_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

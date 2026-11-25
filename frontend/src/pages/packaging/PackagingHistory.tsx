@@ -6,7 +6,7 @@ import PackagingExcelImportButton from '../../components/packaging/PackagingExce
 import PackagingHistoryChart from '../../components/packaging/PackagingHistoryChart'
 import PackagingHistoryTable from '../../components/packaging/PackagingHistoryTable'
 import PackagingHistoryToolbar from '../../components/packaging/PackagingHistoryToolbar'
-import { IMPORT_MODULE_PACKAGING_MISA, downloadExport, fetchCodeOptions, fetchHhOptions, fetchHistory } from '../../api/packaging-cost'
+import { IMPORT_MODULE_PACKAGING_MISA, downloadExport, fetchCodeOptions, fetchFgOptions, fetchHistory } from '../../api/packaging-cost'
 import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
@@ -22,7 +22,7 @@ import '../../components/packaging/packaging.css'
  * Màn LỊCH SỬ MUA HÀNG: từng lần mua của mã VTBB, hoặc của các thành phần trong định mức của một / nhiều sản phẩm; kèm
  * dòng KPI và biểu đồ "Diễn biến đơn giá" khi chọn đúng một mã. Lịch sử là bản chụp BẤT BIẾN của sổ giá — không có ô sửa
  * đơn giá (sai thì sửa ở ĐMH / nguồn nạp). Lọc + xếp + phân trang tại MÁY CHỦ. Lựa chọn mã nằm ở URL (`?codes=A,B` ·
- * `?hh=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
+ * `?fg=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
  */
 export default function PackagingHistory() {
   const { can } = useAuth()
@@ -51,7 +51,7 @@ export default function PackagingHistory() {
   useEffect(() => {
     if (!isProduct || productsLoaded) return
     setProductsLoading(true)
-    fetchHhOptions().then((d) => { setProductOptions(d.map((x) => ({ ...x, group: '', usage: 0, new: null }))); setProductsLoaded(true) })
+    fetchFgOptions().then((d) => { setProductOptions(d.map((x) => ({ ...x, group: '', usage: 0, new: null }))); setProductsLoaded(true) })
       .catch(() => toast.error('Không nạp được danh sách sản phẩm'))
       .finally(() => setProductsLoading(false))
   }, [isProduct, productsLoaded])
@@ -87,7 +87,7 @@ export default function PackagingHistory() {
   const summaryCards = stats ? (
     <div className="pkg-kpis">
       {buildHistorySummary(stats, {
-        singleCode, mode: selection.mode, selectedCount: isProduct ? selection.hh.length : selection.codes.length,
+        singleCode, mode: selection.mode, selectedCount: isProduct ? selection.fg.length : selection.codes.length,
       }).map((it) => (
         <div key={it.label} className="pkg-kpi">
           <div className="pkg-kpi-k">{it.label}</div>

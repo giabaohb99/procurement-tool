@@ -1,5 +1,5 @@
 /**
- * duoc-CR-784 — luật thuần của tab Lịch sử mua hàng: đường dẫn sâu (`?codes=` / `?hh=`), bộ lọc → tham số máy chủ, dữ
+ * duoc-CR-784 — luật thuần của tab Lịch sử mua hàng: đường dẫn sâu (`?codes=` / `?fg=`), bộ lọc → tham số máy chủ, dữ
  * liệu + trục của biểu đồ đơn giá. Các thẻ số liệu ở `packaging-history-summary-items.ts`.
  *
  * Mã được cất trong URL (không chỉ trong state) để màn khác dẫn thẳng vào được — bấm mã ở Bảng giá / Giá mua gần nhất /
@@ -23,8 +23,8 @@ export function historyRoleText(row: { role: number | null }): string {
 }
 
 /** Khóa dòng của bảng: chế độ sản phẩm một dòng sổ giá hiện ở nhiều sản phẩm nên `id` một mình không duy nhất. */
-export function historyRowKey(row: { id: number; hh_code: string }): string {
-  return row.hh_code ? `${row.hh_code}:${row.id}` : String(row.id)
+export function historyRowKey(row: { id: number; fg_code: string }): string {
+  return row.fg_code ? `${row.fg_code}:${row.id}` : String(row.id)
 }
 
 /** Trần số mã một lượt — khớp `MAX_CODES` của máy chủ (`history_service.py`). */
@@ -43,7 +43,7 @@ export interface PackagingHistorySelection {
   /** Mã VTBB (chế độ `code`). */
   codes: string[]
   /** Mã sản phẩm (chế độ `product`). */
-  hh: string[]
+  fg: string[]
 }
 
 export const EMPTY_HISTORY_FILTERS: PackagingHistoryFilters = {
@@ -64,20 +64,20 @@ function splitCodes(raw: string | null): string[] {
 }
 
 /**
- * Đọc lựa chọn từ URL. `mode` nói rõ thì theo `mode`; không nói thì đường dẫn sâu chỉ có `hh` là chế độ sản phẩm, còn lại là
+ * Đọc lựa chọn từ URL. `mode` nói rõ thì theo `mode`; không nói thì đường dẫn sâu chỉ có `fg` là chế độ sản phẩm, còn lại là
  * chế độ mã. Mã lặp / rỗng bị bỏ, cắt ở trần.
  */
 export function parseHistorySearch(search: URLSearchParams): PackagingHistorySelection {
-  const hh = splitCodes(search.get('hh'))
+  const fg = splitCodes(search.get('fg'))
   const codes = splitCodes(search.get('codes'))
   const explicit = search.get('mode')
   const mode: PackagingHistoryMode =
     explicit === 'product' || explicit === 'code'
       ? explicit
-      : hh.length > 0 && codes.length === 0
+      : fg.length > 0 && codes.length === 0
         ? 'product'
         : 'code'
-  return { mode, codes, hh }
+  return { mode, codes, fg }
 }
 
 /**
@@ -86,9 +86,9 @@ export function parseHistorySearch(search: URLSearchParams): PackagingHistorySel
  */
 export function buildHistorySearch(selection: PackagingHistorySelection): Record<string, string> {
   const out: Record<string, string> = {}
-  if (selection.mode === 'product' || selection.hh.length > 0) out.mode = selection.mode
+  if (selection.mode === 'product' || selection.fg.length > 0) out.mode = selection.mode
   if (selection.codes.length) out.codes = selection.codes.join(',')
-  if (selection.hh.length) out.hh = selection.hh.join(',')
+  if (selection.fg.length) out.fg = selection.fg.join(',')
   return out
 }
 
@@ -98,8 +98,8 @@ export function packagingHistoryHref(code: string): string {
 }
 
 /** Đường dẫn tới Lịch sử mua hàng của MỘT sản phẩm (chế độ "Theo mã sản phẩm": mọi mã thành phần của định mức). */
-export function packagingHistoryProductHref(hhCode: string): string {
-  return `${appRoutes.procurement.packagingHistory}?${new URLSearchParams({ hh: hhCode }).toString()}`
+export function packagingHistoryProductHref(fgCode: string): string {
+  return `${appRoutes.procurement.packagingHistory}?${new URLSearchParams({ fg: fgCode }).toString()}`
 }
 
 /**
@@ -116,7 +116,7 @@ export function buildHistoryParams(
   return {
     mode: selection.mode,
     codes: !isProduct && selection.codes.length ? selection.codes : undefined,
-    hh_codes: isProduct && selection.hh.length ? selection.hh : undefined,
+    fg_codes: isProduct && selection.fg.length ? selection.fg : undefined,
     q: search.trim() || undefined,
     supplier: filters.suppliers.length ? filters.suppliers : undefined,
     date_from: filters.from || undefined,

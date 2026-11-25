@@ -5,6 +5,8 @@ import type {
   ImportBatch,
   ImportListResponse,
   ImportLogListResponse,
+  ImportPurgePreview,
+  ImportPurgeResult,
 } from '../types/import-batch'
 
 const BASE_URL = '/api/imports'
@@ -53,6 +55,13 @@ export const importApi = {
 
   /** Ghi thật từ một bản chạy thử — tạo batch APPLY mới dùng lại đúng file đã tải. */
   commit: (id: number) => apiPost<ImportBatch>(`${BASE_URL}/${id}/commit`),
+
+  /** Xem trước xóa dữ liệu theo lô (định mức / báo giá / sổ Misa): số dòng sẽ xóa + số dòng đã sửa tay. */
+  purgePreview: (id: number) => apiGet<ImportPurgePreview>(`${BASE_URL}/${id}/purge-preview`),
+
+  /** Xóa dữ liệu của lô; `includeEdited` = xóa luôn dòng đã sửa tay sau khi nhập. */
+  purge: (id: number, includeEdited: boolean) =>
+    apiPost<ImportPurgeResult>(`${BASE_URL}/${id}/purge`, { include_edited: includeEdited }),
 
   /** Tải lại file .xlsx gốc đã upload (qua đường có kiểm quyền + gắn token). */
   downloadFile: (id: number, filename: string) =>

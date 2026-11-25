@@ -322,7 +322,7 @@ def test_migration_len_chay_lai_khi_bang_nguong_da_mat_khong_vo(old_conn):
     assert _vats(old_conn)[-1] == (3, None)
 
 
-def test_migration_noi_tiep_quotesrc784_la_dau_chuoi_va_nguon_misa_khop_enum():
+def test_migration_noi_tiep_quotesrc784_nam_trong_chuoi_mot_dau_va_nguon_misa_khop_enum():
     mig = _load_migration()
     assert (mig.revision, mig.down_revision, mig.MISA_SOURCE_TYPE) == ("cleanup784", "quotesrc784", MISA)
     from alembic.config import Config
@@ -331,7 +331,8 @@ def test_migration_noi_tiep_quotesrc784_la_dau_chuoi_va_nguon_misa_khop_enum():
     cfg = Config()
     cfg.set_main_option("script_location", str(ROOT / "backend" / "migrations"))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["cleanup784"]
+    assert len(script.get_heads()) == 1                                    # chuỗi một đầu (các phase sau nối tiếp cleanup784)
+    assert "cleanup784" in {r.revision for r in script.walk_revisions()}
 
 
 def test_func_now_dung_trong_model_va_khong_con_import_thua():

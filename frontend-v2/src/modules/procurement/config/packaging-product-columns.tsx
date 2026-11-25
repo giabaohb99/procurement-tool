@@ -49,7 +49,7 @@ export function buildPackagingProductColumns({
   const lead: PackagingProductColumn[] = [
     ...(compact ? [] : [stt]),
     {
-      key: 'hh_code',
+      key: 'fg_code',
       header: 'Mã HH',
       width: compact ? 104 : 110,
       hideable: false,
@@ -57,18 +57,18 @@ export function buildPackagingProductColumns({
       sortable: true,
       cell: (row) =>
         compact ? (
-          <PackagingCodeLink code={row.hh_code} product />
+          <PackagingCodeLink code={row.fg_code} product />
         ) : (
-          <span className="font-medium tabular-nums">{row.hh_code}</span>
+          <span className="font-medium tabular-nums">{row.fg_code}</span>
         ),
     },
     {
-      key: 'hh_name',
+      key: 'fg_name',
       header: 'Tên hàng hóa',
       width: compact ? 190 : 240,
       wrap: !compact,
       sortable: true,
-      cell: (row) => (compact ? <span title={row.hh_name}>{row.hh_name}</span> : row.hh_name),
+      cell: (row) => (compact ? <span title={row.fg_name}>{row.fg_name}</span> : row.fg_name),
     },
     {
       key: 'carton_qty',

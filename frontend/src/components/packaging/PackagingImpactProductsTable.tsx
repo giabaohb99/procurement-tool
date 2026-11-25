@@ -66,7 +66,7 @@ export default function PackagingImpactProductsTable({
           <TableColGroup columns={table.columns} colW={table.colW} />
           <TableHead columns={table.columns} startResize={table.startResize} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
           <tbody>
-            {list.map((r, i) => <tr key={r.hh_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
+            {list.map((r, i) => <tr key={r.fg_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
             {list.length === 0 && (
               <tr><td colSpan={table.columns.length} className="table-empty">
                 {failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…'

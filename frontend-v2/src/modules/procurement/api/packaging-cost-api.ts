@@ -11,7 +11,7 @@ import { filenameFromContentDisposition } from '@/core/api/download-file'
 import { readBlobErrorMessage } from './customs-api'
 import type {
   PackagingCodeOption,
-  PackagingHhOption,
+  PackagingFgOption,
   PackagingHistoryParams,
   PackagingHistoryResult,
   PackagingImpactRequest,
@@ -97,8 +97,8 @@ export async function exportPackagingHistory(params: PackagingHistoryParams) {
 }
 
 /** Sản phẩm (mã HH) có định mức bao bì — nạp một lần cho ô chọn của chế độ "Theo mã sản phẩm". */
-export async function fetchPackagingHhOptions(): Promise<PackagingHhOption[]> {
-  const res = await apiGet<{ items: PackagingHhOption[] }>(`${BASE}/hh-options`)
+export async function fetchPackagingFgOptions(): Promise<PackagingFgOption[]> {
+  const res = await apiGet<{ items: PackagingFgOption[] }>(`${BASE}/fg-options`)
   return res.items ?? []
 }
 

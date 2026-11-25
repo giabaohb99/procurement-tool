@@ -17,17 +17,17 @@ import {
 describe('parseHistorySearch', () => {
   it('reads a deep link with codes as code mode, trimming blanks and duplicates', () => {
     const parsed = parseHistorySearch(new URLSearchParams('codes=CPT0075, NAP0085,,CPT0075'))
-    expect(parsed).toEqual({ mode: 'code', codes: ['CPT0075', 'NAP0085'], hh: [] })
+    expect(parsed).toEqual({ mode: 'code', codes: ['CPT0075', 'NAP0085'], fg: [] })
   })
 
-  it('treats a bare ?hh= deep link as product mode, but an explicit mode wins', () => {
-    expect(parseHistorySearch(new URLSearchParams('hh=HH0713')).mode).toBe('product')
-    expect(parseHistorySearch(new URLSearchParams('hh=HH0713&mode=code')).mode).toBe('code')
-    expect(parseHistorySearch(new URLSearchParams('hh=HH1&codes=A')).mode).toBe('code')
+  it('treats a bare ?fg= deep link as product mode, but an explicit mode wins', () => {
+    expect(parseHistorySearch(new URLSearchParams('fg=HH0713')).mode).toBe('product')
+    expect(parseHistorySearch(new URLSearchParams('fg=HH0713&mode=code')).mode).toBe('code')
+    expect(parseHistorySearch(new URLSearchParams('fg=HH1&codes=A')).mode).toBe('code')
   })
 
   it('survives an empty or hostile query string', () => {
-    expect(parseHistorySearch(new URLSearchParams(''))).toEqual({ mode: 'code', codes: [], hh: [] })
+    expect(parseHistorySearch(new URLSearchParams(''))).toEqual({ mode: 'code', codes: [], fg: [] })
     expect(parseHistorySearch(new URLSearchParams('codes=,,,&mode=zzz')).codes).toEqual([])
     expect(parseHistorySearch(new URLSearchParams('codes=%3Cscript%3E')).codes).toEqual([
       '<script>',
@@ -46,19 +46,19 @@ describe('parseHistorySearch', () => {
 
 describe('buildHistorySearch', () => {
   it('round-trips both lists so switching mode back and forth keeps the other selection', () => {
-    const selection = { mode: 'code' as const, codes: ['A'], hh: ['HH1'] }
+    const selection = { mode: 'code' as const, codes: ['A'], fg: ['HH1'] }
     expect(parseHistorySearch(new URLSearchParams(buildHistorySearch(selection)))).toEqual(
       selection,
     )
-    const product = { mode: 'product' as const, codes: ['A'], hh: ['HH1'] }
+    const product = { mode: 'product' as const, codes: ['A'], fg: ['HH1'] }
     expect(parseHistorySearch(new URLSearchParams(buildHistorySearch(product)))).toEqual(product)
   })
 
-  it('writes nothing for the default empty code mode, and keeps code mode readable when only hh is stored', () => {
-    expect(buildHistorySearch({ mode: 'code', codes: [], hh: [] })).toEqual({})
-    const onlyHh = { mode: 'code' as const, codes: [], hh: ['HH1'] }
-    expect(parseHistorySearch(new URLSearchParams(buildHistorySearch(onlyHh))).mode).toBe('code')
-    expect(buildHistorySearch({ mode: 'product', codes: [], hh: [] })).toEqual({ mode: 'product' })
+  it('writes nothing for the default empty code mode, and keeps code mode readable when only fg is stored', () => {
+    expect(buildHistorySearch({ mode: 'code', codes: [], fg: [] })).toEqual({})
+    const onlyFg = { mode: 'code' as const, codes: [], fg: ['HH1'] }
+    expect(parseHistorySearch(new URLSearchParams(buildHistorySearch(onlyFg))).mode).toBe('code')
+    expect(buildHistorySearch({ mode: 'product', codes: [], fg: [] })).toEqual({ mode: 'product' })
   })
 })
 
@@ -74,14 +74,14 @@ describe('packagingHistoryHref', () => {
 })
 
 describe('packagingHistoryProductHref', () => {
-  it('links one product in product mode (bare ?hh= deep link) and escapes it', () => {
+  it('links one product in product mode (bare ?fg= deep link) and escapes it', () => {
     expect(packagingHistoryProductHref('HH0417.1')).toBe(
-      '/procurement/packaging-cost/history?hh=HH0417.1',
+      '/procurement/packaging-cost/history?fg=HH0417.1',
     )
-    expect(packagingHistoryProductHref('A&B')).toBe('/procurement/packaging-cost/history?hh=A%26B')
+    expect(packagingHistoryProductHref('A&B')).toBe('/procurement/packaging-cost/history?fg=A%26B')
     expect(
       parseHistorySearch(new URLSearchParams(packagingHistoryProductHref('HH1').split('?')[1])),
-    ).toEqual({ mode: 'product', codes: [], hh: ['HH1'] })
+    ).toEqual({ mode: 'product', codes: [], fg: ['HH1'] })
   })
 })
 
@@ -89,11 +89,11 @@ describe('buildHistoryParams', () => {
   const sort = { by: 'date', dir: 'desc' as const }
 
   it('sends only the list of the active mode', () => {
-    const selection = { mode: 'product' as const, codes: ['A'], hh: ['HH1'] }
+    const selection = { mode: 'product' as const, codes: ['A'], fg: ['HH1'] }
     expect(buildHistoryParams(selection, EMPTY_HISTORY_FILTERS, '', sort)).toEqual({
       mode: 'product',
       codes: undefined,
-      hh_codes: ['HH1'],
+      fg_codes: ['HH1'],
       q: undefined,
       supplier: undefined,
       date_from: undefined,
@@ -108,12 +108,12 @@ describe('buildHistoryParams', () => {
       sort,
     )
     expect(byCode.codes).toEqual(['A'])
-    expect(byCode.hh_codes).toBeUndefined()
+    expect(byCode.fg_codes).toBeUndefined()
   })
 
   it('omits an empty selection (= all), blank search and the sort when the user cleared it', () => {
     const params = buildHistoryParams(
-      { mode: 'code', codes: [], hh: [] },
+      { mode: 'code', codes: [], fg: [] },
       EMPTY_HISTORY_FILTERS,
       '   ',
       {
@@ -128,7 +128,7 @@ describe('buildHistoryParams', () => {
 
   it('passes supplier and date filters through', () => {
     const params = buildHistoryParams(
-      { mode: 'code', codes: [], hh: [] },
+      { mode: 'code', codes: [], fg: [] },
       { q: 'x', suppliers: ['NCC1'], from: '2026-01-01', to: '2026-02-01' },
       ' nhựa ',
       sort,
@@ -168,9 +168,9 @@ describe('chart helpers', () => {
 
 describe('historyRowKey / historyRoleText (product mode rows)', () => {
   it('keys a product-mode row by (product, ledger id) because one purchase shows once per product', () => {
-    expect(historyRowKey({ id: 7, hh_code: 'HH0001' })).toBe('HH0001:7')
-    expect(historyRowKey({ id: 7, hh_code: 'HH0002' })).not.toBe(historyRowKey({ id: 7, hh_code: 'HH0001' }))
-    expect(historyRowKey({ id: 7, hh_code: '' })).toBe('7')
+    expect(historyRowKey({ id: 7, fg_code: 'HH0001' })).toBe('HH0001:7')
+    expect(historyRowKey({ id: 7, fg_code: 'HH0002' })).not.toBe(historyRowKey({ id: 7, fg_code: 'HH0001' }))
+    expect(historyRowKey({ id: 7, fg_code: '' })).toBe('7')
   })
 
   it('names the component of a row and is empty in code mode', () => {

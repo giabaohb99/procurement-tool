@@ -13,7 +13,7 @@ Misa (`misa_cutoff.py`): tới mốc chỉ dùng Misa, sau mốc chỉ dùng đ�
 
 VAT: sổ chi tiết Misa không có VAT nên dòng Misa ghi `vat = NULL` (không biết, giao diện hiện trống). `source_id` = số thứ tự trong sổ
 (`max + 1`), KHÔNG trỏ chứng từ; script HTML (`import_misa_price_ledger`) dùng id dòng Misa nên KHÔNG chạy được sau module này
-(`misa_ledger_import.ensure_no_xlsx_misa_rows`). Dòng nào thuộc lô nào chưa lưu — phase 07.
+(`misa_ledger_import.ensure_no_xlsx_misa_rows`). Dòng THÊM mới mang `import_batch_id` = id lô (xóa theo lô, phase 07); dòng giữ nguyên qua lần nạp sau giữ id lô cũ, dòng script HTML = 0.
 
 THÀNH TIỀN: cột "Giá trị" (tùy chọn, như `importExcel` của bản mẫu: chỉ nhận số khác 0 ở dòng CÓ giá) ghi vào `amount` của dòng sổ.
 Nạp lại cùng tệp thì dòng trùng khớp giữ nguyên id nhưng được BỔ SUNG / SỬA `amount` theo tệp (không tạo dòng trùng) — đây là cách điền
@@ -202,7 +202,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 f"Sheet {r['_sheet']}: thêm lần mua {r['price_date']:%d/%m/%Y} {r['product_code']} giá {r['price']:,.0f}"
                 .replace(",", "."), r["product_code"])
         if apply:
-            db.add(L(source_id=next_id, **{k2: v for k2, v in r.items() if not k2.startswith("_")}))
+            db.add(L(source_id=next_id, import_batch_id=batch.id, **{k2: v for k2, v in r.items() if not k2.startswith("_")}))
     kept = len(rows) - inserted
     if apply:
         db.flush()

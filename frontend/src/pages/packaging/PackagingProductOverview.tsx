@@ -95,7 +95,7 @@ export default function PackagingProductOverview() {
             <TableColGroup columns={table.columns} colW={table.colW} />
             <TableHead columns={table.columns} startResize={table.startResize} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
             <tbody>
-              {rows.map((r, i) => <tr key={r.hh_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
+              {rows.map((r, i) => <tr key={r.fg_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
               {rows.length === 0 && (
                 <tr><td colSpan={table.columns.length} className="table-empty">
                   {list.failed ? 'Không tải được dữ liệu — thử tải lại.' : list.loading ? 'Đang tải…'

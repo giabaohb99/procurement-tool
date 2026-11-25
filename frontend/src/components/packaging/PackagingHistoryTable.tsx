@@ -46,7 +46,7 @@ function SourceCell({ row }: { row: PackagingHistoryRow }) {
 
 /**
  * Bảng lần mua của màn Lịch sử mua hàng. Mọi ô MỘT dòng (cắt bằng "…"). Cột bật xếp gửi `sort_by` = khóa cột lên máy chủ
- * (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `hh_code, hh_name, role` ở chế độ sản phẩm); "Lần" và
+ * (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `fg_code, fg_name, role` ở chế độ sản phẩm); "Lần" và
  * "So lần trước" tính theo từng mã nên chưa xếp được. Một mã: bỏ cột Tên (đã có ở tiêu đề biểu đồ) nhường chỗ cho nhà cung cấp.
  * Giá trị mua = thành tiền Misa khi có, không thì giá x số lượng (máy chủ tính). Chế độ sản phẩm: mỗi dòng = một lần mua x một
  * (sản phẩm, thành phần), khóa dòng là (sản phẩm, id).
@@ -77,8 +77,8 @@ export default function PackagingHistoryTable({
     //  chế độ mã: Lần · Ngày mua · Mã VTBB...; một mã thì bỏ cột Tên (đã có ở tiêu đề biểu đồ).
     const cols: TableColumn<PackagingHistoryRow>[] = productMode
       ? [
-          { key: 'hh_code', label: 'Mã SP', width: 110, sort: 'hh_code', cell: (r) => <b>{r.hh_code}</b> },
-          { key: 'hh_name', label: 'Tên sản phẩm', width: 220, sort: 'hh_name', cell: (r) => (r.hh_name ? <OneLine>{r.hh_name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
+          { key: 'fg_code', label: 'Mã SP', width: 110, sort: 'fg_code', cell: (r) => <b>{r.fg_code}</b> },
+          { key: 'fg_name', label: 'Tên sản phẩm', width: 220, sort: 'fg_name', cell: (r) => (r.fg_name ? <OneLine>{r.fg_name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
           { key: 'role', label: 'Thành phần', width: 110, sort: 'role', cell: (r) => historyRoleText(r) || <Dash /> },
           code, name, seq, date,
         ]

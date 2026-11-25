@@ -20,8 +20,8 @@ from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom,
 URL = "/api/packaging-cost/product-overview"
 
 
-def _bom(db, hh: str, bottle: str, **over) -> PackagingBom:
-    base = dict(hh_code=hh, hh_name=f"Sản phẩm {hh}", legal_name=f"Pháp lý {hh}", bottle_code=bottle, cap_code="NAP",
+def _bom(db, fg: str, bottle: str, **over) -> PackagingBom:
+    base = dict(fg_code=fg, fg_name=f"Sản phẩm {fg}", legal_name=f"Pháp lý {fg}", bottle_code=bottle, cap_code="NAP",
                 label_code="", carton_label_code="", carton_code="", carton_qty=10, created_by=1, updated_by=1)
     base.update(over)
     row = build_bom(**base)
@@ -57,20 +57,20 @@ def _rows(db, **kw):
 
 
 def _codes(res):
-    return [r["hh_code"] for r in res["items"]]
+    return [r["fg_code"] for r in res["items"]]
 
 
 # ── Xu hướng + số đếm ───────────────────────────────────────────────────────────
 def test_xu_huong_tung_san_pham_va_so_dem(db, world):
     res = _rows(db)
-    trend = {r["hh_code"]: r["trend"] for r in res["items"]}
+    trend = {r["fg_code"]: r["trend"] for r in res["items"]}
     assert trend == {"HH01": CostTrend.UP, "HH02": CostTrend.DOWN, "HH03": CostTrend.SAME, "HH04": CostTrend.NO_PRICE,
                      "HH05": CostTrend.UP, "HH06": CostTrend.SAME}
     assert res["counts"] == {"all": 6, "up": 2, "down": 1, "flat": 2, "missing": 1} and res["total"] == 6
 
 
 def test_bao_gia_la_gia_moi_va_cong_thuc_chi_phi_chai_va_thung(db, world):
-    by = {r["hh_code"]: r for r in _rows(db)["items"]}
+    by = {r["fg_code"]: r for r in _rows(db)["items"]}
     up = by["HH01"]                                       # chai 100 -> 120, nắp 10, không thùng
     assert (up["cost_old_bottle"], up["cost_new_bottle"], up["diff_bottle"]) == (110, 130, 20)
     assert up["pct"] == round(20 / 110, 6)
@@ -81,13 +81,13 @@ def test_bao_gia_la_gia_moi_va_cong_thuc_chi_phi_chai_va_thung(db, world):
 
 
 def test_chua_co_gia_chai_thi_chi_phi_rong_va_co_canh_bao(db, world):
-    row = {r["hh_code"]: r for r in _rows(db)["items"]}["HH04"]
+    row = {r["fg_code"]: r for r in _rows(db)["items"]}["HH04"]
     assert row["cost_old_bottle"] is None and row["cost_new_bottle"] is None and row["diff_bottle"] is None
     assert row["trend"] == CostTrend.NO_PRICE and row["warnings"]
 
 
 def test_dong_gia_0_bi_bo_qua_nen_khong_phai_giam(db, world):
-    row = {r["hh_code"]: r for r in _rows(db)["items"]}["HH06"]
+    row = {r["fg_code"]: r for r in _rows(db)["items"]}["HH06"]
     assert (row["cost_old_bottle"], row["cost_new_bottle"], row["trend"]) == (110, 110, CostTrend.SAME)
 
 
@@ -118,11 +118,11 @@ def test_xep_o_trong_xuong_cuoi_hai_chieu_khoa_phu_ma_hh(db, world):
         assert diffs == sorted(diffs, reverse=direction == "desc")
     assert _codes(_rows(db, sort_by="diff_bottle", sort_dir="asc"))[1:3] == ["HH03", "HH06"]   # hòa 0 → mã tăng dần
     assert _codes(_rows(db, sort_by="cost_new_bottle", sort_dir="desc"))[:2] == ["HH05", "HH01"]
-    assert _codes(_rows(db, sort_by="hh_name", sort_dir="desc"))[0] == "HH06"
+    assert _codes(_rows(db, sort_by="fg_name", sort_dir="desc"))[0] == "HH06"
 
 
 def test_khoa_xep_la_ve_ma_hh_va_moi_khoa_cua_man_deu_co():
-    assert set(OVERVIEW_SORT_GETTERS) == {"hh_code", "hh_name", "carton_qty", "cost_old_bottle", "cost_new_bottle",
+    assert set(OVERVIEW_SORT_GETTERS) == {"fg_code", "fg_name", "carton_qty", "cost_old_bottle", "cost_new_bottle",
                                           "diff_bottle", "pct", "diff_carton", "part_bottle", "part_cap", "part_label",
                                           "part_carton_label", "part_carton"}      # năm cột thành phần: xếp theo giá mới
 
@@ -144,13 +144,13 @@ def test_so_truy_van_khong_doi_theo_so_san_pham_trang_loc_xep(db, world):
     def run(**kw):
         return len(count_queries(db, lambda: _rows(db, **kw))[1])
 
-    small = {run(), run(page=1, page_size=2, trend="up"), run(q="HH0", sort_by="hh_name", sort_dir="desc"), run(page=9)}
+    small = {run(), run(page=1, page_size=2, trend="up"), run(q="HH0", sort_by="fg_name", sort_dir="desc"), run(page=9)}
     for i in range(7, 207):                                  # thêm 200 sản phẩm, mỗi cái một chai riêng có giá
         add_products(db, (f"X{i}", f"Chai X{i}", "Cái"))
         add_ledger(db, f"X{i}", 100 + i, "2026-01-01")
         _bom(db, f"HH{i:03d}", f"X{i}")
     db.commit()
-    big = {run(), run(page=1, page_size=2, trend="up"), run(q="HH0", sort_by="hh_name", sort_dir="desc"), run(page=9)}
+    big = {run(), run(page=1, page_size=2, trend="up"), run(q="HH0", sort_by="fg_name", sort_dir="desc"), run(page=9)}
     assert len(small) == 1 and small == big and small.pop() <= 5
     assert _rows(db)["counts"]["all"] == 206
 
@@ -185,7 +185,7 @@ def test_loc_nang_cao_tung_bo_loc(db, world, flt, expected):
 
 
 def test_loc_chi_san_pham_co_canh_bao(db, world):
-    warned = [r["hh_code"] for r in _rows(db)["items"] if r["warnings"]]
+    warned = [r["fg_code"] for r in _rows(db)["items"] if r["warnings"]]
     assert "HH04" in warned and _codes(_rows(db, filters=_flt(warnings_only=True))) == warned
     #  Ghép với khoảng CP/chai cũ: chỉ HH05 vừa có cảnh báo vừa cũ >= 150.
     assert _codes(_rows(db, filters=_flt(warnings_only=True, cost_old_bottle=_rng(150, None)))) == [c for c in warned if c == "HH05"]
@@ -233,7 +233,7 @@ def test_api_tra_items_total_counts_va_loc_theo_tham_so(api):
     data = api.get(URL).json()["data"]
     assert data["total"] == 6 and data["counts"]["up"] == 2 and len(data["items"]) == 6
     data = api.get(URL, params={"trend": "up", "page": 1, "page_size": 1, "sort_by": "cost_new_bottle", "sort_dir": "desc"}).json()["data"]
-    assert [r["hh_code"] for r in data["items"]] == ["HH05"] and data["total"] == 2 and data["counts"]["all"] == 6
+    assert [r["fg_code"] for r in data["items"]] == ["HH05"] and data["total"] == 2 and data["counts"]["all"] == 6
 
 
 @pytest.mark.parametrize("params", [{"trend": "bad"}, {"sort_dir": "up"}, {"page": 0}, {"page_size": 501}, {"page_size": 0},
@@ -266,7 +266,7 @@ def test_pham_vi_cong_ty_khong_thay_gia_cua_phap_nhan_khac(db, seed, cap_quyen, 
 
 
 def test_xuat_excel_theo_bo_loc_va_thu_tu_bo_qua_phan_trang(api):
-    res = api.get(URL + "/export", params={"trend": "up", "sort_by": "hh_code", "sort_dir": "desc", "page": 3, "page_size": 1})
+    res = api.get(URL + "/export", params={"trend": "up", "sort_by": "fg_code", "sort_dir": "desc", "page": 3, "page_size": 1})
     assert res.status_code == 200 and "tong-hop-theo-san-pham" in res.headers["content-disposition"]
     header, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content))["Tổng hợp theo sản phẩm"])
     assert [r[0].value for r in rows] == ["HH05", "HH01"]
@@ -282,7 +282,7 @@ def test_api_loc_nang_cao_qua_tham_so(api):
     def codes(**params):
         res = api.get(URL, params=params)
         assert res.status_code == 200, res.text
-        return [r["hh_code"] for r in res.json()["data"]["items"]]
+        return [r["fg_code"] for r in res.json()["data"]["items"]]
     assert codes(part_roles="5") == ["HH05"] and codes(part_roles="1,5") == [f"HH0{i}" for i in range(1, 7)]
     assert codes(diff_bottle_min=-30, diff_bottle_max=-1) == ["HH02"] and codes(carton_qty_min=12) == ["HH05"]
     assert codes(pct_min=15) == ["HH01"] and codes(cost_old_bottle_min=150, trend="up") == ["HH05"]

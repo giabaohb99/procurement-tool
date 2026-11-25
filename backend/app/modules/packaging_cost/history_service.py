@@ -106,7 +106,7 @@ def _weight(counts, q: str):
     return case((or_(*_ledger_text_match(q.strip())), counts.c.n), else_=counts.c.m)
 
 
-def _stats(db: Session, conds: list, counts=None, weight=None, hh_codes: list[str] | None = None) -> dict:
+def _stats(db: Session, conds: list, counts=None, weight=None, fg_codes: list[str] | None = None) -> dict:
     """Số liệu của các thẻ tóm tắt, gom trong MỘT câu SQL (thẻ của bản mẫu HTML, duoc-CR-784).
 
     Chế độ sản phẩm (`counts` + `weight`): mọi số đếm / tổng theo DÒNG đã nhân theo sản phẩm (đúng "Số dòng lịch sử" của bản mẫu) —
@@ -121,7 +121,7 @@ def _stats(db: Session, conds: list, counts=None, weight=None, hh_codes: list[st
 
     first_price = null() if product else _edge_price(conds, latest=False)
     last_price = null() if product else _edge_price(conds, latest=True)
-    products = count_bom_products(hh_codes or []) if product else literal(0)
+    products = count_bom_products(fg_codes or []) if product else literal(0)
     query = select(
         func.sum(weight) if product else func.count(L.id), func.coalesce(total(case((priced, 1), else_=0)), 0),
         func.coalesce(total(L.qty), 0), func.coalesce(total(AMOUNT_EXPR), 0),
@@ -161,28 +161,28 @@ def _series(db: Session, conds: list) -> list[dict]:
              "qty": num(q, 3)} for d, p, s, q, n in reversed(rows)]
 
 
-def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = None, hh_codes: list[str] | None = None,
+def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = None, fg_codes: list[str] | None = None,
                   q: str = "", suppliers: list[str] | None = None, date_from: date | None = None,
                   date_to: date | None = None, sort_by: str = "date", sort_dir: str = "desc", page: int | None = 1,
                   page_size: int = 50, scope_cond=None) -> dict:
     """`{items, total, stats, series, suppliers}`. `page=None` = lấy đủ (xuất Excel; chặn ở MAX_ROWS + 1 dòng).
 
-    `mode=code`: `codes` rỗng = mọi mã VTBB. `mode=product`: mã thành phần của các `hh_codes` (rỗng = mọi sản phẩm có
-    định mức), mỗi dòng = một lần mua x một (sản phẩm, thành phần) kèm `hh_code` / `hh_name` / `role` (mã `PackagingRole`);
+    `mode=code`: `codes` rỗng = mọi mã VTBB. `mode=product`: mã thành phần của các `fg_codes` (rỗng = mọi sản phẩm có
+    định mức), mỗi dòng = một lần mua x một (sản phẩm, thành phần) kèm `fg_code` / `fg_name` / `role` (mã `PackagingRole`);
     sản phẩm chưa có định mức nào thì kết quả rỗng. `series` chỉ có ở chế độ mã khi tập mã đã chọn đúng MỘT mã (biểu đồ diễn
     biến đơn giá), ngược lại `None`.
     """
     scope_cond = with_misa_cutoff(scope_cond)      # mốc sổ Misa: dòng Misa tới mốc + nguồn 1 / 2 sau mốc (chưa có mốc = như cũ)
     product = mode == "product"
-    hh_list = [c for c in (hh_codes or []) if c] if product else []
-    pairs = build_bom_pairs(hh_list) if product else None
+    fg_list = [c for c in (fg_codes or []) if c] if product else []
+    pairs = build_bom_pairs(fg_list) if product else None
     #  Số gộp / ô chọn nhà cung cấp cộng có trọng số theo số cặp mỗi mã (không nối từng cặp); trang dòng mới nối từng cặp.
     counts = build_pair_counts(pairs, q.strip()) if product else None
     options_counts = build_pair_counts(pairs) if product else None
     explicit = None if product else [c for c in (codes or []) if c]
     text = {"q": q, "suppliers": suppliers, "date_from": date_from, "date_to": date_to, "scope_cond": scope_cond}
     conds = _conds(explicit or None, **text, counts=counts)
-    stats = _stats(db, conds, counts, _weight(counts, q), hh_list)
+    stats = _stats(db, conds, counts, _weight(counts, q), fg_list)
     offset, limit = ((page - 1) * page_size, page_size) if page is not None else (0, MAX_ROWS + 1)
     order = build_order(sort_by, sort_dir, pairs)
     rows = (load_page_rows(db, _conds(explicit or None, **text, pairs=pairs), order, scope_cond, limit, offset, pairs,

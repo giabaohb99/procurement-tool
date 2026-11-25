@@ -7,7 +7,7 @@
   mã HH) gán nhãn / nhãn thùng theo tiền tố mã (NHG / NHD / NTN → nhãn, NDT → nhãn thùng); một HH nhiều mã thì chọn mã có
   LẦN MUA CÓ GIÁ GẦN NHẤT trong sổ giá. Khớp HH bỏ số 0 đầu (`HH0417.1` = `HH417.1`).
 
-Có rồi (theo `hh_code`, không phân biệt hoa thường) thì cập nhật, chưa có thì tạo; dòng trên DB không có trong tệp GIỮ NGUYÊN
+Có rồi (theo `fg_code`, không phân biệt hoa thường) thì cập nhật, chưa có thì tạo; dòng trên DB không có trong tệp GIỮ NGUYÊN
 (chỉ báo số đếm). Chạy thử liệt kê ô sẽ đổi (cũ → mới). Không hỗ trợ hoàn tác đợt đầu.
 """
 import re
@@ -34,11 +34,11 @@ CODE_LEN, NAME_LEN = 50, 255
 HEADER_HINTS = ("chai", "nắp", "nhãn", "thùng", "hh", "quy cách", "mã")
 #  tiền tố mã ở DATA CHUNG → cột định mức
 PREFIX_COLUMN = {"NHG": "label_code", "NHD": "label_code", "NTN": "label_code", "NDT": "carton_label_code"}
-FIELD_LABELS = {"hh_name": "Tên HH", "legal_name": "Tên pháp lý", "bottle_code": "Chai", "cap_code": "Nắp",
+FIELD_LABELS = {"fg_name": "Tên HH", "legal_name": "Tên pháp lý", "bottle_code": "Chai", "cap_code": "Nắp",
                 "label_code": "Nhãn", "carton_label_code": "Nhãn thùng", "carton_code": "Thùng",
                 "carton_qty": "Quy cách thùng"}
 #  Trường phẳng của tệp nhập: ba trường đầu phiếu + một trường mã cho MỖI loại thành phần (dựng từ `PackagingRole`).
-HEADER_FIELDS = ("hh_name", "legal_name", "carton_qty")
+HEADER_FIELDS = ("fg_name", "legal_name", "carton_qty")
 CODE_FIELDS = tuple(role_field(role) for role in PackagingRole)
 _HH_KEY = re.compile(r"^HH0*(\d+(?:\.\d+)?)$")
 
@@ -62,7 +62,7 @@ def clean(v) -> str:
     return "" if s.startswith("#") else s
 
 
-def hh_key(code: str) -> str:
+def fg_key(code: str) -> str:
     """Khóa so khớp HH bỏ số 0 đầu: `HH0417.1` và `HH417.1` cùng khóa."""
     c = (code or "").strip().upper()
     m = _HH_KEY.match(c)
@@ -109,10 +109,10 @@ def _common_links(db: Session, wb) -> dict[str, dict[str, str]]:
         return {}
     cands: list[tuple[str, str, str]] = []
     for _, r in _rows(ws, 2):
-        code, hh = clean(r[2]).upper(), clean(r[5])
+        code, fg = clean(r[2]).upper(), clean(r[5])
         col = PREFIX_COLUMN.get(code[:3])
-        if col and hh:
-            cands.append((hh_key(hh), col, code))
+        if col and fg:
+            cands.append((fg_key(fg), col, code))
     last = {}
     if cands:
         last = dict(db.query(ProductPriceLedger.product_code, func.max(ProductPriceLedger.price_date))
@@ -158,41 +158,41 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         if key:
             counts[key] += 1
 
-    existing = {b.hh_code.casefold(): b for b in db.query(PackagingBom).options(selectinload(PackagingBom.parts)).all()}
+    existing = {b.fg_code.casefold(): b for b in db.query(PackagingBom).options(selectinload(PackagingBom.parts)).all()}
     links = {} if is_map else _common_links(db, wb)
-    parsed: dict[str, tuple[int, dict]] = {}     # casefold(hh) -> (dòng, giá trị)
+    parsed: dict[str, tuple[int, dict]] = {}     # casefold(fg) -> (dòng, giá trị)
     for i, r in rows:
-        hh = clean(r[2])
-        if not hh:
-            log(i, LogLevel.ERROR, "missing_hh", "Mã HH trống hoặc là lỗi công thức — bỏ dòng")
+        fg = clean(r[2])
+        if not fg:
+            log(i, LogLevel.ERROR, "missing_fg", "Mã HH trống hoặc là lỗi công thức — bỏ dòng")
             continue
-        vals = {"hh_code": hh, "hh_name": clean(r[3]), "legal_name": clean(r[4]), "bottle_code": clean(r[0]),
+        vals = {"fg_code": fg, "fg_name": clean(r[3]), "legal_name": clean(r[4]), "bottle_code": clean(r[0]),
                 "cap_code": clean(r[1]),
-                "carton_qty": _parse_qty(r[5], lambda m, i=i, hh=hh: log(i, LogLevel.WARNING, "bad_qty", m, hh))}
-        old = existing.get(hh.casefold())
+                "carton_qty": _parse_qty(r[5], lambda m, i=i, fg=fg: log(i, LogLevel.WARNING, "bad_qty", m, fg))}
+        old = existing.get(fg.casefold())
         old_codes = current_codes(old) if old else {}
         if is_map:
             vals.update(label_code=clean(r[8]), carton_label_code=clean(r[9]), carton_code=clean(r[10]))
         else:
-            lk = links.get(hh_key(hh), {})
+            lk = links.get(fg_key(fg), {})
             kept = {f: old_codes.get(int(role), "") for role, f in ROLE_FIELDS}
             vals.update(label_code=lk.get("label_code") or kept["label_code"],
                         carton_label_code=lk.get("carton_label_code") or kept["carton_label_code"],
                         carton_code=kept["carton_code"])
         if not vals["bottle_code"]:
-            log(i, LogLevel.ERROR, "missing_bottle", "Thiếu mã chai — bỏ dòng", hh)
+            log(i, LogLevel.ERROR, "missing_bottle", "Thiếu mã chai — bỏ dòng", fg)
             continue
-        too_long = [c for c in ("hh_code", *CODE_FIELDS) if len(vals[c]) > CODE_LEN]
+        too_long = [c for c in ("fg_code", *CODE_FIELDS) if len(vals[c]) > CODE_LEN]
         if too_long:
-            log(i, LogLevel.ERROR, "too_long", f"Mã dài hơn {CODE_LEN} ký tự ({', '.join(too_long)}) — bỏ dòng", hh)
+            log(i, LogLevel.ERROR, "too_long", f"Mã dài hơn {CODE_LEN} ký tự ({', '.join(too_long)}) — bỏ dòng", fg)
             continue
-        for c in ("hh_name", "legal_name"):
+        for c in ("fg_name", "legal_name"):
             if len(vals[c]) > NAME_LEN:
                 vals[c] = vals[c][:NAME_LEN]
-                log(i, LogLevel.WARNING, "name_cut", f"{FIELD_LABELS[c]} dài hơn {NAME_LEN} ký tự — đã cắt", hh)
-        if hh.casefold() in parsed:
-            log(i, LogLevel.WARNING, "duplicate_hh", f"Mã HH {hh} trùng dòng {parsed[hh.casefold()][0]} — lấy dòng sau", hh)
-        parsed[hh.casefold()] = (i, vals)
+                log(i, LogLevel.WARNING, "name_cut", f"{FIELD_LABELS[c]} dài hơn {NAME_LEN} ký tự — đã cắt", fg)
+        if fg.casefold() in parsed:
+            log(i, LogLevel.WARNING, "duplicate_fg", f"Mã HH {fg} trùng dòng {parsed[fg.casefold()][0]} — lấy dòng sau", fg)
+        parsed[fg.casefold()] = (i, vals)
 
     part_codes = {v[c] for _, v in parsed.values() for c in CODE_FIELDS if v[c]}
     in_catalog = ({c for (c,) in db.query(Product.code).filter(Product.code.in_(part_codes)).all()}
@@ -201,13 +201,14 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         missing = sorted(c for c in {vals[f] for f in CODE_FIELDS} if c and c not in in_catalog)
         if missing:
             log(i, LogLevel.WARNING, "code_not_in_catalog",
-                f"Mã thành phần chưa có trong danh mục sản phẩm: {', '.join(missing)} (vẫn nhận)", vals["hh_code"])
+                f"Mã thành phần chưa có trong danh mục sản phẩm: {', '.join(missing)} (vẫn nhận)", vals["fg_code"])
         old = existing.get(key)
         if old is None:
             counts["created"] += 1
-            log(i, LogLevel.INFO, "bom_new", f"Thêm định mức {vals['hh_code']}", vals["hh_code"])
+            log(i, LogLevel.INFO, "bom_new", f"Thêm định mức {vals['fg_code']}", vals["fg_code"])
             if apply:
-                bom = PackagingBom(hh_code=vals["hh_code"], created_by=uid, updated_by=uid, **{f: vals[f] for f in HEADER_FIELDS})
+                bom = PackagingBom(fg_code=vals["fg_code"], created_by=uid, updated_by=uid, import_batch_id=batch.id,
+                                   **{f: vals[f] for f in HEADER_FIELDS})
                 set_bom_codes(bom, codes_from_fields(vals))
                 db.add(bom)
             continue
@@ -218,12 +219,13 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             counts["skipped"] += 1
             continue
         counts["updated"] += 1
-        log(i, LogLevel.INFO, "bom_update", f"Cập nhật {old.hh_code}: " + "; ".join(diffs), old.hh_code)
+        log(i, LogLevel.INFO, "bom_update", f"Cập nhật {old.fg_code}: " + "; ".join(diffs), old.fg_code)
         if apply:
             for c in HEADER_FIELDS:
                 setattr(old, c, vals[c])
             set_bom_codes(old, codes_from_fields(vals))
             old.updated_by = uid
+            old.import_batch_id = batch.id          # lần ghi cuối thắng (xóa lô cũ không đụng dòng đã bị lô sau ghi đè)
     kept = len(set(existing) - set(parsed))
     if kept:
         log(0, LogLevel.INFO, "bom_kept", f"{kept} định mức có trên hệ thống nhưng không có trong tệp — giữ nguyên")

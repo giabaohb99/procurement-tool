@@ -22,8 +22,8 @@ from .model import PackagingBom, PackagingBomPart, role_field
 class BomRow:
     """Một định mức đã nạp vào bộ nhớ: đầu phiếu + `{loại thành phần: mã}` (chỉ loại có mã). Bản nhẹ thay thực thể ORM."""
 
-    hh_code: str
-    hh_name: str
+    fg_code: str
+    fg_name: str
     legal_name: str
     carton_qty: int
     codes: dict[int, str] = field(default_factory=dict)
@@ -37,24 +37,24 @@ class BomRow:
         return {c for c in self.codes.values() if c}
 
 
-def load_bom_rows(db: Session, *, hh_codes: Iterable[str] | None = None, uses_codes: Iterable[str] | None = None) -> list[BomRow]:
+def load_bom_rows(db: Session, *, fg_codes: Iterable[str] | None = None, uses_codes: Iterable[str] | None = None) -> list[BomRow]:
     """Định mức xếp theo mã hàng hóa tăng dần, MỘT truy vấn.
 
-    `hh_codes` (không None) giữ các mã hàng hóa đó; `uses_codes` (không None) giữ định mức có dùng ÍT NHẤT MỘT mã vật tư đó —
+    `fg_codes` (không None) giữ các mã hàng hóa đó; `uses_codes` (không None) giữ định mức có dùng ÍT NHẤT MỘT mã vật tư đó —
     vẫn trả đủ thành phần của định mức giữ lại (để tính chi phí). Hai điều kiện ghép bằng VÀ.
     """
-    query = (select(PackagingBom.hh_code, PackagingBom.hh_name, PackagingBom.legal_name, PackagingBom.carton_qty,
+    query = (select(PackagingBom.fg_code, PackagingBom.fg_name, PackagingBom.legal_name, PackagingBom.carton_qty,
                     PackagingBomPart.part_type, PackagingBomPart.part_code)
              .select_from(PackagingBom).outerjoin(PackagingBomPart, PackagingBomPart.bom_id == PackagingBom.id))
-    if hh_codes is not None:
-        query = query.where(PackagingBom.hh_code.in_(list(hh_codes)))
+    if fg_codes is not None:
+        query = query.where(PackagingBom.fg_code.in_(list(fg_codes)))
     if uses_codes is not None:
         query = query.where(PackagingBom.id.in_(select(PackagingBomPart.bom_id).where(PackagingBomPart.part_code.in_(list(uses_codes)))))
-    #  Chỉ xếp theo cột của đầu phiếu: đi theo chỉ mục `hh_code`, không phải tạo bảng tạm + filesort (đo: 22 ms -> 13 ms / 1.000 định mức).
+    #  Chỉ xếp theo cột của đầu phiếu: đi theo chỉ mục `fg_code`, không phải tạo bảng tạm + filesort (đo: 22 ms -> 13 ms / 1.000 định mức).
     rows: list[BomRow] = []
-    for hh_code, hh_name, legal_name, carton_qty, part_type, part_code in db.execute(query.order_by(PackagingBom.hh_code)):
-        if not rows or rows[-1].hh_code != hh_code:     # hh_code duy nhất nên các dòng của một định mức nằm liền nhau
-            rows.append(BomRow(hh_code, hh_name, legal_name, carton_qty))
+    for fg_code, fg_name, legal_name, carton_qty, part_type, part_code in db.execute(query.order_by(PackagingBom.fg_code)):
+        if not rows or rows[-1].fg_code != fg_code:     # fg_code duy nhất nên các dòng của một định mức nằm liền nhau
+            rows.append(BomRow(fg_code, fg_name, legal_name, carton_qty))
         if part_type is not None and part_code:
             rows[-1].codes[int(part_type)] = part_code
     return rows
