@@ -4,6 +4,7 @@ import {
   ChartLine,
   ClipboardCheck,
   ClipboardList,
+  Coins,
   FileStack,
   FileText,
   History,
@@ -192,62 +193,66 @@ export const procurementModule: ErpModule = {
         },
       ],
     },
-    //  duoc-CR-784 — cụm Giá nguyên vật liệu sản xuất (tên chốt 21/11/2026, trước là Giá bao bì), khóa RIÊNG `packaging_cost` (giá vốn bao bì, nhạy cảm). Mục gốc là
-    //  đường cha của ba mục kia nên phải `end: true`, không thì nó sáng lây khi đứng ở Bảng giá / Báo giá.
+    //  duoc-CR-784 — cụm Giá nguyên vật liệu sản xuất (tên chốt 21/11/2026, trước là Giá bao bì), khóa RIÊNG `packaging_cost`
+    //  (giá vốn bao bì, nhạy cảm). 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng,
+    //  mục con thụt vào có vạch dọc — và nằm CHUNG nhóm Mua hàng, ngay sau Tra cứu thị trường (người chủ chốt cùng ngày).
+    //  Mục con Tác động ở đường gốc của cụm nên phải `end: true`, không thì nó sáng lây khi đứng ở các mục con khác.
     {
-      label: 'Tác động giá bao bì',
+      label: 'Giá nguyên vật liệu sản xuất',
       path: appRoutes.procurement.packagingImpact,
-      icon: TrendingUp,
+      icon: Coins,
       entity: 'packaging_cost',
-      end: true,
-      group: 'Giá nguyên vật liệu sản xuất',
-    },
-    {
-      label: 'Tổng hợp theo sản phẩm',
-      path: appRoutes.procurement.packagingProducts,
-      icon: Sigma,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
-    },
-    {
-      label: 'Bảng giá VTBB',
-      path: appRoutes.procurement.packagingPrices,
-      icon: WalletCards,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
-      //  Màn Báo giá VTBB (ẩn khỏi menu) thuộc về đây: báo giá nhập từ Bảng giá, đứng ở màn đó thì sáng mục này.
-      matchPaths: [appRoutes.procurement.packagingQuotes],
-    },
-    {
-      label: 'Giá mua gần nhất',
-      path: appRoutes.procurement.packagingLastPrices,
-      icon: History,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
-    },
-    {
-      label: 'Lịch sử mua hàng',
-      path: appRoutes.procurement.packagingHistory,
-      icon: ChartLine,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
-    },
-    {
-      label: 'Báo giá VTBB',
-      path: appRoutes.procurement.packagingQuotes,
-      icon: Tags,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
-      //  Ẩn khỏi menu (người chủ chốt 21/11/2026: file HTML gốc không có tab này, báo giá nhập ngay ở Bảng giá VTBB).
-      //  Giữ mục để đường dẫn vẫn bị gác quyền packaging_cost — bỏ hẳn mục là route mở cho mọi người đăng nhập.
-      hidden: true,
-    },
-    {
-      label: 'Định mức bao bì',
-      path: appRoutes.procurement.packagingBoms,
-      icon: ListTree,
-      entity: 'packaging_cost',
-      group: 'Giá nguyên vật liệu sản xuất',
+      group: 'Mua hàng',
+      children: [
+        {
+          label: 'Tác động giá bao bì',
+          path: appRoutes.procurement.packagingImpact,
+          icon: TrendingUp,
+          entity: 'packaging_cost',
+          end: true,
+        },
+        {
+          label: 'Tổng hợp theo sản phẩm',
+          path: appRoutes.procurement.packagingProducts,
+          icon: Sigma,
+          entity: 'packaging_cost',
+        },
+        {
+          label: 'Bảng giá VTBB',
+          path: appRoutes.procurement.packagingPrices,
+          icon: WalletCards,
+          entity: 'packaging_cost',
+          //  Màn Báo giá VTBB (ẩn khỏi menu) thuộc về đây: báo giá nhập từ Bảng giá, đứng ở màn đó thì sáng mục này.
+          matchPaths: [appRoutes.procurement.packagingQuotes],
+        },
+        {
+          label: 'Giá mua gần nhất',
+          path: appRoutes.procurement.packagingLastPrices,
+          icon: History,
+          entity: 'packaging_cost',
+        },
+        {
+          label: 'Lịch sử mua hàng',
+          path: appRoutes.procurement.packagingHistory,
+          icon: ChartLine,
+          entity: 'packaging_cost',
+        },
+        {
+          label: 'Báo giá VTBB',
+          path: appRoutes.procurement.packagingQuotes,
+          icon: Tags,
+          entity: 'packaging_cost',
+          //  Ẩn khỏi menu (người chủ chốt 21/11/2026: file HTML gốc không có tab này, báo giá nhập ngay ở Bảng giá VTBB).
+          //  Giữ mục để đường dẫn vẫn bị gác quyền packaging_cost — bỏ hẳn mục là route mở cho mọi người đăng nhập.
+          hidden: true,
+        },
+        {
+          label: 'Định mức bao bì',
+          path: appRoutes.procurement.packagingBoms,
+          icon: ListTree,
+          entity: 'packaging_cost',
+        },
+      ],
     },
     {
       label: 'Phiếu khảo sát',
@@ -291,7 +296,7 @@ export const procurementModule: ErpModule = {
       icon: UserCheck,
       entity: 'category_assignee',
       manage: true,
-      group: 'Cấu hình',
+      //  25/11/2026 (người chủ chốt): bỏ tiêu đề nhóm "Cấu hình" — hai mục danh mục nối tiếp nhóm Tài chính, không tiêu đề.
     },
     // bao-CR-453 — danh mục loại chi phí thu mua
     {
@@ -300,7 +305,6 @@ export const procurementModule: ErpModule = {
       icon: PackagePlus,
       entity: 'purchase_cost_type',
       manage: true,
-      group: 'Cấu hình',
     },
     // bao-CR-501: ba danh mục của Tra cứu thị trường — hóa chất theo văn bản (bao-CR-470), từ
     // khóa nhãn + từ đồng nghĩa (bao-CR-494 / 495) — đã dời vào thẻ "Cấu hình" của chính màn
