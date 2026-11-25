@@ -79,11 +79,17 @@ def _record_in_price_ledger(db: Session, history: PurchaseHistory, item) -> None
     Cần `flush` để có `history.id`. Lỗi ở phần sổ giá chỉ ghi log — KHÔNG được làm mất dòng lịch sử hay chặn luồng
     tiến độ mua hàng (sổ giá dựng lại được bằng `scripts/backfill_product_price_ledger.py`).
     """
+    db.flush()   # dòng lịch sử là việc chính: lỗi ở đây để luồng gọi tự xử lý như trước
+    #  bao-CR-789: phần sổ giá chạy trong SAVEPOINT — lỗi CSDL giữa chừng chỉ lùi phần sổ giá, phiên vẫn dùng tiếp được
+    #  (trước đây chỉ nuốt ngoại lệ, phiên có thể kẹt ở trạng thái lỗi làm hỏng luôn thao tác hoàn tất dòng ĐMH).
+    savepoint = db.begin_nested()
     try:
-        db.flush()
         from app.modules.product_price.ledger_sync_service import record_history_row
         record_history_row(db, history, float(getattr(item, "exchange_rate", 0) or 0) or 1.0)
+        db.flush()
+        savepoint.commit()
     except Exception:
+        savepoint.rollback()
         log.exception("Không ghi được sổ giá cho lịch sử mua hàng po_item_id=%s", getattr(item, "id", None))
 
 

@@ -309,6 +309,25 @@ Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/mod
 Commit: a04c4033.
 Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
 
+## bao-CR-789 | Sổ giá: lỗi khi ghi lịch sử mua vào sổ giá không làm hỏng thao tác hoàn tất dòng đơn mua hàng
+- status: xong
+- date: 2026-11-25
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** rà cụm Giá nguyên vật liệu sản xuất (duoc-CR-784) trước khi lên prod: khi một dòng đơn mua hàng hoàn tất, hệ
+ghi lịch sử mua rồi ghi tiếp sổ giá; nếu cơ sở dữ liệu báo lỗi giữa chừng phần sổ giá thì phiên làm việc có thể kẹt, kéo
+hỏng luôn thao tác hoàn tất dòng. Lịch sử mua còn một dòng mã HOP4370 ngày 03/12/2026 (ngày trong tương lai) sẽ bị coi là
+giá mới nhất.
+
+**Đã làm**
+- Phần ghi sổ giá chạy riêng một bước có thể lùi: lỗi thì chỉ bỏ phần sổ giá, dòng lịch sử vẫn lưu, thao tác chính chạy tiếp.
+- Xóa dòng lịch sử mua HOP4370 ngày 03/12/2026 (dữ liệu nhập cũ, không gắn đơn mua hàng) trên dev và prod; prod sao lưu trước.
+
+**Kiểm:** thêm 1 bài kiểm giả lập lỗi giữa chừng; 114 bài sổ giá, lịch sử mua, tiến độ mua hàng xanh.
+
+Mã nguồn: `backend/app/modules/purchase_history/service.py`.
+Kiểm: `test/backend/test_so_gia_san_pham_cr784.py`.
+
 ## bao-CR-788 | Đơn mua hàng tạo thẳng lấy công ty nhận hóa đơn theo đơn gần nhất khi hồ sơ chưa gán công ty
 - status: xong
 - date: 2026-11-20

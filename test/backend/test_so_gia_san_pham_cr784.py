@@ -187,6 +187,23 @@ def test_loi_so_gia_khong_chan_dong_lich_su(db, monkeypatch):
     assert db.query(PurchaseHistory).count() == 1 and ledger_rows(db) == []
 
 
+def test_loi_csdl_giua_chung_so_gia_chi_lui_phan_so_gia(db, monkeypatch):
+    """bao-CR-789: lỗi CSDL GIỮA CHỪNG phần sổ giá (đã thêm dòng rồi mới hỏng) chỉ lùi phần sổ giá trong savepoint; dòng
+    lịch sử vẫn lưu và phiên commit tiếp được (trước đây phiên có thể kẹt trạng thái lỗi)."""
+    def half_then_boom(db_, ph, *_a, **_k):
+        db_.add(ProductPriceLedger(source_type=HISTORY, source_id=ph.id, product_code="X", price=1,
+                                   price_date=date(2026, 1, 1)))
+        db_.flush()
+        raise RuntimeError("giả lập lỗi sau khi đã ghi một phần sổ giá")
+    monkeypatch.setattr(sync, "record_history_row", half_then_boom)
+    po = make_po(db, status="approved")
+    it = make_item(db, po, progress_status="completed")
+    assert snapshot_line(db, po, it) is not None
+    db.commit()
+    assert db.query(PurchaseHistory).count() == 1
+    assert ledger_rows(db) == [], "dòng sổ giá ghi dở phải bị lùi cùng savepoint"
+
+
 def test_hook_trong_sync_po_khong_nem_loi_khi_hong(db, monkeypatch):
     po = make_po(db, status="approved")
     make_item(db, po)
