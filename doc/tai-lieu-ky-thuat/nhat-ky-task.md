@@ -322,7 +322,8 @@ giá mới nhất.
 
 **Đã làm**
 - Phần ghi sổ giá chạy riêng một bước có thể lùi: lỗi thì chỉ bỏ phần sổ giá, dòng lịch sử vẫn lưu, thao tác chính chạy tiếp.
-- Xóa dòng lịch sử mua HOP4370 ngày 03/12/2026 (dữ liệu nhập cũ, không gắn đơn mua hàng) trên dev và prod; prod sao lưu trước.
+- Xóa dòng lịch sử mua HOP4370 ngày 03/12/2026 (dữ liệu nhập cũ, không gắn đơn mua hàng) trên prod, sao lưu trước
+  (`prod_truoc_release_20261125_1333.sql.gz`); dev giữ dòng này (đã khôi phục đúng giá trị từ bản sao lưu prod).
 
 **Kiểm:** thêm 1 bài kiểm giả lập lỗi giữa chừng; 114 bài sổ giá, lịch sử mua, tiến độ mua hàng xanh.
 
