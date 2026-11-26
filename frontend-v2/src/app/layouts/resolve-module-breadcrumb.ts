@@ -26,6 +26,22 @@ function findActiveChild(item: ModuleNavItem, pathname: string): ModuleNavItem |
   return item.children?.find((child) => !child.hidden && isNavItemActive(child, pathname))
 }
 
+/**
+ * Mục con ẨN có bật `breadcrumbOwnLabel` mà URL đang đứng ĐÚNG đường của nó — làm cấp CUỐI, sau mục đang sáng
+ * (vd "Giá nguyên vật liệu sản xuất › Bảng giá VTBB › Báo giá VTBB"). Chỉ khớp chính xác đường (trang chi tiết bên dưới
+ * không tính), và bỏ khi trùng chữ với cấp ngay trước để khỏi lặp.
+ */
+function findOwnLabelChild(
+  item: ModuleNavItem,
+  pathname: string,
+  previousLabel: string,
+): ModuleNavItem | undefined {
+  return item.children?.find(
+    (child) =>
+      child.hidden && child.breadcrumbOwnLabel && child.path === pathname && child.label !== previousLabel,
+  )
+}
+
 export interface ModuleBreadcrumb {
   isModuleRoot: boolean
   current: ModuleNavItem | undefined
@@ -34,6 +50,8 @@ export interface ModuleBreadcrumb {
   hasCurrent: boolean
   /** Có cấp thứ ba (mục con khác tên mục cha) không. */
   hasChild: boolean
+  /** Mục con ẩn tự ghi tên mình làm cấp cuối (`breadcrumbOwnLabel`); `undefined` khi không có. */
+  ownLabelChild: ModuleNavItem | undefined
   /** Mục menu trùng tên phân hệ (vd "Nhân sự › Nhân sự") — giấu cấp phân hệ. */
   hideModuleLevel: boolean
   /** Đang ở trang CON của mục menu (chi tiết bản ghi) — cấp mục menu thành link về danh sách. */
@@ -65,11 +83,27 @@ export function resolveModuleBreadcrumb(module: ErpModule, pathname: string): Mo
   //  không thì thanh ghi "Nhân sự › Nhân sự" (anh Được báo 02/11/2026).
   const hideModuleLevel = hasCurrent && current?.label === module.title
   const isBelowCurrent = hasCurrent && !hasChild && Boolean(current) && pathname !== current?.path
+  //  Cấp cuối riêng của mục con ẩn — CHỈ khi mục đó tự bật cờ; mặc định mục ẩn vẫn ghi tên mục đang sáng.
+  const ownLabelChild =
+    hasCurrent && current
+      ? findOwnLabelChild(current, pathname, hasChild && activeChild ? activeChild.label : current.label)
+      : undefined
 
   let pageLabel: string | null = null
   if (isModuleRoot) pageLabel = module.title
+  else if (ownLabelChild) pageLabel = ownLabelChild.label
   else if (hasChild && activeChild) pageLabel = activeChild.label
   else if (hasCurrent && current && !isBelowCurrent) pageLabel = current.label
 
-  return { isModuleRoot, current, activeChild, hasCurrent, hasChild, hideModuleLevel, isBelowCurrent, pageLabel }
+  return {
+    isModuleRoot,
+    current,
+    activeChild,
+    hasCurrent,
+    hasChild,
+    ownLabelChild,
+    hideModuleLevel,
+    isBelowCurrent,
+    pageLabel,
+  }
 }

@@ -245,6 +245,8 @@ export const procurementModule: ErpModule = {
           //  Ẩn khỏi menu (người chủ chốt 21/11/2026: file HTML gốc không có tab này, báo giá nhập ngay ở Bảng giá VTBB).
           //  Giữ mục để đường dẫn vẫn bị gác quyền packaging_cost — bỏ hẳn mục là route mở cho mọi người đăng nhập.
           hidden: true,
+          //  Breadcrumb ghi thêm cấp cuối "Báo giá VTBB" sau "Bảng giá VTBB" (khớp v1).
+          breadcrumbOwnLabel: true,
         },
         {
           label: 'Định mức bao bì',

@@ -24,12 +24,17 @@ import { UserMenu } from './user-menu'
  *
  * Cấp thứ ba (03/10/2026) chỉ có khi mục menu có `children` — vd "Thu mua › Tra cứu
  * thị trường › Giá thị trường", "Nhân sự › Nghỉ phép › Lịch nghỉ".
+ *
+ * Cấp thứ tư chỉ có ở mục con ẩn bật `breadcrumbOwnLabel` (vd "Thu mua › Giá nguyên vật liệu sản xuất › Bảng giá
+ * VTBB › Báo giá VTBB").
  */
 export function ModuleTopbar({ module }: { module: ErpModule }) {
   const { pathname } = useLocation()
 
-  const { current, activeChild, hasCurrent, hasChild, hideModuleLevel, isBelowCurrent, isModuleRoot } =
+  const { current, activeChild, hasCurrent, hasChild, ownLabelChild, hideModuleLevel, isBelowCurrent, isModuleRoot } =
     resolveModuleBreadcrumb(module, pathname)
+  //  Còn cấp nào sau cấp mục menu không (mục con đang sáng, hoặc mục ẩn tự ghi tên — `breadcrumbOwnLabel`).
+  const hasDeeper = hasChild || Boolean(ownLabelChild)
 
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-4">
@@ -78,8 +83,8 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
               {/*  Có cấp ba thì cấp hai là LINK về mục cha (chỉ cấp cuối mới là
                    `aria-current="page"`), và ở khổ hẹp giấu luôn cấp hai — cùng lý do
                    giấu cấp phân hệ ở trên: dành trọn chỗ cho tên màn đang đứng. */}
-              <BreadcrumbItem className={cn('min-w-0', hasChild && 'shrink-[2] max-sm:hidden')}>
-                {hasChild || isBelowCurrent ? (
+              <BreadcrumbItem className={cn('min-w-0', hasDeeper && 'shrink-[2] max-sm:hidden')}>
+                {hasDeeper || isBelowCurrent ? (
                   <BreadcrumbLink asChild>
                     <Link to={current.path} className="truncate" title={current.label}>
                       {current.label}
@@ -97,12 +102,29 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
           {hasChild && activeChild && (
             <>
               <BreadcrumbSeparator className="shrink-0 max-sm:hidden" />
+              {/*  Có cấp ẩn tự ghi tên phía sau thì cấp ba thành LINK về màn đang sáng, giấu ở khổ hẹp như cấp hai. */}
+              <BreadcrumbItem className={cn('min-w-0', ownLabelChild && 'shrink-[2] max-sm:hidden')}>
+                {ownLabelChild ? (
+                  <BreadcrumbLink asChild>
+                    <Link to={activeChild.path} className="truncate" title={activeChild.label}>
+                      {activeChild.label}
+                    </Link>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage className="truncate font-medium text-navy" title={activeChild.label}>
+                    {activeChild.label}
+                  </BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </>
+          )}
+
+          {ownLabelChild && (
+            <>
+              <BreadcrumbSeparator className="shrink-0 max-sm:hidden" />
               <BreadcrumbItem className="min-w-0">
-                <BreadcrumbPage
-                  className="truncate font-medium text-navy"
-                  title={activeChild.label}
-                >
-                  {activeChild.label}
+                <BreadcrumbPage className="truncate font-medium text-navy" title={ownLabelChild.label}>
+                  {ownLabelChild.label}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </>

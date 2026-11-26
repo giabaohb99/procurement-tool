@@ -2,6 +2,8 @@ import { Users } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
 
 import type { ErpModule } from '@/app/router/module-definition'
+import { procurementModule } from '@/modules/procurement/routes'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { resolveModuleBreadcrumb } from './resolve-module-breadcrumb'
 
 const hr = {
@@ -45,5 +47,37 @@ describe('resolveModuleBreadcrumb — pageLabel (chữ cuối khi nó là "trang
   it('is null on a path no menu item knows, and does not match by bare prefix', () => {
     expect(resolveModuleBreadcrumb(hr, '/hr/unknown').pageLabel).toBeNull()
     expect(resolveModuleBreadcrumb(hr, '/hr/employees-archive').pageLabel).toBeNull()
+  })
+})
+
+//  duoc-CR-784 — cờ `breadcrumbOwnLabel` chỉ bật ở Báo giá VTBB; các màn ẩn khác của Thu mua giữ nguyên luật cũ.
+describe('resolveModuleBreadcrumb — breadcrumbOwnLabel trên menu Thu mua thật', () => {
+  it('ends with Báo giá VTBB after Bảng giá VTBB on the hidden quotes screen', () => {
+    const crumb = resolveModuleBreadcrumb(procurementModule, appRoutes.procurement.packagingQuotes)
+    expect(crumb.current?.label).toBe('Giá nguyên vật liệu sản xuất')
+    expect(crumb.activeChild?.label).toBe('Bảng giá VTBB')
+    expect(crumb.ownLabelChild?.label).toBe('Báo giá VTBB')
+    //  Tiêu đề trang "Báo giá VTBB" trùng chữ cuối nên `PageHeader` tự ẩn (duoc-CR-714).
+    expect(crumb.pageLabel).toBe('Báo giá VTBB')
+  })
+
+  it('is set on the Báo giá VTBB item only', () => {
+    const flagged = procurementModule.nav
+      .flatMap((item) => [item, ...(item.children ?? [])])
+      .filter((item) => item.breadcrumbOwnLabel)
+      .map((item) => item.label)
+    expect(flagged).toEqual(['Báo giá VTBB'])
+  })
+
+  it('keeps Customs hidden tabs and Lô xuất của tôi under Giá thị trường', () => {
+    for (const path of [
+      appRoutes.procurement.customsPriceSection('chart'),
+      appRoutes.procurement.customsPriceSection('tariff'),
+      appRoutes.procurement.customsExports,
+    ]) {
+      const crumb = resolveModuleBreadcrumb(procurementModule, path)
+      expect(crumb.ownLabelChild).toBeUndefined()
+      expect(crumb.pageLabel).toBe('Giá thị trường')
+    }
   })
 })

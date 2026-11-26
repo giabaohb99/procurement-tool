@@ -56,6 +56,18 @@ const testModule: ErpModule = {
       ],
     },
     {
+      //  Khuôn của Giá nguyên vật liệu sản xuất (duoc-CR-784): "Bảng giá" gom màn ẩn "Báo giá" qua `matchPaths`,
+      //  "Báo giá" bật `breadcrumbOwnLabel` nên ghi thêm cấp cuối; "Nhập liệu" ẩn mà KHÔNG bật cờ.
+      label: 'Giá nguyên vật liệu',
+      path: '/test/cost',
+      children: [
+        { label: 'Tác động', path: '/test/cost', end: true },
+        { label: 'Bảng giá', path: '/test/cost/prices', matchPaths: ['/test/cost/quotes', '/test/cost/inputs'] },
+        { label: 'Báo giá', path: '/test/cost/quotes', hidden: true, breadcrumbOwnLabel: true },
+        { label: 'Nhập liệu', path: '/test/cost/inputs', hidden: true },
+      ],
+    },
+    {
       //  Mục trùng tên phân hệ — khuôn của "Nhân sự" › "Nhân sự".
       label: 'Thu mua',
       path: '/test/dup',
@@ -153,6 +165,35 @@ describe('ModuleTopbar breadcrumb', () => {
     const crumb = within(nav).getByText('Báo cáo mua hàng')
     expect(crumb).toHaveAttribute('aria-current', 'page')
     expect(crumb).not.toHaveAttribute('href')
+  })
+
+  describe('breadcrumbOwnLabel (mục ẩn tự ghi tên làm cấp cuối)', () => {
+    it('appends the hidden item own label after the lit item, which becomes a link back', () => {
+      const nav = renderAt('/test/cost/quotes')
+      expect(crumbTexts(nav)).toEqual(['Thu mua', 'Giá nguyên vật liệu', 'Bảng giá', 'Báo giá'])
+      expect(within(nav).getByRole('link', { name: 'Bảng giá' })).toHaveAttribute('href', '/test/cost/prices')
+      expect(within(nav).getByRole('link', { name: 'Giá nguyên vật liệu' })).toHaveAttribute('href', '/test/cost')
+      const current = nav.querySelectorAll('[aria-current="page"]')
+      expect(current).toHaveLength(1)
+      expect(current[0]).toHaveTextContent('Báo giá')
+    })
+
+    it('keeps the lit item name for a hidden item WITHOUT the flag', () => {
+      const nav = renderAt('/test/cost/inputs')
+      expect(crumbTexts(nav)).toEqual(['Thu mua', 'Giá nguyên vật liệu', 'Bảng giá'])
+      expect(nav.querySelectorAll('[aria-current="page"]')[0]).toHaveTextContent('Bảng giá')
+    })
+
+    it('only applies on the exact path of the flagged item, not below it', () => {
+      const nav = renderAt('/test/cost/quotes/5')
+      expect(crumbTexts(nav)).toEqual(['Thu mua', 'Giá nguyên vật liệu', 'Bảng giá'])
+    })
+
+    it('leaves the lit item as the current page on its own path', () => {
+      const nav = renderAt('/test/cost/prices')
+      expect(crumbTexts(nav)).toEqual(['Thu mua', 'Giá nguyên vật liệu', 'Bảng giá'])
+      expect(within(nav).getByText('Bảng giá')).toHaveAttribute('aria-current', 'page')
+    })
   })
 
   it('keeps a single level at the module root', () => {

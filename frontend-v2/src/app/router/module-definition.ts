@@ -92,6 +92,15 @@ export interface ModuleNavItem {
    */
   hidden?: boolean
   /**
+   * **Mục ẩn ghi TÊN MÌNH làm cấp cuối của breadcrumb** (chỉ có nghĩa khi đi cùng `hidden`, ở mục con).
+   *
+   * Mặc định một mục ẩn được gom qua `matchPaths` thì breadcrumb ghi tên mục ĐANG SÁNG bên trái (bốn thẻ ẩn của Tra
+   * cứu thị trường, Lô xuất của tôi... dựa vào luật đó). Bật cờ này thì khi URL đứng ĐÚNG đường của mục, breadcrumb
+   * thêm một cấp nữa sau mục đang sáng: "Giá nguyên vật liệu sản xuất › Bảng giá VTBB › Báo giá VTBB" (duoc-CR-784,
+   * khớp v1). Mục đang sáng thành link quay về; tiêu đề trang trùng tên mục vẫn tự ẩn như cũ.
+   */
+  breadcrumbOwnLabel?: boolean
+  /**
    * **Đường dẫn phụ trỏ sang phân hệ KHÁC.** Mục vẫn nằm trong menu phân hệ này
    * nhưng `path` nằm ngoài `module.path`, bấm vào là chuyển hẳn sang phân hệ kia.
    *
