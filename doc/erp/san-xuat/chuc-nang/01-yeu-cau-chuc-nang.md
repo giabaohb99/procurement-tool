@@ -14,6 +14,9 @@ rút từ bộ Google Sheets *quy trình làm việc* phòng Sản xuất gửi 
 Giá nguyên vật liệu sản xuất đang chạy. Bản 0.1 (danh sách CN-SX theo nghiên cứu chuẩn Thông tư 99) được thay bằng bản này;
 nghiên cứu đó nằm ở [`nghien-cuu/20`](../nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md).
 
+**Nguồn dữ liệu thật để nạp ban đầu:** sổ *Quản lý nhãn mác IDA GROUP* của Thiết kế (11.150 mã hàng hóa, quy tắc đặt mã,
+định mức bao bì thật của 4.189 mã) — xem [`nghien-cuu/21`](../nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md).
+
 ## 1. Cách tổ chức
 
 DEGO không tự sản xuất: toàn bộ là **gia công tại nhà cung cấp gia công (NCC GC)**. Tài liệu chia theo **chức năng**, không

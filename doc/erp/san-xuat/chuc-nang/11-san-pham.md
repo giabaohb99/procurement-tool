@@ -186,7 +186,9 @@ Tiền tố lệch nhau giữa quy trình và sổ; cần chốt một kiểu (c
 
 ### 4.7 Quy tắc quản lý nhãn mác
 
-Nguồn: sheet *QUẢN LÝ NHÃN MÁC* (kéo từ sổ *QUẢN LÝ NHÃN MÁC IDA GROUP* của Thiết kế, mỗi dòng một mã HH).
+Nguồn: sheet *QUẢN LÝ NHÃN MÁC* (kéo từ sổ *QUẢN LÝ NHÃN MÁC IDA GROUP* của Thiết kế, mỗi dòng một mã HH). Sổ gốc đã nhận
+ngày 26/11/2026 và là **dữ liệu thật**: 11.150 mã HH, bản quy tắc đặt mã 31/03/2026, định mức VTBB thật của 4.189 mã HH
+(9 ô thành phần, có *Hộp* và *VTBB khác 1–3*) — xem [`nghien-cuu/21`](../nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md).
 
 1. Mỗi mã HH có một hồ sơ nhãn mác gồm: tình trạng sản phẩm (*đã in*, *chưa in*, *tạm ngưng*, *bỏ nhãn*, *mua thành phẩm*...), khách hàng / thương hiệu, công ty phân phối, **đại diện pháp lý / hóa đơn** (công ty xuất hóa đơn đầu ra), dòng sản phẩm (phân bón, thuốc trừ sâu, trừ bệnh, trừ cỏ...), tên đăng ký, mô tả ruột (vd *Nước đỏ*), tên nhãn hiệu nội bộ, **công ty nhận hóa đơn đầu vào**, **NCC sản xuất**, quy cách sản phẩm, quy cách thùng, quy cách bao, ĐVT chính, chất liệu bao bì chứa, chất liệu nhãn, kích thước nhãn, loại thùng, kích thước thùng, nhãn dán thùng (có / dùng nhãn chính / kích thước), hộp giấy, lưu ý sản phẩm, tên sản phẩm (ghép tự động), link hình VTBB, hoạt chất, trọng lượng.
 2. Hồ sơ có sáu cột mã bao bì gắn sẵn: **chai / xô / can / lon, nhãn chai / túi, túi, thùng, NDT, nắp, hộp**. Đây là điểm xuất phát của BĐM VTBB.

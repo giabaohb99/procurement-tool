@@ -87,6 +87,7 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 | [`nghien-cuu/17-ncc-gia-cong-va-quan-ly-du-lieu.md`](nghien-cuu/17-ncc-gia-cong-va-quan-ly-du-lieu.md) | NCC gia công (đưa vào, đánh giá, ngưng), đầu vào QLDL, duyệt đơn, BĐM thành phẩm | 26/11/2026 |
 | [`nghien-cuu/18-gia-von-mua-hang-cong-no-ton-kho.md`](nghien-cuu/18-gia-von-mua-hang-cong-no-ton-kho.md) | Giá vốn, mua NL / BTP / VTBB, công nợ, đối chiếu tồn, báo cáo VTBB | 26/11/2026 |
 | [`nghien-cuu/19-dieu-phoi-thanh-pham-va-su-co.md`](nghien-cuu/19-dieu-phoi-thanh-pham-va-su-co.md) | Điều phối thành phẩm gửi NCC GC, sự cố sản xuất và chỉ số | 26/11/2026 |
+| [`nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md`](nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md) | Sổ Quản lý nhãn mác (dữ liệu thật): 11.150 mã hàng hóa, quy tắc đặt mã 31/03/2026, định mức bao bì thật 4.189 mã, kho nhãn | 26/11/2026 |
 | [`du-lieu/09-quy-trinh-ban-giao-sheets/`](du-lieu/09-quy-trinh-ban-giao-sheets/) | 20 sheet của tệp quy trình bàn giao (mục lục, tiến độ, QT 1–20) xuất ra văn bản | dữ liệu gốc |
 | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) | Bảng đường API (dựng tự động; chưa có mã backend) | Nháp |
 
