@@ -3,7 +3,7 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | planner | Nháp | duoc-CR-784, bao-CR-789 |
-| 2 | 26/11/2026 | tài liệu và kiểm thử | **Tài liệu xong trên nhánh `duoc-cr784-p05-tai-lieu`** (chưa commit); seed HDSD + xuất bản cẩm nang + nạp lại chỉ mục chờ chạy trên dev; phát hành prod chờ duyệt | duoc-CR-784, bao-CR-789 |
+| 2 | 26/11/2026 | tài liệu và kiểm thử | **Tài liệu xong, đã commit**; đã seed HDSD (10 bài), xuất bản cẩm nang (phiên bản 11), nạp lại chỉ mục (54 đoạn) trên dev 26/11; phát hành prod chờ duyệt | duoc-CR-784, bao-CR-789 |
 
 Ưu tiên P2 · 2 giờ · cần 02–04, 06, 07 (đều đã lên dev 25/11/2026).
 
