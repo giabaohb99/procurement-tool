@@ -27,7 +27,8 @@
 ## HDSD và cẩm nang (26/11/2026)
 - [x] `backend/scripts/seed_help_gia_bao_bi_cr784.py`: 10 nút (thẻ + 9 bài), thêm bài *Giá NVL sản xuất — Xóa dữ liệu đã nhập nhầm theo lô nhập Excel*; sửa đường menu (nhóm Mua hàng), bảng nguồn sổ giá (một dòng mỗi dòng ĐMH, đang mở rồi chốt), ghi chú đơn vị, VAT Misa trống, cột Nguồn của Lịch sử, báo giá trùng + cột Nguồn, thay mọi câu "chưa hoàn tác được" bằng xóa theo lô, phần quản trị hai đường nạp Misa. Slug các bài cũ giữ nguyên. Đã kiểm ngoài DB: tóm tắt <= 255 ký tự, không lọt chữ ngưỡng, mọi liên kết chéo trỏ đúng bài trong cây, thẻ HTML cân, `py_compile` qua.
 - [x] Cẩm nang `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md` mục *Giá nguyên vật liệu sản xuất* (đánh dấu *cập nhật 26/11/2026*): menu, nguồn giá, Lần, Giá trị mua, Tổng hợp lọc nâng cao, báo giá một khóa + cột Nguồn, không còn ngưỡng, xóa theo lô, tham số `fg_codes` của công cụ.
-- [ ] Trên dev (chờ chạy sau commit): seed HDSD → xuất bản cẩm nang → nạp lại chỉ mục, rồi mở devhelp soát 10 nút.
+- [x] Trên dev: seed HDSD → xuất bản cẩm nang (phiên bản 11) → nạp lại chỉ mục (26/11/2026)
+- [ ] Mở devhelp soát 10 bài bằng mắt
 
 ```bash
 # trên VPS dev, container api của dev (tên theo skill viet-hdsd: procurement-tool-dev-api-1)
@@ -82,6 +83,7 @@ mọi migration chạy trên bảng rỗng.
 - [x] Ma trận kiểm xanh theo từng phase (02, 03, 04, 06, 07)
 - [x] Tài liệu kỹ thuật + api.md + sổ (26/11/2026)
 - [x] HDSD + cẩm nang sửa chữ (26/11/2026)
-- [ ] Commit nhánh `duoc-cr784-p05-tai-lieu`, chạy seed + xuất bản cẩm nang + nạp lại chỉ mục trên dev, soát devhelp và màn dev
+- [x] Commit nhánh `duoc-cr784-p05-tai-lieu`, chạy seed + xuất bản cẩm nang + nạp lại chỉ mục trên dev (26/11/2026)
+- [ ] Soát màn dev bằng trình duyệt (cả hai giao diện)
 - [ ] Báo bao-CR-789 thứ tự migration và quyết lên prod một lần
 - [ ] Phát hành prod theo danh sách trên (chờ duyệt)

@@ -59,4 +59,4 @@ phiếu bằng id (`bom_id`) đúng ý chủ dự án — thêm loại mới ch�
 - [x] Gửi agent định mức hai ý 1–2 ở trên (đã làm cả hai)
 - [x] Tách bảng thành phần, migration `bompart784`, so kết quả cũ / mới giống hệt, bài kiểm (25/11/2026)
 - [x] Commit, đẩy `erp-v2` (25/11/2026; revision cuối: `bompart784`, `opt784` trỏ vào đây)
-- [ ] Sao lưu DB dev, deploy dev
+- [x] Sao lưu DB dev, deploy dev (25/11/2026)

@@ -107,7 +107,7 @@ thì để nguồn 2; xóa cột. Local: 87 dòng đổi nguồn. Dev: chạy đ
 - [x] Sửa sync / mốc Misa / lịch sử / backfill
 - [x] API `line_stage` + `is_open`, FE v1 + v2
 - [x] Bài kiểm cụm sổ giá xanh, đếm truy vấn không tăng (sync mỗi đơn còn 2 truy vấn, trước 3)
-- [ ] Sao lưu DB dev, deploy dev, chạy `backfill_product_price_ledger --check` (xem *Việc phải làm trên dev*)
+- [x] Sao lưu DB dev, deploy dev, chạy `backfill_product_price_ledger --check` = 0 (25/11/2026)
 
 ## Kết quả (25/11/2026)
 **Đã làm gì và vì sao.** Một lần mua của hệ thống từng nằm ở hai dòng sổ (nguồn 2 khi đang mở, bị xóa rồi chèn lại thành nguồn 1 lúc hoàn

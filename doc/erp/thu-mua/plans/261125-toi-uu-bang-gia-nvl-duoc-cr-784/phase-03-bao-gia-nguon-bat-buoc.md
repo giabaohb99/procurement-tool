@@ -90,7 +90,7 @@ Xuống: bỏ chỉ mục + hai cột (dòng đã xóa ở bước 4 không tr�
 - [x] Cột, khóa, migration `quotesrc784` + hàm điền lại có bài kiểm (SQLite lên / xuống / lên lại; MySQL 8 trên bản sao local)
 - [x] CRUD + nhập Excel ghi nguồn; 409 trùng khóa
 - [x] Cột Nguồn ở v1 + v2
-- [ ] Lên dev: sao lưu, chạy câu đọc kiểm trùng khóa, khởi động lại api (xem *Việc cần làm khi lên dev*)
+- [x] Lên dev: sao lưu, câu đọc kiểm trùng khóa = 0, khởi động lại api (25/11/2026)
 
 ## Kết quả thực hiện (25/11/2026)
 
