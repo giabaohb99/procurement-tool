@@ -36,7 +36,7 @@ const LAST_PRICES_SORT_KEYS = ['code', 'name', 'group', 'purchase_count', 'v12',
 
 export const PRICE_LIST_URL_KEYS = ['q', 'group', 'scope', 'date_from', 'date_to', 'sort_by', 'sort_dir', 'page', 'page_size'] as const
 export const LAST_PRICES_URL_KEYS = [
-  'q', 'group', 'scope', 'only_priced', 'date_from', 'date_to', 'supplier', 'n', 'show_qty', 'trend', 'min_pct', 'bom_only',
+  'q', 'group', 'all', 'scope', 'only_priced', 'date_from', 'date_to', 'supplier', 'n', 'show_qty', 'trend', 'min_pct', 'bom_only',
   'sort_by', 'sort_dir', 'page', 'page_size',
 ] as const
 
@@ -146,6 +146,7 @@ export function lastPricesScreenToSearch(st: LastPricesScreenState): string {
   const s = new URLSearchParams()
   if (f.q.trim()) s.set('q', f.q.trim())
   f.groups.forEach((g) => s.append('group', g))
+  if (f.all) s.set('all', '1')
   if (f.n !== d.n) s.set('n', String(f.n))
   if (f.scope !== d.scope) s.set('scope', f.scope)
   f.suppliers.forEach((c) => s.append('supplier', c))
@@ -176,10 +177,15 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
   const sortBy = s.get('sort_by') ?? ''
   const sorted = validLastPricesSortKey(sortBy, nShown)
   const range = rangeFromSearch(s)
+  //  `all=1` = đã bấm "Tất cả". Xếp khác mặc định cũng là xem rộng (chế độ gần nhất chỉ có thứ tự mới nhất trước) nên coi như "Tất cả".
+  const sortDir = sorted ? (s.get('sort_dir') === 'desc' ? 'desc' : 'asc') : LAST_PRICES_DEFAULT_SORT.dir
+  const sortedAwayFromRecent = sorted && (sortBy !== LAST_PRICES_DEFAULT_SORT.by || sortDir !== LAST_PRICES_DEFAULT_SORT.dir)
   return {
     filters: {
       q: textFromSearch(s, 'q'),
       groups,
+      all: groups.length === 0 && (flag(s, 'all') === true || sortedAwayFromRecent),
+      trendAllLit: false,
       n: nShown,
       scope: scopeFromSearch(s, EMPTY_LAST_PRICES_FILTERS.scope),
       suppliers,
@@ -193,7 +199,7 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
     },
     //  Không có khóa xếp hợp lệ trên URL = xếp mặc định (Lần 1 ngày mua giảm dần).
     sortBy: sorted ? sortBy : LAST_PRICES_DEFAULT_SORT.by,
-    sortDir: sorted ? (s.get('sort_dir') === 'desc' ? 'desc' : 'asc') : LAST_PRICES_DEFAULT_SORT.dir,
+    sortDir,
     ...pageFromSearch(s, LAST_PRICES_DEFAULT_PAGE_SIZE),
   }
 }

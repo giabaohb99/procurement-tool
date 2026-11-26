@@ -4,6 +4,7 @@ import type { PackagingLastPricesRow } from '../types/packaging-cost-types'
 import type { LastPricesFilters } from '../components/packaging-last-prices-toolbar'
 import {
   buildLastPricesParams,
+  isRecentMode,
   purchaseAt,
   purchaseGroupLabel,
   purchaseTrendTone,
@@ -76,6 +77,8 @@ const FILTERS: LastPricesFilters = {
   onlyPriced: true,
   bomOnly: false,
   showQty: false,
+  all: false,
+  trendAllLit: false,
 }
 
 describe('buildLastPricesParams', () => {
@@ -129,5 +132,25 @@ describe('sortKeyOutsideN', () => {
     expect(sortKeyOutsideN('p5_date', 5)).toBe(false)
     expect(sortKeyOutsideN('v12', 3)).toBe(false)
     expect(sortKeyOutsideN('', 3)).toBe(false)
+  })
+})
+
+describe('isRecentMode', () => {
+  const base: LastPricesFilters = { ...FILTERS, q: '', scope: 'all', onlyPriced: false }
+  it('is on only with nothing chosen (n / showQty do not count)', () => {
+    expect(isRecentMode(base)).toBe(true)
+    expect(isRecentMode({ ...base, n: 10, showQty: true, trendAllLit: true })).toBe(true)
+  })
+  it('turns off for "Tất cả", a group chip or any other filter', () => {
+    expect(isRecentMode({ ...base, all: true })).toBe(false)
+    expect(isRecentMode({ ...base, groups: ['Chai'] })).toBe(false)
+    expect(isRecentMode({ ...base, q: 'nắp' })).toBe(false)
+    expect(isRecentMode({ ...base, suppliers: ['A'] })).toBe(false)
+    expect(isRecentMode({ ...base, from: '2026-01-01' })).toBe(false)
+    expect(isRecentMode({ ...base, trend: 'up' })).toBe(false)
+    expect(isRecentMode({ ...base, minPct: 5 })).toBe(false)
+    expect(isRecentMode({ ...base, scope: 'bom' })).toBe(false)
+    expect(isRecentMode({ ...base, onlyPriced: true })).toBe(false)
+    expect(isRecentMode({ ...base, bomOnly: true })).toBe(false)
   })
 })

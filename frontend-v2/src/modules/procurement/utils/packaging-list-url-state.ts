@@ -172,6 +172,8 @@ export const DEFAULT_LAST_PRICES_FILTERS: LastPricesFilters = {
   onlyPriced: false,
   bomOnly: false,
   showQty: false,
+  all: false,
+  trendAllLit: false,
 }
 
 function readLastPricesN(raw: string | null): number {
@@ -219,10 +221,15 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
         .filter(Boolean),
     ),
   ].slice(0, MAX_GROUPS)
+  //  `all=1` = đã bấm "Tất cả". Xếp khác mặc định cũng là xem rộng (chế độ gần nhất chỉ có thứ tự mới nhất trước) nên coi như "Tất cả".
+  const sortedAwayFromRecent =
+    urlSortBy !== '' && (sortBy !== LAST_PRICES_DEFAULT_SORT.by || sortDir !== LAST_PRICES_DEFAULT_SORT.dir)
   return {
     filters: {
       q: readText(search.get('q'), MAX_QUERY_LENGTH),
       groups,
+      all: groups.length === 0 && (readFlag(search.get('all'), false) || sortedAwayFromRecent),
+      trendAllLit: false,
       n,
       scope: readScope(search.get('scope'), 'all'),
       suppliers,
@@ -248,6 +255,7 @@ export function buildLastPricesUrlSearch(state: LastPricesUrlState): string {
   const q = filters.q.trim()
   if (q) search.set('q', q)
   for (const name of filters.groups) search.append('group', name)
+  if (filters.all) search.set('all', '1')
   if (filters.n !== LAST_PRICE_DEFAULT_N) search.set('n', String(filters.n))
   if (filters.scope !== DEFAULT_LAST_PRICES_FILTERS.scope) search.set('scope', filters.scope)
   for (const code of filters.suppliers) search.append('supplier', code)

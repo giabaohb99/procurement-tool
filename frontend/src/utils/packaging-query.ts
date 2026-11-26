@@ -165,17 +165,33 @@ export interface LastPricesFilters {
   onlyPriced: boolean
   bomOnly: boolean
   showQty: boolean
+  /** Đã bấm chip "Tất cả" (sáng): nạp mọi mã có phân trang. Không bật + không lọc gì = chế độ gần nhất (20 mã mua gần nhất). */
+  all: boolean
+  /** Cờ riêng của giao diện: nút "Tất cả" ở hàng Biến động sáng sau khi bấm (trend nội bộ vẫn là `all`). */
+  trendAllLit: boolean
 }
 
 /** Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026): mọi bộ lọc TẮT — mọi mã, không ép "chỉ mã đã có giá". */
 export const EMPTY_LAST_PRICES_FILTERS: LastPricesFilters = {
   q: '', groups: [], n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
-  trend: 'all', minPct: 0, onlyPriced: false, bomOnly: false, showQty: false,
+  trend: 'all', minPct: 0, onlyPriced: false, bomOnly: false, showQty: false, all: false, trendAllLit: false,
 }
 /** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối) — 20 mã gần nhất. */
 export const LAST_PRICES_DEFAULT_SORT = { by: 'p1_date', dir: 'desc' } as const
 /** Cỡ trang mặc định của Giá mua gần nhất. */
 export const LAST_PRICES_DEFAULT_PAGE_SIZE = 20
+
+/** Chế độ gần nhất: chỉ nạp ngần này mã có lần mua mới nhất (người chủ chốt 26/11/2026), không phân trang. */
+export const RECENT_CODES_LIMIT = 20
+
+/**
+ * Chế độ gần nhất = chưa bấm "Tất cả", không chip nhóm và không bộ lọc nào khác (ô tìm, nhà cung cấp, ngày, biến động,
+ * ngưỡng %, phạm vi định mức, các công tắc). `n` và `showQty` chỉ đổi cột hiện nên không tính.
+ */
+export function isRecentMode(f: LastPricesFilters): boolean {
+  return !f.all && f.groups.length === 0 && !f.q.trim() && f.suppliers.length === 0 && !f.from && !f.to
+    && f.trend === 'all' && f.minPct <= 0 && !f.onlyPriced && !f.bomOnly && f.scope === 'all'
+}
 
 /** Nhãn nhóm cột của lần `index` (0 = gần nhất). */
 export const purchaseGroupLabel = (index: number): string => (index === 0 ? 'Lần 1 (gần nhất)' : `Lần ${index + 1}`)

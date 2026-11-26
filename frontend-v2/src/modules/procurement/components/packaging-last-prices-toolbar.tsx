@@ -26,7 +26,7 @@ import type {
   PackagingLastPricesGroup,
   PackagingLastPricesSupplier,
 } from '../types/packaging-cost-types'
-import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS } from '../utils/packaging-last-prices'
+import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS, RECENT_CODES_LIMIT } from '../utils/packaging-last-prices'
 
 export interface LastPricesFilters {
   q: string
@@ -44,6 +44,10 @@ export interface LastPricesFilters {
   onlyPriced: boolean
   bomOnly: boolean
   showQty: boolean
+  /** Đã bấm chip "Tất cả" (sáng): nạp mọi mã có phân trang. Không bật + không lọc gì = chế độ gần nhất (20 mã mua gần nhất). */
+  all: boolean
+  /** Cờ riêng của giao diện: nút "Tất cả" ở hàng Biến động sáng sau khi bấm (trend nội bộ vẫn là `all`). */
+  trendAllLit: boolean
 }
 
 /** Số tùy chọn hàng 2–3 đang khác mặc định — hiện trên nút "Lọc thêm" khi đã gập ở khổ điện thoại. */
@@ -72,6 +76,8 @@ interface PackagingLastPricesToolbarProps {
   groups: PackagingLastPricesGroup[]
   suppliers: PackagingLastPricesSupplier[]
   onChange: (filters: LastPricesFilters) => void
+  /** Đang ở chế độ gần nhất (chưa chọn nhóm / "Tất cả" / bộ lọc nào) — hiện chú thích 20 mã thay cho tổng số. */
+  recentMode?: boolean
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -115,6 +121,7 @@ export function PackagingLastPricesToolbar({
   groups,
   suppliers,
   onChange,
+  recentMode = false,
 }: PackagingLastPricesToolbarProps) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
   //  Khổ điện thoại: hàng 2–3 (mười tùy chọn) cao gần trọn màn, đẩy danh sách xuống dưới nếp gấp — gập lại sau nút
@@ -135,6 +142,7 @@ export function PackagingLastPricesToolbar({
       groups: filters.groups.includes(name)
         ? filters.groups.filter((item) => item !== name)
         : [...filters.groups, name],
+      all: false,
     })
 
   return (
@@ -151,11 +159,16 @@ export function PackagingLastPricesToolbar({
           />
         </div>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc theo nhóm">
-          {/*  "Tất cả" = bỏ mọi chip nhóm đang bật; không sáng sẵn (người chủ chốt 26/11/2026), chỉ là nút bấm nhanh. */}
+          {/*  "Tất cả" = bỏ mọi chip nhóm và nạp hết mọi mã; chỉ sáng SAU KHI bấm (người chủ chốt 26/11/2026). Mới mở: không
+              sáng, màn ở chế độ gần nhất. Bấm lúc đang sáng thì giữ sáng. */}
           <button
             type="button"
-            onClick={() => patch({ groups: [] })}
-            className="h-8 rounded-full border px-3 text-sm hover:bg-accent"
+            aria-pressed={filters.all}
+            onClick={() => patch({ groups: [], all: true })}
+            className={cn(
+              'h-8 rounded-full border px-3 text-sm hover:bg-accent',
+              filters.all && 'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+            )}
           >
             Tất cả
           </button>
@@ -175,6 +188,11 @@ export function PackagingLastPricesToolbar({
             </button>
           ))}
         </div>
+        {recentMode && (
+          <span className="text-xs text-muted-foreground">
+            {RECENT_CODES_LIMIT} mã mua gần nhất · bấm Tất cả để xem hết
+          </span>
+        )}
       </div>
 
       {isMobile && (
@@ -248,13 +266,16 @@ export function PackagingLastPricesToolbar({
                 variant="outline"
                 size="sm"
                 //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
-                value={filters.trend === 'all' ? '' : filters.trend}
+                value={filters.trend !== 'all' ? filters.trend : filters.trendAllLit ? ALL_TREND : ''}
                 onValueChange={(value) =>
-                  patch({ trend: (!value || value === ALL_TREND ? 'all' : value) as LastPricesTrend })
+                  patch({
+                    trend: (!value || value === ALL_TREND ? 'all' : value) as LastPricesTrend,
+                    trendAllLit: value === ALL_TREND,
+                  })
                 }
                 aria-label="Biến động lần 1 so lần 2"
               >
-                {/*  "Tất cả" = bỏ lọc biến động; giá trị riêng nên không bao giờ sáng sẵn. */}
+                {/*  "Tất cả" = bỏ lọc biến động; sáng sau khi bấm (cờ `trendAllLit`), mới mở thì chưa sáng. */}
                 <ToggleGroupItem value={ALL_TREND}>Tất cả</ToggleGroupItem>
                 {TREND_LABELS.map(([value, label]) => (
                   <ToggleGroupItem key={value} value={value}>

@@ -27,7 +27,12 @@ import {
 } from '../components/packaging-last-prices-toolbar'
 import { usePackagingLastPrices } from '../hooks/use-packaging-last-prices'
 import { usePackagingLastPricesColumns } from '../hooks/use-packaging-last-prices-columns'
-import { buildLastPricesParams, sortKeyOutsideN } from '../utils/packaging-last-prices'
+import {
+  buildLastPricesParams,
+  isRecentMode,
+  RECENT_CODES_LIMIT,
+  sortKeyOutsideN,
+} from '../utils/packaging-last-prices'
 import {
   buildLastPricesUrlSearch,
   DEFAULT_LAST_PRICES_FILTERS,
@@ -52,13 +57,27 @@ export function PackagingLastPricesPage() {
   const once = useSingleFlight()
   const columns = usePackagingLastPricesColumns(filters.n, filters.showQty)
 
+  //  Chế độ gần nhất (mới mở, chưa chọn gì): chỉ 20 mã mua gần nhất, xếp ngày mua mới nhất trước, không phân trang.
+  //  Ô tìm tính theo giá trị đã hoãn để gõ dở không nháy qua lại giữa hai chế độ.
+  const recent = isRecentMode({ ...filters, q: debouncedQ })
+
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo(
-    () => buildLastPricesParams(filters, debouncedQ, { by: sortBy, dir: sortDir }),
-    [filters, debouncedQ, sortBy, sortDir],
+    () =>
+      buildLastPricesParams(
+        filters,
+        debouncedQ,
+        recent ? { by: 'p1_date', dir: 'desc' } : { by: sortBy, dir: sortDir },
+      ),
+    [filters, debouncedQ, sortBy, sortDir, recent],
   )
-  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
-  const list = usePackagingLastPrices({ ...filterParams, page, page_size: pageSize })
+  const [rawPage, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
+  const page = recent ? 1 : rawPage
+  const list = usePackagingLastPrices({
+    ...filterParams,
+    page,
+    page_size: recent ? RECENT_CODES_LIMIT : pageSize,
+  })
 
   //  Ô tìm lên URL theo nhịp ĐÃ HOÃN (350 ms) — không ghi lại URL mỗi phím gõ.
   const urlSearch = buildLastPricesUrlSearch({
@@ -80,9 +99,10 @@ export function PackagingLastPricesPage() {
     setFilters(next)
   }
 
+  //  `all` / `trendAllLit` chỉ là cờ giao diện, không phải bộ lọc dữ liệu.
   const filtersActive =
-    JSON.stringify({ ...filters, n: 0, showQty: false }) !==
-    JSON.stringify({ ...EMPTY_FILTERS, n: 0, showQty: false })
+    JSON.stringify({ ...filters, n: 0, showQty: false, all: false, trendAllLit: false }) !==
+    JSON.stringify({ ...EMPTY_FILTERS, n: 0, showQty: false, all: false, trendAllLit: false })
 
   const exportExcel = () =>
     once(async () => {
@@ -135,12 +155,16 @@ export function PackagingLastPricesPage() {
           )}
           mobileSort
           filtersActive={filtersActive}
-          onResetFilters={() => changeFilters({ ...EMPTY_FILTERS, n: filters.n, showQty: filters.showQty })}
+          onResetFilters={() =>
+            changeFilters({ ...EMPTY_FILTERS, n: filters.n, showQty: filters.showQty, all: filters.all })
+          }
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={(by, dir) => {
             setSortBy(by)
             setSortDir(dir)
+            //  Xếp theo cột khác khi đang ở chế độ gần nhất = muốn xem rộng: nạp hết mọi mã theo thứ tự đó.
+            if (recent) setFilters((current) => ({ ...current, all: true }))
           }}
           toolbar={
             <PackagingLastPricesToolbar
@@ -148,16 +172,22 @@ export function PackagingLastPricesPage() {
               groups={list.data?.groups ?? []}
               suppliers={list.data?.suppliers ?? []}
               onChange={changeFilters}
+              recentMode={recent}
             />
           }
-          pagination={{
-            page,
-            pageSize,
-            total: list.data?.total ?? 0,
-            onPageChange: setPage,
-            onPageSizeChange: setPageSize,
-            unitLabel: 'mã',
-          }}
+          //  Chế độ gần nhất: ẩn chân phân trang (chú thích "20 mã mua gần nhất" nằm ở thanh lọc).
+          pagination={
+            recent
+              ? undefined
+              : {
+                  page,
+                  pageSize,
+                  total: list.data?.total ?? 0,
+                  onPageChange: setPage,
+                  onPageSizeChange: setPageSize,
+                  unitLabel: 'mã',
+                }
+          }
         />
       </Card>
     </PageContainer>

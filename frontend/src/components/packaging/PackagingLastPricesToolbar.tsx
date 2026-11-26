@@ -2,7 +2,7 @@ import DateRangePicker from '../DateRangePicker'
 import MultiCheckSelect from '../MultiCheckSelect'
 import NumberInput from '../NumberInput'
 import type { LastPricesTrend, PackagingLastPricesResult } from '../../api/packaging-cost-types'
-import { LAST_PRICE_N_OPTIONS, type LastPricesFilters } from '../../utils/packaging-query'
+import { LAST_PRICE_N_OPTIONS, RECENT_CODES_LIMIT, type LastPricesFilters } from '../../utils/packaging-query'
 import './packaging.css'
 
 const TRENDS: [LastPricesTrend, string][] = [['up', 'Tăng'], ['down', 'Giảm'], ['flat', 'Không đổi']]
@@ -25,12 +25,14 @@ function Toggle({ label, checked, onChange, title }: { label: string; checked: b
  * ngưỡng %. Hàng 3: các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 export default function PackagingLastPricesToolbar({
-  filters, onChange, groups, suppliers,
+  filters, onChange, groups, suppliers, recentMode = false,
 }: {
   filters: LastPricesFilters
   onChange: (next: LastPricesFilters) => void
   groups: PackagingLastPricesResult['groups']
   suppliers: PackagingLastPricesResult['suppliers']
+  /** Đang ở chế độ gần nhất (chưa chọn nhóm / "Tất cả" / bộ lọc nào) — hiện chú thích 20 mã thay cho tổng số. */
+  recentMode?: boolean
 }) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
   //  Chip bật / tắt từng nhóm (không có chip "Tất cả"): tên nhóm đã bật mà không còn chip nào (số đếm về 0) vẫn hiện để tắt được.
@@ -39,7 +41,7 @@ export default function PackagingLastPricesToolbar({
     ...filters.groups.filter((name) => !groups.some((g) => g.group === name)).map((name) => ({ group: name, label: `${name} (0)` })),
   ]
   const toggleGroup = (name: string) =>
-    patch({ groups: filters.groups.includes(name) ? filters.groups.filter((g) => g !== name) : [...filters.groups, name] })
+    patch({ groups: filters.groups.includes(name) ? filters.groups.filter((g) => g !== name) : [...filters.groups, name], all: false })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 0 10px' }}>
@@ -48,13 +50,16 @@ export default function PackagingLastPricesToolbar({
           <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên, nhóm, nhà cung cấp…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
         </div>
         <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
-          {/*  "Tất cả" = bỏ mọi chip nhóm đang bật; không sáng sẵn (người chủ chốt 26/11/2026), chỉ là nút bấm nhanh. */}
-          <button type="button" className="pkg-pill" onClick={() => patch({ groups: [] })}>Tất cả</button>
+          {/*  "Tất cả" = bỏ mọi chip nhóm và nạp hết mọi mã; chỉ sáng SAU KHI bấm (người chủ chốt 26/11/2026). Mới mở: không
+              sáng, màn ở chế độ gần nhất. Bấm lúc đang sáng thì giữ sáng. */}
+          <button type="button" className={'pkg-pill' + (filters.all ? ' on' : '')} aria-pressed={filters.all}
+            onClick={() => patch({ groups: [], all: true })}>Tất cả</button>
           {chips.map((c) => (
             <button key={c.group} type="button" className={'pkg-pill' + (filters.groups.includes(c.group) ? ' on' : '')}
               aria-pressed={filters.groups.includes(c.group)} onClick={() => toggleGroup(c.group)}>{c.label}</button>
           ))}
         </div>
+        {recentMode && <span className="pkg-hint">{RECENT_CODES_LIMIT} mã mua gần nhất · bấm Tất cả để xem hết</span>}
       </div>
 
       <div className="pkg-row">
@@ -82,12 +87,14 @@ export default function PackagingLastPricesToolbar({
         </div>
         <Field label="Biến động lần 1 so lần 2">
           <div className="pkg-seg" role="group" aria-label="Biến động lần 1 so lần 2">
-            {/*  "Tất cả" = bỏ lọc biến động; không sáng sẵn. */}
-            <button type="button" onClick={() => patch({ trend: 'all' })}>Tất cả</button>
+            {/*  "Tất cả" = bỏ lọc biến động; sáng sau khi bấm (cờ `trendAllLit`), mới mở thì chưa sáng. */}
+            <button type="button" className={filters.trend === 'all' && filters.trendAllLit ? 'on' : ''}
+              aria-pressed={filters.trend === 'all' && filters.trendAllLit}
+              onClick={() => patch({ trend: 'all', trendAllLit: true })}>Tất cả</button>
             {TRENDS.map(([v, label]) => (
               //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
               <button key={v} className={filters.trend === v ? 'on' : ''} aria-pressed={filters.trend === v}
-                onClick={() => patch({ trend: filters.trend === v ? 'all' : v })}>{label}</button>
+                onClick={() => patch({ trend: filters.trend === v ? 'all' : v, trendAllLit: false })}>{label}</button>
             ))}
           </div>
         </Field>

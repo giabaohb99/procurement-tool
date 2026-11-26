@@ -16,6 +16,29 @@ import { packagingDiffTone } from './packaging-price-format'
 export const LAST_PRICE_N_OPTIONS = [3, 5, 10] as const
 export const LAST_PRICE_DEFAULT_N = 5
 
+/** Chế độ gần nhất: chỉ nạp ngần này mã có lần mua mới nhất (người chủ chốt 26/11/2026), không phân trang. */
+export const RECENT_CODES_LIMIT = 20
+
+/**
+ * Chế độ gần nhất = chưa bấm "Tất cả", không chip nhóm và không bộ lọc nào khác (ô tìm, nhà cung cấp, ngày, biến động,
+ * ngưỡng %, phạm vi định mức, các công tắc). `n` và `showQty` chỉ đổi cột hiện nên không tính.
+ */
+export function isRecentMode(filters: LastPricesFilters): boolean {
+  return (
+    !filters.all &&
+    filters.groups.length === 0 &&
+    !filters.q.trim() &&
+    filters.suppliers.length === 0 &&
+    !filters.from &&
+    !filters.to &&
+    filters.trend === 'all' &&
+    filters.minPct <= 0 &&
+    !filters.onlyPriced &&
+    !filters.bomOnly &&
+    filters.scope === 'all'
+  )
+}
+
 /** Lần mua thứ `index` (0 = gần nhất); chưa đủ lần thì `null`. */
 /** Nhãn nhóm cột của lần `index` (0 = gần nhất) — dùng cho hàng tiêu đề nhóm của bảng. */
 export function purchaseGroupLabel(index: number): string {

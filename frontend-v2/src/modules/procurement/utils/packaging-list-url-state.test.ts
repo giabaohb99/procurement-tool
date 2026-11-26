@@ -89,6 +89,8 @@ describe('Giá mua gần nhất URL state', () => {
         onlyPriced: true,
         bomOnly: true,
         showQty: true,
+        all: false,
+        trendAllLit: false,
       },
       sortBy: 'p7_price',
       sortDir: 'desc',
@@ -149,7 +151,7 @@ describe('Giá mua gần nhất URL state', () => {
     expect(parseLast('only_priced=0').filters.onlyPriced).toBe(false)
     const state = parseLast('sort_by=code&sort_dir=asc&page_size=50')
     expect(state).toMatchObject({ sortBy: 'code', sortDir: 'asc', pageSize: 50 })
-    expect(buildLastPricesUrlSearch(state)).toBe('sort_by=code&sort_dir=asc&page_size=50')
+    expect(buildLastPricesUrlSearch(state)).toBe('all=1&sort_by=code&sort_dir=asc&page_size=50')
   })
 
   it('keeps a cleared sort across F5 by writing the server default order explicitly', () => {
@@ -160,7 +162,7 @@ describe('Giá mua gần nhất URL state', () => {
   it('writes the sort once its direction differs from the default (p1_date ascending)', () => {
     const state = parseLast('sort_by=p1_date&sort_dir=asc')
     expect(state).toMatchObject({ sortBy: 'p1_date', sortDir: 'asc' })
-    expect(buildLastPricesUrlSearch(state)).toBe('sort_by=p1_date&sort_dir=asc')
+    expect(buildLastPricesUrlSearch(state)).toBe('all=1&sort_by=p1_date&sort_dir=asc')
   })
 
   it('accepts true / false spellings for flags', () => {
@@ -190,5 +192,19 @@ describe('Giá mua gần nhất URL state', () => {
     expect(parseLast('n=3&sort_by=p3_date&sort_dir=desc').sortBy).toBe('p3_date')
     expect(parseLast('sort_by=p11_price').sortBy).toBe('p1_date')
     expect(parseLast('supplier=A&supplier=&supplier=A&supplier=B').filters.suppliers).toEqual(['A', 'B'])
+  })
+})
+
+describe('Giá mua gần nhất: chế độ Tất cả trên URL', () => {
+  it('writes nothing in recent mode and all=1 when "Tất cả" is active, and restores it', () => {
+    const base = { sortBy: 'p1_date', sortDir: 'desc' as const, page: 1, pageSize: 20 }
+    expect(buildLastPricesUrlSearch({ ...base, filters: DEFAULT_LAST_PRICES_FILTERS })).toBe('')
+    const url = buildLastPricesUrlSearch({ ...base, filters: { ...DEFAULT_LAST_PRICES_FILTERS, all: true } })
+    expect(url).toBe('all=1')
+    expect(parseLastPricesUrlState(new URLSearchParams(url)).filters.all).toBe(true)
+  })
+  it('treats a group chip or a non-default sort as leaving recent mode', () => {
+    expect(parseLastPricesUrlState(new URLSearchParams('all=1&group=Chai')).filters.all).toBe(false)
+    expect(parseLastPricesUrlState(new URLSearchParams('sort_by=name&sort_dir=asc')).filters.all).toBe(true)
   })
 })
