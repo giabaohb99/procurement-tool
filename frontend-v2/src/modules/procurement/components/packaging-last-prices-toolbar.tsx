@@ -108,6 +108,8 @@ function Toggle({
   )
 }
 
+const ALL_TREND = '__all'
+
 export function PackagingLastPricesToolbar({
   filters,
   groups,
@@ -149,6 +151,14 @@ export function PackagingLastPricesToolbar({
           />
         </div>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc theo nhóm">
+          {/*  "Tất cả" = bỏ mọi chip nhóm đang bật; không sáng sẵn (người chủ chốt 26/11/2026), chỉ là nút bấm nhanh. */}
+          <button
+            type="button"
+            onClick={() => patch({ groups: [] })}
+            className="h-8 rounded-full border px-3 text-sm hover:bg-accent"
+          >
+            Tất cả
+          </button>
           {chips.map((chip) => (
             <button
               key={chip.group}
@@ -239,9 +249,13 @@ export function PackagingLastPricesToolbar({
                 size="sm"
                 //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
                 value={filters.trend === 'all' ? '' : filters.trend}
-                onValueChange={(value) => patch({ trend: (value || 'all') as LastPricesTrend })}
+                onValueChange={(value) =>
+                  patch({ trend: (!value || value === ALL_TREND ? 'all' : value) as LastPricesTrend })
+                }
                 aria-label="Biến động lần 1 so lần 2"
               >
+                {/*  "Tất cả" = bỏ lọc biến động; giá trị riêng nên không bao giờ sáng sẵn. */}
+                <ToggleGroupItem value={ALL_TREND}>Tất cả</ToggleGroupItem>
                 {TREND_LABELS.map(([value, label]) => (
                   <ToggleGroupItem key={value} value={value}>
                     {label}

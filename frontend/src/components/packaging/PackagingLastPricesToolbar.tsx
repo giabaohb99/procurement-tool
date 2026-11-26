@@ -48,6 +48,8 @@ export default function PackagingLastPricesToolbar({
           <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên, nhóm, nhà cung cấp…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
         </div>
         <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
+          {/*  "Tất cả" = bỏ mọi chip nhóm đang bật; không sáng sẵn (người chủ chốt 26/11/2026), chỉ là nút bấm nhanh. */}
+          <button type="button" className="pkg-pill" onClick={() => patch({ groups: [] })}>Tất cả</button>
           {chips.map((c) => (
             <button key={c.group} type="button" className={'pkg-pill' + (filters.groups.includes(c.group) ? ' on' : '')}
               aria-pressed={filters.groups.includes(c.group)} onClick={() => toggleGroup(c.group)}>{c.label}</button>
@@ -80,6 +82,8 @@ export default function PackagingLastPricesToolbar({
         </div>
         <Field label="Biến động lần 1 so lần 2">
           <div className="pkg-seg" role="group" aria-label="Biến động lần 1 so lần 2">
+            {/*  "Tất cả" = bỏ lọc biến động; không sáng sẵn. */}
+            <button type="button" onClick={() => patch({ trend: 'all' })}>Tất cả</button>
             {TRENDS.map(([v, label]) => (
               //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
               <button key={v} className={filters.trend === v ? 'on' : ''} aria-pressed={filters.trend === v}
