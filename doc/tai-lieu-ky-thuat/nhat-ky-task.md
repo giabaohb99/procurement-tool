@@ -114,6 +114,40 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## van-hanh-prod-2250-2611 | Phát hành prod 2.25.0: cụm Giá nguyên vật liệu sản xuất, nạp dữ liệu, vai trò "Giá nguyên vật liệu", sửa giá PO01146
+- status: xong
+- date: 2026-11-26
+- list: Sản xuất - Thu mua
+- pic: NSU209
+
+**Bối cảnh:** cụm Giá nguyên vật liệu sản xuất (duoc-CR-784) đã xong trên dev theo kế hoạch tối ưu bảy phase; Ban điều hành duyệt
+đưa lên prod cùng duoc-CR-780..783 và bao-CR-789, kèm nạp dữ liệu, mở quyền cho Thu mua và phòng Dego Lab, sửa giá một đơn.
+
+**Đã làm**
+- Kiểm trên bản phát hành (erp-v2 `c8655f45`): 766 bài máy chủ, 2.774 bài giao diện mới, typecheck và eslint giao diện mới, ruff,
+  cổng tài liệu đều qua; cây migration một đầu. Giao diện cũ còn 4 lỗi kiểu có sẵn ở 3 tệp không thuộc đợt này.
+- Phát hành bản 2.25.0 (main `02d271d8`): sao lưu, dựng api, celery, hai giao diện, agent-api; 10 migration từ `mrg761a` tới
+  `bombatch784` (chỉ bảng mới của cụm); nạp 5 bài hướng dẫn, xuất bản cẩm nang, nạp lại chỉ mục trợ lý (194 bài).
+- Dựng sổ giá từ dữ liệu thật của prod bằng `backfill_product_price_ledger`: 6.410 dòng lịch sử mua cũ và 794 dòng đơn mua hàng;
+  bước kiểm lệch ra 0.
+- Nạp sổ Misa (giá tới mốc 30/06/2026) bằng `import_misa_price_ledger` từ đúng tệp báo cáo đã dùng trên dev: 5.041 dòng, pháp nhân
+  DEGO Holding. Gỡ được bằng `--purge --apply`.
+- Nạp định mức bao bì 1.000 dòng (tệp mẫu đã dùng trên dev) qua đường Quản lý Import, lô số 697, nên xóa được bằng nút
+  **Xóa dữ liệu của lô này**. Bốn mã thành phần chưa có trong danh mục sản phẩm (NHG5096, NHG5007, NHG5099, NHG5094) vẫn được nhận.
+- Tạo vai trò **Giá nguyên vật liệu** (`packaging_cost_view`): xem và xuất Excel cụm, phạm vi tất cả; không nhập, sửa, xóa. Gán
+  thêm cho 29 tài khoản: 21 tài khoản đang giữ vai trò Quản lý / Nhân viên / Admin thu mua và 8 tài khoản phòng Dego Lab. Làm qua
+  hàm của màn Vai trò & quyền nên có nhật ký.
+- Sửa đơn giá PO01146 (NCC Bao bì nhựa Phương Nam), dòng CPV0012: 2.800 thành 2.900; công nợ dòng từ 6.048.000đ lên 6.264.000đ,
+  chưa trả. PO01218 cùng mã đã là 2.900 sẵn nên không đụng. Sao lưu trước khi ghi (`prod_truoc_release_20261126_1657.sql.gz`).
+
+**Chưa làm:** vai trò thu mua của phòng tự mua (Dego Organic, Kinh doanh AGC) chưa được gán vai trò mới; quyền nhập báo giá, định
+mức, nạp sổ Misa và xóa theo lô vẫn chỉ quản trị có. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
+
+**Quay lui:** `alembic downgrade mrg761a` bỏ bảng của cụm; bản sao lưu `prod_truoc_release_20261126_1659.sql.gz` (trước phát
+hành) và `prod_truoc_release_20261126_1706.sql.gz` (sau phát hành, trước nạp dữ liệu).
+
+Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
+
 ## duoc-CR-784 | Cụm Giá bao bì ở Thu mua: sổ giá, báo giá, ngưỡng giá, định mức bao bì và màn mô phỏng tác động giá
 - status: xong
 - date: 2026-11-20
@@ -182,7 +216,7 @@ Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packagin
 Kiểm: `test/backend/test_*_cr784.py`.
 Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`, `doc/erp/thu-mua/plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md`, `doc/erp/thu-mua/tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md`.
 Commit: 1357b785.
-Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch). Chưa lên prod.
+Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch). Chưa lên prod; prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong
@@ -205,7 +239,7 @@ Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat 
 Mã nguồn: `backend/app/modules/work/list_purge_service.py`, `group_service.py`, `controller.py`; `frontend-v2/src/modules/work/components/list-row-menu.tsx`, `components/work-sidebar-tree.tsx`, `components/project-group-filter.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `pages/project-list-page.tsx`, `hooks/use-project-remove-actions.ts`, `hooks/use-work-lists.ts`, `api/work-api.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-sidebar-tree.test.tsx`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`.
 Commit: e2655d59.
-Deploy: dev 19/11/2026 (erp-v2 e2655d59: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 4 đoạn).
+Deploy: dev 19/11/2026 (erp-v2 e2655d59: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 4 đoạn); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-783-luot-2 | Chuông mời vào dự án, nút Mời lại, lưu trữ dự án và sửa bố cục khối thành viên
 - status: xong
@@ -228,7 +262,7 @@ Deploy: dev 19/11/2026 (erp-v2 e2655d59: dựng api, celery-worker, celery-beat 
 Mã nguồn: `backend/app/modules/work/member_invite_service.py`, `list_service.py`, `group_service.py`, `list_group_members.py`, `serializer.py`, `controller.py`; `backend/scripts/sync_task_journal.py`; `frontend-v2/src/modules/work/components/members-panel.tsx`, `components/member-row.tsx`, `components/list-members-panel.tsx`, `components/group-members-panel.tsx`, `components/list-manage-dialog.tsx`, `components/list-archive-action.tsx`, `pages/work-list-page.tsx`, `hooks/use-work-config.ts`, `hooks/use-work-groups.ts`, `api/work-api.ts`, `types/work.ts`; `frontend-v2/src/shared/ui/employee-multi-select.tsx`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `test/backend/test_cong_viec_chuong_cr666.py`, `frontend-v2/src/modules/work/components/list-manage-dialog.test.tsx`, `frontend-v2/src/modules/work/components/list-members-panel.test.tsx`, `frontend-v2/src/modules/work/components/group-manage-dialog.test.tsx`.
 Commit: b1748d1d.
-Deploy: dev 19/11/2026 (erp-v2 b1748d1d: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 3 đoạn).
+Deploy: dev 19/11/2026 (erp-v2 b1748d1d: dựng api, celery-worker, celery-beat và giao diện ERP; seed lại bài HDSD #745, nạp chỉ mục trợ lý 3 đoạn); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-783 | Tạo dự án trong nhóm thì gán sẵn thành viên của nhóm vào dự án
 - status: xong
@@ -249,7 +283,7 @@ Deploy: dev 19/11/2026 (erp-v2 b1748d1d: dựng api, celery-worker, celery-beat 
 Mã nguồn: `backend/app/modules/work/list_group_members.py`, `list_service.py`, `schema.py`, `controller.py`; `frontend-v2/src/modules/work/components/work-create-dialog.tsx`, `components/work-create-group-members-picker.tsx`, `types/work.ts`, `api/work-api.ts`, `hooks/use-work-lists.ts`; `backend/scripts/seed_help_du_an_gan_thanh_vien_nhom_cr783.py`.
 Kiểm: `test/backend/test_gan_thanh_vien_nhom_vao_du_an_cr783.py`, `frontend-v2/src/modules/work/components/work-create-group-members-picker.test.tsx`.
 Commit: 81cf5c61.
-Deploy: dev 18/11/2026 (erp-v2 81cf5c61: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #745, nạp chỉ mục trợ lý 2 đoạn).
+Deploy: dev 18/11/2026 (erp-v2 81cf5c61: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #745, nạp chỉ mục trợ lý 2 đoạn); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-782 | Màn Tổng quan phân hệ Dự án dựng lại cho người quản lý
 - status: xong
@@ -279,7 +313,7 @@ Deploy: dev 18/11/2026 (erp-v2 81cf5c61: dựng api, celery-worker, celery-beat 
 Mã nguồn: `backend/app/modules/work/overview_service.py`, `overview_scope.py`, `overview_people.py`, `overview_projects.py`, `overview_attention.py`, `overview_trend.py`, `controller.py`; `frontend-v2/src/modules/work/pages/work-overview-page.tsx`, `components/work-overview-people-table.tsx`, `components/work-overview-person-tasks-dialog.tsx`, `components/work-overview-project-health-cards.tsx`, `components/work-overview-charts.tsx`, `components/work-overview-tracker.tsx`, `utils/project-health-tone.ts`, `components/work-task-shortlist.tsx`, `components/work-project-report.tsx`, `components/work-overview-trend-chart.tsx`, `components/work-overview-period-switch.tsx`, `components/work-project-report-summary.tsx`, `components/work-project-attention-card.tsx`, `components/work-sidebar-tree.tsx`, `components/work-toolbar.tsx`, `components/project-group-filter.tsx`, `pages/project-list-page.tsx`, `utils/work-groups.ts`, `pages/work-list-page.tsx`, `hooks/use-work-overview.ts`, `frontend-v2/src/shared/ui/stacked-column-line-chart.tsx`; `backend/scripts/seed_help_du_an_tong_quan_cr782.py`.
 Kiểm: `test/backend/test_bao_cao_tong_quan_du_an_cr782.py`, `test/backend/test_du_an_tong_quan_danh_sach_viec.py`, `test/backend/test_pham_vi_bo_may_duyet_xuyen_suot.py`, `frontend-v2/src/modules/work/components/work-overview-charts.test.tsx`, `frontend-v2/src/modules/work/components/work-overview-tracker.test.tsx`, `frontend-v2/src/modules/work/components/work-overview-project-health-cards.test.tsx`, `frontend-v2/src/modules/work/components/work-project-attention-card.test.tsx`, `frontend-v2/src/modules/work/utils/work-groups.test.ts`, `test/backend/test_du_an_dien_bien_cr782.py`.
 Commit: `93bb97f2` trên `erp-v2`.
-Deploy: dev 18/11/2026 (api, celery-worker, celery-beat, erp), đã nạp bài hướng dẫn trên dev.
+Deploy: dev 18/11/2026 (api, celery-worker, celery-beat, erp), đã nạp bài hướng dẫn trên dev; prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-781 | Ô tìm phân hệ và chức năng ở màn chọn phân hệ giao diện ERP mới
 - status: xong
@@ -300,7 +334,7 @@ Deploy: dev 18/11/2026 (api, celery-worker, celery-beat, erp), đã nạp bài h
 Mã nguồn: `frontend-v2/src/app/search/module-search-index.ts`, `frontend-v2/src/app/search/split-search-highlight.ts`, `frontend-v2/src/app/components/module-search/`, `frontend-v2/src/app/pages/module-launcher-page.tsx`, `frontend-v2/src/shared/ui/command.tsx`, `backend/scripts/seed_help_tim_phan_he_cr781.py`.
 Kiểm: `frontend-v2/src/app/search/module-search-index.test.ts`, `frontend-v2/src/app/search/split-search-highlight.test.ts`, `frontend-v2/src/app/components/module-search/module-search-trigger.test.tsx`.
 Commit: 789fed92.
-Deploy: dev 18/11/2026 (erp-v2 789fed92: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #743, nạp chỉ mục trợ lý 2 đoạn).
+Deploy: dev 18/11/2026 (erp-v2 789fed92: dựng api, celery-worker, celery-beat và giao diện ERP; seed bài HDSD #743, nạp chỉ mục trợ lý 2 đoạn); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## duoc-CR-780 | Gập / mở từng thẻ ở các màn Thu mua giao diện ERP mới
 - status: xong
@@ -323,7 +357,7 @@ Deploy: dev 18/11/2026 (erp-v2 789fed92: dựng api, celery-worker, celery-beat 
 Mã nguồn: `frontend-v2/src/shared/hooks/use-card-collapse.ts`, `frontend-v2/src/shared/ui/card-collapse.tsx`, `frontend-v2/src/shared/ui/chart.tsx`, `frontend-v2/src/shared/audit/audit-timeline.tsx`, các thẻ trong `frontend-v2/src/modules/procurement/components/` và các trang chi tiết, xử lý, Tổng quan, Báo cáo trong `frontend-v2/src/modules/procurement/pages/`, `backend/scripts/seed_help_thu_mua_gap_mo_the_cr780.py`.
 Kiểm: `frontend-v2/src/shared/ui/card-collapse.test.tsx`, `frontend-v2/src/modules/procurement/components/purchase-request-linked-documents-card.test.tsx`.
 Commit: a04c4033.
-Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn).
+Deploy: dev 18/11/2026 (erp-v2 a04c4033: dựng api, celery-worker, celery-beat, giao diện ERP và giao diện cũ; seed bài HDSD #742, nạp chỉ mục trợ lý 3 đoạn); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## bao-CR-789 | Sổ giá: lỗi khi ghi lịch sử mua vào sổ giá không làm hỏng thao tác hoàn tất dòng đơn mua hàng
 - status: xong
@@ -344,6 +378,7 @@ giá mới nhất.
 
 Mã nguồn: `backend/app/modules/purchase_history/service.py`.
 Kiểm: `test/backend/test_so_gia_san_pham_cr784.py`.
+Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
 ## bao-CR-788 | Đơn mua hàng tạo thẳng lấy công ty nhận hóa đơn theo đơn gần nhất khi hồ sơ chưa gán công ty
 - status: xong
