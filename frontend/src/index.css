@@ -237,7 +237,8 @@ button.nav-group-title:hover {
 button.nav-group-title.has-active {
   position: relative;
   color: #00aeef;
-  font-weight: 800;
+  /* GIỮ 700: font chỉ nạp 400–700 (dòng @import đầu tệp); 800 làm Edge tự đậm giả và vẽ lệch chữ có dấu như "KHẢO". */
+  font-weight: 700;
 }
 button.nav-group-title.has-active::before {
   content: "";
