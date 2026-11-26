@@ -3,8 +3,9 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | điều phối | Nháp | duoc-CR-784 |
+| 2 | 26/11/2026 | tài liệu và kiểm thử | **Xong, đã commit + lên dev 25/11/2026** (commit `0039f8758`, migration `fgname784`); tài liệu ở phase 05 | duoc-CR-784 |
 
-Ưu tiên P3 · 4 giờ · cần phase 01 (định mức tách thành phần) đã gộp và đi chung migration `opt784` với phase 02–04.
+Ưu tiên P3 · 4 giờ · cần phase 01 (định mức tách thành phần) đã gộp. Thực hiện: migration riêng `fgname784` (sau `cleanup784`), không chung `opt784`.
 
 ## Bối cảnh
 Anh chốt C8 ngày 25/11/2026: đổi định danh cho đúng luật "mọi định danh bằng tiếng Anh" (`chung-dat-ten-va-quy-uoc.md` §1).
@@ -49,7 +50,7 @@ Không đổi: biến cục bộ tiếng Anh sẵn có, chữ hiển thị, tên
 
 ## Việc cần làm
 - [x] Chốt C8: đổi sang tiếng Anh (25/11/2026)
-- [ ] Migration đổi tên cột `tab_packaging_bom` trong `opt784`
-- [ ] Backend + công cụ AI / MCP
-- [ ] v1 + v2
-- [ ] Bài kiểm + tài liệu
+- [x] Migration đổi tên cột `tab_packaging_bom` (`fgname784`, đổi tên cả ràng buộc duy nhất trên MySQL; `tab_product.hh_code` của danh mục sản phẩm KHÔNG đổi)
+- [x] Backend + công cụ AI / MCP (`fg_codes`, `fg_code` / `fg_name`, `?fg=`; `/hh-options` thành `/fg-options`)
+- [x] v1 + v2 (chữ hiển thị giữ *Mã HH*)
+- [x] Bài kiểm (`test_doi_ten_fg_cr784.py` + sửa các tệp `*_cr784.py` đang dùng tên cũ) + tài liệu (phase 05, 26/11/2026: `api.md`, chức năng 21, `06-cong-mcp.md`, `02-danh-sach-api-tool.md`, cẩm nang)

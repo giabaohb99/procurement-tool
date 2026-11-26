@@ -291,7 +291,7 @@ dự án chủ khóa thấy, đúng tập của màn Dự án (`membership_servi
 `archived`, `url` = `/project/lists/{id}`; cộng `total`, `returned`, `has_more` (trần 100), `group_count`, `my_open_task_count`,
 `note`. Số truy vấn cố định. Câu *nhóm dự án* không nạp công cụ nhóm chat.
 
-### 3.7c Giá bao bì (duoc-CR-784, 21/11/2026)
+### 3.7c Giá bao bì (duoc-CR-784, 21/11/2026; cập nhật 26/11/2026)
 
 Ba tool CHỈ ĐỌC ở nhóm RIÊNG `packaging` (**tắt mặc định** — giá vốn bao bì, khóa `packaging_cost` nhạy cảm; quản trị bật ở G7),
 đã khai `READ_TOOLS`, `ROW_BUDGET_TOOLS` (đếm theo `items`), `STRUCTURED_TOOLS`. Gác như màn Giá bao bì: `packaging_cost.read`
@@ -315,6 +315,14 @@ khi có mốc `misa_price_cutoff` thì tới mốc chỉ dùng dòng Misa, sau m
 hàm của màn nên tự theo luật này: `source_label` của lần mua có thể là *Lịch sử mua hàng*, *Dòng đơn mua hàng* hoặc *Sổ Misa*
 (từ 25/11/2026 tính từ cặp nguồn + giai đoạn của dòng sổ — ĐMH đang mở = *Dòng đơn mua hàng*, lần mua đã chốt của ERP và dữ liệu cũ = *Lịch sử mua hàng*; chữ không đổi),
 `supplier` lấy tên chép theo dòng Misa khi mã NCC Misa không có trong danh mục. Không đổi tham số hay hình dạng kết quả.
+
+Đổi hợp đồng ngày 25/11/2026 (kế hoạch tối ưu 261125, phase 04 và 06; chủ khóa MCP / prompt viết sẵn phải đổi theo):
+- **Bỏ trường ngưỡng:** kết quả `packaging_price_impact` / `packaging_price_lookup` không còn `floor_price` / `ceiling_price` (bảng
+  ngưỡng sàn / trần đã xóa); `warnings[]` không còn hai nhãn *Dưới ngưỡng sàn* / *Vượt ngưỡng trần*. Min / max tự tính
+  (`min_price`, `max_price`) giữ nguyên.
+- **Đổi tên định danh sản phẩm:** tham số `hh_codes` của `packaging_product_cost` thành **`fg_codes`**; trường `hh_code` / `hh_name`
+  ở `items[]` của `packaging_price_impact` và `packaging_product_cost` thành **`fg_code`** / **`fg_name`**; `history_url` của sản
+  phẩm dùng `?fg=` thay `?hh=`. Không giữ tên cũ song song (cụm chưa lên prod). Chữ người đọc thấy vẫn là *Mã HH*.
 
 ### 3.8 Luật lương qua cổng MCP (duoc-CR-757, 13/11/2026)
 

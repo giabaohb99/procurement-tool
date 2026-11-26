@@ -4,6 +4,8 @@
 |---|---|---|---|---|
 | 1 | 20/11/2026 | planner | Nháp | duoc-CR-784 |
 
+> **Cập nhật 26/11/2026:** luật nguồn sổ giá, bảng ngưỡng và tên cột `hh_*` của phase này đã được thay bằng [kế hoạch tối ưu 261125](../261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) (phase 02 gộp nguồn, phase 04 bỏ ngưỡng, phase 06 đổi sang `fg_*`). Cấu trúc hiện hành: [mô hình dữ liệu](../../tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md).
+
 Ưu tiên P2 · 3 giờ · chặn mọi phase sau.
 
 ## Bối cảnh

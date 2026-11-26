@@ -30,7 +30,7 @@ lấy từ [bảng fit-gap 30/10/2026](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-e
 | Báo cáo thực hiện trên YCBG | Đã lên prod (theo [brief](nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md)) | bao-CR-388..393 |
 | Công nợ, YCTT, tiền treo | chưa ghi | Độ phủ chặng hóa đơn, công nợ 50 % |
 | Báo cáo thu mua | chưa ghi | Độ phủ 90 % |
-| Giá bao bì (tác động giá, bảng giá VTBB, báo giá, định mức bao bì) | Trên dev (21/11/2026), cả ERP v2 lẫn giao diện cũ | duoc-CR-784, [21](chuc-nang/21-tac-dong-gia-bao-bi.md) |
+| Giá nguyên vật liệu sản xuất (tác động giá, bảng giá VTBB, báo giá, định mức bao bì) | Trên dev (21/11/2026, tối ưu xong trên dev 25/11/2026), cả ERP v2 lẫn giao diện cũ; chờ phát hành prod | duoc-CR-784, [21](chuc-nang/21-tac-dong-gia-bao-bi.md), [mô hình dữ liệu](tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) |
 
 ## Đọc gì trước
 
@@ -39,17 +39,17 @@ lấy từ [bảng fit-gap 30/10/2026](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-e
 | Làm được gì | [chuc-nang/01-yeu-cau-chuc-nang.md](chuc-nang/01-yeu-cau-chuc-nang.md) |
 | Chạy tốt cỡ nào, ai được xem gì | [chuc-nang/02-yeu-cau-phi-chuc-nang.md](chuc-nang/02-yeu-cau-phi-chuc-nang.md) |
 | Gọi API nào | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) · các nhóm `purchase_request`, `survey_request`, `survey`, `purchase_order`, `payable`, `payment_request`, `supplier`, `contract`… trên `/docs` |
-| Thiết kế, bảng dữ liệu, bẫy | [tai-lieu-ky-thuat/](tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) và mô tả từng trường trong `chuc-nang/10..20` |
+| Thiết kế, bảng dữ liệu, bẫy | [tai-lieu-ky-thuat/](tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md), [mô hình dữ liệu Giá NVL sản xuất](tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) và mô tả từng trường trong `chuc-nang/10..21` |
 | So sánh, khảo sát, câu hỏi chờ chốt | [nghien-cuu/11 Độ phủ so với ERPNext](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md), [nghien-cuu/09 Nghiệp vụ mua hàng](nghien-cuu/09-nghiep-vu-mua-hang.md) |
 | Kế hoạch đang làm / đã xong | [plans/261106 Đồng bộ vị trí nút v1 → v2 (duoc-CR-737)](plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-cr-737/plan.md) · [plans/261109 Đồng bộ tên nút và hộp xác nhận v1 → v2 (duoc-CR-741)](plans/261109-dong-bo-ten-nut-v1-v2-duoc-cr-741/plan.md) · [plans/261120 Tác động giá bao bì (duoc-CR-784)](plans/261120-tac-dong-gia-bao-bi/plan.md) · [plans/261125 Tối ưu bảng giá NVL sản xuất (duoc-CR-784)](plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) · kế hoạch chung ở [doc/plans/01 Luồng chuẩn mua hàng, kho, sản xuất](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
 | Kịch bản kiểm thử tay | [kiem-thu/00-muc-luc.md](kiem-thu/00-muc-luc.md) |
-| Hướng dẫn người dùng | Trung tâm trợ giúp, nhóm *Dành cho Nhân viên Mua hàng*: `backend/scripts/seed_help_xu_ly_phuong_an.py`, `seed_help_chi_tiet_yc_mua_hang.py`, `seed_help_chi_phi_thu_mua.py`, `seed_help_thu_mua_cap_nhat.py`, `seed_help_lap_bo_tai_khoan_phong_tu_mua.py`; thẻ riêng *Hướng dẫn sử dụng Giá bao bì*: `seed_help_gia_bao_bi_cr784.py` |
+| Hướng dẫn người dùng | Trung tâm trợ giúp, nhóm *Dành cho Nhân viên Mua hàng*: `backend/scripts/seed_help_xu_ly_phuong_an.py`, `seed_help_chi_tiet_yc_mua_hang.py`, `seed_help_chi_phi_thu_mua.py`, `seed_help_thu_mua_cap_nhat.py`, `seed_help_lap_bo_tai_khoan_phong_tu_mua.py`; thẻ riêng *Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất*: `seed_help_gia_bao_bi_cr784.py` |
 
 ## Mục lục
 
 | Tệp | Nội dung | Trạng thái |
 |---|---|---|
-| [chuc-nang/01-yeu-cau-chuc-nang.md](chuc-nang/01-yeu-cau-chuc-nang.md) | Danh sách chức năng CN-TM-01..30, chi tiết sáu chức năng chính và cụm Giá bao bì | Nháp |
+| [chuc-nang/01-yeu-cau-chuc-nang.md](chuc-nang/01-yeu-cau-chuc-nang.md) | Danh sách chức năng CN-TM-01..31, chi tiết sáu chức năng chính và cụm Giá bao bì | Nháp |
 | [chuc-nang/02-yeu-cau-phi-chuc-nang.md](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-TM-01..16 | Nháp |
 | [chuc-nang/10-phieu-khao-sat.md](chuc-nang/10-phieu-khao-sat.md) | Phiếu khảo sát NCC và sản phẩm: vòng đời, từng trường | chưa ghi |
 | [chuc-nang/11-yeu-cau-khao-sat.md](chuc-nang/11-yeu-cau-khao-sat.md) | Yêu cầu báo giá (YCBG): vòng đời, phương án ẩn danh, quyền, xuất Excel, Tiến độ báo giá | chưa ghi |
@@ -62,7 +62,7 @@ lấy từ [bảng fit-gap 30/10/2026](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-e
 | [chuc-nang/18-lich-su-mua-hang.md](chuc-nang/18-lich-su-mua-hang.md) | Lịch sử mua hàng theo mã hàng và theo NCC, che NCC (CR-060) | chưa ghi |
 | [chuc-nang/19-bao-cao-thuc-hien-ycbg.md](chuc-nang/19-bao-cao-thuc-hien-ycbg.md) | Khối Báo cáo thực hiện trên chi tiết YCBG | chưa ghi (đầu tệp: bản 1.0, 12/09/2026) |
 | [chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md](chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) | Hướng dẫn lập bộ tài khoản phòng tự mua hàng và công ty con | chưa ghi |
-| [chuc-nang/21-tac-dong-gia-bao-bi.md](chuc-nang/21-tac-dong-gia-bao-bi.md) | Giá bao bì: công thức, sổ giá, luật giá cũ / mới, sáu màn (Tác động giá, Tổng hợp theo sản phẩm, Bảng giá VTBB + báo giá, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì), hai giao diện (duoc-CR-784) | Hiệu lực (chỉ trên dev) |
+| [chuc-nang/21-tac-dong-gia-bao-bi.md](chuc-nang/21-tac-dong-gia-bao-bi.md) | Giá nguyên vật liệu sản xuất: công thức, sổ giá, luật giá cũ / mới, sáu màn (Tác động giá, Tổng hợp theo sản phẩm, Bảng giá VTBB + báo giá, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì), xóa dữ liệu theo lô nhập, hai giao diện (duoc-CR-784) | Hiệu lực (chỉ trên dev) |
 | [du-lieu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.pdf](du-lieu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.pdf) | Bản PDF của hướng dẫn ERPNext 01 | chưa ghi |
 | [kiem-thu/00-muc-luc.md](kiem-thu/00-muc-luc.md) | Mục lục kịch bản kiểm thử tay dải `bao` | chưa ghi |
 | [kiem-thu/01-chung-tu-lien-quan-ycmh.md](kiem-thu/01-chung-tu-lien-quan-ycmh.md) | Thẻ Chứng từ liên quan trên YCMH (bao-CR-422) | chưa ghi |
@@ -76,6 +76,7 @@ lấy từ [bảng fit-gap 30/10/2026](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-e
 | [nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) | Fit-gap thu mua và kho so với ERPNext v16, 52 chức năng | chưa ghi (đầu tệp: bản 1.0, 30/10/2026) |
 | [nghien-cuu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.md](nghien-cuu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) | Hướng dẫn thao tác mua hàng tới thanh toán trên site học ERPNext | chưa ghi |
 | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) | Bảng đường API dựng tự động từ mã | Nháp |
+| [tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md](tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) | Mô hình dữ liệu cụm Giá NVL sản xuất: sổ giá, báo giá, định mức bao bì (đầu phiếu + thành phần), khóa, chỉ mục, chuỗi migration (duoc-CR-784) | Hiệu lực (chỉ trên dev) |
 | [tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md](tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) | Thiết kế kỹ thuật Báo cáo thực hiện YCBG | chưa ghi (đầu tệp: bản 1.0, 12/09/2026) |
 
 ## Mã nguồn

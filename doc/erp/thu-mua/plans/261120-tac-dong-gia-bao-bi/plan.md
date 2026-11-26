@@ -10,7 +10,18 @@ created: 2026-11-20
 ---
 
 # Tác động giá bao bì (duoc-CR-784)
-Trạng thái kế hoạch: **đang làm** (chưa viết mã)
+
+> **Cập nhật 26/11/2026 — đọc trước khi dùng kế hoạch này.** Nhiều quyết định dưới đây đã được thay bằng
+> [kế hoạch tối ưu 261125](../261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) (đã lên dev 25/11/2026): (1) **ngưỡng sàn / trần bỏ hẳn**
+> (quyết định 4 bên dưới hết hiệu lực: bảng `tab_product_price_limit`, đường `/api/product-price-limits`, cảnh báo 6 / 7, cột Excel,
+> trường công cụ AI đều đã xóa — migration `cleanup784`); (2) luật sổ giá "nguồn 1 chỉ chèn, dòng vào lịch sử thì xóa dòng nguồn 2"
+> (quyết định 1) thay bằng **một dòng sổ mỗi dòng ĐMH** có `line_stage` Đang mở / Đã chốt (`srcmerge784`); (3) định danh `hh_code` /
+> `hh_name` / `hh_codes` đổi thành **`fg_code` / `fg_name` / `fg_codes`** (`fgname784`) — chữ `hh_*` trong các phase của kế hoạch này là
+> tên cũ; (4) định mức tách đầu phiếu + bảng thành phần (`bompart784`); (5) báo giá có nguồn bắt buộc và khóa duy nhất (`quotesrc784`);
+> (6) nhập Excel cụm này xóa được theo lô (`bombatch784`). Hiện trạng: [chức năng 21](../../chuc-nang/21-tac-dong-gia-bao-bi.md),
+> [mô hình dữ liệu](../../tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md).
+
+Trạng thái kế hoạch: **xong trên dev** (mã viết và lên dev 20–25/11/2026; phần tối ưu và phát hành prod theo kế hoạch 261125; dòng cũ ghi "đang làm, chưa viết mã" đã hết hạn)
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|

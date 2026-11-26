@@ -4,6 +4,8 @@
 |---|---|---|---|---|
 | 1 | 20/11/2026 | planner | Nháp | duoc-CR-784 |
 
+> **Cập nhật 26/11/2026:** luật "nguồn 1 chỉ chèn / dòng vào lịch sử thì xóa dòng nguồn 2" của phase này đã được **thay bằng** [phase 02 của kế hoạch tối ưu 261125](../261125-toi-uu-bang-gia-nvl-duoc-cr-784/phase-02-so-gia-gop-nguon-lich-su-va-dong-dmh.md): mỗi dòng ĐMH là MỘT dòng sổ suốt đời (`line_stage` Đang mở → Đã chốt, migration `srcmerge784`), nguồn 1 chỉ còn lịch sử cũ nạp Excel.
+
 Ưu tiên P1 trong kế hoạch (sai ở đây là giá sai im lặng) · 6 giờ · cần phase 01.
 
 ## Bối cảnh (đã soát mã)

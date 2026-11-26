@@ -3,6 +3,7 @@
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
 | 1 | 25/11/2026 | điều phối | Đã duyệt, chờ làm | duoc-CR-784 |
+| 2 | 26/11/2026 | tài liệu và kiểm thử | **Xong, đã commit + lên dev 25/11/2026** (commit `0039f8758`, migration `bombatch784`); HDSD + tài liệu ở phase 05 | duoc-CR-784 |
 
 Ưu tiên P2 · 3 giờ · làm sau phase 03 (cùng ý "nguồn nhập": báo giá nhập Excel có `source_id` = id lô).
 
@@ -42,7 +43,9 @@ Chủ dự án hỏi 25/11/2026: 1.000 dòng định mức nạp từ bản mẫ
 
 ## Việc cần làm
 - [x] Chủ dự án duyệt hướng làm (25/11/2026)
-- [ ] Cột `import_batch_id` + ghi khi nhập Excel định mức
-- [ ] Đánh dấu 1.000 dòng lô 98 trên dev
-- [ ] Xóa theo lô (backend + v1 + v2) cho module 4, 5, 6
-- [ ] Bài kiểm, tài liệu, HDSD
+- [x] Cột `import_batch_id` trên `tab_packaging_bom` VÀ `tab_product_price_ledger` (module 6 ghi id lô vào dòng Misa THÊM mới) + ghi khi nhập Excel định mức
+- [x] Đánh dấu 1.000 dòng lô 98 trên dev (migration `bombatch784` đánh dấu mọi lô module 4 ghi thật khi số dòng khớp đúng `created_count`, lệch thì bỏ qua và cảnh báo)
+- [x] Xóa theo lô (backend `batch_purge_service.py` / `batch_purge_controller.py`, v2 `import-batch-purge-dialog.tsx`, v1 `PackagingBatchPurgeModal.tsx`) cho module 4, 5, 6
+- [x] Bài kiểm (`test_xoa_theo_lo_nhap_cr784.py`, 17 bài), tài liệu (chức năng 21 mục 9, `api.md`), HDSD (bài *Xóa dữ liệu đã nhập nhầm theo lô nhập Excel*, phase 05 26/11/2026)
+
+**Khác kế hoạch:** sổ Misa dùng cột `import_batch_id` mới (không suy từ `source_id`); 5.041 dòng Misa trên dev nạp bằng script HTML mang 0 nên không gỡ được theo lô (gỡ bằng `import_misa_price_ledger --purge`).
