@@ -361,6 +361,17 @@ const NAV_W_DEFAULT = 222;
 const isActive = (path: string, to: string) =>
   to === "/" ? path === "/" : path.startsWith(to);
 
+/**
+ * Màn đang xem thuộc mục menu này (chính nó, đường `matchPaths`, hoặc một mục con) — dùng để in đậm tiêu đề nhóm chứa
+ * màn đang xem (người chủ chốt 26/11/2026, duoc-CR-784). Cùng luật sáng với dòng menu và `NavParent`.
+ */
+const isNavItemOnPath = (n: NavItem, pathname: string) =>
+  !n.external && (
+    isActive(pathname, n.to)
+    || !!n.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"))
+    || !!n.children?.some((c) => isNavChildActive(c, n.to, pathname))
+  );
+
 /** Mục con đang sáng — menu trái và breadcrumb cấp ba dùng CHUNG luật này để khỏi lệch tên. */
 const isNavChildActive = (c: NavChild, parentTo: string, pathname: string) =>
   pathname === c.to || pathname.startsWith(c.to + "/")
@@ -594,12 +605,14 @@ export default function AppLayout() {
           const items = visibleItems(g.items);
           if (items.length === 0) return null;
           const isCol = !!g.key && !!collapsed[g.key];
+          // Nhóm chứa màn đang xem: tiêu đề in đậm, màu chữ chính — kể cả khi nhóm đang thu gọn (26/11/2026).
+          const hasActive = items.some((n) => isNavItemOnPath(n, loc.pathname));
           return (
             // Nhóm không tiêu đề đứng giữa menu (cụm Giá nguyên vật liệu sản xuất) nối liền nhóm trên, không chừa khoảng.
             <div key={gi} className={!g.title && gi > 0 ? "nav-group-plain" : undefined}>
               {g.title && (
                 <button
-                  className="nav-group-title toggle"
+                  className={"nav-group-title toggle" + (hasActive ? " has-active" : "")}
                   onClick={() => toggle(g.key!)}
                   aria-expanded={!isCol}
                   title={isCol ? `Mở ${g.title}` : `Thu gọn ${g.title}`}

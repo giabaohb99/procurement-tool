@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ModuleNavItem } from '@/app/router/module-definition'
 
-import { buildNavSections } from './build-nav-sections'
+import { buildNavSections, isNavItemOnPath } from './build-nav-sections'
 
 function item(path: string, group?: string): ModuleNavItem {
   return { label: path, path, group }
@@ -46,5 +46,21 @@ describe('buildNavSections', () => {
       ['G1', ['/b', '/d']],
       ['G2', ['/c']],
     ])
+  })
+})
+
+describe('isNavItemOnPath', () => {
+  const base = { label: 'x' }
+  it('matches the item path and its sub-screens', () => {
+    expect(isNavItemOnPath({ ...base, path: '/procurement/surveys' }, '/procurement/surveys')).toBe(true)
+    expect(isNavItemOnPath({ ...base, path: '/procurement/surveys' }, '/procurement/surveys/12')).toBe(true)
+    expect(isNavItemOnPath({ ...base, path: '/procurement/surveys' }, '/procurement/surveys-report')).toBe(false)
+  })
+  it('respects end, matchPaths and children', () => {
+    expect(isNavItemOnPath({ ...base, path: '/a', end: true }, '/a/b')).toBe(false)
+    expect(isNavItemOnPath({ ...base, path: '/a', matchPaths: ['/q'] }, '/q/1')).toBe(true)
+    expect(
+      isNavItemOnPath({ ...base, path: '/p', children: [{ ...base, path: '/c' }] }, '/c/9'),
+    ).toBe(true)
   })
 })

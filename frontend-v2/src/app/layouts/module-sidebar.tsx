@@ -27,7 +27,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/shared/ui/sidebar'
-import { buildNavSections } from './build-nav-sections'
+import { buildNavSections, isNavItemOnPath } from './build-nav-sections'
 import { SidebarResizeHandle } from './sidebar-resize-handle'
 import { SidebarVersionFooter } from './sidebar-version-footer'
 
@@ -108,6 +108,9 @@ const navSubItemClass = [
 const groupLabelClass =
   'px-3 text-[0.6875rem] font-semibold tracking-wider text-muted-foreground uppercase'
 
+/** Tiêu đề nhóm chứa màn đang xem: chữ đậm, màu chữ chính — biết ngay mình đang ở cụm nào (26/11/2026). */
+const groupLabelActiveClass = 'font-bold text-foreground'
+
 /**
  * Menu trái của MỘT phân hệ, dựng trên `Sidebar` của shadcn — thu gọn còn icon,
  * ngăn kéo trên màn hẹp, phím tắt ⌘B và ghi nhớ trạng thái đều do nó lo sẵn.
@@ -128,6 +131,7 @@ export function ModuleSidebar({
   const { can } = usePermission()
   const navCtx = useNavContext()
   const { isMobile, setOpenMobile } = useSidebar()
+  const { pathname } = useLocation()
 
   //  Cùng luật với màn chọn phân hệ — xem `module-visibility.ts`.
   //  ⚠️ `hidden` lọc ở ĐÂY thôi, không lọc trong `visibleNavItems`: mục ẩn vẫn
@@ -209,20 +213,31 @@ export function ModuleSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {sections.map(({ key, label, items }) => (
-          // `mt-5` tách nhóm có tiêu đề; khối không tiêu đề (cụm Giá nguyên vật liệu sản xuất) nối liền khối trên
-          // bằng `mt-1` = khoảng giữa hai mục, người chủ chốt 25/11/2026 vì khoảng hở làm menu rời rạc.
-          <SidebarGroup key={key} className={cn(label ? 'mt-5' : 'mt-1', 'p-0')}>
-            {label && <SidebarGroupLabel className={groupLabelClass}>{label}</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
-                {items.map((item) => (
-                  <NavItemRenderer key={item.path} item={item} onNavigate={closeOnMobile} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {sections.map(({ key, label, items }) => {
+          //  Nhóm chứa màn đang xem thì tiêu đề in đậm, màu chữ chính (người chủ chốt 26/11/2026).
+          const hasActive = !!label && items.some((item) => isNavItemOnPath(item, pathname))
+          return (
+            // `mt-5` tách nhóm có tiêu đề; khối không tiêu đề (cụm Giá nguyên vật liệu sản xuất) nối liền khối trên
+            // bằng `mt-1` = khoảng giữa hai mục, người chủ chốt 25/11/2026 vì khoảng hở làm menu rời rạc.
+            <SidebarGroup key={key} className={cn(label ? 'mt-5' : 'mt-1', 'p-0')}>
+              {label && (
+                <SidebarGroupLabel
+                  className={cn(groupLabelClass, hasActive && groupLabelActiveClass)}
+                  data-active-group={hasActive || undefined}
+                >
+                  {label}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {items.map((item) => (
+                    <NavItemRenderer key={item.path} item={item} onNavigate={closeOnMobile} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )
+        })}
       </SidebarContent>
 
       {/* bao-CR-722: phiên bản đang chạy, bấm mở Có gì mới. */}

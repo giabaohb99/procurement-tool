@@ -233,6 +233,12 @@ button.nav-group-title:hover {
   color: #1b2559;
 }
 
+/* Nhóm chứa màn đang xem: tiêu đề in đậm, màu chữ chính (người chủ chốt 26/11/2026, duoc-CR-784). */
+button.nav-group-title.has-active {
+  color: #1b2559;
+  font-weight: 800;
+}
+
 .main {
   flex: 1;
   min-width: 0;

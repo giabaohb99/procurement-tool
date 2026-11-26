@@ -42,3 +42,18 @@ export function buildNavSections(items: ModuleNavItem[]): NavSection[] {
   }
   return sections
 }
+
+/** Đường `pathname` nằm dưới `base` (đúng đường hoặc màn con của nó). */
+function isUnderPath(pathname: string, base: string): boolean {
+  return pathname === base || pathname.startsWith(`${base}/`)
+}
+
+/**
+ * Mục menu (hoặc một mục con của nó) có đang là màn người dùng đứng không — cùng luật sáng với `NavLink` + `matchPaths`
+ * của thanh bên. Dùng để làm đậm tiêu đề nhóm chứa màn đang xem (người chủ chốt 26/11/2026, duoc-CR-784).
+ */
+export function isNavItemOnPath(item: ModuleNavItem, pathname: string): boolean {
+  const self = item.end ? pathname === item.path : isUnderPath(pathname, item.path)
+  if (self || item.matchPaths?.some((p) => isUnderPath(pathname, p))) return true
+  return !!item.children?.some((child) => isNavItemOnPath(child, pathname))
+}
