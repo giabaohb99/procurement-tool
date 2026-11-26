@@ -18063,7 +18063,7 @@ vì Thông tư 200 đã hết hiệu lực từ đầu năm, sửa tám chỗ sa
 đồng sản phẩm. Tài liệu đối chiếu thêm với mã nguồn đang chạy để chỉ ra phần dùng lại được và phần còn thiếu, kèm mười lăm câu hỏi phải
 chốt trước khi viết yêu cầu. Chưa có dòng mã nào.
 
-Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md · doc/erp/README.md
+Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md · doc/erp/README.md
 
 ## duoc-CR-658 | Gom tài liệu chức năng Nhân sự về một thư mục để người mới đọc vào là phụ được
 - status: xong
