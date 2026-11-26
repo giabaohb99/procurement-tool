@@ -63,10 +63,12 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 
 | Tệp | Nội dung | Trạng thái |
 |---|---|---|
-| [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) | **Danh sách tính năng tổng** (SX-SP, SX-KHO), thứ tự làm, câu hỏi chặn | Nháp 0.2 (26/11/2026) |
+| [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) | **Danh sách tính năng tổng** (SX-SP, SX-KHO), thứ tự làm, câu hỏi chặn | Nháp 0.3 (26/11/2026) |
 | [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-SX-01..16 (phần lớn chưa có) | Nháp 0.2 |
-| [`chuc-nang/11-san-pham.md`](chuc-nang/11-san-pham.md) | Sản phẩm: mã hàng, quy tắc mã, công thức BTP, định mức / BOM ba tầng, tiêu chí đánh giá; 54 tính năng SX-SP | Nháp 0.1 (26/11/2026) |
-| [`chuc-nang/12-kho.md`](chuc-nang/12-kho.md) | Kho: loại kho, loại tồn, nhập / xuất / chuyển, xuất theo đơn và BĐM, đối chiếu NCC GC, báo cáo; 50 tính năng SX-KHO | Nháp 0.1 (26/11/2026) |
+| [`chuc-nang/11-san-pham.md`](chuc-nang/11-san-pham.md) | Sản phẩm: mã hàng, quy tắc mã, công thức BTP, định mức / BOM ba tầng, tiêu chí đánh giá; 54 tính năng SX-SP | Nháp 0.2 (26/11/2026) |
+| [`chuc-nang/12-kho.md`](chuc-nang/12-kho.md) | Kho: loại kho, loại tồn, nhập / xuất / chuyển, xuất theo đơn và BĐM, đối chiếu NCC GC, báo cáo; 50 tính năng SX-KHO | Nháp 0.2 (26/11/2026) |
+| [`chuc-nang/90-phu-luc-cau-hoi-phong-san-xuat.md`](chuc-nang/90-phu-luc-cau-hoi-phong-san-xuat.md) | Phụ lục: 71 câu hỏi cần phòng Sản xuất chốt (10 câu chặn, Sản phẩm 26, Kho 30, sổ nhãn mác 5) | Chờ trả lời |
+| [`plans/261126-lo-trinh-san-xuat-gia-cong/plan.md`](plans/261126-lo-trinh-san-xuat-gia-cong/plan.md) | Lộ trình phase (đã duyệt thứ tự 26/11/2026); module Sản phẩm và Kho: chức năng, cách dùng, sheet thay thế, báo cáo | Đang làm |
 | [`nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) | Thuật ngữ, quan hệ với Tồn kho / Mua hàng / Bán hàng / Kế toán, quy trình chuẩn, hạch toán giá thành theo Thông tư 99/2025, dở dang, phân bổ chi phí chung, giá chuẩn / thực tế, hàng lỗi, gia công ngoài, đối chiếu mã ERP, 15 câu phải chốt | Tài liệu nghiên cứu (bản 1.0, 21/10/2026) |
 | [`du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx`](du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx) | Bản Word các mâu thuẫn gửi Phòng Sản xuất | chưa ghi |
 | [`du-lieu/03-mau-thuan-san-xuat.xlsx`](du-lieu/03-mau-thuan-san-xuat.xlsx) | Bảng Excel mâu thuẫn và câu hỏi (đi kèm `03`) | chưa ghi |

@@ -1,7 +1,7 @@
 ---
 title: "Lộ trình phân hệ Sản xuất gia công: làm phần nào trước"
 description: "Thứ tự các phase (không ước thời gian) và mô tả hai module viết chi tiết trước: Sản phẩm và Kho — chức năng, cách dùng, thay sheet nào, báo cáo nào"
-status: pending
+status: in-progress
 priority: P1
 branch: erp-v2
 tags: [san-xuat, san-pham, kho, bom, lo-trinh]
@@ -12,7 +12,8 @@ created: 2026-11-26
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
-| 1 | 26/11/2026 | NSU209 (A1 Điều phối) | Nháp, chờ chủ dự án duyệt thứ tự | — |
+| 1 | 26/11/2026 | NSU209 (A1 Điều phối) | Nháp | — |
+| 2 | 26/11/2026 | NSU209 (A1 Điều phối) | **Chủ dự án đã duyệt thứ tự phase** (26/11/2026) | — |
 
 Tệp này trả lời ba câu: **làm phần nào trước**, **hai module Sản phẩm và Kho gồm những chức năng gì, dùng ra sao**, và
 **thay được sheet nào, báo cáo nào** của phòng Sản xuất. Không ước thời gian. Chi tiết từng tính năng (mã SX-SP, SX-KHO) ở
@@ -186,17 +187,20 @@ chỉ còn một nơi.
 3. **Bài kiểm tự động** cho mỗi công thức và mỗi luật chặn (xuất âm kho, dựng lại tồn từ sổ giao dịch phải khớp).
 4. **Người dùng chạy thử trên dev**, rồi chạy song song với Google Sheets; số tồn hai bên khớp ổn định thì mới bỏ sheet.
 
-## 6. Việc cần chủ dự án quyết
+## 6. Quyết định của chủ dự án (26/11/2026)
 
-| # | Câu hỏi | Đề xuất |
+| # | Việc | Quyết định |
 |---|---|---|
-| 1 | Thứ tự phase ở mục 2 | Duyệt như bảng; Pháp lý sản phẩm chen sau phase 1 |
-| 2 | Lát cắt đầu tiên | Phase 0 + 1 + 2 cho VTBB: mã hàng, định mức bao bì thật, nhập / xuất / chuyển kho, tồn |
-| 3 | Gửi câu hỏi chặn cho phòng Sản xuất | Gửi 10 câu ở [`01`](../../chuc-nang/01-yeu-cau-chuc-nang.md) mục 4 trước khi thiết kế bảng Kho |
-| 4 | Mở rộng định mức bao bì (thêm *Hộp*, *Vật tư khác*, số lượng trên dòng) | Làm chung đợt tối ưu duoc-CR-784 đang chạy |
+| 1 | Thứ tự phase ở mục 2 | **Duyệt.** |
+| 2 | Viết chi tiết trước hai module Sản phẩm và Kho | **Duyệt**: dùng tài liệu đã viết ([`11`](../../chuc-nang/11-san-pham.md), [`12`](../../chuc-nang/12-kho.md)), bổ sung thêm phần cách dùng, sheet thay thế, báo cáo (đã thêm 26/11) |
+| 3 | Bản câu hỏi cho phòng Sản xuất | Gom vào phụ lục [`chuc-nang/90`](../../chuc-nang/90-phu-luc-cau-hoi-phong-san-xuat.md) (71 câu, 10 câu chặn ở mục A) |
+| 4 | Mở rộng định mức bao bì (thêm *Hộp*, *Vật tư khác*, số lượng trên dòng) trong đợt tối ưu duoc-CR-784 | Chủ dự án tự trao đổi với người làm cụm đó sau; chưa giao |
+
+Việc tiếp theo: viết tiêu chí chấp nhận và bộ ca đối chứng cho lát cắt đầu (phase 0 + 1 + 2, VTBB) khi chủ dự án bảo.
 
 ## 7. Liên kết
 
+- Câu hỏi cho phòng Sản xuất: [`chuc-nang/90`](../../chuc-nang/90-phu-luc-cau-hoi-phong-san-xuat.md)
 - Danh sách tính năng: [`chuc-nang/01`](../../chuc-nang/01-yeu-cau-chuc-nang.md), [`11`](../../chuc-nang/11-san-pham.md), [`12`](../../chuc-nang/12-kho.md)
 - Nguồn dữ liệu thật: [`nghien-cuu/21`](../../nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md)
 - 13 quy trình con và tên gọi chuỗi cung ứng: [`nghien-cuu/15`](../../nghien-cuu/15-tong-hop-13-quy-trinh-san-xuat.md)

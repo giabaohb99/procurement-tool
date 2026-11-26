@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 0.1 |
+| Bản | 0.2 |
 | Ngày | 26/11/2026 |
 | Người phụ trách | chưa giao |
 | Trạng thái | Nháp |
@@ -1039,33 +1039,75 @@ Ngày, mã sự cố, mã hàng, NCC GC, kho xuất, kho nhập, số lượng, 
 
 ## 9. Câu hỏi cần phòng Sản xuất chốt
 
-1. **Hai sổ nội bộ và thuế:** ERP giữ cả tồn nội bộ lẫn tồn thuế, hay chỉ giữ tồn nội bộ còn tồn thuế vẫn ở Misa Thuế? Gợi ý: giai đoạn đầu chỉ làm sổ nội bộ, thêm ô xác nhận *đủ tồn thuế* do kế toán tích.
-2. **Thương hiệu và pháp nhân:** thương hiệu trên sổ kho (IDA, ABA, DEGO, DR XANH, BAMBOO, N2SBIO, LAB, Dùng chung) có ứng một-một với pháp nhân không? Việc gom DEGO AGROCHEM, DEGO, BAMBOO về IDA ở sổ BTP là quy tắc cố định hay tạm thời?
-3. **Tồn có thể sản xuất tính thế nào?** Ba nguồn ghi ba cách: (a) sổ tồn: tồn thực tế = đầu kỳ + nhập thực tế − xuất thực tế, tồn tạm tính riêng; (b) báo cáo VTBB: tồn thực tế + tồn tạm; (c) mẫu 9.10: tồn − xuất tạm − đơn chờ xuất. Gợi ý: lấy (c) làm chuẩn, hiển thị đủ ba thành phần.
-4. **Phương pháp tính giá tồn:** bình quân gia quyền cả kỳ, bình quân sau mỗi lần nhập, hay trung bình cộng các lần nhập như mục lục sổ VTBB ghi? Tính theo từng kho hay gộp các kho? Theo từng thương hiệu hay gộp?
-5. **Giá nhập kho trước hay sau VAT?** Sổ VTBB lấy giá đã gồm VAT và vận chuyển; ERP đang tính theo đơn giá ĐMH cộng chi phí thu mua phân bổ. Cần một quy ước cho giá vốn.
-6. **Xuất âm kho:** chặn cứng hay chỉ cảnh báo? Gợi ý: chặn với xuất thực tế, cho phép giữ hàng vượt tồn khi có người duyệt (thành *đơn chờ xuất*).
-7. **Thời điểm ghi xuất:** xác nhận quy tắc *xuất nội bộ khi NCC có thành phẩm*. Khi nhận TP về kho DEGO khác số NCC báo có hàng thì trừ vật tư theo số nào?
-8. **Định mức hao hụt chuẩn:** đang có bốn nguồn khác nhau (theo NCC GC trong danh mục, theo loại VTBB ở báo cáo, mặc định 2% ở phân tích TP, điều khoản hợp đồng). Nguồn nào dùng để cấn trừ NCC? Tỷ lệ hao hụt tính trên số lượng nhập hay giá trị xuất?
-9. **Hao hụt có vào BĐM không?** BĐM hiện không có cột hao hụt; phần dư khi gửi NCC là mẫu Lab. Vật tư NCC dùng vượt định mức được ghi nhận lúc nào: theo từng đơn hay chỉ khi đối chiếu cuối tháng?
-10. **Số lần NCC có thành phẩm:** sổ giới hạn 3 lần cho một đơn. Thực tế có đơn giao hơn 3 lần không?
-11. **Cột xuất VTBB:** hướng dẫn ghi số xuất thực tế đọc từ cột AF, AG, AH và xuất tạm từ cột AI, nhưng sheet hiện đặt ở AG, AH, AI và AJ. Bản nào đúng với sổ đang chạy?
-12. **Mẫu Lab cộng thêm:** phía VTBB cộng theo số mẫu (ví dụ 200 thành 202), phía BTP cộng cố định 1. Quy tắc chung là gì, có theo quy cách sản phẩm không?
-13. **Nhập đổ thu, dư sau sản xuất:** quy trình ghi *sẽ xây dựng sau*. Hiện dư vật tư sau đơn được xử lý thế nào: để lại kho NCC cho đơn sau hay NCC xuất trả?
-14. **Hàng cho tặng nhập kho:** ghi giá 0 hay giá ước tính? Có tính vào giá trị tồn không?
-15. **Kho lỗi:** mỗi NCC GC một kho lỗi riêng như danh mục, hay dùng nhóm tồn *lỗi* trong cùng kho? Các kho lỗi ghi *Bổ sung kho sau* đã có mã Misa chưa?
-16. **Kiểm kê thực tế:** DEGO có cử người đếm tại kho NCC GC không, hay chỉ dựa biên bản của NCC? Nếu có: chu kỳ, ai đếm, ai duyệt chênh lệch.
-17. **Chu kỳ đối chiếu:** hằng tuần, hằng tháng hay theo đơn? Ngày chốt số? NCC nào bắt buộc gửi báo cáo, NCC nào không gửi thì làm thế nào?
-18. **Bảng ánh xạ mã NCC GC:** hiện mới đủ cho Hà Long. Ai giữ và cập nhật cho các NCC còn lại? NCC nào dùng luôn mã DEGO?
-19. **Mẫu biên bản:** cần mẫu *Biên bản xác nhận tồn kho cuối kỳ* và *Biên bản kiểm tra và giải trình chênh lệch* (mục lục ghi chưa xác định phiếu in).
-20. **Min và MOQ:** đặt theo mã + kho hay theo mã + kho + thương hiệu? Khi KD xác nhận định mức tồn thì cộng định mức các thương hiệu như mục lục ghi? Ngưỡng 500 / 200 ở sổ NL / BTP có bỏ không?
-21. **Hai sổ tồn SX và KD:** có giữ cả hai trên ERP không? Nếu giữ, sổ nào là sổ gốc đối chiếu với NCC? Chênh lệch đóng tối ưu thể tích hạch toán ra sao?
-22. **Lô và hạn dùng:** bắt buộc số lô cho NL, BTP, TP; VTBB có cần lô không (nhãn in theo đợt)? Có áp dụng xuất lô hết hạn trước không? Cảnh báo trước hạn bao nhiêu ngày (báo cáo ghi 90 ngày)?
-23. **Thành phẩm:** kho TP do phòng Sản xuất hay kho Dr.Xanh quản trên ERP? TP nằm tại kho NCC GC sau khi sản xuất có tính là tồn của DEGO từ ngày nào (ngày NCC báo có hàng hay ngày nhận hóa đơn)?
-24. **Xuất bán nội bộ giữa thương hiệu:** đơn giá do ai quyết, có luồng duyệt không? Trường hợp chỉ chuyển số liệu (hàng không di chuyển) có cần phiếu in không?
-25. **Phí lưu kho:** danh sách NCC đang tính phí và cách tính từng NCC; phân bổ về thương hiệu theo tiêu chí nào (giá trị tồn, số pallet)? Con số ước tính 1,5% mỗi tháng có còn dùng khi đã có số thực tế?
-26. **Quyền duyệt phiếu kho:** loại phiếu nào QLSX duyệt, loại nào cần thêm KD hoặc kế toán? Có hạn mức giá trị không?
-27. **Chốt kỳ:** có cần khóa sổ kho theo tháng không, ai được mở lại?
-28. **Số dư đầu kỳ khi lên ERP:** lấy số tại ngày nào, nguồn nào là chuẩn (sổ Drive, Misa nội bộ hay biên bản NCC), có đơn giá đầu kỳ cho VTBB không?
-29. **Loại VTBB suy từ ba ký tự đầu của mã** có còn dùng khi ERP đã có phân loại trên danh mục sản phẩm không? Mã `VT0` và các mã lạ xếp vào đâu?
-30. **Danh mục kho:** `KHO SX_VTBB` là kho gì? Hai tên *Agri Future* và *kho nhà cung cấp AGRIFUTURE* có gộp không? NCC có trong danh sách chính sách nhưng chưa có kho (ví dụ Việt Thắng xuất hiện ở sổ sự cố) thì bổ sung thế nào?
+Danh sách câu hỏi của phần Kho đã gom về [`90-phu-luc-cau-hoi-phong-san-xuat.md`](90-phu-luc-cau-hoi-phong-san-xuat.md) mục C.
+
+## 10. Phase, cách dùng, sheet thay thế, báo cáo
+
+Thứ tự phase đã được chủ dự án duyệt ngày 26/11/2026 ([lộ trình](../plans/261126-lo-trinh-san-xuat-gia-cong/plan.md)): phần Kho làm ở **phase 2** (kho lõi, VTBB) và **phase 4** (kho cho sản xuất).
+
+### 10.1 Có những chức năng nào
+
+| Nhóm chức năng | Làm được gì | Tính năng | Phase |
+|---|---|---|---|
+| Danh mục kho và loại giao dịch | Kho DEGO, kho tại từng NCC gia công (mỗi NCC một kho thường và một kho lỗi), kho thương mại; danh mục loại nhập / xuất để mọi phiếu ghi cùng một cách | SX-KHO-01, 02, 06 | 2 |
+| Tồn theo thương hiệu | Tồn ghi theo Kho + Thương hiệu + Mã hàng (nếu phòng Sản xuất chốt giữ cách này) | SX-KHO-03 | 2 |
+| Số dư đầu kỳ | Nhập tồn đầu kỳ từ sheet hiện có bằng Excel | SX-KHO-07 | 2 |
+| Nhập kho | Nhập từ đơn mua hàng của Thu mua (đã có), nhập khác (đổ thu, dư sau sản xuất, cho tặng) | SX-KHO-08, 12 | 2 |
+| Xuất ngoài sản xuất, chuyển kho | Phiếu đề nghị xuất, chuyển giữa kho DEGO và kho NCC, giữa các NCC; chặn xuất âm kho | SX-KHO-19, 21, 22 | 2 |
+| Tồn và sổ giao dịch | Tồn tức thời ba nhóm (thực tế, tạm, lỗi), tồn có thể sản xuất, sổ giao dịch từng mã (thẻ kho), giá trị tồn theo đơn giá bình quân | SX-KHO-29, 31, 33 | 2 |
+| Min, MOQ và đề xuất đặt | Khai tồn an toàn và số đặt tối thiểu theo mã + kho; hệ đề xuất số cần đặt và chuyển thành yêu cầu mua hàng sang Thu mua | SX-KHO-05, 36, 47 | 2 |
+| NL / BTP theo lô | Nhập theo số lô, ngày sản xuất, hạn sử dụng, kết quả Lab; nhập tạm chờ kiểm duyệt; tồn chi tiết theo lô | SX-KHO-09, 10, 30 | 4 |
+| Phối BTP | Lệnh phối: xuất nguyên liệu theo BĐM BTP, nhập BTP sau phối | SX-KHO-11 | 4 |
+| Xuất cho sản xuất theo đơn | Đơn duyệt thì giữ hàng (xuất tạm); mỗi lần NCC có thành phẩm thì trừ tồn thực tế = định mức x số thành phẩm; kiểm đủ vật tư cho đơn; hủy đơn thì hoàn giữ hàng | SX-KHO-14 … 20 | 4 |
+| Thành phẩm | Nhập thành phẩm từ NCC, chuyển về kho, trả hàng, tồn thành phẩm tại NCC | SX-KHO-13, 37 | 4 (cùng phase 5) |
+| Hàng lỗi và hao hụt | Chuyển sang kho lỗi theo trạng thái (nghi lỗi, chờ phương án, chờ xử lý lại), xuất hủy, ghi hao hụt, đưa vào chi phí | SX-KHO-24, 25, 26 | 4 |
+| Đối chiếu tồn với NCC gia công | Nạp tệp tồn NCC gửi, hệ tự so theo mã + kho với dung sai hao hụt, lưu lịch sử chênh lệch và cách xử lý, in biên bản | SX-KHO-04, 38 … 42 | 4 |
+| Kỳ kho | Chốt kỳ, tồn theo kỳ, phí lưu kho và hao hụt NCC tính | SX-KHO-32, 43, 44 | 4 |
+| Phiếu in | Phiếu đề nghị nhập, xuất, chuyển, xuất bán nội bộ, đưa vào chi phí | SX-KHO-23, 28 | 2 (mẫu cơ bản), 4 |
+| Hai góc nhìn tồn, tồn thuế | Tồn BTP theo Sản xuất và theo Kinh doanh; tồn nội bộ và tồn thuế | SX-KHO-34, 35 | sau (chờ chốt) |
+
+### 10.2 Dùng ra sao
+
+| Ai | Việc hằng ngày trên ERP |
+|---|---|
+| Điều phối VTBB | Nhận hàng mua về kho NCC (từ đơn mua hàng), lập phiếu chuyển kho, xuất ngoài sản xuất; xem tồn và cảnh báo dưới Min; bấm tạo yêu cầu mua hàng từ số đề xuất |
+| Điều phối NL / BTP | Nhập nguyên liệu, BTP theo lô; lập lệnh phối; kiểm đủ BTP cho đơn |
+| Điều phối thành phẩm | Ghi lần NCC có thành phẩm (hệ tự trừ VTBB, BTP theo định mức); nhập thành phẩm; chuyển hàng lỗi |
+| QLDL | Nạp tệp tồn NCC gửi cuối kỳ, xem bảng chênh lệch, ghi cách xử lý, in biên bản; chốt kỳ |
+| Kế toán | Xem giá trị tồn, phiếu xuất bán nội bộ, phiếu đưa vào chi phí |
+| Kinh doanh | Tra tồn thành phẩm và tồn BTP có thể đóng hàng |
+| Thu mua | Nhận yêu cầu mua hàng sinh từ đề xuất đặt; nhận hàng như hiện nay |
+
+### 10.3 Thay được sheet nào
+
+| Tệp | Sheet thay được | Phase |
+|---|---|---|
+| 4. XUẤT NHẬP TỒN - VTBB | NHẬP KHO VTBB, XUẤT KHO VTBB NGOÀI SX, TỒN KHO, THÔNG TIN (Min / MOQ), các phiếu đề nghị xuất / nhập / chuyển / xuất bán nội bộ / đưa vào chi phí | 2 |
+| 4. XUẤT NHẬP TỒN - VTBB | XUẤT KHO VTBB SX, TỒN KHO THEO KỲ, DỮ LIỆU NCC, ĐỐI CHIẾU NCC, ĐỐI CHIẾU CÁC LẦN, LỊCH SỬ ĐỐI CHIẾU, LỊCH SỬ TỪ SỰ CỐ | 4 |
+| BC VTBB (cả tệp) | DASHBOARD, BÁO CÁO THÁNG, BÁO CÁO QUÝ, TỔNG HỢP TÙY CHỌN, XNT VTBB, GIAO DỊCH VTBB, MIN MOQ, CẤU HÌNH | 2 (tồn, Min / MOQ), 4 (hao hụt, tồn lâu) |
+| QUẢN LÝ NHÃN MÁC IDA GROUP | NHẬP KHO NHÃN MÁC, XUẤT KHO NHÃN MÁC, BÁO CÁO TỒN KHO NHÃN MÁC, ĐỊNH MỨC TỒN | 2 |
+| 3. XUẤT NHẬP TỒN NL, BTP | Nhập kho NLBTP, 6. Xuất kho ngoài sản xuất, 6.1 Xuất kho theo ĐH thành phẩm, 4. DS PHỐI BTP, 4.1 LSX BTP, 8 và 8.1 Tồn kho SX, 9 và 9.1 Tồn kho Kinh doanh, 10 đến 10.3 đối chiếu NCC, Sổ tổng hợp tồn kho có giá, Báo cáo, Chi tiết báo cáo | 4 |
+| Drive QLDL 7. Đối chiếu tồn kho (cả tệp) | Toàn bộ | 4 |
+| Drive QLDL 1, 2, 4 | Tồn kho NCC (1); NHẬP KHO VTBB, Nhập kho NLBTP, Đối chiếu tồn kho VTBB / BTP, XK SX BTP, XK SX VTBB, XUẤT NHẬP TP (2 và 4) | 2 (nhập), 4 (còn lại) |
+| Drive QL Giá vốn 1 và 3 | Tồn kho chi tiết / tổng BTP SX và VTBB SX, Giá nhập kho VTBB, Giá nhập kho NLBTP | 4 |
+| ĐIỀU PHỐI THÀNH PHẨM, BC ĐP THÀNH PHẨM | NHẬP-XUẤT TP, BC TỒN KHO TẠI NCC GC, phiếu nhập kho thành phẩm | 4 (cùng phase 5) |
+
+Sheet tồn kho đang bị chép ở ít nhất 6 tệp (hai tệp Xuất nhập tồn, QLDL 2, QLDL 7, Giá vốn 1, Giá vốn 3); sau phase 4
+chỉ còn một nơi.
+
+### 10.4 Báo cáo
+
+| Báo cáo | Nội dung | Thay sheet | Tính năng | Phase |
+|---|---|---|---|---|
+| Tồn tức thời | Tồn thực tế, tạm, lỗi, có thể sản xuất theo kho, thương hiệu, mã | TỒN KHO; 8.1, 9.1 Tồn kho tổng | SX-KHO-29 | 2 |
+| Sổ giao dịch (thẻ kho) | Mọi lần nhập, xuất, chuyển của một mã | GIAO DỊCH VTBB, LỊCH SỬ | SX-KHO-31 | 2 |
+| Giá trị tồn | Số lượng x đơn giá bình quân theo kho, loại hàng | Sổ tổng hợp tồn kho có giá | SX-KHO-33 | 2 |
+| Cần đặt hàng | Mã dưới tồn an toàn, số đề xuất đặt làm tròn theo MOQ, trừ số đang đặt chưa về | MIN MOQ, THÔNG TIN, ĐỊNH MỨC TỒN | SX-KHO-36, 47 | 2 |
+| Xuất nhập tồn theo kỳ | Tồn đầu, nhập, xuất, tồn cuối theo tháng, quý, khoảng ngày | BÁO CÁO THÁNG, BÁO CÁO QUÝ, TỔNG HỢP TÙY CHỌN, TỒN KHO THEO KỲ | SX-KHO-32, 45 | 4 |
+| Tồn theo lô và hạn sử dụng | Lô nào còn bao nhiêu, sắp hết hạn | 8. Tồn kho chi tiết | SX-KHO-30 | 4 |
+| Tuổi tồn, tồn lâu, tồn chết | Mã không phát sinh lâu ngày, chi phí lưu kho ước tính | DASHBOARD của BC VTBB | SX-KHO-46 | 4 |
+| Hao hụt và lỗi nhập | Hao hụt thực tế so định mức theo loại vật tư, tỷ lệ lỗi nhập theo NCC | BC VTBB | SX-KHO-48 | 4 |
+| Đối chiếu tồn với NCC | Chênh lệch từng mã từng kỳ, trạng thái xử lý, so các lần NCC gửi | ĐỐI CHIẾU NCC, LỊCH SỬ ĐỐI CHIẾU, QLDL 7 | SX-KHO-39 … 42 | 4 |
+| Tồn tại NCC gia công | VTBB, BTP, thành phẩm đang nằm ở từng NCC | BC TỒN KHO TẠI NCC GC, Tồn kho NCC | SX-KHO-37 | 4 |
+| Đủ vật tư cho đơn | Đơn nào đủ VTBB, đủ BTP để sản xuất | Cột trạng thái ở sheet ĐIỀU PHỐI | SX-KHO-14 | 4 |
+| Bảng điều khiển kho và kiểm tra dữ liệu | Số tổng, cảnh báo, dòng dữ liệu sai | DASHBOARD, Kiểm tra dữ liệu | SX-KHO-49 | sau |

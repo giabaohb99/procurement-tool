@@ -143,9 +143,4 @@ Các sổ nhập / xuất dừng ở 2021–2023 nên là dữ liệu lịch s�
 
 ## 8. Câu hỏi
 
-1. Sheet *DANH SÁCH TỔNG* còn là nguồn gốc duy nhất của mã HH không, hay đã chuyển sang drive *DRIVE ĐẦU VÀO SX*?
-2. *Bang chi tiet dinh muc* còn được cập nhật không (bản 2023 và bản hiện tại lệch nhau)? Dòng `#N/A` là chưa khai hay mã
-   đã ngưng?
-3. Mã HH có hậu tố (`HH0223.1`) là biến thể bao bì của cùng sản phẩm hay sản phẩm khác?
-4. *VTBB khác 1–3* gồm những loại nào ngoài cốc đong, seal?
-5. Tồn nhãn có nhập chung vào kho VTBB không, hay Thiết kế tiếp tục quản riêng?
+Đã gom về [`chuc-nang/90`](../chuc-nang/90-phu-luc-cau-hoi-phong-san-xuat.md) mục D.

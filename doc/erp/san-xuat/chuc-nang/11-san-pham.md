@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 0.1 |
+| Bản | 0.2 |
 | Ngày | 26/11/2026 |
 | Người phụ trách | chưa giao |
 | Trạng thái | Nháp |
@@ -913,34 +913,88 @@ Tên bảng dưới đây là **đề xuất** để dễ hình dung, trừ nh�
 
 ## 11. Câu hỏi cần phòng Sản xuất chốt
 
-1. **Ai là chủ danh mục mã hàng khi lên ERP?** Hiện mã do P TCKT tạo trên Misa rồi các bộ phận kéo về. Phương án A: ERP là gốc, có phiếu khai báo và duyệt, xuất tệp cho kế toán nhập Misa. Phương án B: Misa vẫn là gốc, ERP chỉ nhập về và bổ sung thuộc tính. Gợi ý: A, vì thuộc tính sản xuất không có chỗ trên Misa.
-2. **Danh mục HH lấy từ đâu?** Sổ *Quản lý nhãn mác* của Thiết kế (khoảng sáu nghìn dòng) hay sheet *Data HH* (đang trống)? Thiết kế có tiếp tục là người khai HH trên ERP không?
-3. **Tiền tố mã BĐM**: theo quy trình (`BDMBTP_`, `BDMVT_`, `BDMTP_`) hay theo sổ đang dùng (không tiền tố, `VT_`, `BĐMTP_` có dấu)? Gợi ý: dùng bản không dấu của quy trình để in và tìm kiếm ổn định.
-4. **Mã BĐM BTP có nên chứa tên pháp lý viết tắt và màu?** Viết tắt tự đặt (ABB, ASPG, CT3.6) dễ trùng và không có danh mục. Có chấp nhận mã do hệ thống sinh (mã BTP + số phiên bản) không?
-5. **Cấu thành thuế khác cấu thành nội bộ ở những điểm nào cụ thể?** Khác mã vật tư, khác số lượng, hay chỉ khác công ty đứng tên và luồng hóa đơn? Cần một ví dụ thật mà hai bộ khác nhau. Khi nào thì *chỉ còn một bảng dùng chung*?
-6. **BĐM TP theo mã HH hay theo mã HH + NCC GC?** Cùng một mã HH làm ở hai NCC có cấu thành khác nhau (NCC này lo thùng, NCC kia không) thì là hai BĐM hay hai mã HH?
-7. **Các ô ký trên phiếu BĐM** (duyệt bao bì, duyệt pháp lý, duyệt giá, kế toán trưởng) có thành các bước duyệt trên hệ thống không, hay chỉ QLSX duyệt và in ra ký giấy?
-8. **Ranh giới mã HH mới và phiên bản BĐM mới**: đổi chai sang màu khác, đổi thùng, đổi NCC in nhãn — trường hợp nào khai HH mới, trường hợp nào chỉ lên phiên bản BĐM VTBB?
-9. **Hao hụt để ở đâu?** Cả ba tầng BĐM không có cột hao hụt. Có thêm *% hao hụt định mức* trên dòng BĐM không, hay giữ ở chính sách NCC theo nhóm vật tư và chỉ dùng lúc quyết toán?
-10. **BĐM BTP có cần đủ mọi thành phần không?** Sổ chỉ ghi hoạt chất chính; dung môi, phụ gia (mã `NA`), chất mang, màu chưa có dòng. Giá BTP và xuất kho NL có cần các dòng này không? Nếu công thức đầy đủ là bí mật của Lab thì ai được nhập?
-11. **Công thức giá NL trong BTP** ở sheet *3.1* đang chia cho *lượng BTP cần phối* (ra số gấp đôi khi phối 500 lít). Xác nhận công thức đúng là chia cho 1.000?
-12. **Tỷ lệ chênh lệch khi test mẫu**: có dòng chia cho hàm lượng đăng ký, có dòng chia cho 1.000 hoặc 100. Chuẩn là chia cho hàm lượng đăng ký (sai số tương đối) đúng không? Với hàm lượng trên 500 g/kg thì dùng sai số tuyệt đối ±25 g/kg?
-13. **Tỷ trọng**: nhiều BĐM ghi *chưa tính tỷ trọng*. Thuốc dạng lỏng đăng ký theo g/l thì định mức tính trên 1.000 lít hay 1.000 kg? Ai cấp tỷ trọng (Lab hay NCC) và khi nào phải có?
-14. **Sai số phối chế nội bộ**: quy định *tối đa 50% ngưỡng Nhà nước* áp cho mọi sản phẩm hay chỉ một số? Ai được duyệt ngoại lệ?
-15. **Thể tích chốt đóng** (vd 440 ml cho chai 450 ml): BĐM TP ghi lượng ruột theo thể tích trên nhãn hay theo thể tích chốt đóng? Phần chênh hạch toán cho ai (sổ ghi có trường hợp đưa vào chi phí Kinh doanh)?
-16. **Định mức bao bì đang có trên ERP** (do Thu mua nhập để tính giá) có được coi là BĐM VTBB đã duyệt của Sản xuất không, hay Sản xuất rà lại rồi mới duyệt?
-17. **BTPM dự kiến bỏ năm 2027**: các mã BTPM đang dùng chuyển sang BTPR thế nào? Các loại *Phí phạt*, *Chiết khấu*, *BTPNL* có trong sổ khai báo nhưng không có trong quy tắc — có phải loại mã chính thức không?
-18. **Mã đơn vị xuất hóa đơn** thiếu số III: đã bỏ hay sót?
-19. **Bảng đồng bộ mã DEGO - mã NCC** mới có một NCC và ghi *chưa chốt*: ai nhập cho các NCC còn lại, và NCC có gửi danh mục mã của họ không?
-20. **Bảo mật công thức**: liệt kê cụ thể nhóm người được xem (a) lượng NL trong BĐM BTP, (b) dòng công thức phía NCC, (c) tên thật của mã `NA`. Kinh doanh có được xem BĐM VTBB và cấu thành không?
-21. **Khảo sát công nghệ**: số bộ mẫu gửi (11 bộ / 4-5 bộ) là quy định cố định theo NCC hay tùy lần? Kết quả khảo sát có hạn hiệu lực không (đổi máy, đổi lô chai thì khảo sát lại)?
-22. **Cọc nhãn**: sổ ghi ba NCC, quy trình ghi bốn. Danh sách đúng? Tiền cọc tính theo mã nhãn hay theo hợp đồng? Phần bị trừ khi hoàn cọc tính theo công thức nào?
-23. **Mẫu cho tặng** không quản lý tồn: nếu mẫu đạt và được dùng thật thì chuyển sang mã chính thức bằng bước nào?
-24. **Thuộc tính VTBB**: *kích thước lọt lòng* thùng hiện thiếu, sổ ghi cần làm lại với Thiết kế. Ai nhập, và có bắt buộc trước khi duyệt BĐM VTBB không?
-25. **Phân bón và thuốc BVTV** có dùng chung một mẫu BĐM BTP không? Phân bón do Lab phối theo mã riêng của Lab và tính theo tỷ trọng; cần mẫu ví dụ của phân bón (sổ chỉ có ví dụ thuốc).
-26. **NCC GC có được xem / xác nhận BĐM trên ERP không** (vd cổng cho NCC), hay vẫn gửi tệp qua Zalo?
+Danh sách câu hỏi của phần Sản phẩm đã gom về [`90-phu-luc-cau-hoi-phong-san-xuat.md`](90-phu-luc-cau-hoi-phong-san-xuat.md) mục B.
 
----
+## 12. Phase, cách dùng, sheet thay thế, báo cáo
+
+Thứ tự phase đã được chủ dự án duyệt ngày 26/11/2026 ([lộ trình](../plans/261126-lo-trinh-san-xuat-gia-cong/plan.md)): phần Sản phẩm làm ở **phase 1** (lõi) và **phase 3** (BOM đầy đủ).
+
+### 12.1 Có những chức năng nào
+
+| Nhóm chức năng | Làm được gì | Tính năng | Phase |
+|---|---|---|---|
+| Danh mục mã hàng | Một danh mục cho nguyên liệu, bán thành phẩm, vật tư bao bì, thành phẩm, mã phí; lọc theo loại mã; mỗi loại có thuộc tính riêng (hàm lượng, tỷ trọng, chất liệu, cổ chai, kích thước, thương hiệu, pháp nhân hóa đơn, NCC sản xuất) | SX-SP-01 … 09 | 1 |
+| Sinh mã và tên theo quy tắc | Chọn loại mã, hệ tự sinh mã (`NAP0123`, `NHG4995`, `THI0164`...) và ghép tên nội bộ, tên hóa đơn theo mẫu; chặn khai trùng | SX-SP-10, 11, 12 | 1 |
+| Khai báo mã mới có duyệt | Người đề nghị lập phiếu khai báo, bộ phận phụ trách duyệt, kế toán nhận để khai Misa | SX-SP-13, 18 | 1 (duyệt ở 3) |
+| Đồng bộ mã DEGO - mã NCC | Một mã DEGO ứng với mã nào của từng NCC gia công; dùng khi đối chiếu tồn và công nợ | SX-SP-14 | 1 |
+| Hồ sơ nhãn mác | Tình trạng in nhãn, NCC duyệt nhãn, ghi chú độc quyền, hình nhãn và mockup gắn mã | SX-SP-08, 16 | 1 |
+| Định mức bao bì | Mỗi thành phẩm dùng chai, nắp, nhãn, hộp, nhãn thùng, thùng, vật tư khác nào, số lượng bao nhiêu, quy cách thùng, nhà máy đóng hàng; tra ngược *mã vật tư này dùng ở sản phẩm nào*; nhập / xuất Excel | SX-SP-28, 29, 30, 38, 39, 41 | 1 |
+| Công thức BTP và test mẫu | Danh sách công thức (dòng công thức cho Kinh doanh khác dòng gửi NCC), theo dõi công thức mới, phiếu test mẫu và kết quả Lab, khung sai số hàm lượng và chiết rót | SX-SP-15, 17, 19 … 24, 43, 44 | 3 |
+| BĐM BTP | Nguyên liệu cho 1.000 kg / lít BTP, tự tính theo hàm lượng yêu cầu, hàm lượng thực của lô nguyên liệu và tỷ trọng | SX-SP-25, 26, 27 | 3 |
+| BĐM thành phẩm | Gộp BTP ruột + bao bì + phí gia công; mỗi dòng ghi công ty hay NCC cung ứng; bung ra nhu cầu vật tư cho một đơn | SX-SP-31, 32, 33, 42 | 3 |
+| Phiên bản và duyệt định mức | Định mức có mã phiên bản (`_01`, `_02`), người duyệt, ngày duyệt, in phiếu ký; định mức chưa duyệt không dùng để xuất kho | SX-SP-34, 35, 37 | 3 |
+| Bản thuế của định mức | Bộ cấu thành thuế song song bộ nội bộ | SX-SP-36 | sau (chờ nguồn) |
+| Sổ phụ theo sản phẩm | Cọc nhãn, khảo sát công nghệ VTBB tại NCC, mẫu cho tặng, tiêu chí KCS, chính sách theo sản phẩm tại NCC | SX-SP-45 … 52 | sau |
+| Chuyển dữ liệu ban đầu | Nhập Excel mã hàng, định mức, ánh xạ mã từ các sheet hiện có | SX-SP-54 | 0, 1 |
+
+### 12.2 Dùng ra sao
+
+| Ai | Việc hằng ngày trên ERP |
+|---|---|
+| Thiết kế | Khai mã hàng hóa mới (hệ sinh mã và tên), gắn hình nhãn / mockup, cập nhật tình trạng in nhãn |
+| Điều phối VTBB | Khai chai, nắp, nhãn, thùng mới; lập định mức bao bì cho thành phẩm; tra *đổi chai này thì ảnh hưởng sản phẩm nào* |
+| Điều phối NL / BTP | Khai nguyên liệu, BTP; lập BĐM BTP, hệ tự tính lượng nguyên liệu theo hàm lượng lô |
+| QLDL | Duyệt mã mới, duyệt định mức, gộp BĐM thành phẩm, giữ bảng ánh xạ mã với NCC |
+| Lab / R&D | Nhập kết quả test mẫu, chốt công thức |
+| Giá vốn, Thu mua | Đọc định mức và giá để tính chi phí (màn Tác động giá bao bì đã có dùng chính định mức này) |
+| Kinh doanh | Tra mã, quy cách, tình trạng sản phẩm; chỉ thấy dòng công thức dành cho Kinh doanh |
+| Kế toán | Nhận danh sách mã mới đã duyệt để khai Misa |
+
+### 12.3 Thay được sheet nào
+
+| Tệp | Sheet thay được | Phase |
+|---|---|---|
+| QUẢN LÝ NHÃN MÁC IDA GROUP | DANH SÁCH TỔNG, QUY TẮC ĐẶT MÃ, Bang chi tiet dinh muc (và bản 2023), DM CHAI, DM TÚINHÃN, DM THÙNG, DM VTBB, DM NSX, DATA | 1 |
+| DRIVE ĐẦU VÀO SX | Admin, Data HH, Data NLBTP, Data VTBB, Data đồng bộ NCC GC, Nháp chung | 1 |
+| 5 tệp khác | Các bản chép danh mục: *DATA 1*, *Data1*, *Data 1 (mới)*, *DATA MỚI*, *Quản lý nhãn mác* (ở Pháp lý, Điều phối, Giá vốn 1 và 2, hai tệp Xuất nhập tồn) | 1 |
+| 4. XUẤT NHẬP TỒN - VTBB | DATA 2, KHAI BÁO VTBB, BDM VTBB, 9. Phiếu BDM VTBB TP | 1 |
+| 3. XUẤT NHẬP TỒN NL, BTP | QUY TẮC, 1.1 DS và dòng công thức BTP, 2. Theo dõi công thức mới, 2.1 Theo dõi test mẫu, 3. BDM BTP, 3.1 Tính lượng NL và giá BTP | 3 |
+| Drive QLDL 2 và 4 | BĐM VTBB, BĐM BTP (2); BĐM BTP, BĐM VTBB, BDM TP (4) | 1 (VTBB), 3 (BTP, TP) |
+| Drive QL Giá vốn 1 và 2 | BDM TP | 3 |
+| 4. XUẤT NHẬP TỒN - VTBB | KHẢO SÁT CÔNG NGHỆ VTBB, CỌC NHÃN VTBB, MẪU CHO TẶNG VTBB | sau |
+
+Lợi trực tiếp: danh mục mã và định mức chỉ còn **một nơi**, các bộ phận không phải chép qua 5–6 tệp.
+
+### 12.4 Báo cáo và tra cứu
+
+| Báo cáo / tra cứu | Dùng để | Tính năng |
+|---|---|---|
+| Danh sách mã theo loại, thương hiệu, NCC sản xuất, tình trạng | Thay việc lọc sheet DANH SÁCH TỔNG | SX-SP-01, 05 |
+| Mã thiếu thông tin, định mức thiếu thành phần hoặc thiếu quy cách thùng | Dọn dữ liệu trước khi dùng cho kho và đơn hàng | SX-SP-41 |
+| Tra ngược vật tư dùng ở sản phẩm nào | Đổi mẫu chai, đổi NCC bao bì, ngưng mã | SX-SP-39 |
+| Chi phí định mức của một thành phẩm (theo chai và theo thùng) | Đã có ở màn *Tác động giá bao bì*; mở rộng khi có BTP và phí gia công | SX-SP-40 |
+| Định mức chờ duyệt, định mức theo phiên bản | Kiểm soát thay đổi định mức | SX-SP-34, 35 |
+| Phiếu in BĐM có chữ ký | Thay phiếu BĐM in từ sheet | SX-SP-37 |
+| Tình trạng nhãn (đã in, chưa in, tạm ngưng, độc quyền) | Thiết kế và Kinh doanh | SX-SP-16 |
+| Lịch sử thay đổi mã và định mức | Ai sửa gì, khi nào | SX-SP-53 |
+| Dữ liệu VTBB cho Kinh doanh | Kinh doanh tra bao bì, kích thước nhãn | SX-SP-52 |
+
+### 12.5 Bổ sung từ sổ Quản lý nhãn mác (dữ liệu thật)
+
+Sổ *QUẢN LÝ NHÃN MÁC IDA GROUP* của Thiết kế nhận ngày 26/11/2026 là dữ liệu đang dùng thật (chi tiết ở
+[`nghien-cuu/21`](../nghien-cuu/21-so-quan-ly-nhan-mac-ida-group.md)). Ba điểm bổ sung cho phần này:
+
+1. **Danh mục hàng hóa có 11.150 mã HH** (không phải khoảng sáu nghìn dòng như các bản chép): phân bón 4.293, thuốc trừ sâu
+   3.243, thuốc trừ bệnh 2.896, còn lại là thuốc trừ cỏ, chế phẩm diệt côn trùng, thuốc trừ ốc, điều hòa sinh trưởng; 38 NCC
+   sản xuất. Đây là nguồn nạp ban đầu cho SX-SP-01, SX-SP-05, SX-SP-16.
+2. **Bảng quy tắc đặt mã bản 31/03/2026** là bản gốc mới nhất của mục 4.1, có thêm cột bộ phận khai báo: Thiết kế khai mã
+   HH; Điều phối VTBB khai chai, nắp, nhãn, hộp, thùng, nhãn dán thùng; Thu mua khai nguyên liệu, BTP nhập khẩu, BTPR, chi phí
+   nhập khẩu; QLDL khai BTPM; Điều phối khai BTPCT, PPT, PĐG. Dùng cho SX-SP-10, SX-SP-13.
+3. **Định mức bao bì thật của 4.189 mã HH có 9 ô thành phần**: chai, nắp, nhãn / túi, **hộp**, nhãn dán thùng, thùng,
+   **VTBB khác 1–3** (cốc đong, seal...), kèm quy cách thùng và nhà máy đóng hàng. Số mã đã có mã vật tư theo loại: nhãn
+   4.121, thùng 3.765, nhãn dán thùng 3.468, chai 3.093, nắp 2.598, VTBB khác 548, hộp 68. Vì vậy SX-SP-29 (*mở rộng loại
+   thành phần và nhiều mã cùng loại*) phải có tối thiểu hai loại mới *Hộp* và *Vật tư khác*; đây cũng là nguồn nạp thay
+   1.000 dòng định mức mẫu (SX-SP-28, SX-SP-54).
 
 ## Phụ lục — Nguồn đã đọc
 
