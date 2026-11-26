@@ -553,6 +553,27 @@ input[role="combobox"] {
   background: var(--red-bg);
 }
 
+/* Nút bị khóa (duoc-CR-784): trông rõ là không bấm được, kể cả khi rê chuột. Nút đặc (xanh) chuyển xám; nút viền / ghost / đỏ chỉ mờ đi. */
+.btn:disabled,
+.btn[disabled],
+.btn:disabled:hover,
+.btn[disabled]:hover {
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  opacity: 0.55;
+}
+
+.btn:disabled:not(.ghost):not(.err):not(.secondary),
+.btn[disabled]:not(.ghost):not(.err):not(.secondary),
+.btn:disabled:not(.ghost):not(.err):not(.secondary):hover,
+.btn[disabled]:not(.ghost):not(.err):not(.secondary):hover {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+  color: #64748b;
+  opacity: 1;
+}
+
 .card {
   background: #ffffff;
   border: 1px solid #e9edf7;

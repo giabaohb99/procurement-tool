@@ -16,6 +16,7 @@ import { PackagingHistoryPrintPage } from './packaging-history-print-page'
 const calls: { url: string; params: Record<string, unknown> }[] = []
 let total = 0
 let single = false
+let byCode = false
 let failWith: Error | null = null
 
 const row = (id: number, over: Partial<PackagingHistoryRow> = {}): PackagingHistoryRow => ({
@@ -91,6 +92,12 @@ vi.mock('@/core/api', async (importOriginal) => {
         stats,
         series: single ? [{ date: '2026-01-01', price: 1000, supplier_code: 'NCC01', supplier: 'A', qty: 10 },
           { date: '2026-03-05', price: 1200, supplier_code: 'NCC01', supplier: 'A', qty: 10 }] : null,
+        series_by_code: byCode
+          ? [
+              { code: 'CPT0105', name: 'Chai 450ml', role: 1, points: [{ date: '2026-01-01', price: 100 }, { date: '2026-02-01', price: 110 }] },
+              { code: 'NAP0085', name: 'Nắp vặn', role: 2, points: [{ date: '2026-02-01', price: 200 }] },
+            ]
+          : null,
         suppliers: [{ code: 'NCC01', name: 'Nhựa Á Châu' }],
       }
       return result
@@ -118,6 +125,7 @@ beforeEach(() => {
   calls.length = 0
   total = 0
   single = false
+  byCode = false
   failWith = null
   printSpy.mockReset()
   vi.stubGlobal('print', printSpy)
@@ -205,6 +213,16 @@ describe('PackagingHistoryPrintPage', () => {
     expect(calls[0].params).toMatchObject({ mode: 'product', fg_codes: ['HH0417.1'] })
     expect(calls[0].params.sort_by).toBeUndefined()
     expect(calls[0].params.date_from).toBeUndefined()
+  })
+
+  it('draws one line per component code with a role + code legend when the server sends series_by_code', async () => {
+    total = 1
+    byCode = true
+    build('mode=product&fg_codes=HH0417.1')
+    expect(await screen.findByRole('img', { name: 'Diễn biến đơn giá theo thành phần' })).toBeInTheDocument()
+    expect(screen.getByText('Chai · CPT0105')).toBeInTheDocument()
+    expect(screen.getByText('Nắp · NAP0085')).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Diễn biến đơn giá' })).not.toBeInTheDocument()
   })
 
   it('shows a clear empty message when the filter matches nothing', async () => {

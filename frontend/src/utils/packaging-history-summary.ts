@@ -12,7 +12,7 @@
 import type { PackagingHistoryMode, PackagingHistoryStats } from '../api/packaging-cost-types'
 import { fmtDateStr } from './datetime'
 import { fmtVND } from './money'
-import { pctText, priceText, qtyText } from './packaging-price'
+import { avgPriceText, pctText, priceText, qtyText } from './packaging-price'
 
 export interface HistorySummaryItem {
   label: string
@@ -61,7 +61,7 @@ function singleCodeItems(s: PackagingHistoryStats): HistorySummaryItem[] {
   const ratio = latestVsFirst(s)
   const low = priceText(s.min)
   const high = priceText(s.max)
-  const avg = priceText(s.weighted_avg)
+  const avg = avgPriceText(s.weighted_avg)
   return [
     purchaseCount(s, 'Tổng số lần mua'),
     { label: 'Tổng số lượng mua', value: qtyText(s.qty_total) || '0', sub: s.unit || undefined },

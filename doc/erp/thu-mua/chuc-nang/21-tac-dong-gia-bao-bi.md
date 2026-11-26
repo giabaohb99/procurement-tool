@@ -158,6 +158,11 @@ VTBB và nhập báo giá của nhà cung cấp*.
   **(mã VTBB, mã NCC, ngày hiệu lực)** (`uq_ppq_key`, chính khóa nhập Excel vẫn dùng): tạo hoặc sửa thành khóa đã có là **409** *Đã có
   báo giá cùng mã, NCC và ngày hiệu lực*. Danh sách Báo giá VTBB có cột **Nguồn** (chỉ xem, không xếp): *Nhập tay* hoặc *Nhập Excel (lô
   #N)*, bản v2 bấm vào lô mở đợt nhập đó; bản cũ cũng bấm được. Bảng giá VTBB, cột *Báo giá mới* và mọi con số tính giá KHÔNG đổi.
+- **Giữ bộ lọc trên URL** (26/11/2026, bản v2; bản cũ làm cùng tên tham số): F5 hay gửi link là mở lại đúng ô tìm `q`, chip nhóm `group`,
+  phạm vi `scope` (`all`; mặc định `bom` không ghi), khoảng ngày `date_from` / `date_to`, cột xếp `sort_by` / `sort_dir`, trang `page`
+  và cỡ trang `page_size` (10 / 20 / 50 / 100; mặc định 50 không ghi). Tên tham số trùng tham số của API; giá trị mặc định không ghi,
+  giá trị hỏng (ngày sai, khóa xếp lạ, cỡ trang ngoài danh sách) bị bỏ chứ không làm màn lỗi; ô tìm lên URL sau nhịp gõ, URL thay
+  thế chứ không đẻ thêm mục lịch sử của nút Quay lại.
 
 ## 5. Giá mua gần nhất
 
@@ -171,6 +176,10 @@ lần mua gần nhất*.
   *Nhà cung cấp* (giữ mã có NCC đó trong n lần đang hiện), *Khoảng ngày mua*, *Biến động lần 1 so lần 2* (Tất cả / Tăng /
   Giảm / Không đổi), *Biến động từ (%)*, công tắc *Chỉ mã đã có giá* (bật sẵn), *Chỉ mã đang dùng trong định mức*, *Hiện số
   lượng*. Xuất Excel theo đúng bộ lọc, n và thứ tự.
+- **Giữ bộ lọc trên URL** (26/11/2026, cùng cách với Bảng giá VTBB): `q`, `group`, `n` (3 / 5 / 10; mặc định 5 không ghi), `scope`,
+  `supplier` (lặp khóa: `supplier=A&supplier=B`), `date_from` / `date_to`, `trend` (`up` / `down` / `flat`), `min_pct`, `only_priced`
+  (mặc định bật nên chỉ ghi `only_priced=0` khi tắt), `bom_only=1`, `show_qty=1`, `sort_by` / `sort_dir` (kể cả khóa theo lần
+  `p{k}_price` / `p{k}_date`, bị bỏ khi k lớn hơn n), `page`, `page_size`.
 
 ## 6. Lịch sử mua hàng (của cụm Giá bao bì)
 
@@ -199,6 +208,11 @@ và dữ liệu cũ, *Sổ Misa*. Khóa xếp Nguồn theo thứ tự đó (lị
     *Số nhà cung cấp*.
   - Theo mã sản phẩm: *Số sản phẩm* (đã chọn / tất cả; số sản phẩm có định mức) · *Mã vật tư liên quan* · *Số dòng lịch sử* (dòng
     đã nhân theo sản phẩm; dòng phụ: khoảng ngày) · *Số nhà cung cấp*.
+    Khi chọn ĐÚNG MỘT sản phẩm có thêm biểu đồ **Diễn biến đơn giá theo thành phần** (26/11/2026): mỗi mã thành phần của định mức có
+    lần mua có giá (chai, nắp, nhãn, nhãn thùng, thùng) một đường giá cũ → mới, chú giải = vai trò + mã (*Chai · CPT0105*), màu theo
+    vai trò (thùng nét đứt), trục giá chung không bắt đầu từ 0, rê chuột ra giá từng mã tại lần mua đó; cả ở màn hình lẫn bản in.
+    API trả `series_by_code` (xem `api.md`), áp cùng bộ lọc, phạm vi pháp nhân và mốc sổ Misa với bảng; chọn nhiều sản phẩm hoặc
+    không có lần mua có giá thì không có biểu đồ.
   - *Tổng giá trị mua* và *BQ gia quyền* cộng đúng **Giá trị mua** của từng lần có giá (thành tiền Misa khi có), BQ gia quyền =
     tổng giá trị / tổng số lượng của các lần có giá.
 - Cột (chế độ mã): Lần, Ngày mua, Mã VTBB, Tên vật tư, Nhà cung cấp, **Kho**, Số lượng, Đơn giá, **Giá trị mua**, So lần trước,

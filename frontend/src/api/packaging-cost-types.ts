@@ -320,12 +320,23 @@ export interface PackagingHistoryPoint {
   qty: number | null
 }
 
+/** Một đường của biểu đồ nhiều đường: giá theo ngày của MỘT mã thành phần trong định mức sản phẩm. */
+export interface PackagingHistorySeriesByCode {
+  code: string
+  name: string
+  /** Mã `PackagingRole` của thành phần (chai / nắp / nhãn / nhãn thùng / thùng). */
+  role: number
+  points: { date: string; price: number }[]
+}
+
 export interface PackagingHistoryResult {
   items: PackagingHistoryRow[]
   total: number
   stats: PackagingHistoryStats
   /** Chỉ khi đúng MỘT mã được chọn. */
   series: PackagingHistoryPoint[] | null
+  /** Chỉ ở chế độ sản phẩm khi đúng MỘT sản phẩm được chọn: mỗi mã thành phần một đường giá. Máy chủ cũ không có trường này. */
+  series_by_code?: PackagingHistorySeriesByCode[] | null
   suppliers: PackagingSupplierOption[]
 }
 

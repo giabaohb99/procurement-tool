@@ -57,7 +57,9 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
     theo số lượng của giá trị mua, `min, max, supplier_count, first_date, last_date`, `amount_total` = tổng giá trị mua của lần
     có giá, `code_count` = số mã có lần mua, `product_count` = số sản phẩm có định mức trong phạm vi chọn (chế độ sản phẩm),
     `unit`, `first_price` / `last_price` = giá lần có giá đầu tiên / gần nhất, chế độ sản phẩm để trống), `series` (chế độ mã,
-    đúng một mã được chọn: tối đa 1.000 điểm giá cũ -> mới) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền
+    đúng một mã được chọn: tối đa 1.000 điểm giá cũ -> mới), `series_by_code` (chế độ sản phẩm, đúng MỘT sản phẩm được chọn: mỗi mã
+    thành phần có lần mua có giá một đường `{code, name, role, points: [{date, price}]}`, xếp theo vai trò, tối đa 1.000 điểm giá cũ -> mới
+    mỗi mã; ngược lại `null`) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền
     `packaging_cost.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
     """
     res = build_history(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, "read"))

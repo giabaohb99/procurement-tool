@@ -4,7 +4,7 @@
  * (thẻ số liệu ở `packaging-history-summary.ts`).
  */
 import type {
-  PackagingCodeOption, PackagingHistoryMode, PackagingHistoryParams, PackagingHistoryPoint,
+  PackagingCodeOption, PackagingHistoryMode, PackagingHistoryParams,
   PackagingLastPricesParams, PackagingLastPricesRow, PackagingLastPurchase,
   LastPricesTrend,
 } from '../api/packaging-cost-types'
@@ -137,7 +137,7 @@ export const historyRowKey = (row: { id: number; fg_code: string }): string => (
  * Trục giá nới ra hai đầu một đoạn (10% biên độ, tối thiểu 2% giá) — đường giá không dính sát khung, giá đi ngang vẫn có
  * khoảng để vẽ. Trục KHÔNG bắt đầu từ 0: biến động vài phần trăm sẽ dẹp lì nếu kéo về 0.
  */
-export function priceAxisDomain(points: readonly PackagingHistoryPoint[]): [number, number] {
+export function priceAxisDomain(points: readonly { price: number }[]): [number, number] {
   if (points.length === 0) return [0, 1]
   const prices = points.map((p) => p.price)
   const low = Math.min(...prices)

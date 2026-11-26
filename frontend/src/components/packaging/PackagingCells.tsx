@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  amountText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR, PKG_UP_COLOR, trendLabel, COST_TREND,
+  amountText, avgPriceText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR, PKG_UP_COLOR, trendLabel, COST_TREND,
 } from '../../utils/packaging-price'
 import { historyHref, historyProductHref } from '../../utils/packaging-query'
 import './packaging.css'
@@ -12,8 +12,8 @@ type Num = number | null | undefined
 export const Dash = () => <span className="pkg-muted">—</span>
 
 /** Đơn giá (`fmtPrice`, đủ 4 số lẻ). */
-export function PriceText({ value, bold, color }: { value: Num; bold?: boolean; color?: string }) {
-  const t = priceText(value)
+export function PriceText({ value, bold, color, average }: { value: Num; bold?: boolean; color?: string; average?: boolean }) {
+  const t = average ? avgPriceText(value) : priceText(value)
   if (!t) return <Dash />
   return <span className="pkg-num" style={{ fontWeight: bold ? 700 : undefined, color }}>{t}</span>
 }

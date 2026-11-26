@@ -5,7 +5,8 @@
  * nên Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá mới.
  */
 import { Plus } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -35,17 +36,22 @@ import { usePackagingPriceList } from '../hooks/use-packaging-price-list'
 import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-columns'
 import type { PackagingPriceListParams, PackagingPriceRow } from '../types/packaging-cost-types'
 import { collectPackagingGroups } from '../utils/packaging-code-match'
+import { buildPriceListUrlSearch, parsePriceListUrlState } from '../utils/packaging-list-url-state'
 
 const EMPTY_FILTERS: PriceListFilters = { q: '', group: '', scope: 'bom' }
 
 export function PackagingPriceListPage() {
   const { can } = usePermission()
   const isMobile = useIsMobile()
-  const [filters, setFilters] = useState<PriceListFilters>(EMPTY_FILTERS)
-  const [range, setRange] = useState({ from: '', to: '' })
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [pageSize, setPageSize] = useState(50)
+  const [searchParams, setSearchParams] = useSearchParams()
+  //  Bộ lọc / cột xếp / trang sống trên URL (F5 / gửi link mở lại đúng chỗ): đọc MỘT lần lúc mở màn, sau đó state là nguồn
+  //  và URL đi theo (effect bên dưới, `replace` — gõ ô tìm không đẻ ra cả chục mục lịch sử của nút Quay lại).
+  const [initial] = useState(() => parsePriceListUrlState(searchParams))
+  const [filters, setFilters] = useState<PriceListFilters>(initial.filters)
+  const [range, setRange] = useState({ from: initial.from, to: initial.to })
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const debouncedQ = useDebouncedValue(filters.q, 350)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -64,8 +70,24 @@ export function PackagingPriceListPage() {
     }),
     [debouncedQ, filters.group, filters.scope, range, sortBy, sortDir],
   )
-  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
+  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
   const list = usePackagingPriceList({ ...filterParams, page, page_size: pageSize })
+
+  //  Ô tìm lên URL theo nhịp ĐÃ HOÃN (350 ms) — không ghi lại URL mỗi phím gõ.
+  const urlSearch = buildPriceListUrlSearch({
+    filters: { ...filters, q: debouncedQ },
+    from: range.from,
+    to: range.to,
+    sortBy,
+    sortDir,
+    page,
+    pageSize,
+  })
+  useEffect(() => {
+    if (urlSearch !== searchParams.toString()) {
+      setSearchParams(new URLSearchParams(urlSearch), { replace: true })
+    }
+  }, [urlSearch, searchParams, setSearchParams])
 
   //  Nhóm cho chip lấy từ mã đang dùng trong định mức (đã có cache của màn Tác động).
   const optionsQuery = usePackagingCodeOptions()

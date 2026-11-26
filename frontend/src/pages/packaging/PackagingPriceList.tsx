@@ -19,6 +19,8 @@ import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import { fmtDateStr } from '../../utils/datetime'
 import { joinWarnings } from '../../utils/packaging-price'
 import { collectGroups, nextSort } from '../../utils/packaging-query'
+import { PRICE_LIST_URL_KEYS, priceListScreenToSearch, searchToPriceListScreen } from '../../utils/packaging-prices-screen-url'
+import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import '../../components/packaging/packaging.css'
 
 interface Filters { q: string; group: string; scope: 'bom' | 'all' }
@@ -31,12 +33,14 @@ const EMPTY: Filters = { q: '', group: '', scope: 'bom' }
  */
 export default function PackagingPriceList() {
   const { can } = useAuth()
-  const [filters, setFilters] = useState<Filters>(EMPTY)
-  const [range, setRange] = useState({ from: '', to: '' })
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ từ khóa, nhóm, phạm vi, khoảng ngày, cột xếp, trang).
+  const [initial] = useState(() => searchToPriceListScreen(window.location.search))
+  const [filters, setFilters] = useState<Filters>({ q: initial.q, group: initial.group, scope: initial.scope })
+  const [range, setRange] = useState(initial.range)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [page, setPage] = useState(initial.page)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const [groups, setGroups] = useState<string[]>([])
   const [quoteCode, setQuoteCode] = useState<string | null>(null)   // '' = mở "Báo giá mới" chưa khóa mã
   const [exporting, setExporting] = useState(false)
@@ -57,6 +61,18 @@ export default function PackagingPriceList() {
   }), [q, filters.group, filters.scope, range, sortBy, sortDir])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchPriceList(params), JSON.stringify(params))
+
+  const urlSearch = useMemo(
+    () => priceListScreenToSearch({ ...filters, range, sortBy, sortDir, page, pageSize }),
+    [filters, range, sortBy, sortDir, page, pageSize])
+  useSearchSyncToUrl(urlSearch, PRICE_LIST_URL_KEYS)
+  //  Trang từ URL (hoặc sau khi lọc ra ít dòng) vượt số trang thật thì lùi về trang cuối.
+  const listTotal = list.data?.total
+  useEffect(() => {
+    if (listTotal == null) return
+    const last = Math.max(1, Math.ceil(listTotal / pageSize))
+    if (page > last) setPage(last)
+  }, [listTotal, pageSize, page])
 
   //  Đổi bộ lọc / cột xếp → về trang 1 (đặt cùng lúc với setter để khỏi gọi máy chủ hai lần).
   const patch = (next: Partial<Filters>) => { setFilters((f) => ({ ...f, ...next })); setPage(1) }

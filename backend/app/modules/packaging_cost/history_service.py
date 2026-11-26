@@ -4,16 +4,17 @@ của một / nhiều sản phẩm (duoc-CR-784, tab "Lịch sử mua hàng" c�
 Đọc THẲNG sổ giá `tab_product_price_ledger` (dòng ĐMH đang mở + đã chốt, lịch sử cũ, sổ Misa; trường `is_open` /
 `line_stage` để giao diện đánh dấu "ĐMH đang mở"). Lịch sử là bản chụp bất biến — không có đường sửa giá ở đây.
 
-Số truy vấn CỐ ĐỊNH (tối đa 5) bất kể số mã / số dòng / bộ lọc:
+Số truy vấn CỐ ĐỊNH (tối đa 5; chế độ mã một mã hoặc chế độ sản phẩm một sản phẩm đều có đúng một truy vấn biểu đồ) bất kể số mã / số dòng / bộ lọc:
   1. số gộp trên TOÀN BỘ tập đã lọc (số lần mua, tổng SL, tổng giá trị, giá bình quân gia quyền, min / max, số NCC, khoảng ngày);
   2. nhà cung cấp có trong phạm vi mã (cho ô chọn, chưa áp `q` / nhà cung cấp);
   3. khóa các dòng của trang: đã lọc + xếp + cắt trang, chỉ id sổ giá (kèm sản phẩm / thành phần ở chế độ sản phẩm);
   4. chi tiết đúng các dòng đó (`history_page_rows.py`): nối tên sản phẩm / nhà cung cấp / số ĐMH, kèm giá của lần mua có giá liền
      trước và số thứ tự lần mua (hai truy vấn con tương quan chạy trên chỉ mục phủ `ix_ppl_code_latest`, chỉ cho dòng của trang);
   5. (đúng một mã) các điểm giá cho biểu đồ, tối đa SERIES_CAP điểm gần nhất.
+  5'. (chế độ sản phẩm, đúng MỘT sản phẩm) các điểm giá của MỌI mã thành phần trong một truy vấn (`history_series_by_code.py`) -> `series_by_code`.
 CHẾ ĐỘ SẢN PHẨM (`history_product_pairs.py`): mỗi dòng = một lần mua x một cặp (sản phẩm, mã thành phần của định mức), nối thẳng
 trong SQL (một lần mua của mã dùng ở 275 sản phẩm = 275 dòng, như bản mẫu), xếp mặc định ngày -> mã sản phẩm -> thành phần; không có
-biểu đồ. Số truy vấn vẫn như trên (cặp là truy vấn con, không thêm truy vấn). SỐ GỘP + ô chọn nhà cung cấp KHÔNG nối ra hàng chục
+biểu đồ một mã (một sản phẩm duy nhất thì có `series_by_code`: mỗi thành phần một đường). Số truy vấn vẫn như trên (cặp là truy vấn con, không thêm truy vấn). SỐ GỘP + ô chọn nhà cung cấp KHÔNG nối ra hàng chục
 nghìn dòng đã nhân: cộng có trọng số theo số cặp của từng mã (`history_product_pairs.build_pair_counts`) — cùng kết quả, đọc ~1/5 số dòng.
 
 LẦN (`seq`): thứ tự lần mua của mã trên TOÀN BỘ lịch sử trong phạm vi pháp nhân (không phụ thuộc bộ lọc), 1 = lần mua GẦN NHẤT
@@ -40,6 +41,7 @@ from app.modules.supplier.model import Supplier
 from .cost_service import fold_text
 from .history_page_rows import (  # noqa: F401  (SORT_KEYS: nơi khác import từ đây)
     AMOUNT_EXPR, PRODUCT_SORT_KEYS, SORT_KEYS, build_order, join_pairs, load_page_rows, row_to_item, supplier_name_expr)
+from .history_series_by_code import build_series_by_code
 from .history_product_pairs import build_bom_pairs, build_pair_counts, count_bom_products, pair_text_conds
 from .last_prices_service import supplier_label
 from .bom_parts_service import component_codes_query
@@ -170,7 +172,8 @@ def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = 
     `mode=code`: `codes` rỗng = mọi mã VTBB. `mode=product`: mã thành phần của các `fg_codes` (rỗng = mọi sản phẩm có
     định mức), mỗi dòng = một lần mua x một (sản phẩm, thành phần) kèm `fg_code` / `fg_name` / `role` (mã `PackagingRole`);
     sản phẩm chưa có định mức nào thì kết quả rỗng. `series` chỉ có ở chế độ mã khi tập mã đã chọn đúng MỘT mã (biểu đồ diễn
-    biến đơn giá), ngược lại `None`.
+    biến đơn giá), ngược lại `None`. `series_by_code` chỉ có ở chế độ sản phẩm khi đã chọn đúng MỘT sản phẩm: mỗi mã thành phần có
+    lần mua CÓ GIÁ một đường `{code, name, role, points}` (điểm cũ -> mới, tối đa SERIES_CAP điểm gần nhất mỗi mã), ngược lại `None`.
     """
     scope_cond = with_misa_cutoff(scope_cond)      # mốc sổ Misa: dòng Misa tới mốc + nguồn 1 / 2 sau mốc (chưa có mốc = như cũ)
     product = mode == "product"
@@ -192,5 +195,7 @@ def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = 
                          skip_text_filters=True, counts=options_counts)
     return {"items": [row_to_item(r) for r in rows], "total": stats["purchase_count"], "stats": stats,
             "series": _series(db, conds) if explicit and len(explicit) == 1 and stats["priced_count"] else None,
+            "series_by_code": (build_series_by_code(db, pairs, _conds(None, **text, pairs=pairs), SERIES_CAP)
+                               if product and len(set(fg_list)) == 1 and stats["priced_count"] else None),
             "suppliers": _supplier_options(db, scope_conds, options_counts)}
 

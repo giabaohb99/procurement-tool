@@ -10,6 +10,7 @@ import { useSearchParams } from 'react-router-dom'
 
 import { extractErrorMessage } from '@/core/api'
 
+import { PrintCodeChart } from '../components/packaging-history-print-code-chart'
 import { PackagingPrintShell } from '../components/packaging-print-shell'
 import { PrintKpis } from '../components/packaging-print-widgets'
 import {
@@ -31,6 +32,7 @@ export function PackagingHistoryPrintPage() {
   const query = usePackagingHistoryPrint(params)
   const data = query.data
   const series = data?.series ?? null
+  const seriesByCode = data?.series_by_code ?? null
   const singleCode = series !== null
   const productMode = params.mode === 'product'
   const first = data?.items[0]
@@ -69,6 +71,7 @@ export function PackagingHistoryPrintPage() {
             })}
           />
           {series && series.length > 0 && <PrintPriceChart series={series} />}
+          {!series && seriesByCode && seriesByCode.length > 0 && <PrintCodeChart lines={seriesByCode} />}
           <PrintHistoryTable
             rows={data.items}
             productMode={productMode}

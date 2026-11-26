@@ -18,6 +18,10 @@ export const isNum = (v: Num): v is number => typeof v === 'number' && Number.is
 /** Đơn giá / chi phí một đơn vị. */
 export const priceText = (v: Num): string => (isNum(v) ? fmtPrice(v) : '')
 
+/** Giá TRUNG BÌNH (Giá TB n lần, BQ gia quyền): tối đa 2 số lẻ như bản v2 — trung bình chia ra nhiều chữ số lẻ vô nghĩa. */
+export const avgPriceText = (v: Num): string =>
+  isNum(v) ? v.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : ''
+
 /** Thành tiền (làm tròn về đồng). */
 export const amountText = (v: Num): string => (isNum(v) ? fmtVND(v) : '')
 

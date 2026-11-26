@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import Pagination from '../../components/Pagination'
 import TableToolbar from '../../components/TableToolbar'
@@ -11,6 +11,8 @@ import { useLatestQuery } from '../../hooks/use-latest-query'
 import {
   buildLastPricesParams, EMPTY_LAST_PRICES_FILTERS, nextSort, sortKeyOutsideN, type LastPricesFilters,
 } from '../../utils/packaging-query'
+import { LAST_PRICES_URL_KEYS, lastPricesScreenToSearch, searchToLastPricesScreen } from '../../utils/packaging-prices-screen-url'
+import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import '../../components/packaging/packaging.css'
 
 /**
@@ -20,11 +22,13 @@ import '../../components/packaging/packaging.css'
  */
 export default function PackagingLastPrices() {
   const { can } = useAuth()
-  const [filters, setFilters] = useState<LastPricesFilters>(EMPTY_LAST_PRICES_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ bộ lọc, số lần, cột xếp, trang).
+  const [initial] = useState(() => searchToLastPricesScreen(window.location.search))
+  const [filters, setFilters] = useState<LastPricesFilters>(initial.filters)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [page, setPage] = useState(initial.page)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
   const q = useDebouncedValue(filters.q, 350)
 
@@ -32,6 +36,17 @@ export default function PackagingLastPrices() {
   const filterParams = useMemo(() => buildLastPricesParams(filters, q, { by: sortBy, dir: sortDir }), [filters, q, sortBy, sortDir])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchLastPrices(params), JSON.stringify(params))
+
+  const urlSearch = useMemo(
+    () => lastPricesScreenToSearch({ filters, sortBy, sortDir, page, pageSize }), [filters, sortBy, sortDir, page, pageSize])
+  useSearchSyncToUrl(urlSearch, LAST_PRICES_URL_KEYS)
+  //  Trang từ URL (hoặc sau khi lọc ra ít dòng) vượt số trang thật thì lùi về trang cuối.
+  const listTotal = list.data?.total
+  useEffect(() => {
+    if (listTotal == null) return
+    const last = Math.max(1, Math.ceil(listTotal / pageSize))
+    if (page > last) setPage(last)
+  }, [listTotal, pageSize, page])
 
   const changeFilters = (next: LastPricesFilters) => {
     //  Bớt số lần mà đang xếp theo một lần đã biến mất → bỏ xếp, khỏi xếp theo cột không còn thấy.

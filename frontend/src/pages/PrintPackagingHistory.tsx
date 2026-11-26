@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchAllHistory, printErrorMessage } from '../api/packaging-print'
 import type { PackagingHistoryPrintData } from '../api/packaging-print'
+import { PrintMultiPriceChart } from '../components/packaging/PackagingHistoryMultiPrintChart'
+import { normalizeSeriesByCode } from '../utils/packaging-multi-series-chart'
 import { PrintHistoryFilters, PrintHistoryTable, PrintPriceChart } from '../components/packaging/PackagingHistoryPrintParts'
 import PackagingPrintShell from '../components/packaging/PackagingPrintShell'
 import { PrintKpis } from '../components/packaging/PackagingPrintWidgets'
@@ -30,6 +32,7 @@ export default function PrintPackagingHistory() {
   }, [params])
 
   const series = data?.series ?? null
+  const seriesByCode = normalizeSeriesByCode(data?.series_by_code)
   const singleCode = series !== null
   const productMode = params.mode === 'product'
   const codes = (productMode ? params.fg_codes : params.codes) ?? []
@@ -42,6 +45,9 @@ export default function PrintPackagingHistory() {
           {data.capped && <p role="status" className="banner">{cappedPrintNotice(data.total, productMode ? 'dòng' : 'lần mua')}</p>}
           <PrintKpis items={buildHistorySummary(data.stats, { singleCode, mode: params.mode, selectedCount: codes.length })} />
           {series && series.length > 0 && <PrintPriceChart series={series} />}
+          {seriesByCode.length > 0 && (
+            <PrintMultiPriceChart series={seriesByCode} subject={[data.items[0]?.fg_code, data.items[0]?.fg_name].filter(Boolean).join(' · ')} />
+          )}
           <PrintHistoryTable rows={data.items} productMode={productMode} singleCode={singleCode} total={data.total} />
         </>
       )}

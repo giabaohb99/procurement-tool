@@ -52,7 +52,7 @@ export default function PackagingHistoryToolbar({
         </div>
         <div style={{ width: 230 }}>
           <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
-            options={suppliers.map((s) => ({ value: s.code, label: s.name }))} onChange={(v) => patch({ suppliers: v })} />
+            options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))} onChange={(v) => patch({ suppliers: v })} />
         </div>
         <div style={{ width: 250 }}>
           <DateRangePicker block value={{ from: filters.from, to: filters.to }} placeholder="Khoảng ngày mua"

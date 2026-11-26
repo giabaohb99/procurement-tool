@@ -4,6 +4,8 @@ import { useAuth } from '../../auth/AuthContext'
 import { toast } from '../../components/toast'
 import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingHistoryChart from '../../components/packaging/PackagingHistoryChart'
+import PackagingHistoryMultiChart from '../../components/packaging/PackagingHistoryMultiChart'
+import { normalizeSeriesByCode } from '../../utils/packaging-multi-series-chart'
 import PackagingHistoryTable from '../../components/packaging/PackagingHistoryTable'
 import PackagingHistoryToolbar from '../../components/packaging/PackagingHistoryToolbar'
 import { IMPORT_MODULE_PACKAGING_MISA, downloadExport, fetchCodeOptions, fetchFgOptions, fetchHistory } from '../../api/packaging-cost'
@@ -66,6 +68,8 @@ export default function PackagingHistory() {
   const list = useLatestQuery(() => fetchHistory(params), JSON.stringify(params))
   const series = list.data?.series ?? null
   const singleCode = series !== null
+  //  Chế độ sản phẩm với đúng một sản phẩm: mỗi mã thành phần một đường giá (máy chủ cũ không trả trường này).
+  const seriesByCode = useMemo(() => normalizeSeriesByCode(list.data?.series_by_code), [list.data?.series_by_code])
 
   //  Đổi lựa chọn mã / bộ lọc / cột xếp → về trang 1 (đặt cùng lúc với setter để khỏi gọi máy chủ hai lần).
   const changeSelection = (next: HistorySelection) => { setSearchParams(buildHistorySearch(next), { replace: true }); setPage(1) }
@@ -129,6 +133,10 @@ export default function PackagingHistory() {
         {summaryCards}
         {series && series.length > 0 && (
           <PackagingHistoryChart series={series} subject={[first?.code, first?.name].filter(Boolean).join(' · ')} />
+        )}
+        {seriesByCode.length > 0 && (
+          <PackagingHistoryMultiChart series={seriesByCode}
+            subject={[list.data?.items[0]?.fg_code, list.data?.items[0]?.fg_name].filter(Boolean).join(' · ')} />
         )}
         <PackagingHistoryTable rows={list.data?.items ?? []} total={list.data?.total ?? 0} productMode={isProduct} singleCode={singleCode}
           sortBy={sortBy} sortDir={sortDir} onSort={onSort} page={page} pageSize={pageSize}

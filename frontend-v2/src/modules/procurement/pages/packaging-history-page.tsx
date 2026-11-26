@@ -23,6 +23,7 @@ import { PackagingExportExcelButton, PackagingPrintButton } from '../components/
 import { exportPackagingHistory } from '../api/packaging-cost-api'
 import { PackagingHistoryCard } from '../components/packaging-history-card'
 import { PackagingHistoryChart } from '../components/packaging-history-chart'
+import { PackagingHistoryCodeChart } from '../components/packaging-history-code-chart'
 import { PackagingHistorySummary } from '../components/packaging-history-summary'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PackagingHistoryToolbar } from '../components/packaging-history-toolbar'
@@ -76,6 +77,8 @@ export function PackagingHistoryPage() {
   const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
   const list = usePackagingHistory({ ...filterParams, page, page_size: pageSize })
   const series = list.data?.series ?? null
+  //  Chế độ sản phẩm, đúng một sản phẩm: mỗi thành phần một đường giá (máy chủ chỉ trả khi có lần mua có giá).
+  const seriesByCode = list.data?.series_by_code ?? null
   const columns = usePackagingHistoryColumns(isProduct, series !== null)
 
   const changeSelection = (next: PackagingHistorySelection) =>
@@ -143,6 +146,12 @@ export function PackagingHistoryPage() {
             subject={[list.data?.items[0]?.code, list.data?.items[0]?.name]
               .filter(Boolean)
               .join(' · ')}
+          />
+        )}
+        {!series && seriesByCode && seriesByCode.length > 0 && (
+          <PackagingHistoryCodeChart
+            lines={seriesByCode}
+            subject={[selection.fg[0], list.data?.items[0]?.fg_name].filter(Boolean).join(' · ')}
           />
         )}
         <DataTable

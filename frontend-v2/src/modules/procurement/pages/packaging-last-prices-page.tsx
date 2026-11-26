@@ -4,7 +4,8 @@
  * so lần 2 / lần n và giá trung bình. Lọc + xếp + phân trang tại MÁY CHỦ (luật §8); tham số đi kèm Xuất Excel để ra đúng
  * thứ tự. Tiêu đề gộp nhóm cột do `DataTable` vẽ (`group` của cột).
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -26,34 +27,26 @@ import {
 } from '../components/packaging-last-prices-toolbar'
 import { usePackagingLastPrices } from '../hooks/use-packaging-last-prices'
 import { usePackagingLastPricesColumns } from '../hooks/use-packaging-last-prices-columns'
+import { buildLastPricesParams, sortKeyOutsideN } from '../utils/packaging-last-prices'
 import {
-  buildLastPricesParams,
-  LAST_PRICE_DEFAULT_N,
-  sortKeyOutsideN,
-} from '../utils/packaging-last-prices'
+  buildLastPricesUrlSearch,
+  DEFAULT_LAST_PRICES_FILTERS,
+  parseLastPricesUrlState,
+} from '../utils/packaging-list-url-state'
 
-const EMPTY_FILTERS: LastPricesFilters = {
-  q: '',
-  group: '',
-  n: LAST_PRICE_DEFAULT_N,
-  scope: 'bom',
-  suppliers: [],
-  from: '',
-  to: '',
-  trend: 'all',
-  minPct: 0,
-  onlyPriced: true,
-  bomOnly: false,
-  showQty: false,
-}
+const EMPTY_FILTERS = DEFAULT_LAST_PRICES_FILTERS
 
 export function PackagingLastPricesPage() {
   const { can } = usePermission()
   const isMobile = useIsMobile()
-  const [filters, setFilters] = useState<LastPricesFilters>(EMPTY_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [pageSize, setPageSize] = useState(50)
+  const [searchParams, setSearchParams] = useSearchParams()
+  //  Bộ lọc / cột xếp / trang sống trên URL (F5 / gửi link mở lại đúng chỗ): đọc MỘT lần lúc mở màn, sau đó state là nguồn
+  //  và URL đi theo (effect bên dưới, `replace` — gõ ô tìm không đẻ ra cả chục mục lịch sử của nút Quay lại).
+  const [initial] = useState(() => parseLastPricesUrlState(searchParams))
+  const [filters, setFilters] = useState<LastPricesFilters>(initial.filters)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
   const debouncedQ = useDebouncedValue(filters.q, 350)
   const once = useSingleFlight()
@@ -64,8 +57,22 @@ export function PackagingLastPricesPage() {
     () => buildLastPricesParams(filters, debouncedQ, { by: sortBy, dir: sortDir }),
     [filters, debouncedQ, sortBy, sortDir],
   )
-  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
+  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
   const list = usePackagingLastPrices({ ...filterParams, page, page_size: pageSize })
+
+  //  Ô tìm lên URL theo nhịp ĐÃ HOÃN (350 ms) — không ghi lại URL mỗi phím gõ.
+  const urlSearch = buildLastPricesUrlSearch({
+    filters: { ...filters, q: debouncedQ },
+    sortBy,
+    sortDir,
+    page,
+    pageSize,
+  })
+  useEffect(() => {
+    if (urlSearch !== searchParams.toString()) {
+      setSearchParams(new URLSearchParams(urlSearch), { replace: true })
+    }
+  }, [urlSearch, searchParams, setSearchParams])
 
   const changeFilters = (next: LastPricesFilters) => {
     //  Bớt số lần mà đang xếp theo một lần đã biến mất → bỏ xếp, khỏi xếp theo cột không còn thấy.

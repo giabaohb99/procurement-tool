@@ -371,9 +371,11 @@ def test_so_truy_van_co_dinh_khong_phu_thuoc_so_ma_so_dong_hay_bo_loc(db, world)
     _, big_one = count_queries(db, lambda: build_history(db, codes=["CPT0105"]))
     _, big_busy = count_queries(db, lambda: build_history(db, codes=["CPT0105", "NAP0085"], **busy))
     _, big_prod = count_queries(db, lambda: build_history(db, mode="product", fg_codes=["HH0001"] + [f"HH1{i:04d}" for i in range(80)]))
+    _, big_prod_one = count_queries(db, lambda: build_history(db, mode="product", fg_codes=["HH0001"]))
     #  số gộp + ô chọn nhà cung cấp + trang dòng (khóa các dòng của trang, rồi chi tiết các dòng đó: lần / giá liền trước chỉ tính cho trang)
     assert len(small_all) == len(big_all) == 4
     assert len(small) == len(big_one) == 5                        # + truy vấn biểu đồ của đúng một mã
+    assert len(big_prod_one) == 5                                 # chế độ sản phẩm đúng một sản phẩm: + MỘT truy vấn biểu đồ cho mọi thành phần
     add_ledger(db, "C0000", 5, "2026-01-02", warehouse="Kho A")
     _, big_kho = count_queries(db, lambda: build_history(db, q="kho", sort_by="warehouse", sort_dir="asc", page_size=50))
     _, big_busy_page1 = count_queries(db, lambda: build_history(db, codes=["CPT0105", "NAP0085"], **{**busy, "page": 1}))

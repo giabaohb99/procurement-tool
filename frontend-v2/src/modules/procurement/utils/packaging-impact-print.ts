@@ -55,7 +55,8 @@ export const IMPACT_SORT_KEYS: readonly string[] = [
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-function validDate(raw: string | null): string | undefined {
+/** Ngày ISO đúng lịch hoặc `undefined` — URL là dữ liệu từ ngoài vào. */
+export function validDate(raw: string | null): string | undefined {
   if (!raw || !ISO_DATE.test(raw)) return undefined
   const time = Date.parse(`${raw}T00:00:00Z`)
   return Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== raw ? undefined : raw

@@ -43,7 +43,7 @@ function partCell(row: any, role: number, field: string) {
 export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   'product-price-quotes': {
     slug: 'product-price-quotes', entity: 'packaging_cost', auditEntity: 'packaging_cost_quote', title: 'Báo giá VTBB',
-    apiPath: PACKAGING_QUOTE_API, txn: true, cards: true,
+    apiPath: PACKAGING_QUOTE_API, txn: true, idDefaultHidden: true, cards: true,
     columns: [
       { key: 'product_code', label: 'Mã VTBB', card: 'title', render: (r) => <b>{r.product_code}</b> },
       { key: 'product_name', label: 'Tên vật tư', noSort: true, card: 'subtitle' },

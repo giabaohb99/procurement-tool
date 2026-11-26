@@ -104,7 +104,7 @@ export default function PackagingLastPricesTable({
               })}
               <td style={{ textAlign: 'right' }}><PctText value={r.v12} /></td>
               <td style={{ textAlign: 'right' }}><PctText value={r.v1n} /></td>
-              <td style={{ textAlign: 'right' }}><PriceText value={r.avg} bold /></td>
+              <td style={{ textAlign: 'right' }}><PriceText value={r.avg} bold average /></td>
             </tr>
           ))}
           {rows.length === 0 && <tr><td colSpan={colCount} className="table-empty">{empty}</td></tr>}
@@ -148,7 +148,7 @@ function LastPricesCards({ rows, slots, showQty, n, empty, sortBy, sortDir, onSo
             <div className="tcard-head"><div className="tcard-title"><CodeLink code={r.code} /></div></div>
             <div className="tcard-sub">{r.name || <span className="pkg-muted">(chưa có tên)</span>}</div>
             <div className="tcard-heroes" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-              <div className="tcard-hero"><span className="tcard-k">{`Giá TB ${n} lần`}</span><span className="tcard-v"><PriceText value={r.avg} bold /></span></div>
+              <div className="tcard-hero"><span className="tcard-k">{`Giá TB ${n} lần`}</span><span className="tcard-v"><PriceText value={r.avg} bold average /></span></div>
               <div className="tcard-hero"><span className="tcard-k">Lần 1 so lần 2</span><span className="tcard-v"><PctText value={r.v12} /></span></div>
               <div className="tcard-hero"><span className="tcard-k">{`Lần 1 so lần ${n}`}</span><span className="tcard-v"><PctText value={r.v1n} /></span></div>
             </div>

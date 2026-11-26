@@ -1,6 +1,7 @@
 import Select, { components as RS } from 'react-select'
 
-type Opt = { value: string; label: string }
+/** `hint` = chữ phụ mờ sau nhãn (vd mã nhà cung cấp khi hai nhà cung cấp trùng tên); không ảnh hưởng giá trị chọn. */
+type Opt = { value: string; label: string; hint?: string }
 
 // Tắt gợi ý autofill/sọc của trình duyệt khi gõ trong ô select (giống SearchSelect)
 const NoAutofillInput = (props: any) => <RS.Input {...props} autoComplete="off" spellCheck={false} aria-autocomplete="none" />
@@ -13,6 +14,7 @@ const CheckOption = (props: any) => (
       <input type="checkbox" checked={props.isSelected} readOnly tabIndex={-1}
         style={{ margin: 0, width: 15, height: 15, accentColor: 'var(--teal)', cursor: 'pointer', flex: '0 0 auto' }} />
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{props.label}</span>
+      {props.data?.hint && <span style={{ color: '#94a3b8', fontSize: 12, flex: '0 0 auto' }}>{props.data.hint}</span>}
     </span>
   </RS.Option>
 )
@@ -48,7 +50,7 @@ export default function MultiCheckSelect({
   // chỗ đó để ghi "đã chọn gì" thay vì bày chip.
   const summary = selected.length === 0 ? '' :
     selected.length === 1 ? selected[0].label : `${selected[0].label} +${selected.length - 1}`
-  const title = selected.map((o) => o.label).join(', ')
+  const title = selected.map((o) => (o.hint ? `${o.label} (${o.hint})` : o.label)).join(', ')
 
   const SummaryPlaceholder = (props: any) => (
     <RS.Placeholder {...props}>

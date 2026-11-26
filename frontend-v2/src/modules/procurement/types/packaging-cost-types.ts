@@ -425,12 +425,23 @@ export interface PackagingHistoryPoint {
   qty: number | null
 }
 
+/** Một đường giá của biểu đồ theo thành phần (`series_by_code`): một mã thành phần của định mức, điểm cũ → mới. */
+export interface PackagingHistorySeriesLine {
+  code: string
+  name: string
+  /** Mã `PackagingRole` (1 chai · 2 nắp · 3 nhãn · 4 nhãn thùng · 5 thùng). */
+  role: number
+  points: { date: string; price: number }[]
+}
+
 export interface PackagingHistoryResult {
   items: PackagingHistoryRow[]
   total: number
   stats: PackagingHistoryStats
   /** Chỉ khi đúng MỘT mã được chọn: các điểm giá cũ → mới cho biểu đồ. */
   series: PackagingHistoryPoint[] | null
+  /** Chỉ khi chế độ sản phẩm và đúng MỘT sản phẩm được chọn: mỗi mã thành phần có lần mua có giá một đường giá. */
+  series_by_code?: PackagingHistorySeriesLine[] | null
   suppliers: PackagingLastPricesSupplier[]
 }
 

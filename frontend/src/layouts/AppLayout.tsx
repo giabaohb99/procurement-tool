@@ -64,6 +64,8 @@ type NavChild = {
   isDefault?: boolean;
   /** Đường KHÁC cũng làm mục này sáng — mục gom nhiều thẻ, mỗi thẻ một đường riêng. */
   matchPaths?: string[];
+  /** Màn con gom vào mục này (có trong `matchPaths`) nhưng có tên riêng: breadcrumb thêm cấp cuối ghi tên màn đó. */
+  crumbSuffixes?: { path: string; label: string }[];
   visible?: (can: (entity: string, action: string) => boolean) => boolean;
 };
 // Mọi nhóm CÓ tiêu đề đều thu/mở được (đồng bộ trên toàn menu trái).
@@ -188,6 +190,8 @@ const NAV_GROUPS: NavGroup[] = [
             label: "Bảng giá VTBB",
             icon: "ti-list-details",
             matchPaths: ["/product-price-quotes"],
+            //  Màn Báo giá VTBB ẩn khỏi menu nhưng tiêu đề trang là "Báo giá VTBB" → breadcrumb ghi đủ, khỏi lệch tên.
+            crumbSuffixes: [{ path: "/product-price-quotes", label: "Báo giá VTBB" }],
           },
           { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
           { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
@@ -565,6 +569,8 @@ export default function AppLayout() {
   const currentChild = current?.children
     ?.filter((c) => !c.visible || c.visible(can))
     .find((c) => isNavChildActive(c, current.to, loc.pathname));
+  const crumbSuffix = currentChild?.crumbSuffixes
+    ?.find((x) => loc.pathname === x.path || loc.pathname.startsWith(x.path + "/"))?.label;
   const name = user?.full_name || "Người dùng";
   const initials = initialsOf(name);
   // CR-028: dòng phụ dưới tên ở góc phải — mã NV · chức vụ (bỏ phần nào rỗng).
@@ -705,6 +711,7 @@ export default function AppLayout() {
               {currentGroup?.title ? `${currentGroup.title} / ` : ""}
               {current?.label || "Trang chủ"}
               {currentChild && currentChild.label !== current?.label ? ` / ${currentChild.label}` : ""}
+              {crumbSuffix ? ` / ${crumbSuffix}` : ""}
             </div>
           </div>
           <div

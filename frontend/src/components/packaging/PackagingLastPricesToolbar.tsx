@@ -66,7 +66,7 @@ export default function PackagingLastPricesToolbar({
         </Field>
         <div style={{ width: 230 }} title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
           <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
-            options={suppliers.map((s) => ({ value: s.code, label: s.name }))}
+            options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))}
             onChange={(v) => patch({ suppliers: v })} />
         </div>
         <div style={{ width: 250 }}>
