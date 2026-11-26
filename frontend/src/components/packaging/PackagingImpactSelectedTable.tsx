@@ -3,6 +3,7 @@ import NumberInput from '../NumberInput'
 import TableHead, { TableCells, TableColGroup } from '../TableHead'
 import TableToolbar from '../TableToolbar'
 import TableCards from '../TableCards'
+import { SelectedCodeCard } from './PackagingMobileCards'
 import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingSelectedCode } from '../../api/packaging-cost-types'
@@ -92,7 +93,8 @@ export default function PackagingImpactSelectedTable({
       {/*  Chọn cả nhóm là vài chục mã — chặn chiều cao, cuộn trong khung để bảng sản phẩm không bị đẩy xuống tận cuối trang. */}
       {narrow ? (
         <div className="pkg-scroll-y">
-          <TableCards columns={table.columns} rows={list} rowKey={(r) => r.code} empty={emptyText} />
+          <TableCards columns={table.columns} rows={list} rowKey={(r) => r.code} empty={emptyText}
+            renderCard={(r) => <SelectedCodeCard row={r} assumed={assumed[r.code]} onAssumedChange={onAssumedChange} onRemove={onRemove} />} />
         </div>
       ) : (
       <div className="table-scroll pkg-scroll-y">

@@ -84,6 +84,7 @@ export function PackagingPriceRowCard({ row, onQuote }: PackagingPriceRowCardPro
           { label: 'Số SP đang dùng', value: row.usage.toLocaleString('vi-VN') },
           { label: 'Min', value: <PriceText value={row.min} /> },
           { label: 'Max', value: <PriceText value={row.max} /> },
+          { label: 'Tiền tệ', value: 'VND' },
         ]}
       />
 

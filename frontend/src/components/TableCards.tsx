@@ -51,7 +51,7 @@ function pick<T>(columns: TableColumn<T>[], slot: CardSlot) {
  * `column.card` quyết định (xem `CardSlot`). Phân trang / chip lọc / thanh công cụ vẫn là của trang, đứng ngoài thẻ.
  */
 export default function TableCards<T>({
-  columns, rows, rowKey, empty, sortBy, sortDir, onSort, onRowClick, onRowAuxClick, rowClassName,
+  columns, rows, rowKey, empty, sortBy, sortDir, onSort, onRowClick, onRowAuxClick, rowClassName, renderCard,
 }: {
   columns: TableColumn<T>[]
   rows: T[]
@@ -64,6 +64,8 @@ export default function TableCards<T>({
   onRowClick?: (e: MouseEvent, row: T) => void
   onRowAuxClick?: (e: MouseEvent, row: T) => void
   rowClassName?: (row: T) => string | undefined
+  /** Thẻ tự dựng cho riêng bảng (bố cục lưới 2×2 của Mã đã chọn / Sản phẩm): thay NỘI DUNG thẻ, khung `<li>`, thanh xếp và ô rỗng vẫn của bảng. */
+  renderCard?: (row: T, index: number) => ReactNode
 }) {
   const sortOptions = columns.filter((c) => c.sort).map((c) => ({ key: c.sort!, label: c.label }))
   const titles = pick(columns, 'title')
@@ -86,6 +88,7 @@ export default function TableCards<T>({
             className={'tcard' + (onRowClick ? ' clickable' : '') + (rowClassName?.(row) ? ` ${rowClassName(row)}` : '')}
             onClick={onRowClick ? (e) => onRowClick(e, row) : undefined}
             onAuxClick={onRowAuxClick ? (e) => onRowAuxClick(e, row) : undefined}>
+            {renderCard ? renderCard(row, i) : (<>
             {(titles.length > 0 || corners.length > 0) && (
               <div className="tcard-head">
                 <div className="tcard-title">{titles.map((c) => <span key={c.key}>{filled(c.cell?.(row, i) ?? (row as any)[c.key])}</span>)}</div>
@@ -137,6 +140,7 @@ export default function TableCards<T>({
             {actions.length > 0 && (
               <div className="tcard-actions">{actions.map((c) => <span key={c.key}>{c.cell?.(row, i)}</span>)}</div>
             )}
+            </>)}
           </li>
         ))}
       </ul>

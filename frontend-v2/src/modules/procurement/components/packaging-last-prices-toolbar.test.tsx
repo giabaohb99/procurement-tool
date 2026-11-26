@@ -13,13 +13,13 @@ const FILTERS: LastPricesFilters = {
   q: '',
   group: '',
   n: 5,
-  scope: 'bom',
+  scope: 'all',
   suppliers: [],
   from: '',
   to: '',
   trend: 'all',
   minPct: 0,
-  onlyPriced: true,
+  onlyPriced: false,
   bomOnly: false,
   showQty: false,
 }
@@ -58,11 +58,12 @@ describe('PackagingLastPricesToolbar', () => {
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, n: 10 })
   })
 
-  it('switches the scope between "Định mức + báo giá" and "Mọi mã"', async () => {
+  it('switches the scope between "Mọi mã" (default) and "Định mức + báo giá"', async () => {
     const { onChange, user } = setup()
-    expect(screen.getByRole('radio', { name: 'Định mức + báo giá' })).toBeChecked()
-    await user.click(screen.getByRole('radio', { name: 'Mọi mã' }))
-    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, scope: 'all' })
+    expect(screen.getByRole('radio', { name: 'Mọi mã' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Định mức + báo giá' })).not.toBeChecked()
+    await user.click(screen.getByRole('radio', { name: 'Định mức + báo giá' }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, scope: 'bom' })
   })
 
   it('filters the direction of the lần 1 vs lần 2 change', async () => {
@@ -72,15 +73,15 @@ describe('PackagingLastPricesToolbar', () => {
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, trend: 'down' })
   })
 
-  it('has "Chỉ mã đã có giá" on, "Chỉ mã đang dùng trong định mức" and "Hiện số lượng" off by default', async () => {
+  it('has every switch off by default ("Chỉ mã đã có giá", "Chỉ mã đang dùng trong định mức", "Hiện số lượng")', async () => {
     const { onChange, user } = setup()
-    expect(screen.getByRole('switch', { name: 'Chỉ mã đã có giá' })).toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Chỉ mã đã có giá' })).not.toBeChecked()
     expect(screen.getByRole('switch', { name: 'Chỉ mã đang dùng trong định mức' })).not.toBeChecked()
     expect(screen.getByRole('switch', { name: 'Hiện số lượng' })).not.toBeChecked()
     await user.click(screen.getByRole('switch', { name: 'Hiện số lượng' }))
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, showQty: true })
     await user.click(screen.getByRole('switch', { name: 'Chỉ mã đã có giá' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...FILTERS, onlyPriced: false })
+    expect(onChange).toHaveBeenLastCalledWith({ ...FILTERS, onlyPriced: true })
   })
 
   it('commits the % threshold when leaving the field', async () => {

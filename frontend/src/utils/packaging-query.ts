@@ -166,10 +166,15 @@ export interface LastPricesFilters {
   showQty: boolean
 }
 
+/** Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026): mọi bộ lọc TẮT — mọi mã, không ép "chỉ mã đã có giá". */
 export const EMPTY_LAST_PRICES_FILTERS: LastPricesFilters = {
-  q: '', group: '', n: LAST_PRICE_DEFAULT_N, scope: 'bom', suppliers: [], from: '', to: '',
-  trend: 'all', minPct: 0, onlyPriced: true, bomOnly: false, showQty: false,
+  q: '', group: '', n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
+  trend: 'all', minPct: 0, onlyPriced: false, bomOnly: false, showQty: false,
 }
+/** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối) — 20 mã gần nhất. */
+export const LAST_PRICES_DEFAULT_SORT = { by: 'p1_date', dir: 'desc' } as const
+/** Cỡ trang mặc định của Giá mua gần nhất. */
+export const LAST_PRICES_DEFAULT_PAGE_SIZE = 20
 
 /** Nhãn nhóm cột của lần `index` (0 = gần nhất). */
 export const purchaseGroupLabel = (index: number): string => (index === 0 ? 'Lần 1 (gần nhất)' : `Lần ${index + 1}`)

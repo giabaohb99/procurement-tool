@@ -3,13 +3,16 @@
  * để F5 / gửi link vẫn giữ từ khóa, chip nhóm, phạm vi, khoảng ngày, nhà cung cấp, cột xếp và trang. Tên tham số trùng tên
  * tham số API của hai màn (và bản v2): `q` · `group` · `scope` · `only_priced` · `date_from` / `date_to` · `supplier`
  * (lặp khóa như API: `supplier=a&supplier=b`) · `n` (3 / 5 / 10) · `show_qty` · `trend` · `min_pct` · `bom_only` · `sort_by` / `sort_dir` ·
- * `page` / `page_size`. Giá trị mặc định không ghi để link gọn.
+ * `page` / `page_size`. Giá trị mặc định không ghi để link gọn. Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026):
+ * mọi bộ lọc tắt (`scope=all`, `only_priced` tắt), xếp Lần 1 ngày mua giảm dần, 20 dòng / trang — nên chỉ ghi `scope=bom` khi
+ * chọn phạm vi định mức và `only_priced=1` khi bật; còn nhận `only_priced=0` của link cũ. Bảng giá VTBB giữ mặc định cũ.
  *
  * Phần đọc coi URL là dữ liệu từ ngoài vào: khóa xếp ngoài danh sách, ngày sai lịch, n ngoài {3,5,10}, cỡ trang lạ, số quá
  * trần đều bị bỏ về mặc định, không bao giờ làm màn hỏng.
  */
 import {
-  EMPTY_LAST_PRICES_FILTERS, LAST_PRICE_N_OPTIONS, type LastPricesFilters,
+  EMPTY_LAST_PRICES_FILTERS, LAST_PRICES_DEFAULT_PAGE_SIZE, LAST_PRICES_DEFAULT_SORT, LAST_PRICE_N_OPTIONS,
+  type LastPricesFilters,
 } from './packaging-query'
 import type { LastPricesTrend } from '../api/packaging-cost-types'
 
@@ -51,26 +54,32 @@ function rangeFromSearch(s: URLSearchParams): { from: string; to: string } {
 
 const textFromSearch = (s: URLSearchParams, key: string, max = MAX_QUERY_LENGTH): string => (s.get(key) ?? '').trim().slice(0, max)
 
-function pageFromSearch(s: URLSearchParams): { page: number; pageSize: number } {
+function pageFromSearch(s: URLSearchParams, defaultPageSize = PRICES_DEFAULT_PAGE_SIZE): { page: number; pageSize: number } {
   const page = Number(s.get('page'))
   const size = Number(s.get('page_size'))
   return {
     page: Number.isInteger(page) && page >= 1 && page <= 100000 ? page : 1,
-    pageSize: PAGE_SIZES.includes(size) ? size : PRICES_DEFAULT_PAGE_SIZE,
+    pageSize: PAGE_SIZES.includes(size) ? size : defaultPageSize,
   }
 }
 
-const scopeFromSearch = (s: URLSearchParams): 'bom' | 'all' => (s.get('scope') === 'all' ? 'all' : 'bom')
+const scopeFromSearch = (s: URLSearchParams, fallback: 'bom' | 'all' = 'bom'): 'bom' | 'all' => {
+  const v = s.get('scope')
+  return v === 'all' || v === 'bom' ? v : fallback
+}
 const flag = (s: URLSearchParams, key: string): boolean | null => {
   const v = s.get(key)
   return v === '1' || v === 'true' ? true : v === '0' || v === 'false' ? false : null
 }
 
 /** Ghi các khóa xếp + trang chung của hai màn. */
-function writeSortAndPage(s: URLSearchParams, sortBy: string, sortDir: 'asc' | 'desc', page: number, pageSize: number) {
+function writeSortAndPage(
+  s: URLSearchParams, sortBy: string, sortDir: 'asc' | 'desc', page: number, pageSize: number,
+  defaultPageSize = PRICES_DEFAULT_PAGE_SIZE,
+) {
   if (sortBy) { s.set('sort_by', sortBy); s.set('sort_dir', sortDir) }
   if (page > 1) s.set('page', String(page))
-  if (pageSize !== PRICES_DEFAULT_PAGE_SIZE) s.set('page_size', String(pageSize))
+  if (pageSize !== defaultPageSize) s.set('page_size', String(pageSize))
 }
 
 // ── Bảng giá VTBB ───────────────────────────────────────────────────────────────
@@ -142,11 +151,12 @@ export function lastPricesScreenToSearch(st: LastPricesScreenState): string {
   if (f.to) s.set('date_to', f.to)
   if (f.trend !== 'all') s.set('trend', f.trend)
   if (f.minPct > 0) s.set('min_pct', String(f.minPct))
-  //  `only_priced` mặc định BẬT nên chỉ ghi khi tắt.
-  if (f.onlyPriced !== d.onlyPriced) s.set('only_priced', '0')
+  //  `only_priced` mặc định TẮT nên chỉ ghi khi bật.
+  if (f.onlyPriced !== d.onlyPriced) s.set('only_priced', '1')
   if (f.bomOnly) s.set('bom_only', '1')
   if (f.showQty) s.set('show_qty', '1')
-  writeSortAndPage(s, st.sortBy, st.sortDir, st.page, st.pageSize)
+  const isDefaultSort = st.sortBy === LAST_PRICES_DEFAULT_SORT.by && st.sortDir === LAST_PRICES_DEFAULT_SORT.dir
+  writeSortAndPage(s, isDefaultSort ? '' : st.sortBy, st.sortDir, st.page, st.pageSize, LAST_PRICES_DEFAULT_PAGE_SIZE)
   return s.toString()
 }
 
@@ -167,7 +177,7 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
       q: textFromSearch(s, 'q'),
       group: textFromSearch(s, 'group', MAX_CODE_LENGTH),
       n: nShown,
-      scope: scopeFromSearch(s),
+      scope: scopeFromSearch(s, EMPTY_LAST_PRICES_FILTERS.scope),
       suppliers,
       from: range.from,
       to: range.to,
@@ -177,8 +187,9 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
       bomOnly: flag(s, 'bom_only') ?? false,
       showQty: flag(s, 'show_qty') ?? false,
     },
-    sortBy: sorted ? sortBy : '',
-    sortDir: sorted && s.get('sort_dir') === 'desc' ? 'desc' : 'asc',
-    ...pageFromSearch(s),
+    //  Không có khóa xếp hợp lệ trên URL = xếp mặc định (Lần 1 ngày mua giảm dần).
+    sortBy: sorted ? sortBy : LAST_PRICES_DEFAULT_SORT.by,
+    sortDir: sorted ? (s.get('sort_dir') === 'desc' ? 'desc' : 'asc') : LAST_PRICES_DEFAULT_SORT.dir,
+    ...pageFromSearch(s, LAST_PRICES_DEFAULT_PAGE_SIZE),
   }
 }

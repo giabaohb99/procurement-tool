@@ -257,13 +257,13 @@ TREE = {
 <p>Nhà cung cấp gửi giá mới (qua thư, Zalo, bảng báo giá) thì ghi vào hệ thống để màn Tác động giá dùng làm <strong>giá mới</strong>:</p>
 <ol>
 <li>Ở dòng của mã, bấm nút <strong>Báo giá</strong> cuối dòng (mã điền sẵn, con trỏ nằm ở ô đơn giá). Mã chưa có trong bảng thì bấm <strong>Báo giá mới</strong> ở góc phải trên cùng rồi gõ <strong>Mã VTBB</strong> (ví dụ NAP0085).</li>
-<li>Điền <strong>Đơn giá (VNĐ, chưa VAT)</strong> theo đơn vị tính của danh mục, <strong>Ngày hiệu lực</strong>; tùy chọn <strong>Mã NCC</strong> (bỏ trống nếu chưa rõ), <strong>VAT (%)</strong>, <strong>Ghi chú</strong>.</li>
+<li>Điền <strong>Đơn giá (VNĐ, chưa VAT)</strong> theo đơn vị tính của danh mục, <strong>Ngày hiệu lực</strong>; tùy chọn <strong>Nhà cung cấp</strong> (chọn từ danh mục nhà cung cấp, gõ mã hoặc tên để tìm, bỏ trống nếu chưa rõ; người chưa có quyền xem danh mục nhà cung cấp thì gõ mã tay), <strong>VAT (%)</strong>, <strong>Ghi chú</strong>.</li>
 <li>Bấm <strong>Lưu báo giá</strong>. Bảng giá, màn Tác động giá và Tổng hợp theo sản phẩm tính lại ngay.</li>
 </ol>
 <ul>
 <li>Báo giá có <strong>ngày hiệu lực ở tương lai vẫn tính ngay</strong> là giá mới, để xem trước tác động trước khi giá áp dụng.</li>
 <li>Một mã có nhiều báo giá thì báo giá có ngày hiệu lực muộn nhất thắng. Báo giá không vào sổ giá: nó không thành "lần mua", không đổi số lần mua hay giá mua gần nhất.</li>
-<li><strong>Mỗi mã, mỗi nhà cung cấp, mỗi ngày hiệu lực chỉ có một báo giá</strong> (bỏ trống Mã NCC cũng tính là một nhà cung cấp). Lưu một báo giá trùng cả ba ô với báo giá đã có thì hệ thống báo <em>Đã có báo giá cùng mã, NCC và ngày hiệu lực</em> và không lưu: hãy sửa báo giá đang có, hoặc đổi ngày hiệu lực nếu đây là đợt giá mới.</li>
+<li><strong>Mỗi mã, mỗi nhà cung cấp, mỗi ngày hiệu lực chỉ có một báo giá</strong> (bỏ trống nhà cung cấp cũng tính là một nhà cung cấp). Lưu một báo giá trùng cả ba ô với báo giá đã có thì hệ thống báo <em>Đã có báo giá cùng mã, NCC và ngày hiệu lực</em> và không lưu: hãy sửa báo giá đang có, hoặc đổi ngày hiệu lực nếu đây là đợt giá mới.</li>
 <li>Báo giá nhập nhầm: sửa hay xóa ở màn danh sách <strong>Báo giá VTBB</strong>. Màn này không có trong menu, mở bằng đường <em>/procurement/packaging-cost/quotes</em>; bấm một dòng để mở hộp sửa (<strong>Lưu thay đổi</strong>), nút xóa trong hộp cần quyền Xóa.</li>
 <li>Màn Báo giá VTBB có cột <strong>Nguồn</strong> (chỉ xem): <em>Nhập tay</em> là báo giá gõ ở hộp <strong>Báo giá mới</strong> / <strong>Báo giá</strong> hoặc đã sửa tay đơn giá, VAT, mã, NCC hay ngày hiệu lực; <em>Nhập Excel (lô #N)</em> là báo giá do lô nhập Excel số N ghi giá lần cuối, bấm vào là mở trang lô đó ở Quản lý Import. Chỉ sửa ghi chú thì nguồn giữ nguyên.</li>
 </ul>
@@ -299,21 +299,24 @@ TREE = {
 <li>Chỉ tính lần mua <strong>có giá</strong>; lần mua đơn giá 0 bị bỏ qua.</li>
 </ul>
 
+<h2>Mở màn lần đầu</h2>
+<p>Lúc mới mở, <strong>mọi bộ lọc đều tắt</strong>: phạm vi <strong>Mọi mã</strong>, các công tắc tắt hết, chip nhóm <strong>Tất cả</strong>, không chọn nhà cung cấp hay khoảng ngày. Bảng xếp sẵn theo <strong>Ngày mua của Lần 1, mới nhất trước</strong> và chỉ hiện <strong>20 dòng đầu</strong>, tức 20 mã có lần mua gần nhất (mã chưa có lần mua nằm cuối bảng). Muốn tìm gì thì tự chọn bộ lọc; muốn xem thêm thì chuyển trang hoặc đổi số dòng mỗi trang (10, 20, 50, 100).</p>
+
 <h2>Lọc</h2>
 <table>
 <thead><tr><th>Ô lọc</th><th>Làm gì</th></tr></thead>
 <tbody>
 <tr><td>Tìm mã, tên, nhóm, nhà cung cấp…; chip nhóm</td><td>Lọc theo chữ và theo nhóm (chip kèm số mã).</td></tr>
-<tr><td>Số lần hiển thị</td><td>3, 5 (mặc định) hoặc 10 lần mua.</td></tr>
-<tr><td>Phạm vi mã</td><td><strong>Định mức + báo giá</strong> (mặc định) hoặc <strong>Mọi mã</strong> có trong sổ giá.</td></tr>
+<tr><td>Số lần hiển thị</td><td>3, 5 (mặc định) hoặc 10 lần mua. Đây là số cột hiện, không phải bộ lọc.</td></tr>
+<tr><td>Phạm vi mã</td><td><strong>Mọi mã</strong> (mặc định) hoặc <strong>Định mức + báo giá</strong> (chỉ mã thành phần của định mức và mã đã có báo giá).</td></tr>
 <tr><td>Nhà cung cấp</td><td>Giữ các mã có nhà cung cấp đó trong các lần mua đang hiện (không cắt bớt lần mua của nhà cung cấp khác).</td></tr>
 <tr><td>Khoảng ngày mua</td><td>Chỉ xếp hạng các lần mua trong khoảng ngày.</td></tr>
 <tr><td>Biến động lần 1 so lần 2; Biến động từ (%)</td><td>Chỉ mã <strong>Tăng</strong> / <strong>Giảm</strong> / <strong>Không đổi</strong>; chỉ mã biến động từ bao nhiêu phần trăm trở lên (0 là không lọc).</td></tr>
-<tr><td>Chỉ mã đã có giá (bật sẵn); Chỉ mã đang dùng trong định mức; Hiện số lượng</td><td>Công tắc bật / tắt.</td></tr>
+<tr><td>Chỉ mã đã có giá; Chỉ mã đang dùng trong định mức; Hiện số lượng</td><td>Công tắc, mặc định tắt cả ba.</td></tr>
 </tbody>
 </table>
 <p><strong>Xuất Excel</strong> ra đúng bộ lọc, số lần và thứ tự đang xem; bật Hiện số lượng thì tệp có thêm cột số lượng.</p>
-<p><strong>Giữ nguyên bộ lọc khi tải lại:</strong> mọi bộ lọc ở trên, số lần hiển thị, công tắc, cột đang xếp, trang và số dòng mỗi trang đều nằm trên địa chỉ của trang, nên F5 hoặc gửi địa chỉ cho đồng nghiệp là mở lại đúng màn đang xem.</p>
+<p><strong>Giữ nguyên bộ lọc khi tải lại:</strong> mọi bộ lọc ở trên khi khác mặc định, số lần hiển thị, công tắc, cột đang xếp, trang và số dòng mỗi trang đều nằm trên địa chỉ của trang (giá trị mặc định thì không ghi), nên F5 hoặc gửi địa chỉ cho đồng nghiệp là mở lại đúng màn đang xem.</p>
 {OLD_UI}menu <strong>Mua hàng › Giá nguyên vật liệu sản xuất › Giá mua gần nhất</strong>, cùng bộ lọc và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
         },
         {
@@ -443,7 +446,7 @@ TREE = {
 <tr><td>Sản phẩm không hiện ở màn Tác động giá</td><td>Định mức của sản phẩm không chứa mã đang chọn, hoặc sản phẩm chưa có định mức.</td><td>Kiểm ở {ref(BOM_TITLE, "Định mức bao bì")}.</td></tr>
 <tr><td>CP bao bì để trống, xu hướng <em>Chưa có giá</em></td><td>Thiếu giá chai.</td><td>Nhập báo giá cho mã chai ({ref(PRICES_TITLE, "Bảng giá VTBB")}).</td></tr>
 <tr><td>Vừa sửa đơn mua hàng, giá trên màn chưa đổi</td><td>Chỉ đơn đã duyệt mới vào sổ giá; đơn nháp, chờ duyệt chưa tính.</td><td>Duyệt đơn rồi tải lại màn.</td></tr>
-<tr><td>Lưu báo giá báo <em>Đã có báo giá cùng mã, NCC và ngày hiệu lực</em></td><td>Mã đó đã có báo giá của cùng nhà cung cấp (kể cả cùng bỏ trống Mã NCC) với cùng ngày hiệu lực.</td><td>Sửa báo giá đang có ở màn Báo giá VTBB, hoặc chọn ngày hiệu lực khác ({ref(PRICES_TITLE, "Bảng giá VTBB")}).</td></tr>
+<tr><td>Lưu báo giá báo <em>Đã có báo giá cùng mã, NCC và ngày hiệu lực</em></td><td>Mã đó đã có báo giá của cùng nhà cung cấp (kể cả cùng bỏ trống nhà cung cấp) với cùng ngày hiệu lực.</td><td>Sửa báo giá đang có ở màn Báo giá VTBB, hoặc chọn ngày hiệu lực khác ({ref(PRICES_TITLE, "Bảng giá VTBB")}).</td></tr>
 <tr><td>Ghi thật nhầm một tệp Excel của cụm</td><td>Lô định mức, báo giá, sổ Misa không có nút Hoàn tác.</td><td>Dùng nút <strong>Xóa dữ liệu của lô này</strong> ở trang lô ({ref(PURGE_TITLE, "Xóa dữ liệu theo lô")}).</td></tr>
 <tr><td>Hai người mở cùng mã thấy giá khác nhau</td><td>Giá tính theo pháp nhân mỗi người được xem.</td><td>Bình thường; cần thống nhất thì cùng xem bằng tài khoản có phạm vi rộng hơn.</td></tr>
 </tbody>

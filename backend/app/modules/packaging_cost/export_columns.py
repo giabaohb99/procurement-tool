@@ -20,9 +20,13 @@ from .report_xlsx_writer import Group, bold_tone, change_tone, sign_tone, write_
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+#  Bảng giá VTBB luôn tính bằng đồng Việt Nam; màn hình có cột "Tiền tệ" cùng giá trị (duoc-CR-784, 26/11/2026).
+PRICE_LIST_CURRENCY = "VND"
+
 PRICE_LIST_COLUMNS = [
     Col("code", "Mã VTBB", width=11), Col("name", "Tên vật tư", width=44), Col("group", "Nhóm", width=12),
-    Col("unit", "ĐVT", width=7), Col("old", "Giá cũ", "price", 11), Col("new", "Giá mới", "price", 11),
+    Col("unit", "ĐVT", width=7), Col("currency", "Tiền tệ", width=8),
+    Col("old", "Giá cũ", "price", 11), Col("new", "Giá mới", "price", 11),
     Col("diff", "Chênh lệch", "price", 11), Col("pct", "%", "percent", 9),
     Col("last_purchase_price", "Giá mua\ngần nhất", "price", 11), Col("last_purchase_date", "Mua gần nhất", "date", 12),
     Col("prev_purchase_price", "Giá mua\nlần trước", "price", 11), Col("usage", "Số SP\nđang dùng", "int", 9),
@@ -39,8 +43,8 @@ def warning_text(kinds) -> str:
 
 
 def price_list_rows(rows: list[dict]) -> list[dict]:
-    """Bổ sung chữ cảnh báo cho dòng bảng giá."""
-    return [{**r, "warn_text": warning_text(r["warnings"])} for r in rows]
+    """Bổ sung chữ cảnh báo và đơn vị tiền tệ (luôn VND) cho dòng bảng giá."""
+    return [{**r, "warn_text": warning_text(r["warnings"]), "currency": PRICE_LIST_CURRENCY} for r in rows]
 
 
 def _save(wb: Workbook) -> bytes:

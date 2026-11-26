@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../auth/AuthContext'
+import { api } from '../../api/client'
 import NumberInput from '../NumberInput'
+import SearchSelect from '../SearchSelect'
 import { toast } from '../toast'
 import { createQuote } from '../../api/packaging-cost'
 import { PRICE_DECIMALS } from '../../utils/money'
@@ -32,6 +35,23 @@ export default function PackagingQuoteModal({
   const [busy, setBusy] = useState(false)
   const locked = !!defaultCode
 
+  // Mã NCC chọn từ danh mục NCC (cùng cách ô NCC ở màn ĐMH). Thiếu quyền đọc danh mục hoặc tải lỗi
+  // thì lùi về ô gõ tay để vẫn nhập được; mã đang lưu mà không còn trong danh mục vẫn hiện nguyên mã.
+  const { can } = useAuth()
+  const canPickSupplier = can('supplier', 'read')
+  const [supplierOptions, setSupplierOptions] = useState<{ value: string; label: string }[] | null>(null)
+  useEffect(() => {
+    if (!canPickSupplier) return
+    let alive = true
+    api.get('/api/suppliers', { params: { page_size: 1000, is_active: true } }).then((r) => {
+      if (!alive) return
+      setSupplierOptions((r.data.data.items as { code: string; name: string }[])
+        .map((s) => ({ value: s.code, label: `${s.code} · ${s.name}` })))
+    }).catch(() => { /* tải lỗi: giữ ô gõ tay */ })
+    return () => { alive = false }
+  }, [canPickSupplier])
+  const pickSupplier = canPickSupplier && supplierOptions !== null
+
   async function submit() {
     if (busy) return
     if (!code.trim()) return setError('Nhập mã vật tư bao bì.')
@@ -41,7 +61,8 @@ export default function PackagingQuoteModal({
     setBusy(true)
     try {
       await createQuote({
-        product_code: code.trim().toUpperCase(), supplier_code: supplier.trim().toUpperCase(),
+        product_code: code.trim().toUpperCase(), // Mã chọn từ danh mục giữ nguyên chữ hoa/thường của danh mục; chỉ ô gõ tay mới tự viết hoa.
+        supplier_code: pickSupplier ? supplier.trim() : supplier.trim().toUpperCase(),
         price, vat, valid_from: validFrom, note: note.trim(),
       })
       toast.success('Đã lưu báo giá')
@@ -64,8 +85,10 @@ export default function PackagingQuoteModal({
             : <input value={code} placeholder="Vd: NAP0085" onChange={(e) => setCode(e.target.value)} />}
         </div>
         <div>
-          <label>Mã NCC</label>
-          <input value={supplier} placeholder="Bỏ trống nếu chưa rõ" onChange={(e) => setSupplier(e.target.value)} />
+          <label>Nhà cung cấp</label>
+          {pickSupplier
+            ? <SearchSelect value={supplier} options={supplierOptions!} placeholder="Bỏ trống nếu chưa rõ" onChange={setSupplier} />
+            : <input value={supplier} placeholder="Bỏ trống nếu chưa rõ" onChange={(e) => setSupplier(e.target.value)} />}
         </div>
         <div>
           <label>Đơn giá (VNĐ, chưa VAT) *</label>

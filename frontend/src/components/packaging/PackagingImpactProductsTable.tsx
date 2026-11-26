@@ -4,6 +4,7 @@ import TableHead, { TableCells, TableColGroup } from '../TableHead'
 import TableToolbar from '../TableToolbar'
 import TableScroll from '../TableScroll'
 import TableCards from '../TableCards'
+import { ProductCard } from './PackagingMobileCards'
 import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { useTableColumns } from '../../hooks/useTableColumns'
 import type { PackagingImpactProduct } from '../../api/packaging-cost-types'
@@ -65,7 +66,7 @@ export default function PackagingImpactProductsTable({
       </TableToolbar>
       {narrow ? (
         <TableCards columns={table.columns} rows={list} rowKey={(r) => r.fg_code} sortBy={sortBy} sortDir={sortDir} onSort={onSort}
-          empty={emptyText} />
+          empty={emptyText} renderCard={(r) => <ProductCard row={r} />} />
       ) : (
       <TableScroll>
         <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>

@@ -48,6 +48,8 @@ export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListCol
         },
         { key: 'group', header: 'Nhóm', width: 100, sortable: true, cell: (row) => row.group },
         { key: 'unit', header: 'ĐVT', width: 70, cell: (row) => row.unit },
+        //  Mọi giá của bảng này tính bằng đồng Việt Nam (người chủ chốt 26/11/2026) — cột chỉ để ghi rõ đơn vị tiền.
+        { key: 'currency', header: 'Tiền tệ', width: 80, cell: () => 'VND' },
         {
           key: 'purchase_count',
           header: 'Số lần mua',

@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CoreApi from '@/core/api'
@@ -22,11 +23,28 @@ vi.mock('@/core/api', async (importOriginal) => {
     },
   }
 })
+//  Quyền đọc NCC + danh mục NCC do bài kiểm điều khiển (mặc định: không có quyền → ô gõ tay).
+let canReadSupplier = false
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({
+    can: (entity: string, action: string) => canReadSupplier && entity === 'supplier' && action === 'read',
+  }),
+}))
+vi.mock('@/modules/production/hooks/use-suppliers', () => ({
+  useSuppliers: () => ({
+    data: {
+      items: [
+        { code: 'TanPhat', name: 'Công ty Tân Phát' },
+        { code: 'HOAMAI', name: 'Hoa Mai' },
+      ],
+    },
+  }),
+}))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { PackagingQuoteDialog } from './packaging-quote-dialog'
 
-function renderDialog(props: { defaultCode?: string } = {}) {
+function renderDialog(props: Partial<ComponentProps<typeof PackagingQuoteDialog>> = {}) {
   const onOpenChange = vi.fn()
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -42,6 +60,7 @@ function renderDialog(props: { defaultCode?: string } = {}) {
 beforeEach(() => {
   postCalls.length = 0
   resolvePost = null
+  canReadSupplier = false
 })
 
 describe('PackagingQuoteDialog', () => {
@@ -85,5 +104,35 @@ describe('PackagingQuoteDialog', () => {
     const buttons = screen.getAllByRole('button').filter((b) => b.closest('form'))
     const submits = buttons.filter((b) => b.getAttribute('type') === 'submit')
     expect(submits.map((b) => b.textContent)).toEqual(['Lưu báo giá'])
+  })
+
+  it('falls back to a free-text supplier box when the user cannot read the supplier catalogue', async () => {
+    const { user } = renderDialog({ defaultCode: 'NAP0085' })
+    const box = screen.getByLabelText('Nhà cung cấp')
+    expect(box.getAttribute('role')).not.toBe('combobox')
+    await user.type(box, 'abc')
+    await user.type(screen.getByLabelText(/Đơn giá/), '10')
+    await user.click(screen.getByRole('button', { name: 'Lưu báo giá' }))
+    expect(postCalls[0]).toMatchObject({ body: { supplier_code: 'ABC' } })
+  })
+
+  it('picks a supplier from the catalogue by name and stores the exact code', async () => {
+    canReadSupplier = true
+    const { user } = renderDialog({ defaultCode: 'NAP0085' })
+    const combo = screen.getByRole('combobox', { name: 'Nhà cung cấp' })
+    await user.click(combo)
+    await user.type(combo, 'tan phat')
+    await user.click(await screen.findByRole('button', { name: /TanPhat · Công ty Tân Phát/ }))
+    await user.type(screen.getByLabelText(/Đơn giá/), '10')
+    await user.click(screen.getByRole('button', { name: 'Lưu báo giá' }))
+    expect(postCalls[0]).toMatchObject({ body: { supplier_code: 'TanPhat' } })
+  })
+
+  it('keeps showing a stored supplier code that is no longer in the catalogue', () => {
+    canReadSupplier = true
+    renderDialog({
+      item: { id: 5, product_code: 'NAP0085', supplier_code: 'OLDNCC', price: 1, vat: 0, valid_from: '2026-11-01', note: '' } as never,
+    })
+    expect(screen.getByRole('combobox', { name: 'Nhà cung cấp' })).toHaveValue('OLDNCC')
   })
 })

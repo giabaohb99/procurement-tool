@@ -34,9 +34,10 @@ describe('PackagingPriceRowCard', () => {
       </MemoryRouter>,
     )
     expect(screen.getByRole('link', { name: 'CET0028' })).toBeInTheDocument()
-    for (const label of ['Số lần mua', 'Mua gần nhất', 'Giá mua gần nhất', 'Giá mua lần trước', 'Báo giá mới', 'Số SP đang dùng']) {
+    for (const label of ['Số lần mua', 'Mua gần nhất', 'Giá mua gần nhất', 'Giá mua lần trước', 'Báo giá mới', 'Số SP đang dùng', 'Tiền tệ']) {
       expect(screen.getByText(label)).toBeInTheDocument()
     }
+    expect(screen.getByText('VND')).toBeInTheDocument()
     expect(screen.getByText('30/06/2026')).toBeInTheDocument()
     expect(screen.getByText('20/11/2026')).toBeInTheDocument()
     expect(screen.getByText('+330,5')).toHaveClass('text-emerald-600')

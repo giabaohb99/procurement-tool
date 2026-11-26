@@ -12,8 +12,8 @@ import AuditTimeline from './AuditTimeline'
 // PUBLIC (không lọc theo quyền). Công ty / phòng ban / nhân sự bị lọc theo phạm vi người xem,
 // tự điền thì điền SAI mà không báo.
 const PUBLIC_SOURCES = ['/api/item-groups', '/api/suppliers', '/api/products', '/api/warehouses', '/api/units']
-const canAutoSelect = (f: { options?: unknown[]; source?: { url: string } }) =>
-  !!f.options || (!!f.source && PUBLIC_SOURCES.includes(f.source.url))
+const canAutoSelect = (f: { options?: unknown[]; source?: { url: string; noAutoSelect?: boolean } }) =>
+  !!f.options || (!!f.source && !f.source.noAutoSelect && PUBLIC_SOURCES.includes(f.source.url))
 
 export default function CrudDetail() {
   const { entity, id } = useParams()
@@ -28,6 +28,8 @@ export default function CrudDetail() {
   const [msg, setMsg] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
+  // Ô có `source.freeTextFallback` mà tải danh mục lỗi (403 thiếu quyền đọc, mạng…) → hiện ô gõ tay thay vì ô chọn rỗng.
+  const [srcFailed, setSrcFailed] = useState<Record<string, boolean>>({})
   // Tab phụ khai báo trong cruds.tsx (`detailTabs`). 'info' = tab mặc định (form + detailExtra + nhật ký).
   const [tab, setTab] = useState('info')
 
@@ -46,10 +48,12 @@ export default function CrudDetail() {
         const data = r.data.data
         const items = Array.isArray(data) ? data : (data.items || [])
         const opts = items.map((it: any) => ({
-          value: String(it[vk] ?? ''), label: String(it[lk] ?? it[vk] ?? ''),
+          value: String(it[vk] ?? ''),
+          // `labelWithCode`: "MÃ · Tên" để tìm được theo cả mã lẫn tên (chỉ khi cấu hình bật).
+          label: f.source!.labelWithCode && it[vk] ? `${it[vk]} · ${it[lk] ?? ''}` : String(it[lk] ?? it[vk] ?? ''),
         })).filter((o: any) => o.value)
         setDynOpts(s => ({ ...s, [f.key]: opts }))
-      }).catch(() => {})
+      }).catch(() => { if (f.source!.freeTextFallback) setSrcFailed(s => ({ ...s, [f.key]: true })) })
     })
   }, [cfg?.slug])
 
@@ -197,6 +201,8 @@ export default function CrudDetail() {
                   <label>{f.label}</label>
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
+                  ) : f.source?.freeTextFallback && srcFailed[f.key] ? (
+                    <input value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
                   ) : (f.type === 'select' || (f.source && f.type !== 'select-multiple')) ? (
                     <SearchSelect value={form[f.key] ?? ''} disabled={ro} placeholder="Chọn…"
                       autoSelectSingle={canAutoSelect(f)}

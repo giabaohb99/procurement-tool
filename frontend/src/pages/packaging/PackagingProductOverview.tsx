@@ -5,6 +5,7 @@ import TableHead, { TableCells, TableColGroup } from '../../components/TableHead
 import TableToolbar from '../../components/TableToolbar'
 import TableScroll from '../../components/TableScroll'
 import TableCards from '../../components/TableCards'
+import { ProductCard } from '../../components/packaging/PackagingMobileCards'
 import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { toast } from '../../components/toast'
 import { PctText, TrendText } from '../../components/packaging/PackagingCells'
@@ -114,7 +115,7 @@ export default function PackagingProductOverview() {
         </TableToolbar>
         {narrow ? (
           <TableCards columns={table.columns} rows={rows} rowKey={(r) => r.fg_code} sortBy={sortBy} sortDir={sortDir} onSort={onSort}
-            empty={emptyText} />
+            empty={emptyText} renderCard={(r) => <ProductCard row={r} overview />} />
         ) : (
         <TableScroll>
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>

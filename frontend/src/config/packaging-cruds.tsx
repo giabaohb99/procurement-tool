@@ -74,7 +74,8 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
     fields: [
       { key: 'product_code', label: 'Mã VTBB', readonlyOnEdit: true, group: 'Báo giá',
         hint: 'Mã vật tư bao bì có trong danh mục sản phẩm. Không sửa được sau khi tạo.' },
-      { key: 'supplier_code', label: 'Mã NCC', group: 'Báo giá', hint: 'Bỏ trống nếu chưa rõ nhà cung cấp.' },
+      { key: 'supplier_code', label: 'Nhà cung cấp', group: 'Báo giá', hint: 'Chọn từ danh mục nhà cung cấp; bỏ trống nếu chưa rõ.',
+        source: { url: '/api/suppliers', value: 'code', label: 'name', labelWithCode: true, freeTextFallback: true, noAutoSelect: true } },
       { key: 'price', label: 'Đơn giá (VNĐ, chưa VAT)', type: 'number', group: 'Báo giá',
         hint: 'Theo đơn vị tính của danh mục. Báo giá mới nhất của một mã là giá mới ở màn Tác động.' },
       { key: 'vat', label: 'VAT (%)', type: 'number', group: 'Báo giá' },

@@ -40,14 +40,24 @@ function renderCard(over: Partial<PackagingSelectedCode> = {}) {
 }
 
 describe('PackagingSelectedCodeCard', () => {
-  it('shows code (link to history), name, old -> new price, diff and the table labels', () => {
+  it('shows code (link to history), name, the four tiles and the usage / min-max footer', () => {
     renderCard()
     expect(screen.getByRole('link', { name: 'CET0028' })).toHaveAttribute('href', expect.stringContaining('CET0028'))
     expect(screen.getByText('Chai PAPE tròn cổ 43')).toBeInTheDocument()
-    expect(screen.getByText('Giá cũ → Giá mới')).toBeInTheDocument()
+    expect(screen.getByText('· Chai')).toBeInTheDocument()
+    for (const label of ['Giá cũ', 'Giá mới', 'Chênh lệch', 'Giá giả định']) {
+      expect(screen.getByText(label)).toBeInTheDocument()
+    }
+    expect(screen.getByText('3.170')).toBeInTheDocument()
     expect(screen.getByText('3.500,5')).toBeInTheDocument()
-    expect(screen.getByText('Số SP bị ảnh hưởng')).toBeInTheDocument()
-    expect(screen.getByText('4.724')).toBeInTheDocument()
+    expect(screen.getByText('30 SP bị ảnh hưởng · Min–Max 3.170 – 4.724')).toBeInTheDocument()
+  })
+
+  it('shows no warning line when the row has none, and one when it has', () => {
+    renderCard({ warnings: [] })
+    expect(screen.queryByText(/Thiếu giá/)).not.toBeInTheDocument()
+    renderCard({ code: 'NAP0001', warnings: [3] })
+    expect(screen.getByText('Thiếu giá thành phần')).toBeInTheDocument()
   })
 
   it('colours an increase green and a decrease red, like the table', () => {

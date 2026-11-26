@@ -30,7 +30,12 @@ export type FieldDef = {
   type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'date' | 'select-multiple'
   options?: { value: string; label: string }[]
   readonlyOnEdit?: boolean
-  source?: { url: string; value?: string; label?: string }
+  source?: {
+    url: string; value?: string; label?: string
+    labelWithCode?: boolean    // nhãn "MÃ · Tên" (mặc định chỉ hiện `label`)
+    freeTextFallback?: boolean // tải danh mục lỗi / thiếu quyền → ô gõ tay thay vì ô chọn rỗng
+    noAutoSelect?: boolean     // không tự điền khi danh mục chỉ có 1 mục (ô tùy chọn)
+  }
   onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
   colorMap?: Record<string, string>   // map giá trị option → màu chữ (vd trạng thái: true→xanh, false→đỏ)
   zeroAsBlank?: boolean   // ô số FK-sentinel: giá trị 0 hiện rỗng (để trống = 0), tránh hiện "0" mặc định

@@ -49,12 +49,12 @@ export interface LastPricesFilters {
 function countExtraOptions(filters: LastPricesFilters): number {
   return [
     filters.n !== LAST_PRICE_DEFAULT_N,
-    filters.scope !== 'bom',
+    filters.scope !== 'all',
     filters.suppliers.length > 0,
     Boolean(filters.from || filters.to),
     filters.trend !== 'all',
     filters.minPct > 0,
-    !filters.onlyPriced,
+    filters.onlyPriced,
     filters.bomOnly,
     filters.showQty,
   ].filter(Boolean).length

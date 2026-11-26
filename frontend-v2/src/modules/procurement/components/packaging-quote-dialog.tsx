@@ -8,9 +8,11 @@
  * Báo giá có `valid_from` ở tương lai VẪN tính ngay là giá mới (Q2, chốt 20/11) — để xem trước tác động.
  */
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
+import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { useCrudDelete, useCrudSave, type CrudFormDialogProps } from '@/shared/crud'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
@@ -29,6 +31,7 @@ import { Label } from '@/shared/ui/label'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { Textarea } from '@/shared/ui/textarea'
 import { toDateInputValue } from '@/shared/utils/format-date'
 
@@ -85,6 +88,22 @@ export function PackagingQuoteDialog({
   //  `disabled={isPending}` không chặn được bấm đúp — `useRef` trong hook này mới chặn (duoc-CR-317).
   const once = useSingleFlight()
   const pending = save.isPending || remove.isPending
+  //  Mã NCC chọn từ danh mục NCC (cùng cách ô NCC ở màn ĐMH). Thiếu quyền đọc danh mục thì lùi về ô gõ tay
+  //  để vẫn nhập được — đừng gọi API cho backend trả 403.
+  const { can } = usePermission()
+  const canPickSupplier = can('supplier', 'read')
+  const { data: suppliersData } = useSuppliers(
+    { page_size: 1000, is_active: true },
+    { enabled: canPickSupplier },
+  )
+  const supplierOptions = useMemo(
+    () =>
+      (suppliersData?.items ?? []).map((supplier) => ({
+        value: supplier.code,
+        label: `${supplier.code} · ${supplier.name}`,
+      })),
+    [suppliersData],
+  )
   const codeLocked = Boolean(item || defaultCode)
 
   const patch = (next: Partial<QuoteDraft>) => setDraft((prev) => ({ ...prev, ...next }))
@@ -99,7 +118,10 @@ export function PackagingQuoteDialog({
         values: {
           ...draft,
           product_code: draft.product_code.trim().toUpperCase(),
-          supplier_code: draft.supplier_code.trim().toUpperCase(),
+          //  Mã chọn từ danh mục giữ nguyên chữ hoa/thường của danh mục; chỉ ô gõ tay mới tự viết hoa.
+          supplier_code: canPickSupplier
+            ? draft.supplier_code.trim()
+            : draft.supplier_code.trim().toUpperCase(),
           note: draft.note.trim(),
         },
       })
@@ -149,13 +171,27 @@ export function PackagingQuoteDialog({
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="quote-supplier">Mã NCC</Label>
-            <Input
-              id="quote-supplier"
-              value={draft.supplier_code}
-              placeholder="Bỏ trống nếu chưa rõ"
-              onChange={(event) => patch({ supplier_code: event.target.value })}
-            />
+            <Label htmlFor="quote-supplier">Nhà cung cấp</Label>
+            {canPickSupplier ? (
+              //  Mã đang lưu mà không còn trong danh mục (NCC đã ngừng) vẫn hiện nguyên mã, không bị làm trống.
+              <SearchSelect
+                id="quote-supplier"
+                searchInTrigger
+                clearable
+                value={draft.supplier_code}
+                options={supplierOptions}
+                placeholder="Bỏ trống nếu chưa rõ"
+                searchPlaceholder="Tìm theo mã hoặc tên NCC…"
+                onChange={(supplier_code) => patch({ supplier_code })}
+              />
+            ) : (
+              <Input
+                id="quote-supplier"
+                value={draft.supplier_code}
+                placeholder="Bỏ trống nếu chưa rõ"
+                onChange={(event) => patch({ supplier_code: event.target.value })}
+              />
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="quote-price">

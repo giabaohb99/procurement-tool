@@ -4,8 +4,10 @@
  *
  * Tên tham số = tên tham số API của hai màn (`q`, `group`, `scope`, `date_from` / `date_to`, `supplier` lặp khóa, `n`,
  * `trend`, `min_pct`, `only_priced`, `bom_only`, `show_qty`, `sort_by` / `sort_dir`, `page`, `page_size`) — cùng tên bản v1
- * dùng. Giá trị mặc định thì KHÔNG ghi lên URL; `only_priced` mặc định BẬT nên chỉ ghi khi tắt (`only_priced=0`); cờ bật
- * ghi `1`, đọc nhận `1` / `true` / `0` / `false`.
+ * dùng. Giá trị mặc định thì KHÔNG ghi lên URL; cờ bật ghi `1`, đọc nhận `1` / `true` / `0` / `false`.
+ * Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026): MỌI bộ lọc tắt (`scope=all`, `only_priced` tắt), xếp theo Lần 1
+ * ngày mua giảm dần, 20 dòng / trang — nên chỉ ghi `scope=bom` khi chọn phạm vi định mức, `only_priced=1` khi bật; Bảng giá
+ * VTBB giữ mặc định cũ (`scope=bom`, 50 dòng, chưa xếp).
  *
  * URL là dữ liệu từ ngoài vào: ngày phải ISO đúng lịch, khóa xếp phải nằm trong bộ khóa máy chủ nhận, `n` 3 / 5 / 10, cỡ trang
  * nằm trong lựa chọn của chân bảng, chuỗi bị cắt theo `max_length` của máy chủ; thứ hỏng rơi về mặc định chứ không làm màn lỗi.
@@ -19,8 +21,12 @@ import { parsePageParam } from './packaging-filter-url'
 import { validDate } from './packaging-impact-print'
 import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS, sortKeyOutsideN } from './packaging-last-prices'
 
-/** Cỡ trang mặc định của cả hai màn. */
+/** Cỡ trang mặc định của Bảng giá VTBB. */
 export const PACKAGING_LIST_DEFAULT_PAGE_SIZE = 50
+/** Cỡ trang mặc định của Giá mua gần nhất: 20 mã có lần mua gần nhất. */
+export const LAST_PRICES_DEFAULT_PAGE_SIZE = 20
+/** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối). */
+export const LAST_PRICES_DEFAULT_SORT = { by: 'p1_date', dir: 'desc' } as const
 
 const MAX_QUERY_LENGTH = 100
 const MAX_GROUP_LENGTH = 50
@@ -55,25 +61,39 @@ function readFlag(raw: string | null, fallback: boolean): boolean {
   return fallback
 }
 
-function readPageSize(raw: string | null): number {
+function readPageSize(raw: string | null, fallback = PACKAGING_LIST_DEFAULT_PAGE_SIZE): number {
   const size = Number(raw)
-  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(size) ? size : PACKAGING_LIST_DEFAULT_PAGE_SIZE
+  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(size) ? size : fallback
 }
 
-function readScope(raw: string | null): 'bom' | 'all' {
-  return raw === 'all' ? 'all' : 'bom'
+function readScope(raw: string | null, fallback: 'bom' | 'all' = 'bom'): 'bom' | 'all' {
+  return raw === 'all' || raw === 'bom' ? raw : fallback
 }
 
-/** Ghi các khóa dùng chung của hai màn: xếp, trang, cỡ trang (mặc định thì bỏ qua). */
+/**
+ * Ghi các khóa dùng chung của hai màn: xếp, trang, cỡ trang (mặc định thì bỏ qua). `defaults` là mặc định của màn gọi:
+ * Bảng giá VTBB chưa xếp (`by` rỗng) và 50 dòng; Giá mua gần nhất xếp Lần 1 ngày mua giảm dần và 20 dòng.
+ */
 function appendTableSearch(
   search: URLSearchParams,
   table: { sortBy: string; sortDir: 'asc' | 'desc'; page: number; pageSize: number },
+  defaults: { by: string; dir: 'asc' | 'desc'; pageSize: number } = {
+    by: '',
+    dir: 'asc',
+    pageSize: PACKAGING_LIST_DEFAULT_PAGE_SIZE,
+  },
 ): void {
   if (table.sortBy) {
-    search.set('sort_by', table.sortBy)
-    search.set('sort_dir', table.sortDir)
+    if (table.sortBy !== defaults.by || table.sortDir !== defaults.dir) {
+      search.set('sort_by', table.sortBy)
+      search.set('sort_dir', table.sortDir)
+    }
+  } else if (defaults.by) {
+    //  Người dùng bỏ xếp (bấm tiêu đề lần thứ ba) trong khi mặc định là CÓ xếp: URL phải nói rõ, nếu không F5 sẽ quay về xếp mặc định.
+    search.set('sort_by', 'code')
+    search.set('sort_dir', 'asc')
   }
-  if (table.pageSize !== PACKAGING_LIST_DEFAULT_PAGE_SIZE) search.set('page_size', String(table.pageSize))
+  if (table.pageSize !== defaults.pageSize) search.set('page_size', String(table.pageSize))
   if (table.page > 1) search.set('page', String(table.page))
 }
 
@@ -142,13 +162,13 @@ export const DEFAULT_LAST_PRICES_FILTERS: LastPricesFilters = {
   q: '',
   group: '',
   n: LAST_PRICE_DEFAULT_N,
-  scope: 'bom',
+  scope: 'all',
   suppliers: [],
   from: '',
   to: '',
   trend: 'all',
   minPct: 0,
-  onlyPriced: true,
+  onlyPriced: false,
   bomOnly: false,
   showQty: false,
 }
@@ -168,12 +188,19 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
   const trend = search.get('trend')
   const range = readDateRange(search)
   //  Khóa xếp theo lần k vượt số lần đang hiện thì không còn cột để xếp (cùng luật `sortKeyOutsideN` của màn).
-  const sortBy = validSortKey(
+  const urlSortBy = validSortKey(
     search.get('sort_by'),
     (key) =>
       (LAST_PRICES_STATIC_SORT_KEYS.includes(key) || LAST_PRICES_SLOT_SORT_KEY.test(key)) &&
       !sortKeyOutsideN(key, n),
   )
+  //  Không có khóa xếp hợp lệ trên URL = xếp mặc định (Lần 1 ngày mua giảm dần).
+  const sortBy = urlSortBy || LAST_PRICES_DEFAULT_SORT.by
+  const sortDir = urlSortBy
+    ? search.get('sort_dir') === 'desc'
+      ? 'desc'
+      : 'asc'
+    : LAST_PRICES_DEFAULT_SORT.dir
   const suppliers = [
     ...new Set(
       search
@@ -187,20 +214,20 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
       q: readText(search.get('q'), MAX_QUERY_LENGTH),
       group: readText(search.get('group'), MAX_GROUP_LENGTH),
       n,
-      scope: readScope(search.get('scope')),
+      scope: readScope(search.get('scope'), 'all'),
       suppliers,
       from: range.from,
       to: range.to,
       trend: LAST_PRICE_TRENDS.includes(trend as LastPricesTrend) ? (trend as LastPricesTrend) : 'all',
       minPct: readMinPct(search.get('min_pct')),
-      onlyPriced: readFlag(search.get('only_priced'), true),
+      onlyPriced: readFlag(search.get('only_priced'), false),
       bomOnly: readFlag(search.get('bom_only'), false),
       showQty: readFlag(search.get('show_qty'), false),
     },
     sortBy,
-    sortDir: sortBy && search.get('sort_dir') === 'desc' ? 'desc' : 'asc',
+    sortDir,
     page: parsePageParam(search.get('page')),
-    pageSize: readPageSize(search.get('page_size')),
+    pageSize: readPageSize(search.get('page_size'), LAST_PRICES_DEFAULT_PAGE_SIZE),
   }
 }
 
@@ -212,15 +239,18 @@ export function buildLastPricesUrlSearch(state: LastPricesUrlState): string {
   if (q) search.set('q', q)
   if (filters.group) search.set('group', filters.group)
   if (filters.n !== LAST_PRICE_DEFAULT_N) search.set('n', String(filters.n))
-  if (filters.scope !== 'bom') search.set('scope', filters.scope)
+  if (filters.scope !== DEFAULT_LAST_PRICES_FILTERS.scope) search.set('scope', filters.scope)
   for (const code of filters.suppliers) search.append('supplier', code)
   if (filters.from) search.set('date_from', filters.from)
   if (filters.to) search.set('date_to', filters.to)
   if (filters.trend !== 'all') search.set('trend', filters.trend)
   if (filters.minPct > 0) search.set('min_pct', String(filters.minPct))
-  if (!filters.onlyPriced) search.set('only_priced', '0')
+  if (filters.onlyPriced) search.set('only_priced', '1')
   if (filters.bomOnly) search.set('bom_only', '1')
   if (filters.showQty) search.set('show_qty', '1')
-  appendTableSearch(search, state)
+  appendTableSearch(search, state, {
+    ...LAST_PRICES_DEFAULT_SORT,
+    pageSize: LAST_PRICES_DEFAULT_PAGE_SIZE,
+  })
   return search.toString()
 }

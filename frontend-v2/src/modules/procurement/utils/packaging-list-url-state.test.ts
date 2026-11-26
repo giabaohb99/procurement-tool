@@ -80,13 +80,13 @@ describe('Giá mua gần nhất URL state', () => {
         q: 'chai',
         group: 'Chai',
         n: 10,
-        scope: 'all',
+        scope: 'bom',
         suppliers: ['NCC01', 'NCC02'],
         from: '2026-02-01',
         to: '2026-03-01',
         trend: 'up',
         minPct: 7.5,
-        onlyPriced: false,
+        onlyPriced: true,
         bomOnly: true,
         showQty: true,
       },
@@ -97,25 +97,58 @@ describe('Giá mua gần nhất URL state', () => {
     }
     const query = buildLastPricesUrlSearch(state)
     const params = new URLSearchParams(query)
+    expect(params.get('scope')).toBe('bom')
     expect(params.getAll('supplier')).toEqual(['NCC01', 'NCC02'])
     expect(params.get('n')).toBe('10')
     expect(params.get('min_pct')).toBe('7.5')
-    expect(params.get('only_priced')).toBe('0')
+    expect(params.get('only_priced')).toBe('1')
     expect(params.get('bom_only')).toBe('1')
     expect(params.get('show_qty')).toBe('1')
     expect(params.get('trend')).toBe('up')
     expect(parseLast(query)).toEqual(state)
   })
 
-  it('writes nothing for the default state (only_priced on, n = 5)', () => {
+  it('opens with every filter off, sorted by Lần 1 ngày mua descending, 20 rows, and writes nothing', () => {
     const state = parseLast('')
     expect(state.filters).toEqual(DEFAULT_LAST_PRICES_FILTERS)
+    expect(state.filters).toMatchObject({ scope: 'all', onlyPriced: false, bomOnly: false, showQty: false, n: 5 })
+    expect(state).toMatchObject({ sortBy: 'p1_date', sortDir: 'desc', page: 1, pageSize: 20 })
     expect(buildLastPricesUrlSearch(state)).toBe('')
   })
 
+  it('writes scope=bom and only_priced=1 only when they differ from the defaults', () => {
+    const state = parseLast('')
+    const query = buildLastPricesUrlSearch({
+      ...state,
+      filters: { ...state.filters, scope: 'bom', onlyPriced: true },
+    })
+    expect(query).toBe('scope=bom&only_priced=1')
+    const back = parseLast(query)
+    expect(back.filters.scope).toBe('bom')
+    expect(back.filters.onlyPriced).toBe(true)
+  })
+
+  it('treats a legacy only_priced=0 / scope=bom link as before and keeps explicit sort / page size', () => {
+    expect(parseLast('only_priced=0').filters.onlyPriced).toBe(false)
+    const state = parseLast('sort_by=code&sort_dir=asc&page_size=50')
+    expect(state).toMatchObject({ sortBy: 'code', sortDir: 'asc', pageSize: 50 })
+    expect(buildLastPricesUrlSearch(state)).toBe('sort_by=code&sort_dir=asc&page_size=50')
+  })
+
+  it('keeps a cleared sort across F5 by writing the server default order explicitly', () => {
+    const state = { ...parseLast(''), sortBy: '', sortDir: 'asc' as const }
+    expect(buildLastPricesUrlSearch(state)).toBe('sort_by=code&sort_dir=asc')
+  })
+
+  it('writes the sort once its direction differs from the default (p1_date ascending)', () => {
+    const state = parseLast('sort_by=p1_date&sort_dir=asc')
+    expect(state).toMatchObject({ sortBy: 'p1_date', sortDir: 'asc' })
+    expect(buildLastPricesUrlSearch(state)).toBe('sort_by=p1_date&sort_dir=asc')
+  })
+
   it('accepts true / false spellings for flags', () => {
-    const filters = parseLast('only_priced=false&bom_only=true&show_qty=1').filters
-    expect(filters.onlyPriced).toBe(false)
+    const filters = parseLast('only_priced=true&bom_only=true&show_qty=1').filters
+    expect(filters.onlyPriced).toBe(true)
     expect(filters.bomOnly).toBe(true)
     expect(filters.showQty).toBe(true)
   })
@@ -127,17 +160,18 @@ describe('Giá mua gần nhất URL state', () => {
     expect(state.filters.n).toBe(5)
     expect(state.filters.trend).toBe('all')
     expect(state.filters.minPct).toBe(0)
-    expect(state.filters.onlyPriced).toBe(true)
+    expect(state.filters.onlyPriced).toBe(false)
     expect(state.filters.from).toBe('')
-    expect(state.sortBy).toBe('')
+    expect(state.sortBy).toBe('p1_date')
+    expect(state.sortDir).toBe('desc')
     expect(state.page).toBe(1)
-    expect(state.pageSize).toBe(50)
+    expect(state.pageSize).toBe(20)
   })
 
   it('drops a sort slot beyond the shown purchase count and blank / duplicate suppliers', () => {
-    expect(parseLast('n=3&sort_by=p4_price').sortBy).toBe('')
+    expect(parseLast('n=3&sort_by=p4_price').sortBy).toBe('p1_date')
     expect(parseLast('n=3&sort_by=p3_date&sort_dir=desc').sortBy).toBe('p3_date')
-    expect(parseLast('sort_by=p11_price').sortBy).toBe('')
+    expect(parseLast('sort_by=p11_price').sortBy).toBe('p1_date')
     expect(parseLast('supplier=A&supplier=&supplier=A&supplier=B').filters.suppliers).toEqual(['A', 'B'])
   })
 })
