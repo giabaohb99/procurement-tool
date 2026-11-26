@@ -85,10 +85,11 @@ export default function PackagingPriceList() {
     { key: 'name', label: 'Tên vật tư', width: 250, sort: 'name', card: 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
     { key: 'group', label: 'Nhóm', width: 90, sort: 'group', cell: (r) => r.group },
     { key: 'unit', label: 'ĐVT', width: 70, cell: (r) => r.unit },
-    //  Mọi giá của bảng này tính bằng đồng Việt Nam (người chủ chốt 26/11/2026) — cột chỉ để ghi rõ đơn vị tiền.
-    { key: 'currency', label: 'Tiền tệ', width: 80, cell: () => 'VND' },
     { key: 'purchase_count', label: 'Số lần mua', width: 90, align: 'right', sort: 'purchase_count', cell: (r) => r.purchase_count },
     { key: 'last_date', label: 'Mua gần nhất', width: 110, sort: 'last_date', cell: (r) => (r.last_date ? fmtDateStr(r.last_date) : <Dash />) },
+    //  Mọi giá của bảng này tính bằng đồng Việt Nam (người chủ chốt 26/11/2026) — cột chỉ để ghi rõ đơn vị tiền, đặt
+    //  ngay trước cột giá đầu tiên để luôn thấy cạnh các cột giá (đặt sau ĐVT thì bị cuộn ngang che mất).
+    { key: 'currency', label: 'Tiền tệ', width: 80, cell: () => 'VND' },
     { key: 'last_purchase_price', label: 'Giá mua gần nhất', width: 120, align: 'right', sort: 'last_purchase_price', cell: (r) => <PriceText value={r.last_purchase_price} /> },
     { key: 'prev_purchase_price', label: 'Giá mua lần trước', width: 120, align: 'right', sort: 'prev_purchase_price', cell: (r) => <PriceText value={r.prev_purchase_price} /> },
     {

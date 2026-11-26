@@ -48,8 +48,6 @@ export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListCol
         },
         { key: 'group', header: 'Nhóm', width: 100, sortable: true, cell: (row) => row.group },
         { key: 'unit', header: 'ĐVT', width: 70, cell: (row) => row.unit },
-        //  Mọi giá của bảng này tính bằng đồng Việt Nam (người chủ chốt 26/11/2026) — cột chỉ để ghi rõ đơn vị tiền.
-        { key: 'currency', header: 'Tiền tệ', width: 80, cell: () => 'VND' },
         {
           key: 'purchase_count',
           header: 'Số lần mua',
@@ -67,6 +65,9 @@ export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListCol
           sortDescFirst: true,
           cell: (row) => (row.last_date ? formatDate(row.last_date) : <EmptyDash />),
         },
+        //  Mọi giá của bảng này tính bằng đồng Việt Nam (người chủ chốt 26/11/2026) — cột chỉ để ghi rõ đơn vị tiền, đặt
+        //  ngay trước cột giá đầu tiên để luôn thấy cạnh các cột giá (đặt sau ĐVT thì bị cuộn ngang che mất).
+        { key: 'currency', header: 'Tiền tệ', width: 80, cell: () => 'VND' },
         {
           key: 'last_purchase_price',
           header: 'Giá mua gần nhất',
