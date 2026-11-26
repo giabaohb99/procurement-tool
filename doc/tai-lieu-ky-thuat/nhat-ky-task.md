@@ -142,6 +142,8 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
   chưa trả. PO01218 cùng mã đã là 2.900 sẵn nên không đụng. Sao lưu trước khi ghi (`prod_truoc_release_20261126_1657.sql.gz`).
 - Mở quyền nhập liệu cho vai trò **Quản lý thu mua** (3 tài khoản): thêm dòng quyền *Giá bao bì* gồm xem, tạo, sửa, xóa, xuất,
   phạm vi tất cả; 27 dòng quyền cũ của vai trò giữ nguyên. Sao lưu trước (`prod_truoc_release_20261126_1717.sql.gz`).
+- Dev: dựng lại api theo erp-v2 `7c67e072` (cùng bản 2.25.0), rồi tạo vai trò và quyền giống prod theo đúng luật trên: vai trò
+  **Giá nguyên vật liệu** gán 44 tài khoản (dev có thêm tài khoản thử), Quản lý thu mua có quyền nhập liệu.
 
 **Chưa làm:** Nhân viên thu mua, nhà máy và phòng Dego Lab chỉ xem và xuất, chưa có quyền nhập liệu. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
 
