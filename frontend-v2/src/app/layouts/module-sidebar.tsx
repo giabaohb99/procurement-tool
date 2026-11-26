@@ -108,8 +108,15 @@ const navSubItemClass = [
 const groupLabelClass =
   'px-3 text-[0.6875rem] font-semibold tracking-wider text-muted-foreground uppercase'
 
-/** Tiêu đề nhóm chứa màn đang xem: chữ đậm, màu chữ chính — biết ngay mình đang ở cụm nào (26/11/2026). */
-const groupLabelActiveClass = 'font-bold text-foreground'
+/**
+ * Tiêu đề nhóm chứa màn đang xem: chữ xanh thương hiệu (cùng màu dòng đang sáng), in đậm, vạch xanh 3px bên trái —
+ * biết ngay mình đang ở cụm nào (người chủ chốt 26/11/2026, duoc-CR-784; giao diện cũ cùng kiểu).
+ */
+const groupLabelActiveClass = [
+  'relative font-bold text-sidebar-active-foreground',
+  'before:absolute before:top-1/2 before:left-0.5 before:h-3.5 before:w-[3px] before:-translate-y-1/2',
+  'before:rounded-full before:bg-sidebar-active-foreground before:content-[""]',
+].join(' ')
 
 /**
  * Menu trái của MỘT phân hệ, dựng trên `Sidebar` của shadcn — thu gọn còn icon,

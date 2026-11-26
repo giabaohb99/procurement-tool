@@ -233,10 +233,21 @@ button.nav-group-title:hover {
   color: #1b2559;
 }
 
-/* Nhóm chứa màn đang xem: tiêu đề in đậm, màu chữ chính (người chủ chốt 26/11/2026, duoc-CR-784). */
+/* Nhóm chứa màn đang xem: tiêu đề xanh thương hiệu, in đậm, vạch xanh bên trái (người chủ chốt 26/11/2026, duoc-CR-784). */
 button.nav-group-title.has-active {
-  color: #1b2559;
+  position: relative;
+  color: #00aeef;
   font-weight: 800;
+}
+button.nav-group-title.has-active::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  bottom: 5px;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: #00aeef;
 }
 
 .main {
