@@ -234,7 +234,8 @@ export type LastPricesTrend = 'all' | 'up' | 'down' | 'flat'
 export interface PackagingLastPricesParams {
   n?: number
   q?: string
-  group?: string
+  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 50. */
+  group?: string[]
   supplier?: string[]
   date_from?: string
   date_to?: string

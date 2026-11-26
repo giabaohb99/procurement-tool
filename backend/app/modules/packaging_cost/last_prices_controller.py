@@ -4,8 +4,10 @@ Router con, gắn vào `impact_controller.router` (cùng tiền tố `/api/packa
 Phạm vi dữ liệu theo PHÁP NHÂN đo trên sổ giá — cùng luật với Tác động giá / Bảng giá.
 """
 from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import StringConstraints
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -19,6 +21,8 @@ from .last_prices_service import DEFAULT_N, MAX_N, build_last_prices
 
 ENTITY = "packaging_cost"
 MAX_PAGE_SIZE = 500
+MAX_GROUPS = 50      #  số nhóm tối đa trong một lần gọi (chip nhóm bật nhiều cùng lúc)
+GroupValue = Annotated[str, StringConstraints(max_length=50)]    #  độ dài từng tên nhóm (cột item_group dài 50)
 router = APIRouter()
 
 
@@ -28,7 +32,8 @@ def view_scope(db: Session, user, action: str):
 
 
 def last_price_filters(
-    n: int = Query(DEFAULT_N, ge=2, le=MAX_N), q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+    n: int = Query(DEFAULT_N, ge=2, le=MAX_N), q: str = Query("", max_length=100),
+    group: list[GroupValue] = Query([], max_length=MAX_GROUPS),
     supplier: list[str] = Query([], max_length=50), date_from: date | None = None, date_to: date | None = None,
     trend: str = Query("all", pattern="^(all|up|down|flat)$"), min_pct: float | None = Query(None, ge=0, le=100000),
     only_priced: bool = True, bom_only: bool = False, scope: str = Query("bom", pattern="^(bom|all)$"),
@@ -37,7 +42,7 @@ def last_price_filters(
     """Bộ tham số lọc + xếp dùng chung cho danh sách và Xuất Excel (cùng thứ tự)."""
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "Từ ngày không được sau Đến ngày")
-    return {"n": n, "q": q, "group": group, "suppliers": supplier, "date_from": date_from, "date_to": date_to,
+    return {"n": n, "q": q, "groups": group, "suppliers": supplier, "date_from": date_from, "date_to": date_to,
             "trend": trend, "min_pct": min_pct, "only_priced": only_priced, "bom_only": bom_only, "scope": scope,
             "sort_by": sort_by, "sort_dir": sort_dir}
 
@@ -50,12 +55,13 @@ def last_prices(filters: dict = Depends(last_price_filters), page: int = Query(1
 
     `n` = số lần hiển thị (2–10, mặc định 5). Lần 1 là lần mua có giá (> 0) gần nhất; `purchases` xếp từ gần nhất tới xa
     nhất. `v12` / `v1n` là tỷ số biến động lần 1 so lần 2 / lần n (0,05 = +5%). Bộ lọc: `q` (mã, tên, nhóm, nhà cung cấp),
-    `group`, `supplier` (lặp được — giữ mã có nhà cung cấp đó trong n lần đang hiện), `date_from` / `date_to` (chỉ các lần
+    `group` (lặp được, `group=Chai&group=Nắp` = nhóm Chai HOẶC Nắp; tối đa 50 nhóm, mỗi tên <= 50 ký tự; chỉ một giá trị vẫn
+    nhận như cũ), `supplier` (lặp được — giữ mã có nhà cung cấp đó trong n lần đang hiện), `date_from` / `date_to` (chỉ các lần
     mua trong khoảng được xếp hạng), `trend` (all / up / down / flat — lần 1 so lần 2), `min_pct` (|biến động| >= %),
     `only_priced` (mặc định bật), `bom_only` (chỉ mã thành phần của định mức), `scope=bom|all`. `sort_by` là khóa cột
     (`code, name, group, unit, purchase_count, last_price, last_date, v12, v1n, avg` hoặc `p{k}_price` / `p{k}_date`), ô
     trống xuống cuối. Trả thêm `groups` (số mã mỗi nhóm) và `suppliers` (để vẽ chip / ô chọn, chưa áp `q`, `group`,
-    `supplier`, `trend`, `min_pct`). Quyền `packaging_cost.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
+    `supplier`, `trend`, `min_pct`; `groups` đếm sau mọi bộ lọc trừ chính bộ lọc nhóm). Quyền `packaging_cost.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
     """
     res = build_last_prices(db, **filters, scope_cond=view_scope(db, user, "read"))
     start = (page - 1) * page_size

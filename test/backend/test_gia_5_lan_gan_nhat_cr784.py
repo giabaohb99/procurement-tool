@@ -177,7 +177,7 @@ def test_pham_vi_cong_ty_chi_thay_lan_mua_cua_phap_nhan_minh(db, seed, cap_quyen
 
 # ── Số truy vấn ─────────────────────────────────────────────────────────────────
 def test_so_truy_van_la_5_va_khong_phu_thuoc_so_ma_so_lan_hay_bo_loc(db, world):
-    busy = dict(q="chai", group="Chai", suppliers=["NCC01"], date_from=date(2026, 1, 1), date_to=date(2026, 12, 31),
+    busy = dict(q="chai", groups=["Chai", "Nắp"], suppliers=["NCC01"], date_from=date(2026, 1, 1), date_to=date(2026, 12, 31),
                 trend="up", min_pct=1.0, bom_only=True, sort_by="p2_price", sort_dir="desc")
     _, small = count_queries(db, lambda: build_last_prices(db))
     for i in range(120):
@@ -238,7 +238,8 @@ def test_n_10_co_6_lan_thi_lan_1_so_lan_10_trong(api):
 
 
 @pytest.mark.parametrize("params", [{"n": 1}, {"n": 11}, {"trend": "sideways"}, {"min_pct": -1},
-                                    {"date_from": "2026-05-01", "date_to": "2026-01-01"}])
+                                    {"date_from": "2026-05-01", "date_to": "2026-01-01"},
+                                    {"group": "x" * 51}, {"group": ["Chai", "x" * 51]}, {"group": [f"G{i}" for i in range(51)]}])
 def test_tham_so_sai_la_422(api, params):
     assert api.get(URL, params=params).status_code == 422
 
@@ -349,3 +350,34 @@ def test_chip_nhom_dem_theo_moi_bo_loc_tru_bo_loc_nhom(db, api):
     assert _items(api, date_from="2026-06-01")["groups"] == [{"group": "Chai", "count": 1}]
     assert _items(api, supplier=["NCC_LA"], group="Chai")["groups"] == [{"group": "Nắp", "count": 1}]   # nhóm không tự co chính nó
     assert _items(api, supplier=["NCC_LA"], group="Chai")["items"] == []
+
+
+# ── Chip nhóm bật / tắt, chọn nhiều nhóm cùng lúc (HOẶC) ────────────────────────────
+@pytest.fixture
+def grouped(db, moves):
+    """CPT0105 + DWN01 = Chai, NAP0085 = Nắp, FLT01 = Nhãn."""
+    for code, grp in (("CPT0105", "Chai"), ("DWN01", "Chai"), ("NAP0085", "Nắp"), ("FLT01", "Nhãn")):
+        db.query(Product).filter_by(code=code).update({"item_group": grp})
+    db.commit()
+
+
+def test_nhieu_nhom_la_hoac_mot_nhom_va_ten_nhom_cu_van_nhan(api, grouped):
+    codes = lambda **kw: sorted(r["code"] for r in _items(api, **kw)["items"])  # noqa: E731
+    assert codes() == ["CPT0105", "DWN01", "FLT01", "NAP0085"]                       # không chọn nhóm nào = không lọc
+    assert codes(group="Chai") == ["CPT0105", "DWN01"]                               # một giá trị (cách gọi cũ)
+    assert codes(group=["Chai", "Nắp"]) == ["CPT0105", "DWN01", "NAP0085"]           # HOẶC
+    assert codes(group=["nap", "NHAN"]) == ["FLT01", "NAP0085"]                      # không dấu, không phân biệt hoa thường
+    assert codes(group=["", "Nắp"]) == ["NAP0085"]                                   # giá trị rỗng bị bỏ
+    assert codes(group=[""]) == ["CPT0105", "DWN01", "FLT01", "NAP0085"]
+    assert codes(group=["Chai", "Nắp"], trend="up") == ["CPT0105"]                   # cộng với bộ lọc khác theo VÀ
+
+
+def test_chip_nhom_khong_doi_khi_chon_nhom_va_xuat_excel_theo_nhieu_nhom(api, grouped):
+    base = _items(api)["groups"]
+    assert base == [{"group": "Chai", "count": 2}, {"group": "Nắp", "count": 1}, {"group": "Nhãn", "count": 1}]
+    for picked in (["Chai"], ["Chai", "Nắp"], ["Nhãn", "Nắp", "Chai"]):
+        assert _items(api, group=picked)["groups"] == base                           # chip không tự co theo nhóm đang bật
+    assert _items(api, group=["Nắp"], trend="down")["groups"] == [{"group": "Chai", "count": 1}]   # nhưng co theo bộ lọc khác
+    res = api.get(URL + "/export", params={"group": ["Chai", "Nắp"]})
+    _, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content)).active)
+    assert sorted(r[0].value for r in rows) == ["CPT0105", "DWN01", "NAP0085"]

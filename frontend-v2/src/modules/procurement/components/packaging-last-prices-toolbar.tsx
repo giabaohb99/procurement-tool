@@ -2,7 +2,8 @@
  * duoc-CR-784 — thanh lọc của tab Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng"
  * chỉ đổi cột hiện (Excel thêm cột theo cờ `show_qty` cùng giá trị).
  *
- * Hàng 1: ô tìm + chip nhóm (kèm số mã). Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
+ * Hàng 1: ô tìm + chip nhóm (kèm số mã; bấm bật / tắt, bật nhiều nhóm cùng lúc = HOẶC, không chip nào bật = mọi nhóm).
+ * Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
  * ngưỡng %, và các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 import { ChevronDown, Search } from 'lucide-react'
@@ -29,8 +30,8 @@ import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS } from '../utils/packaging-l
 
 export interface LastPricesFilters {
   q: string
-  /** Rỗng = mọi nhóm. */
-  group: string
+  /** Tên các nhóm đang bật (chip); rỗng = mọi nhóm. */
+  groups: string[]
   n: number
   scope: 'bom' | 'all'
   /** Mã nhà cung cấp đã chọn; rỗng = không lọc. */
@@ -61,7 +62,6 @@ function countExtraOptions(filters: LastPricesFilters): number {
 }
 
 const TREND_LABELS: [LastPricesTrend, string][] = [
-  ['all', 'Tất cả'],
   ['up', 'Tăng'],
   ['down', 'Giảm'],
   ['flat', 'Không đổi'],
@@ -121,10 +121,19 @@ export function PackagingLastPricesToolbar({
   const [expanded, setExpanded] = useState(false)
   const showExtra = !isMobile || expanded
   const extraCount = countExtraOptions(filters)
-  const total = groups.reduce((sum, item) => sum + item.count, 0)
-  const chips = [{ group: '', label: `Tất cả (${total})` }].concat(
-    groups.map((item) => ({ group: item.group, label: `${item.group} (${item.count})` })),
-  )
+  //  Chip bật / tắt từng nhóm (không có chip "Tất cả"): tên nhóm đã bật mà không còn chip nào (số đếm về 0) vẫn hiện để tắt được.
+  const chips = [
+    ...groups.map((item) => ({ group: item.group, label: `${item.group} (${item.count})` })),
+    ...filters.groups
+      .filter((name) => !groups.some((item) => item.group === name))
+      .map((name) => ({ group: name, label: `${name} (0)` })),
+  ]
+  const toggleGroup = (name: string) =>
+    patch({
+      groups: filters.groups.includes(name)
+        ? filters.groups.filter((item) => item !== name)
+        : [...filters.groups, name],
+    })
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -142,13 +151,13 @@ export function PackagingLastPricesToolbar({
         <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc theo nhóm">
           {chips.map((chip) => (
             <button
-              key={chip.group || 'all'}
+              key={chip.group}
               type="button"
-              aria-pressed={filters.group === chip.group}
-              onClick={() => patch({ group: chip.group })}
+              aria-pressed={filters.groups.includes(chip.group)}
+              onClick={() => toggleGroup(chip.group)}
               className={cn(
                 'h-8 rounded-full border px-3 text-sm hover:bg-accent',
-                filters.group === chip.group &&
+                filters.groups.includes(chip.group) &&
                   'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
               )}
             >
@@ -228,8 +237,9 @@ export function PackagingLastPricesToolbar({
                 type="single"
                 variant="outline"
                 size="sm"
-                value={filters.trend}
-                onValueChange={(value) => value && patch({ trend: value as LastPricesTrend })}
+                //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
+                value={filters.trend === 'all' ? '' : filters.trend}
+                onValueChange={(value) => patch({ trend: (value || 'all') as LastPricesTrend })}
                 aria-label="Biến động lần 1 so lần 2"
               >
                 {TREND_LABELS.map(([value, label]) => (

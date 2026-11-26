@@ -78,7 +78,7 @@ describe('Giá mua gần nhất URL state', () => {
     const state: LastPricesUrlState = {
       filters: {
         q: 'chai',
-        group: 'Chai',
+        groups: ['Chai', 'Nắp'],
         n: 10,
         scope: 'bom',
         suppliers: ['NCC01', 'NCC02'],
@@ -98,6 +98,7 @@ describe('Giá mua gần nhất URL state', () => {
     const query = buildLastPricesUrlSearch(state)
     const params = new URLSearchParams(query)
     expect(params.get('scope')).toBe('bom')
+    expect(params.getAll('group')).toEqual(['Chai', 'Nắp'])
     expect(params.getAll('supplier')).toEqual(['NCC01', 'NCC02'])
     expect(params.get('n')).toBe('10')
     expect(params.get('min_pct')).toBe('7.5')
@@ -114,6 +115,22 @@ describe('Giá mua gần nhất URL state', () => {
     expect(state.filters).toMatchObject({ scope: 'all', onlyPriced: false, bomOnly: false, showQty: false, n: 5 })
     expect(state).toMatchObject({ sortBy: 'p1_date', sortDir: 'desc', page: 1, pageSize: 20 })
     expect(buildLastPricesUrlSearch(state)).toBe('')
+  })
+
+  it('reads the legacy single group= and writes trend only when one is picked', () => {
+    const legacy = parseLast('group=N%E1%BA%AFp')
+    expect(legacy.filters.groups).toEqual(['Nắp'])
+    expect(buildLastPricesUrlSearch(legacy)).toBe('group=N%E1%BA%AFp')
+    const repeated = parseLast('group=Chai&group=Chai&group=&group=N%E1%BA%AFp&trend=down')
+    expect(repeated.filters).toMatchObject({ groups: ['Chai', 'Nắp'], trend: 'down' })
+    expect(buildLastPricesUrlSearch(parseLast('trend=all'))).toBe('')
+    expect(parseLast('trend=all').filters.trend).toBe('all')
+  })
+
+  it('caps the number and length of groups read from the URL', () => {
+    const many = Array.from({ length: 80 }, (_, i) => `group=G${i}`).join('&')
+    expect(parseLast(many).filters.groups).toHaveLength(50)
+    expect(parseLast(`group=${'a'.repeat(120)}`).filters.groups[0]).toHaveLength(50)
   })
 
   it('writes scope=bom and only_priced=1 only when they differ from the defaults', () => {

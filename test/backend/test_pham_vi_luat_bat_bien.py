@@ -360,6 +360,11 @@ BB4_CONTROLLER_MIEN_TRU = {
                                                       "ProductPriceLedger, 'packaging_cost', …) và truyền scope_cond vào "
                                                       "build_product_overview; bài dò tên hàm trong tệp không thấy vì lời "
                                                       "gọi nằm ở tệp kia",
+    "packaging_cost/batch_purge_controller.py": "duoc-CR-784 phase 07: xóa dữ liệu theo LÔ NHẬP = đảo ngược đúng một lần "
+                                                "nhập Excel, chỉ đụng dòng mang import_batch_id / source_id của lô đó; gác kép "
+                                                "import.read + packaging_cost.delete (ngang quyền nhập). Định mức và báo giá là "
+                                                "danh mục dùng chung không có cột pháp nhân; dòng sổ Misa của lô mang pháp nhân "
+                                                "người nhập chọn lúc nạp, không lọc thêm theo phạm vi xem",
     "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá — danh mục dùng chung, không có cột "
                                                "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_cost', …) "
                                                "từng route. Giá chỉ ĐI VÀO màn Tác động qua `get_price_states` (có scope_cond)",

@@ -153,7 +153,8 @@ export const LAST_PRICE_DEFAULT_N = 5
 
 export interface LastPricesFilters {
   q: string
-  group: string
+  /** Tên các nhóm đang bật (chip bật / tắt); rỗng = mọi nhóm. */
+  groups: string[]
   n: number
   scope: 'bom' | 'all'
   suppliers: string[]
@@ -168,7 +169,7 @@ export interface LastPricesFilters {
 
 /** Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026): mọi bộ lọc TẮT — mọi mã, không ép "chỉ mã đã có giá". */
 export const EMPTY_LAST_PRICES_FILTERS: LastPricesFilters = {
-  q: '', group: '', n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
+  q: '', groups: [], n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
   trend: 'all', minPct: 0, onlyPriced: false, bomOnly: false, showQty: false,
 }
 /** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối) — 20 mã gần nhất. */
@@ -197,7 +198,7 @@ export function buildLastPricesParams(
   return {
     n: f.n,
     q: search.trim() || undefined,
-    group: f.group || undefined,
+    group: f.groups.length ? f.groups : undefined,
     supplier: f.suppliers.length ? f.suppliers : undefined,
     date_from: f.from || undefined,
     date_to: f.to || undefined,

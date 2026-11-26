@@ -289,7 +289,8 @@ export interface PackagingLastPricesParams {
   /** Số lần mua hiển thị, 2–10 (mặc định 5). */
   n?: number
   q?: string
-  group?: string
+  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 50. */
+  group?: string[]
   /** Mã nhà cung cấp; mã có nhà cung cấp đó trong `n` lần đang hiện thì giữ. */
   supplier?: string[]
   date_from?: string

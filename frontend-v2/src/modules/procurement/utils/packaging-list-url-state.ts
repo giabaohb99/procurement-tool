@@ -32,6 +32,7 @@ const MAX_QUERY_LENGTH = 100
 const MAX_GROUP_LENGTH = 50
 const MAX_SUPPLIER_LENGTH = 50
 const MAX_SUPPLIERS = 50
+const MAX_GROUPS = 50
 const MAX_MIN_PCT = 10_000
 const LAST_PRICE_TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 
@@ -160,7 +161,7 @@ export interface LastPricesUrlState {
 
 export const DEFAULT_LAST_PRICES_FILTERS: LastPricesFilters = {
   q: '',
-  group: '',
+  groups: [],
   n: LAST_PRICE_DEFAULT_N,
   scope: 'all',
   suppliers: [],
@@ -209,10 +210,19 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
         .filter(Boolean),
     ),
   ].slice(0, MAX_SUPPLIERS)
+  //  `group` lặp khóa như `supplier`; bản cũ chỉ ghi MỘT `group=` thì vẫn đọc ra đúng một nhóm.
+  const groups = [
+    ...new Set(
+      search
+        .getAll('group')
+        .map((name) => readText(name, MAX_GROUP_LENGTH))
+        .filter(Boolean),
+    ),
+  ].slice(0, MAX_GROUPS)
   return {
     filters: {
       q: readText(search.get('q'), MAX_QUERY_LENGTH),
-      group: readText(search.get('group'), MAX_GROUP_LENGTH),
+      groups,
       n,
       scope: readScope(search.get('scope'), 'all'),
       suppliers,
@@ -237,7 +247,7 @@ export function buildLastPricesUrlSearch(state: LastPricesUrlState): string {
   const search = new URLSearchParams()
   const q = filters.q.trim()
   if (q) search.set('q', q)
-  if (filters.group) search.set('group', filters.group)
+  for (const name of filters.groups) search.append('group', name)
   if (filters.n !== LAST_PRICE_DEFAULT_N) search.set('n', String(filters.n))
   if (filters.scope !== DEFAULT_LAST_PRICES_FILTERS.scope) search.set('scope', filters.scope)
   for (const code of filters.suppliers) search.append('supplier', code)

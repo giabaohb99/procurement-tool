@@ -65,7 +65,7 @@ describe('purchaseGroupLabel', () => {
 
 const FILTERS: LastPricesFilters = {
   q: 'raw',
-  group: '',
+  groups: [],
   n: 5,
   scope: 'bom',
   suppliers: [],
@@ -92,7 +92,7 @@ describe('buildLastPricesParams', () => {
       {
         ...FILTERS,
         n: 10,
-        group: 'Chai',
+        groups: ['Chai', 'Nắp'],
         suppliers: ['PHL', 'NCC02'],
         from: '2026-01-01',
         to: '2026-06-30',
@@ -108,7 +108,7 @@ describe('buildLastPricesParams', () => {
     expect(params).toEqual({
       n: 10,
       q: 'nap',
-      group: 'Chai',
+      group: ['Chai', 'Nắp'],
       supplier: ['PHL', 'NCC02'],
       date_from: '2026-01-01',
       date_to: '2026-06-30',

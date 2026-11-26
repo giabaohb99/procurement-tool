@@ -1,7 +1,8 @@
 /**
  * duoc-CR-784 — trạng thái màn hình <-> chuỗi truy vấn của URL cho hai màn Bảng giá VTBB và Giá mua gần nhất (bản v1),
  * để F5 / gửi link vẫn giữ từ khóa, chip nhóm, phạm vi, khoảng ngày, nhà cung cấp, cột xếp và trang. Tên tham số trùng tên
- * tham số API của hai màn (và bản v2): `q` · `group` · `scope` · `only_priced` · `date_from` / `date_to` · `supplier`
+ * tham số API của hai màn (và bản v2): `q` · `group` (Giá mua gần nhất: lặp khóa như `supplier`, bật nhiều chip nhóm; link cũ
+ * chỉ một `group=` vẫn đọc được) · `scope` · `only_priced` · `date_from` / `date_to` · `supplier`
  * (lặp khóa như API: `supplier=a&supplier=b`) · `n` (3 / 5 / 10) · `show_qty` · `trend` · `min_pct` · `bom_only` · `sort_by` / `sort_dir` ·
  * `page` / `page_size`. Giá trị mặc định không ghi để link gọn. Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026):
  * mọi bộ lọc tắt (`scope=all`, `only_priced` tắt), xếp Lần 1 ngày mua giảm dần, 20 dòng / trang — nên chỉ ghi `scope=bom` khi
@@ -21,6 +22,7 @@ const PAGE_SIZES = [10, 20, 50, 100]
 const MAX_QUERY_LENGTH = 100
 const MAX_CODE_LENGTH = 50
 const MAX_SUPPLIERS = 100
+const MAX_GROUPS = 50
 const TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -143,7 +145,7 @@ export function lastPricesScreenToSearch(st: LastPricesScreenState): string {
   const d = EMPTY_LAST_PRICES_FILTERS
   const s = new URLSearchParams()
   if (f.q.trim()) s.set('q', f.q.trim())
-  if (f.group) s.set('group', f.group)
+  f.groups.forEach((g) => s.append('group', g))
   if (f.n !== d.n) s.set('n', String(f.n))
   if (f.scope !== d.scope) s.set('scope', f.scope)
   f.suppliers.forEach((c) => s.append('supplier', c))
@@ -167,6 +169,8 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
   //  Nhận cả dạng một khóa cách nhau dấu phẩy lẫn dạng lặp khóa (`supplier=a&supplier=b`) của API.
   const suppliers = [...new Set(s.getAll('supplier').flatMap((v) => v.split(',')).map((c) => c.trim())
     .filter((c) => c && c.length <= MAX_CODE_LENGTH))].slice(0, MAX_SUPPLIERS)
+  //  `group` lặp khóa như `supplier` (chip nhóm bật nhiều cùng lúc); link cũ chỉ một `group=` vẫn ra đúng một nhóm.
+  const groups = [...new Set(s.getAll('group').map((g) => g.trim().slice(0, MAX_CODE_LENGTH)).filter(Boolean))].slice(0, MAX_GROUPS)
   const trend = s.get('trend') as LastPricesTrend
   const minPct = Number(s.get('min_pct'))
   const sortBy = s.get('sort_by') ?? ''
@@ -175,7 +179,7 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
   return {
     filters: {
       q: textFromSearch(s, 'q'),
-      group: textFromSearch(s, 'group', MAX_CODE_LENGTH),
+      groups,
       n: nShown,
       scope: scopeFromSearch(s, EMPTY_LAST_PRICES_FILTERS.scope),
       suppliers,

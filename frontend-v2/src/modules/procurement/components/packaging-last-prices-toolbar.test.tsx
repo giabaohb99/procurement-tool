@@ -11,7 +11,7 @@ const GROUPS = [
 const SUPPLIERS = [{ code: 'PHL', name: 'CÔNG TY CỔ PHẦN PHL' }]
 const FILTERS: LastPricesFilters = {
   q: '',
-  group: '',
+  groups: [],
   n: 5,
   scope: 'all',
   suppliers: [],
@@ -38,16 +38,39 @@ function setup(filters: LastPricesFilters = FILTERS) {
 }
 
 describe('PackagingLastPricesToolbar', () => {
-  it('shows a chip per group with its count plus "Tất cả" with the sum', () => {
+  it('shows a chip per group with its count, none active and no "Tất cả" chip', () => {
     setup()
-    expect(screen.getByRole('button', { name: 'Tất cả (15)' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: /^Tất cả/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Chai (12)' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Nắp (3)' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('selects a group by its exact name (not the label with the count)', async () => {
+  it('toggles a group on by its exact name (not the label with the count)', async () => {
     const { onChange, user } = setup()
     await user.click(screen.getByRole('button', { name: 'Nắp (3)' }))
-    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, group: 'Nắp' })
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp'] })
+  })
+
+  it('allows several groups at once, appends in click order and clicking an active chip switches it off', async () => {
+    const { onChange, user } = setup({ ...FILTERS, groups: ['Nắp', 'Chai'] })
+    expect(screen.getByRole('button', { name: 'Nắp (3)' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Chai (12)' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Chai (12)' }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp'] })
+  })
+
+  it('appends a second group after the first', async () => {
+    const { onChange, user } = setup({ ...FILTERS, groups: ['Nắp'] })
+    await user.click(screen.getByRole('button', { name: 'Chai (12)' }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp', 'Chai'] })
+  })
+
+  it('keeps an active group visible (count 0) when the server no longer lists it, so it can be switched off', async () => {
+    const { onChange, user } = setup({ ...FILTERS, groups: ['Nhãn'] })
+    const chip = screen.getByRole('button', { name: 'Nhãn (0)' })
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await user.click(chip)
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: [] })
   })
 
   it('offers 3 / 5 / 10 purchases with 5 selected by default and changes n', async () => {
@@ -66,11 +89,19 @@ describe('PackagingLastPricesToolbar', () => {
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, scope: 'bom' })
   })
 
-  it('filters the direction of the lần 1 vs lần 2 change', async () => {
+  it('filters the direction of the lần 1 vs lần 2 change with toggle buttons (no "Tất cả")', async () => {
     const { onChange, user } = setup()
-    expect(screen.getByRole('radio', { name: 'Tất cả' })).toBeChecked()
+    expect(screen.queryByRole('radio', { name: 'Tất cả' })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Giảm' })).not.toBeChecked()
     await user.click(screen.getByRole('radio', { name: 'Giảm' }))
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, trend: 'down' })
+  })
+
+  it('clicking the active direction again switches it off', async () => {
+    const { onChange, user } = setup({ ...FILTERS, trend: 'up' })
+    expect(screen.getByRole('radio', { name: 'Tăng' })).toBeChecked()
+    await user.click(screen.getByRole('radio', { name: 'Tăng' }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, trend: 'all' })
   })
 
   it('has every switch off by default ("Chỉ mã đã có giá", "Chỉ mã đang dùng trong định mức", "Hiện số lượng")', async () => {

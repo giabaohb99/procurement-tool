@@ -50,7 +50,7 @@ export function buildLastPricesParams(
   return {
     n: filters.n,
     q: search.trim() || undefined,
-    group: filters.group || undefined,
+    group: filters.groups.length ? filters.groups : undefined,
     supplier: filters.suppliers.length ? filters.suppliers : undefined,
     date_from: filters.from || undefined,
     date_to: filters.to || undefined,

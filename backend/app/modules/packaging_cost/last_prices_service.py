@@ -121,7 +121,7 @@ def _sorted(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict]:
     return sort_rows(rows, sort_by, sort_dir, SORT_KEYS)
 
 
-def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: str = "", only_priced: bool = True,
+def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", groups: list[str] | None = None, only_priced: bool = True,
                       bom_only: bool = False, scope: str = "bom", suppliers: list[str] | None = None,
                       date_from: date | None = None, date_to: date | None = None, trend: str = "all",
                       min_pct: float | None = None, sort_by: str = "code", sort_dir: str = "asc", scope_cond=None) -> dict:
@@ -129,7 +129,7 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
 
     `n` = số lần mua hiển thị (2..MAX_N). `scope`: `bom` = mã thành phần của định mức ∪ mã có báo giá; `all` = mọi mã có
     lần mua có giá; `bom_only` = chỉ mã thành phần của định mức (thắng `scope`). `date_from` / `date_to` lọc các lần mua
-    TRƯỚC khi xếp hạng. `suppliers` giữ dòng có nhà cung cấp đó trong `n` lần đang hiện. `trend` (all / up / down / flat) lọc
+    TRƯỚC khi xếp hạng. `suppliers` giữ dòng có nhà cung cấp đó trong `n` lần đang hiện. `groups` (tên nhóm, nhiều tên = HOẶC) giữ dòng thuộc một trong các nhóm đó. `trend` (all / up / down / flat) lọc
     chiều đổi giá lần 1 so lần 2; `min_pct` giữ dòng có |lần 1 so lần 2| >= min_pct (đơn vị %).
     `suppliers` tính trên tập đã lọc "chỉ mã có giá" nhưng CHƯA áp tìm / nhóm / nhà cung cấp / biến động (ô chọn đứng yên).
     `groups` = số mã mỗi nhóm SAU mọi bộ lọc trừ bộ lọc nhóm (tìm, nhà cung cấp, khoảng ngày, xu hướng, ngưỡng %) — chip khớp
@@ -183,8 +183,10 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
         rows = [r for r in rows if r["v12"] is not None and abs(r["v12"]) * 100 >= min_pct - 1e-9]
     #  chip nhóm đếm trên tập đã qua MỌI bộ lọc trừ chính bộ lọc nhóm (cùng luật chip xu hướng của Tổng hợp)
     chips = group_counts(rows)
-    if group.strip():
-        rows = [r for r in rows if fold_text(r["group"]) == fold_text(group)]
+    #  nhiều nhóm = HOẶC (chip bật / tắt); so không dấu, không phân biệt hoa thường; chuỗi rỗng bị bỏ
+    wanted_groups = {fold_text(g) for g in (groups or []) if g.strip()}
+    if wanted_groups:
+        rows = [r for r in rows if fold_text(r["group"]) in wanted_groups]
     return {"rows": _sorted(rows, sort_by, sort_dir), "groups": chips, "suppliers": supplier_list}
 
 

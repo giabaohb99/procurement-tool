@@ -5,7 +5,7 @@ import type { LastPricesTrend, PackagingLastPricesResult } from '../../api/packa
 import { LAST_PRICE_N_OPTIONS, type LastPricesFilters } from '../../utils/packaging-query'
 import './packaging.css'
 
-const TRENDS: [LastPricesTrend, string][] = [['all', 'Tất cả'], ['up', 'Tăng'], ['down', 'Giảm'], ['flat', 'Không đổi']]
+const TRENDS: [LastPricesTrend, string][] = [['up', 'Tăng'], ['down', 'Giảm'], ['flat', 'Không đổi']]
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="pkg-field"><span>{label}</span>{children}</div>
@@ -21,7 +21,7 @@ function Toggle({ label, checked, onChange, title }: { label: string; checked: b
 
 /**
  * Thanh lọc của màn Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng" chỉ đổi cột hiện.
- * Hàng 1: ô tìm + chip nhóm (kèm số mã). Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
+ * Hàng 1: ô tìm + chip nhóm (kèm số mã; bấm bật / tắt, bật nhiều nhóm cùng lúc = HOẶC, không chip nào bật = mọi nhóm). Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
  * ngưỡng %. Hàng 3: các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 export default function PackagingLastPricesToolbar({
@@ -33,8 +33,13 @@ export default function PackagingLastPricesToolbar({
   suppliers: PackagingLastPricesResult['suppliers']
 }) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
-  const total = groups.reduce((s, g) => s + g.count, 0)
-  const chips = [{ group: '', label: `Tất cả (${total})` }, ...groups.map((g) => ({ group: g.group, label: `${g.group} (${g.count})` }))]
+  //  Chip bật / tắt từng nhóm (không có chip "Tất cả"): tên nhóm đã bật mà không còn chip nào (số đếm về 0) vẫn hiện để tắt được.
+  const chips = [
+    ...groups.map((g) => ({ group: g.group, label: `${g.group} (${g.count})` })),
+    ...filters.groups.filter((name) => !groups.some((g) => g.group === name)).map((name) => ({ group: name, label: `${name} (0)` })),
+  ]
+  const toggleGroup = (name: string) =>
+    patch({ groups: filters.groups.includes(name) ? filters.groups.filter((g) => g !== name) : [...filters.groups, name] })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 0 10px' }}>
@@ -44,8 +49,8 @@ export default function PackagingLastPricesToolbar({
         </div>
         <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
           {chips.map((c) => (
-            <button key={c.group || 'all'} type="button" className={'pkg-pill' + (filters.group === c.group ? ' on' : '')}
-              aria-pressed={filters.group === c.group} onClick={() => patch({ group: c.group })}>{c.label}</button>
+            <button key={c.group} type="button" className={'pkg-pill' + (filters.groups.includes(c.group) ? ' on' : '')}
+              aria-pressed={filters.groups.includes(c.group)} onClick={() => toggleGroup(c.group)}>{c.label}</button>
           ))}
         </div>
       </div>
@@ -76,7 +81,9 @@ export default function PackagingLastPricesToolbar({
         <Field label="Biến động lần 1 so lần 2">
           <div className="pkg-seg" role="group" aria-label="Biến động lần 1 so lần 2">
             {TRENDS.map(([v, label]) => (
-              <button key={v} className={filters.trend === v ? 'on' : ''} onClick={() => patch({ trend: v })}>{label}</button>
+              //  Bấm lại nút đang bật = tắt (về "không lọc"); `all` là giá trị nội bộ cho "chưa chọn".
+              <button key={v} className={filters.trend === v ? 'on' : ''} aria-pressed={filters.trend === v}
+                onClick={() => patch({ trend: filters.trend === v ? 'all' : v })}>{label}</button>
             ))}
           </div>
         </Field>
