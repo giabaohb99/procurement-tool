@@ -29,7 +29,13 @@ describe('buildImpactPrintSearch / parseImpactPrintSearch', () => {
     expect(buildImpactPrintSearch({ codes: ['A'], assumed_prices: { A: 12 } })).toBe(
       'codes=A&assumed=A%3A12',
     )
+    expect(buildImpactPrintSearch({ codes: ['A', 'B'], assumed_prices: { A: 12, B: 3.5 } })).toBe(
+      'codes=A%2CB&assumed=A%3A12%2CB%3A3.5',
+    )
     expect(parse('codes=X:Y&assumed=X:Y:5').assumed_prices).toEqual({ 'X:Y': 5 })
+    //  Dạng một khóa nối dấu phẩy (mới, cùng bản v1) và dạng khóa lặp lại (link in cũ) đều đọc được.
+    expect(parse('codes=A,B&assumed=A:1,B:2').assumed_prices).toEqual({ A: 1, B: 2 })
+    expect(parse('codes=A,B&assumed=A:1&assumed=B:2').assumed_prices).toEqual({ A: 1, B: 2 })
   })
 
   it('drops assumed prices that are zero, negative, NaN, text, for an unselected code, or malformed', () => {

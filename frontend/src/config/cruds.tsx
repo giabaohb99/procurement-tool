@@ -1,5 +1,6 @@
 import { FilterField } from '../components/FilterBar'
 import type { FilterFieldDefinition } from '../components/conditional-filter'
+import type { CardSlot } from '../hooks/useTableColumns'
 import { condDate, condSelect, condSource, condText, DEPT_SRC, EMP_SRC } from './conditional-filters'
 import DepartmentMembers from '../components/DepartmentMembers'
 import ProductImages from '../components/ProductImages'
@@ -46,6 +47,8 @@ export type Column = {
   // bao-CR-705: cột phụ ẩn sẵn (tick trong menu Cột mới hiện); `hiddenForOlderLayouts` cho cột ẩn sẵn
   // thêm vào bảng đã dùng; `noSort` cho cột tên do máy chủ gắn thêm (không có cột DB để sắp xếp).
   defaultHidden?: boolean; hiddenForOlderLayouts?: boolean; noSort?: boolean
+  // duoc-CR-784: chỗ đặt cột khi danh sách hiện dạng thẻ trên điện thoại (chỉ có tác dụng khi cấu hình bật `cards`)
+  card?: CardSlot
 }
 
 // bao-CR-294 — cột "Ngày cập nhật" dùng chung cho mọi bảng danh sách. Bấm header để sắp xếp
@@ -91,6 +94,8 @@ export type CrudConfig = {
    *  trạng thái trong lựa chọn được giữ nguyên. Backend cũng chặn cả lô nếu lọt phiếu không Nháp. */
   bulkDelete?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
+  /** duoc-CR-784: màn hẹp (≤ 820px) hiện danh sách dạng THẺ thay vì bảng cuộn ngang — chỉ cụm Giá bao bì bật; cột khai chỗ đặt ở `Column.card`. */
+  cards?: boolean
   idDefaultHidden?: boolean      // ẩn cột ID (cột tự thêm đầu bảng) mặc định — vẫn bật lại được ở menu Cột (duoc-CR-784)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới

@@ -43,6 +43,24 @@ export function PercentText({ value }: { value: Num }) {
 }
 
 /**
+ * Giá "cũ → mới" gọn trong một dòng: đổi giá thì số cũ mờ + mũi tên + số mới đậm tô theo chiều (tăng xanh, giảm đỏ); không
+ * đổi thì một số; chưa có giá mới thì nói thẳng "chưa có giá". Dùng ở ô thành phần của bảng sản phẩm và ở thẻ điện thoại.
+ */
+export function PriceChangeText({ from, to }: { from: Num; to: Num }) {
+  if (to == null) return <span className="text-muted-foreground">chưa có giá</span>
+  const changed = from != null && Math.abs(to - from) > 1e-9
+  if (!changed) return <span className="tabular-nums">{formatPackagingPrice(to)}</span>
+  return (
+    <span className="tabular-nums">
+      <span className="text-muted-foreground">{formatPackagingPrice(from)} →</span>{' '}
+      <span className={cn('font-semibold', packagingDiffTone(to - (from ?? 0)))}>
+        {formatPackagingPrice(to)}
+      </span>
+    </span>
+  )
+}
+
+/**
  * Xu hướng chi phí của một sản phẩm (mã `CostTrend`): chữ + màu theo chiều (tăng xanh, giảm đỏ — cùng luật với ô chênh lệch);
  * không đổi / chưa có giá để màu mờ. Tăng kèm gợi ý "cần xem lại giá bán" ở chú giải.
  */

@@ -8,6 +8,7 @@ import type { CrudConfig } from '@/shared/crud'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 
 import { PACKAGING_QUOTE_API } from '../api/packaging-cost-api'
+import { PackagingQuoteCard } from '../components/packaging-quote-card'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
 import { PackagingQuoteSourceCell } from '../components/packaging-quote-source-cell'
 import { PriceText } from '../components/packaging-price-cells'
@@ -30,6 +31,9 @@ export const PACKAGING_QUOTE_CRUD_CONFIG: CrudConfig<PackagingQuote> = {
   openFormOnRowClick: true,
   FormDialog: PackagingQuoteDialog,
   alsoInvalidate: [packagingCostKeys.all],
+  //  Khổ điện thoại: thẻ thay bảng (bấm thẻ = mở hộp sửa như bấm dòng) + ô "Xếp theo" thay tiêu đề cột.
+  mobileCard: (row) => <PackagingQuoteCard row={row} />,
+  mobileSort: true,
   columns: [
     {
       key: 'product_code',

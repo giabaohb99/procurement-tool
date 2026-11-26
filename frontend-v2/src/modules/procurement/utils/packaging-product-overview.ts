@@ -11,6 +11,12 @@ import type {
   PackagingOverviewParams,
   PackagingOverviewTrend,
 } from '../types/packaging-cost-types'
+import {
+  advancedFiltersFromSearch,
+  appendAdvancedFiltersSearch,
+  parsePageParam,
+  parseTrendParam,
+} from './packaging-filter-url'
 import { overviewFiltersToParams, type ImpactAdvancedFilters } from './packaging-impact-filters'
 import { costTrendLabel } from './packaging-warning-text'
 
@@ -65,4 +71,52 @@ export function buildOverviewParams(
     //  Chưa chọn cột xếp thì KHÔNG gửi — máy chủ xếp mặc định theo mã HH.
     ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
   }
+}
+
+/** Trạng thái của màn Tổng hợp theo sản phẩm giữ trên URL (duoc-CR-784) — F5 / gửi link mở lại đúng bộ lọc. */
+export interface OverviewUrlState {
+  q: string
+  trend: PackagingOverviewTrend
+  advanced: ImpactAdvancedFilters
+  sortBy: string
+  sortDir: 'asc' | 'desc'
+  page: number
+}
+
+/** Trần ô tìm — khớp `max_length=100` của máy chủ. */
+const OVERVIEW_MAX_QUERY_LENGTH = 100
+
+/**
+ * URL → trạng thái màn. `sortKeys` = khóa các cột xếp được của bảng (khóa lạ bị bỏ — luật §8, máy chủ chỉ nhận khóa của
+ * cột). Tên tham số trùng tham số máy chủ / bản v1: `q`, `trend`, `sort_by` / `sort_dir`, `page` + tên trường lọc.
+ */
+export function parseOverviewUrlState(
+  search: URLSearchParams,
+  sortKeys: readonly string[],
+): OverviewUrlState {
+  const sortBy = search.get('sort_by') ?? ''
+  const sorted = sortKeys.includes(sortBy)
+  return {
+    q: (search.get('q') ?? '').trim().slice(0, OVERVIEW_MAX_QUERY_LENGTH),
+    trend: parseTrendParam(search.get('trend')),
+    advanced: advancedFiltersFromSearch(search, 'overview'),
+    sortBy: sorted ? sortBy : '',
+    sortDir: sorted && search.get('sort_dir') === 'desc' ? 'desc' : 'asc',
+    page: parsePageParam(search.get('page')),
+  }
+}
+
+/** Trạng thái màn → chuỗi truy vấn (không kèm `?`); mặc định thì không ghi gì. */
+export function buildOverviewUrlSearch(state: OverviewUrlState): string {
+  const search = new URLSearchParams()
+  const q = state.q.trim()
+  if (q) search.set('q', q)
+  if (state.trend !== 'all') search.set('trend', state.trend)
+  appendAdvancedFiltersSearch(search, state.advanced, 'overview')
+  if (state.sortBy) {
+    search.set('sort_by', state.sortBy)
+    search.set('sort_dir', state.sortDir)
+  }
+  if (state.page > 1) search.set('page', String(state.page))
+  return search.toString()
 }

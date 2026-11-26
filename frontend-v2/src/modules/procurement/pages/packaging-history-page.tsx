@@ -5,24 +5,23 @@
  * Lịch sử là bản chụp BẤT BIẾN của sổ giá — không có ô sửa đơn giá (sai thì sửa ở ĐMH / nguồn nạp). Lọc + xếp + phân trang tại
  * MÁY CHỦ (luật §8). Lựa chọn mã nằm ở URL (`?codes=A,B` · `?fg=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
  */
-import { FileDown, Loader2, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
-import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
-import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { PackagingExportExcelButton, PackagingPrintButton } from '../components/packaging-header-buttons'
 import { exportPackagingHistory } from '../api/packaging-cost-api'
+import { PackagingHistoryCard } from '../components/packaging-history-card'
 import { PackagingHistoryChart } from '../components/packaging-history-chart'
 import { PackagingHistorySummary } from '../components/packaging-history-summary'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
@@ -46,6 +45,7 @@ import { packagingHistoryPrintHref } from '../utils/packaging-history-print'
 
 export function PackagingHistoryPage() {
   const { can } = usePermission()
+  const isMobile = useIsMobile()
   const [searchParams, setSearchParams] = useSearchParams()
   const selection = useMemo(() => parseHistorySearch(searchParams), [searchParams])
   const [filters, setFilters] = useState<PackagingHistoryFilters>(EMPTY_HISTORY_FILTERS)
@@ -96,42 +96,30 @@ export function PackagingHistoryPage() {
     })
 
   return (
-    <PageContainer fill>
+    //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Lịch sử mua hàng"
-        description="Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn."
+        //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
+        description={
+          isMobile
+            ? undefined
+            : 'Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn.'
+        }
         actions={
           <>
             {/* In = xem, nên gác theo quyền đọc (không đòi quyền xuất). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
             {can('packaging_cost', 'read') && (
-              <Button asChild variant="outline">
-                <Link
-                  to={packagingHistoryPrintHref(filterParams)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
-                >
-                  <Printer />
-                  In
-                </Link>
-              </Button>
+              <PackagingPrintButton href={packagingHistoryPrintHref(filterParams)} />
             )}
             <PackagingExcelImportButton kind={PACKAGING_MISA_IMPORT} />
             {can('packaging_cost', 'export') && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={exporting}
-                onClick={() => void exportExcel()}
-              >
-                {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-                Xuất Excel
-              </Button>
+              <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
             )}
           </>
         }
       />
-      <Card className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+      <Card className="flex min-h-0 flex-1 flex-col gap-3 p-4 max-md:gap-2 max-md:p-3">
         <PackagingHistoryToolbar
           selection={selection}
           onSelectionChange={changeSelection}
@@ -172,6 +160,8 @@ export function PackagingHistoryPage() {
               : 'Chưa có lần mua nào cho lựa chọn này.'
           }
           storageKey={`procurement.packaging-history.${isProduct ? 'product' : 'code'}`}
+          mobileCard={(row) => <PackagingHistoryCard row={row} productMode={isProduct} />}
+          mobileSort
           filtersActive={filtersActive}
           onResetFilters={() => setFilters(EMPTY_HISTORY_FILTERS)}
           sortBy={sortBy}

@@ -4,6 +4,8 @@
  * `perCarton` = giá tính cho cả thùng, chia quy cách thùng khi cộng vào chi phí /chai. `sortKey` = khóa `sort_by` máy chủ
  * nhận cho cột đó (xếp theo giá đang áp của thành phần) — khớp `PART_SORT_ROLES` của `impact_service.py`.
  */
+import { packagingRoleLabel } from '../utils/packaging-warning-text'
+
 export const PACKAGING_PART_COLUMNS = [
   { role: 1, sortKey: 'part_bottle', field: 'bottle_code', perCarton: false },
   { role: 2, sortKey: 'part_cap', field: 'cap_code', perCarton: false },
@@ -11,3 +13,9 @@ export const PACKAGING_PART_COLUMNS = [
   { role: 4, sortKey: 'part_carton_label', field: 'carton_label_code', perCarton: true },
   { role: 5, sortKey: 'part_carton', field: 'carton_code', perCarton: true },
 ] as const
+
+/** Tên cột / nhãn dòng của một thành phần — cùng một chữ ở bảng, thẻ điện thoại và bản in ("Thùng (giá /thùng)"). */
+export function packagingPartHeader(part: { role: number; perCarton: boolean }): string {
+  const label = packagingRoleLabel(part.role)
+  return part.perCarton ? `${label} (giá /thùng)` : label
+}

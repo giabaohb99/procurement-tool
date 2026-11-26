@@ -13,8 +13,8 @@ import { PackagingCodeLink } from '../components/packaging-code-link'
 import { PackagingPartCell } from '../components/packaging-part-cell'
 import { DiffText, PriceText } from '../components/packaging-price-cells'
 import type { PackagingImpactProduct } from '../types/packaging-cost-types'
-import { joinPackagingWarnings, packagingRoleLabel } from '../utils/packaging-warning-text'
-import { PACKAGING_PART_COLUMNS } from './packaging-part-columns'
+import { joinPackagingWarnings } from '../utils/packaging-warning-text'
+import { PACKAGING_PART_COLUMNS, packagingPartHeader } from './packaging-part-columns'
 
 export type PackagingProductColumn = DataTableColumn<PackagingImpactProduct>
 
@@ -80,9 +80,7 @@ export function buildPackagingProductColumns({
     },
   ]
   const parts = PACKAGING_PART_COLUMNS.map<PackagingProductColumn>((part) => {
-    const header = part.perCarton
-      ? `${packagingRoleLabel(part.role)} (giá /thùng)`
-      : packagingRoleLabel(part.role)
+    const header = packagingPartHeader(part)
     return {
       key: `part_${part.role}`,
       header,

@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 import TableScroll from '../TableScroll'
+import { CardSortBar } from '../TableCards'
+import '../table-cards.css'
+import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import type { PackagingLastPricesRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
 import { qtyText } from '../../utils/packaging-price'
@@ -40,6 +43,11 @@ export default function PackagingLastPricesTable({
     W.var, W.var, W.avg,
   ]
   const total = widths.reduce((s, w) => s + w, 0)
+  const narrow = useNarrowScreen()
+
+  if (narrow) {
+    return <LastPricesCards rows={rows} slots={slots} showQty={showQty} n={n} empty={empty} {...sort} />
+  }
 
   return (
     <TableScroll>
@@ -103,5 +111,73 @@ export default function PackagingLastPricesTable({
         </tbody>
       </table>
     </TableScroll>
+  )
+}
+
+/**
+ * Màn hẹp: mỗi mã một thẻ — mã + tên, ba số chính (giá TB, lần 1 so lần 2, lần 1 so lần n), nhóm / ĐVT / số lần có giá,
+ * rồi danh sách n lần mua gọn (ngày · đơn giá, dòng dưới nhà cung cấp + số lượng). Màu nền từng lần y tiêu đề bảng; đơn giá
+ * tô xanh / đỏ so với lần mua liền trước như ô bảng. Nhãn trùng tiêu đề bảng.
+ */
+function LastPricesCards({ rows, slots, showQty, n, empty, sortBy, sortDir, onSort }: {
+  rows: PackagingLastPricesRow[]
+  slots: number[]
+  showQty: boolean
+  n: number
+  empty: ReactNode
+  sortBy: string
+  sortDir: 'asc' | 'desc'
+  onSort: (key: string) => void
+}) {
+  const options = [
+    { key: 'code', label: 'Mã VTBB' }, { key: 'name', label: 'Tên vật tư' }, { key: 'group', label: 'Nhóm' },
+    { key: 'purchase_count', label: 'Số lần có giá' },
+    ...slots.flatMap((i) => [
+      { key: `p${i + 1}_date`, label: `${purchaseGroupLabel(i)} — Ngày mua` },
+      { key: `p${i + 1}_price`, label: `${purchaseGroupLabel(i)} — Đơn giá` },
+    ]),
+    { key: 'v12', label: 'Lần 1 so lần 2' }, { key: 'v1n', label: `Lần 1 so lần ${n}` }, { key: 'avg', label: `Giá TB ${n} lần` },
+  ]
+  return (
+    <div className="tcards-wrap">
+      <CardSortBar options={options} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+      {rows.length === 0 && <div className="tcards-empty">{empty}</div>}
+      <ul className="tcards">
+        {rows.map((r) => (
+          <li key={r.code} className="tcard">
+            <div className="tcard-head"><div className="tcard-title"><CodeLink code={r.code} /></div></div>
+            <div className="tcard-sub">{r.name || <span className="pkg-muted">(chưa có tên)</span>}</div>
+            <div className="tcard-heroes" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <div className="tcard-hero"><span className="tcard-k">{`Giá TB ${n} lần`}</span><span className="tcard-v"><PriceText value={r.avg} bold /></span></div>
+              <div className="tcard-hero"><span className="tcard-k">Lần 1 so lần 2</span><span className="tcard-v"><PctText value={r.v12} /></span></div>
+              <div className="tcard-hero"><span className="tcard-k">{`Lần 1 so lần ${n}`}</span><span className="tcard-v"><PctText value={r.v1n} /></span></div>
+            </div>
+            <dl className="tcard-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <div className="tcard-f"><dt>Nhóm</dt><dd>{r.group || <Dash />}</dd></div>
+              <div className="tcard-f"><dt>ĐVT</dt><dd>{r.unit || <Dash />}</dd></div>
+              <div className="tcard-f"><dt>Số lần có giá</dt><dd>{r.purchase_count}</dd></div>
+            </dl>
+            <div className="tcard-buys">
+              {slots.map((i) => {
+                const p = purchaseAt(r, i)
+                //  Lần chưa có giá mua: một dòng mờ, không chiếm cả ô màu.
+                if (!p) return <div key={i} className="tcard-buy empty">{purchaseGroupLabel(i)} · chưa có lần mua</div>
+                return (
+                  <div key={i} className={`tcard-buy ${TONES[i % TONES.length]}`}>
+                    <div className="tcard-buy-top">
+                      <span>{purchaseGroupLabel(i)} · {p?.date ? fmtDateStr(p.date) : <Dash />}</span>
+                      <b><PriceText value={p?.price} bold color={purchaseTone(r, i)} /></b>
+                    </div>
+                    {p && (p.supplier || (showQty && qtyText(p.qty))) && (
+                      <div className="tcard-buy-sub">{[p.supplier, showQty ? (qtyText(p.qty) ? `SL ${qtyText(p.qty)}` : '') : ''].filter(Boolean).join(' · ')}</div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

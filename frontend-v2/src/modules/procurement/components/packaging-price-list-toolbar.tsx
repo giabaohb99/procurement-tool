@@ -31,7 +31,9 @@ export function PackagingPriceListToolbar({
   return (
     //  `flex-1` (không `w-full`): khối lọc chiếm phần còn lại của hàng để nút Tải lại / Cột của bảng đứng CÙNG hàng bên phải;
     //  `w-full` từng đẩy hai nút đó xuống một hàng riêng, chừa dải trống giữa thanh lọc và bảng (người chủ báo 23/11/2026).
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+    //  Khổ điện thoại: khối lọc chiếm TRỌN hàng (`basis-full`) — cụm nút bên phải còn thêm ô "Xếp theo", chia hàng với nó
+    //  thì ô tìm co còn một mẩu và chip nhóm dựng thành cột.
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 max-md:basis-full">
       <div className="relative w-full max-w-xs">
         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input

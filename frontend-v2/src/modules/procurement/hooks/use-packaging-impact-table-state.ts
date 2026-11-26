@@ -41,14 +41,37 @@ export interface PackagingImpactTableState {
   setPage: (page: number) => void
 }
 
-export function usePackagingImpactTableState(resetKeys: readonly unknown[]): PackagingImpactTableState {
-  const [keyword, setKeyword] = useState('')
+/** Trạng thái lúc mở màn — đọc từ URL (`parseImpactUrlState`); thiếu thì bảng mở trống như trước. */
+export interface PackagingImpactTableInitial {
+  q: string
+  filters: ImpactAdvancedFilters
+  sortBy: string
+  sortDir: 'asc' | 'desc'
+  page: number
+}
+
+const EMPTY_INITIAL: PackagingImpactTableInitial = {
+  q: '',
+  filters: EMPTY_IMPACT_FILTERS,
+  sortBy: '',
+  sortDir: 'asc',
+  page: 1,
+}
+
+export function usePackagingImpactTableState(
+  resetKeys: readonly unknown[],
+  initial: PackagingImpactTableInitial = EMPTY_INITIAL,
+): PackagingImpactTableState {
+  const [keyword, setKeyword] = useState(initial.q)
   const query = useDebouncedValue(keyword, 250).trim()
-  const [filters, setFilters] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [filters, setFilters] = useState<ImpactAdvancedFilters>(initial.filters)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
   const [pageSize, setPageSize] = useState(PACKAGING_IMPACT_PAGE_SIZE)
-  const [page, setPage] = usePageResetOnFilterChange([...resetKeys, query, filters, sortBy, sortDir, pageSize])
+  const [page, setPage] = usePageResetOnFilterChange(
+    [...resetKeys, query, filters, sortBy, sortDir, pageSize],
+    initial.page,
+  )
 
   return {
     keyword,

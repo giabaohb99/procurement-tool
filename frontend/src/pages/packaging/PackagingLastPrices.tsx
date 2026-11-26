@@ -55,14 +55,14 @@ export default function PackagingLastPrices() {
   const rows = list.data?.items ?? []
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Giá mua gần nhất</h2>
           <div className="pkg-hint">Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua.</div>
         </div>
         {can('packaging_cost', 'export') && (
-          <button className="btn outline" disabled={exporting} onClick={exportExcel}>
-            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
+          <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
+            <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>
         )}
       </div>
@@ -70,11 +70,11 @@ export default function PackagingLastPrices() {
       <div className="card table-card">
         <PackagingLastPricesToolbar filters={filters} onChange={changeFilters}
           groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []} />
-        <div className="table-tools" style={{ marginTop: -4 }}>
+        <div className="table-tools tt-compact" style={{ marginTop: -4 }}>
           <span className="pkg-hint" style={{ marginRight: 'auto' }}>{list.data ? `${list.data.total} mã` : ''}</span>
           {filtersActive && <button className="btn ghost" onClick={() => changeFilters(reset)}><i className="ti ti-rotate" />Xóa lọc</button>}
           <button className="btn ghost" onClick={list.reload} disabled={list.loading} title="Tải lại dữ liệu">
-            <i className={'ti ti-refresh' + (list.loading ? ' spin' : '')} />Tải lại
+            <i className={'ti ti-refresh' + (list.loading ? ' spin' : '')} /><span className="tt-label">Tải lại</span>
           </button>
         </div>
         <PackagingLastPricesTable rows={rows} n={filters.n} showQty={filters.showQty}

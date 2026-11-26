@@ -4,21 +4,22 @@
  * so lần 2 / lần n và giá trung bình. Lọc + xếp + phân trang tại MÁY CHỦ (luật §8); tham số đi kèm Xuất Excel để ra đúng
  * thứ tự. Tiêu đề gộp nhóm cột do `DataTable` vẽ (`group` của cột).
  */
-import { FileDown, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { PackagingExportExcelButton } from '../components/packaging-header-buttons'
 import { exportPackagingLastPrices } from '../api/packaging-cost-api'
+import { PackagingLastPricesCard } from '../components/packaging-last-prices-card'
 import {
   PackagingLastPricesToolbar,
   type LastPricesFilters,
@@ -48,6 +49,7 @@ const EMPTY_FILTERS: LastPricesFilters = {
 
 export function PackagingLastPricesPage() {
   const { can } = usePermission()
+  const isMobile = useIsMobile()
   const [filters, setFilters] = useState<LastPricesFilters>(EMPTY_FILTERS)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -87,30 +89,31 @@ export function PackagingLastPricesPage() {
       }
     })
 
+  const exportButton = can('packaging_cost', 'export') && (
+    <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
+  )
+
   return (
-    <PageContainer fill>
+    //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Giá mua gần nhất"
-        description="Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua."
-        actions={
-          can('packaging_cost', 'export') && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={exporting}
-              onClick={() => void exportExcel()}
-            >
-              {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-              Xuất Excel
-            </Button>
-          )
+        //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
+        description={
+          isMobile
+            ? undefined
+            : 'Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua.'
         }
+        //  Khổ điện thoại: nút Xuất Excel dời xuống cụm nút của bảng (cạnh Tải lại) — một mình nó một hàng đầu màn là dải
+        //  trống người chủ chê (26/11/2026).
+        actions={!isMobile && exportButton}
       />
-      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4 max-md:gap-2 max-md:p-3">
         <DataTable
           //  Dòng khóa theo mã, không có `id` số: để mặc định thì lúc đang tải bảng chèn cột ID rồi gỡ, làm tách nhóm cột.
           idColumn={false}
           fillHeight
+          toolbarEnd={isMobile ? exportButton : undefined}
           columns={columns}
           rows={list.data?.items}
           getRowId={(row) => row.code}
@@ -120,6 +123,10 @@ export function PackagingLastPricesPage() {
             filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có mã vật tư bao bì nào có giá.'
           }
           storageKey="procurement.packaging-last-prices"
+          mobileCard={(row) => (
+            <PackagingLastPricesCard row={row} n={filters.n} showQty={filters.showQty} />
+          )}
+          mobileSort
           filtersActive={filtersActive}
           onResetFilters={() => changeFilters({ ...EMPTY_FILTERS, n: filters.n, showQty: filters.showQty })}
           sortBy={sortBy}

@@ -10,6 +10,8 @@ import type { PackagingCodeOption, PackagingImpactRequest } from '../../api/pack
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { impactPrintHref } from '../../utils/packaging-print'
+import { IMPACT_URL_KEYS, impactScreenToSearch, searchToImpactScreen } from '../../utils/packaging-screen-url'
+import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import { nextSort, sortCodeOptions } from '../../utils/packaging-query'
 import { EMPTY_IMPACT_FILTERS, countImpactFilters, impactFiltersToRequest } from '../../utils/packaging-impact-filters'
 import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
@@ -30,15 +32,17 @@ export default function PackagingImpact() {
   const { can } = useAuth()
   const [options, setOptions] = useState<PackagingCodeOption[]>([])
   const [optionsLoading, setOptionsLoading] = useState(true)
-  const [codes, setCodes] = useState<string[]>([])
-  const [assumed, setAssumed] = useState<Record<string, number>>({})
-  const [range, setRange] = useState({ from: '', to: '' })
-  const [keyword, setKeyword] = useState('')
-  const [filters, setFilters] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ mã, giá giả định, lọc, xếp, trang); đọc một lần lúc mở màn.
+  const [initial] = useState(() => searchToImpactScreen(window.location.search))
+  const [codes, setCodes] = useState<string[]>(initial.codes)
+  const [assumed, setAssumed] = useState<Record<string, number>>(initial.assumed)
+  const [range, setRange] = useState(initial.range)
+  const [keyword, setKeyword] = useState(initial.keyword)
+  const [filters, setFilters] = useState<ImpactAdvancedFilters>(initial.filters)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [page, setPage] = useState(initial.page)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
   const debouncedAssumed = useDebouncedValue(assumed, 400)
   const query = useDebouncedValue(keyword, 250).trim()
@@ -49,6 +53,19 @@ export default function PackagingImpact() {
       .catch(() => toast.error('Không nạp được danh sách mã bao bì'))
       .finally(() => setOptionsLoading(false))
   }, [])
+
+  //  Mã từ URL không còn trong danh mục (link cũ / gõ tay) thì bỏ sau khi nạp danh sách — khỏi gửi máy chủ mã không có thật.
+  useEffect(() => {
+    if (optionsLoading || options.length === 0) return
+    const known = new Set(options.map((o) => o.code))
+    setCodes((prev) => (prev.every((c) => known.has(c)) ? prev : prev.filter((c) => known.has(c))))
+  }, [options, optionsLoading])
+
+  //  Ghi trạng thái lên URL (replace, trễ 300 ms) — giá giả định gõ dở cũng được giữ.
+  const urlSearch = useMemo(
+    () => impactScreenToSearch({ codes, assumed, range, keyword, filters, sortBy, sortDir, page, pageSize }),
+    [codes, assumed, range, keyword, filters, sortBy, sortDir, page, pageSize])
+  useSearchSyncToUrl(urlSearch, IMPACT_URL_KEYS)
 
   /** Phần thân dùng chung cho tính toán và Xuất Excel (cùng bộ lọc + thứ tự); chưa kèm trang. */
   const filterBody = useMemo<PackagingImpactRequest>(() => ({
@@ -64,6 +81,14 @@ export default function PackagingImpact() {
   const body = useMemo<PackagingImpactRequest>(() => ({ ...filterBody, page, page_size: pageSize }), [filterBody, page, pageSize])
   const impact = useLatestQuery(() => fetchImpact(body), JSON.stringify(body), codes.length > 0)
   const data = codes.length ? impact.data : null
+
+  //  Trang từ URL (hoặc sau khi lọc ra ít dòng) vượt số trang thật thì lùi về trang cuối — khỏi kẹt ở "Trang 2/1" trống.
+  const productsTotal = data?.products_total
+  useEffect(() => {
+    if (productsTotal == null) return
+    const last = Math.max(1, Math.ceil(productsTotal / pageSize))
+    if (page > last) setPage(last)
+  }, [productsTotal, pageSize, page])
 
   //  Đổi danh sách mã / khoảng ngày / từ khóa / cột xếp / cỡ trang → về trang 1 (đổi giá giả định thì KHÔNG: người xem không bị nhảy trang).
   const changeCodes = (next: string[]) => { setCodes(next); setPage(1) }
@@ -96,7 +121,7 @@ export default function PackagingImpact() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Tác động tăng giá bao bì</h2>
           <div className="pkg-hint">Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá. Đơn vị VNĐ, chưa VAT.</div>
@@ -107,14 +132,14 @@ export default function PackagingImpact() {
         </div>
         {/* In = xem (quyền đọc). Mở tab mới, mã + giá giả định ĐANG GÕ + từ khóa / lọc nâng cao / cột xếp của bảng; trang in tự nạp đủ mọi sản phẩm. */}
         {can('packaging_cost', 'read') && (
-          <button className="btn outline" disabled={!codes.length} title={codes.length ? undefined : 'Chọn ít nhất một mã để in'}
+          <button className="btn outline" disabled={!codes.length} aria-label="In" title={codes.length ? 'In' : 'Chọn ít nhất một mã để in'}
             onClick={() => window.open(impactPrintHref({ ...filterBody, assumed_prices: pickAssumed(codes, assumed) }), '_blank')}>
-            <i className="ti ti-printer" />In
+            <i className="ti ti-printer" /><span className="pkg-btn-label">In</span>
           </button>
         )}
         {can('packaging_cost', 'export') && (
-          <button className="btn outline" disabled={!codes.length || exporting} onClick={exportExcel}>
-            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
+          <button className="btn outline" disabled={!codes.length || exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
+            <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>
         )}
       </div>

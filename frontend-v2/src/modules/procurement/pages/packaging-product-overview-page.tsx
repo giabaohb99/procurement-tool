@@ -4,22 +4,24 @@
  * Cùng công thức và luật giá cũ / mới với Tác động giá, nhưng không có giá giả định. Lọc + xếp + phân trang tại MÁY CHỦ
  * (luật §8); tham số đi kèm Xuất Excel để ra đúng thứ tự.
  */
-import { FileDown, Loader2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { PackagingExportExcelButton } from '../components/packaging-header-buttons'
 import { exportPackagingProductOverview } from '../api/packaging-cost-api'
 import { PercentText, TrendText } from '../components/packaging-price-cells'
+import { PackagingProductCard } from '../components/packaging-product-card'
 import { PackagingProductOverviewToolbar } from '../components/packaging-product-overview-toolbar'
 import {
   buildPackagingProductColumns,
@@ -32,7 +34,11 @@ import {
   countAdvancedFilters,
   type ImpactAdvancedFilters,
 } from '../utils/packaging-impact-filters'
-import { buildOverviewParams } from '../utils/packaging-product-overview'
+import {
+  buildOverviewParams,
+  buildOverviewUrlSearch,
+  parseOverviewUrlState,
+} from '../utils/packaging-product-overview'
 
 const DEFAULT_PAGE_SIZE = 100
 
@@ -55,13 +61,28 @@ const EXTRA_COLUMNS: PackagingProductColumn[] = [
   },
 ]
 
+/** Cột của bảng — không phụ thuộc gì của màn nên dựng một lần. */
+const OVERVIEW_COLUMNS = buildPackagingProductColumns({
+  newCostKey: 'cost_new_bottle',
+  compact: true,
+  extraAfterCosts: EXTRA_COLUMNS,
+})
+/** Khóa các cột xếp được — để kiểm `sort_by` đọc từ URL (luật §8: máy chủ chỉ nhận khóa của cột). */
+const OVERVIEW_SORT_KEYS = OVERVIEW_COLUMNS.filter((column) => column.sortable).map(
+  (column) => column.sortKey ?? column.key,
+)
+
 export function PackagingProductOverviewPage() {
   const { can } = usePermission()
-  const [keyword, setKeyword] = useState('')
-  const [trend, setTrend] = useState<PackagingOverviewTrend>('all')
-  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const isMobile = useIsMobile()
+  const [searchParams, setSearchParams] = useSearchParams()
+  //  Bộ lọc sống trên URL (F5 / gửi link mở lại đúng bộ lọc, duoc-CR-784): đọc một lần lúc mở, sau đó URL đi theo state.
+  const [initial] = useState(() => parseOverviewUrlState(searchParams, OVERVIEW_SORT_KEYS))
+  const [keyword, setKeyword] = useState(initial.q)
+  const [trend, setTrend] = useState<PackagingOverviewTrend>(initial.trend)
+  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(initial.advanced)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [exporting, setExporting] = useState(false)
   const debouncedKeyword = useDebouncedValue(keyword, 350)
@@ -72,19 +93,16 @@ export function PackagingProductOverviewPage() {
     () => buildOverviewParams(trend, debouncedKeyword, { by: sortBy, dir: sortDir }, advanced),
     [trend, debouncedKeyword, sortBy, sortDir, advanced],
   )
-  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
+  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
   const overview = usePackagingProductOverview({ ...filterParams, page, page_size: pageSize })
   const rows = overview.data?.items
 
-  const columns = useMemo(
-    () =>
-      buildPackagingProductColumns({
-        newCostKey: 'cost_new_bottle',
-        compact: true,
-        extraAfterCosts: EXTRA_COLUMNS,
-      }),
-    [],
-  )
+  const urlSearch = buildOverviewUrlSearch({ q: debouncedKeyword, trend, advanced, sortBy, sortDir, page })
+  useEffect(() => {
+    if (urlSearch !== searchParams.toString()) {
+      setSearchParams(new URLSearchParams(urlSearch), { replace: true })
+    }
+  }, [urlSearch, searchParams, setSearchParams])
 
   const filtersActive =
     trend !== 'all' ||
@@ -108,31 +126,32 @@ export function PackagingProductOverviewPage() {
       }
     })
 
+  const exportButton = can('packaging_cost', 'export') && (
+    <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
+  )
+
   return (
-    <PageContainer fill>
+    //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Tổng hợp theo sản phẩm"
-        description="Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT."
-        actions={
-          can('packaging_cost', 'export') && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={exporting}
-              onClick={() => void exportExcel()}
-            >
-              {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-              Xuất Excel
-            </Button>
-          )
+        //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
+        description={
+          isMobile
+            ? undefined
+            : 'Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT.'
         }
+        //  Khổ điện thoại: nút Xuất Excel dời xuống cụm nút của bảng (cạnh Tải lại) — một mình nó một hàng đầu màn là dải
+        //  trống người chủ chê (26/11/2026).
+        actions={!isMobile && exportButton}
       />
-      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4 max-md:gap-2 max-md:p-3">
         <DataTable
           //  Dòng khóa theo mã, không có `id` số: để mặc định thì lúc đang tải bảng chèn cột ID rồi gỡ, làm tách nhóm cột.
           idColumn={false}
           fillHeight
-          columns={columns}
+          toolbarEnd={isMobile ? exportButton : undefined}
+          columns={OVERVIEW_COLUMNS}
           rows={rows}
           getRowId={(row) => row.fg_code}
           isLoading={overview.isLoading}
@@ -143,6 +162,8 @@ export function PackagingProductOverviewPage() {
               : 'Chưa có sản phẩm nào có định mức bao bì.'
           }
           storageKey="procurement.packaging-product-overview"
+          mobileCard={(row) => <PackagingProductCard row={row} variant="overview" />}
+          mobileSort
           filtersActive={filtersActive}
           onResetFilters={resetFilters}
           toolbarActionsClassName="order-2"

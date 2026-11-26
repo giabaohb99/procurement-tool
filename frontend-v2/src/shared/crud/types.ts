@@ -218,6 +218,8 @@ export interface CrudConfig<T> {
    * bậc nào.
    */
   mobileCard?: (row: T) => ReactNode
+  /** Ở chế độ thẻ bày ô "Xếp theo" thay cho tiêu đề cột — xem `DataTableProps.mobileSort`. */
+  mobileSort?: boolean
   /** Cấu hình bộ lọc nâng cao (ConditionalFilter). */
   filterConfig?: {
     fields: FilterFieldDefinition[]

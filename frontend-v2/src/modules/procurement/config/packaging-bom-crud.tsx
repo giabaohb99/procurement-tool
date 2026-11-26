@@ -11,6 +11,7 @@ import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 import { PACKAGING_BOM_API } from '../api/packaging-cost-api'
+import { PackagingBomCard } from '../components/packaging-bom-card'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PACKAGING_BOM_IMPORT } from './packaging-excel-imports'
 import type { PackagingBom } from '../types/packaging-cost-types'
@@ -75,6 +76,9 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
   dialogMaxWidth: 'sm:max-w-2xl',
   alsoInvalidate: [packagingCostKeys.all],
   renderToolbarExtra: () => <PackagingExcelImportButton kind={PACKAGING_BOM_IMPORT} />,
+  //  Khổ điện thoại: thẻ thay bảng (bấm thẻ = mở hộp sửa như bấm dòng) + ô "Xếp theo" thay tiêu đề cột.
+  mobileCard: (row) => <PackagingBomCard row={row} />,
+  mobileSort: true,
   columns: [
     {
       key: 'fg_code',

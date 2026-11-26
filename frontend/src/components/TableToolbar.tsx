@@ -11,6 +11,8 @@ type Props = {
   /** Tải lại dữ liệu bảng. Bỏ trống = ẩn nút Tải lại. */
   onRefresh?: () => void | Promise<void>
   children?: React.ReactNode   // nút riêng của trang (nếu muốn gộp chung hàng)
+  /** duoc-CR-784: màn ≤ 820px nút Cột / Tải lại chỉ còn biểu tượng và nằm cùng hàng với ô tìm (CSS `.tt-compact` ở table-cards.css). */
+  compact?: boolean
 }
 
 /**
@@ -19,7 +21,7 @@ type Props = {
  * để không bị `overflow` của card cắt mất.
  */
 export default function TableToolbar({
-  allColumns, hidden, toggleColumn, showAllColumns, resetTable, onRefresh, children,
+  allColumns, hidden, toggleColumn, showAllColumns, resetTable, onRefresh, children, compact,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
@@ -67,13 +69,13 @@ export default function TableToolbar({
   const hiddenCount = hideable.filter((c) => hidden.includes(c.key)).length
 
   return (
-    <div className="table-tools">
+    <div className={'table-tools' + (compact ? ' tt-compact' : '')}>
       {children}
 
       {hideable.length > 0 && (
         <button ref={btnRef} className={hiddenCount ? 'btn secondary' : 'btn ghost'}
           onClick={() => setOpen((v) => !v)} title="Chọn cột hiển thị">
-          <i className="ti ti-columns-3" />Cột{hiddenCount ? ` (ẩn ${hiddenCount})` : ''}
+          <i className="ti ti-columns-3" /><span className="tt-label">Cột{hiddenCount ? ` (ẩn ${hiddenCount})` : ''}</span>
         </button>
       )}
 
@@ -102,7 +104,7 @@ export default function TableToolbar({
 
       {onRefresh && (
         <button className="btn ghost" onClick={refresh} disabled={busy} title="Tải lại dữ liệu">
-          <i className={'ti ti-refresh' + (busy ? ' spin' : '')} />Tải lại
+          <i className={'ti ti-refresh' + (busy ? ' spin' : '')} /><span className="tt-label">Tải lại</span>
         </button>
       )}
     </div>

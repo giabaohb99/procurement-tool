@@ -7,14 +7,16 @@ import { X } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
-import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import { cn } from '@/shared/utils/cn'
 
 import type { PackagingSelectedCode } from '../types/packaging-cost-types'
 import { buildSelectedGroupChips, resolveSelectedGroup } from '../utils/packaging-selected-groups'
 import { joinPackagingWarnings } from '../utils/packaging-warning-text'
+import { PackagingAssumedPriceInput } from './packaging-assumed-price-input'
 import { PackagingCodeLink } from './packaging-code-link'
+import { PackagingSelectedCodeCard } from './packaging-selected-code-card'
 import { DiffText, PercentText, PriceText } from './packaging-price-cells'
 
 interface PackagingImpactSelectedTableProps {
@@ -40,6 +42,7 @@ export function PackagingImpactSelectedTable({
   toolbar,
 }: PackagingImpactSelectedTableProps) {
   const [pickedGroup, setPickedGroup] = useState('')
+  const isMobile = useIsMobile()
   const chips = useMemo(() => buildSelectedGroupChips(rows), [rows])
   //  Nhóm đã chọn mà bị bỏ hết mã thì tự về "Tất cả" (suy ra lúc vẽ, không cần effect).
   const group = resolveSelectedGroup(pickedGroup, chips)
@@ -85,15 +88,10 @@ export function PackagingImpactSelectedTable({
         width: 130,
         hideable: false,
         cell: (row) => (
-          <NumberInput
-            aria-label={`Giá giả định ${row.code}`}
-            placeholder="Nhập giá"
-            title="Nhập giá giả định để mô phỏng trước khi NCC chốt giá; xóa trắng để quay về giá mới"
-            maxDecimals={PRICE_MAX_DECIMALS}
-            className="h-8 bg-amber-50 text-right dark:bg-amber-950"
-            value={assumed[row.code] ?? 0}
-            //  Ô xóa trắng trả 0 — coi là BỎ giả định (giá bao bì 0 đồng không có nghĩa mô phỏng).
-            onChange={(price) => onAssumedChange(row.code, price > 0 ? price : null)}
+          <PackagingAssumedPriceInput
+            code={row.code}
+            value={assumed[row.code]}
+            onChange={onAssumedChange}
           />
         ),
       },
@@ -161,7 +159,8 @@ export function PackagingImpactSelectedTable({
   return (
     //  Chọn cả nhóm là vài chục mã — chặn chiều cao, cuộn trong khung, để bảng sản phẩm
     //  không bị đẩy xuống tận cuối trang.
-    <div className="flex max-h-[28rem] min-h-0 flex-col">
+    //  Khổ điện thoại (thẻ, mỗi thẻ ~220px): khung cao theo màn để thấy được vài thẻ mà vẫn chừa bảng sản phẩm phía dưới.
+    <div className="flex max-h-[28rem] min-h-0 flex-col max-md:max-h-[70svh]">
       <DataTable
         //  Dòng khóa theo mã, không có `id` số: để mặc định thì lúc đang tải bảng chèn cột ID rồi gỡ, làm tách nhóm cột.
         idColumn={false}
@@ -173,32 +172,44 @@ export function PackagingImpactSelectedTable({
         isError={isError}
         emptyMessage="Các mã đã chọn chưa có trong định mức nào."
         storageKey="procurement.packaging-impact-selected"
+        mobileCard={(row) => (
+          <PackagingSelectedCodeCard
+            row={row}
+            assumed={assumed[row.code]}
+            onAssumedChange={onAssumedChange}
+            onRemove={onRemove}
+          />
+        )}
+        //  Khổ điện thoại: chỉ một nhóm mã thì thanh công cụ chỉ còn mỗi nút Tải lại đứng trơ một hàng (dải trống người chủ
+        //  chê 26/11/2026) — bỏ hẳn hàng đó; bảng thẻ không có menu Cột nên không mất gì.
         toolbar={
-          <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-2">
-            {toolbar}
-            {/*  Một nhóm duy nhất thì không có gì để lọc. */}
-            {chips.length > 1 && (
-              <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc mã đã chọn theo nhóm">
-                {[{ group: '', label: 'Tất cả', count: rows?.length ?? 0 }, ...chips.map((chip) => ({ ...chip, label: chip.group }))].map(
-                  (chip) => (
-                    <button
-                      key={chip.group || 'all'}
-                      type="button"
-                      aria-pressed={group === chip.group}
-                      onClick={() => setPickedGroup(chip.group)}
-                      className={cn(
-                        'h-7 rounded-full border px-3 text-xs hover:bg-accent',
-                        group === chip.group &&
-                          'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
-                      )}
-                    >
-                      {chip.label} ({chip.count.toLocaleString('vi-VN')})
-                    </button>
-                  ),
-                )}
-              </div>
-            )}
-          </div>
+          isMobile && chips.length <= 1 ? undefined : (
+            <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+              {toolbar}
+              {/*  Một nhóm duy nhất thì không có gì để lọc. */}
+              {chips.length > 1 && (
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Lọc mã đã chọn theo nhóm">
+                  {[{ group: '', label: 'Tất cả', count: rows?.length ?? 0 }, ...chips.map((chip) => ({ ...chip, label: chip.group }))].map(
+                    (chip) => (
+                      <button
+                        key={chip.group || 'all'}
+                        type="button"
+                        aria-pressed={group === chip.group}
+                        onClick={() => setPickedGroup(chip.group)}
+                        className={cn(
+                          'h-7 rounded-full border px-3 text-xs hover:bg-accent',
+                          group === chip.group &&
+                            'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                        )}
+                      >
+                        {chip.label} ({chip.count.toLocaleString('vi-VN')})
+                      </button>
+                    ),
+                  )}
+                </div>
+              )}
+            </div>
+          )
         }
       />
     </div>

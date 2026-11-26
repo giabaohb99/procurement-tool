@@ -43,16 +43,16 @@ function partCell(row: any, role: number, field: string) {
 export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   'product-price-quotes': {
     slug: 'product-price-quotes', entity: 'packaging_cost', auditEntity: 'packaging_cost_quote', title: 'Báo giá VTBB',
-    apiPath: PACKAGING_QUOTE_API, txn: true,
+    apiPath: PACKAGING_QUOTE_API, txn: true, cards: true,
     columns: [
-      { key: 'product_code', label: 'Mã VTBB', render: (r) => <b>{r.product_code}</b> },
-      { key: 'product_name', label: 'Tên vật tư', noSort: true },
+      { key: 'product_code', label: 'Mã VTBB', card: 'title', render: (r) => <b>{r.product_code}</b> },
+      { key: 'product_name', label: 'Tên vật tư', noSort: true, card: 'subtitle' },
       { key: 'supplier_code', label: 'Mã NCC' },
       { key: 'supplier_name', label: 'Nhà cung cấp', noSort: true },
-      { key: 'price', label: 'Đơn giá', render: (r) => <div style={{ textAlign: 'right' }}>{fmtPrice(r.price)}</div> },
-      { key: 'vat', label: 'VAT %', render: (r) => Number(r.vat) },
-      { key: 'valid_from', label: 'Ngày hiệu lực', render: (r) => fmtDateStr(r.valid_from) },
-      { key: 'note', label: 'Ghi chú' },
+      { key: 'price', label: 'Đơn giá', card: 'hero', render: (r) => <div style={{ textAlign: 'right' }}>{fmtPrice(r.price)}</div> },
+      { key: 'vat', label: 'VAT %', card: 'hero', render: (r) => Number(r.vat) },
+      { key: 'valid_from', label: 'Ngày hiệu lực', card: 'hero', render: (r) => fmtDateStr(r.valid_from) },
+      { key: 'note', label: 'Ghi chú', card: 'full' },
       // Nguồn do máy chủ ghi (nhập tay / nhập Excel); không xếp được vì chữ "(lô #N)" ghép ở giao diện. Nhập Excel bấm mở đợt nhập.
       { key: 'source', label: 'Nguồn', noSort: true, render: (r) => {
         const text = quoteSourceText(r.source_type, r.source_id)
@@ -85,21 +85,21 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   },
   'packaging-boms': {
     slug: 'packaging-boms', entity: 'packaging_cost', auditEntity: 'packaging_bom', title: 'Định mức bao bì',
-    apiPath: PACKAGING_BOM_API, txn: true, idDefaultHidden: true,
+    apiPath: PACKAGING_BOM_API, txn: true, idDefaultHidden: true, cards: true,
     headerExtra: () => (
       <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_BOM} action="create"
         label="Nhập từ Excel" title="Nhập định mức bao bì"
         description="Tệp DATA_CHAI.xlsx (sheet MAP_SP, hoặc data + DATA CHUNG). Hệ thống chạy thử trước — xem nhật ký từng dòng ở trang lô rồi mới bấm Ghi thật. Mã HH đã có thì cập nhật, chưa có thì tạo; dòng không có trong tệp giữ nguyên." />
     ),
     columns: [
-      { key: 'fg_code', label: 'Mã HH', render: (r) => <b>{r.fg_code}</b> },
-      { key: 'fg_name', label: 'Tên hàng hóa' },
+      { key: 'fg_code', label: 'Mã HH', card: 'title', render: (r) => <b>{r.fg_code}</b> },
+      { key: 'fg_name', label: 'Tên hàng hóa', card: 'subtitle' },
       { key: 'legal_name', label: 'Tên pháp lý', defaultHidden: true },
       {
         key: 'carton_qty', label: 'Quy cách thùng',
         render: (r) => (r.carton_qty ? Number(r.carton_qty).toLocaleString('vi-VN') : <span style={{ color: 'var(--red)' }}>chưa có</span>),
       },
-      ...ROLE_FIELDS.map((p) => ({ key: p.key, label: PACKAGING_ROLE_LABELS[p.role], render: (r: any) => partCell(r, p.role, p.key) })),
+      ...ROLE_FIELDS.map((p) => ({ key: p.key, label: PACKAGING_ROLE_LABELS[p.role], card: 'part' as const, render: (r: any) => partCell(r, p.role, p.key) })),
       { key: 'updated_at', label: 'Cập nhật', render: (r) => fmtDateTime(r.updated_at) || '—', defaultHidden: true },
     ],
     filters: [

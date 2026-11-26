@@ -15,6 +15,7 @@ import { buildPackagingProductColumns } from '../config/packaging-product-column
 import type { PackagingImpactTableState } from '../hooks/use-packaging-impact-table-state'
 import type { PackagingImpactProduct } from '../types/packaging-cost-types'
 import { PackagingFilterChipBar } from './packaging-filter-chip-bar'
+import { PackagingProductCard } from './packaging-product-card'
 
 interface PackagingImpactProductsTableProps {
   /** Dòng của TRANG hiện tại (đã lọc + xếp ở máy chủ). */
@@ -61,6 +62,8 @@ export function PackagingImpactProductsTable({
           : 'Không có sản phẩm nào dùng các mã đã chọn.'
       }
       storageKey="procurement.packaging-impact-products"
+      mobileCard={(row) => <PackagingProductCard row={row} variant="impact" />}
+      mobileSort
       filtersActive={filtersActive}
       onResetFilters={view.resetFilters}
       sortBy={sortBy}

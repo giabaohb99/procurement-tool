@@ -101,23 +101,23 @@ export default function PackagingHistory() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Lịch sử mua hàng</h2>
           <div className="pkg-hint">Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn.</div>
         </div>
         {/* In = xem (quyền đọc). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
         {can('packaging_cost', 'read') && (
-          <button className="btn outline" onClick={() => window.open(historyPrintHref(filterParams), '_blank')}>
-            <i className="ti ti-printer" />In
+          <button className="btn outline" aria-label="In" title="In" onClick={() => window.open(historyPrintHref(filterParams), '_blank')}>
+            <i className="ti ti-printer" /><span className="pkg-btn-label">In</span>
           </button>
         )}
         <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_MISA} action="write"
           label="Nạp sổ Misa" title="Nạp Sổ chi tiết mua hàng Misa"
           description="Tệp Excel Sổ chi tiết mua hàng xuất từ Misa (cột Ngày, Mã hàng, Số lượng, Đơn giá, Tên NCC, Tên kho…). Chỉ thay dữ liệu Misa trong khoảng ngày của tệp, dòng trùng giữ nguyên, ngoài khoảng không đổi; mốc sổ Misa dời theo ngày lớn nhất. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
         {can('packaging_cost', 'export') && (
-          <button className="btn outline" disabled={exporting} onClick={exportExcel}>
-            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
+          <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
+            <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>
         )}
       </div>

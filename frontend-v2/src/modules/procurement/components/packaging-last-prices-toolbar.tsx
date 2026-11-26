@@ -5,7 +5,11 @@
  * Hàng 1: ô tìm + chip nhóm (kèm số mã). Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
  * ngưỡng %, và các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
-import { Search } from 'lucide-react'
+import { ChevronDown, Search } from 'lucide-react'
+import { useState } from 'react'
+
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { Button } from '@/shared/ui/button'
 
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
@@ -21,7 +25,7 @@ import type {
   PackagingLastPricesGroup,
   PackagingLastPricesSupplier,
 } from '../types/packaging-cost-types'
-import { LAST_PRICE_N_OPTIONS } from '../utils/packaging-last-prices'
+import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS } from '../utils/packaging-last-prices'
 
 export interface LastPricesFilters {
   q: string
@@ -41,6 +45,21 @@ export interface LastPricesFilters {
   showQty: boolean
 }
 
+/** Số tùy chọn hàng 2–3 đang khác mặc định — hiện trên nút "Lọc thêm" khi đã gập ở khổ điện thoại. */
+function countExtraOptions(filters: LastPricesFilters): number {
+  return [
+    filters.n !== LAST_PRICE_DEFAULT_N,
+    filters.scope !== 'bom',
+    filters.suppliers.length > 0,
+    Boolean(filters.from || filters.to),
+    filters.trend !== 'all',
+    filters.minPct > 0,
+    !filters.onlyPriced,
+    filters.bomOnly,
+    filters.showQty,
+  ].filter(Boolean).length
+}
+
 const TREND_LABELS: [LastPricesTrend, string][] = [
   ['all', 'Tất cả'],
   ['up', 'Tăng'],
@@ -57,7 +76,9 @@ interface PackagingLastPricesToolbarProps {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5">
+    //  `flex-wrap`: ở khổ điện thoại nhãn dài ("Biến động lần 1 so lần 2") + bốn nút không vừa một hàng — nhóm nút xuống
+    //  dưới nhãn chứ không tràn ngang cả trang.
+    <div className="flex flex-wrap items-center gap-1.5">
       <span className="text-sm whitespace-nowrap text-muted-foreground">{label}</span>
       {children}
     </div>
@@ -94,6 +115,12 @@ export function PackagingLastPricesToolbar({
   onChange,
 }: PackagingLastPricesToolbarProps) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
+  //  Khổ điện thoại: hàng 2–3 (mười tùy chọn) cao gần trọn màn, đẩy danh sách xuống dưới nếp gấp — gập lại sau nút
+  //  "Lọc thêm". Màn rộng luôn mở như cũ.
+  const isMobile = useIsMobile()
+  const [expanded, setExpanded] = useState(false)
+  const showExtra = !isMobile || expanded
+  const extraCount = countExtraOptions(filters)
   const total = groups.reduce((sum, item) => sum + item.count, 0)
   const chips = [{ group: '', label: `Tất cả (${total})` }].concat(
     groups.map((item) => ({ group: item.group, label: `${item.group} (${item.count})` })),
@@ -131,105 +158,124 @@ export function PackagingLastPricesToolbar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Field label="Số lần hiển thị">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={String(filters.n)}
-            onValueChange={(value) => value && patch({ n: Number(value) })}
-            aria-label="Số lần hiển thị"
-          >
-            {LAST_PRICE_N_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option} value={String(option)}>
-                {option} lần
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </Field>
-        <Field label="Phạm vi mã">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={filters.scope}
-            onValueChange={(value) => value && patch({ scope: value as 'bom' | 'all' })}
-            aria-label="Phạm vi mã"
-          >
-            <ToggleGroupItem value="bom">Định mức + báo giá</ToggleGroupItem>
-            <ToggleGroupItem value="all">Mọi mã</ToggleGroupItem>
-          </ToggleGroup>
-        </Field>
-        <div className="w-56" title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
-          <MultiPicker<string>
-            value={filters.suppliers}
-            onChange={(ids) => patch({ suppliers: ids })}
-            options={suppliers.map((s) => ({ id: s.code, label: s.name, hint: s.code }))}
-            placeholder="Nhà cung cấp"
-            searchPlaceholder="Tìm nhà cung cấp…"
-            emptyMessage="Không có nhà cung cấp nào."
-            summaryInTrigger
-            clearInTrigger
-          />
-        </div>
-        <DateRangePicker
-          from={filters.from}
-          to={filters.to}
-          placeholder="Khoảng ngày mua"
-          onChange={(from, to) => patch({ from, to })}
-        />
-        <Field label="Biến động lần 1 so lần 2">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={filters.trend}
-            onValueChange={(value) => value && patch({ trend: value as LastPricesTrend })}
-            aria-label="Biến động lần 1 so lần 2"
-          >
-            {TREND_LABELS.map(([value, label]) => (
-              <ToggleGroupItem key={value} value={value}>
-                {label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </Field>
-        <Field label="Biến động từ (%)">
-          <NumberInput
-            aria-label="Ngưỡng biến động lần 1 so lần 2 (%)"
-            title="Chỉ lấy mã có |biến động lần 1 so lần 2| từ ngưỡng này trở lên; 0 = không lọc"
-            className="h-8 w-20"
-            value={filters.minPct}
-            maxDecimals={2}
-            onChange={(minPct) => patch({ minPct })}
-          />
-        </Field>
-      </div>
+      {isMobile && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-fit"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          {expanded ? 'Thu gọn bộ lọc' : 'Lọc thêm'}
+          {!expanded && extraCount > 0 && ` (${extraCount})`}
+          <ChevronDown className={cn('transition-transform', expanded && 'rotate-180')} />
+        </Button>
+      )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Toggle
-          id="last-prices-only-priced"
-          label="Chỉ mã đã có giá"
-          checked={filters.onlyPriced}
-          onChange={(onlyPriced) => patch({ onlyPriced })}
-        />
-        <Toggle
-          id="last-prices-bom-only"
-          label="Chỉ mã đang dùng trong định mức"
-          checked={filters.bomOnly}
-          onChange={(bomOnly) => patch({ bomOnly })}
-        />
-        <Toggle
-          id="last-prices-show-qty"
-          label="Hiện số lượng"
-          checked={filters.showQty}
-          onChange={(showQty) => patch({ showQty })}
-        />
-        <span className="text-xs text-muted-foreground">
-          Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
-        </span>
-      </div>
+      {showExtra && (
+        <>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Field label="Số lần hiển thị">
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={String(filters.n)}
+                onValueChange={(value) => value && patch({ n: Number(value) })}
+                aria-label="Số lần hiển thị"
+              >
+                {LAST_PRICE_N_OPTIONS.map((option) => (
+                  <ToggleGroupItem key={option} value={String(option)}>
+                    {option} lần
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </Field>
+            <Field label="Phạm vi mã">
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={filters.scope}
+                onValueChange={(value) => value && patch({ scope: value as 'bom' | 'all' })}
+                aria-label="Phạm vi mã"
+              >
+                <ToggleGroupItem value="bom">Định mức + báo giá</ToggleGroupItem>
+                <ToggleGroupItem value="all">Mọi mã</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+            <div className="w-56" title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
+              <MultiPicker<string>
+                value={filters.suppliers}
+                onChange={(ids) => patch({ suppliers: ids })}
+                options={suppliers.map((s) => ({ id: s.code, label: s.name, hint: s.code }))}
+                placeholder="Nhà cung cấp"
+                searchPlaceholder="Tìm nhà cung cấp…"
+                emptyMessage="Không có nhà cung cấp nào."
+                summaryInTrigger
+                clearInTrigger
+              />
+            </div>
+            <DateRangePicker
+              from={filters.from}
+              to={filters.to}
+              placeholder="Khoảng ngày mua"
+              onChange={(from, to) => patch({ from, to })}
+            />
+            <Field label="Biến động lần 1 so lần 2">
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={filters.trend}
+                onValueChange={(value) => value && patch({ trend: value as LastPricesTrend })}
+                aria-label="Biến động lần 1 so lần 2"
+              >
+                {TREND_LABELS.map(([value, label]) => (
+                  <ToggleGroupItem key={value} value={value}>
+                    {label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </Field>
+            <Field label="Biến động từ (%)">
+              <NumberInput
+                aria-label="Ngưỡng biến động lần 1 so lần 2 (%)"
+                title="Chỉ lấy mã có |biến động lần 1 so lần 2| từ ngưỡng này trở lên; 0 = không lọc"
+                className="h-8 w-20"
+                value={filters.minPct}
+                maxDecimals={2}
+                onChange={(minPct) => patch({ minPct })}
+              />
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Toggle
+              id="last-prices-only-priced"
+              label="Chỉ mã đã có giá"
+              checked={filters.onlyPriced}
+              onChange={(onlyPriced) => patch({ onlyPriced })}
+            />
+            <Toggle
+              id="last-prices-bom-only"
+              label="Chỉ mã đang dùng trong định mức"
+              checked={filters.bomOnly}
+              onChange={(bomOnly) => patch({ bomOnly })}
+            />
+            <Toggle
+              id="last-prices-show-qty"
+              label="Hiện số lượng"
+              checked={filters.showQty}
+              onChange={(showQty) => patch({ showQty })}
+            />
+            <span className="text-xs text-muted-foreground">
+              Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
+            </span>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -191,7 +191,8 @@ function rangesToRequest(
   return out
 }
 
-const RANGE_REQUEST_FIELD: Record<ImpactRangeKey, string> = {
+/** Ô khoảng của biểu mẫu → tiền tố tham số máy chủ / URL (`carton_qty` → `carton_qty_min` + `carton_qty_max`). */
+export const RANGE_REQUEST_FIELD: Record<ImpactRangeKey, string> = {
   cartonQty: 'carton_qty',
   diffBottle: 'diff_bottle',
   diffCarton: 'diff_carton',

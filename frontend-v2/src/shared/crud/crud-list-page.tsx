@@ -331,6 +331,7 @@ function CrudListContent<T extends CrudRecord>({
           //  Chỉ những danh mục KHAI mới đổi sang thẻ ở khổ hẹp — xem
           //  `CrudConfig.mobileCard`.
           mobileCard={config.mobileCard}
+          mobileSort={config.mobileSort}
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={handleSortChange}

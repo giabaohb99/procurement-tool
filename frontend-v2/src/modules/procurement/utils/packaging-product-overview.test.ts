@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { EMPTY_IMPACT_FILTERS } from './packaging-impact-filters'
-import { buildOverviewParams, OVERVIEW_TREND_CHIPS, overviewChipLabel } from './packaging-product-overview'
+import {
+  buildOverviewParams,
+  buildOverviewUrlSearch,
+  OVERVIEW_TREND_CHIPS,
+  overviewChipLabel,
+  parseOverviewUrlState,
+  type OverviewUrlState,
+} from './packaging-product-overview'
 
 describe('OVERVIEW_TREND_CHIPS', () => {
   it('takes the four trend labels from the generated code set, in the order the owner reads them', () => {
@@ -58,5 +65,51 @@ describe('buildOverviewParams', () => {
         pct: { min: '5', max: '' },
       }),
     ).toEqual({ q: 'x', trend: undefined, part_roles: '3', pct_min: 5 })
+  })
+})
+
+describe('overview URL state (duoc-CR-784)', () => {
+  const sortKeys = ['fg_code', 'diff_carton', 'pct']
+
+  it('round-trips keyword, trend chip, advanced filters, sort and page', () => {
+    const state: OverviewUrlState = {
+      q: 'chito',
+      trend: 'up',
+      advanced: {
+        ...EMPTY_IMPACT_FILTERS,
+        roles: [2, 3],
+        costOldBottle: { min: '1000', max: '' },
+        pct: { min: '-5', max: '10,5' },
+        warningsOnly: true,
+      },
+      sortBy: 'diff_carton',
+      sortDir: 'desc',
+      page: 2,
+    }
+    const query = buildOverviewUrlSearch(state)
+    const params = new URLSearchParams(query)
+    expect(params.get('trend')).toBe('up')
+    expect(params.get('part_roles')).toBe('2,3')
+    expect(params.get('cost_old_bottle_min')).toBe('1000')
+    expect(params.get('pct_max')).toBe('10.5')
+    expect(parseOverviewUrlState(params, sortKeys)).toEqual(state)
+  })
+
+  it('writes nothing for defaults and drops an unknown sort key / trend / page', () => {
+    expect(
+      buildOverviewUrlSearch({
+        q: ' ',
+        trend: 'all',
+        advanced: EMPTY_IMPACT_FILTERS,
+        sortBy: '',
+        sortDir: 'asc',
+        page: 1,
+      }),
+    ).toBe('')
+    const state = parseOverviewUrlState(
+      new URLSearchParams('sort_by=drop_table&sort_dir=desc&trend=sideways&page=abc'),
+      sortKeys,
+    )
+    expect(state).toMatchObject({ sortBy: '', sortDir: 'asc', trend: 'all', page: 1 })
   })
 })

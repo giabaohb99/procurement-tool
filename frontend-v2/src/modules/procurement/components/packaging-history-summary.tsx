@@ -46,7 +46,7 @@ export function PackagingHistorySummary({
             className={cn(
               //  Giá trị dài ("1.900 – 2.800") thu cỡ chữ và được xuống dòng thay vì bị cắt "…".
               'mt-1 leading-tight font-bold tabular-nums break-words',
-              item.value.length > LONG_VALUE_LENGTH ? 'text-lg' : 'text-[22px]',
+              item.value.length > LONG_VALUE_LENGTH ? 'text-lg max-md:text-base' : 'text-[22px]',
               item.tone ? packagingDiffTone(item.tone === 'up' ? 1 : -1) : 'text-navy',
             )}
             title={item.value}

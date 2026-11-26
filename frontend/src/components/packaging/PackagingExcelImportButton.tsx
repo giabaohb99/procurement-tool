@@ -73,7 +73,7 @@ export default function PackagingExcelImportButton({ module, label, title, descr
 
   return (
     <>
-      <button className="btn outline" onClick={() => setOpen(true)}><i className="ti ti-file-import" />{label}</button>
+      <button className="btn outline" aria-label={label} title={title} onClick={() => setOpen(true)}><i className="ti ti-file-import" /><span className="pkg-btn-label">{label}</span></button>
       {open && (
         <PackagingModal title={title} onClose={close} busy={busy} maxWidth={460} subtitle={description}
           footer={<>

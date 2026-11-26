@@ -48,13 +48,14 @@ export function buildProductColumns({ offset, newKey, compact, extraAfterCosts =
 }): TableColumn<PackagingImpactProduct>[] {
   const note = (r: PackagingImpactProduct): ReactNode => {
     const text = joinWarnings(r.warnings)
+    if (!text) return null
     return compact ? <OneLine title={text}><span className="pkg-hint">{text}</span></OneLine> : <span className="pkg-hint">{text}</span>
   }
   const lead: TableColumn<PackagingImpactProduct>[] = [
-    { key: 'stt', label: 'STT', width: 56, align: 'center', fixed: true, cell: (_r, i) => offset + i + 1 },
-    { key: 'fg_code', label: 'Mã HH', width: 110, sort: 'fg_code', fixed: true,
+    { key: 'stt', label: 'STT', width: 56, align: 'center', fixed: true, card: 'hide', cell: (_r, i) => offset + i + 1 },
+    { key: 'fg_code', label: 'Mã HH', width: 110, sort: 'fg_code', fixed: true, card: 'title',
       cell: (r) => (compact ? <CodeLink code={r.fg_code} product /> : <b className="pkg-num">{r.fg_code}</b>) },
-    { key: 'fg_name', label: 'Tên hàng hóa', width: compact ? 220 : 250, sort: 'fg_name', cell: (r) => <OneLine>{r.fg_name}</OneLine> },
+    { key: 'fg_name', label: 'Tên hàng hóa', width: compact ? 220 : 250, sort: 'fg_name', card: 'subtitle', cell: (r) => <OneLine>{r.fg_name}</OneLine> },
     { key: 'carton_qty', label: 'Quy cách thùng', width: compact ? 112 : 100, align: 'right', sort: 'carton_qty',
       cell: (r) => (r.carton_qty ? r.carton_qty.toLocaleString('vi-VN') : <span className="pkg-muted">—</span>) },
   ]
@@ -64,15 +65,16 @@ export function buildProductColumns({ offset, newKey, compact, extraAfterCosts =
     width: 140,
     sort: p.sort,
     sortTitle: 'Xếp theo giá mới của thành phần',
+    card: 'part',
     cell: (r) => <PartCell part={r.parts.find((x) => x.role === p.role)} linkCode={compact} />,
   }))
   const costs: TableColumn<PackagingImpactProduct>[] = [
-    { key: 'cost_old_bottle', label: 'CP bao bì/chai cũ', width: 110, align: 'right', sort: 'cost_old_bottle', cell: (r) => <PriceText value={r.cost_old_bottle} /> },
-    { key: newKey, label: 'CP bao bì/chai mới', width: 110, align: 'right', sort: newKey, cell: (r) => <PriceText value={r[newKey]} bold /> },
-    { key: 'diff_bottle', label: 'Tăng/giảm /chai', width: 110, align: 'right', sort: 'diff_bottle', cell: (r) => <DiffText value={r.diff_bottle} bold /> },
-    { key: 'diff_carton', label: 'Tăng/giảm /thùng', width: 120, align: 'right', sort: 'diff_carton', cell: (r) => <DiffText value={r.diff_carton} bold /> },
+    { key: 'cost_old_bottle', label: 'CP bao bì/chai cũ', width: 110, align: 'right', sort: 'cost_old_bottle', card: 'hero', cell: (r) => <PriceText value={r.cost_old_bottle} /> },
+    { key: newKey, label: 'CP bao bì/chai mới', width: 110, align: 'right', sort: newKey, card: 'hero', cell: (r) => <PriceText value={r[newKey]} bold /> },
+    { key: 'diff_bottle', label: 'Tăng/giảm /chai', width: 110, align: 'right', sort: 'diff_bottle', card: 'hero', cell: (r) => <DiffText value={r.diff_bottle} bold /> },
+    { key: 'diff_carton', label: 'Tăng/giảm /thùng', width: 120, align: 'right', sort: 'diff_carton', card: 'hero', cell: (r) => <DiffText value={r.diff_carton} bold /> },
   ]
-  const noteCol: TableColumn<PackagingImpactProduct> = { key: 'note', label: 'Ghi chú', width: 220, cell: note }
+  const noteCol: TableColumn<PackagingImpactProduct> = { key: 'note', label: 'Ghi chú', width: 220, card: 'full', cell: note }
   //  Tổng hợp (compact): con số cần đọc (chi phí cũ / mới, chênh lệch, xu hướng) đứng TRƯỚC năm ô thành phần để thấy ngay
   //  không phải cuộn ngang; Tác động giá giữ thứ tự bản mẫu (thành phần rồi tới chi phí).
   return compact ? [...lead, ...costs, ...extraAfterCosts, ...parts, noteCol] : [...lead, ...parts, ...costs, ...extraAfterCosts, noteCol]

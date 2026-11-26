@@ -24,11 +24,13 @@ import { useHasChanged } from './use-has-changed'
  * @param filterDeps Danh sách giá trị lọc. So sánh bằng `JSON.stringify` nên
  *   truyền giá trị nguyên thủy hoặc chuỗi đã ổn định (vd `queryKey` của
  *   `useFilterQuery`), đừng truyền object tạo mới mỗi lần render.
+ * @param initialPage Trang lúc mở màn (vd đọc từ URL — duoc-CR-784); chỉ dùng ở lượt render đầu, bộ lọc đổi vẫn về 1.
  */
 export function usePageResetOnFilterChange(
   filterDeps: readonly unknown[],
+  initialPage = 1,
 ): [number, Dispatch<SetStateAction<number>>] {
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(initialPage)
 
   // `JSON.stringify` để so theo NỘI DUNG: mảng deps là mảng mới mỗi lần render.
   if (useHasChanged(JSON.stringify(filterDeps))) {

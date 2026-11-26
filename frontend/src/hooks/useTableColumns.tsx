@@ -19,7 +19,16 @@ export type TableColumn<T = any> = {
   th?: React.CSSProperties                     // style thêm cho <th>
   td?: React.CSSProperties                     // style thêm cho <td>
   cell?: (row: T, index: number) => React.ReactNode   // nội dung ô dữ liệu
+  /** duoc-CR-784: vai trò của cột khi bảng hiện dạng THẺ trên điện thoại (`TableCards`); bỏ trống = ô "nhãn: giá trị" 2 cột. */
+  card?: CardSlot
 }
+
+/**
+ * Chỗ đặt cột trong thẻ (màn ≤ 820px): `title` mã in đậm · `subtitle` tên dưới mã · `hero` số chính (nhãn nhỏ trên, số to dưới) ·
+ * `field` (mặc định) lưới 2 cột nhãn: giá trị · `full` một ô trọn hàng · `part` dòng gọn nhãn + giá trị (thành phần chai / nắp…) ·
+ * `corner` nút nhỏ góc phải trên · `action` hàng nút cuối thẻ · `hide` không hiện trong thẻ (STT…).
+ */
+export type CardSlot = 'title' | 'subtitle' | 'hero' | 'field' | 'full' | 'part' | 'corner' | 'action' | 'hide'
 
 /** Chưa từng chỉnh (chưa có trong localStorage) → dùng bộ mặc định `defaultHidden` của bảng.
  *

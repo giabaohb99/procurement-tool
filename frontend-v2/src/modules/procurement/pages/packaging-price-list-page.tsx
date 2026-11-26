@@ -4,13 +4,14 @@
  * và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ (luật §8) — tham số xếp đi kèm bộ lọc
  * nên Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá mới.
  */
-import { FileDown, Loader2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
@@ -19,12 +20,14 @@ import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { PackagingExportExcelButton } from '../components/packaging-header-buttons'
 import { exportPackagingPriceList } from '../api/packaging-cost-api'
 import {
   PackagingPriceListToolbar,
   type PriceListFilters,
 } from '../components/packaging-price-list-toolbar'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
+import { PackagingPriceRowCard } from '../components/packaging-price-row-card'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
 import { PACKAGING_QUOTE_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
@@ -37,6 +40,7 @@ const EMPTY_FILTERS: PriceListFilters = { q: '', group: '', scope: 'bom' }
 
 export function PackagingPriceListPage() {
   const { can } = usePermission()
+  const isMobile = useIsMobile()
   const [filters, setFilters] = useState<PriceListFilters>(EMPTY_FILTERS)
   const [range, setRange] = useState({ from: '', to: '' })
   const [sortBy, setSortBy] = useState('')
@@ -68,8 +72,9 @@ export function PackagingPriceListPage() {
   const groups = useMemo(() => collectPackagingGroups(optionsQuery.data ?? []), [optionsQuery.data])
 
   const openQuote = useCallback((row: PackagingPriceRow) => setQuoteCode(row.code), [])
+  const canQuote = can('packaging_cost', 'create')
   const columns = usePackagingPriceListColumns({
-    canQuote: can('packaging_cost', 'create'),
+    canQuote,
     onQuote: openQuote,
   })
 
@@ -92,16 +97,25 @@ export function PackagingPriceListPage() {
     })
 
   return (
-    <PageContainer fill>
+    //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Bảng giá VTBB"
-        description="Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT."
+        //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
+        description={
+          isMobile
+            ? undefined
+            : 'Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.'
+        }
         actions={
           <>
             <DateRangePicker
               from={range.from}
               to={range.to}
               placeholder="Khoảng ngày tính min – max"
+              //  Màn này đầu hàng còn ba nút (Báo giá mới · Nhập báo giá · Xuất Excel): ô ngày chiếm trọn hàng riêng, chia
+              //  hàng với chúng thì bị bóp còn mỗi biểu tượng lịch.
+              className="max-md:basis-full"
               onChange={(from, to) => setRange({ from, to })}
             />
             {can('packaging_cost', 'create') && (
@@ -112,20 +126,12 @@ export function PackagingPriceListPage() {
             )}
             <PackagingExcelImportButton kind={PACKAGING_QUOTE_IMPORT} />
             {can('packaging_cost', 'export') && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={exporting}
-                onClick={() => void exportExcel()}
-              >
-                {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-                Xuất Excel
-              </Button>
+              <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
             )}
           </>
         }
       />
-      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+      <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4 max-md:gap-2 max-md:p-3">
         <DataTable
           //  Dòng khóa theo mã, không có `id` số: để mặc định thì lúc đang tải bảng chèn cột ID rồi gỡ, làm tách nhóm cột.
           idColumn={false}
@@ -141,6 +147,10 @@ export function PackagingPriceListPage() {
               : 'Chưa có mã vật tư bao bì nào trong định mức.'
           }
           storageKey="procurement.packaging-price-list"
+          mobileCard={(row) => (
+            <PackagingPriceRowCard row={row} onQuote={canQuote ? openQuote : undefined} />
+          )}
+          mobileSort
           filtersActive={filtersActive}
           onResetFilters={() => {
             setFilters(EMPTY_FILTERS)

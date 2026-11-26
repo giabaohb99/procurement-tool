@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import NumberInput from '../NumberInput'
 import TableHead, { TableCells, TableColGroup } from '../TableHead'
 import TableToolbar from '../TableToolbar'
+import TableCards from '../TableCards'
+import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import type { PackagingSelectedCode } from '../../api/packaging-cost-types'
 import { PRICE_DECIMALS } from '../../utils/money'
@@ -28,13 +30,13 @@ export default function PackagingImpactSelectedTable({
 }) {
   const columns = useMemo<TableColumn<PackagingSelectedCode>[]>(() => {
     return [
-      { key: 'code', label: 'Mã', width: 110, fixed: true, cell: (r) => <CodeLink code={r.code} /> },
-      { key: 'name', label: 'Tên vật tư', width: 240, cell: (r) => <OneLine>{r.name}</OneLine> },
+      { key: 'code', label: 'Mã', width: 110, fixed: true, card: 'title', cell: (r) => <CodeLink code={r.code} /> },
+      { key: 'name', label: 'Tên vật tư', width: 240, card: 'subtitle', cell: (r) => <OneLine>{r.name}</OneLine> },
       { key: 'group', label: 'Nhóm', width: 80, cell: (r) => r.group },
-      { key: 'old', label: 'Giá cũ', width: 100, align: 'right', cell: (r) => <PriceText value={r.old} /> },
-      { key: 'new', label: 'Giá mới', width: 100, align: 'right', cell: (r) => <PriceText value={r.new} /> },
+      { key: 'old', label: 'Giá cũ', width: 100, align: 'right', card: 'hero', cell: (r) => <PriceText value={r.old} /> },
+      { key: 'new', label: 'Giá mới', width: 100, align: 'right', card: 'hero', cell: (r) => <PriceText value={r.new} /> },
       {
-        key: 'assumed', label: 'Giá giả định', width: 140, fixed: true,
+        key: 'assumed', label: 'Giá giả định', width: 140, fixed: true, card: 'full',
         cell: (r) => (
           <NumberInput className="pkg-assumed" placeholder="Nhập giá" maxDecimals={PRICE_DECIMALS}
             value={assumed[r.code] ?? 0}
@@ -42,34 +44,37 @@ export default function PackagingImpactSelectedTable({
             onChange={(p) => onAssumedChange(r.code, p > 0 ? p : null)} />
         ),
       },
-      { key: 'diff', label: 'Chênh lệch', width: 110, align: 'right', cell: (r) => <DiffText value={r.diff} bold /> },
-      { key: 'pct', label: '%', width: 80, align: 'right', cell: (r) => <PctText value={r.pct} /> },
+      { key: 'diff', label: 'Chênh lệch', width: 110, align: 'right', card: 'hero', cell: (r) => <DiffText value={r.diff} bold /> },
+      { key: 'pct', label: '%', width: 80, align: 'right', card: 'hero', cell: (r) => <PctText value={r.pct} /> },
       { key: 'usage', label: 'Số SP bị ảnh hưởng', width: 104, align: 'right', cell: (r) => r.usage },
       //  Min và Max tách hai cột — giá thấp / cao nhất trong sổ giá của mã.
       { key: 'min', label: 'Min', width: 100, align: 'right', cell: (r) => <PriceText value={r.min} /> },
       { key: 'max', label: 'Max', width: 100, align: 'right', cell: (r) => <PriceText value={r.max} /> },
       {
-        key: 'note', label: 'Ghi chú', width: 170,
-        cell: (r) => <span className="pkg-err" title={joinWarnings(r.warnings)}>{joinWarnings(r.warnings)}</span>,
+        key: 'note', label: 'Ghi chú', width: 170, card: 'full',
+        cell: (r) => (joinWarnings(r.warnings) ? <span className="pkg-err" title={joinWarnings(r.warnings)}>{joinWarnings(r.warnings)}</span> : null),
       },
       {
-        key: 'remove', label: '', width: 44, align: 'center', fixed: true,
+        key: 'remove', label: '', width: 44, align: 'center', fixed: true, card: 'corner',
         cell: (r) => <button className="pkg-x" aria-label={`Bỏ ${r.code}`} title="Bỏ mã này" onClick={() => onRemove(r.code)}><i className="ti ti-x" /></button>,
       },
     ]
   }, [assumed, onAssumedChange, onRemove])
 
   const table = useTableColumns('packaging-impact-selected', columns)
+  const narrow = useNarrowScreen()
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
   const [pickedGroup, setPickedGroup] = useState('')
   const chips = useMemo(() => buildSelectedGroupChips(rows), [rows])
   //  Nhóm đã chọn mà bị bỏ hết mã thì tự về "Tất cả" (suy ra lúc vẽ, không cần effect).
   const group = resolveSelectedGroup(pickedGroup, chips)
+  const emptyText = failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…' : 'Các mã đã chọn chưa có trong định mức nào.'
   const list = (group ? rows?.filter((r) => r.group === group) : rows) ?? []
 
   return (
     <div>
-      <TableToolbar {...table}>
+      {/*  Màn hẹp + không có chip nhóm: thanh công cụ chỉ còn mỗi nút Cột nằm trơ một hàng — bỏ hẳn cho gọn. */}
+      {(!narrow || chips.length > 1) && <TableToolbar compact {...table}>
         <div className="pkg-row" style={{ flex: 1, textAlign: 'left' }}>
           {/*  Một nhóm duy nhất thì không có gì để lọc. */}
           {chips.length > 1 && (
@@ -83,8 +88,13 @@ export default function PackagingImpactSelectedTable({
             </div>
           )}
         </div>
-      </TableToolbar>
+      </TableToolbar>}
       {/*  Chọn cả nhóm là vài chục mã — chặn chiều cao, cuộn trong khung để bảng sản phẩm không bị đẩy xuống tận cuối trang. */}
+      {narrow ? (
+        <div className="pkg-scroll-y">
+          <TableCards columns={table.columns} rows={list} rowKey={(r) => r.code} empty={emptyText} />
+        </div>
+      ) : (
       <div className="table-scroll pkg-scroll-y">
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
             <TableColGroup columns={table.columns} colW={table.colW} />
@@ -92,13 +102,12 @@ export default function PackagingImpactSelectedTable({
             <tbody>
               {list.map((r, i) => <tr key={r.code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
               {list.length === 0 && (
-                <tr><td colSpan={table.columns.length} className="table-empty">
-                  {failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…' : 'Các mã đã chọn chưa có trong định mức nào.'}
-                </td></tr>
+                <tr><td colSpan={table.columns.length} className="table-empty">{emptyText}</td></tr>
               )}
             </tbody>
           </table>
       </div>
+      )}
     </div>
   )
 }

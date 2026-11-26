@@ -15,6 +15,8 @@ import TableToolbar from './TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useFilterUrlWriter } from '../hooks/use-url-filters'
 import TableScroll from './TableScroll'
+import TableCards from './TableCards'
+import { useNarrowScreen } from '../hooks/useNarrowScreen'
 import { isInteractiveTarget, openInNewTab, wantsNewTab } from '../utils/new-tab'
 
 export default function CrudList() {
@@ -22,6 +24,7 @@ export default function CrudList() {
   const cfg = cruds[entity || '']
   const { can } = useAuth()
   const navigate = useNavigate()
+  const narrow = useNarrowScreen()
   const [searchParams] = useSearchParams()
 
   // Các key query mà thanh lọc cơ bản quản lý. Ô "daterange" sinh 2 param <key>_from / <key>_to
@@ -100,11 +103,12 @@ export default function CrudList() {
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
     if (!cfg) return []
     const list: TableColumn<any>[] = [
-      { key: 'id', label: 'ID', sort: 'id', width: 80, defaultHidden: cfg.idDefaultHidden },
+      { key: 'id', label: 'ID', sort: 'id', width: 80, defaultHidden: cfg.idDefaultHidden, card: 'hide' },
       ...cfg.columns.map((c): TableColumn<any> => ({
         key: c.key,
         label: c.label,
         sort: c.noSort ? undefined : c.key,
+        card: c.card,
         defaultHidden: c.defaultHidden,           // bao-CR-705
         hiddenForOlderLayouts: c.hiddenForOlderLayouts,
         cell: (row) => {
@@ -131,7 +135,7 @@ export default function CrudList() {
         key: '__select', label: (
           <input type="checkbox" checked={allPageSelected} onChange={toggleAllOnPage}
             title="Chọn/bỏ chọn toàn bộ dòng trên trang này" />
-        ), width: 44, align: 'center', fixed: true,
+        ), width: 44, align: 'center', fixed: true, card: 'corner',
         cell: (row) => (
           <span onClick={(e) => e.stopPropagation()}>
             <input type="checkbox" checked={selectedIds.includes(row.id)}
@@ -144,7 +148,7 @@ export default function CrudList() {
     }
     if (showClone) {
       list.push({
-        key: '__clone', label: 'Thao tác', width: 110, align: 'center', fixed: true,
+        key: '__clone', label: 'Thao tác', width: 110, align: 'center', fixed: true, card: 'action',
         cell: (row) => (
           <span onClick={(e) => e.stopPropagation()}>
             <button className="btn ghost" style={{ height: 30, padding: '0 10px' }}
@@ -413,7 +417,7 @@ export default function CrudList() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className={cfg.cards ? 'pkg-head' : undefined} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="page-title" style={{ margin: 0 }}>{cfg.title}</h2>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {selectedIds.length > 0 && cfg.bulkDelete && can(cfg.entity, 'delete') && (
@@ -458,6 +462,7 @@ export default function CrudList() {
       </div>
 
       {/* Nút mở bảng điều kiện nằm chung hàng với thanh lọc cơ bản (slot `extra`) */}
+      <div className={cfg.cards ? 'pkg-compact-filters' : undefined}>
       {(() => {
         const bar = (
           <FilterBar key={`${cfg.slug}:${filterResetToken}`} fields={cfg.filters} initial={urlFilters} onApply={applyFilters}
@@ -470,9 +475,16 @@ export default function CrudList() {
           </ConditionalFilter>
         )
       })()}
+      </div>
 
       <div className="card table-card">
-        <TableToolbar {...table} onRefresh={() => load(page, pageSize, filters)} />
+        <TableToolbar {...table} compact={cfg.cards} onRefresh={() => load(page, pageSize, filters)} />
+        {cfg.cards && narrow ? (
+          <TableCards columns={table.columns} rows={displayItems} rowKey={(r) => r.id} sortBy={sortField} sortDir={sortDir} onSort={handleSort}
+            empty="Không có dữ liệu"
+            onRowClick={(e, row) => openRow(e, `/${cfg.slug}/${row.id}`)}
+            onRowAuxClick={(e, row) => { if (e.button === 1) openRow(e, `/${cfg.slug}/${row.id}`) }} />
+        ) : (
         <TableScroll>
           <table>
             <TableHead {...table} sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
@@ -494,6 +506,7 @@ export default function CrudList() {
             </tbody>
           </table>
         </TableScroll>
+        )}
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
         </div>

@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import Pagination from '../../components/Pagination'
 import TableHead, { TableCells, TableColGroup } from '../../components/TableHead'
 import TableToolbar from '../../components/TableToolbar'
 import TableScroll from '../../components/TableScroll'
+import TableCards from '../../components/TableCards'
+import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { toast } from '../../components/toast'
 import { PctText, TrendText } from '../../components/packaging/PackagingCells'
 import PackagingOverviewToolbar from '../../components/packaging/PackagingOverviewToolbar'
@@ -17,12 +19,14 @@ import { EMPTY_IMPACT_FILTERS, countAdvancedFilters } from '../../utils/packagin
 import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
 import { buildOverviewParams } from '../../utils/packaging-overview'
 import { nextSort } from '../../utils/packaging-query'
+import { OVERVIEW_URL_KEYS, overviewScreenToSearch, searchToOverviewScreen } from '../../utils/packaging-screen-url'
+import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import '../../components/packaging/packaging.css'
 
 /** "% chênh" và "Xu hướng" đứng ngay sau các cột chi phí — Tác động giá không có. */
 const EXTRA_COLUMNS: TableColumn<PackagingImpactProduct>[] = [
-  { key: 'pct', label: '% chênh', width: 80, align: 'right', sort: 'pct', cell: (r) => <PctText value={r.pct} /> },
-  { key: 'trend', label: 'Xu hướng', width: 96, cell: (r) => <TrendText trend={r.trend} /> },
+  { key: 'pct', label: '% chênh', width: 80, align: 'right', sort: 'pct', card: 'field', cell: (r) => <PctText value={r.pct} /> },
+  { key: 'trend', label: 'Xu hướng', width: 96, card: 'field', cell: (r) => <TrendText trend={r.trend} /> },
 ]
 
 /**
@@ -33,13 +37,15 @@ const EXTRA_COLUMNS: TableColumn<PackagingImpactProduct>[] = [
  */
 export default function PackagingProductOverview() {
   const { can } = useAuth()
-  const [keyword, setKeyword] = useState('')
-  const [trend, setTrend] = useState<PackagingOverviewTrend>('all')
-  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(EMPTY_IMPACT_FILTERS)
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100)
+  //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ từ khóa, xu hướng, chip lọc, xếp, trang).
+  const [initial] = useState(() => searchToOverviewScreen(window.location.search))
+  const [keyword, setKeyword] = useState(initial.keyword)
+  const [trend, setTrend] = useState<PackagingOverviewTrend>(initial.trend)
+  const [advanced, setAdvanced] = useState<ImpactAdvancedFilters>(initial.filters)
+  const [sortBy, setSortBy] = useState(initial.sortBy)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
+  const [page, setPage] = useState(initial.page)
+  const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
   const q = useDebouncedValue(keyword, 350)
 
@@ -48,6 +54,19 @@ export default function PackagingProductOverview() {
     () => buildOverviewParams(trend, q, { by: sortBy, dir: sortDir }, advanced), [trend, q, sortBy, sortDir, advanced])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchProductOverview(params), JSON.stringify(params))
+
+  const urlSearch = useMemo(
+    () => overviewScreenToSearch({ keyword, trend, filters: advanced, sortBy, sortDir, page, pageSize }),
+    [keyword, trend, advanced, sortBy, sortDir, page, pageSize])
+  useSearchSyncToUrl(urlSearch, OVERVIEW_URL_KEYS)
+
+  //  Trang từ URL (hoặc sau khi lọc ra ít dòng) vượt số trang thật thì lùi về trang cuối.
+  const listTotal = list.data?.total
+  useEffect(() => {
+    if (listTotal == null) return
+    const last = Math.max(1, Math.ceil(listTotal / pageSize))
+    if (page > last) setPage(last)
+  }, [listTotal, pageSize, page])
 
   const offset = (page - 1) * pageSize
   const columns = useMemo(
@@ -68,28 +87,35 @@ export default function PackagingProductOverview() {
   }
 
   const rows = list.data?.items ?? []
+  const narrow = useNarrowScreen()
+  const emptyText = list.failed ? 'Không tải được dữ liệu — thử tải lại.' : list.loading ? 'Đang tải…'
+    : filtersActive ? 'Không có sản phẩm nào khớp bộ lọc.' : 'Chưa có sản phẩm nào có định mức bao bì.'
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Tổng hợp theo sản phẩm</h2>
           <div className="pkg-hint">Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT.</div>
         </div>
         {can('packaging_cost', 'export') && (
-          <button className="btn outline" disabled={exporting} onClick={exportExcel}>
-            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
+          <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
+            <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>
         )}
       </div>
 
       <div className="card table-card">
         {/* Thanh lọc nằm CÙNG hàng với nút Cột / Tải lại của bảng (người chủ báo dải trống giữa hai hàng, 25/11/2026). */}
-        <TableToolbar {...table} onRefresh={list.reload}>
+        <TableToolbar compact {...table} onRefresh={list.reload}>
           <PackagingOverviewToolbar keyword={keyword} onKeyword={(v) => { setKeyword(v); setPage(1) }}
             trend={trend} onTrend={(v) => { setTrend(v); setPage(1) }} counts={list.data?.counts}
             advanced={advanced} onAdvanced={(v) => { setAdvanced(v); setPage(1) }}
             filtersActive={filtersActive} onReset={reset} />
         </TableToolbar>
+        {narrow ? (
+          <TableCards columns={table.columns} rows={rows} rowKey={(r) => r.fg_code} sortBy={sortBy} sortDir={sortDir} onSort={onSort}
+            empty={emptyText} />
+        ) : (
         <TableScroll>
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
             <TableColGroup columns={table.columns} colW={table.colW} />
@@ -97,14 +123,12 @@ export default function PackagingProductOverview() {
             <tbody>
               {rows.map((r, i) => <tr key={r.fg_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
               {rows.length === 0 && (
-                <tr><td colSpan={table.columns.length} className="table-empty">
-                  {list.failed ? 'Không tải được dữ liệu — thử tải lại.' : list.loading ? 'Đang tải…'
-                    : filtersActive ? 'Không có sản phẩm nào khớp bộ lọc.' : 'Chưa có sản phẩm nào có định mức bao bì.'}
-                </td></tr>
+                <tr><td colSpan={table.columns.length} className="table-empty">{emptyText}</td></tr>
               )}
             </tbody>
           </table>
         </TableScroll>
+        )}
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={list.data?.total ?? 0} onChange={(p, s) => { setPage(p); setPageSize(s) }} />
         </div>

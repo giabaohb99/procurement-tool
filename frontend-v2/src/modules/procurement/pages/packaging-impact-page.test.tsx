@@ -4,7 +4,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CoreApi from '@/core/api'
@@ -36,7 +36,8 @@ vi.mock('@/core/api', async (importOriginal) => {
   const actual = await importOriginal<typeof CoreApi>()
   return {
     ...actual,
-    apiGet: async () => [],
+    //  Danh sách mã của ô chọn (`/code-options`): mã lạ trên URL bị bỏ theo danh sách này.
+    apiGet: async () => [{ code: 'CPT0105', name: 'Chai 450ml', group: 'Chai', usage: 2, new: 1100 }],
     apiPost: async (_url: string, body: Record<string, unknown>) => {
       bodies.push(body)
       return impactResult()
@@ -56,12 +57,18 @@ vi.mock('../components/packaging-code-picker', () => ({
   ),
 }))
 
-function build() {
+/** In chuỗi truy vấn hiện tại để bài kiểm đọc được URL màn vừa ghi. */
+function LocationProbe() {
+  return <output data-testid="search">{useLocation().search}</output>
+}
+
+function build(initialSearch = '') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[`/procurement/packaging-cost${initialSearch}`]}>
         <PackagingImpactPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -88,5 +95,34 @@ describe('PackagingImpactPage without summary cards', () => {
     await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
     await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
     expect(bodies[0]).not.toHaveProperty('sort_by')
+  })
+})
+
+describe('PackagingImpactPage keeps its selection in the URL', () => {
+  it('writes the chosen codes to the URL (replace, no reload needed)', async () => {
+    build()
+    await userEvent.click(screen.getByRole('button', { name: 'chọn mã giả lập' }))
+    await waitFor(() => expect(screen.getByTestId('search')).toHaveTextContent('?codes=CPT0105'))
+  })
+
+  it('restores codes, assumed price, keyword, sort and page from the URL on load', async () => {
+    build('?codes=CPT0105&assumed=CPT0105:1250&q=abc&sort_by=diff_carton&sort_dir=desc&page=2')
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
+    expect(bodies[0]).toMatchObject({
+      codes: ['CPT0105'],
+      assumed_prices: { CPT0105: 1250 },
+      q: 'abc',
+      sort_by: 'diff_carton',
+      sort_dir: 'desc',
+      page: 2,
+    })
+  })
+
+  it('drops a code that is not in the code list once the list has loaded', async () => {
+    build('?codes=CPT0105,KHONGCO')
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe('?codes=CPT0105'),
+    )
+    expect(bodies.at(-1)).toMatchObject({ codes: ['CPT0105'] })
   })
 })

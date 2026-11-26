@@ -3,7 +3,9 @@
  * bộ lọc, dòng tóm tắt. Cùng nếp với `packaging-history-print.ts`: URL là dữ liệu từ ngoài vào nên mọi trường được kiểm ở
  * đây trước khi gửi máy chủ.
  *
- * Giá giả định đi bằng các khóa `assumed=MÃ:GIÁ` lặp lại (tách ở dấu hai chấm CUỐI, vì mã có thể chứa dấu hai chấm).
+ * Giá giả định đi bằng MỘT khóa `assumed=MÃ:GIÁ,MÃ:GIÁ` (cùng dạng với `codes=` và với bản v1 — người chủ chốt 26/11/2026);
+ * mỗi cặp tách ở dấu hai chấm CUỐI vì mã có thể chứa dấu hai chấm. Đọc vẫn nhận dạng cũ (khóa `assumed` lặp lại) để link
+ * in đã gửi trước đó không hỏng. Màn Tác động dùng chính hai hàm này để giữ lựa chọn trên URL (`packaging-impact-url-state`).
  */
 import { appRoutes } from '@/shared/constants/app-routes'
 import { formatDate } from '@/shared/utils/format-date'
@@ -63,9 +65,8 @@ function validDate(raw: string | null): string | undefined {
 export function buildImpactPrintSearch(request: PackagingImpactRequest): string {
   const search = new URLSearchParams()
   search.set('codes', request.codes.join(','))
-  for (const [code, price] of Object.entries(request.assumed_prices ?? {})) {
-    search.append('assumed', `${code}:${price}`)
-  }
+  const assumed = Object.entries(request.assumed_prices ?? {})
+  if (assumed.length) search.set('assumed', assumed.map(([code, price]) => `${code}:${price}`).join(','))
   if (request.date_from) search.set('date_from', request.date_from)
   if (request.date_to) search.set('date_to', request.date_to)
   if (request.q) search.set('q', request.q)
@@ -96,7 +97,7 @@ export function parseImpactPrintSearch(search: URLSearchParams): PackagingImpact
   ].slice(0, IMPACT_PRINT_MAX_CODES)
   const picked = new Set(codes)
   const assumed: Record<string, number> = {}
-  for (const pair of search.getAll('assumed')) {
+  for (const pair of search.getAll('assumed').flatMap((value) => value.split(','))) {
     const cut = pair.lastIndexOf(':')
     if (cut <= 0) continue
     const code = pair.slice(0, cut).trim()

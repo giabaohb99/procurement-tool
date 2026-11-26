@@ -23,6 +23,7 @@ import { ColumnHeaderCell } from './column-header-cell'
 import { canMoveWithinGroup, layoutColumnGroups } from './column-groups'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { DataTableMobileCards } from './data-table-mobile-cards'
+import { DataTableMobileSort } from './data-table-mobile-sort'
 import { DataTablePagination } from './data-table-pagination'
 import { FilterResetButton } from './filter-reset-button'
 import { measureColumnContentWidth } from './measure-column-width'
@@ -305,6 +306,12 @@ export interface DataTableProps<T> {
    */
   mobileCard?: (row: T) => ReactNode
   /**
+   * duoc-CR-784 — ở chế độ thẻ, bày ô "Xếp theo" (cột `sortable`) + nút đổi chiều trên thanh công cụ, vì thẻ không có
+   * hàng tiêu đề để bấm xếp. Cần kèm `onSortChange`. Tự nguyện như `mobileCard`: bật cho màn mà thứ tự là một phần
+   * của việc đọc (bảng phân trang tại máy chủ — không xếp được thì chỉ thấy trang 1 theo thứ tự mặc định).
+   */
+  mobileSort?: boolean
+  /**
    * Cột "ID" tự thêm ở bìa trái (bao-CR-578). Mặc định BẬT cho mọi bảng; truyền `false` cho
    * bảng không muốn. Bảng đã tự khai cột `id`, hoặc hàng không có `id` số, thì tự không thêm.
    */
@@ -348,6 +355,7 @@ export function DataTable<T>({
   onSortChange,
   fillHeight = false,
   mobileCard,
+  mobileSort = false,
   idColumn = true,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient()
@@ -355,6 +363,7 @@ export function DataTable<T>({
   //  Chỉ đúng khi màn khai `mobileCard`; không khai thì hook vẫn chạy nhưng
   //  không ai đọc kết quả — rẻ hơn nhiều so với gọi hook có điều kiện (cấm).
   const asCards = useIsMobile() && !!mobileCard
+  const showMobileSort = asCards && mobileSort && !!onSortChange
 
   /**
    * Tải lại dữ liệu. Cờ `refreshing` do CHÍNH nút giữ (không dùng `isFetching`
@@ -578,12 +587,17 @@ export function DataTable<T>({
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
       {(toolbar ||
         toolbarEnd ||
+        showMobileSort ||
         (!asCards && tableColumns.some((c) => c.hideable !== false))) && (
         <div
           className={cn('mb-4 flex shrink-0 flex-wrap items-center gap-3', toolbarClassName)}
         >
           {toolbar}
-          <div className={cn('ml-auto flex items-center gap-2', toolbarActionsClassName)}>
+          <div
+            //  `flex-wrap justify-end`: ở khổ hẹp cụm này còn chứa ô "Xếp theo" + "Xóa lọc" (duoc-CR-784) — thiếu chỗ thì
+            //  xuống hàng bám mép phải chứ không đẩy tràn ngang cả trang.
+            className={cn('ml-auto flex flex-wrap items-center justify-end gap-2', toolbarActionsClassName)}
+          >
             {/*  Nút "Xóa lọc" do BẢNG vẽ, không bắt từng màn tự nhớ: quên một
                  màn là màn đó lọc xong không có đường lùi. Đứng sát mép phải
                  ngay trước nút Tải lại, và tự ẩn khi chưa lọc gì. */}
@@ -592,6 +606,18 @@ export function DataTable<T>({
                 active={filtersActive}
                 keepParams={keepFilterParams}
                 onReset={onResetFilters}
+              />
+            )}
+
+            {showMobileSort && onSortChange && (
+              <DataTableMobileSort
+                columns={tableColumns}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSortChange={(by, dir) => {
+                  trackUiAction(UI_ACTION_CODE.SORT_CHANGE)
+                  onSortChange(by, dir)
+                }}
               />
             )}
 

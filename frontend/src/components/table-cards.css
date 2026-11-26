@@ -1,0 +1,131 @@
+/* duoc-CR-784 — bảng hiện dạng THẺ trên điện thoại (components/TableCards.tsx, chọn bằng hooks/useNarrowScreen.ts, ≤ 820px).
+   Lớp `.tcard*` chỉ nằm trong thẻ do TableCards dựng; không đụng bảng nào khác. */
+
+/* Khung bảng chứa thẻ: bớt lề 18px còn 10px cho thẻ rộng hơn, và không cho tràn ngang trang. */
+.table-card:has(.tcards-wrap) { padding: 0 10px; }
+.table-card:has(.tcards-wrap) > .table-tools { gap: 6px; }
+.tcards-wrap { min-width: 0; }
+.tcards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.tcards-empty { padding: 28px 8px; text-align: center; color: #94a3b8; font-size: 13.5px; }
+
+/* Thanh xếp theo: ô chọn cột + nút đảo chiều */
+.tcards-sort { display: flex; align-items: center; gap: 8px; padding: 8px 0 10px; }
+.tcards-sort label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.tcards-sort label span { white-space: nowrap; }
+.tcards-sort select { flex: 1; min-width: 0; height: 34px; font-size: 13px; }
+.tcards-sort .btn { height: 34px; white-space: nowrap; flex: none; }
+
+.tcard {
+  min-width: 0; padding: 12px 12px 10px; background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 64, .04);
+}
+.tcard.clickable:active { background: #f4f7fe; }
+.tcard.pkg-zero { color: var(--muted); }
+
+.tcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.tcard-title { min-width: 0; font-size: 15px; font-weight: 700; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; overflow-wrap: anywhere; }
+.tcard-title .pkg-code, .tcard-title b { font-size: 15px; white-space: normal; }
+.tcard-corner { flex: none; margin: -4px -4px 0 0; }
+.tcard-sub { margin-top: 2px; font-size: 13.5px; color: var(--navy); line-height: 1.35; overflow-wrap: anywhere; }
+.tcard-sub .pkg-oneline { white-space: normal; overflow: visible; display: block; }
+
+/* Số chính: nhãn nhỏ trên, số to dưới, hai ô một hàng */
+.tcard-heroes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.tcard-hero { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 7px 9px; background: #f4f7fe; border-radius: 8px; }
+.tcard-k { font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.25; }
+.tcard-v > div { text-align: left !important; }
+.tcard-v { font-size: 15.5px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Trường phụ: lưới 2 cột "nhãn nhỏ / giá trị" */
+.tcard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 10px 0 0; }
+.tcard-f { min-width: 0; }
+.tcard-f dt { font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.25; }
+.tcard-f dd { margin: 1px 0 0; font-size: 13px; overflow-wrap: break-word; min-width: 0; }
+.tcard-f dd .pkg-oneline { white-space: normal; overflow: visible; }
+.tcard-f dd .pkg-err, .tcard-full .pkg-err, .tcard-f dd .pkg-hint { display: block; }
+
+.tcard-full { margin-top: 10px; font-size: 13px; min-width: 0; }
+.tcard-full .pkg-oneline { white-space: normal; overflow: visible; }
+.tcard-full .pkg-assumed { width: 100%; max-width: 100%; }
+.tcard-full > div { margin-top: 2px; min-width: 0; overflow-wrap: anywhere; }
+
+/* Thành phần (chai / nắp / nhãn…): mỗi thành phần một dòng gọn, mã + giá cũ → mới cùng hàng */
+.tcard-parts { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.tcard-part { display: grid; grid-template-columns: 38% 1fr; gap: 8px; align-items: baseline; font-size: 13px; }
+.tcard-part > div { min-width: 0; overflow-wrap: anywhere; }
+.tcard-part .pkg-part { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.tcard-part .pkg-part.sel { margin: 0; align-self: start; justify-self: start; }
+.tcard-part .pkg-part .code, .tcard-part .pkg-part .price { font-size: 13px; }
+
+.tcard-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.tcard-actions:not(:has(button, a)) { display: none; }
+.tcard-actions .pkg-actions { flex-wrap: wrap; }
+
+/* Lần mua gần nhất (thẻ tự dựng của màn Giá mua gần nhất) */
+.tcard-buys { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.tcard-buy { padding: 6px 9px; border-radius: 8px; font-size: 12.5px; line-height: 1.35; min-width: 0; }
+.tcard-buy.g0 { background: #dbeafe; } .tcard-buy.g1 { background: #ffedd5; }
+.tcard-buy.g2 { background: #dcfce7; } .tcard-buy.g3 { background: #fef3c7; }
+.tcard-buy-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tcard-buy-top b { font-weight: 700; color: var(--navy); }
+.tcard-buy-sub { color: #475569; overflow-wrap: anywhere; }
+.tcard-buy.empty { padding: 2px 9px; color: var(--muted); background: none; }
+/* Tên thành phần của Định mức (ô khai style inline cắt "…"): trong thẻ cho xuống dòng thay vì cắt. */
+.tcard-part [style*="text-overflow"] { white-space: normal !important; max-width: none !important; overflow: visible !important; }
+
+/* ══ Điện thoại (≤ 820px): gọn khoảng trắng của cụm Giá bao bì (duoc-CR-784, owner 26/11/2026). Màn rộng không đổi. ══ */
+@media (max-width: 820px) {
+  /* Dòng tiêu đề + nút: tiêu đề trọn hàng; ô ngày co giãn; nút In / Xuất Excel / Nhập chỉ còn biểu tượng cùng một hàng. */
+  .pkg-head { gap: 8px !important; margin-bottom: 8px !important; }
+  .pkg-head > div:first-child { flex: 1 1 100% !important; min-width: 0 !important; }
+  .pkg-head > div:not(:first-child)[style*="width"] { flex: 1 1 0 !important; width: auto !important; min-width: 150px !important; }
+  .pkg-head .btn { height: 38px; padding: 0 12px; }
+  .pkg-head .btn .pkg-btn-label { display: none; }
+  .pkg-head .pkg-hint { font-size: 12px; line-height: 1.4; }
+  .page-title { font-size: 18px; }
+
+  /* Thanh công cụ của bảng: Cột / Tải lại chỉ biểu tượng, cùng hàng với ô tìm; "Thêm điều kiện" + chip điều kiện ngay hàng dưới. */
+  .table-tools.tt-compact { justify-content: flex-start; gap: 6px; margin-bottom: 6px; }
+  .tt-compact .tt-label { display: none; }
+  .tt-compact > .btn { width: 36px; padding: 0; justify-content: center; flex: none; }
+  .tt-compact > .btn i { margin: 0; }
+  .tt-compact .pkg-row { display: contents; }
+  .tt-compact .pkg-search { flex: 1 1 140px; min-width: 0; width: auto; order: 0; }
+  .tt-compact .pkg-search input { height: 36px; }
+  .tt-compact:has(.pkg-search) > .btn { order: 1; }
+  .tt-compact:has(.pkg-search) .pkg-row > :not(.pkg-search) { order: 2; }
+  .tt-compact .pkg-row > .btn { height: 34px; padding: 0 10px; font-size: 13px; }
+  /* Hàng chip điều kiện hòa vào dòng chung ngay sau nút "Thêm điều kiện". */
+  .tt-compact .pkg-chips { display: contents; }
+  .tt-compact .pkg-chips > * { order: 2; }
+  .tt-compact:not(:has(.pkg-search)) .pkg-pills { flex: 1 1 0; min-width: 0; }
+  .tt-compact .pkg-pill { height: 30px; padding: 0 11px; font-size: 12.5px; }
+  .tt-compact .pkg-summary { flex: 1 1 0 !important; min-width: 0 !important; font-size: 12.5px; line-height: 1.45; }
+  .tt-compact .pkg-hint { margin: 0; }
+
+  /* Khung chứa: bớt lề / khoảng cách. */
+  .card.pkg-card { padding: 10px 12px; margin-bottom: 10px !important; gap: 8px !important; }
+  .table-card:has(.tt-compact) { padding: 0 10px; }
+  .table-card > .table-tools { padding-top: 10px; }
+  .pkg-row { gap: 6px 8px; }
+  .tcards-sort { padding: 2px 0 8px; }
+  .table-foot { padding: 8px 0; }
+
+  /* Bộ lọc cơ bản của Báo giá / Định mức (FilterBar dùng chung): hai ô một hàng, nhãn sát ô. */
+  .pkg-compact-filters .card.filter-panel { padding: 10px 12px; gap: 8px; margin-bottom: 8px; }
+  .pkg-compact-filters .filter-item, .pkg-compact-filters .filter-item.grow { flex: 1 1 calc(50% - 4px) !important; min-width: 0 !important; }
+  .pkg-compact-filters .filter-item > label { margin-bottom: 3px; }
+  .pkg-compact-filters .filter-item input, .pkg-compact-filters .filter-item select { height: 36px; }
+  .pkg-compact-filters .filter-actions .btn { height: 36px; }
+
+  /* Thanh lọc của Giá mua gần nhất / Lịch sử: nhãn + công tắc sát nhau. */
+  .pkg-field { gap: 4px 6px; }
+}
+
+@media (max-width: 820px) {
+  /* Ô chọn có bề rộng cố định (nhà cung cấp, khoảng ngày) xếp hai ô một hàng thay vì mỗi ô một hàng. */
+  .pkg-row > div[style*="width: 2"] { flex: 1 1 140px; width: auto !important; min-width: 0; }
+  /* Thanh công cụ chỉ có hai nút (không ô tìm / chữ): nút nằm chung hàng với thanh "Xếp theo" ngay dưới, không chiếm một hàng riêng. */
+  .table-tools.tt-compact:not(:has(> :not(.btn):not(.pkg-summary:empty))) { justify-content: flex-end; height: 0; margin: 0; padding: 0; overflow: visible; position: relative; z-index: 1; top: 8px; }
+  .table-tools.tt-compact:not(:has(> :not(.btn):not(.pkg-summary:empty))) + .tcards-wrap .tcards-sort { padding-right: 84px; }
+}

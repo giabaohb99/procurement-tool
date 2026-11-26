@@ -7,12 +7,17 @@
  * Lọc NGAY (không có nút Áp dụng); khoảng số đợi 400 ms sau phím cuối (xem `packaging-filter-condition-editor.tsx`). Trạng thái
  * vẫn là `ImpactAdvancedFilters` nên thân `POST /impact`, tham số `GET /product-overview` và bản in không đổi.
  *
- * Đặt làm `toolbar` của `DataTable`: hàng một dùng `order-1`, hàng chip `order-3 basis-full`; màn phải truyền
+ * Đặt làm `toolbar` của `DataTable`: hàng một dùng `order-1`, hàng chip `order-4 basis-full`; màn phải truyền
  * `toolbarActionsClassName="order-2"` để nhóm nút Tải lại / Cột đứng cùng hàng một thay vì tụt xuống dưới hàng chip.
+ *
+ * Khổ điện thoại (< 768px, bảng thành thẻ): hàng một chỉ còn ô tìm (giãn hết chỗ) + nút "Thêm điều kiện" dạng biểu tượng,
+ * để cụm Xếp theo / Tải lại đứng CÙNG hàng; phần riêng của màn (`children`) xuống hàng riêng `order-3` — người chủ chê
+ * dải trống khi cụm nút đứng một mình một hàng (26/11/2026).
  */
-import { ChevronDown, Plus, Search, X } from 'lucide-react'
+import { ChevronDown, ListFilter, Plus, Search, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -58,6 +63,7 @@ export function PackagingFilterChipBar({
 }: PackagingFilterChipBarProps) {
   //  Điều kiện vừa thêm / đang sửa. Chưa nhập gì thì vẫn hiện chip (để hộp sửa neo vào), đóng hộp mà còn trống thì chip biến mất.
   const [editing, setEditing] = useState<FilterConditionKey | null>(null)
+  const isMobile = useIsMobile()
   const order = ADVANCED_FILTER_PROFILES[variant].conditionOrder
   const chips = order.filter((key) => isConditionActive(value, key) || key === editing)
   const addable = order.filter((key) => !chips.includes(key))
@@ -76,8 +82,13 @@ export function PackagingFilterChipBar({
     <>
       {/*  `flex-[1_1_24rem]`: hàng này chiếm phần còn lại để Tải lại / Cột đứng CÙNG hàng bên phải; hẹp hơn 24rem thì cả
            cụm xuống dòng thay vì bóp ô tìm. */}
-      <div className="order-1 flex min-w-0 flex-[1_1_24rem] flex-wrap items-center gap-2">
-        <div className="relative w-72 max-w-full">
+      <div
+        className={cn(
+          'order-1 flex min-w-0 items-center gap-2',
+          isMobile ? 'flex-[1_1_10rem]' : 'flex-[1_1_24rem] flex-wrap',
+        )}
+      >
+        <div className={cn('relative', isMobile ? 'min-w-0 flex-1' : 'w-72 max-w-full')}>
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -89,11 +100,24 @@ export function PackagingFilterChipBar({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" disabled={addable.length === 0}>
-              <Plus />
-              Thêm điều kiện
-              <ChevronDown />
-            </Button>
+            {isMobile ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Thêm điều kiện"
+                title="Thêm điều kiện"
+                disabled={addable.length === 0}
+              >
+                <ListFilter />
+              </Button>
+            ) : (
+              <Button type="button" variant="outline" disabled={addable.length === 0}>
+                <Plus />
+                Thêm điều kiện
+                <ChevronDown />
+              </Button>
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
@@ -114,12 +138,16 @@ export function PackagingFilterChipBar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        {children}
+        {!isMobile && children}
       </div>
+
+      {isMobile && children && (
+        <div className="order-3 flex basis-full flex-wrap items-center gap-2">{children}</div>
+      )}
 
       {chips.length > 0 && (
         <div
-          className="order-3 flex basis-full flex-wrap items-center gap-2"
+          className="order-4 flex basis-full flex-wrap items-center gap-2"
           role="group"
           aria-label="Điều kiện lọc đang bật"
         >

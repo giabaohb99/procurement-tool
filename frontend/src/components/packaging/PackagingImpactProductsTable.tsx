@@ -3,6 +3,8 @@ import Pagination from '../Pagination'
 import TableHead, { TableCells, TableColGroup } from '../TableHead'
 import TableToolbar from '../TableToolbar'
 import TableScroll from '../TableScroll'
+import TableCards from '../TableCards'
+import { useNarrowScreen } from '../../hooks/useNarrowScreen'
 import { useTableColumns } from '../../hooks/useTableColumns'
 import type { PackagingImpactProduct } from '../../api/packaging-cost-types'
 import { buildProductColumns } from './PackagingProductColumns'
@@ -45,12 +47,15 @@ export default function PackagingImpactProductsTable({
   const table = useTableColumns('packaging-impact-products', columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
   const list = rows ?? []
+  const narrow = useNarrowScreen()
   //  Rỗng vì bộ lọc ≠ rỗng vì chưa có gì: hai câu khác nhau.
   const filtersActive = keyword !== '' || filterCount > 0
+  const emptyText = failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…'
+    : filtersActive ? 'Không có sản phẩm nào khớp từ khóa / bộ lọc.' : 'Không có sản phẩm nào dùng các mã đã chọn.'
 
   return (
     <div>
-      <TableToolbar {...table}>
+      <TableToolbar compact {...table}>
         <PackagingFilterChipBar variant="impact" value={filters} onChange={onFilters} keyword={keyword} onKeyword={onKeyword}>
           {filtersActive && affected != null && !loading && (
             <span role="status" className="pkg-hint">Đang lọc: <b>{total.toLocaleString('vi-VN')}</b> / {affected.toLocaleString('vi-VN')} sản phẩm</span>
@@ -58,6 +63,10 @@ export default function PackagingImpactProductsTable({
           {filtersActive && <button type="button" className="btn ghost" onClick={onResetFilters}><i className="ti ti-filter-off" />Xóa lọc</button>}
         </PackagingFilterChipBar>
       </TableToolbar>
+      {narrow ? (
+        <TableCards columns={table.columns} rows={list} rowKey={(r) => r.fg_code} sortBy={sortBy} sortDir={sortDir} onSort={onSort}
+          empty={emptyText} />
+      ) : (
       <TableScroll>
         <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
           <TableColGroup columns={table.columns} colW={table.colW} />
@@ -65,14 +74,12 @@ export default function PackagingImpactProductsTable({
           <tbody>
             {list.map((r, i) => <tr key={r.fg_code}><TableCells columns={table.columns} row={r} index={i} /></tr>)}
             {list.length === 0 && (
-              <tr><td colSpan={table.columns.length} className="table-empty">
-                {failed ? 'Không tính được tác động — thử lại sau.' : loading ? 'Đang tính…'
-                  : filtersActive ? 'Không có sản phẩm nào khớp từ khóa / bộ lọc.' : 'Không có sản phẩm nào dùng các mã đã chọn.'}
-              </td></tr>
+              <tr><td colSpan={table.columns.length} className="table-empty">{emptyText}</td></tr>
             )}
           </tbody>
         </table>
       </TableScroll>
+      )}
       <div className="table-foot"><Pagination page={page} pageSize={pageSize} total={total} onChange={onPage} /></div>
     </div>
   )

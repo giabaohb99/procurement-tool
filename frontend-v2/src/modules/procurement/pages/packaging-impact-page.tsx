@@ -7,22 +7,21 @@
  * và mới. Giá giả định trễ 400 ms rồi mới tính lại; dữ liệu cũ giữ nguyên trong lúc tính. Bảng sản phẩm phân
  * trang / tìm / lọc nâng cao / xếp tại MÁY CHỦ (có thể hàng nghìn sản phẩm khi chọn cả nhóm); ba thẻ luôn tính trên toàn bộ tập.
  */
-import { FileDown, Loader2, Printer } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
-import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
-import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { PackagingExportExcelButton, PackagingPrintButton } from '../components/packaging-header-buttons'
 import { exportPackagingImpact } from '../api/packaging-cost-api'
 import { PackagingCodePicker } from '../components/packaging-code-picker'
 import { PackagingImpactProductsTable } from '../components/packaging-impact-products-table'
@@ -33,6 +32,7 @@ import type { PackagingImpactRequest } from '../types/packaging-cost-types'
 import { sortPackagingCodeOptions } from '../utils/packaging-code-match'
 import { impactFiltersToRequest } from '../utils/packaging-impact-filters'
 import { packagingImpactPrintHref } from '../utils/packaging-impact-print'
+import { buildImpactUrlSearch, parseImpactUrlState } from '../utils/packaging-impact-url-state'
 
 /** Chỉ gửi giả định của mã còn đang chọn — bỏ mã khỏi danh sách là bỏ luôn giá giả định của nó. */
 function pickAssumed(
@@ -47,9 +47,14 @@ function pickAssumed(
 
 export function PackagingImpactPage() {
   const { can } = usePermission()
-  const [codes, setCodes] = useState<string[]>([])
-  const [assumed, setAssumed] = useState<Record<string, number>>({})
-  const [range, setRange] = useState({ from: '', to: '' })
+  const isMobile = useIsMobile()
+  const [searchParams, setSearchParams] = useSearchParams()
+  //  Lựa chọn của màn sống trên URL (F5 / gửi link mở lại đúng chỗ): đọc MỘT lần lúc mở màn, sau đó state là nguồn và
+  //  URL đi theo (effect bên dưới, `replace` — gõ giá không đẻ ra cả chục mục lịch sử của nút Quay lại).
+  const [initial] = useState(() => parseImpactUrlState(searchParams))
+  const [pickedCodes, setCodes] = useState<string[]>(initial.codes)
+  const [assumed, setAssumed] = useState<Record<string, number>>(initial.assumed)
+  const [range, setRange] = useState({ from: initial.dateFrom, to: initial.dateTo })
   const debouncedAssumed = useDebouncedValue(assumed, 400)
   const once = useSingleFlight()
   const [exporting, setExporting] = useState(false)
@@ -59,8 +64,32 @@ export function PackagingImpactPage() {
     () => sortPackagingCodeOptions(optionsQuery.data ?? []),
     [optionsQuery.data],
   )
+  //  Mã lạ trên URL (gõ tay, mã đã bỏ khỏi định mức) rơi khỏi lựa chọn ngay khi có danh sách mã; chưa nạp xong thì giữ.
+  const codes = useMemo(() => {
+    if (!optionsQuery.data) return pickedCodes
+    const known = new Set(optionsQuery.data.map((option) => option.code))
+    return pickedCodes.filter((code) => known.has(code))
+  }, [optionsQuery.data, pickedCodes])
 
-  const table = usePackagingImpactTableState([codes, range])
+  const table = usePackagingImpactTableState([codes, range], initial)
+
+  const urlSearch = buildImpactUrlSearch({
+    codes,
+    //  Giá giả định + từ khóa lên URL theo nhịp ĐÃ HOÃN (400 / 250 ms) — không ghi lại URL mỗi phím gõ.
+    assumed: debouncedAssumed,
+    dateFrom: range.from,
+    dateTo: range.to,
+    q: table.query,
+    filters: table.filters,
+    sortBy: table.sortBy,
+    sortDir: table.sortDir,
+    page: table.page,
+  })
+  useEffect(() => {
+    if (urlSearch !== searchParams.toString()) {
+      setSearchParams(new URLSearchParams(urlSearch), { replace: true })
+    }
+  }, [urlSearch, searchParams, setSearchParams])
   /** Đang lọc bằng từ khóa / lọc nâng cao → thẻ "Sản phẩm bị ảnh hưởng" ghi "Đang lọc: x / M". */
 
   /** Phần thân dùng chung cho tính toán và Xuất Excel (cùng bộ lọc + thứ tự); chưa kèm trang. */
@@ -115,54 +144,40 @@ export function PackagingImpactPage() {
     <PageContainer className="space-y-4">
       <PageHeader
         title="Tác động tăng giá bao bì"
-        description="Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá. Đơn vị VNĐ, chưa VAT."
+        //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
+        description={
+          isMobile
+            ? undefined
+            : 'Chọn mã bao bì, nhập giá giả định để xem sản phẩm nào tăng chi phí bao nhiêu trước khi NCC chốt giá. Đơn vị VNĐ, chưa VAT.'
+        }
         actions={
           <>
             <DateRangePicker
               from={range.from}
               to={range.to}
               placeholder="Khoảng ngày tính min – max"
+              className="max-md:min-w-0 max-md:flex-1"
               onChange={(from, to) => setRange({ from, to })}
             />
             {/* In = xem (quyền đọc). Mở tab mới, mã + giá giả định ĐANG GÕ + từ khóa / cột xếp của bảng; trang in tự nạp đủ mọi sản phẩm. */}
-            {can('packaging_cost', 'read') &&
-              (codes.length ? (
-                <Button asChild variant="outline">
-                  <Link
-                    to={packagingImpactPrintHref({
-                      ...filterBody,
-                      assumed_prices: pickAssumed(codes, assumed),
-                    })}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
-                  >
-                    <Printer />
-                    In
-                  </Link>
-                </Button>
-              ) : (
-                <Button type="button" variant="outline" disabled title="Chọn ít nhất một mã để in">
-                  <Printer />
-                  In
-                </Button>
-              ))}
+            {can('packaging_cost', 'read') && (
+              <PackagingPrintButton
+                href={
+                  codes.length
+                    ? packagingImpactPrintHref({ ...filterBody, assumed_prices: pickAssumed(codes, assumed) })
+                    : undefined
+                }
+                disabledTitle="Chọn ít nhất một mã để in"
+              />
+            )}
             {can('packaging_cost', 'export') && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!codes.length || exporting}
-                onClick={() => void exportExcel()}
-              >
-                {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
-                Xuất Excel
-              </Button>
+              <PackagingExportExcelButton exporting={exporting} disabled={!codes.length} onClick={() => void exportExcel()} />
             )}
           </>
         }
       />
 
-      <Card className="gap-3 p-4">
+      <Card className="gap-3 p-4 max-md:gap-2 max-md:p-3">
         <PackagingCodePicker
           options={options}
           value={codes}
@@ -198,7 +213,7 @@ export function PackagingImpactPage() {
 
       {codes.length > 0 && (
         <div>
-          <Card className="gap-3 p-4">
+          <Card className="gap-3 p-4 max-md:gap-2 max-md:p-3">
             <PackagingImpactProductsTable
               rows={data?.products}
               total={data?.products_total ?? 0}

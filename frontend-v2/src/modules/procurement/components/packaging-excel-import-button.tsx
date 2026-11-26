@@ -74,7 +74,14 @@ export function PackagingExcelImportButton({ kind }: PackagingExcelImportButtonP
 
   return (
     <>
-      <Button type="button" variant="outline" className="max-md:w-full" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        variant="outline"
+        //  `flex-1` chứ không `w-full`: ở màn CRUD nút nằm cạnh nút "Thêm" trong một hàng KHÔNG xuống dòng — `w-full` đẩy
+        //  nút "Thêm" tràn ra ngoài mép phải ở khổ điện thoại; `flex-1` chia đều hàng với nó.
+        className="max-md:flex-1"
+        onClick={() => setOpen(true)}
+      >
         <FileUp />
         {kind.label}
       </Button>
