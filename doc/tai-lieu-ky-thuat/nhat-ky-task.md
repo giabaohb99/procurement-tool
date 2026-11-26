@@ -136,12 +136,12 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
   **Xóa dữ liệu của lô này**. Bốn mã thành phần chưa có trong danh mục sản phẩm (NHG5096, NHG5007, NHG5099, NHG5094) vẫn được nhận.
 - Tạo vai trò **Giá nguyên vật liệu** (`packaging_cost_view`): xem và xuất Excel cụm, phạm vi tất cả; không nhập, sửa, xóa. Gán
   thêm cho 29 tài khoản: 21 tài khoản đang giữ vai trò Quản lý / Nhân viên / Admin thu mua và 8 tài khoản phòng Dego Lab. Làm qua
-  hàm của màn Vai trò & quyền nên có nhật ký.
+  hàm của màn Vai trò & quyền nên có nhật ký. Sau đó gán thêm 4 tài khoản thu mua của nhà máy (phòng Dego Organic), tổng 33;
+  5 tài khoản thu mua của Kinh doanh AGC đã chốt không gán.
 - Sửa đơn giá PO01146 (NCC Bao bì nhựa Phương Nam), dòng CPV0012: 2.800 thành 2.900; công nợ dòng từ 6.048.000đ lên 6.264.000đ,
   chưa trả. PO01218 cùng mã đã là 2.900 sẵn nên không đụng. Sao lưu trước khi ghi (`prod_truoc_release_20261126_1657.sql.gz`).
 
-**Chưa làm:** vai trò thu mua của phòng tự mua (Dego Organic, Kinh doanh AGC) chưa được gán vai trò mới; quyền nhập báo giá, định
-mức, nạp sổ Misa và xóa theo lô vẫn chỉ quản trị có. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
+**Chưa làm:** quyền nhập báo giá, định mức, nạp sổ Misa và xóa theo lô vẫn chỉ quản trị có. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
 
 **Quay lui:** `alembic downgrade mrg761a` bỏ bảng của cụm; bản sao lưu `prod_truoc_release_20261126_1659.sql.gz` (trước phát
 hành) và `prod_truoc_release_20261126_1706.sql.gz` (sau phát hành, trước nạp dữ liệu).
