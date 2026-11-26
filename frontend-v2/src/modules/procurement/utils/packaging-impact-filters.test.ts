@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest'
 import type { PackagingImpactRequest } from '../types/packaging-cost-types'
 import {
   EMPTY_IMPACT_FILTERS,
+  activeConditionKeys,
   appendImpactFilterSearch,
+  clearCondition,
+  isConditionActive,
+  rangeTextProblem,
+  summarizeCondition,
+  WARNINGS_ONLY_HINT,
   countAdvancedFilters,
   countImpactFilters,
   describeImpactAdvancedFilters,
@@ -203,5 +209,61 @@ describe('describeImpactAdvancedFilters', () => {
       'Tăng/giảm /thùng: từ 1.000 đ',
       'Chỉ sản phẩm có cảnh báo',
     ])
+  })
+})
+
+describe('filter chips (thanh lọc dạng chip)', () => {
+  it('writes a human summary for each kind of condition', () => {
+    const f = filters({
+      trend: 'up',
+      roles: [2, 1],
+      cartonQty: { min: '24', max: '40' },
+      diffCarton: { min: '1.000', max: '' },
+      diffBottle: { min: '', max: '50,5' },
+      costOldBottle: { min: '1.000', max: '2.500' },
+      pct: { min: '', max: '5' },
+    })
+    expect(summarizeCondition(f, 'trend')).toBe('Xu hướng: Tăng')
+    expect(summarizeCondition(f, 'roles')).toBe('Vai trò: Chai, Nắp')
+    expect(summarizeCondition(f, 'cartonQty')).toBe('Quy cách 24–40')
+    expect(summarizeCondition(f, 'diffCarton')).toBe('Chênh /thùng ≥ 1.000 đ')
+    expect(summarizeCondition(f, 'diffBottle')).toBe('Chênh /chai ≤ 50,5 đ')
+    expect(summarizeCondition(f, 'costOldBottle')).toBe('CP chai cũ 1.000–2.500 đ')
+    expect(summarizeCondition(f, 'pct')).toBe('% chênh ≤ 5%')
+    expect(summarizeCondition(filters({ warningsOnly: true }), 'warningsOnly')).toBe('Chỉ SP có cảnh báo')
+  })
+
+  it('marks an inverted range as not applied and an empty one as "chưa nhập"', () => {
+    const f = filters({ cartonQty: { min: '40', max: '24' } })
+    expect(summarizeCondition(f, 'cartonQty')).toBe('Quy cách 40–24 (chưa áp dụng)')
+    expect(summarizeCondition(EMPTY_IMPACT_FILTERS, 'pct')).toBe('% chênh: chưa nhập')
+  })
+
+  it('lists active conditions in menu order per screen and the overview menu has no trend', () => {
+    const f = filters({ trend: 'down', roles: [5], pct: { min: '1', max: '' }, warningsOnly: true })
+    expect(activeConditionKeys(f, 'impact')).toEqual(['trend', 'roles', 'warningsOnly'])
+    expect(activeConditionKeys(f, 'overview')).toEqual(['roles', 'pct', 'warningsOnly'])
+    expect(isConditionActive(filters({ diffBottle: { min: '-', max: '' } }), 'diffBottle')).toBe(false)
+  })
+
+  it('clears exactly one condition and leaves the others', () => {
+    const f = filters({ trend: 'up', roles: [1], warningsOnly: true, diffCarton: { min: '5', max: '9' } })
+    expect(clearCondition(f, 'diffCarton').diffCarton).toEqual({ min: '', max: '' })
+    expect(clearCondition(f, 'trend')).toMatchObject({ trend: 'all', roles: [1], warningsOnly: true })
+    expect(clearCondition(f, 'roles').roles).toEqual([])
+    expect(clearCondition(f, 'warningsOnly').warningsOnly).toBe(false)
+  })
+
+  it('reports an inline problem for junk text, a bad carton quantity and "from" > "to"', () => {
+    expect(rangeTextProblem('diffBottle', { min: '', max: '' })).toBeNull()
+    expect(rangeTextProblem('diffBottle', { min: '-1.000', max: '2,5' })).toBeNull()
+    expect(rangeTextProblem('diffBottle', { min: 'abc', max: '' })).toMatch(/số hợp lệ/)
+    expect(rangeTextProblem('cartonQty', { min: '1,5', max: '' })).toMatch(/số nguyên/)
+    expect(rangeTextProblem('cartonQty', { min: '', max: '1.000.001' })).toMatch(/1\.000\.000/)
+    expect(rangeTextProblem('cartonQty', { min: '30', max: '10' })).toMatch(/không được lớn hơn/)
+  })
+
+  it('describes the warning filter with only the current warning kinds', () => {
+    expect(WARNINGS_ONLY_HINT).not.toMatch(/sàn|trần/)
   })
 })

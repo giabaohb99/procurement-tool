@@ -4,19 +4,17 @@
  * Máy chủ phân trang + tìm + xếp (luật §8: bảng phân trang tại máy chủ thì xếp tại máy chủ — chọn cả nhóm
  * nhãn có thể ra hàng nghìn sản phẩm). Bảng chỉ vẽ MỘT trang và báo thao tác của người dùng qua `view`
  * (`usePackagingImpactTableState`, nằm ở màn vì chúng là một phần thân `POST /impact`). Ô thành phần ghi mã +
- * "giá cũ → giá đang dùng"; mã nằm trong danh sách đang chọn thì tô nổi. Tìm + Lọc nâng cao + xếp cả năm cột thành phần
+ * "giá cũ → giá đang dùng"; mã nằm trong danh sách đang chọn thì tô nổi. Tìm + thanh lọc điều kiện (chip) + xếp cả năm cột thành phần
  * đều làm ở máy chủ; KPI luôn tính trên toàn bộ tập nên khi đang lọc, thanh công cụ nói rõ "Đang lọc: x / M sản phẩm".
  */
-import { Search } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { DataTable } from '@/shared/data-table'
-import { Input } from '@/shared/ui/input'
 
 import { buildPackagingProductColumns } from '../config/packaging-product-columns'
 import type { PackagingImpactTableState } from '../hooks/use-packaging-impact-table-state'
 import type { PackagingImpactProduct } from '../types/packaging-cost-types'
-import { PackagingImpactAdvancedFilter } from './packaging-impact-advanced-filter'
+import { PackagingFilterChipBar } from './packaging-filter-chip-bar'
 
 interface PackagingImpactProductsTableProps {
   /** Dòng của TRANG hiện tại (đã lọc + xếp ở máy chủ). */
@@ -68,26 +66,22 @@ export function PackagingImpactProductsTable({
       sortBy={sortBy}
       sortDir={sortDir}
       onSortChange={view.setSort}
+      toolbarActionsClassName="order-2"
       toolbar={
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative w-72 max-w-full">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              aria-label="Tìm sản phẩm"
-              placeholder="Tìm mã HH, tên, mã thành phần…"
-              value={keyword}
-              onChange={(event) => view.setKeyword(event.target.value)}
-            />
-          </div>
-          <PackagingImpactAdvancedFilter value={view.filters} onApply={view.setFilters} />
+        <PackagingFilterChipBar
+          variant="impact"
+          value={view.filters}
+          onChange={view.setFilters}
+          keyword={keyword}
+          onKeywordChange={view.setKeyword}
+        >
           {filtersActive && affected != null && !isLoading && (
             <span role="status" className="text-sm text-muted-foreground">
               Đang lọc: <b className="text-foreground">{total.toLocaleString('vi-VN')}</b> /{' '}
               {affected.toLocaleString('vi-VN')} sản phẩm
             </span>
           )}
-        </div>
+        </PackagingFilterChipBar>
       }
       pagination={{
         page,

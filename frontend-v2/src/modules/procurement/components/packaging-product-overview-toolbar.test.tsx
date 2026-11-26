@@ -47,11 +47,19 @@ describe('PackagingProductOverviewToolbar', () => {
     expect(onKeywordChange).toHaveBeenCalledWith('x')
   })
 
-  it('puts the advanced filter button next to the search and chips (one row) and applies it', async () => {
+  it('keeps the trend count chips beside the add-condition button and applies a condition immediately', async () => {
     const { onAdvancedChange, user } = setup()
-    await user.click(screen.getByRole('button', { name: 'Lọc nâng cao' }))
-    await user.click(screen.getByRole('button', { name: 'Thùng' }))
-    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    expect(screen.getByRole('button', { name: 'Tất cả (6)' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Thêm điều kiện/ }))
+    expect(screen.queryByRole('menuitem', { name: 'Xu hướng chi phí' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Có mã ở vai trò' }))
+    await user.click(await screen.findByRole('button', { name: 'Thùng' }))
     expect(onAdvancedChange).toHaveBeenCalledWith(expect.objectContaining({ roles: [5] }))
+  })
+
+  it('shows the chips of the filters already applied', () => {
+    setup({ advanced: { ...EMPTY_IMPACT_FILTERS, pct: { min: '5', max: '' }, warningsOnly: true } })
+    expect(screen.getByRole('button', { name: 'Sửa điều kiện: % chênh ≥ 5%' })).toBeInTheDocument()
+    expect(screen.getByText('Chỉ SP có cảnh báo')).toBeInTheDocument()
   })
 })

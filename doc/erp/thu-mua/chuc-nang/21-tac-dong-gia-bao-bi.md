@@ -91,6 +91,13 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
 - Bảng sản phẩm bị ảnh hưởng (phân trang, tìm, xếp tại máy chủ): STT, Mã HH, Tên hàng hóa, Quy cách thùng, Chai, Nắp,
   Nhãn, Nhãn thùng (giá /thùng), Thùng (giá /thùng) — ô thành phần ghi *giá cũ → giá đang dùng*, mã đang chọn tô vàng —,
   CP bao bì/chai cũ, CP bao bì/chai mới, Tăng/giảm /chai, Tăng/giảm /thùng, Ghi chú.
+- **Thanh lọc dạng chip** (chốt 26/11/2026, thay hộp *Lọc nâng cao*): ô tìm + nút **Thêm điều kiện** (menu các trường chưa bật:
+  Xu hướng chi phí, Có mã đã chọn ở vai trò, Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, Chỉ sản
+  phẩm có cảnh báo). Mỗi điều kiện đang bật là một chip ghi câu tóm tắt (*Xu hướng: Tăng*, *Vai trò: Chai, Nắp*, *Chênh /thùng
+  ≥ 1.000 đ*, *Quy cách 24–40*); bấm chip để sửa ngay tại chỗ (xu hướng chọn một, vai trò chọn nhiều, khoảng số hai ô *từ … đến …*
+  có đơn vị), nút x trên chip để bỏ. Lọc **ngay**, không có nút Áp dụng; khoảng số đợi 400 ms sau phím cuối. "Từ" lớn hơn "Đến"
+  thì báo lỗi ngay dưới ô và chưa lọc. **Xóa lọc** bỏ cả ô tìm lẫn mọi chip. Dòng *Đang lọc: x / M sản phẩm* vẫn hiện khi có lọc.
+  Tham số gửi máy chủ, Xuất Excel và bản in giữ nguyên như hộp cũ.
 - **Xuất Excel** (quyền `export`): hai sheet *Sản phẩm bị ảnh hưởng* (đứng đầu) và *Mã đã chọn*, theo giá giả định đang gõ, `q` và thứ tự.
 - Bản cũ: cùng bước, nút, cột.
 
@@ -110,15 +117,17 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
 Màn `/procurement/packaging-cost/products` (cũ `/packaging-cost/products`). Bài HDSD: *Giá NVL sản xuất — Rà chi phí bao bì
 của mọi sản phẩm*. Mọi mã HH có định mức, giá cũ so với giá mới hiện hành, không có giá giả định.
 
-- Thanh lọc **một hàng** (chốt 25/11/2026): bên trái ô tìm + chip, bên phải nút **Lọc nâng cao**, **Cột**, **Tải lại**
-  (màn hẹp thì ô tìm + chip xuống dòng trước). Nút Xuất Excel vẫn ở đầu trang.
-- Chip **Tất cả / Tăng / Giảm / Không đổi / Chưa có giá** kèm số đếm (đếm sau lọc từ khóa và lọc nâng cao, chưa lọc xu hướng).
-- **Lọc nâng cao** (cùng hộp với màn Tác động giá, bỏ mục Xu hướng vì đã có chip): **Có mã ở vai trò** (Chai, Nắp, Nhãn, Nhãn
-  thùng, Thùng; chọn nhiều = một trong các vai trò, xét theo mã có trong định mức), khoảng **Từ – Đến** cho Quy cách thùng,
-  CP bao bì/chai cũ, CP bao bì/chai mới, Tăng/giảm /chai, Tăng/giảm /thùng, % chênh (so với số một chữ số lẻ đang hiện), và ô
-  **Chỉ sản phẩm có cảnh báo**. Điều kiện ghép bằng VÀ; sản phẩm chưa có giá chai bị loại khi bật một khoảng. Nút hiện số nhóm
-  điều kiện đang bật; **Xóa lọc** ở thanh lọc xóa cả ô tìm, chip và lọc nâng cao. Lọc tại máy chủ nên bảng, số đếm chip, phân
-  trang và Xuất Excel cùng một bộ lọc.
+- Thanh lọc (chốt 25/11/2026, đổi sang dạng chip 26/11/2026): hàng một gồm ô tìm, nút **Thêm điều kiện**, các chip xu hướng kèm
+  số đếm; bên phải **Xóa lọc**, **Tải lại**, **Cột** (màn hẹp thì ô tìm xuống dòng trước); hàng hai là các chip điều kiện đang
+  bật. Nút Xuất Excel vẫn ở đầu trang.
+- Chip **Tất cả / Tăng / Giảm / Không đổi / Chưa có giá** kèm số đếm (đếm sau lọc từ khóa và các chip điều kiện, chưa lọc xu hướng).
+- **Thêm điều kiện** (cùng thanh lọc với màn Tác động giá, menu bỏ mục Xu hướng vì đã có chip đếm): **Có mã ở vai trò** (Chai, Nắp,
+  Nhãn, Nhãn thùng, Thùng; chọn nhiều = một trong các vai trò, xét theo mã có trong định mức), khoảng **từ … đến …** cho Quy cách
+  thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai cũ, CP bao bì/chai mới, % chênh (so với số một chữ số lẻ đang hiện), và
+  **Chỉ sản phẩm có cảnh báo** (thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT). Điều kiện ghép bằng
+  VÀ; sản phẩm chưa có giá chai bị loại khi bật một khoảng. Mỗi điều kiện là một chip: bấm để sửa, x để bỏ; lọc ngay, khoảng số
+  đợi 400 ms. **Xóa lọc** xóa cả ô tìm, chip xu hướng và mọi chip điều kiện. Lọc tại máy chủ nên bảng, số đếm chip, phân trang và
+  Xuất Excel cùng một bộ lọc.
 - Cột: Mã HH (bấm → Lịch sử mua hàng theo mã sản phẩm), Tên hàng hóa, Quy cách, CP cũ /chai, CP mới /chai, Chênh /chai,
   Chênh /thùng, % chênh, Xu hướng, năm ô thành phần (mã bấm được), Ghi chú.
 - Ô tìm *Tìm mã HH, tên, mã thành phần…*; xếp + phân trang tại máy chủ; **Xuất Excel** tối đa 5.000 dòng.

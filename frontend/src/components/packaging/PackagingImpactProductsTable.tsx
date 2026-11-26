@@ -6,12 +6,12 @@ import TableScroll from '../TableScroll'
 import { useTableColumns } from '../../hooks/useTableColumns'
 import type { PackagingImpactProduct } from '../../api/packaging-cost-types'
 import { buildProductColumns } from './PackagingProductColumns'
-import PackagingImpactAdvancedFilter from './PackagingImpactAdvancedFilter'
+import PackagingFilterChipBar from './PackagingFilterChipBar'
 import type { ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
 
 /**
  * Bảng SẢN PHẨM BỊ ẢNH HƯỞNG: máy chủ phân trang + tìm + xếp (chọn cả nhóm nhãn có thể ra hàng nghìn sản phẩm).
- * Bảng chỉ vẽ MỘT trang; thao tác của người dùng báo ngược lên màn qua các callback. Tìm + Lọc nâng cao + xếp cả năm cột thành
+ * Bảng chỉ vẽ MỘT trang; thao tác của người dùng báo ngược lên màn qua các callback. Tìm + thanh lọc điều kiện (chip) + xếp cả năm cột thành
  * phần đều làm ở máy chủ; KPI luôn tính trên toàn bộ tập nên khi đang lọc, thanh công cụ nói rõ "Đang lọc: x / M sản phẩm".
  */
 export default function PackagingImpactProductsTable({
@@ -51,15 +51,12 @@ export default function PackagingImpactProductsTable({
   return (
     <div>
       <TableToolbar {...table}>
-        <div className="pkg-row" style={{ flex: 1, textAlign: 'left' }}>
-          <input aria-label="Tìm sản phẩm" placeholder="Tìm mã HH, tên, mã thành phần…" value={keyword}
-            style={{ width: 320, maxWidth: '100%', height: 34 }} onChange={(e) => onKeyword(e.target.value)} />
-          <PackagingImpactAdvancedFilter value={filters} onApply={onFilters} />
+        <PackagingFilterChipBar variant="impact" value={filters} onChange={onFilters} keyword={keyword} onKeyword={onKeyword}>
           {filtersActive && affected != null && !loading && (
             <span role="status" className="pkg-hint">Đang lọc: <b>{total.toLocaleString('vi-VN')}</b> / {affected.toLocaleString('vi-VN')} sản phẩm</span>
           )}
           {filtersActive && <button type="button" className="btn ghost" onClick={onResetFilters}><i className="ti ti-filter-off" />Xóa lọc</button>}
-        </div>
+        </PackagingFilterChipBar>
       </TableToolbar>
       <TableScroll>
         <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>

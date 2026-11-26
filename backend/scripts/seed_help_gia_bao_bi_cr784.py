@@ -152,7 +152,7 @@ TREE = {
         {
             "title": IMPACT_TITLE,
             "icon": "bar-chart",
-            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm), nhập giá giả định, đọc bảng mã đã chọn và sản phẩm bị ảnh hưởng, lọc nâng cao, xếp mọi cột kể cả Chai / Nắp / Nhãn, ghi chú cảnh báo, In, Xuất Excel",
+            "summary": "Màn Tác động giá bao bì: chọn mã (hoặc cả nhóm), nhập giá giả định, đọc bảng mã đã chọn và sản phẩm bị ảnh hưởng, lọc bằng chip điều kiện, xếp mọi cột kể cả Chai / Nắp / Nhãn, ghi chú cảnh báo, In, Xuất Excel",
             "content": f"""<h2>Khi nào dùng</h2>
 <p>Nhà cung cấp báo tăng (hoặc giảm) giá một hay nhiều mã bao bì, hoặc bạn muốn thử "nếu nắp lên 350 đ thì sao" trước khi chốt giá. Mở <strong>Thu mua › Mua hàng › Giá nguyên vật liệu sản xuất › Tác động giá bao bì</strong> (màn có tiêu đề <strong>Tác động tăng giá bao bì</strong>).</p>
 
@@ -182,7 +182,7 @@ TREE = {
 <h2>Lọc và xếp</h2>
 <ul>
 <li><strong>Bảng mã đã chọn</strong>: chọn mã của nhiều nhóm thì có hàng chip <strong>Tất cả</strong> · <strong>Chai</strong> · <strong>Nắp</strong> · <strong>Nhãn</strong>… kèm số mã; bấm một chip để chỉ xem mã của nhóm đó (chỉ lọc bảng này, không đổi các mã đang tính).</li>
-<li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Lọc nâng cao</strong>. Trong hộp lọc nâng cao: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>Từ – Đến</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, và ô <strong>Chỉ sản phẩm có cảnh báo</strong>. Bấm <strong>Áp dụng</strong> để lọc, <strong>Xóa lọc</strong> để bỏ; nút hiện số điều kiện đang bật.</li>
+<li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Thêm điều kiện</strong>. Bấm nút để chọn một điều kiện: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>từ … đến …</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, hoặc <strong>Chỉ sản phẩm có cảnh báo</strong> (thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT). Mỗi điều kiện hiện thành một <strong>chip</strong> dưới ô tìm, ví dụ "Vai trò: Chai, Nắp" hay "Chênh /thùng ≥ 1.000 đ": bấm chip để sửa ngay tại chỗ, bấm dấu <strong>x</strong> trên chip để bỏ. Bảng lọc ngay, không cần bấm Áp dụng (ô số đợi chừng nửa giây sau khi bạn ngừng gõ). Nút <strong>Xóa lọc</strong> bỏ cả ô tìm lẫn mọi chip.</li>
 <li>Bấm tiêu đề cột để xếp, kể cả các cột <strong>Chai</strong>, <strong>Nắp</strong>, <strong>Nhãn</strong>, <strong>Nhãn thùng</strong>, <strong>Thùng</strong> (xếp theo giá đang dùng của thành phần đó). Ví dụ xếp <strong>Tăng/giảm /thùng</strong> giảm dần để thấy sản phẩm bị ảnh hưởng nặng nhất.</li>
 <li>Bảng chia trang; chọn cả nhóm chai có thể ra hàng nghìn sản phẩm, tổng số sản phẩm hiện ở chân bảng. Xuất Excel và In theo đúng bộ lọc, thứ tự đang xem.</li>
 </ul>
@@ -210,16 +210,16 @@ TREE = {
 <p>Mở <strong>Thu mua › Mua hàng › Giá nguyên vật liệu sản xuất › Tổng hợp theo sản phẩm</strong>.</p>
 
 <h2>Lọc nhanh bằng chip</h2>
-<p>Thanh lọc nằm trên <strong>một hàng</strong>: bên trái là ô tìm và hàng chip, bên phải là nút <strong>Lọc nâng cao</strong>, <strong>Cột</strong>, <strong>Tải lại</strong>. Hàng chip kèm số sản phẩm của từng loại: <strong>Tất cả</strong>, <strong>Tăng</strong> (chi phí bao bì tăng, cần xem lại giá bán), <strong>Giảm</strong>, <strong>Không đổi</strong>, <strong>Chưa có giá</strong> (thiếu giá chai nên chưa tính được). Bấm một chip để chỉ xem loại đó; bấm <strong>Tất cả</strong> để bỏ lọc. Số trên chip đếm theo từ khóa và bộ lọc nâng cao đang bật.</p>
+<p>Thanh lọc nằm trên <strong>một hàng</strong>: bên trái là ô tìm và hàng chip, bên phải là nút <strong>Xóa lọc</strong> (khi đang lọc), <strong>Tải lại</strong>, <strong>Cột</strong>. Sau ô tìm là nút <strong>Thêm điều kiện</strong>, rồi hàng chip kèm số sản phẩm của từng loại: <strong>Tất cả</strong>, <strong>Tăng</strong> (chi phí bao bì tăng, cần xem lại giá bán), <strong>Giảm</strong>, <strong>Không đổi</strong>, <strong>Chưa có giá</strong> (thiếu giá chai nên chưa tính được). Bấm một chip để chỉ xem loại đó; bấm <strong>Tất cả</strong> để bỏ lọc. Số trên chip đếm theo từ khóa và các chip điều kiện đang bật.</p>
 
-<h2>Lọc nâng cao</h2>
-<p>Bấm <strong>Lọc nâng cao</strong> để lọc sâu hơn, ví dụ "sản phẩm có thùng mà chi phí tăng trên 5%":</p>
+<h2>Thêm điều kiện lọc</h2>
+<p>Bấm <strong>Thêm điều kiện</strong> để lọc sâu hơn, ví dụ "sản phẩm có thùng mà chi phí tăng trên 5%". Menu liệt kê các điều kiện chưa bật; chọn một điều kiện thì hộp nhỏ hiện ngay dưới chip mới để bạn nhập:</p>
 <ul>
 <li><strong>Có mã ở vai trò</strong>: Chai, Nắp, Nhãn, Nhãn thùng, Thùng. Chọn nhiều vai trò thì sản phẩm chỉ cần có mã ở một trong các vai trò đó trong định mức.</li>
-<li>Các khoảng <strong>Từ – Đến</strong> (bỏ trống một đầu nếu chỉ cần một phía, số âm được): <strong>Quy cách thùng</strong>, <strong>CP bao bì/chai cũ</strong>, <strong>CP bao bì/chai mới</strong>, <strong>Tăng/giảm /chai</strong>, <strong>Tăng/giảm /thùng</strong>, <strong>% chênh</strong> (gõ 5 là 5%, so với con số đang hiện trên bảng). Sản phẩm chưa có giá chai không có số để so nên bị loại khi bạn bật một khoảng.</li>
-<li><strong>Chỉ sản phẩm có cảnh báo</strong>: thiếu giá / mã thành phần, thiếu quy cách thùng, lệch ĐVT.</li>
+<li>Các khoảng <strong>từ … đến …</strong> (bỏ trống một ô nếu chỉ cần một phía, số âm được): <strong>Quy cách thùng</strong>, <strong>CP bao bì/chai cũ</strong>, <strong>CP bao bì/chai mới</strong>, <strong>Tăng/giảm /chai</strong>, <strong>Tăng/giảm /thùng</strong>, <strong>% chênh</strong> (gõ 5 là 5%, so với con số đang hiện trên bảng). Sản phẩm chưa có giá chai không có số để so nên bị loại khi bạn bật một khoảng. Nếu "từ" lớn hơn "đến" thì có dòng báo lỗi ngay dưới ô và điều kiện đó chưa được áp dụng.</li>
+<li><strong>Chỉ sản phẩm có cảnh báo</strong>: thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT. Điều kiện này không có gì để nhập nên chọn là lọc luôn.</li>
 </ul>
-<p>Bấm <strong>Áp dụng</strong> để lọc, <strong>Xóa lọc</strong> trong hộp để làm trống hộp; nút hiện số nhóm điều kiện đang bật. Các điều kiện cùng lúc là "và" với nhau, và kết hợp được với ô tìm và chip. <strong>Xóa lọc</strong> ở thanh lọc bỏ tất cả. <strong>Xuất Excel</strong> ra đúng bộ lọc đang xem.</p>
+<p>Mỗi điều kiện là một chip: bấm chip để sửa, bấm <strong>x</strong> để bỏ. Bảng lọc ngay khi bạn chọn hoặc gõ xong, không có nút Áp dụng. Các điều kiện cùng lúc là "và" với nhau, và kết hợp được với ô tìm và chip xu hướng. <strong>Xóa lọc</strong> bỏ tất cả. <strong>Xuất Excel</strong> ra đúng bộ lọc đang xem.</p>
 
 <h2>Đọc bảng</h2>
 <ul>

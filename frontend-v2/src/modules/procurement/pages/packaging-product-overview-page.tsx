@@ -145,6 +145,7 @@ export function PackagingProductOverviewPage() {
           storageKey="procurement.packaging-product-overview"
           filtersActive={filtersActive}
           onResetFilters={resetFilters}
+          toolbarActionsClassName="order-2"
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={(by, dir) => {

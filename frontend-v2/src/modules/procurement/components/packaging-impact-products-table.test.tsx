@@ -176,10 +176,11 @@ describe('PackagingImpactProductsTable', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Đang lọc: 12 / 1.234 sản phẩm')
   })
 
-  it('shows no "Đang lọc" line when nothing is filtered, and the badge counts active conditions', () => {
+  it('shows no "Đang lọc" line and no condition chips when nothing is filtered', () => {
     renderTable([product()], makeView(), 12, 1234)
     expect(screen.queryByText(/Đang lọc/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Lọc nâng cao/ })).not.toHaveTextContent(/\d/)
+    expect(screen.getByRole('button', { name: /Thêm điều kiện/ })).toBeEnabled()
+    expect(screen.queryByRole('group', { name: 'Điều kiện lọc đang bật' })).not.toBeInTheDocument()
   })
 
   it('tells "filtered out" from "nothing selected" when only the advanced filter is on', () => {

@@ -1,6 +1,7 @@
 /**
  * duoc-CR-784 — luật thuần của LỌC NÂNG CAO bảng sản phẩm bị ảnh hưởng (màn Tác động giá): trạng thái biểu mẫu, đổi sang
  * thân `POST /impact`, đếm điều kiện đang bật, câu mô tả cho bản in, và đường đi qua chuỗi truy vấn của trang in.
+ * Thanh lọc dạng chip (26/11/2026) đọc cùng trạng thái này: mỗi điều kiện = một chip, câu trên chip do `summarizeCondition`.
  *
  * Ô khoảng số giữ DẠNG CHỮ trong biểu mẫu (để người dùng gõ dở "-" hay "1," không bị nuốt) và chỉ đổi sang số khi gửi đi.
  * Khoảng có "Từ" lớn hơn "Đến" bị báo lỗi tại ô và KHÔNG gửi (máy chủ sẽ trả 422).
@@ -64,17 +65,20 @@ export type ImpactRangeKey =
 
 interface RangeField {
   key: ImpactRangeKey
+  /** Tên đầy đủ (menu "Thêm điều kiện", ô nhập, bản in). */
   label: string
+  /** Tên ngắn đứng đầu câu trên chip ("Chênh /thùng ≥ 1.000 đ"). */
+  chip: string
   unit: string
   integer?: boolean
 }
 
-const CARTON_QTY_FIELD: RangeField = { key: 'cartonQty', label: 'Quy cách thùng', unit: '', integer: true }
-const DIFF_BOTTLE_FIELD: RangeField = { key: 'diffBottle', label: 'Tăng/giảm /chai', unit: 'đ' }
-const DIFF_CARTON_FIELD: RangeField = { key: 'diffCarton', label: 'Tăng/giảm /thùng', unit: 'đ' }
-const COST_NEW_FIELD: RangeField = { key: 'costNewBottle', label: 'CP bao bì/chai mới', unit: 'đ' }
-const COST_OLD_FIELD: RangeField = { key: 'costOldBottle', label: 'CP bao bì/chai cũ', unit: 'đ' }
-const PCT_FIELD: RangeField = { key: 'pct', label: '% chênh', unit: '' }
+const CARTON_QTY_FIELD: RangeField = { key: 'cartonQty', label: 'Quy cách thùng', chip: 'Quy cách', unit: '', integer: true }
+const DIFF_BOTTLE_FIELD: RangeField = { key: 'diffBottle', label: 'Tăng/giảm /chai', chip: 'Chênh /chai', unit: 'đ' }
+const DIFF_CARTON_FIELD: RangeField = { key: 'diffCarton', label: 'Tăng/giảm /thùng', chip: 'Chênh /thùng', unit: 'đ' }
+const COST_NEW_FIELD: RangeField = { key: 'costNewBottle', label: 'CP bao bì/chai mới', chip: 'CP chai mới', unit: 'đ' }
+const COST_OLD_FIELD: RangeField = { key: 'costOldBottle', label: 'CP bao bì/chai cũ', chip: 'CP chai cũ', unit: 'đ' }
+const PCT_FIELD: RangeField = { key: 'pct', label: '% chênh', chip: '% chênh', unit: '%' }
 
 /** Nhãn + đơn vị hiện ở biểu mẫu / bản in của từng ô khoảng (Tác động giá). */
 export const IMPACT_RANGE_FIELDS: readonly RangeField[] = [
@@ -94,13 +98,18 @@ export const OVERVIEW_RANGE_FIELDS: readonly RangeField[] = [
   PCT_FIELD,
 ]
 
-/** Màn dùng hộp lọc nâng cao. */
+/** Một điều kiện lọc của thanh chip: xu hướng · vai trò · một trong sáu khoảng số · chỉ-có-cảnh-báo. */
+export type FilterConditionKey = 'trend' | 'roles' | ImpactRangeKey | 'warningsOnly'
+
+/** Màn dùng thanh lọc nâng cao. */
 export type AdvancedFilterVariant = 'impact' | 'overview'
 
 /** Phần khác nhau giữa hai màn: ô khoảng nào, có mục xu hướng không, và cách gọi mục vai trò. */
 export interface AdvancedFilterProfile {
   rangeFields: readonly RangeField[]
   showTrend: boolean
+  /** Thứ tự các điều kiện trong menu "Thêm điều kiện" (và của các chip). */
+  conditionOrder: readonly FilterConditionKey[]
   rolesLabel: string
   rolesAriaLabel: string
   rolesHint: string
@@ -110,6 +119,7 @@ export const ADVANCED_FILTER_PROFILES: Record<AdvancedFilterVariant, AdvancedFil
   impact: {
     rangeFields: IMPACT_RANGE_FIELDS,
     showTrend: true,
+    conditionOrder: ['trend', 'roles', 'cartonQty', 'diffBottle', 'diffCarton', 'costNewBottle', 'warningsOnly'],
     rolesLabel: 'Có mã đã chọn ở vai trò',
     rolesAriaLabel: 'Vai trò của mã đã chọn',
     rolesHint: 'Chọn nhiều vai trò = sản phẩm có mã đã chọn ở một trong các vai trò đó.',
@@ -117,6 +127,16 @@ export const ADVANCED_FILTER_PROFILES: Record<AdvancedFilterVariant, AdvancedFil
   overview: {
     rangeFields: OVERVIEW_RANGE_FIELDS,
     showTrend: false,
+    conditionOrder: [
+      'roles',
+      'cartonQty',
+      'diffBottle',
+      'diffCarton',
+      'costOldBottle',
+      'costNewBottle',
+      'pct',
+      'warningsOnly',
+    ],
     rolesLabel: 'Có mã ở vai trò',
     rolesAriaLabel: 'Vai trò của mã trong định mức',
     rolesHint: 'Chọn nhiều vai trò = sản phẩm có mã ở một trong các vai trò đó trong định mức.',
@@ -192,7 +212,7 @@ export function impactFiltersToRequest(
 }
 
 /**
- * Số điều kiện lọc nâng cao đang bật (mỗi nhóm một điều kiện) — số trên huy hiệu của nút "Lọc nâng cao". Màn Tổng hợp
+ * Số điều kiện lọc nâng cao đang bật (mỗi nhóm một điều kiện) — số điều kiện đang bật của thanh lọc chip. Màn Tổng hợp
  * không đếm xu hướng (chip riêng đã hiện trạng thái đang chọn).
  */
 export function countAdvancedFilters(
@@ -314,4 +334,116 @@ export function describeImpactAdvancedFilters(request: PackagingImpactRequest): 
     request.warnings_only ? 'Chỉ sản phẩm có cảnh báo' : null,
   ]
   return parts.filter((part): part is string => part != null)
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Thanh lọc dạng chip (26/11/2026): mỗi điều kiện đang bật là một chip; luật dưới đây dùng chung cho màn và bài kiểm.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Câu mô tả "cảnh báo" — chỉ liệt kê các loại cảnh báo còn tồn tại (ngưỡng sàn / trần đã bỏ ở giai đoạn 04). */
+export const WARNINGS_ONLY_HINT = 'Thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT.'
+
+/** Các xu hướng chọn được trong điều kiện "Xu hướng chi phí" (không có "Tất cả" — bỏ điều kiện là xóa chip). */
+export const TREND_CONDITION_VALUES: readonly Exclude<PackagingOverviewTrend, 'all'>[] = [
+  'up',
+  'down',
+  'flat',
+  'missing',
+]
+
+/** Nhãn một xu hướng (khớp chip đếm của màn Tổng hợp). */
+export function trendConditionLabel(trend: PackagingOverviewTrend): string {
+  return trend === 'all' ? 'Tất cả' : (TREND_TEXT[trend] ?? trend)
+}
+
+function rangeFieldOf(key: ImpactRangeKey): RangeField {
+  return [...IMPACT_RANGE_FIELDS, ...OVERVIEW_RANGE_FIELDS].find((field) => field.key === key)!
+}
+
+/** Tên điều kiện trong menu "Thêm điều kiện" và trên đầu hộp sửa. */
+export function conditionLabel(key: FilterConditionKey, variant: AdvancedFilterVariant): string {
+  if (key === 'trend') return 'Xu hướng chi phí'
+  if (key === 'roles') return ADVANCED_FILTER_PROFILES[variant].rolesLabel
+  if (key === 'warningsOnly') return 'Chỉ sản phẩm có cảnh báo'
+  return rangeFieldOf(key).label
+}
+
+/** Điều kiện nào đang có hiệu lực (khoảng số cần ít nhất một biên đọc được; ô nhập dở chưa tính). */
+export function isConditionActive(filters: ImpactAdvancedFilters, key: FilterConditionKey): boolean {
+  if (key === 'trend') return filters.trend !== 'all'
+  if (key === 'roles') return filters.roles.length > 0
+  if (key === 'warningsOnly') return filters.warningsOnly
+  return parseRangeText(filters[key].min) != null || parseRangeText(filters[key].max) != null
+}
+
+/** Các điều kiện đang bật của màn, theo thứ tự menu. */
+export function activeConditionKeys(
+  filters: ImpactAdvancedFilters,
+  variant: AdvancedFilterVariant,
+): FilterConditionKey[] {
+  return ADVANCED_FILTER_PROFILES[variant].conditionOrder.filter((key) => isConditionActive(filters, key))
+}
+
+/** Bỏ một điều kiện (xóa chip). */
+export function clearCondition(filters: ImpactAdvancedFilters, key: FilterConditionKey): ImpactAdvancedFilters {
+  if (key === 'trend') return { ...filters, trend: 'all' }
+  if (key === 'roles') return { ...filters, roles: [] }
+  if (key === 'warningsOnly') return { ...filters, warningsOnly: false }
+  return { ...filters, [key]: EMPTY_RANGE }
+}
+
+/** Số trên chip theo cách viết Việt (dấu chấm ngăn nghìn, dấu phẩy thập phân). */
+function formatBound(value: number): string {
+  return value.toLocaleString('vi-VN', { maximumFractionDigits: 6 })
+}
+
+/**
+ * Câu hiện trên chip. Khoảng số: "Chênh /thùng ≥ 1.000 đ", "Quy cách 24–40", "% chênh ≤ 5%"; khoảng ngược ("Từ" lớn hơn
+ * "Đến", hoặc quy cách không nguyên) ghi thêm "(chưa áp dụng)" vì máy chủ không nhận. Ô chưa nhập số nào (chip đang mở sửa) ghi "chưa nhập".
+ */
+export function summarizeCondition(filters: ImpactAdvancedFilters, key: FilterConditionKey): string {
+  //  Chip vừa thêm, chưa chọn gì (hộp sửa đang mở): ghi "chưa chọn" / "chưa nhập" thay vì câu rỗng.
+  if (key === 'trend') {
+    return `Xu hướng: ${filters.trend === 'all' ? 'chưa chọn' : trendConditionLabel(filters.trend)}`
+  }
+  if (key === 'roles') {
+    if (filters.roles.length === 0) return 'Vai trò: chưa chọn'
+    return `Vai trò: ${[...filters.roles].sort((a, b) => a - b).map((role) => packagingRoleLabel(role)).join(', ')}`
+  }
+  if (key === 'warningsOnly') return 'Chỉ SP có cảnh báo'
+  const field = rangeFieldOf(key)
+  const min = parseRangeText(filters[key].min)
+  const max = parseRangeText(filters[key].max)
+  if (min == null && max == null) return `${field.chip}: chưa nhập`
+  //  Đơn vị tiền cách một khoảng trắng ("1.000 đ"), dấu % dính liền ("5%").
+  const unit = field.unit === '%' ? '%' : field.unit ? ` ${field.unit}` : ''
+  const text =
+    min != null && max != null
+      ? `${field.chip} ${formatBound(min)}–${formatBound(max)}${unit}`
+      : min != null
+        ? `${field.chip} ≥ ${formatBound(min)}${unit}`
+        : `${field.chip} ≤ ${formatBound(max!)}${unit}`
+  //  Khoảng ngược / quy cách không nguyên: máy chủ không nhận nên chip nói rõ là chưa lọc.
+  return rangeTextProblem(key, filters[key]) ? `${text} (chưa áp dụng)` : text
+}
+
+/**
+ * Lỗi của một ô khoảng đang gõ, hiện ngay dưới ô: chữ không đọc được thành số, quy cách thùng không phải số nguyên trong
+ * [0; 1.000.000], hoặc "Từ" lớn hơn "Đến". `null` = ổn (kể cả ô trống). Khớp luật của `rangeBounds` / máy chủ (422).
+ */
+export function rangeTextProblem(key: ImpactRangeKey, range: ImpactRangeText): string | null {
+  const field = rangeFieldOf(key)
+  const sides = [range.min, range.max].map((text) => ({ text, value: parseRangeText(text) }))
+  if (sides.some(({ text, value }) => text.trim() !== '' && value == null)) {
+    return 'Nhập số hợp lệ, ví dụ 1.000 hoặc 2,5.'
+  }
+  if (
+    field.integer &&
+    sides.some(({ value }) => value != null && !(Number.isInteger(value) && value >= 0 && value <= IMPACT_CARTON_QTY_LIMIT))
+  ) {
+    return `Quy cách thùng phải là số nguyên từ 0 đến ${IMPACT_CARTON_QTY_LIMIT.toLocaleString('vi-VN')}.`
+  }
+  const [min, max] = sides.map(({ value }) => value)
+  if (min != null && max != null && min > max) return '"Từ" không được lớn hơn "Đến" — điều kiện này chưa được áp dụng.'
+  return null
 }
