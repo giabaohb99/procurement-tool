@@ -8,7 +8,7 @@
 | Luật gộp | **MIC là chuẩn** (người chủ chốt). Hai nguồn lệch thì nội dung chính viết theo MIC; bản của tệp ghi ở ô *Mâu thuẫn* và ở mục 9 |
 | Đọc gì trước | Mục 1 (đọc nhanh) và mục 9 (sổ mâu thuẫn) |
 | Trạng thái | Nháp. Chỗ chưa chắc ghi *chưa rõ* |
-| Bản dễ đọc | Muốn hiểu logic từng quy trình bằng lời thường, không viết tắt: đọc [giai-thich-quy-trinh-san-xuat.md](giai-thich-quy-trinh-san-xuat.md) |
+| Bản dễ đọc | Muốn hiểu logic từng quy trình bằng lời thường, không viết tắt: đọc [giai-thich-quy-trinh-san-xuat.md](10-giai-thich-quy-trinh-san-xuat.md) |
 
 ## Mục lục
 

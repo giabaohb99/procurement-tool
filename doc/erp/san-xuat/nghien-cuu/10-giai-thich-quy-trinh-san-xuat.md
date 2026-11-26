@@ -1,6 +1,6 @@
 # Giải thích từng quy trình của Phòng Sản xuất
 
-*Em viết để đại ca hiểu **logic**: mỗi quy trình sinh ra để làm gì, chạy thế nào, nối với quy trình khác ra sao. Không dùng chữ viết tắt. Hai nguồn (khảo sát MIC và tệp bàn giao) nói khác nhau thì em theo khảo sát MIC. Muốn tra nguồn từng ý thì xem [tai-lieu-gop-phong-san-xuat.md](tai-lieu-gop-phong-san-xuat.md).*
+*Em viết để đại ca hiểu **logic**: mỗi quy trình sinh ra để làm gì, chạy thế nào, nối với quy trình khác ra sao. Không dùng chữ viết tắt. Hai nguồn (khảo sát MIC và tệp bàn giao) nói khác nhau thì em theo khảo sát MIC. Muốn tra nguồn từng ý thì xem [tai-lieu-gop-phong-san-xuat.md](09-tai-lieu-gop-phong-san-xuat.md).*
 
 ## Mục lục
 

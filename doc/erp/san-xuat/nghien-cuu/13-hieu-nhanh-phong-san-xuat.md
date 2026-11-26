@@ -1,6 +1,6 @@
 # Hiểu nhanh Phòng Sản xuất
 
-*Bản viết lại cho dễ đọc, gom từ khảo sát MIC và tệp quy trình bàn giao. Nguồn hai bên nói khác nhau thì em theo MIC. Phần **Em hiểu là** và **Góc nhìn của em** là nhận xét riêng của em. Ai cần tra nguồn từng ý thì xem tệp gộp đầy đủ [tai-lieu-gop-phong-san-xuat.md](tai-lieu-gop-phong-san-xuat.md).*
+*Bản viết lại cho dễ đọc, gom từ khảo sát MIC và tệp quy trình bàn giao. Nguồn hai bên nói khác nhau thì em theo MIC. Phần **Em hiểu là** và **Góc nhìn của em** là nhận xét riêng của em. Ai cần tra nguồn từng ý thì xem tệp gộp đầy đủ [tai-lieu-gop-phong-san-xuat.md](09-tai-lieu-gop-phong-san-xuat.md).*
 
 ---
 

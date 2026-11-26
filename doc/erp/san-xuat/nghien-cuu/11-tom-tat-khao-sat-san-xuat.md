@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Nguồn | Make It Clear, dự án *Khảo sát hiện trạng Phòng Sản xuất, trả lời chung (24/10/2026)*. Cả phòng trả lời chung, chị Ngân duyệt câu trả lời |
-| Gồm | (1) **Trang kết quả MIC** dựng từ 370 câu trả lời + 15 tài liệu phòng nộp; (2) **177 câu hỏi đáp gốc** lấy được ([tệp đầy đủ](cau-hoi-tra-loi-khao-sat-san-xuat.md)) |
+| Gồm | (1) **Trang kết quả MIC** dựng từ 370 câu trả lời + 15 tài liệu phòng nộp; (2) **177 câu hỏi đáp gốc** lấy được ([tệp đầy đủ](12-cau-hoi-tra-loi-khao-sat-san-xuat.md)) |
 | Lấy ngày | 06/11/2026, chỉ đọc. Điểm rõ ràng của MIC: 95/100 |
 | Ký hiệu | **V3·C14** = vòng 3, câu 14 trong tệp hỏi đáp. Không ghi số câu = lấy từ trang kết quả MIC |
 
