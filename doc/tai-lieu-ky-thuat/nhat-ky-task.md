@@ -140,8 +140,10 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
   5 tài khoản thu mua của Kinh doanh AGC đã chốt không gán.
 - Sửa đơn giá PO01146 (NCC Bao bì nhựa Phương Nam), dòng CPV0012: 2.800 thành 2.900; công nợ dòng từ 6.048.000đ lên 6.264.000đ,
   chưa trả. PO01218 cùng mã đã là 2.900 sẵn nên không đụng. Sao lưu trước khi ghi (`prod_truoc_release_20261126_1657.sql.gz`).
+- Mở quyền nhập liệu cho vai trò **Quản lý thu mua** (3 tài khoản): thêm dòng quyền *Giá bao bì* gồm xem, tạo, sửa, xóa, xuất,
+  phạm vi tất cả; 27 dòng quyền cũ của vai trò giữ nguyên. Sao lưu trước (`prod_truoc_release_20261126_1717.sql.gz`).
 
-**Chưa làm:** quyền nhập báo giá, định mức, nạp sổ Misa và xóa theo lô vẫn chỉ quản trị có. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
+**Chưa làm:** Nhân viên thu mua, nhà máy và phòng Dego Lab chỉ xem và xuất, chưa có quyền nhập liệu. Chưa diễn tập chuỗi migration trên bản sao prod (bảng mới, rỗng).
 
 **Quay lui:** `alembic downgrade mrg761a` bỏ bảng của cụm; bản sao lưu `prod_truoc_release_20261126_1659.sql.gz` (trước phát
 hành) và `prod_truoc_release_20261126_1706.sql.gz` (sau phát hành, trước nạp dữ liệu).
