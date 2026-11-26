@@ -78,6 +78,11 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 | [`nghien-cuu/12-cau-hoi-tra-loi-khao-sat-san-xuat.md`](nghien-cuu/12-cau-hoi-tra-loi-khao-sat-san-xuat.md) | Toàn bộ câu hỏi và câu trả lời khảo sát MIC (trả lời chung 24/10) | chưa ghi (06/11/2026) |
 | [`nghien-cuu/13-hieu-nhanh-phong-san-xuat.md`](nghien-cuu/13-hieu-nhanh-phong-san-xuat.md) | Hiểu nhanh Phòng Sản xuất | chưa ghi (06/11/2026) |
 | [`nghien-cuu/14-danh-gia-quy-trinh-ban-giao.md`](nghien-cuu/14-danh-gia-quy-trinh-ban-giao.md) | Đánh giá tệp quy trình bàn giao, đối chiếu với khảo sát MIC | chưa ghi (06/11/2026) |
+| [`nghien-cuu/15-tong-hop-13-quy-trinh-san-xuat.md`](nghien-cuu/15-tong-hop-13-quy-trinh-san-xuat.md) | Tổng hợp 13 quy trình con, luồng dữ liệu, lộ trình đưa vào ERP, tên gọi chuỗi cung ứng | 26/11/2026 |
+| [`nghien-cuu/16-khung-quy-trinh-va-phap-ly-san-xuat.md`](nghien-cuu/16-khung-quy-trinh-va-phap-ly-san-xuat.md) | Chi tiết QT1–QT13, danh mục đầu vào sản xuất, pháp lý sản phẩm / NCC | 26/11/2026 |
+| [`nghien-cuu/17-ncc-gia-cong-va-quan-ly-du-lieu.md`](nghien-cuu/17-ncc-gia-cong-va-quan-ly-du-lieu.md) | NCC gia công (đưa vào, đánh giá, ngưng), đầu vào QLDL, duyệt đơn, BĐM thành phẩm | 26/11/2026 |
+| [`nghien-cuu/18-gia-von-mua-hang-cong-no-ton-kho.md`](nghien-cuu/18-gia-von-mua-hang-cong-no-ton-kho.md) | Giá vốn, mua NL / BTP / VTBB, công nợ, đối chiếu tồn, báo cáo VTBB | 26/11/2026 |
+| [`nghien-cuu/19-dieu-phoi-thanh-pham-va-su-co.md`](nghien-cuu/19-dieu-phoi-thanh-pham-va-su-co.md) | Điều phối thành phẩm gửi NCC GC, sự cố sản xuất và chỉ số | 26/11/2026 |
 | [`du-lieu/09-quy-trinh-ban-giao-sheets/`](du-lieu/09-quy-trinh-ban-giao-sheets/) | 20 sheet của tệp quy trình bàn giao (mục lục, tiến độ, QT 1–20) xuất ra văn bản | dữ liệu gốc |
 | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) | Bảng đường API (dựng tự động; chưa có mã backend) | Nháp |
 
