@@ -22,9 +22,9 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 
 | Mảng | Trạng thái | Ghi chú |
 |---|---|---|
-| Nghiên cứu nghiệp vụ chuẩn (Thông tư 99/2025) | Đã có tài liệu | [`10`](chuc-nang/10-tong-quan-nghiep-vu.md), bản 1.0 21/10/2026 |
+| Nghiên cứu nghiệp vụ chuẩn (Thông tư 99/2025) | Đã có tài liệu | [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md), bản 1.0 21/10/2026 |
 | Khảo sát hiện trạng Phòng Sản xuất | Đã có tài liệu | [`02`](nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md) … [`08`](nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md); còn câu chưa thống nhất |
-| Tài liệu yêu cầu | Chưa làm | Chờ trả lời 15 câu ở [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) §14 (việc SX1-1) |
+| Tài liệu yêu cầu (danh sách tính năng) | Đang làm: Sản phẩm (54 tính năng) và Kho (50 tính năng) đã viết 26/11/2026; đơn hàng, sự cố, phần còn lại chưa | [`01`](chuc-nang/01-yeu-cau-chuc-nang.md), [`11`](chuc-nang/11-san-pham.md), [`12`](chuc-nang/12-kho.md); còn chờ trả lời 15 câu ở [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §14 (việc SX1-1) |
 | Mã nguồn (BOM, đơn gia công, lệnh sản xuất, phiếu kho sản xuất) | Chưa làm | [Kế hoạch theo module](../../plans/00-ke-hoach-theo-module.md) §12 |
 
 ## Ba điều quan trọng nhất
@@ -39,30 +39,34 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 
 | Muốn biết | Đọc |
 |---|---|
-| Làm được gì (đề xuất, chưa chốt) | [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) |
+| Danh sách tính năng (đọc đầu tiên) | [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) |
+| Sản phẩm: mã hàng, quy tắc, công thức, định mức / BOM | [`chuc-nang/11-san-pham.md`](chuc-nang/11-san-pham.md) |
+| Kho: nhập, xuất, tồn, kho tại NCC gia công, đối chiếu | [`chuc-nang/12-kho.md`](chuc-nang/12-kho.md) |
 | Chạy tốt cỡ nào, ai được xem gì | [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) |
 | Gọi API nào | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) (chưa có đường nào) |
-| Thiết kế, bảng dữ liệu, bẫy | chưa có; ràng buộc thiết kế ở [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) §13.3 |
-| So sánh, khảo sát, câu hỏi chờ chốt | [`nghien-cuu/`](nghien-cuu/) — đọc nhanh [`04`](nghien-cuu/04-san-xuat-tom-tat-cho-ban-dieu-hanh.md); câu cần chốt ở [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) §14 |
+| Thiết kế, bảng dữ liệu, bẫy | chưa có; ràng buộc thiết kế ở [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §13.3 |
+| So sánh, khảo sát, câu hỏi chờ chốt | [`nghien-cuu/`](nghien-cuu/) — đọc nhanh [`04`](nghien-cuu/04-san-xuat-tom-tat-cho-ban-dieu-hanh.md); câu cần chốt ở [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §14 |
 | Kế hoạch đang làm / đã xong | chưa có thư mục `plans/`; việc ở [kế hoạch theo module](../../plans/00-ke-hoach-theo-module.md) §12 (SX1-x, SX2-x, SX3-x) |
 | Kịch bản kiểm thử tay | chưa có |
 | Hướng dẫn người dùng | chưa có |
 
 Đọc theo vai:
 
-- **Người quyết:** đọc [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) mục 14; câu B1 quan trọng nhất (bản đầu chỉ quản lý số
+- **Người quyết:** đọc [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) mục 14; câu B1 quan trọng nhất (bản đầu chỉ quản lý số
   lượng hay làm cả giá thành). Đọc nhanh hiện trạng ở [`04`](nghien-cuu/04-san-xuat-tom-tat-cho-ban-dieu-hanh.md).
-- **Kế toán:** đọc [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) mục 5 đến 9, rồi trả lời nhóm C ở mục 14.
-- **Đội phần mềm:** đọc [`10`](chuc-nang/10-tong-quan-nghiep-vu.md) mục 13 (đã có gì, phải làm mới gì, ràng buộc không được
+- **Kế toán:** đọc [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) mục 5 đến 9, rồi trả lời nhóm C ở mục 14.
+- **Đội phần mềm:** đọc [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) mục 13 (đã có gì, phải làm mới gì, ràng buộc không được
   phá) và [`02`](nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md) mục 7 (ý nghĩa của khảo sát cho ERP).
 
 ## Mục lục
 
 | Tệp | Nội dung | Trạng thái |
 |---|---|---|
-| [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) | Danh sách chức năng đề xuất CN-SX-NN rút từ nghiên cứu, chưa chốt phạm vi | Nháp |
-| [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-SX-01..12 (phần lớn chưa có) | Nháp |
-| [`chuc-nang/10-tong-quan-nghiep-vu.md`](chuc-nang/10-tong-quan-nghiep-vu.md) | Thuật ngữ, quan hệ với Tồn kho / Mua hàng / Bán hàng / Kế toán, quy trình chuẩn, hạch toán giá thành theo Thông tư 99/2025, dở dang, phân bổ chi phí chung, giá chuẩn / thực tế, hàng lỗi, gia công ngoài, đối chiếu mã ERP, 15 câu phải chốt | Tài liệu nghiên cứu (bản 1.0, 21/10/2026) |
+| [`chuc-nang/01-yeu-cau-chuc-nang.md`](chuc-nang/01-yeu-cau-chuc-nang.md) | **Danh sách tính năng tổng** (SX-SP, SX-KHO), thứ tự làm, câu hỏi chặn | Nháp 0.2 (26/11/2026) |
+| [`chuc-nang/02-yeu-cau-phi-chuc-nang.md`](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng PCN-SX-01..16 (phần lớn chưa có) | Nháp 0.2 |
+| [`chuc-nang/11-san-pham.md`](chuc-nang/11-san-pham.md) | Sản phẩm: mã hàng, quy tắc mã, công thức BTP, định mức / BOM ba tầng, tiêu chí đánh giá; 54 tính năng SX-SP | Nháp 0.1 (26/11/2026) |
+| [`chuc-nang/12-kho.md`](chuc-nang/12-kho.md) | Kho: loại kho, loại tồn, nhập / xuất / chuyển, xuất theo đơn và BĐM, đối chiếu NCC GC, báo cáo; 50 tính năng SX-KHO | Nháp 0.1 (26/11/2026) |
+| [`nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) | Thuật ngữ, quan hệ với Tồn kho / Mua hàng / Bán hàng / Kế toán, quy trình chuẩn, hạch toán giá thành theo Thông tư 99/2025, dở dang, phân bổ chi phí chung, giá chuẩn / thực tế, hàng lỗi, gia công ngoài, đối chiếu mã ERP, 15 câu phải chốt | Tài liệu nghiên cứu (bản 1.0, 21/10/2026) |
 | [`du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx`](du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx) | Bản Word các mâu thuẫn gửi Phòng Sản xuất | chưa ghi |
 | [`du-lieu/03-mau-thuan-san-xuat.xlsx`](du-lieu/03-mau-thuan-san-xuat.xlsx) | Bảng Excel mâu thuẫn và câu hỏi (đi kèm `03`) | chưa ghi |
 | [`du-lieu/06-ban-do-quy-trinh-san-xuat.html`](du-lieu/06-ban-do-quy-trinh-san-xuat.html) | Bản đồ quy trình sản xuất, mở bằng trình duyệt | chưa ghi |

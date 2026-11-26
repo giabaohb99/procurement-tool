@@ -1,15 +1,15 @@
-# YÊU CẦU PHI CHỨC NĂNG — SẢN XUẤT
+# YÊU CẦU PHI CHỨC NĂNG — SẢN XUẤT GIA CÔNG
 
 | | |
 |---|---|
-| Bản | 0.1 |
-| Ngày | 03/11/2026 |
+| Bản | 0.2 |
+| Ngày | 26/11/2026 |
 | Người phụ trách | chưa giao |
 | Trạng thái | Nháp |
 | CR liên quan | bao-CR-712 |
 
 Mỗi yêu cầu một mã `PCN-SX-NN`, ghi **mức đo được** và **cách kiểm**. Phân hệ chưa có mã nên cột *Hiện trạng* đều là
-*Chưa đo*; yêu cầu nào chưa có nguồn ghi *Chưa có*. Các ràng buộc dưới lấy từ [`10`](10-tong-quan-nghiep-vu.md) §13.3 và
+*Chưa đo*; yêu cầu nào chưa có nguồn ghi *Chưa có*. Các ràng buộc dưới lấy từ [`10`](../nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §13.3 và
 luật chung của hệ.
 
 | Mã | Nhóm | Yêu cầu (đo được) | Cách kiểm | Hiện trạng |
@@ -21,8 +21,12 @@ luật chung của hệ.
 | PCN-SX-05 | Nhật ký và truy vết | Chưa có | Chưa có | Chưa đo |
 | PCN-SX-06 | Lưu trữ và dọn dữ liệu | Chưa có | Chưa có | Chưa đo |
 | PCN-SX-07 | Sao lưu và khôi phục | Chưa có (dữ liệu sẽ nằm trong CSDL ERP, theo bản sao lưu chung của [Nền tảng](../../nen-tang/chuc-nang/02-yeu-cau-phi-chuc-nang.md) PCN-NT-07) | Chưa có | Chưa đo |
-| PCN-SX-08 | Đồng thời | Chưa có. Lưu ý dữ liệu: đơn giá bình quân di động hiện tính lại mỗi lần nhận hàng; thêm nhập thành phẩm với giá tạm thì phải quyết có tính lại bình quân khi chốt giá thật không | [`10`](10-tong-quan-nghiep-vu.md) §8.2, §13.3 | Chưa đo |
-| PCN-SX-09 | Tích hợp | Dùng lại `tab_product` (nối bằng `product_code`), `tab_inventory`, `tab_inventory_move`, YCMH / ĐMH, công nợ phải trả, bộ máy duyệt. Không thêm bảng biến thể dưới `tab_product`, không đổi / tái dùng `product_code`, không đặt cột giá lên sản phẩm. Kế toán dùng MISA: ranh giới ERP sinh bút toán hay chỉ xuất số chưa chốt (câu C1) | [`10`](10-tong-quan-nghiep-vu.md) §3, §13.1, §13.3, §14; [mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) | Chưa đo |
+| PCN-SX-08 | Đồng thời | Chưa có. Lưu ý dữ liệu: đơn giá bình quân di động hiện tính lại mỗi lần nhận hàng; thêm nhập thành phẩm với giá tạm thì phải quyết có tính lại bình quân khi chốt giá thật không | [`10`](../nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §8.2, §13.3 | Chưa đo |
+| PCN-SX-09 | Tích hợp | Dùng lại `tab_product` (nối bằng `product_code`), `tab_inventory`, `tab_inventory_move`, YCMH / ĐMH, công nợ phải trả, bộ máy duyệt. Không thêm bảng biến thể dưới `tab_product`, không đổi / tái dùng `product_code`, không đặt cột giá lên sản phẩm. Kế toán dùng MISA: ranh giới ERP sinh bút toán hay chỉ xuất số chưa chốt (câu C1) | [`10`](../nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §3, §13.1, §13.3, §14; [mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) | Chưa đo |
 | PCN-SX-10 | Khả dụng và thiết bị | Chưa có | Chưa có | Chưa đo |
-| PCN-SX-11 | Pháp lý | Hạch toán theo Thông tư 99/2025/TT-BTC (hiệu lực 01/01/2026) và Chuẩn mực kế toán số 02 *Hàng tồn kho*; phần vượt mức bình thường vào thẳng giá vốn, không vào tồn kho; pháp nhân theo chế độ doanh nghiệp nhỏ và vừa thì không dùng 621, 622, 627 (câu C3). Chứng từ phải mang đúng pháp nhân nhận hóa đơn | [`10`](10-tong-quan-nghiep-vu.md) §1, §5, §7; [`02`](../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md) §7 dòng 8 | Chưa đo |
+| PCN-SX-11 | Pháp lý | Hạch toán theo Thông tư 99/2025/TT-BTC (hiệu lực 01/01/2026) và Chuẩn mực kế toán số 02 *Hàng tồn kho*; phần vượt mức bình thường vào thẳng giá vốn, không vào tồn kho; pháp nhân theo chế độ doanh nghiệp nhỏ và vừa thì không dùng 621, 622, 627 (câu C3). Chứng từ phải mang đúng pháp nhân nhận hóa đơn | [`10`](../nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §1, §5, §7; [`02`](../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md) §7 dòng 8 | Chưa đo |
 | PCN-SX-12 | Vận hành | Chưa có | `/api/system/jobs` khi có việc chạy ngầm | Chưa đo |
+| PCN-SX-13 | Bảo mật công thức và giá vốn | Dòng công thức thật của BTP, hàm lượng, mã nguyên liệu mã hóa (`NA`) và giá vốn chỉ hiện với vai trò được cấp; Kinh doanh và NCC gia công thấy tên công thức khác nhau ([`11`](11-san-pham.md) SX-SP-15, SX-SP-17). Chưa chốt ai được xem gì | Bài kiểm phạm vi theo vai trò khi có mã | Chưa đo |
+| PCN-SX-14 | Chuyển dữ liệu từ Google Sheets | Mã hàng, định mức, tồn đầu kỳ, ánh xạ mã NCC nhập được bằng Excel có tệp mẫu, chạy thử trước khi ghi, nhập lại không sinh trùng ([`11`](11-san-pham.md) SX-SP-54, [`12`](12-kho.md) SX-KHO-07) | Nhập hai lần cùng tệp, số dòng không đổi | Chưa đo |
+| PCN-SX-15 | Toàn vẹn tồn kho | Không cho xuất âm kho; mọi thay đổi tồn đi qua sổ giao dịch, không sửa thẳng số tồn; tồn tính lại được từ sổ ([`12`](12-kho.md) SX-KHO-19, SX-KHO-31) | Bài kiểm dựng lại tồn từ sổ giao dịch | Chưa đo |
+| PCN-SX-16 | Không ảnh hưởng Thu mua đang chạy | Mở rộng `tab_product`, `tab_inventory`, định mức bao bì (`tab_packaging_bom`, `tab_packaging_bom_part`) phải giữ nguyên hành vi các màn Thu mua và Giá nguyên vật liệu sản xuất trên prod | Chạy lại bài kiểm Thu mua, kho và cụm giá trước mỗi đợt | Chưa đo |
