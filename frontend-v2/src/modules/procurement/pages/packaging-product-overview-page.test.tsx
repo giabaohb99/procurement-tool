@@ -137,7 +137,7 @@ describe('PackagingProductOverviewPage', () => {
     build()
     await user.type(await screen.findByLabelText('Tìm sản phẩm'), 'b07')
     await waitFor(() => expect(lastParams()).toMatchObject({ q: 'b07' }))
-    await user.click(screen.getByText('Chênh /thùng'))
+    await user.click(screen.getByText('Tăng/giảm /thùng'))
     await waitFor(() =>
       expect(lastParams()).toMatchObject({ q: 'b07', sort_by: 'diff_carton', sort_dir: 'desc' }),
     )

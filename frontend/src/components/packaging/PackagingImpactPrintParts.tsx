@@ -53,7 +53,7 @@ export function PrintImpactSelection({ codes, extras, rows }: {
                 <td>{r.group}</td>
                 <td className="n"><Price value={r.old} /></td>
                 <td className="n"><Price value={r.new} /></td>
-                <td className="n">{r.assumed != null ? <span className="cell-inp"><Price value={r.assumed} /></span> : <span className="cell-inp faint">Bỏ trống</span>}</td>
+                <td className="n">{r.assumed != null ? <span className="cell-inp"><Price value={r.assumed} /></span> : <span className="cell-inp faint">—</span>}</td>
                 <td className="n"><Diff value={r.diff} /></td>
                 <td className="n"><Pct value={r.pct} /></td>
                 <td className="n">{r.usage}</td>
@@ -95,7 +95,7 @@ export function PrintImpactProducts({ rows, matched, empty }: { rows: readonly P
         <span className="cnt">{matched.toLocaleString('vi-VN')} sản phẩm · Đơn vị VNĐ, chưa VAT</span>
       </div>
       {rows.length === 0 ? <p className="empty">{empty}</p> : (
-        <table>
+        <table className="dense">
           <thead>
             <tr>
               <th className="c">STT</th><th>Mã HH</th><th>Tên hàng hóa</th><th className="n">Quy cách thùng</th>

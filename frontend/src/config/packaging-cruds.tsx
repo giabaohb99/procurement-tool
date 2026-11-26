@@ -85,7 +85,7 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   },
   'packaging-boms': {
     slug: 'packaging-boms', entity: 'packaging_cost', auditEntity: 'packaging_bom', title: 'Định mức bao bì',
-    apiPath: PACKAGING_BOM_API, txn: true,
+    apiPath: PACKAGING_BOM_API, txn: true, idDefaultHidden: true,
     headerExtra: () => (
       <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_BOM} action="create"
         label="Nhập từ Excel" title="Nhập định mức bao bì"

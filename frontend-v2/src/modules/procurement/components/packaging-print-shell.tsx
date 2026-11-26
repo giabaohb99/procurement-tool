@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDateTime } from '@/shared/utils/format-date'
 
+import { buildPackagingPrintTitle } from '../utils/packaging-print-title'
 import {
   PACKAGING_PRINT_CRUMB,
   PACKAGING_PRINT_DELAY_MS,
@@ -65,7 +66,7 @@ export function PackagingPrintShell({ subtitle, status, errorMessage, children }
 
   useEffect(() => {
     const previousTitle = document.title
-    document.title = `Gia-nguyen-vat-lieu-san-xuat-${subtitle}`.replace(/\s+/g, '-')
+    document.title = buildPackagingPrintTitle(subtitle)
     return () => {
       document.title = previousTitle
     }

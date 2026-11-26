@@ -1,5 +1,6 @@
 import type { PackagingHistoryMode, PackagingHistoryPoint, PackagingHistoryRow } from '../../api/packaging-cost-types'
 import { fmtDateStr } from '../../utils/datetime'
+import { dateTickAnchor, pickDateTickIndexes } from '../../utils/packaging-chart-date-ticks'
 import { amountText, diffText, pctText, priceText, qtyText } from '../../utils/packaging-price'
 import { historyRoleText, historyRowKey } from '../../utils/packaging-query'
 import { PrintDash } from './PackagingPrintShell'
@@ -69,6 +70,9 @@ export function PrintPriceChart({ series }: { series: readonly PackagingHistoryP
   const last = series.length - 1
   const path = series.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(' ')
   const step = Math.max(1, Math.ceil(series.length / 10))
+  //  Nhãn ngày thưa theo độ rộng thật: không để hai nhãn (nhất là nhãn cuối) đè lên nhau.
+  const tickLabels = series.map((p) => shortDate(p.date))
+  const tickIndexes = pickDateTickIndexes(series.map((_, i) => x(i)), tickLabels, step)
   const money = (v: number) => Math.round(v).toLocaleString('vi-VN')
   return (
     <div className="panel chart">
@@ -88,9 +92,9 @@ export function PrintPriceChart({ series }: { series: readonly PackagingHistoryP
         <text x={Math.min(x(last), W - r - 4)} y={y(series[last].price) - 10} textAnchor="end" fontSize="12" fontWeight="700" fill="#0F3B6E">
           {money(series[last].price)}
         </text>
-        {series.map((p, i) => (i % step === 0 || i === last) && (
-          <text key={`t${i}`} x={x(i)} y={H - 8} fontSize="11" fill="#5A5A5A" textAnchor={i === last ? 'end' : i === 0 ? 'start' : 'middle'}>
-            {shortDate(p.date)}
+        {tickIndexes.map((i) => (
+          <text key={`t${i}`} x={x(i)} y={H - 8} fontSize="11" fill="#5A5A5A" textAnchor={dateTickAnchor(i, series.length)}>
+            {tickLabels[i]}
           </text>
         ))}
       </svg>

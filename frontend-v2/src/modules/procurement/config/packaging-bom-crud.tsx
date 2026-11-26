@@ -124,6 +124,15 @@ export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
       defaultHidden: true,
       cell: (row) => formatDateTime(row.updated_at),
     },
+    //  Bảng tự thêm cột ID ở bìa trái; khai sẵn ở đây để ẩn mặc định và dồn xuống cuối (bật lại ở menu Cột).
+    {
+      key: 'id',
+      header: 'ID',
+      width: 72,
+      sortable: true,
+      defaultHidden: true,
+      cell: (row) => row.id,
+    },
   ],
   filterConfig: {
     fields: [

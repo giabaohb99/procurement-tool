@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { usePrintTitle } from '../../hooks/usePrintTitle'
 import { fmtDateTime } from '../../utils/datetime'
+import { buildPackagingPrintTitle } from '../../utils/packaging-print-title'
 import PRINT_CSS from './packaging-print.css?raw'
 
 /** Chờ một nhịp sau khi dữ liệu + font về để bảng / biểu đồ kịp dựng rồi mới mở hộp thoại in. */
@@ -46,7 +47,7 @@ export default function PackagingPrintShell({ subtitle, status, errorMessage, ch
   const { user } = useAuth()
   //  Một mốc giờ cố định cho cả tờ — render lại không làm giờ in nhảy.
   const [printedAt] = useState(() => fmtDateTime(new Date()))
-  usePrintTitle(`Gia-nguyen-vat-lieu-san-xuat-${subtitle}`.replace(/\s+/g, '-'))
+  usePrintTitle(buildPackagingPrintTitle(subtitle))
 
   useEffect(() => {
     const link = document.createElement('link')

@@ -67,15 +67,15 @@ interface RangeField {
   key: ImpactRangeKey
   /** Tên đầy đủ (menu "Thêm điều kiện", ô nhập, bản in). */
   label: string
-  /** Tên ngắn đứng đầu câu trên chip ("Chênh /thùng ≥ 1.000 đ"). */
+  /** Tên ngắn đứng đầu câu trên chip ("Tăng/giảm /thùng ≥ 1.000 đ"). */
   chip: string
   unit: string
   integer?: boolean
 }
 
 const CARTON_QTY_FIELD: RangeField = { key: 'cartonQty', label: 'Quy cách thùng', chip: 'Quy cách', unit: '', integer: true }
-const DIFF_BOTTLE_FIELD: RangeField = { key: 'diffBottle', label: 'Tăng/giảm /chai', chip: 'Chênh /chai', unit: 'đ' }
-const DIFF_CARTON_FIELD: RangeField = { key: 'diffCarton', label: 'Tăng/giảm /thùng', chip: 'Chênh /thùng', unit: 'đ' }
+const DIFF_BOTTLE_FIELD: RangeField = { key: 'diffBottle', label: 'Tăng/giảm /chai', chip: 'Tăng/giảm /chai', unit: 'đ' }
+const DIFF_CARTON_FIELD: RangeField = { key: 'diffCarton', label: 'Tăng/giảm /thùng', chip: 'Tăng/giảm /thùng', unit: 'đ' }
 const COST_NEW_FIELD: RangeField = { key: 'costNewBottle', label: 'CP bao bì/chai mới', chip: 'CP chai mới', unit: 'đ' }
 const COST_OLD_FIELD: RangeField = { key: 'costOldBottle', label: 'CP bao bì/chai cũ', chip: 'CP chai cũ', unit: 'đ' }
 const PCT_FIELD: RangeField = { key: 'pct', label: '% chênh', chip: '% chênh', unit: '%' }
@@ -398,7 +398,7 @@ function formatBound(value: number): string {
 }
 
 /**
- * Câu hiện trên chip. Khoảng số: "Chênh /thùng ≥ 1.000 đ", "Quy cách 24–40", "% chênh ≤ 5%"; khoảng ngược ("Từ" lớn hơn
+ * Câu hiện trên chip. Khoảng số: "Tăng/giảm /thùng ≥ 1.000 đ", "Quy cách 24–40", "% chênh ≤ 5%"; khoảng ngược ("Từ" lớn hơn
  * "Đến", hoặc quy cách không nguyên) ghi thêm "(chưa áp dụng)" vì máy chủ không nhận. Ô chưa nhập số nào (chip đang mở sửa) ghi "chưa nhập".
  */
 export function summarizeCondition(filters: ImpactAdvancedFilters, key: FilterConditionKey): string {

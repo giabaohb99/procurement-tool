@@ -103,7 +103,7 @@ export function PrintImpactSelection({ codes, extras, rows }: PrintImpactSelecti
                       <Price value={row.assumed} />
                     </span>
                   ) : (
-                    <span className="cell-inp faint">Bỏ trống</span>
+                    <span className="cell-inp faint">—</span>
                   )}
                 </td>
                 <td className="n">
@@ -181,7 +181,7 @@ export function PrintImpactProducts({
       {rows.length === 0 ? (
         <p className="empty">{empty}</p>
       ) : (
-        <table>
+        <table className="dense">
           <thead>
             <tr>
               <th className="c">STT</th>

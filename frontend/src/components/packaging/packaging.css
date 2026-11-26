@@ -174,10 +174,12 @@ tbody tr.pkg-zero td { color: var(--muted); }
   border: 1px solid var(--border, #e5e7eb); border-top: 3px solid #92c83e; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); }
 .pkg-kpi-k { font-size: 12px; font-weight: 600; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pkg-kpi-v { margin-top: 4px; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--navy, #1b2559);
-  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+/* Giá trị dài ("1.900 – 2.800") thu cỡ chữ và được xuống dòng thay vì bị cắt "…". */
+.pkg-kpi-v.long { font-size: 18px; }
 .pkg-kpi-v.up { color: #16a34a; }
 .pkg-kpi-v.down { color: #dc2626; }
-.pkg-kpi-s { margin-top: 2px; font-size: 12px; color: #8c939c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-kpi-s { margin-top: 2px; font-size: 12px; color: #8c939c; overflow-wrap: anywhere; }
 
 /* ── Thanh lọc dạng chip của bảng sản phẩm bị ảnh hưởng (Tác động giá) và Tổng hợp theo sản phẩm (duoc-CR-784, 26/11/2026) ── */
 .pkg-filter-panel {

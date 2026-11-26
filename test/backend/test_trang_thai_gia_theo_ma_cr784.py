@@ -191,3 +191,25 @@ def test_stats_codes_rong_hoac_ngoai_tap_khong_vo_loi(db):
     assert _states(db, {"A"}, stats_codes=set())["A"].purchase_count == 0
     assert _states(db, {"A"}, stats_codes={"ZZZ"})["A"].new == D(120)
     assert _states(db, {"A", "B"}, stats_codes={"A", "B"})["B"].purchase_count == 1
+
+
+# ── ĐVT: danh mục trống thì lấy ĐVT lần mua có giá gần nhất (26/11/2026) ────────────────────────
+def test_dvt_danh_muc_trong_thi_lay_dvt_lan_mua_gan_nhat_con_co_thi_giu_danh_muc(db):
+    add_products(db, ("A", "Chai A", ""), ("B", "Nắp B", "Bộ"), ("C", "Nhãn C", ""))
+    add_ledger(db, "A", 100, "2026-01-01", unit="Thùng")
+    add_ledger(db, "A", 110, "2026-02-01", unit="Cái")
+    add_ledger(db, "B", 50, "2026-01-01", unit="Cái")
+    add_ledger(db, "C", 10, "2026-01-01", unit="")            # lần mua không ghi ĐVT, mã khác không có gì khác
+    add_ledger(db, "D", 10, "2026-01-01", unit="Kg")          # mã chưa có trong danh mục
+    st = _states(db, {"A", "B", "C", "D"})
+    assert (st["A"].unit, st["B"].unit, st["C"].unit, st["D"].unit) == ("Cái", "Bộ", "", "Kg")
+
+
+def test_dvt_lan_1_trong_thi_lay_dvt_lan_2_va_khong_them_truy_van(db):
+    add_products(db, *[(f"M{i}", f"Mã {i}", "") for i in range(40)])
+    for i in range(40):
+        add_ledger(db, f"M{i}", 100, "2026-01-01", unit="Cái")
+        add_ledger(db, f"M{i}", 110, "2026-02-01", unit="")
+    states, sqls = count_queries(db, lambda: _states(db, {f"M{i}" for i in range(40)}))
+    assert all(st.unit == "Cái" for st in states.values())
+    assert len(sqls) == 3                                      # như bài đếm truy vấn phía trên: không thêm câu nào

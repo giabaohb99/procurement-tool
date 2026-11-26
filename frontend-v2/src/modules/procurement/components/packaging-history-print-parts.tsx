@@ -14,6 +14,7 @@ import type {
   PackagingHistoryPoint,
   PackagingHistoryRow,
 } from '../types/packaging-cost-types'
+import { dateTickAnchor, pickDateTickIndexes } from '../utils/packaging-chart-date-ticks'
 import { historyRoleText, historyRowKey } from '../utils/packaging-history'
 import {
   formatPackagingDiff,
@@ -100,6 +101,9 @@ export function PrintPriceChart({ series }: { series: readonly PackagingHistoryP
   const lastIndex = series.length - 1
   const path = series.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(' ')
   const step = Math.max(1, Math.ceil(series.length / 10))
+  //  Nhãn ngày thưa theo độ rộng thật: không để hai nhãn (nhất là nhãn cuối) đè lên nhau.
+  const tickLabels = series.map((point) => shortDate(point.date))
+  const tickIndexes = pickDateTickIndexes(series.map((_, i) => x(i)), tickLabels, step)
   return (
     <div className="panel chart">
       <h4>Diễn biến đơn giá qua các lần mua (VNĐ)</h4>
@@ -134,20 +138,18 @@ export function PrintPriceChart({ series }: { series: readonly PackagingHistoryP
         >
           {Math.round(series[lastIndex].price).toLocaleString('vi-VN')}
         </text>
-        {series.map((point, i) =>
-          i % step === 0 || i === lastIndex ? (
-            <text
-              key={`t${i}`}
-              x={x(i)}
-              y={H - 8}
-              textAnchor={i === lastIndex ? 'end' : i === 0 ? 'start' : 'middle'}
-              fontSize="11"
-              fill="#5A5A5A"
-            >
-              {shortDate(point.date)}
-            </text>
-          ) : null,
-        )}
+        {tickIndexes.map((i) => (
+          <text
+            key={`t${i}`}
+            x={x(i)}
+            y={H - 8}
+            textAnchor={dateTickAnchor(i, series.length)}
+            fontSize="11"
+            fill="#5A5A5A"
+          >
+            {tickLabels[i]}
+          </text>
+        ))}
       </svg>
     </div>
   )

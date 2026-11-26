@@ -93,7 +93,7 @@ Màn `/procurement/packaging-cost` (tiêu đề *Tác động tăng giá bao bì
   CP bao bì/chai cũ, CP bao bì/chai mới, Tăng/giảm /chai, Tăng/giảm /thùng, Ghi chú.
 - **Thanh lọc dạng chip** (chốt 26/11/2026, thay hộp *Lọc nâng cao*): ô tìm + nút **Thêm điều kiện** (menu các trường chưa bật:
   Xu hướng chi phí, Có mã đã chọn ở vai trò, Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, Chỉ sản
-  phẩm có cảnh báo). Mỗi điều kiện đang bật là một chip ghi câu tóm tắt (*Xu hướng: Tăng*, *Vai trò: Chai, Nắp*, *Chênh /thùng
+  phẩm có cảnh báo). Mỗi điều kiện đang bật là một chip ghi câu tóm tắt (*Xu hướng: Tăng*, *Vai trò: Chai, Nắp*, *Tăng/giảm /thùng
   ≥ 1.000 đ*, *Quy cách 24–40*); bấm chip để sửa ngay tại chỗ (xu hướng chọn một, vai trò chọn nhiều, khoảng số hai ô *từ … đến …*
   có đơn vị), nút x trên chip để bỏ. Lọc **ngay**, không có nút Áp dụng; khoảng số đợi 400 ms sau phím cuối. "Từ" lớn hơn "Đến"
   thì báo lỗi ngay dưới ô và chưa lọc. **Xóa lọc** bỏ cả ô tìm lẫn mọi chip. Dòng *Đang lọc: x / M sản phẩm* vẫn hiện khi có lọc.
@@ -128,8 +128,8 @@ của mọi sản phẩm*. Mọi mã HH có định mức, giá cũ so với gi�
   VÀ; sản phẩm chưa có giá chai bị loại khi bật một khoảng. Mỗi điều kiện là một chip: bấm để sửa, x để bỏ; lọc ngay, khoảng số
   đợi 400 ms. **Xóa lọc** xóa cả ô tìm, chip xu hướng và mọi chip điều kiện. Lọc tại máy chủ nên bảng, số đếm chip, phân trang và
   Xuất Excel cùng một bộ lọc.
-- Cột: Mã HH (bấm → Lịch sử mua hàng theo mã sản phẩm), Tên hàng hóa, Quy cách, CP cũ /chai, CP mới /chai, Chênh /chai,
-  Chênh /thùng, % chênh, Xu hướng, năm ô thành phần (mã bấm được), Ghi chú.
+- Cột: Mã HH (bấm → Lịch sử mua hàng theo mã sản phẩm), Tên hàng hóa, Quy cách, CP cũ /chai, CP mới /chai, Tăng/giảm /chai,
+  Tăng/giảm /thùng, % chênh, Xu hướng, năm ô thành phần (mã bấm được), Ghi chú.
 - Ô tìm *Tìm mã HH, tên, mã thành phần…*; xếp + phân trang tại máy chủ; **Xuất Excel** tối đa 5.000 dòng.
 
 ## 4. Bảng giá VTBB và báo giá

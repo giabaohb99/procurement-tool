@@ -130,7 +130,7 @@ describe('PackagingFilterChipBar', () => {
     await act(() => vi.advanceTimersByTimeAsync(450))
     expect(applied).toHaveLength(1)
     expect(impactFiltersToRequest(applied[0])).toEqual({ diff_carton_min: 1000 })
-    expect(within(chipGroup()).getByText('Chênh /thùng ≥ 1.000 đ')).toBeInTheDocument()
+    expect(within(chipGroup()).getByText('Tăng/giảm /thùng ≥ 1.000 đ')).toBeInTheDocument()
   })
 
   it('range: closing the editor before the delay still sends what was typed', async () => {
@@ -164,7 +164,7 @@ describe('PackagingFilterChipBar', () => {
     render(<Harness />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Tăng/giảm /chai' }))
-    expect(await screen.findByText('Chênh /chai: chưa nhập')).toBeInTheDocument()
+    expect(await screen.findByText('Tăng/giảm /chai: chưa nhập')).toBeInTheDocument()
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('group', { name: 'Điều kiện lọc đang bật' })).not.toBeInTheDocument()
   })

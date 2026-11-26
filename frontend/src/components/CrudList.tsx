@@ -100,7 +100,7 @@ export default function CrudList() {
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
     if (!cfg) return []
     const list: TableColumn<any>[] = [
-      { key: 'id', label: 'ID', sort: 'id', width: 80 },
+      { key: 'id', label: 'ID', sort: 'id', width: 80, defaultHidden: cfg.idDefaultHidden },
       ...cfg.columns.map((c): TableColumn<any> => ({
         key: c.key,
         label: c.label,

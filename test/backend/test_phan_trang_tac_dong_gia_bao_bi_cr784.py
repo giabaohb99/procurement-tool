@@ -212,3 +212,16 @@ def test_duong_nhanh_chi_tinh_gia_cho_ma_cua_trang_va_khong_doi_so_truy_van(db, 
     for kw in ({"sort_by": "diff"}, {"scope": "all"}):
         _, sqls = count_queries(db, lambda kw=kw: build_price_list_page(db, page=1, page_size=2, **kw))
         assert len(sqls) <= 7
+
+
+def test_bang_gia_dvt_danh_muc_trong_lay_dvt_lan_mua_va_xep_theo_dvt_dang_hien(db, price_world):
+    """C2 có ĐVT danh mục trống: cột ĐVT hiện ĐVT của lần mua ("Cái") ở cả đường nhanh lẫn đường đầy đủ, xếp theo giá trị đang hiện,
+    và số truy vấn vẫn trong trần 7."""
+    items, _ = build_price_list_page(db, page=1, page_size=50)
+    assert {r["code"]: r["unit"] for r in items}["C2"] == "Cái"
+    assert "unit" not in STATIC_SORT_KEYS
+    asc = [r["unit"] for r in build_price_list(db, sort_by="unit", sort_dir="asc") if r["unit"]]
+    assert asc == sorted(asc, key=str.casefold) and "Cái" in asc
+    _, sqls = count_queries(db, lambda: build_price_list_page(db, page=1, page_size=2))
+    _, sqls_unit = count_queries(db, lambda: build_price_list_page(db, page=1, page_size=2, sort_by="unit"))
+    assert len(sqls) <= 7 and len(sqls_unit) <= 7

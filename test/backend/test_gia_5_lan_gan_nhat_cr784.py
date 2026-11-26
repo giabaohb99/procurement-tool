@@ -335,3 +335,17 @@ def test_dvt_danh_muc_trong_thi_lay_dvt_cua_lan_mua_gan_nhat_co_ghi_dvt(db, api)
     rows = {r["code"]: r for r in _items(api)["items"]}
     assert rows["CPT0105"]["unit"] == "Cái"      # từ lần mua gần nhất có ĐVT (add_ledger mặc định "Cái")
     assert rows["NAP0085"]["unit"] == "Bộ"
+
+
+def test_chip_nhom_dem_theo_moi_bo_loc_tru_bo_loc_nhom(db, api):
+    """Lọc nhà cung cấp / tìm / ngày / xu hướng thì số trên chip nhóm co theo; chọn nhóm thì chip các nhóm khác vẫn giữ."""
+    db.query(Product).filter_by(code="NAP0085").update({"item_group": "Nắp"})
+    db.commit()
+    both = [{"group": "Chai", "count": 1}, {"group": "Nắp", "count": 1}]
+    assert _items(api)["groups"] == both
+    assert _items(api, supplier=["NCC_LA"])["groups"] == [{"group": "Nắp", "count": 1}]       # chỉ nắp có NCC_LA
+    assert _items(api, supplier=["NCC02"], n=2)["groups"] == [{"group": "Chai", "count": 1}]
+    assert _items(api, q="chai")["groups"] == [{"group": "Chai", "count": 1}]
+    assert _items(api, date_from="2026-06-01")["groups"] == [{"group": "Chai", "count": 1}]
+    assert _items(api, supplier=["NCC_LA"], group="Chai")["groups"] == [{"group": "Nắp", "count": 1}]   # nhóm không tự co chính nó
+    assert _items(api, supplier=["NCC_LA"], group="Chai")["items"] == []

@@ -9,6 +9,9 @@ import type { PackagingHistoryMode, PackagingHistoryStats } from '../types/packa
 import { buildHistorySummary } from '../utils/packaging-history-summary-items'
 import { packagingDiffTone } from '../utils/packaging-price-format'
 
+/** Từ chừng này ký tự trở lên thì dùng cỡ chữ nhỏ hơn để lọt thẻ hẹp (6 thẻ / hàng). */
+const LONG_VALUE_LENGTH = 10
+
 interface PackagingHistorySummaryProps {
   stats: PackagingHistoryStats | undefined
   /** Đúng một mã được chọn (có biểu đồ) — bật bộ thẻ giá. */
@@ -41,14 +44,16 @@ export function PackagingHistorySummary({
           <span className="truncate text-xs font-semibold text-muted-foreground">{item.label}</span>
           <span
             className={cn(
-              'mt-1 truncate text-[22px] leading-tight font-bold tabular-nums',
+              //  Giá trị dài ("1.900 – 2.800") thu cỡ chữ và được xuống dòng thay vì bị cắt "…".
+              'mt-1 leading-tight font-bold tabular-nums break-words',
+              item.value.length > LONG_VALUE_LENGTH ? 'text-lg' : 'text-[22px]',
               item.tone ? packagingDiffTone(item.tone === 'up' ? 1 : -1) : 'text-navy',
             )}
             title={item.value}
           >
             {item.value}
           </span>
-          <span className="mt-0.5 truncate text-xs text-muted-foreground" title={item.sub}>
+          <span className="mt-0.5 text-xs break-words text-muted-foreground" title={item.sub}>
             {item.sub || '\u00a0'}
           </span>
         </div>

@@ -91,6 +91,7 @@ export type CrudConfig = {
    *  trạng thái trong lựa chọn được giữ nguyên. Backend cũng chặn cả lô nếu lọt phiếu không Nháp. */
   bulkDelete?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
+  idDefaultHidden?: boolean      // ẩn cột ID (cột tự thêm đầu bảng) mặc định — vẫn bật lại được ở menu Cột (duoc-CR-784)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
   detailExtra?: (row: any) => any  // section tùy biến render dưới form ở trang chi tiết (chỉ khi đã có bản ghi)

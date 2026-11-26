@@ -182,7 +182,7 @@ TREE = {
 <h2>Lọc và xếp</h2>
 <ul>
 <li><strong>Bảng mã đã chọn</strong>: chọn mã của nhiều nhóm thì có hàng chip <strong>Tất cả</strong> · <strong>Chai</strong> · <strong>Nắp</strong> · <strong>Nhãn</strong>… kèm số mã; bấm một chip để chỉ xem mã của nhóm đó (chỉ lọc bảng này, không đổi các mã đang tính).</li>
-<li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Thêm điều kiện</strong>. Bấm nút để chọn một điều kiện: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>từ … đến …</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, hoặc <strong>Chỉ sản phẩm có cảnh báo</strong> (thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT). Mỗi điều kiện hiện thành một <strong>chip</strong> dưới ô tìm, ví dụ "Vai trò: Chai, Nắp" hay "Chênh /thùng ≥ 1.000 đ": bấm chip để sửa ngay tại chỗ, bấm dấu <strong>x</strong> trên chip để bỏ. Bảng lọc ngay, không cần bấm Áp dụng (ô số đợi chừng nửa giây sau khi bạn ngừng gõ). Nút <strong>Xóa lọc</strong> bỏ cả ô tìm lẫn mọi chip.</li>
+<li><strong>Bảng sản phẩm</strong>: ô <strong>Tìm mã HH, tên, mã thành phần…</strong> và nút <strong>Thêm điều kiện</strong>. Bấm nút để chọn một điều kiện: <strong>Xu hướng chi phí</strong> (Tăng, Giảm, Không đổi, Chưa có giá), <strong>Có mã đã chọn ở vai trò</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng), các khoảng <strong>từ … đến …</strong> cho Quy cách thùng, Tăng/giảm /chai, Tăng/giảm /thùng, CP bao bì/chai mới, hoặc <strong>Chỉ sản phẩm có cảnh báo</strong> (thiếu giá chai, thiếu mã / giá thành phần, thiếu quy cách thùng, lệch ĐVT). Mỗi điều kiện hiện thành một <strong>chip</strong> dưới ô tìm, ví dụ "Vai trò: Chai, Nắp" hay "Tăng/giảm /thùng ≥ 1.000 đ": bấm chip để sửa ngay tại chỗ, bấm dấu <strong>x</strong> trên chip để bỏ. Bảng lọc ngay, không cần bấm Áp dụng (ô số đợi chừng nửa giây sau khi bạn ngừng gõ). Nút <strong>Xóa lọc</strong> bỏ cả ô tìm lẫn mọi chip.</li>
 <li>Bấm tiêu đề cột để xếp, kể cả các cột <strong>Chai</strong>, <strong>Nắp</strong>, <strong>Nhãn</strong>, <strong>Nhãn thùng</strong>, <strong>Thùng</strong> (xếp theo giá đang dùng của thành phần đó). Ví dụ xếp <strong>Tăng/giảm /thùng</strong> giảm dần để thấy sản phẩm bị ảnh hưởng nặng nhất.</li>
 <li>Bảng chia trang; chọn cả nhóm chai có thể ra hàng nghìn sản phẩm, tổng số sản phẩm hiện ở chân bảng. Xuất Excel và In theo đúng bộ lọc, thứ tự đang xem.</li>
 </ul>
@@ -224,10 +224,10 @@ TREE = {
 <h2>Đọc bảng</h2>
 <ul>
 <li>Cột đầu: <strong>Mã HH</strong> (bấm để mở {ref(HISTORY_TITLE, "Lịch sử mua hàng")} ở chế độ theo mã sản phẩm, gồm mọi thành phần của định mức), <strong>Tên hàng hóa</strong>, <strong>Quy cách</strong>.</li>
-<li>Con số cần đọc đứng trước: <strong>CP cũ /chai</strong>, <strong>CP mới /chai</strong>, <strong>Chênh /chai</strong>, <strong>Chênh /thùng</strong>, <strong>% chênh</strong>, <strong>Xu hướng</strong>.</li>
+<li>Con số cần đọc đứng trước: <strong>CP cũ /chai</strong>, <strong>CP mới /chai</strong>, <strong>Tăng/giảm /chai</strong>, <strong>Tăng/giảm /thùng</strong>, <strong>% chênh</strong>, <strong>Xu hướng</strong>.</li>
 <li>Sau đó là năm ô thành phần (Chai, Nắp, Nhãn, Nhãn thùng, Thùng: mã và giá cũ → mới, mã bấm được) và <strong>Ghi chú</strong> (cùng bộ cảnh báo như màn Tác động giá).</li>
 </ul>
-<p>Ô <strong>Tìm mã HH, tên, mã thành phần…</strong> tìm không cần dấu. Bấm tiêu đề cột để xếp, ví dụ <strong>Chênh /thùng</strong> giảm dần. <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng).</p>
+<p>Ô <strong>Tìm mã HH, tên, mã thành phần…</strong> tìm không cần dấu. Bấm tiêu đề cột để xếp, ví dụ <strong>Tăng/giảm /thùng</strong> giảm dần. <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem (tối đa 5.000 dòng).</p>
 {OLD_UI}menu <strong>Mua hàng › Giá nguyên vật liệu sản xuất › Tổng hợp theo sản phẩm</strong>, cùng chip, cột và nút.</p>""",
         },
         {

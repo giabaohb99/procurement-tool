@@ -118,8 +118,8 @@ export function buildPackagingProductColumns({
     },
     {
       key: 'diff_bottle',
-      header: compact ? 'Chênh /chai' : 'Tăng/giảm /chai',
-      width: compact ? 124 : 100,
+      header: 'Tăng/giảm /chai',
+      width: compact ? 140 : 100,
       align: 'right',
       sortable: true,
       sortDescFirst: true,
@@ -127,8 +127,8 @@ export function buildPackagingProductColumns({
     },
     {
       key: 'diff_carton',
-      header: compact ? 'Chênh /thùng' : 'Tăng/giảm /thùng',
-      width: compact ? 136 : 110,
+      header: 'Tăng/giảm /thùng',
+      width: compact ? 152 : 110,
       align: 'right',
       sortable: true,
       sortDescFirst: true,

@@ -84,7 +84,8 @@ def build_price_list(db: Session, *, q: str = "", group: str = "", scope: str = 
 
 
 #  Khóa xếp chỉ phụ thuộc DANH MỤC (không cần giá): xếp + lọc + cắt trang xong rồi mới tính giá cho đúng các mã của trang.
-STATIC_SORT_KEYS = {"code", "name", "group", "unit"}
+#  `unit` KHÔNG nằm ở đây: ĐVT hiện có thể lấy từ lần mua gần nhất (khi danh mục trống) nên phải có giá mới xếp đúng giá trị đang hiện.
+STATIC_SORT_KEYS = {"code", "name", "group"}
 
 
 def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = "", group: str = "", scope: str = "bom",
@@ -92,7 +93,7 @@ def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = ""
                           sort_by: str = "code", sort_dir: str = "asc", scope_cond=None) -> tuple[list[dict], int]:
     """`(dòng của trang, tổng số dòng sau lọc)` — màn hình Bảng giá.
 
-    ĐƯỜNG NHANH khi `scope=bom` và xếp theo cột danh mục (`code, name, group, unit` — mặc định của màn):
+    ĐƯỜNG NHANH khi `scope=bom` và xếp theo cột danh mục (`code, name, group` — mặc định của màn):
     lọc + xếp + cắt trang trên khung danh mục (một truy vấn `tab_product`) RỒI mới tính giá cho đúng các mã của trang, nên sổ giá
     có lớn đến đâu cũng chỉ chạm vài chục mã. Còn lại (xếp theo số, `scope=all`) buộc phải tính giá cả
     tập rồi mới xếp: đường đầy đủ `build_price_list`. Hai đường cho CÙNG kết quả (có bài kiểm đối chiếu).

@@ -61,7 +61,7 @@ class PriceState:
     code: str
     name: str = ""
     group: str = ""
-    unit: str = ""                       # ĐVT danh mục (`tab_product.unit`)
+    unit: str = ""                       # ĐVT danh mục (`tab_product.unit`); trống thì ĐVT lần mua có giá gần nhất
     old: Decimal | None = None
     new: Decimal | None = None
     p1: PricePoint | None = None
@@ -165,4 +165,8 @@ def get_price_states(db: Session, codes: set[str] | None, *, as_of: date | None 
             db.query(Product.code, Product.name, Product.item_group, Product.unit).filter(Product.code.in_(set(states) or {""})).all()}
     for code, st in states.items():
         st.name, st.group, st.unit = info.get(code, ("", "", ""))
+        #  ĐVT danh mục thường để trống: lấy ĐVT của lần mua có giá gần nhất có ghi ĐVT (đã nằm sẵn trong truy vấn xếp hạng,
+        #  không thêm truy vấn) — cùng luật với "Giá mua gần nhất" (duoc-CR-784, 26/11/2026).
+        if not st.unit:
+            st.unit = next((pt.unit for pt in (st.p1, st.p2) if pt is not None and pt.unit), "")
     return states

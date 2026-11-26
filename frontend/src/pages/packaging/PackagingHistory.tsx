@@ -91,7 +91,7 @@ export default function PackagingHistory() {
       }).map((it) => (
         <div key={it.label} className="pkg-kpi">
           <div className="pkg-kpi-k">{it.label}</div>
-          <div className={it.tone ? `pkg-kpi-v ${it.tone}` : 'pkg-kpi-v'} title={it.value}>{it.value}</div>
+          <div className={['pkg-kpi-v', it.tone, it.value.length > 10 && 'long'].filter(Boolean).join(' ')} title={it.value}>{it.value}</div>
           <div className="pkg-kpi-s" title={it.sub}>{it.sub || '\u00a0'}</div>
         </div>
       ))}

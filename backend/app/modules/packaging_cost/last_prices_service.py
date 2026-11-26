@@ -131,8 +131,9 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
     lần mua có giá; `bom_only` = chỉ mã thành phần của định mức (thắng `scope`). `date_from` / `date_to` lọc các lần mua
     TRƯỚC khi xếp hạng. `suppliers` giữ dòng có nhà cung cấp đó trong `n` lần đang hiện. `trend` (all / up / down / flat) lọc
     chiều đổi giá lần 1 so lần 2; `min_pct` giữ dòng có |lần 1 so lần 2| >= min_pct (đơn vị %).
-    `groups` / `suppliers` tính trên tập đã lọc "chỉ mã có giá" nhưng CHƯA áp tìm / nhóm / nhà cung cấp / biến động —
-    chip đứng yên khi gõ tìm (như bản mẫu).
+    `suppliers` tính trên tập đã lọc "chỉ mã có giá" nhưng CHƯA áp tìm / nhóm / nhà cung cấp / biến động (ô chọn đứng yên).
+    `groups` = số mã mỗi nhóm SAU mọi bộ lọc trừ bộ lọc nhóm (tìm, nhà cung cấp, khoảng ngày, xu hướng, ngưỡng %) — chip khớp
+    với số dòng bấm vào sẽ ra.
     """
     n = max(2, min(int(n), MAX_N))
     comps = set(usage_by_code(db))     # mã thành phần của mọi định mức (gom ở SQL, không kéo từng dòng định mức về)
@@ -167,14 +168,12 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
     rows = [_row(c, info.get(c, ("", "", "")), counts.get(c, 0), points.get(c, []), names, n) for c in sorted(all_codes)]
     if only_priced:
         rows = [r for r in rows if r["purchase_count"] > 0]
-    chips, supplier_list = group_counts(rows), supplier_options(rows)
+    supplier_list = supplier_options(rows)    # ô chọn nhà cung cấp đứng yên theo tập "chỉ mã có giá" (như bản mẫu)
 
     terms = fold_text(q).split()
     if terms:
         hay = {r["code"]: _haystack(r) for r in rows}
         rows = [r for r in rows if all(t in hay[r["code"]] for t in terms)]
-    if group.strip():
-        rows = [r for r in rows if fold_text(r["group"]) == fold_text(group)]
     wanted = {c for c in (suppliers or []) if c}
     if wanted:
         rows = [r for r in rows if any(p["supplier_code"] in wanted for p in r["purchases"])]
@@ -182,6 +181,10 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", group: st
         rows = [r for r in rows if _direction(r) == trend]
     if min_pct:
         rows = [r for r in rows if r["v12"] is not None and abs(r["v12"]) * 100 >= min_pct - 1e-9]
+    #  chip nhóm đếm trên tập đã qua MỌI bộ lọc trừ chính bộ lọc nhóm (cùng luật chip xu hướng của Tổng hợp)
+    chips = group_counts(rows)
+    if group.strip():
+        rows = [r for r in rows if fold_text(r["group"]) == fold_text(group)]
     return {"rows": _sorted(rows, sort_by, sort_dir), "groups": chips, "suppliers": supplier_list}
 
 
