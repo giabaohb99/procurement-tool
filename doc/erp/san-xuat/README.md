@@ -46,7 +46,8 @@ danh mục đó thuộc tài liệu của Thu mua và Mặt hàng, không thuộ
 | Gọi API nào | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) (chưa có đường nào) |
 | Thiết kế, bảng dữ liệu, bẫy | chưa có; ràng buộc thiết kế ở [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §13.3 |
 | So sánh, khảo sát, câu hỏi chờ chốt | [`nghien-cuu/`](nghien-cuu/) — đọc nhanh [`04`](nghien-cuu/04-san-xuat-tom-tat-cho-ban-dieu-hanh.md); câu cần chốt ở [`10`](nghien-cuu/20-tong-quan-nghiep-vu-chuan-tt99.md) §14 |
-| Kế hoạch đang làm / đã xong | chưa có thư mục `plans/`; việc ở [kế hoạch theo module](../../plans/00-ke-hoach-theo-module.md) §12 (SX1-x, SX2-x, SX3-x) |
+| Làm phần nào trước (lộ trình phase) | [`plans/261126-lo-trinh-san-xuat-gia-cong/plan.md`](plans/261126-lo-trinh-san-xuat-gia-cong/plan.md) |
+| Kế hoạch đang làm / đã xong | [`plans/`](plans/); việc cũ ở [kế hoạch theo module](../../plans/00-ke-hoach-theo-module.md) §12 (SX1-x, SX2-x, SX3-x) |
 | Kịch bản kiểm thử tay | chưa có |
 | Hướng dẫn người dùng | chưa có |
 
