@@ -45,7 +45,7 @@ export default function PackagingHistory() {
   const isProduct = selection.mode === 'product'
 
   useEffect(() => {
-    fetchCodeOptions().then((d) => setCodeOptions(sortCodeOptions(d)))
+    fetchCodeOptions('all').then((d) => setCodeOptions(sortCodeOptions(d)))
       .catch(() => toast.error('Không nạp được danh sách mã bao bì'))
       .finally(() => setCodesLoading(false))
   }, [])

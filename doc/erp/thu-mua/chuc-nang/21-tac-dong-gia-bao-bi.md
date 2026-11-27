@@ -208,7 +208,8 @@ chỉ bày nhãn *ĐMH đang mở* (khi `is_open`) và mã ĐMH bấm được (
 (và công cụ AI `source_label`) ghi chữ, giữ nguyên chữ cũ: *Dòng đơn mua hàng* = ĐMH đang mở, *Lịch sử mua hàng* = lần mua đã chốt của ERP
 và dữ liệu cũ, *Sổ Misa*. Khóa xếp Nguồn theo thứ tự đó (lịch sử < ĐMH đang mở < Misa).
 
-- Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (tối đa 200 mã; lọc Nhà cung cấp, Khoảng ngày mua, ô tìm).
+- Chế độ **Theo mã VTBB** (rỗng = mọi mã) / **Theo mã sản phẩm** (tối đa 200 mã; lọc Nhà cung cấp, Khoảng ngày mua; ô tìm chữ thứ hai bỏ 27/11/2026 vì ô chọn mã — nay liệt kê
+  mọi mã có trong sổ giá — đã tìm theo mã, tên, nhóm và tên NCC).
   Chế độ sản phẩm y bản mẫu: **mỗi dòng = một lần mua x một (sản phẩm, thành phần)** — mã chai dùng ở 275 sản phẩm thì MỘT lần mua
   ra 275 dòng, mỗi dòng ghi rõ Mã SP, Tên sản phẩm và Thành phần (chai / nắp / nhãn / nhãn thùng / thùng); mã xuất hiện hai vai trò
   trong cùng một sản phẩm chỉ tính một lần. Thứ tự mặc định: ngày mới → cũ, rồi mã sản phẩm, rồi thành phần. Ô tìm tìm cả mã / tên

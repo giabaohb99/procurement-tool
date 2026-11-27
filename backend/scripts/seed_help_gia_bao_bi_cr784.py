@@ -330,9 +330,9 @@ TREE = {
 <h2>Chọn xem cái gì</h2>
 <ol>
 <li>Nút <strong>Theo mã VTBB</strong> (mặc định) hoặc <strong>Theo mã sản phẩm</strong>.</li>
-<li>Theo mã VTBB: bấm ô chọn, gõ mã, tên hoặc tên nhóm để chọn một hay nhiều mã. Để trống là xem mọi mã VTBB.</li>
+<li>Theo mã VTBB: bấm ô chọn, gõ mã, tên, tên nhóm hoặc tên nhà cung cấp để chọn một hay nhiều mã (danh sách gồm mọi mã có trong sổ giá). Để trống là xem mọi mã VTBB.</li>
 <li>Theo mã sản phẩm: chọn mã HH (để trống là mọi sản phẩm có định mức). <strong>Mỗi dòng là một lần mua của một thành phần trong định mức của một sản phẩm</strong>: ví dụ mã chai dùng cho 275 sản phẩm thì một lần mua hiện thành 275 dòng, mỗi dòng ghi rõ <strong>Mã SP</strong>, <strong>Tên sản phẩm</strong> và <strong>Thành phần</strong> (Chai, Nắp, Nhãn, Nhãn thùng, Thùng). Sắp mặc định: ngày mới nhất trước, rồi mã sản phẩm, rồi thành phần; bấm tiêu đề cột để xếp lại. Ô tìm tìm được cả mã, tên sản phẩm và tên thành phần.</li>
-<li>Lọc thêm: <strong>Nhà cung cấp</strong>, <strong>Khoảng ngày mua</strong>, ô <strong>Tìm mã, tên, nhà cung cấp…</strong>.</li>
+<li>Lọc thêm: <strong>Nhà cung cấp</strong>, <strong>Khoảng ngày mua</strong>.</li>
 </ol>
 
 <h2>Đọc kết quả</h2>
