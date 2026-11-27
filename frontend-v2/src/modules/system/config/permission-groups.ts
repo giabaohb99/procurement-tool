@@ -33,7 +33,13 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
       'purchase_order',
       'goods_receipt',
       'category_assignee',
-      'packaging_cost',
+      //  bao-CR-792: Giá NVL sản xuất, mỗi màn một khóa (thay khóa chung `packaging_cost`).
+      'packaging_impact',
+      'packaging_product_summary',
+      'packaging_price_list',
+      'packaging_last_price',
+      'packaging_history',
+      'packaging_bom',
     ],
   },
   {

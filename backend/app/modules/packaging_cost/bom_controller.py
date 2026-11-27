@@ -1,7 +1,7 @@
 """CRUD định mức bao bì theo mã hàng hóa (duoc-CR-784, phase 03).
 
-Gác khóa `packaging_cost` bằng quyền HÀNH ĐỘNG; danh mục dùng chung nên `scoped=False` (xem `product_price/
-quote_limit_controller.py`). Đầu ra mỗi dòng kèm `parts` — mỗi loại thành phần một mục với tên + ĐVT lấy từ `tab_product`, gom MỘT
+Gác khóa `packaging_bom` (bao-CR-792, 27/11/2026: mỗi màn một khóa; trước đó là khóa chung `packaging_cost`) bằng quyền HÀNH
+ĐỘNG; danh mục dùng chung nên `scoped=False` (xem `product_price/quote_limit_controller.py`). Đầu ra mỗi dòng kèm `parts` — mỗi loại thành phần một mục với tên + ĐVT lấy từ `tab_product`, gom MỘT
 truy vấn cho cả trang (không N+1).
 
 Chuẩn hóa 25/11/2026: mã thành phần nằm ở bảng `tab_packaging_bom_part` (loại + mã, nối bằng `bom_id`). Hình dạng API KHÔNG đổi —
@@ -13,11 +13,13 @@ from sqlalchemy import func
 from app.core.crud import make_crud_router
 from app.core.packaging_price_codes import PackagingRole
 from app.modules.product_price import catalog_checks as chk
-from app.modules.product_price.quote_limit_controller import ENTITY, _retag
+from app.modules.product_price.quote_limit_controller import _retag
 
 from .bom_parts_service import codes_from_fields, set_bom_codes
 from .model import PackagingBom, role_field
 from .schema import BomCreate, BomOut, BomUpdate
+
+ENTITY = "packaging_bom"
 
 #  (loại, tên trường phẳng của API) — thứ tự hiển thị của một dòng định mức; dựng từ `PackagingRole`.
 PART_COLUMNS = tuple((role, role_field(role)) for role in PackagingRole)

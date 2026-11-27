@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
+import { navItemLandingPath } from '@/app/router/module-visibility'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,6 +37,11 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
     resolveModuleBreadcrumb(module, pathname)
   //  Còn cấp nào sau cấp mục menu không (mục con đang sáng, hoặc mục ẩn tự ghi tên — `breadcrumbOwnLabel`).
   const hasDeeper = hasChild || Boolean(ownLabelChild)
+  //  bao-CR-792 — link cấp mục menu: mục cha có các mục con KHÁC KHÓA nhau thì trỏ tới mục con người này xem được, không
+  //  cứng `current.path` (xem `navItemLandingPath`).
+  const { can } = usePermission()
+  const navCtx = useNavContext()
+  const currentHref = current ? navItemLandingPath(current, can, navCtx) : ''
 
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-4">
@@ -86,7 +93,7 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
               <BreadcrumbItem className={cn('min-w-0', hasDeeper && 'shrink-[2] max-sm:hidden')}>
                 {hasDeeper || isBelowCurrent ? (
                   <BreadcrumbLink asChild>
-                    <Link to={current.path} className="truncate" title={current.label}>
+                    <Link to={currentHref} className="truncate" title={current.label}>
                       {current.label}
                     </Link>
                   </BreadcrumbLink>

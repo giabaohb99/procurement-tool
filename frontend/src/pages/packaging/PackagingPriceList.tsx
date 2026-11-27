@@ -11,7 +11,7 @@ import { toast } from '../../components/toast'
 import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingQuoteModal from '../../components/packaging/PackagingQuoteModal'
 import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText } from '../../components/packaging/PackagingCells'
-import { IMPORT_MODULE_PACKAGING_QUOTE, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
+import { IMPORT_MODULE_PACKAGING_QUOTE, PACKAGING_ENTITY, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
 import type { PackagingCodeOption, PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
@@ -46,7 +46,7 @@ export default function PackagingPriceList() {
   const [codesLoading, setCodesLoading] = useState(true)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)   // '' = mở "Báo giá mới" chưa khóa mã
   const [exporting, setExporting] = useState(false)
-  const canQuote = can('packaging_cost', 'create')
+  const canQuote = can(PACKAGING_ENTITY.priceList, 'create')
 
   //  Ô chọn mã (27/11/2026): mọi mã có trong sổ giá; nhóm cho chip lấy từ chính danh sách đó.
   useEffect(() => {
@@ -153,7 +153,7 @@ export default function PackagingPriceList() {
         <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_QUOTE} action="create"
           label="Nhập báo giá" title="Nhập báo giá VTBB từ Excel"
           description="Mỗi dòng một báo giá: Mã VTBB, Đơn giá (VNĐ chưa VAT), Ngày hiệu lực; tùy chọn Mã NCC, VAT (%), Ghi chú. Trùng mã + NCC + ngày hiệu lực thì cập nhật, chưa có thì thêm. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
-        {can('packaging_cost', 'export') && (
+        {can(PACKAGING_ENTITY.priceList, 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
             <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>

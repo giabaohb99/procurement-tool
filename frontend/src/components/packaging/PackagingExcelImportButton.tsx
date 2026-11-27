@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../api/client'
 import { toast } from '../toast'
-import { downloadImportTemplate } from '../../api/packaging-cost'
+import { PACKAGING_IMPORT_ENTITY, downloadImportTemplate } from '../../api/packaging-cost'
 import PackagingModal from './PackagingModal'
 
 interface Props {
@@ -12,14 +12,16 @@ interface Props {
   label: string
   title: string
   description: string
-  /** Quyền `packaging_cost` đòi thêm: định mức + báo giá = 'create', sổ Misa (thay dữ liệu) = 'write'. */
+  /** Hành động đòi thêm trên khóa quyền của kiểu nhập: định mức + báo giá = 'create', sổ Misa (thay dữ liệu) = 'write'. */
   action: 'create' | 'write'
 }
 
 /**
  * Nút nhập Excel của cụm Giá bao bì: tải tệp lên Quản lý Import, LUÔN chạy thử trước, rồi sang trang chi tiết lô
  * để xem nhật ký từng dòng và bấm "Ghi thật". Trong hộp thoại có "Tải tệp mẫu" (đúng cột backend đọc).
- * Hiện khi có ĐỦ `import.create` + `import.read` (trang lô gác `import.read`) + `packaging_cost.<action>` — backend gác y hệt.
+ * Hiện khi có ĐỦ `import.create` + `import.read` (trang lô gác `import.read`) + `<khóa của kiểu nhập>.<action>` — backend gác y hệt.
+ * bao-CR-792: khóa theo kiểu nhập (`PACKAGING_IMPORT_ENTITY`): định mức → `packaging_bom`, báo giá → `packaging_price_list`,
+ * sổ Misa → `packaging_history`.
  */
 export default function PackagingExcelImportButton({ module, label, title, description, action }: Props) {
   const { can } = useAuth()
@@ -33,7 +35,8 @@ export default function PackagingExcelImportButton({ module, label, title, descr
   const sendingRef = useRef(false)      // chặn bấm đúp: state `busy` chỉ cập nhật sau lượt vẽ kế tiếp
   const tplRef = useRef(false)
 
-  if (!(can('import', 'create') && can('import', 'read') && can('packaging_cost', action))) return null
+  const entity = PACKAGING_IMPORT_ENTITY[module]
+  if (!(entity && can('import', 'create') && can('import', 'read') && can(entity, action))) return null
 
   function pick(f: File | null | undefined) {
     if (!f) return

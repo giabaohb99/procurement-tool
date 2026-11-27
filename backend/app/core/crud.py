@@ -83,7 +83,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
       xóa được thoải mái và để lại dữ liệu mồ côi.
 
     - `scoped=False` (duoc-CR-784) — danh mục DÙNG CHUNG mà khóa quyền của nó lọc phạm vi trên một bảng KHÁC (vd định
-      mức / báo giá / ngưỡng của khóa `packaging_cost`, phạm vi đo trên sổ giá): bảng này không có cột pháp nhân nên
+      mức `packaging_bom` / báo giá của khóa `packaging_price_list`, phạm vi đo trên sổ giá): bảng này không có cột pháp nhân nên
       `apply_scope` / `get_scoped` không dựng được điều kiện. Cổng chỉ còn là quyền hành động (`require`).
     - `virtual_fields` + `after_create(db, obj, data)` (duoc-CR-784, chuẩn hóa định mức bao bì) — danh mục có trường của API KHÔNG
       phải cột của bảng (vd `bottle_code` nay nằm ở bảng thành phần). Trường khai trong `virtual_fields` bị bỏ khỏi `Model(**...)` lúc

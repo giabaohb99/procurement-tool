@@ -196,7 +196,8 @@ def test_misa_tieu_de_khong_o_dong_dau_va_sai_tep_bi_chan(db, seed):
 # ── Quyền, nhóm màn Import, hoàn tác ───────────────────────────────────────────
 def test_nap_so_misa_doi_quyen_sua_con_bao_gia_doi_quyen_tao(db, seed, cap_quyen):
     user = db.get(User, seed.u_req_id)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, create=True)
+    for key in ("packaging_price_list", "packaging_history"):       # bao-CR-792: báo giá theo khóa Bảng giá, Sổ Misa theo khóa Lịch sử
+        cap_quyen(seed.u_req_id, key, scope="all", read=True, create=True)
     imp_ctl._guard_module(db, user, int(ImportModule.PACKAGING_QUOTE), "create")
     with pytest.raises(HTTPException) as exc:
         imp_ctl._guard_module(db, user, int(ImportModule.PACKAGING_MISA), "create")

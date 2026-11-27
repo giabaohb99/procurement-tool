@@ -7,10 +7,16 @@ Không tính lại gì: gọi đúng dịch vụ của màn Giá bao bì (`packa
 `product_overview_service.build_product_overview`, `cost_service.compute_product_cost`,
 `product_price.price_state_service.get_price_states`, `latest_priced_query.latest_priced_by_code`) nên số khớp màn web.
 
-Gác như màn web: khóa `packaging_cost.read` (giá vốn bao bì, nhạy cảm — không có thì `denied`), và phạm vi PHÁP NHÂN đo trên
-sổ giá (`last_prices_controller.view_scope`) — giá chỉ tính trên các dòng sổ người hỏi được thấy. Định mức / báo giá
-là danh mục dùng chung, không lọc (như màn). Mã ngoài phạm vi và mã không tồn tại trả CÙNG một hình: không có giá nào.
-Số truy vấn cố định theo lượt (không theo số mã / số sản phẩm).
+Gác như màn web, MỖI công cụ theo khóa của MÀN có dữ liệu nó trả (bao-CR-792, 27/11/2026 — trước đó cả ba dùng khóa chung
+`packaging_cost`; giá vốn bao bì là dữ liệu nhạy cảm, không có `read` thì `denied`):
+  - `packaging_price_impact`  -> `packaging_impact` (màn Tác động giá bao bì);
+  - `packaging_price_lookup`  -> `packaging_price_list` (màn Bảng giá VTBB: giá cũ / mới, báo giá, min / max, số sản phẩm dùng);
+    phần `recent_purchases` (n lần mua gần nhất) là dữ liệu của màn Giá mua gần nhất nên chỉ kèm khi có thêm
+    `packaging_last_price.read`, tính trong phạm vi của khóa đó;
+  - `packaging_product_cost`  -> `packaging_product_summary` (màn Tổng hợp theo sản phẩm).
+Phạm vi PHÁP NHÂN đo trên sổ giá (`last_prices_controller.view_scope` theo đúng khóa đó) — giá chỉ tính trên các dòng sổ người
+hỏi được thấy. Định mức / báo giá là danh mục dùng chung, không lọc (như màn). Mã ngoài phạm vi và mã không tồn tại trả CÙNG
+một hình: không có giá nào. Số truy vấn cố định theo lượt (không theo số mã / số sản phẩm).
 """
 from __future__ import annotations
 
@@ -19,7 +25,10 @@ from decimal import Decimal, InvalidOperation
 from . import packaging_cost_format as fmt
 from .base import ToolContext, ToolSpec, denied
 
-ENTITY = "packaging_cost"
+IMPACT_ENTITY = "packaging_impact"
+PRICE_LIST_ENTITY = "packaging_price_list"
+LAST_PRICE_ENTITY = "packaging_last_price"
+PRODUCT_SUMMARY_ENTITY = "packaging_product_summary"
 CODE_MAX_LEN = 50
 Q_MAX_LEN = 100
 MAX_IMPACT_CODES = 50
@@ -29,14 +38,14 @@ MAX_ROWS = 50
 DEFAULT_PURCHASES = 5
 MAX_PURCHASES = 10
 TRENDS = ("all", "up", "down", "flat", "missing")
-DENIED_WHAT = "giá bao bì (cần quyền xem Giá bao bì)"
+DENIED_WHAT = "giá bao bì (cần quyền xem {screen} ở cụm Giá NVL sản xuất)"
 
 
-def _scope(ctx: ToolContext):
-    """Điều kiện phạm vi pháp nhân trên sổ giá của người hỏi — đúng hàm của màn web (None = thấy hết)."""
+def _scope(ctx: ToolContext, entity: str):
+    """Điều kiện phạm vi pháp nhân trên sổ giá của người hỏi theo khóa `entity` — đúng hàm của màn web (None = thấy hết)."""
     from app.modules.packaging_cost.last_prices_controller import view_scope
 
-    return view_scope(ctx.db, ctx.user, "read")
+    return view_scope(ctx.db, ctx.user, entity, "read")
 
 
 def _clamp(value, default: int, lo: int, hi: int) -> int:
@@ -97,8 +106,8 @@ def packaging_price_impact(ctx: ToolContext, args: dict) -> dict:
     from app.modules.packaging_cost.impact_schema import ImpactRequest
     from app.modules.packaging_cost.impact_service import compute_impact
 
-    if not ctx.can(ENTITY):
-        return denied(DENIED_WHAT)
+    if not ctx.can(IMPACT_ENTITY):
+        return denied(DENIED_WHAT.format(screen="Tác động giá bao bì"))
     codes, err = _codes(args.get("codes"), MAX_IMPACT_CODES)
     assumed, err2 = _assumed(args.get("assumed_prices"))
     if err or err2:
@@ -115,7 +124,8 @@ def packaging_price_impact(ctx: ToolContext, args: dict) -> dict:
                              sort_dir=sort_dir)
     except ValidationError as exc:
         return {"error": _validation_message(exc)}
-    res = compute_impact(ctx.db, body.codes, dict(body.assumed_prices), scope_cond=_scope(ctx), page=1, page_size=top_n,
+    res = compute_impact(ctx.db, body.codes, dict(body.assumed_prices), scope_cond=_scope(ctx, IMPACT_ENTITY), page=1,
+                         page_size=top_n,
                          sort_by="diff_bottle", sort_dir=sort_dir)
     items = [fmt.impact_product_row(r) for r in res["products"]]
     kpis = {k: res["kpis"][k] for k in ("selected_count", "assumed_count", "affected_products", "increased", "decreased",
@@ -171,14 +181,15 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
     from app.modules.product_price.model import ProductPriceLedger
     from app.modules.product_price.price_state_service import get_price_states
 
-    if not ctx.can(ENTITY):
-        return denied(DENIED_WHAT)
+    if not ctx.can(PRICE_LIST_ENTITY):
+        return denied(DENIED_WHAT.format(screen="Bảng giá VTBB"))
     codes, err = _codes(args.get("codes"), MAX_LOOKUP_CODES)
     if err:
         return {"error": err}
     q = " ".join(str(args.get("q") or "").split())[:Q_MAX_LEN]
     limit = _clamp(args.get("limit"), 10, 1, MAX_LOOKUP_CODES)
-    n = _clamp(args.get("purchases"), DEFAULT_PURCHASES, 0, MAX_PURCHASES)
+    can_recent = ctx.can(LAST_PRICE_ENTITY)      # n lần mua gần nhất = dữ liệu của màn Giá mua gần nhất
+    n = _clamp(args.get("purchases"), DEFAULT_PURCHASES, 0, MAX_PURCHASES) if can_recent else 0
     has_more = False
     if not codes:
         if not q:
@@ -188,10 +199,10 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
     if not codes:
         return {**base, "items": [], "total": 0, "has_more": False,
                 "note": f"Không có mã vật tư bao bì nào khớp '{q}'. Thử mã chính xác (vd CPT0075) hoặc từ khác."}
-    scope = _scope(ctx)
-    states = get_price_states(ctx.db, set(codes), scope_cond=scope, also=set(codes))
+    states = get_price_states(ctx.db, set(codes), scope_cond=_scope(ctx, PRICE_LIST_ENTITY), also=set(codes))
     recent: dict = {}
     if n:
+        scope = _scope(ctx, LAST_PRICE_ENTITY)
         conds = [ProductPriceLedger.price > 0, *([scope] if scope is not None else [])]
         recent = latest_priced_by_code(ctx.db, n, codes=set(codes), rank_conds=conds)
     rows_of = {c: (recent[c].rows[:n] if c in recent else []) for c in codes}
@@ -207,6 +218,9 @@ def packaging_price_lookup(ctx: ToolContext, args: dict) -> dict:
     out = {**base, "items": items, "total": len(items), "has_more": has_more,
            "note": ("recent_purchases = các lần mua CÓ GIÁ gần nhất (mới nhất trước); purchase_count đếm mọi dòng sổ giá kể cả "
                     "giá 0; min / max trên mọi lần mua có giá. Mở history_url để xem đủ lịch sử và biểu đồ.")}
+    if not can_recent:
+        out["note"] = ("Không kèm recent_purchases: người hỏi chưa có quyền xem màn Giá mua gần nhất (nhờ quản trị cấp nếu cần). "
+                       "min / max trên mọi lần mua có giá. Mở history_url để xem lịch sử nếu có quyền.")
     if no_data:
         out["no_data_codes"] = no_data
         out["note"] += " no_data_codes = mã không có trong danh mục và không có giá nào bạn được xem."
@@ -237,8 +251,8 @@ def _costs_of_products(db, fg_codes: list[str], scope) -> list[dict]:
 def packaging_product_cost(ctx: ToolContext, args: dict) -> dict:
     from app.modules.packaging_cost.product_overview_service import build_product_overview
 
-    if not ctx.can(ENTITY):
-        return denied(DENIED_WHAT)
+    if not ctx.can(PRODUCT_SUMMARY_ENTITY):
+        return denied(DENIED_WHAT.format(screen="Tổng hợp theo sản phẩm"))
     fg_codes, err = _codes(args.get("fg_codes"), MAX_LOOKUP_CODES)
     if err:
         return {"error": err.replace("Mã vật tư", "Mã hàng hóa")}
@@ -249,7 +263,7 @@ def packaging_product_cost(ctx: ToolContext, args: dict) -> dict:
     limit = _clamp(args.get("limit"), DEFAULT_ROWS, 1, MAX_ROWS)
     page = _clamp(args.get("page"), 1, 1, 10000)
     base = {"currency": fmt.CURRENCY, "price_basis": fmt.PRICE_BASIS, "price_rule": fmt.OLD_NEW_RULE}
-    scope = _scope(ctx)
+    scope = _scope(ctx, PRODUCT_SUMMARY_ENTITY)
     if fg_codes:
         rows = _costs_of_products(ctx.db, fg_codes, scope)
         found = {r["fg_code"] for r in rows}

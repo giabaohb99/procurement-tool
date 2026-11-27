@@ -21,6 +21,7 @@ import {
   customsSectionPath,
 } from "../config/customs-sections";
 import { CUSTOMS_EXPORTS_PATH } from "../utils/customs-export";
+import { PACKAGING_ENTITY, type PackagingEntity } from "../api/packaging-cost";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
 // Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
@@ -77,6 +78,10 @@ type NavGroup = {
   key?: string;
   items: NavItem[];
 };
+
+/** bao-CR-792 — điều kiện hiện của một mục con cụm Giá nguyên vật liệu sản xuất: có quyền xem trên khóa của chính màn đó. */
+const canReadPackaging = (entity: PackagingEntity) =>
+  (can: (entity: string, action: string) => boolean) => can(entity, "read");
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -171,20 +176,23 @@ const NAV_GROUPS: NavGroup[] = [
           })),
         ],
       },
-      // duoc-CR-784 — cụm "Giá nguyên vật liệu sản xuất" (tên chốt 21/11/2026, trước là "Giá bao bì"). Mọi mục gác khóa
-      // quyền riêng `packaging_cost`. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có), trang /product-price-quotes vẫn
-      // vào được và sáng mục Bảng giá VTBB. 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có
+      // duoc-CR-784 — cụm "Giá nguyên vật liệu sản xuất" (tên chốt 21/11/2026, trước là "Giá bao bì").
+      // bao-CR-792: MỖI MỤC CON MỘT KHÓA QUYỀN (`PACKAGING_ENTITY`, khóa chung cũ đã nghỉ) — mục con chỉ vẽ khi có `read`
+      // trên khóa của mình (`visible`), mục cha hiện khi xem được ÍT NHẤT MỘT mục con (`anyEntity`) và bấm vào là mở mục
+      // con đầu tiên được xem. Báo giá VTBB ẩn khỏi menu (tệp HTML gốc không có), trang /product-price-quotes vẫn
+      // vào được và sáng mục Bảng giá VTBB (chung khóa `packaging_price_list`).
+      // 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có
       // biểu tượng, mục con thụt vào có vạch dọc — và dời vào CHUNG nhóm Mua hàng, ngay sau Tra cứu thị trường.
       {
         to: "/packaging-cost",
         label: "Giá nguyên vật liệu sản xuất",
         icon: "ti-coins",
-        entity: "packaging_cost",
+        anyEntity: Object.values(PACKAGING_ENTITY),
         // Định mức bao bì là route CRUD chung, không nằm dưới /packaging-cost; Báo giá VTBB ẩn khỏi menu.
         matchPaths: ["/packaging-boms", "/product-price-quotes"],
         children: [
-          { to: "/packaging-cost/impact", label: "Tác động giá bao bì", icon: "ti-trending-up", isDefault: true },
-          { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum" },
+          { to: "/packaging-cost/impact", label: "Tác động giá bao bì", icon: "ti-trending-up", isDefault: true, visible: canReadPackaging(PACKAGING_ENTITY.impact) },
+          { to: "/packaging-cost/products", label: "Tổng hợp theo sản phẩm", icon: "ti-sum", visible: canReadPackaging(PACKAGING_ENTITY.products) },
           {
             to: "/packaging-cost/price-list",
             label: "Bảng giá VTBB",
@@ -192,10 +200,11 @@ const NAV_GROUPS: NavGroup[] = [
             matchPaths: ["/product-price-quotes"],
             //  Màn Báo giá VTBB ẩn khỏi menu nhưng tiêu đề trang là "Báo giá VTBB" → breadcrumb ghi đủ, khỏi lệch tên.
             crumbSuffixes: [{ path: "/product-price-quotes", label: "Báo giá VTBB" }],
+            visible: canReadPackaging(PACKAGING_ENTITY.priceList),
           },
-          { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history" },
-          { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline" },
-          { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2" },
+          { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history", visible: canReadPackaging(PACKAGING_ENTITY.lastPrices) },
+          { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline", visible: canReadPackaging(PACKAGING_ENTITY.history) },
+          { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2", visible: canReadPackaging(PACKAGING_ENTITY.boms) },
         ],
       },
     ],

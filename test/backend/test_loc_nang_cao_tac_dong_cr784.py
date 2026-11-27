@@ -197,7 +197,8 @@ def test_so_truy_van_khong_doi_theo_loc_va_xep(db, world):
 # ── API ─────────────────────────────────────────────────────────────────────────
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    for key in ("packaging_impact", "packaging_product_summary"):       # bao-CR-792: mỗi màn một khóa
+        cap_quyen(seed.u_req_id, key, scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 

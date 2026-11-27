@@ -6,7 +6,7 @@ import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { IMPORT_MODULE, IMPORT_MODE, statusBadge } from './ImportBatches'
-import { PACKAGING_IMPORT_MODULES } from '../api/packaging-cost'
+import { PACKAGING_IMPORT_ENTITY, PACKAGING_IMPORT_MODULES } from '../api/packaging-cost'
 import PackagingBatchPurgeModal from '../components/packaging/PackagingBatchPurgeModal'
 
 const LEVEL: Record<number, { l: string; c: string }> = {
@@ -101,7 +101,8 @@ export default function ImportBatchDetail() {
             <i className="ti ti-device-floppy" />{committing ? 'Đang gửi…' : 'Ghi thật'}
           </button>
         )}
-        {PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 1 && can('import', 'read') && can('packaging_cost', 'delete') && (
+        {/* bao-CR-792: khóa xóa theo kiểu của lô — định mức `packaging_bom`, báo giá `packaging_price_list`, sổ Misa `packaging_history`. */}
+        {PACKAGING_IMPORT_MODULES.includes(b.module) && b.status === 2 && b.mode === 1 && can('import', 'read') && can(PACKAGING_IMPORT_ENTITY[b.module], 'delete') && (
           <button className="btn ghost" style={{ color: '#dc2626' }} onClick={() => setPurgeOpen(true)}>
             <i className="ti ti-trash" />Xóa dữ liệu của lô này
           </button>

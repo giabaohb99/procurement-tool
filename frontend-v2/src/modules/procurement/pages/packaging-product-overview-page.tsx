@@ -126,7 +126,7 @@ export function PackagingProductOverviewPage() {
       }
     })
 
-  const exportButton = can('packaging_cost', 'export') && (
+  const exportButton = can('packaging_product_summary', 'export') && (
     <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
   )
 

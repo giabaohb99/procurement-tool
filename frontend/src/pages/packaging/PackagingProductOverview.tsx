@@ -11,7 +11,7 @@ import { toast } from '../../components/toast'
 import { PctText, TrendText } from '../../components/packaging/PackagingCells'
 import PackagingOverviewToolbar from '../../components/packaging/PackagingOverviewToolbar'
 import { buildProductColumns } from '../../components/packaging/PackagingProductColumns'
-import { downloadExport, fetchProductOverview } from '../../api/packaging-cost'
+import { PACKAGING_ENTITY, downloadExport, fetchProductOverview } from '../../api/packaging-cost'
 import type { PackagingImpactProduct, PackagingOverviewTrend } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
@@ -98,7 +98,7 @@ export default function PackagingProductOverview() {
           <h2 className="page-title" style={{ margin: 0 }}>Tổng hợp theo sản phẩm</h2>
           <div className="pkg-hint">Chi phí bao bì / chai của mọi sản phẩm có định mức, giá cũ so với giá mới (báo giá hoặc lần mua gần nhất). Sản phẩm tăng chi phí là sản phẩm cần xem lại giá bán; thiếu giá chai thì chưa tính được. Đơn vị VNĐ, chưa VAT.</div>
         </div>
-        {can('packaging_cost', 'export') && (
+        {can(PACKAGING_ENTITY.products, 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
             <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>

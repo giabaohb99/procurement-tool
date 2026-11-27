@@ -1,5 +1,5 @@
 /**
- * duoc-CR-784 — danh mục Định mức bao bì theo mã hàng hóa (`/api/packaging-boms`, khóa `packaging_cost`).
+ * duoc-CR-784 — danh mục Định mức bao bì theo mã hàng hóa (`/api/packaging-boms`; bao-CR-792: khóa `packaging_bom`).
  *
  * Mỗi mã HH một dòng: chai + nắp + nhãn (tính theo chai) và nhãn thùng + thùng (tính theo thùng, chia quy
  * cách). Nạp hàng loạt bằng nút "Nhập từ Excel" (`PackagingExcelImportButton`); ở đây sửa từng dòng.
@@ -59,7 +59,7 @@ const PART_FORM_FIELDS: CrudFormField[] = PACKAGING_PART_COLUMNS.map((part) => (
 }))
 
 export const PACKAGING_BOM_CRUD_CONFIG: CrudConfig<PackagingBom> = {
-  entity: 'packaging_cost',
+  entity: 'packaging_bom',
   auditEntity: 'packaging_bom',
   title: 'Định mức bao bì',
   description:

@@ -160,7 +160,7 @@ export function PackagingImpactPage() {
               onChange={(from, to) => setRange({ from, to })}
             />
             {/* In = xem (quyền đọc). Mở tab mới, mã + giá giả định ĐANG GÕ + từ khóa / cột xếp của bảng; trang in tự nạp đủ mọi sản phẩm. */}
-            {can('packaging_cost', 'read') && (
+            {can('packaging_impact', 'read') && (
               <PackagingPrintButton
                 href={
                   codes.length
@@ -170,7 +170,7 @@ export function PackagingImpactPage() {
                 disabledTitle="Chọn ít nhất một mã để in"
               />
             )}
-            {can('packaging_cost', 'export') && (
+            {can('packaging_impact', 'export') && (
               <PackagingExportExcelButton exporting={exporting} disabled={!codes.length} onClick={() => void exportExcel()} />
             )}
           </>

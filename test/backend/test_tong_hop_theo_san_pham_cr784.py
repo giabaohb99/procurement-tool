@@ -225,7 +225,7 @@ def test_so_truy_van_khong_doi_khi_loc_nang_cao(db, world):
 # ── API: quyền, phạm vi, xuất Excel ─────────────────────────────────────────────
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_product_summary", scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -248,7 +248,7 @@ def test_api_tran_page_size_500_hop_le(api):
 
 def test_khong_co_quyen_la_403_va_chi_doc_khong_xuat_duoc(db, seed, cap_quyen, client_as, world):  # noqa: F811
     assert client_as(db.get(User, seed.u_req_id)).get(URL).status_code == 403
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_product_summary", scope="all", read=True)
     only_read = client_as(db.get(User, seed.u_req_id))
     assert only_read.get(URL).status_code == 200 and only_read.get(URL + "/export").status_code == 403
 
@@ -257,10 +257,10 @@ def test_pham_vi_cong_ty_khong_thay_gia_cua_phap_nhan_khac(db, seed, cap_quyen, 
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})
     add_ledger(db, "B_FLAT", 150, "2026-04-01", company_id=seed.company_id + 99)       # pháp nhân khác, mới hơn
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_product_summary", scope="company", read=True)
     mine = client_as(db.get(User, seed.u_req_id)).get(URL, params={"q": "HH03"}).json()["data"]
     assert mine["items"][0]["trend"] == CostTrend.SAME                                # không thấy dòng 150
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_product_summary", scope="all", read=True)
     full = client_as(db.get(User, seed.u_req_id)).get(URL, params={"q": "HH03"}).json()["data"]
     assert full["items"][0]["trend"] == CostTrend.UP and full["items"][0]["cost_new_bottle"] == 160
 

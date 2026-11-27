@@ -331,3 +331,18 @@ def require(entity: str, action: str):
         return user
 
     return dep
+
+
+def require_any(*pairs: tuple[str, str]):
+    """Dependency: qua khi có ÍT NHẤT MỘT cặp `(entity, action)` (bao-CR-792).
+
+    Cho đường API DÙNG CHUNG nhiều màn mà mỗi màn một khóa (vd ô chọn mã của cụm Giá NVL sản xuất). Chỉ là cổng hành
+    động — phạm vi dữ liệu nơi gọi tự lấy HỢP theo các khóa người đó giữ.
+    """
+
+    def dep(user=Depends(get_current_user), db: Session = Depends(get_db)):
+        if not any(user_has_permission(db, user, entity, action) for entity, action in pairs):
+            raise HTTPException(403, "Không có quyền: " + " / ".join(f"{action} {entity}" for entity, action in pairs))
+        return user
+
+    return dep

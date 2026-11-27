@@ -92,7 +92,7 @@ export function PackagingPriceListPage() {
   const groups = useMemo(() => collectPackagingGroups(codeOptions), [codeOptions])
 
   const openQuote = useCallback((row: PackagingPriceRow) => setQuoteCode(row.code), [])
-  const canQuote = can('packaging_cost', 'create')
+  const canQuote = can('packaging_price_list', 'create')
   const columns = usePackagingPriceListColumns({
     canQuote,
     onQuote: openQuote,
@@ -138,14 +138,14 @@ export function PackagingPriceListPage() {
               className="max-md:basis-full"
               onChange={(from, to) => setRange({ from, to })}
             />
-            {can('packaging_cost', 'create') && (
+            {canQuote && (
               <Button type="button" onClick={() => setQuoteCode('')}>
                 <Plus />
                 Báo giá mới
               </Button>
             )}
             <PackagingExcelImportButton kind={PACKAGING_QUOTE_IMPORT} />
-            {can('packaging_cost', 'export') && (
+            {can('packaging_price_list', 'export') && (
               <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
             )}
           </>

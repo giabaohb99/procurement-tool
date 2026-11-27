@@ -45,7 +45,7 @@ def world(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_last_price", scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -158,7 +158,7 @@ def test_phan_trang_va_tham_so_sai(api):
 # ── Quyền + phạm vi ─────────────────────────────────────────────────────────────
 def test_thieu_quyen_la_403_ke_ca_xuat(db, seed, cap_quyen, client_as, world):  # noqa: F811
     assert client_as(db.get(User, seed.u_req_id)).get(URL).status_code == 403
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_last_price", scope="all", read=True)
     only_read = client_as(db.get(User, seed.u_req_id))
     assert only_read.get(URL).status_code == 200 and only_read.get(URL + "/export").status_code == 403
 
@@ -167,10 +167,10 @@ def test_pham_vi_cong_ty_chi_thay_lan_mua_cua_phap_nhan_minh(db, seed, cap_quyen
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})
     add_ledger(db, "CPT0105", 999, "2026-09-01", company_id=seed.company_id + 99)      # pháp nhân khác, mới nhất
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_last_price", scope="company", read=True)
     rows = {r["code"]: r for r in client_as(db.get(User, seed.u_req_id)).get(URL).json()["data"]["items"]}
     assert rows["CPT0105"]["last_price"] == 150 and rows["CPT0105"]["purchase_count"] == 6
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_last_price", scope="all", read=True)
     full = {r["code"]: r for r in client_as(db.get(User, seed.u_req_id)).get(URL).json()["data"]["items"]}
     assert full["CPT0105"]["last_price"] == 999
 

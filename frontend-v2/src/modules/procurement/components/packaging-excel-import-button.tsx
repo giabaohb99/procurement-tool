@@ -5,7 +5,8 @@
  *
  * Không dùng `ImportUploadDialog` của Quản lý Import: ô chọn bảng ở đó chỉ biết các đối tượng khai trong
  * `system/config/import-meta.ts` có `moduleId`. Hiện khi có ĐỦ `import.create` + `import.read` (trang lô gác `import.read`)
- * + quyền `kind.action` trên `packaging_cost` — backend gác lại y hệt.
+ * + quyền `kind.action` trên `kind.entity` (bao-CR-792: khóa của màn chứa nút, không còn khóa chung `packaging_cost`) —
+ * backend gác lại y hệt.
  */
 import { FileDown, FileUp, Loader2 } from 'lucide-react'
 import { useState } from 'react'
@@ -45,7 +46,7 @@ export function PackagingExcelImportButton({ kind }: PackagingExcelImportButtonP
   const upload = useUploadImport()
   const once = useSingleFlight()
 
-  if (!(can('import', 'create') && can('import', 'read') && can('packaging_cost', kind.action)))
+  if (!(can('import', 'create') && can('import', 'read') && can(kind.entity, kind.action)))
     return null
 
   const submit = () =>

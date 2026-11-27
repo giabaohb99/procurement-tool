@@ -76,6 +76,21 @@ export function visibleNavChildren(item: ModuleNavItem, can: CanFn, ctx: NavCont
   return (item.children ?? []).filter((child) => !child.hidden && itemAllowed(child, can, ctx))
 }
 
+/**
+ * Đường mở ra khi đi tới một mục menu từ chỗ không phải menu trái: cấp mục menu trên breadcrumb, và màn đáp xuống khi
+ * vào phân hệ (`firstAccessibleNavPath`).
+ *
+ * Mục thường: chính `item.path`. Mục cha có `children` KHÁC KHÓA nhau (bao-CR-792, cụm Giá nguyên vật liệu sản xuất —
+ * mỗi màn một khóa): `item.path` là màn con đầu tiên KHAI BÁO, người không có quyền màn đó mà bấm vào là gặp trang cấm.
+ * Khi không mục con nào người này xem được nằm ở đúng `item.path` thì trả mục con ĐẦU TIÊN họ xem được — cùng đích với
+ * cú bấm mục cha ở menu trái (`module-sidebar.tsx` đi tới mục con đầu của danh sách đã lọc quyền).
+ */
+export function navItemLandingPath(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): string {
+  const children = visibleNavChildren(item, can, ctx)
+  if (children.length === 0 || children.some((child) => child.path === item.path)) return item.path
+  return children[0].path
+}
+
 export function canOpenModule(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
   //  ⚠️ Phân hệ LINK RA NGOÀI luôn mở. Nó không có mục menu nào theo đúng bản
   //  chất (`nav: []` — màn hình nằm ở app khác), nên đo bằng "còn mục nào hiện
@@ -161,6 +176,10 @@ function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boo
  * Bỏ qua ba loại mục: chính trang gốc (đó là trang vừa không vào được),
  * `crossModule` (dẫn sang phân hệ khác — đá người ta ra ngoài còn khó hiểu hơn)
  * và `hidden` (không vẽ trên menu, đẩy tới đó thì menu trái tối om).
+ *
+ * bao-CR-792 — mục chọn được là mục CHA có các mục con khác khóa nhau thì trả đường của mục con người này xem được
+ * (`navItemLandingPath`), không trả cứng đường mục cha: người chỉ giữ khóa Lịch sử mua hàng vào Thu mua phải đáp xuống
+ * Lịch sử mua hàng, không đáp xuống màn Tác động giá (đường của mục cha) rồi gặp trang cấm.
  */
 export function firstAccessibleNavPath(
   module: ErpModule,
@@ -171,7 +190,7 @@ export function firstAccessibleNavPath(
   const item = allItems.find(
     (i) => i.path !== module.path && !i.crossModule && !i.hidden && itemAllowed(i, can, ctx),
   )
-  return item?.path ?? null
+  return item ? navItemLandingPath(item, can, ctx) : null
 }
 
 /**

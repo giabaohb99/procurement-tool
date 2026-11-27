@@ -46,7 +46,8 @@ def world(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    for key in ("packaging_impact", "packaging_price_list"):       # bao-CR-792: mỗi màn một khóa
+        cap_quyen(seed.u_req_id, key, scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -234,7 +235,8 @@ def test_api_thieu_quyen_la_403_ke_ca_xuat(db, seed, cap_quyen, client_as, world
     none = client_as(db.get(User, seed.u_req_id))
     assert none.post(IMPACT, json={"codes": ["CPT0105"]}).status_code == 403
     assert none.get(PRICE_LIST).status_code == 403 and none.get(OPTIONS).status_code == 403
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)       # có đọc, không có xuất
+    for key in ("packaging_impact", "packaging_price_list"):       # có đọc, không có xuất
+        cap_quyen(seed.u_req_id, key, scope="all", read=True)
     only_read = client_as(db.get(User, seed.u_req_id))
     assert only_read.post(IMPACT, json={"codes": ["CPT0105"]}).status_code == 200
     assert only_read.post(IMPACT + "/export", json={"codes": ["CPT0105"]}).status_code == 403
@@ -245,11 +247,11 @@ def test_pham_vi_cong_ty_nguoi_xem_chi_thay_gia_cua_phap_nhan_minh(db, seed, cap
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})   # sổ của `world` = pháp nhân của người xem
     add_ledger(db, "CPT0105", 5000, "2026-09-01", company_id=seed.company_id + 99)           # pháp nhân khác, mới nhất
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_impact", scope="company", read=True)
     mine = client_as(db.get(User, seed.u_req_id)).post(IMPACT, json={"codes": ["CPT0105"]}).json()["data"]
     assert (mine["selected"][0]["new"], mine["selected"][0]["old"]) == (1100, 1000)         # 5000 của pháp nhân khác bị ẩn
     assert mine["selected"][0]["max"] == 1100
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)                       # grant thứ hai: HỢP hai phạm vi
+    cap_quyen(seed.u_req_id, "packaging_impact", scope="all", read=True)                     # grant thứ hai: HỢP hai phạm vi
     full = client_as(db.get(User, seed.u_req_id)).post(IMPACT, json={"codes": ["CPT0105"]}).json()["data"]
     assert full["selected"][0]["new"] == 5000
 

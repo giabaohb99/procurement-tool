@@ -45,7 +45,7 @@ def world(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -170,7 +170,7 @@ def test_pham_vi_cong_ty_chi_thay_dong_cua_phap_nhan_minh_ke_ca_lan(db, seed, ca
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})
     add_ledger(db, "CPT0105", 999, "2026-03-15", company_id=seed.company_id + 99)         # pháp nhân khác, mới nhất
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="company", read=True)
     data = client_as(db.get(User, seed.u_req_id)).get(URL, params={"mode": "product", "page_size": 500}).json()["data"]
     assert data["total"] == 12 and max(r["price"] for r in data["items"]) == 200 and {r["seq"] for r in data["items"] if r["code"] == "CPT0105"} == {1, 2, 3}
 

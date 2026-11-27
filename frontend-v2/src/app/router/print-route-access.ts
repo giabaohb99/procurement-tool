@@ -45,11 +45,11 @@ export const PRINT_ROUTE_ACCESS: Readonly<Record<string, PrintRouteAccess>> = {
     action: 'read', // GET /api/reports/import-landed-cost
   },
   [appRoutes.procurement.packagingHistoryPrint]: {
-    entity: 'packaging_cost',
+    entity: 'packaging_history', // bao-CR-792: khóa riêng của màn Lịch sử mua hàng
     action: 'read', // GET /api/packaging-cost/history (in là xem, không đòi quyền export)
   },
   [appRoutes.procurement.packagingImpactPrint]: {
-    entity: 'packaging_cost',
+    entity: 'packaging_impact', // bao-CR-792: khóa riêng của màn Tác động giá
     action: 'read', // POST /api/packaging-cost/impact (đọc thuần, đòi quyền đọc)
   },
   [appRoutes.finance.paymentRequestPrint(':id')]: {

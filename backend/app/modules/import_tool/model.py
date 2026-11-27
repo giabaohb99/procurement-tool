@@ -22,7 +22,7 @@ class ImportModule(IntEnum):
     # `app.modules.customs.importer`. Gác bằng khóa `customs_price`, không bằng `import`.
     CUSTOMS_DECLARATION = 3
     # Định mức bao bì theo mã hàng hóa (duoc-CR-784) — tệp DATA_CHAI.xlsx, đọc bằng `packaging_cost.bom_import`.
-    # Gác bằng khóa `packaging_cost` (xem `_MODULE_GUARDS`). Không hỗ trợ hoàn tác đợt đầu.
+    # Gác bằng khóa `packaging_bom` (bao-CR-792; xem `_MODULE_GUARDS`). Không hỗ trợ hoàn tác đợt đầu.
     PACKAGING_BOM = 4
     # Báo giá VTBB hàng loạt + Sổ chi tiết mua hàng Misa (.xlsx) — cụm Giá NVL sản xuất (duoc-CR-784, 23/11/2026).
     # Bộ đọc ở `packaging_cost/quote_import.py`, `packaging_cost/misa_xlsx_import.py`; chưa hỗ trợ hoàn tác.

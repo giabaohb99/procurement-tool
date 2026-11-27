@@ -54,7 +54,7 @@ GROUPS: tuple[ToolGroup, ...] = (
         "product_purchase_history", "supplier_search", "suppliers_for_product", "supplier_contracts", "supplier_scorecard",
         "contract_count_by_status", "contract_list_by_expiry", "analytics_query", "purchase_report",
         "top_suppliers_by_purchase", "market_price_search", "erp_read", "draft_purchase_request", "draft_survey_request"})),
-    #  duoc-CR-784: giá vốn bao bì (khóa riêng packaging_cost, nhạy cảm) — nhóm RIÊNG, tắt mặc định: nhóm "purchase" có thể
+    #  duoc-CR-784: giá vốn bao bì (khóa riêng theo từng màn `packaging_*` từ bao-CR-792, nhạy cảm) — nhóm RIÊNG, tắt mặc định: nhóm "purchase" có thể
     #  đang bật trên prod, gộp vào đó là mở giá vốn qua MCP mà quản trị không chủ động bật.
     ToolGroup("packaging", "Giá bao bì: tác động giá, giá mua VTBB, chi phí bao bì sản phẩm", False, frozenset({
         "packaging_price_impact", "packaging_price_lookup", "packaging_product_cost"})),

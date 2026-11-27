@@ -5,7 +5,7 @@ import { toast } from '../../components/toast'
 import PackagingCodePicker from '../../components/packaging/PackagingCodePicker'
 import PackagingImpactProductsTable from '../../components/packaging/PackagingImpactProductsTable'
 import PackagingImpactSelectedTable from '../../components/packaging/PackagingImpactSelectedTable'
-import { exportImpact, fetchCodeOptions, fetchImpact } from '../../api/packaging-cost'
+import { PACKAGING_ENTITY, exportImpact, fetchCodeOptions, fetchImpact } from '../../api/packaging-cost'
 import type { PackagingCodeOption, PackagingImpactRequest } from '../../api/packaging-cost-types'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
@@ -131,13 +131,13 @@ export default function PackagingImpact() {
             onChange={(v) => { setRange(v); setPage(1) }} />
         </div>
         {/* In = xem (quyền đọc). Mở tab mới, mã + giá giả định ĐANG GÕ + từ khóa / lọc nâng cao / cột xếp của bảng; trang in tự nạp đủ mọi sản phẩm. */}
-        {can('packaging_cost', 'read') && (
+        {can(PACKAGING_ENTITY.impact, 'read') && (
           <button className="btn outline" disabled={!codes.length} aria-label="In" title={codes.length ? 'In' : 'Chọn ít nhất một mã để in'}
             onClick={() => window.open(impactPrintHref({ ...filterBody, assumed_prices: pickAssumed(codes, assumed) }), '_blank')}>
             <i className="ti ti-printer" /><span className="pkg-btn-label">In</span>
           </button>
         )}
-        {can('packaging_cost', 'export') && (
+        {can(PACKAGING_ENTITY.impact, 'export') && (
           <button className="btn outline" disabled={!codes.length || exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
             <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>

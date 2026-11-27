@@ -1,11 +1,16 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { PACKAGING_COST_TREND_CODE } from '@/shared/constants/statuses'
 
 import type { PackagingImpactProduct } from '../types/packaging-cost-types'
 import { PackagingProductCard } from './packaging-product-card'
+
+//  bao-CR-792: mã / số chứng từ chỉ thành đường bấm khi có quyền ở màn đích — bài kiểm này đứng ở vai người có đủ quyền.
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({ can: () => true }),
+}))
 
 const product: PackagingImpactProduct = {
   fg_code: 'HH0260',

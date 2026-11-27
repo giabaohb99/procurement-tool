@@ -1,9 +1,16 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PackagingHistoryRow } from '../types/packaging-cost-types'
 import { DiffCell, PriceCell, SourceCell } from './packaging-history-cells'
+
+let canReadPo = true
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({
+    can: (entity: string, action: string) => canReadPo && entity === 'purchase_order' && action === 'read',
+  }),
+}))
 
 const row = (over: Partial<PackagingHistoryRow> = {}): PackagingHistoryRow => ({
   id: 1,
@@ -75,6 +82,19 @@ describe('DiffCell', () => {
 })
 
 describe('SourceCell', () => {
+  beforeEach(() => {
+    canReadPo = true
+  })
+
+  //  bao-CR-792 — người chỉ giữ khóa Lịch sử mua hàng: số ĐMH là chữ thường, không dẫn vào màn ĐMH bị cấm.
+  it('shows the order number as plain text without purchase_order.read, keeping the open badge', () => {
+    canReadPo = false
+    inRouter(<SourceCell row={row({ source_type: 2, line_stage: 1, is_open: true, doc_id: 77, po_code: 'PO00077' })} />)
+    expect(screen.getByText('ĐMH đang mở')).toBeInTheDocument()
+    expect(screen.getByText('PO00077')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
   it('marks an open purchase-order line and links its order', () => {
     inRouter(<SourceCell row={row({ source_type: 2, line_stage: 1, is_open: true, doc_id: 77, po_code: 'PO00077' })} />)
     expect(screen.getByText('ĐMH đang mở')).toBeInTheDocument()

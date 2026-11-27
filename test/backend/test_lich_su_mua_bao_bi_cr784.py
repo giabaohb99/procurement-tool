@@ -51,7 +51,7 @@ def world(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -263,7 +263,7 @@ def test_dau_vao_sai_tra_422(api):
 def test_khong_co_quyen_la_403_va_chi_doc_khong_xuat_duoc(db, seed, cap_quyen, client_as, world):  # noqa: F811
     assert client_as(db.get(User, seed.u_req_id)).get(URL).status_code == 403
     assert client_as(db.get(User, seed.u_req_id)).get("/api/packaging-cost/fg-options").status_code == 403
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True)
     only_read = client_as(db.get(User, seed.u_req_id))
     assert only_read.get(URL).status_code == 200 and only_read.get(URL + "/export").status_code == 403
 
@@ -273,12 +273,12 @@ def test_pham_vi_cong_ty_khong_thay_lan_mua_cua_phap_nhan_khac_ke_ca_trong_chenh
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})
     add_ledger(db, "CPT0105", 999, "2026-03-15", company_id=seed.company_id + 99)      # pháp nhân khác, chen giữa 1/3 và 1/4
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="company", read=True)
     data = client_as(db.get(User, seed.u_req_id)).get(URL, params={"codes": ["CPT0105"]}).json()["data"]
     assert data["total"] == 6 and data["stats"]["max"] == 130 and len(data["series"]) == 5
     by_date = {r["date"]: r for r in data["items"]}
     assert by_date["2026-04-01"]["prev_price"] == 105 and by_date["2026-04-01"]["seq"] == 3      # không nhìn thấy dòng 999 (mới hơn: 15/4 + 1/5)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True)
     full = client_as(db.get(User, seed.u_req_id)).get(URL, params={"codes": ["CPT0105"]}).json()["data"]
     assert full["total"] == 7 and full["stats"]["max"] == 999
 

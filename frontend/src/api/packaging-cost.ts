@@ -27,6 +27,28 @@ export const PACKAGING_IMPORT_MODULES: readonly number[] = [
   IMPORT_MODULE_PACKAGING_BOM, IMPORT_MODULE_PACKAGING_QUOTE, IMPORT_MODULE_PACKAGING_MISA,
 ]
 
+/**
+ * bao-CR-792 — khóa phân quyền của cụm: MỖI MÀN MỘT KHÓA (khóa chung cũ của duoc-CR-784 đã nghỉ hẳn ở backend).
+ * Endpoint của màn nào backend gác bằng khóa của màn đó; ô chọn mã / ô chọn sản phẩm dùng chung mở khi có `read` trên
+ * bất kỳ khóa nào. Báo giá VTBB (`/product-price-quotes`) đi chung khóa với Bảng giá VTBB.
+ */
+export const PACKAGING_ENTITY = {
+  impact: 'packaging_impact',
+  products: 'packaging_product_summary',
+  priceList: 'packaging_price_list',
+  lastPrices: 'packaging_last_price',
+  history: 'packaging_history',
+  boms: 'packaging_bom',
+} as const
+export type PackagingEntity = typeof PACKAGING_ENTITY[keyof typeof PACKAGING_ENTITY]
+
+/** bao-CR-792 — khóa quyền theo kiểu nhập: nút nhập Excel và nút xóa dữ liệu theo lô hỏi đúng khóa của màn nhận dữ liệu. */
+export const PACKAGING_IMPORT_ENTITY: Record<number, PackagingEntity> = {
+  [IMPORT_MODULE_PACKAGING_BOM]: PACKAGING_ENTITY.boms,
+  [IMPORT_MODULE_PACKAGING_QUOTE]: PACKAGING_ENTITY.priceList,
+  [IMPORT_MODULE_PACKAGING_MISA]: PACKAGING_ENTITY.history,
+}
+
 /** Xem trước xóa dữ liệu theo lô nhập (định mức / báo giá / sổ Misa). */
 export async function fetchBatchPurgePreview(batchId: number | string): Promise<PackagingBatchPurgePreview> {
   const r = await api.get(`/api/imports/${batchId}/purge-preview`)

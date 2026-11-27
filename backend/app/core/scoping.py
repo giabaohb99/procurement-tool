@@ -306,7 +306,19 @@ SCOPE_FIELDS = {
     #  bảng duy nhất mang giá vốn theo giao dịch. Định mức bao bì / báo giá / ngưỡng là danh mục dùng chung, không có
     #  cột pháp nhân — các đường CRUD của chúng gác bằng quyền hành động (`make_crud_router(scoped=False)`). Giá cũ /
     #  mới / min / max chỉ tính trên các dòng sổ giá người xem được thấy. Người xem toàn công ty để scope `all`.
-    "packaging_cost":   {"company": "company_id"},
+    #  bao-CR-792 (27/11/2026): khóa `packaging_cost` tách thành mỗi màn một khóa. Năm khóa có GIÁ đo trên sổ giá như cũ
+    #  (Báo giá VTBB đi cùng `packaging_price_list`, vẫn `scoped=False`). Ô chọn mã dùng chung nhiều màn lấy HỢP phạm vi
+    #  của năm khóa này (`packaging_cost/last_prices_controller.shared_view_scope`).
+    "packaging_impact":          {"company": "company_id"},
+    "packaging_product_summary": {"company": "company_id"},
+    "packaging_price_list":      {"company": "company_id"},
+    "packaging_last_price":      {"company": "company_id"},
+    "packaging_history":         {"company": "company_id"},
+    #  Định mức bao bì: danh mục dùng chung MỌI pháp nhân, bảng `tab_packaging_bom` không có cột pháp nhân và màn này
+    #  không hiện giá — không có gì để lọc theo dòng (trước bao-CR-792 CRUD của nó đã chạy `scoped=False`). Ai được XEM /
+    #  SỬA gác bằng quyền hành động `packaging_bom.*`. KHÔNG đo trên sổ giá: khóa này trùng tên entity nhật ký
+    #  `packaging_bom`, khai model sổ giá cho nó là `audit/controller._guard` đem id định mức đi soi trên bảng sổ giá.
+    "packaging_bom":             PUBLIC,
 
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy

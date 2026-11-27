@@ -5,6 +5,7 @@
  * `ImportStatus`, `LogLevel`. Thêm đối tượng import mới (Đ-13d) thì bổ sung ở đây
  * và ở `IMPORT_MODULE_OPTIONS` bên dưới.
  */
+import type { PermissionEntity } from '@/core/authorization/permission-types'
 
 export const IMPORT_MODULE_SURVEY = 1
 export const IMPORT_MODULE_PURCHASE_ORDER = 2
@@ -23,6 +24,15 @@ export const IMPORT_MODULES_WITHOUT_REVERT: readonly number[] = [
 ]
 /** Loại lô có nút "Xóa dữ liệu của lô này" (duoc-CR-784 phase 07) — cùng ba loại không hoàn tác. */
 export const IMPORT_MODULES_WITH_PURGE: readonly number[] = IMPORT_MODULES_WITHOUT_REVERT
+/**
+ * bao-CR-792 — khóa quyền phải có `delete` để "Xóa dữ liệu của lô này", theo loại lô: mỗi loại thuộc một màn của cụm Giá
+ * NVL sản xuất nên gác bằng khóa của màn đó (khóa chung `packaging_cost` nghỉ hẳn). Khớp chốt gác ở backend.
+ */
+export const IMPORT_PURGE_ENTITY: Readonly<Record<number, PermissionEntity>> = {
+  [IMPORT_MODULE_PACKAGING_BOM]: 'packaging_bom',
+  [IMPORT_MODULE_PACKAGING_QUOTE]: 'packaging_price_list',
+  [IMPORT_MODULE_PACKAGING_MISA]: 'packaging_history',
+}
 // Danh mục nền (Đ-13d) — khớp `ImportModule` ở backend.
 export const IMPORT_MODULE_COMPANY = 10
 export const IMPORT_MODULE_DEPARTMENT = 11

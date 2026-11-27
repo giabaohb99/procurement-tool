@@ -26,6 +26,10 @@ hàng; sổ giá gộp nguồn (một lần mua trên ERP là một dòng, đang
 Sổ Misa / lịch sử cũ để trống, tệp Excel mới ghi chữ); báo giá có cột Nguồn và chặn trùng (mã, NCC, ngày hiệu lực); ghi chú đơn vị
 VNĐ, chưa VAT trên màn; VAT dòng Misa để trống; bài mới Xóa dữ liệu theo lô nhập thay cho câu "chưa hoàn tác được".
 
+Cập nhật 27/11/2026 (bao-CR-792): quyền *Giá bao bì* (một khóa cho cả cụm) tách thành MỖI MÀN MỘT QUYỀN, tên ở màn phân quyền
+*Giá NVL sản xuất › <tên màn>*. Sửa các đoạn nói về quyền ở bài tổng quan, nhập báo giá, nạp Sổ Misa, nhập định mức, xóa theo lô
+và mục dành cho quản trị. Sau khi phát hành phải seed lại + nạp lại chỉ mục (ba lệnh dưới).
+
 KHÔNG CÓ trong bài: ngưỡng giá sàn / trần — người chủ chốt 21/11/2026 "tạm thời chưa xài", rồi 25/11/2026 chốt XÓA HẲN (phase 04,
 migration `cleanup784`): nút Ngưỡng, cột Sàn – Trần, ô Chỉ mã ngoài ngưỡng, cảnh báo Dưới ngưỡng sàn / Vượt ngưỡng trần không còn
 trên giao diện nên bài cũng không nhắc. Màn danh sách Báo giá VTBB ẩn khỏi menu: chỉ nhắc đường vào trong bài Bảng giá.
@@ -71,7 +75,7 @@ TREE = {
 <li><strong>Giao diện ERP mới:</strong> phân hệ <strong>Thu mua</strong>, nhóm menu <strong>Mua hàng</strong>, mục <strong>Giá nguyên vật liệu sản xuất</strong> (ngay dưới Tra cứu thị trường). Bấm mục này để mở hoặc thu sáu mục con: Tác động giá bao bì, Tổng hợp theo sản phẩm, Bảng giá VTBB, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì. Đang đứng ở một màn con vẫn bấm thu lại được.</li>
 <li><strong>Giao diện cũ (Thu mua):</strong> cũng trong nhóm <strong>Mua hàng</strong>, mục <strong>Giá nguyên vật liệu sản xuất</strong> ngay dưới Tra cứu thị trường, cùng sáu mục con và cùng tên như trên.</li>
 </ul>
-<p>Không thấy mục này là tài khoản chưa được giao quyền <strong>Giá bao bì</strong>, nhờ quản trị (xem {ref(FAQ_TITLE, "Lỗi thường gặp và dành cho quản trị")}).</p>
+<p>Mỗi màn của cụm có quyền riêng (tên ở màn phân quyền: <strong>Giá NVL sản xuất › tên màn</strong>). Không thấy cả mục này là tài khoản chưa được giao quyền Xem của màn nào trong cụm; chỉ thấy một vài màn là mới được giao quyền của các màn đó. Cần thêm thì nhờ quản trị (xem {ref(FAQ_TITLE, "Lỗi thường gặp và dành cho quản trị")}).</p>
 <p>Đọc theo việc cần làm:</p>
 <ul>
 <li>Lần đầu dùng, muốn hiểu số trên màn từ đâu ra: {ref(OVERVIEW_TITLE, "Các màn, ai được xem và giá cũ, giá mới lấy từ đâu")}.</li>
@@ -87,7 +91,7 @@ TREE = {
         {
             "title": OVERVIEW_TITLE,
             "icon": "book-open",
-            "summary": "Công thức chi phí bao bì / chai, sổ giá (Sổ Misa tới 30/06/2026, sau đó đơn mua hàng ERP), luật giá cũ / giá mới, màu tăng giảm, In và Xuất Excel, quyền Giá bao bì và phạm vi pháp nhân",
+            "summary": "Công thức chi phí bao bì / chai, sổ giá (Sổ Misa tới 30/06/2026, sau đó đơn mua hàng ERP), luật giá cũ / giá mới, màu tăng giảm, In và Xuất Excel, quyền theo từng màn và phạm vi pháp nhân",
             "content": f"""<h2>Cụm Giá nguyên vật liệu sản xuất gồm những màn nào</h2>
 <table>
 <thead><tr><th>Màn (menu)</th><th>Dùng để</th></tr></thead>
@@ -143,9 +147,10 @@ TREE = {
 
 <h2>Ai được xem gì</h2>
 <ul>
-<li>Mọi màn cần quyền <strong>Giá bao bì</strong> (nhóm Thu mua ở màn phân quyền vai trò): <strong>Xem</strong> để mở màn, <strong>Xuất</strong> để có nút Xuất Excel, <strong>Tạo</strong> để nhập báo giá và định mức, <strong>Sửa</strong> / <strong>Xóa</strong> để sửa, xóa định mức hay báo giá. Nút <strong>Xóa dữ liệu của lô này</strong> ở trang lô nhập cần quyền <strong>Xóa</strong> của Giá bao bì cộng quyền xem Quản lý Import.</li>
-<li><strong>Giá tính theo pháp nhân bạn được xem:</strong> phạm vi của quyền Giá bao bì lọc sổ giá theo công ty mua. Hai người cùng mở một mã có thể thấy giá khác nhau nếu được xem các pháp nhân khác nhau.</li>
-<li>Định mức bao bì và báo giá là danh mục dùng chung: ai có quyền Xem đều thấy đủ.</li>
+<li><strong>Mỗi màn một quyền riêng</strong> (từ 27/11/2026), nằm ở nhóm Thu mua của màn phân quyền vai trò, tên <strong>Giá NVL sản xuất › tên màn</strong>: Tác động giá bao bì, Tổng hợp theo sản phẩm, Bảng giá VTBB (gồm cả Báo giá VTBB), Giá mua gần nhất, Lịch sử mua hàng (gồm cả Nạp sổ Misa), Định mức bao bì. Có quyền <strong>Xem</strong> của màn nào thì thấy màn đó; <strong>Xuất</strong> của màn nào thì có nút Xuất Excel ở màn đó.</li>
+<li>Quyền ghi: <strong>Tạo</strong> / <strong>Sửa</strong> / <strong>Xóa</strong> của <em>Bảng giá VTBB</em> để thêm, nhập, sửa, xóa báo giá; của <em>Định mức bao bì</em> để thêm, nhập, sửa, xóa định mức; <strong>Sửa</strong> của <em>Lịch sử mua hàng</em> để Nạp sổ Misa. Nút <strong>Xóa dữ liệu của lô này</strong> ở trang lô nhập cần quyền <strong>Xóa</strong> của đúng màn giữ dữ liệu lô (lô định mức: Định mức bao bì; lô báo giá: Bảng giá VTBB; lô Sổ Misa: Lịch sử mua hàng) cộng quyền xem Quản lý Import.</li>
+<li><strong>Giá tính theo pháp nhân bạn được xem:</strong> phạm vi đặt cho quyền của từng màn lọc sổ giá theo công ty mua. Hai người cùng mở một mã có thể thấy giá khác nhau nếu được xem các pháp nhân khác nhau; một người cũng có thể thấy khác nhau giữa hai màn nếu hai quyền được đặt phạm vi khác nhau.</li>
+<li>Định mức bao bì và báo giá là danh mục dùng chung: ai có quyền Xem của màn tương ứng đều thấy đủ.</li>
 </ul>
 {OLD_UI}cùng dữ liệu, cùng công thức, cùng quyền. Đơn giá hiện tới 4 chữ số lẻ (giao diện mới làm tròn: dưới 100.000 đ giữ tối đa 2 chữ số lẻ, từ 100.000 đ làm tròn tới đồng).</p>""",
         },
@@ -279,7 +284,7 @@ TREE = {
 <ul>
 <li>Trùng <strong>mã + mã NCC + ngày hiệu lực</strong> với báo giá đã có thì cập nhật đơn giá, VAT, ghi chú; chưa có thì thêm. Báo giá đang có mà không nằm trong tệp giữ nguyên. Báo giá được thêm hoặc đổi đơn giá / VAT qua tệp sẽ mang nguồn <em>Nhập Excel (lô #N)</em> của lô này.</li>
 <li>Mã chưa có trong danh mục sản phẩm, đơn giá trống / bằng 0, ngày sai bị bỏ và ghi lỗi; các dòng khác vẫn nhập.</li>
-<li>Cần quyền <strong>Tạo</strong> của Giá bao bì và quyền tạo, xem Quản lý Import.</li>
+<li>Cần quyền <strong>Tạo</strong> của <em>Giá NVL sản xuất › Bảng giá VTBB</em> và quyền tạo, xem Quản lý Import.</li>
 <li>Ghi thật nhầm cả tệp: mở trang lô đó, bấm <strong>Xóa dữ liệu của lô này</strong> để gỡ đúng các báo giá lô đã ghi ({ref(PURGE_TITLE, "xem cách xóa theo lô")}). Sai vài dòng thì sửa hay xóa ở màn Báo giá VTBB.</li>
 </ul>
 {OLD_UI}menu <strong>Mua hàng › Giá nguyên vật liệu sản xuất › Bảng giá VTBB</strong>. Nút <strong>Báo giá mới</strong> và nút <strong>Báo giá</strong> từng dòng mở cùng hộp nhập như trên. Cột <strong>Min</strong>, <strong>Max</strong> hiện sẵn; đơn giá hiện tới 4 chữ số lẻ. Danh sách Báo giá VTBB (không có trong menu, đường <em>/product-price-quotes</em>) là màn danh sách chung, cũng có cột <strong>Nguồn</strong> (bấm lô để mở trang lô nhập): bấm một dòng mở <strong>trang chi tiết</strong> (không phải hộp thoại) để sửa rồi bấm <strong>Lưu</strong>, hoặc <strong>Xóa</strong>.</p>""",
@@ -357,7 +362,7 @@ TREE = {
 <li>Cột <strong>Giá trị</strong> trong tệp được ghi làm Giá trị mua. Nạp lại <strong>cùng tệp</strong> thì các lần mua đã có được bổ sung hoặc sửa Giá trị mua theo tệp, không bị nhân đôi; nhật ký ghi dòng <em>cập nhật thành tiền</em>. Tệp không có cột Giá trị thì không đụng tới Giá trị mua đã có.</li>
 <li>Mã đầu PPA, CKC, CPM, CPN và dòng số lượng 0 bị bỏ qua (giống báo cáo HTML). Đơn giá trống vẫn nhận nhưng không làm giá.</li>
 <li>Mốc sổ Misa dời tới ngày lớn nhất đã nạp; giá các màn tính lại ngay.</li>
-<li>Cần quyền <strong>Sửa</strong> của Giá bao bì (vì đổi giá cả cụm) và quyền tạo, xem Quản lý Import.</li>
+<li>Cần quyền <strong>Sửa</strong> của <em>Giá NVL sản xuất › Lịch sử mua hàng</em> (vì đổi giá cả cụm) và quyền tạo, xem Quản lý Import.</li>
 <li>Nạp nhầm tệp: nạp lại tệp đúng của cùng khoảng ngày, hoặc mở trang lô rồi bấm <strong>Xóa dữ liệu của lô này</strong> để gỡ các lần mua lô đó đã THÊM; mốc sổ Misa tự tính lại ({ref(PURGE_TITLE, "xem cách xóa theo lô")}). Lần mua mà lô đó đã bỏ khỏi sổ thì xóa lô không trả lại, phải nạp lại tệp đúng.</li>
 </ul>
 {OLD_UI}menu <strong>Mua hàng › Giá nguyên vật liệu sản xuất › Lịch sử mua hàng</strong>, cùng chế độ, bộ lọc, biểu đồ và cột; đơn giá hiện tới 4 chữ số lẻ.</p>""",
@@ -391,7 +396,7 @@ TREE = {
 <li>Mã HH so khớp không cần số 0 đầu: <em>HH0417.1</em> và <em>HH417.1</em> là một.</li>
 <li>Tệp tối đa 20.000 dòng mỗi sheet. Luôn đọc kỹ bản chạy thử trước khi Ghi thật.</li>
 <li>Ghi thật nhầm tệp: mở trang lô đó, bấm <strong>Xóa dữ liệu của lô này</strong> ({ref(PURGE_TITLE, "xem cách xóa theo lô")}). Định mức mà lô đó tạo mới <strong>hoặc sửa lần cuối</strong> đều bị xóa hẳn (kèm thành phần), không quay về bản trước khi nhập; định mức đã được sửa tay sau khi nhập được giữ lại trừ khi bạn chọn xóa luôn.</li>
-<li>Nút Nhập từ Excel chỉ hiện với người có quyền tạo Giá bao bì và quyền tạo, xem Quản lý Import. Màn Định mức bao bì không hiện số lô của từng dòng; muốn biết lô nào đã nhập thì xem danh sách lô ở Quản lý Import.</li>
+<li>Nút Nhập từ Excel chỉ hiện với người có quyền Tạo của <em>Giá NVL sản xuất › Định mức bao bì</em> và quyền tạo, xem Quản lý Import. Màn Định mức bao bì không hiện số lô của từng dòng; muốn biết lô nào đã nhập thì xem danh sách lô ở Quản lý Import.</li>
 </ul>
 {OLD_UI}menu <strong>Mua hàng › Giá nguyên vật liệu sản xuất › Định mức bao bì</strong> là màn danh sách chung: bấm <strong>Thêm</strong> hoặc bấm một dòng là mở <strong>trang chi tiết</strong> (không phải hộp thoại), điền rồi bấm <strong>Tạo</strong> / <strong>Lưu</strong>, xóa bằng nút <strong>Xóa</strong> trên trang. Nhập từ Excel giống trên: bấm <strong>Chạy thử</strong>, sang trang lô import, bấm <strong>Ghi thật</strong> (nút này có ở trang lô của lô định mức bao bì đã chạy thử xong).</p>""",
         },
@@ -425,7 +430,7 @@ TREE = {
 <table>
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td>Trang lô không có nút Xóa dữ liệu của lô này</td><td>Lô là bản <strong>chạy thử</strong> (chưa ghi gì), lô lỗi / chưa chạy xong, lô thuộc loại khác (loại khác dùng nút Hoàn tác), hoặc tài khoản thiếu quyền <strong>Xóa</strong> của Giá bao bì hay quyền xem Quản lý Import.</td><td>Chọn đúng lô ghi thật đã xong; thiếu quyền thì nhờ quản trị.</td></tr>
+<tr><td>Trang lô không có nút Xóa dữ liệu của lô này</td><td>Lô là bản <strong>chạy thử</strong> (chưa ghi gì), lô lỗi / chưa chạy xong, lô thuộc loại khác (loại khác dùng nút Hoàn tác), hoặc tài khoản thiếu quyền <strong>Xóa</strong> của màn giữ dữ liệu lô (lô định mức: Định mức bao bì; lô báo giá: Bảng giá VTBB; lô Sổ Misa: Lịch sử mua hàng) hay quyền xem Quản lý Import.</td><td>Chọn đúng lô ghi thật đã xong; thiếu quyền thì nhờ quản trị.</td></tr>
 <tr><td><em>Lô này không còn dòng dữ liệu nào để xóa.</em></td><td>Dòng của lô đã bị xóa trước đó, hoặc đã bị lô sau ghi đè / sửa tay đổi nguồn.</td><td>Không cần làm gì.</td></tr>
 <tr><td><em>Không xem trước được số dòng của lô.</em></td><td>Mất kết nối hoặc phiên đăng nhập hết hạn.</td><td>Đóng hộp, tải lại trang rồi thử lại.</td></tr>
 </tbody>
@@ -435,13 +440,14 @@ TREE = {
         {
             "title": FAQ_TITLE,
             "icon": "help",
-            "summary": "Không thấy menu, số khác báo cáo HTML (mốc Sổ Misa 30/06/2026), báo giá bị báo trùng, thiếu giá, màn chưa đổi sau cập nhật, giới hạn hiện tại và cách quản trị giao quyền Giá bao bì, nạp Sổ Misa",
+            "summary": "Không thấy menu, số khác báo cáo HTML (mốc Sổ Misa 30/06/2026), báo giá bị báo trùng, thiếu giá, màn chưa đổi sau cập nhật, giới hạn hiện tại và cách quản trị giao quyền theo từng màn, nạp Sổ Misa",
             "content": f"""<h2>Lỗi thường gặp</h2>
 <table>
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td>Không thấy mục Giá nguyên vật liệu sản xuất trong nhóm Mua hàng</td><td>Tài khoản chưa có quyền Xem của Giá bao bì.</td><td>Nhờ quản trị giao quyền (mục dưới).</td></tr>
-<tr><td>Thấy màn nhưng không có nút Xuất Excel / Báo giá mới / Nhập báo giá / Nạp sổ Misa / Nhập từ Excel</td><td>Thiếu quyền Xuất / Tạo của Giá bao bì; Nạp sổ Misa cần quyền Sửa; các nút nhập Excel cần thêm quyền tạo, xem Quản lý Import.</td><td>Nhờ quản trị bổ sung đúng quyền cần dùng.</td></tr>
+<tr><td>Không thấy mục Giá nguyên vật liệu sản xuất trong nhóm Mua hàng</td><td>Tài khoản chưa có quyền Xem của màn nào trong cụm.</td><td>Nhờ quản trị giao quyền (mục dưới).</td></tr>
+<tr><td>Chỉ thấy một vài màn trong sáu màn của cụm</td><td>Mỗi màn một quyền riêng; tài khoản mới có quyền Xem của các màn đang thấy.</td><td>Cần màn nào thì nhờ quản trị giao thêm quyền Xem của màn đó.</td></tr>
+<tr><td>Thấy màn nhưng không có nút Xuất Excel / Báo giá mới / Nhập báo giá / Nạp sổ Misa / Nhập từ Excel</td><td>Thiếu quyền Xuất / Tạo của đúng màn đó (Báo giá mới, Nhập báo giá: màn Bảng giá VTBB; Nhập từ Excel: màn Định mức bao bì); Nạp sổ Misa cần quyền Sửa của màn Lịch sử mua hàng; các nút nhập Excel cần thêm quyền tạo, xem Quản lý Import.</td><td>Nhờ quản trị bổ sung đúng quyền cần dùng.</td></tr>
 <tr><td>Giá trên ERP khác báo cáo giá NVL bản HTML</td><td>Tới 30/06/2026 hai bên cùng số (Sổ Misa); sau mốc đó ERP lấy thêm đơn mua hàng thật trên ERP nên giá mới hơn. Báo giá chỉ có khi đã nhập ở Bảng giá VTBB. Pháp nhân bạn được xem cũng làm giá khác.</td><td>Bấm mã để mở Lịch sử mua hàng: dòng có mã đơn ở cột Nguồn là lần mua trên ERP, dòng để trống ô Nguồn là Sổ Misa (hoặc lịch sử cũ); tệp Xuất Excel ghi rõ chữ nguồn.</td></tr>
 <tr><td>Vừa cập nhật mà màn vẫn như cũ (giao diện cũ)</td><td>Giao diện cũ là ứng dụng cài được, trình duyệt giữ bản cũ tới khi tải lại.</td><td>Bấm <strong>Tải lại</strong> ở hộp <em>Đã có phiên bản mới</em> góc phải dưới, hoặc đóng hết thẻ rồi mở lại.</td></tr>
 <tr><td>Sản phẩm không hiện ở màn Tác động giá</td><td>Định mức của sản phẩm không chứa mã đang chọn, hoặc sản phẩm chưa có định mức.</td><td>Kiểm ở {ref(BOM_TITLE, "Định mức bao bì")}.</td></tr>
@@ -462,15 +468,17 @@ TREE = {
 <li>Chọn một lần tối đa 500 mã ở màn Tác động giá; Lịch sử mua hàng chọn tối đa 200 mã.</li>
 </ul>
 
-<h2>Dành cho quản trị: giao quyền Giá bao bì</h2>
+<h2>Dành cho quản trị: giao quyền Giá NVL sản xuất theo từng màn</h2>
 <ol>
 <li>Vào <strong>Quản trị › Phân quyền tài khoản › Vai trò &amp; quyền</strong>, chọn vai trò của nhân sự thu mua cần dùng.</li>
-<li>Ở nhóm <strong>Thu mua</strong>, dòng <strong>Giá bao bì</strong>, tick <strong>Xem</strong> (bắt buộc để thấy menu), thêm <strong>Xuất</strong>, <strong>Tạo</strong>, <strong>Sửa</strong>, <strong>Xóa</strong> tùy người.</li>
-<li>Đặt <strong>phạm vi</strong> theo pháp nhân người đó được xem giá mua (phạm vi lọc sổ giá theo công ty mua).</li>
-<li>Người cần Nhập từ Excel định mức, Nhập báo giá, Nạp sổ Misa: thêm quyền tạo và xem của <strong>Quản lý Import</strong> (Nạp sổ Misa cần thêm quyền Sửa của Giá bao bì). Người được gỡ lô nhập nhầm bằng nút Xóa dữ liệu của lô này: quyền <strong>Xóa</strong> của Giá bao bì và quyền xem Quản lý Import.</li>
+<li>Ở nhóm <strong>Thu mua</strong> có sáu dòng tên bắt đầu bằng <strong>Giá NVL sản xuất ›</strong>, mỗi dòng một màn: Tác động giá bao bì, Tổng hợp theo sản phẩm, Bảng giá VTBB, Giá mua gần nhất, Lịch sử mua hàng, Định mức bao bì. Tick <strong>Xem</strong> ở dòng của màn cần giao (bắt buộc để thấy màn đó trong menu), thêm <strong>Xuất</strong> nếu được xuất Excel.</li>
+<li>Quyền ghi chỉ có nghĩa ở ba dòng: <em>Bảng giá VTBB</em> (Tạo / Sửa / Xóa báo giá, Nhập báo giá), <em>Định mức bao bì</em> (Tạo / Sửa / Xóa định mức, Nhập từ Excel), <em>Lịch sử mua hàng</em> (Sửa = Nạp sổ Misa, Xóa = gỡ lô Sổ Misa).</li>
+<li>Đặt <strong>phạm vi</strong> ở từng dòng theo pháp nhân người đó được xem giá mua (phạm vi lọc sổ giá theo công ty mua). Dòng Định mức bao bì không có giá nên phạm vi không có tác dụng.</li>
+<li>Người cần Nhập từ Excel định mức, Nhập báo giá, Nạp sổ Misa: thêm quyền tạo và xem của <strong>Quản lý Import</strong>. Người được gỡ lô nhập nhầm bằng nút Xóa dữ liệu của lô này: quyền <strong>Xóa</strong> ở dòng của màn giữ dữ liệu lô (Định mức bao bì, Bảng giá VTBB hoặc Lịch sử mua hàng) và quyền xem Quản lý Import.</li>
+<li>Vai trò đã có quyền Giá bao bì trước ngày 27/11/2026 được chuyển tự động sang các dòng mới với đúng hành động và phạm vi cũ, không ai mất quyền. Muốn thu hẹp theo màn thì bỏ tick ở dòng không cần.</li>
 <li>Người được giao đăng xuất rồi đăng nhập lại để menu hiện.</li>
 </ol>
-<p>Giá bao bì là <strong>giá vốn</strong>, thuộc nhóm dữ liệu nhạy cảm của Thu mua: tick Xem / Xuất cho vai trò mặc định của mọi tài khoản thì màn phân quyền hiện dòng nhắc màu vàng. Chỉ giao cho người thật sự cần.</p>
+<p>Giá bao bì là <strong>giá vốn</strong>, cả sáu quyền đều thuộc nhóm dữ liệu nhạy cảm của Thu mua: tick Xem / Xuất cho vai trò mặc định của mọi tài khoản thì màn phân quyền hiện dòng nhắc màu vàng. Chỉ giao cho người thật sự cần.</p>
 
 <h2>Dành cho quản trị: hai đường nạp Sổ Misa</h2>
 <p>Sổ Misa nạp được bằng hai đường: nút <strong>Nạp sổ Misa</strong> (tệp Excel, qua Quản lý Import, đường dùng hằng ngày) và công cụ quản trị nạp từ báo cáo HTML (bộ phận kỹ thuật chạy trên máy chủ). Hai đường đánh số dòng khác nhau nên <strong>không trộn được</strong>: khi đã có lô Nạp sổ Misa ghi thật mà sổ đang có dòng Misa, công cụ nạp từ HTML từ chối chạy. Muốn đổi sang nạp bằng HTML thì phải gỡ hết sổ Misa trước. Dòng Misa nạp bằng HTML không thuộc lô nào nên không gỡ được bằng nút Xóa dữ liệu của lô này.</p>""",

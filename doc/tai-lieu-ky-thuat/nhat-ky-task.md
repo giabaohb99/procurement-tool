@@ -114,6 +114,77 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** sau khi tách quyền theo từng màn, chủ dự án chốt cách chia: phòng Dego Lab chỉ cần xem Bảng giá VTBB và Giá mua gần
+nhất; những người còn lại đang được xem cụm giá thì giữ nguyên cả sáu màn.
+
+**Đã làm:**
+- Thêm một vai trò mới *Giá NVL: Bảng giá và Giá mua gần nhất*, chỉ có quyền Xem / Xuất ở hai màn đó.
+- Thêm script chuyển người của một phòng từ vai trò xem cả cụm sang vai trò hai màn. Script chạy thử trước, có cờ mới ghi thật,
+  chạy lại không đổi gì, và ghi nhật ký thao tác cho từng tài khoản.
+- Người ngoài phòng không bị đụng. Vai trò đến từ gói quyền của chức vụ cũng không bị đụng, script chỉ in cảnh báo.
+
+**Người dùng phòng Lab sẽ thấy:** menu cụm giá còn hai mục; mã vật tư ở Bảng giá VTBB không còn bấm sang Lịch sử mua hàng; vẫn xem
+được danh sách báo giá nhưng không thêm, sửa, xóa.
+
+**Chưa làm:** chưa soát bằng trình duyệt với tài khoản phòng Lab (cần người đăng nhập thử trên dev).
+
+**Quay lui:** vào màn Vai trò & quyền gán lại vai trò *Giá nguyên vật liệu* cho các tài khoản phòng Lab và bỏ vai trò hai màn.
+
+**Kiểm:** 5 ca mới đạt, chạy kèm 42 ca tách quyền của bao-CR-792 đều đạt; ruff sạch.
+
+Mã nguồn: `backend/scripts/split_packaging_lab_role.py`.
+Kiểm: `test/backend/test_vai_tro_gia_nvl_phong_lab_cr793.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
+Deploy: dev 27/11/2026 (erp-v2 637a310e): chạy script cho phòng Dego Lab (id 6), tạo vai trò hai màn và chuyển 8 tài khoản; chạy
+lại không đổi gì. Thử bằng tài khoản thật: người phòng Lab vào được Bảng giá VTBB (kể cả xuất), Giá mua gần nhất và danh sách báo
+giá, bị chặn ở bốn màn còn lại và ở thao tác thêm báo giá; người giữ vai trò xem cả cụm vẫn vào đủ. Prod chưa (chạy script sau khi
+phát hành bao-CR-792).
+
+## bao-CR-792 | Giá nguyên vật liệu sản xuất: tách quyền theo từng màn thay cho một quyền chung cả cụm
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** cả cụm Giá nguyên vật liệu sản xuất dùng một quyền chung, ai được xem một màn là xem được cả sáu màn. Yêu cầu: chia
+nhỏ để cấp riêng từng màn (ví dụ Tác động giá bao bì riêng, Bảng giá VTBB riêng).
+
+**Đã làm**
+- Sáu quyền mới, mỗi màn một quyền: Tác động giá bao bì; Tổng hợp theo sản phẩm; Bảng giá VTBB (kèm Báo giá VTBB và nhập báo
+  giá từ Excel); Giá mua gần nhất; Lịch sử mua hàng (kèm nạp Sổ Misa); Định mức bao bì (kèm nhập định mức từ Excel). Quyền chung
+  cũ bỏ hẳn.
+- Quyền đang có được chuyển tự động khi nâng cấp cơ sở dữ liệu, không ai mất quyền: vai trò đang có Xem / Xuất thì có Xem / Xuất
+  ở cả sáu màn; Tạo chuyển sang Bảng giá và Định mức; Sửa / Xóa chuyển sang Bảng giá, Định mức và Lịch sử mua hàng; phạm vi
+  giữ nguyên. Sau đó quản trị bỏ tick từng màn trên màn Vai trò và quyền để thu hẹp.
+- Menu cụm hiện khi người dùng xem được ít nhất một màn; bấm vào mục cha thì tới màn đầu tiên người đó được xem. Mã vật tư trên
+  các bảng chỉ bấm được sang Lịch sử mua hàng khi có quyền xem màn đó, không thì là chữ thường.
+- Ô chọn mã và ô chọn sản phẩm dùng chung mở cho người có quyền xem bất kỳ màn nào trong cụm.
+- Nhập Excel và xóa dữ liệu theo lô nhập gác theo quyền của đúng màn (lô định mức theo Định mức, lô báo giá theo Bảng giá, lô Sổ
+  Misa theo Lịch sử mua hàng). Ba công cụ của trợ lý AI gác theo quyền của màn tương ứng.
+- Cập nhật bài hướng dẫn sử dụng của cụm, tài liệu chức năng và tài liệu kỹ thuật.
+
+**Chưa làm:** chưa soát bằng trình duyệt với tài khoản chỉ giữ một quyền (cần người đăng nhập thử trên dev). Sau khi lên prod phải
+chạy lại bài hướng dẫn sử dụng của cụm và nạp lại chỉ mục trợ lý.
+
+**Quay lui:** hạ cấp cơ sở dữ liệu một bước gộp sáu quyền về quyền chung cũ (lấy hợp các hành động, phạm vi rộng nhất) rồi chạy lại
+bản mã trước.
+
+**Kiểm:** backend 1.026 bài đạt, 4 bỏ qua (cụm bài canh phân quyền, 27 tệp bài của cụm giá, 42 ca mới về tách quyền, lịch sử mua); giao diện mới kiểm kiểu 0 lỗi, 2.450 bài đạt ở lượt chạy chung, 1 bài hết giờ ở tệp không liên quan (hộp quyền báo cáo) chạy riêng lại đạt 7 trên 7; giao diện cũ kiểm kiểu chỉ còn 4 lỗi nền có từ trước; ruff sạch.
+
+Mã nguồn: `backend/app/core/permissions.py` · `scoping.py` · `auth.py` · `backend/app/modules/packaging_cost/` ·
+`backend/app/modules/product_price/quote_limit_controller.py` · `backend/app/modules/import_tool/controller.py` ·
+`backend/migrations/versions/permsplit792_tach_khoa_quyen_gia_nvl_theo_man.py` ·
+`frontend-v2/src/modules/procurement/routes.tsx` · `frontend-v2/src/app/router/module-visibility.ts` · `frontend/src/layouts/AppLayout.tsx`.
+Kiểm: `test/backend/test_tach_quyen_gia_nvl_cr792.py` · `frontend-v2/src/modules/procurement/routes.test.ts`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
+Deploy: dev 27/11/2026 (erp-v2 e94bb084): migration `permsplit792` chạy, không còn dòng quyền cũ; vai trò xem cụm giá (44 tài
+khoản) có Xem / Xuất ở cả sáu màn, Quản lý thu mua giữ đủ quyền nhập liệu; thử bằng tài khoản thật: người có vai trò vào được mọi
+đường của cụm, người không có khóa nào bị chặn hết. Đã seed lại HDSD và nạp lại chỉ mục trên dev. Prod chưa.
+
 ## bao-CR-791 | Bảng giá VTBB: ô tìm kiếm tìm trên mọi mã đã mua, kể cả mã chưa có trong định mức bao bì
 - status: xong
 - date: 2026-11-27
@@ -132,6 +203,7 @@ mã nằm trong định mức bao bì hoặc có báo giá; mã này chưa thu�
 
 Mã nguồn: `backend/app/modules/packaging_cost/price_list_service.py`.
 Kiểm: `test/backend/test_bang_gia_tim_moi_ma_cr791.py`.
+Deploy: dev 27/11/2026 (erp-v2 f08f1b7f). Prod chưa.
 
 ## bao-CR-790 | Lịch sử mua hàng ghi ngay khi hàng về kho và đổi theo đơn mua hàng tới khi dòng hoàn thành
 - status: xong
@@ -171,6 +243,8 @@ Mã nguồn: `backend/app/modules/purchase_history/` · `backend/app/modules/pro
 `backend/scripts/sync_po_purchase_history.py` · `backend/migrations/versions/phstage790_lich_su_mua_them_giai_doan.py`.
 Kiểm: `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`.
+Deploy: dev 27/11/2026 (erp-v2 f08f1b7f): migration `phstage790` chạy; script dựng lịch sử ghi 65 bản ghi đang mở của 35 đơn, chạy
+lại lần hai không đổi gì, kiểm sổ giá không lệch. Prod chưa (sau khi phát hành phải chạy script trên prod, ước 745 dòng).
 
 ## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
 - status: xong

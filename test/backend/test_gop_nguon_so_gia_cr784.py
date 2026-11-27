@@ -191,7 +191,7 @@ def api(db, seed, cap_quyen, client_as):  # noqa: F811
     add_ledger(db, "CPT0105", 110, "2026-02-01", source_type=PriceSourceType.PO_LINE, line_stage=LedgerLineStage.FINAL,
                doc_id=po.id, supplier="NCC01")                                                                   # ERP đã chốt
     add_ledger(db, "CPT0105", 120, "2026-03-01", source_type=PriceSourceType.PO_LINE, doc_id=po.id, supplier="NCC01")   # ERP đang mở
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True, export=True)
     return client_as(db.get(User, seed.u_req_id))
 
 

@@ -13,8 +13,8 @@ Phân hệ nhận đường nào: đọc dòng ``Mã backend:`` ở đầu từn
 Cột nào lấy từ đâu:
 - *Mục đích*: dòng đầu docstring của hàm đường (hay `summary`). Không có thì giữ chữ đang ghi tay; chưa có gì thì tên hàm.
   Muốn đổi câu thì sửa docstring trong mã, đừng sửa tay ở đây (lần chạy sau sẽ ghi đè).
-- *Quyền*: `require(entity, action)` và `require_report` gắn trên đường; chỉ có `get_current_user` thì ghi *đăng nhập*;
-  không gác gì thì *công khai*.
+- *Quyền*: `require(entity, action)`, `require_any(...)` (ghi *một trong: ...*, bao-CR-792) và `require_report` gắn trên
+  đường; chỉ có `get_current_user` thì ghi *đăng nhập*; không gác gì thì *công khai*.
 - *Phạm vi*: ghi tay được giữ nguyên; trống thì tự điền khi thấy `apply_scope` / `get_scoped` / `scope_condition` trong
   thân hàm đường (trống vẫn nghĩa là **chưa soát** — có thể lọc ở tầng dịch vụ).
 - *Ai gọi*: ghi tay được giữ nguyên; trống hoặc đang mang tiền tố *tự dò:* thì dò lại từ `frontend-v2/src` (thay hằng
@@ -79,6 +79,9 @@ def _permission(route) -> str:
             nl = inspect.getclosurevars(call).nonlocals
             if isinstance(nl.get("entity"), str) and isinstance(nl.get("action"), str):
                 perms.append(f"`{nl['entity']}.{nl['action']}`")
+            pairs = nl.get("pairs")       # bao-CR-792: `require_any` — đạt MỘT trong các cặp (đường dùng chung nhiều màn)
+            if isinstance(pairs, tuple) and pairs:
+                perms.append("một trong: " + " / ".join(f"`{entity}.{action}`" for entity, action in pairs))
     perms = list(dict.fromkeys(perms))
     if perms:
         return ", ".join(perms)

@@ -1,12 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
 import type { PackagingQuote } from '../types/packaging-cost-types'
 import { PackagingQuoteSourceCell } from './packaging-quote-source-cell'
+
+let canReadImport = true
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({
+    can: (entity: string, action: string) => canReadImport && entity === 'import' && action === 'read',
+  }),
+}))
 
 function quote(over: Partial<PackagingQuote>): PackagingQuote {
   return {
@@ -45,6 +52,18 @@ function renderCell(row: PackagingQuote, onRowClick = vi.fn()) {
 }
 
 describe('PackagingQuoteSourceCell', () => {
+  beforeEach(() => {
+    canReadImport = true
+  })
+
+  //  bao-CR-792 — trang lô nhập gác `import.read`: thiếu quyền thì chữ nguồn không bấm được.
+  it('shows the batch as plain text without import.read', () => {
+    canReadImport = false
+    renderCell(quote({ source_type: 2, source_id: 57 }))
+    expect(screen.getByText('Nhập Excel (lô #57)')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).toBeNull()
+  })
+
   it('shows "Nhập tay" as plain text for a hand-typed quote', () => {
     renderCell(quote({ source_type: 1, source_id: 0 }))
     expect(screen.getByText('Nhập tay')).toBeInTheDocument()

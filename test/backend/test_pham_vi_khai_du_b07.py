@@ -204,9 +204,13 @@ def test_du_55_entity():
     HỒ SƠ NHÂN SỰ đích (company / dept_id / self như `employee`); nằm trong `_SYS_ENTITIES`, chỉ `dept_head` khai tay.
     81 → 82 ngày 20/11/2026 (duoc-CR-784): Giá bao bì (`packaging_cost`) — company đo trên SỔ GIÁ (`ProductPriceLedger`);
     KHÔNG nằm trong `_SYS_ENTITIES` nên `pur_manager` (Quản lý thu mua) tự có, vai trò khác tick tay.
+    82 → 87 ngày 27/11/2026 (bao-CR-792, chủ dự án yêu cầu): TÁCH `packaging_cost` thành mỗi màn một khóa — gỡ 1, thêm 6:
+    `packaging_impact` · `packaging_product_summary` · `packaging_price_list` · `packaging_last_price` · `packaging_history`
+    (company đo trên sổ giá như cũ) + `packaging_bom` (PUBLIC: danh mục định mức dùng chung, không có cột pháp nhân). Quyền
+    đang có chuyển sang khóa mới bằng migration `permsplit792`; vẫn KHÔNG nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 82
-    assert len(SCOPE_FIELDS) == 82
+    assert len(ENTITIES) == 87
+    assert len(SCOPE_FIELDS) == 87
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

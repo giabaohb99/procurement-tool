@@ -293,8 +293,11 @@ dự án chủ khóa thấy, đúng tập của màn Dự án (`membership_servi
 
 ### 3.7c Giá bao bì (duoc-CR-784, 21/11/2026; cập nhật 26/11/2026)
 
-Ba tool CHỈ ĐỌC ở nhóm RIÊNG `packaging` (**tắt mặc định** — giá vốn bao bì, khóa `packaging_cost` nhạy cảm; quản trị bật ở G7),
-đã khai `READ_TOOLS`, `ROW_BUDGET_TOOLS` (đếm theo `items`), `STRUCTURED_TOOLS`. Gác như màn Giá bao bì: `packaging_cost.read`
+Ba tool CHỈ ĐỌC ở nhóm RIÊNG `packaging` (**tắt mặc định** — giá vốn bao bì, các khóa `packaging_*` nhạy cảm; quản trị bật ở G7),
+đã khai `READ_TOOLS`, `ROW_BUDGET_TOOLS` (đếm theo `items`), `STRUCTURED_TOOLS`. Gác như màn Giá bao bì, mỗi tool theo khóa của MÀN
+tương ứng (bao-CR-792, 27/11/2026): `packaging_price_impact` cần `packaging_impact.read`, `packaging_price_lookup` cần
+`packaging_price_list.read` (phần `recent_purchases` chỉ kèm khi có thêm `packaging_last_price.read`, theo phạm vi của khóa
+đó), `packaging_product_cost` cần `packaging_product_summary.read`
 (thiếu thì `denied`) + phạm vi PHÁP NHÂN trên sổ giá (`last_prices_controller.view_scope`) — giá chỉ tính trên các dòng sổ chủ
 khóa được thấy; mã chỉ có giá ở pháp nhân khác trả cùng hình với mã chưa có giá nào. Không tính lại: gọi đúng dịch vụ của màn
 (`compute_impact`, `build_product_overview`, `compute_product_cost`, `get_price_states`, `latest_priced_by_code`). Mọi số là VND

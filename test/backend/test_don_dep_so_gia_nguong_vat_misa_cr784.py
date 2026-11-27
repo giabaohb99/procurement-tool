@@ -79,7 +79,7 @@ def test_nap_misa_tu_xlsx_module_6_ghi_vat_null(db, seed):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, export=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True, export=True)
     add_products(db, ("CPT0105", "Chai 450ml", "Cái"))
     add_ledger(db, "CPT0105", 100, "2026-01-01", source_type=PriceSourceType.PURCHASE_HISTORY)          # VAT 8
     add_ledger(db, "CPT0105", 110, "2026-02-01", source_type=PriceSourceType.MISA, supplier="NCC9")      # VAT NULL

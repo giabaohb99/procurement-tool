@@ -8,6 +8,7 @@ import {
   canAccessRoute,
   canOpenModule,
   firstAccessibleNavPath,
+  navItemLandingPath,
   visibleNavItems,
 } from './module-visibility'
 import { allModules, moduleRegistry } from './module-registry'
@@ -410,6 +411,68 @@ describe('mục có submenu (children)', () => {
     expect(canAccessRoute(hr, '/hr/leave-balances', allow('leave_balance'))).toBe(true)
     expect(canAccessRoute(hr, '/hr/leave-requests', allow('leave_balance'))).toBe(false)
     expect(canAccessRoute(hr, '/hr/leave-requests', allow('leave_request'))).toBe(true)
+  })
+
+  //  bao-CR-792 — cụm Giá nguyên vật liệu sản xuất: mỗi mục con một khóa, mục cha không còn khóa chung.
+  describe('mục cha có các mục con khác khóa nhau', () => {
+    const parent: ErpModule['nav'][number] = {
+      label: 'Cụm',
+      path: '/x/cum',
+      entities: ['leave_request', 'leave_balance', 'leave_type'],
+      children: [
+        { label: 'Màn đầu', path: '/x/cum', entity: 'leave_request', end: true },
+        { label: 'Màn hai', path: '/x/cum/hai', entity: 'leave_balance', matchPaths: ['/x/cum/an'] },
+        { label: 'Màn ẩn', path: '/x/cum/an', entity: 'leave_balance', hidden: true },
+        { label: 'Màn ba', path: '/x/cum/ba', entity: 'leave_type' },
+      ],
+    }
+    const cum = module([parent])
+
+    it('mục cha hiện khi còn ÍT NHẤT MỘT mục con xem được, ẩn khi không còn mục nào', () => {
+      expect(visibleNavItems(cum, allow('leave_type')).map((i) => i.label)).toEqual(['Cụm'])
+      expect(visibleNavItems(cum, allow('leave_type'))[0].children?.map((c) => c.label)).toEqual(['Màn ba'])
+      expect(visibleNavItems(cum, allow('purchase_order'))).toEqual([])
+      expect(canOpenModule(cum, allow('purchase_order'))).toBe(false)
+    })
+
+    it('navItemLandingPath: tới mục con ĐẦU TIÊN xem được khi không xem được màn ở đường mục cha', () => {
+      expect(navItemLandingPath(parent, allow('leave_balance', 'leave_type'))).toBe('/x/cum/hai')
+      expect(navItemLandingPath(parent, allow('leave_type'))).toBe('/x/cum/ba')
+    })
+
+    it('navItemLandingPath: xem được màn ở đường mục cha thì giữ đường mục cha', () => {
+      expect(navItemLandingPath(parent, allow('leave_request', 'leave_type'))).toBe('/x/cum')
+    })
+
+    it('navItemLandingPath: không bao giờ trả mục con ẩn; mục thường / hết mục con xem được thì trả chính đường của mục', () => {
+      const hiddenFirst: ErpModule['nav'][number] = {
+        label: 'Cụm',
+        path: '/x/cum',
+        children: [
+          { label: 'Màn đầu', path: '/x/cum', entity: 'leave_request' },
+          { label: 'Màn ẩn', path: '/x/cum/an', entity: 'leave_balance', hidden: true },
+          { label: 'Màn hai', path: '/x/cum/hai', entity: 'leave_balance' },
+        ],
+      }
+      expect(navItemLandingPath(hiddenFirst, allow('leave_balance'))).toBe('/x/cum/hai')
+      expect(navItemLandingPath(parent, allow('purchase_order'))).toBe('/x/cum')
+      expect(navItemLandingPath({ label: 'Đơn', path: '/x/don', entity: 'leave_request' }, allow())).toBe('/x/don')
+    })
+
+    it('firstAccessibleNavPath: vào phân hệ thì đáp xuống mục con xem được, không đáp xuống đường mục cha bị cấm', () => {
+      const withRoot = module([{ label: 'Tổng quan', path: '/x', entity: 'inventory' }, parent])
+      expect(firstAccessibleNavPath(withRoot, allow('leave_type'))).toBe('/x/cum/ba')
+      expect(firstAccessibleNavPath(withRoot, allow('leave_request', 'leave_type'))).toBe('/x/cum')
+      const landing = firstAccessibleNavPath(withRoot, allow('leave_balance'))
+      expect(landing).toBe('/x/cum/hai')
+      expect(canAccessRoute(withRoot, landing ?? '', allow('leave_balance'))).toBe(true)
+    })
+
+    it('gõ thẳng đường mục cha vẫn hỏi khóa của MÀN nằm ở đó, không mở theo khóa của mục con khác', () => {
+      expect(canAccessRoute(cum, '/x/cum', allow('leave_type'))).toBe(false)
+      expect(canAccessRoute(cum, '/x/cum', allow('leave_request'))).toBe(true)
+      expect(canAccessRoute(cum, '/x/cum/ba', allow('leave_type'))).toBe(true)
+    })
   })
 })
 

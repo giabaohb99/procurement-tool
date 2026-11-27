@@ -46,7 +46,7 @@ def world(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, world):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="all", read=True)
     return client_as(db.get(User, seed.u_req_id))
 
 
@@ -101,7 +101,7 @@ def test_pham_vi_cong_ty_khong_lo_diem_cua_phap_nhan_khac(db, seed, cap_quyen, c
     from app.modules.product_price.model import ProductPriceLedger
     db.query(ProductPriceLedger).update({ProductPriceLedger.company_id: seed.company_id})
     add_ledger(db, "CPT0105", 999, "2026-03-15", company_id=seed.company_id + 99)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    cap_quyen(seed.u_req_id, "packaging_history", scope="company", read=True)
     res = client_as(db.get(User, seed.u_req_id)).get(URL, params={"mode": "product", "fg_codes": ["HH0001"]})
     chai = next(line for line in res.json()["data"]["series_by_code"] if line["code"] == "CPT0105")
     assert [p["price"] for p in chai["points"]] == [100, 110, 120]
