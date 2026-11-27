@@ -174,14 +174,16 @@ lần mua gần nhất*.
 - Mỗi mã VTBB một dòng; nhóm cột *Thông tin VTBB* (Mã VTBB, Tên vật tư, Nhóm, ĐVT, Số lần có giá); mỗi lần mua một nhóm cột
   gộp *Lần 1 (gần nhất)*, *Lần 2*… (Ngày mua, Nhà cung cấp, [Số lượng], Đơn giá; xanh đắt hơn lần trước, đỏ rẻ hơn); *Biến
   động* (Lần 1 so lần 2, Lần 1 so lần n); *Giá TB* (Giá TB n lần). Chỉ lần mua có giá.
-- Lọc: ô tìm, chip nhóm kèm số (bật / tắt, chọn nhiều nhóm; API nhận `group` lặp, tối đa 50 nhóm), *Số lần hiển thị* 3 / 5
+- Lọc: ô tìm, ô chọn nhiều **Nhóm sản phẩm** (27/11/2026 thay hàng chip vì prod có khoảng 42 nhóm; mỗi nhóm một dòng tick kèm số mã,
+  gõ để tìm, dòng đầu là **Tất cả**; API nhận `group` lặp, tối đa 200 nhóm), *Số lần hiển thị* 3 / 5
   (mặc định) / 10, *Phạm vi mã* **Mọi mã** (mặc định) / **Định mức + báo giá**, *Nhà cung cấp* (giữ mã có NCC đó trong n lần
   đang hiện), *Khoảng ngày mua*, *Biến động lần 1 so lần 2* (Tất cả / Tăng / Giảm / Không đổi, bấm lại nút đang bật là tắt),
   *Biến động từ (%)*, công tắc *Chỉ mã đã có giá*, *Chỉ mã đang dùng trong định mức*, *Hiện số lượng* (cả ba tắt sẵn). Xuất
   Excel theo đúng bộ lọc, n và thứ tự.
 - **Mở màn ở chế độ gần nhất** (người chủ chốt 26/11/2026, cả hai giao diện): mọi bộ lọc tắt thì chỉ nạp **20 mã mua gần nhất**,
-  xếp ngày mua Lần 1 giảm dần, không có chân phân trang, thanh lọc ghi *20 mã mua gần nhất · bấm Tất cả để xem hết*. Chip
-  **Tất cả** (chỉ sáng sau khi bấm) bỏ chip nhóm và nạp hết mọi mã có phân trang; bật chip nhóm, gõ tìm, bật bất kỳ bộ lọc nào
+  xếp ngày mua Lần 1 giảm dần, không có chân phân trang, thanh lọc ghi *20 mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết*. Dòng
+  **Tất cả** của ô Nhóm sản phẩm (chỉ được tick sau khi chọn) bỏ các nhóm đang chọn và nạp hết mọi mã có phân trang; đang Tất cả
+  mà tick một nhóm thì chuyển sang lọc theo nhóm đó; chọn nhóm, gõ tìm, bật bất kỳ bộ lọc nào
   hoặc xếp theo cột khác cũng ra chế độ xem hết. Nút **Tất cả** ở hàng Biến động bỏ lọc biến động, cũng chỉ sáng sau khi bấm.
 - **Giữ bộ lọc trên URL** (26/11/2026, cùng cách với Bảng giá VTBB): `q`, `group` (lặp khóa; link cũ một nhóm vẫn mở đúng), `all=1`
   (đã bấm Tất cả), `n` (3 / 5 / 10; mặc định 5 không ghi), `scope` (chỉ ghi `scope=bom`), `supplier` (lặp khóa: `supplier=A&supplier=B`),

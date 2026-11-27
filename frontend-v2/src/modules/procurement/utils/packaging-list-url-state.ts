@@ -32,7 +32,7 @@ const MAX_QUERY_LENGTH = 100
 const MAX_GROUP_LENGTH = 50
 const MAX_SUPPLIER_LENGTH = 50
 const MAX_SUPPLIERS = 50
-const MAX_GROUPS = 50
+const MAX_GROUPS = 200
 const MAX_MIN_PCT = 10_000
 const LAST_PRICE_TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 

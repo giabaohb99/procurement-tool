@@ -239,7 +239,7 @@ def test_n_10_co_6_lan_thi_lan_1_so_lan_10_trong(api):
 
 @pytest.mark.parametrize("params", [{"n": 1}, {"n": 11}, {"trend": "sideways"}, {"min_pct": -1},
                                     {"date_from": "2026-05-01", "date_to": "2026-01-01"},
-                                    {"group": "x" * 51}, {"group": ["Chai", "x" * 51]}, {"group": [f"G{i}" for i in range(51)]}])
+                                    {"group": "x" * 51}, {"group": ["Chai", "x" * 51]}, {"group": [f"G{i}" for i in range(201)]}])
 def test_tham_so_sai_la_422(api, params):
     assert api.get(URL, params=params).status_code == 422
 

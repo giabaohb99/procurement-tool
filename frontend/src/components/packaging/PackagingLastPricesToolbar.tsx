@@ -6,6 +6,8 @@ import { LAST_PRICE_N_OPTIONS, RECENT_CODES_LIMIT, type LastPricesFilters } from
 import './packaging.css'
 
 const TRENDS: [LastPricesTrend, string][] = [['up', 'Tăng'], ['down', 'Giảm'], ['flat', 'Không đổi']]
+/** Dòng "Tất cả" đứng đầu ô Nhóm sản phẩm — không phải tên nhóm thật, chỉ là cờ `all` của bộ lọc. */
+const ALL_GROUPS = '__all_groups'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="pkg-field"><span>{label}</span>{children}</div>
@@ -21,7 +23,8 @@ function Toggle({ label, checked, onChange, title }: { label: string; checked: b
 
 /**
  * Thanh lọc của màn Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng" chỉ đổi cột hiện.
- * Hàng 1: ô tìm + chip nhóm (kèm số mã; bấm bật / tắt, bật nhiều nhóm cùng lúc = HOẶC, không chip nào bật = mọi nhóm). Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
+ * Hàng 1: ô tìm + ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; số mã là chữ phụ), dòng
+ * đầu danh sách là Tất cả — ô chọn thay hàng chip từ 27/11/2026 vì prod có khoảng 42 nhóm, chip chiếm bốn hàng. Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
  * ngưỡng %. Hàng 3: các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 export default function PackagingLastPricesToolbar({
@@ -35,13 +38,18 @@ export default function PackagingLastPricesToolbar({
   recentMode?: boolean
 }) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
-  //  Chip bật / tắt từng nhóm (không có chip "Tất cả"): tên nhóm đã bật mà không còn chip nào (số đếm về 0) vẫn hiện để tắt được.
-  const chips = [
-    ...groups.map((g) => ({ group: g.group, label: `${g.group} (${g.count})` })),
-    ...filters.groups.filter((name) => !groups.some((g) => g.group === name)).map((name) => ({ group: name, label: `${name} (0)` })),
+  //  Mỗi nhóm một dòng tick, số mã là chữ phụ. Nhóm đã chọn mà số đếm về 0 (bộ lọc khác loại hết mã của nó) vẫn có dòng để bỏ tick.
+  const groupOptions = [
+    { value: ALL_GROUPS, label: 'Tất cả' },
+    ...groups.map((g) => ({ value: g.group, label: g.group, hint: String(g.count) })),
+    ...filters.groups.filter((name) => !groups.some((g) => g.group === name)).map((name) => ({ value: name, label: name, hint: '0' })),
   ]
-  const toggleGroup = (name: string) =>
-    patch({ groups: filters.groups.includes(name) ? filters.groups.filter((g) => g !== name) : [...filters.groups, name], all: false })
+  //  "Tất cả" = bỏ mọi nhóm đang chọn và nạp hết mọi mã; chỉ được tick SAU KHI chọn (người chủ chốt 26/11/2026), mới mở thì không
+  //  tick, màn ở chế độ gần nhất. Đang Tất cả mà tick thêm một nhóm = chuyển sang lọc theo nhóm đó (bỏ tick Tất cả).
+  const changeGroups = (v: string[]) => {
+    if (v.includes(ALL_GROUPS) && !filters.all) patch({ groups: [], all: true })
+    else patch({ groups: v.filter((g) => g !== ALL_GROUPS), all: false })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 0 10px' }}>
@@ -49,17 +57,11 @@ export default function PackagingLastPricesToolbar({
         <div className="pkg-search">
           <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên, nhóm, nhà cung cấp…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
         </div>
-        <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
-          {/*  "Tất cả" = bỏ mọi chip nhóm và nạp hết mọi mã; chỉ sáng SAU KHI bấm (người chủ chốt 26/11/2026). Mới mở: không
-              sáng, màn ở chế độ gần nhất. Bấm lúc đang sáng thì giữ sáng. */}
-          <button type="button" className={'pkg-pill' + (filters.all ? ' on' : '')} aria-pressed={filters.all}
-            onClick={() => patch({ groups: [], all: true })}>Tất cả</button>
-          {chips.map((c) => (
-            <button key={c.group} type="button" className={'pkg-pill' + (filters.groups.includes(c.group) ? ' on' : '')}
-              aria-pressed={filters.groups.includes(c.group)} onClick={() => toggleGroup(c.group)}>{c.label}</button>
-          ))}
+        <div style={{ width: 230 }}>
+          <MultiCheckSelect value={filters.all ? [ALL_GROUPS] : filters.groups} placeholder="Nhóm sản phẩm" options={groupOptions}
+            onChange={changeGroups} />
         </div>
-        {recentMode && <span className="pkg-hint">{RECENT_CODES_LIMIT} mã mua gần nhất · bấm Tất cả để xem hết</span>}
+        {recentMode && <span className="pkg-hint">{RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết</span>}
       </div>
 
       <div className="pkg-row">

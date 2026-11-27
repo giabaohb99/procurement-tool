@@ -101,7 +101,7 @@ export default function PackagingLastPrices() {
         <PackagingLastPricesToolbar filters={filters} onChange={changeFilters}
           groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []} recentMode={recent} />
         <div className="table-tools tt-compact" style={{ marginTop: -4 }}>
-          <span className="pkg-hint" style={{ marginRight: 'auto' }}>{list.data ? (recent ? `${RECENT_CODES_LIMIT} mã mua gần nhất · bấm Tất cả để xem hết` : `Tổng ${list.data.total} mã`) : ''}</span>
+          <span className="pkg-hint" style={{ marginRight: 'auto' }}>{list.data ? (recent ? `${RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết` : `Tổng ${list.data.total} mã`) : ''}</span>
           {filtersActive && <button className="btn ghost" onClick={() => changeFilters(reset)}><i className="ti ti-rotate" />Xóa lọc</button>}
           <button className="btn ghost" onClick={list.reload} disabled={list.loading} title="Tải lại dữ liệu">
             <i className={'ti ti-refresh' + (list.loading ? ' spin' : '')} /><span className="tt-label">Tải lại</span>

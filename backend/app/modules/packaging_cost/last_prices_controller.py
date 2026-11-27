@@ -21,7 +21,7 @@ from .last_prices_service import DEFAULT_N, MAX_N, build_last_prices
 
 ENTITY = "packaging_cost"
 MAX_PAGE_SIZE = 500
-MAX_GROUPS = 50      #  số nhóm tối đa trong một lần gọi (chip nhóm bật nhiều cùng lúc)
+MAX_GROUPS = 200     #  số nhóm tối đa trong một lần gọi (ô chọn nhiều nhóm, 27/11/2026: prod có khoảng 42 nhóm nên trần 50 quá sát)
 GroupValue = Annotated[str, StringConstraints(max_length=50)]    #  độ dài từng tên nhóm (cột item_group dài 50)
 router = APIRouter()
 
@@ -55,7 +55,7 @@ def last_prices(filters: dict = Depends(last_price_filters), page: int = Query(1
 
     `n` = số lần hiển thị (2–10, mặc định 5). Lần 1 là lần mua có giá (> 0) gần nhất; `purchases` xếp từ gần nhất tới xa
     nhất. `v12` / `v1n` là tỷ số biến động lần 1 so lần 2 / lần n (0,05 = +5%). Bộ lọc: `q` (mã, tên, nhóm, nhà cung cấp),
-    `group` (lặp được, `group=Chai&group=Nắp` = nhóm Chai HOẶC Nắp; tối đa 50 nhóm, mỗi tên <= 50 ký tự; chỉ một giá trị vẫn
+    `group` (lặp được, `group=Chai&group=Nắp` = nhóm Chai HOẶC Nắp; tối đa 200 nhóm, mỗi tên <= 50 ký tự; chỉ một giá trị vẫn
     nhận như cũ), `supplier` (lặp được — giữ mã có nhà cung cấp đó trong n lần đang hiện), `date_from` / `date_to` (chỉ các lần
     mua trong khoảng được xếp hạng), `trend` (all / up / down / flat — lần 1 so lần 2), `min_pct` (|biến động| >= %),
     `only_priced` (mặc định bật), `bom_only` (chỉ mã thành phần của định mức), `scope=bom|all`. `sort_by` là khóa cột

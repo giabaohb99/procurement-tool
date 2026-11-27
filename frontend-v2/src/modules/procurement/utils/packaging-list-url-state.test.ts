@@ -130,8 +130,8 @@ describe('Giá mua gần nhất URL state', () => {
   })
 
   it('caps the number and length of groups read from the URL', () => {
-    const many = Array.from({ length: 80 }, (_, i) => `group=G${i}`).join('&')
-    expect(parseLast(many).filters.groups).toHaveLength(50)
+    const many = Array.from({ length: 250 }, (_, i) => `group=G${i}`).join('&')
+    expect(parseLast(many).filters.groups).toHaveLength(200)
     expect(parseLast(`group=${'a'.repeat(120)}`).filters.groups[0]).toHaveLength(50)
   })
 

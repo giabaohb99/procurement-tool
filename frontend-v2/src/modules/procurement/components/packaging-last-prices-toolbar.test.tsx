@@ -40,52 +40,61 @@ function setup(filters: LastPricesFilters = FILTERS) {
 }
 
 describe('PackagingLastPricesToolbar', () => {
-  it('shows a chip per group with its count, none active and "Tất cả" not lit until clicked', () => {
-    setup()
-    expect(screen.getByRole('button', { name: 'Tất cả' })).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByRole('button', { name: 'Chai (12)' })).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByRole('button', { name: 'Nắp (3)' })).toHaveAttribute('aria-pressed', 'false')
+  it('shows one multi-select box for groups, "Tất cả" first in its list and not ticked until chosen', async () => {
+    const { user } = setup()
+    expect(screen.queryByRole('button', { name: /^Chai/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Nhóm sản phẩm/ }))
+    //  Mỗi nhóm một dòng tick, số mã là chữ phụ; dòng đầu là "Tất cả", không có hàng "Chọn tất cả" của ô chọn.
+    const rows = screen.getAllByRole('button', { name: /^(Tất cả|Chai\s*12|Nắp\s*3)$/ })
+    expect(rows.map((row) => row.textContent?.replace(/\d+$/, '').trim())).toEqual(['Tất cả', 'Chai', 'Nắp'])
+    expect(screen.queryByRole('button', { name: /Chọn tất cả/ })).not.toBeInTheDocument()
   })
 
-  it('toggles a group on by its exact name (not the label with the count)', async () => {
+  it('ticks a group by its exact name (not the label with the count)', async () => {
     const { onChange, user } = setup()
-    await user.click(screen.getByRole('button', { name: 'Nắp (3)' }))
+    await user.click(screen.getByRole('button', { name: /Nhóm sản phẩm/ }))
+    await user.click(screen.getByRole('button', { name: /^Nắp\s*3$/ }))
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp'], all: false })
   })
 
-  it('"Tất cả" clears the group chips, lights up and loads everything; a group chip then unlights it', async () => {
-    const first = setup({ ...FILTERS, groups: ['Nắp'] })
-    await first.user.click(screen.getByRole('button', { name: 'Tất cả' }))
-    expect(first.onChange).toHaveBeenCalledWith({ ...FILTERS, groups: [], all: true })
+  it('"Tất cả" in the list clears the chosen groups and loads everything', async () => {
+    const { onChange, user } = setup({ ...FILTERS, groups: ['Nắp'] })
+    await user.click(screen.getByRole('button', { name: /^Nắp$/ }))
+    await user.click(screen.getByRole('button', { name: /^Tất cả$/ }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: [], all: true })
   })
 
-  it('shows "Tất cả" lit when all is on, and the recent-mode caption only in recent mode', async () => {
-    render(
+  it('names "Tất cả" in the box when all is on; ticking a group then leaves "Tất cả"', async () => {
+    const { onChange, user } = setup({ ...FILTERS, all: true })
+    await user.click(screen.getByRole('button', { name: /^Tất cả$/ }))
+    await user.click(screen.getByRole('button', { name: /^Chai\s*12$/ }))
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Chai'], all: false })
+  })
+
+  it('shows the recent-mode caption only in recent mode', () => {
+    const { rerender } = render(
       <PackagingLastPricesToolbar filters={{ ...FILTERS, all: true }} groups={GROUPS} suppliers={SUPPLIERS} onChange={vi.fn()} />,
     )
-    expect(screen.getByRole('button', { name: 'Tất cả' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByText(/mã mua gần nhất/)).not.toBeInTheDocument()
+    rerender(
+      <PackagingLastPricesToolbar filters={FILTERS} groups={GROUPS} suppliers={SUPPLIERS} onChange={vi.fn()} recentMode />,
+    )
+    expect(screen.getByText('20 mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết')).toBeInTheDocument()
   })
 
-  it('allows several groups at once, appends in click order and clicking an active chip switches it off', async () => {
-    const { onChange, user } = setup({ ...FILTERS, groups: ['Nắp', 'Chai'] })
-    expect(screen.getByRole('button', { name: 'Nắp (3)' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Chai (12)' })).toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: 'Chai (12)' }))
-    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp'], all: false })
-  })
-
-  it('appends a second group after the first', async () => {
+  it('names the chosen groups in the box, appends in tick order and unticking one removes it', async () => {
     const { onChange, user } = setup({ ...FILTERS, groups: ['Nắp'] })
-    await user.click(screen.getByRole('button', { name: 'Chai (12)' }))
-    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: ['Nắp', 'Chai'], all: false })
+    await user.click(screen.getByRole('button', { name: /^Nắp$/ }))
+    await user.click(screen.getByRole('button', { name: /^Chai\s*12$/ }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...FILTERS, groups: ['Nắp', 'Chai'], all: false })
+    await user.click(screen.getByRole('button', { name: /^Nắp\s*3$/ }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...FILTERS, groups: [], all: false })
   })
 
-  it('keeps an active group visible (count 0) when the server no longer lists it, so it can be switched off', async () => {
+  it('keeps a chosen group listed (count 0) when the server no longer lists it, so it can be unticked', async () => {
     const { onChange, user } = setup({ ...FILTERS, groups: ['Nhãn'] })
-    const chip = screen.getByRole('button', { name: 'Nhãn (0)' })
-    expect(chip).toHaveAttribute('aria-pressed', 'true')
-    await user.click(chip)
+    await user.click(screen.getByRole('button', { name: /^Nhãn$/ }))
+    await user.click(screen.getByRole('button', { name: /^Nhãn\s*0$/ }))
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, groups: [], all: false })
   })
 

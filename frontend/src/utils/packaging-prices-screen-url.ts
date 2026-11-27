@@ -22,7 +22,7 @@ const PAGE_SIZES = [10, 20, 50, 100]
 const MAX_QUERY_LENGTH = 100
 const MAX_CODE_LENGTH = 50
 const MAX_SUPPLIERS = 100
-const MAX_GROUPS = 50
+const MAX_GROUPS = 200
 const TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
