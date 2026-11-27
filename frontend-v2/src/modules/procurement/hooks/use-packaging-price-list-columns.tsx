@@ -5,9 +5,9 @@
  * `SORT_KEYS` của `packaging_cost/price_list_service.py`. Hai cột giá mua gần nhất / lần trước KHÔNG bật
  * xếp vì máy chủ chưa có khóa cho chúng — bật mà máy chủ không nhận là lỗi "bấm không ăn" (luật §8).
  *
- * bao-CR-800 — cùng bộ cột cho Bảng giá nguyên liệu (`rawMaterial`), khác ba chỗ: tiêu đề ghi "nguyên liệu"; mã là CHỮ THƯỜNG
- * (màn Lịch sử mua hàng của cụm không còn mã nguyên liệu nên không có đích để bấm tới); bỏ cột Số SP đang dùng (nguyên liệu
- * không nằm trong định mức bao bì, luôn 0) và cột Thao tác (không nhập báo giá ở màn này).
+ * bao-CR-800 — cùng bộ cột cho Bảng giá nguyên liệu (`rawMaterial`), khác ba chỗ: tiêu đề ghi "nguyên liệu"; mã dẫn tới màn
+ * Lịch sử mua NGUYÊN LIỆU (bao-CR-801 — trước đó là chữ thường vì màn Lịch sử mua hàng của VTBB không có mã nguyên liệu); bỏ
+ * cột Số SP đang dùng (nguyên liệu không nằm trong định mức bao bì, luôn 0) và cột Thao tác (không nhập báo giá ở màn này).
  */
 import { useMemo } from 'react'
 
@@ -28,7 +28,7 @@ import { joinPackagingWarnings } from '../utils/packaging-warning-text'
 interface PriceListColumnOptions {
   canQuote?: boolean
   onQuote?: (row: PackagingPriceRow) => void
-  /** Bảng giá nguyên liệu: tiêu đề "nguyên liệu", mã là chữ thường, không có cột Số SP đang dùng và cột Thao tác. */
+  /** Bảng giá nguyên liệu: tiêu đề "nguyên liệu", mã mở Lịch sử mua nguyên liệu, không có cột Số SP đang dùng và cột Thao tác. */
   rawMaterial?: boolean
 }
 
@@ -49,12 +49,7 @@ export function usePackagingPriceListColumns({
           sortable: true,
           hideable: false,
           defaultPinned: true,
-          cell: (row) =>
-            rawMaterial ? (
-              <span className="font-semibold tabular-nums">{row.code}</span>
-            ) : (
-              <PackagingCodeLink code={row.code} />
-            ),
+          cell: (row) => <PackagingCodeLink code={row.code} rawMaterial={rawMaterial} />,
         },
         {
           key: 'name',

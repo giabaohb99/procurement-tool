@@ -4,6 +4,9 @@
  * Một hàng (27/11/2026): chế độ (theo mã VTBB / theo mã sản phẩm) · ô chọn nhiều mã kiểu gọn (dùng lại `PackagingCodePicker`;
  * để trống = tất cả) · nhà cung cấp · khoảng ngày mua. Ô tìm chữ thứ hai bỏ 27/11/2026 vì ô chọn mã đã tìm theo mã, tên, nhóm và
  * tên NCC. Lựa chọn mã nằm ở URL (do trang giữ), bộ lọc còn lại ở state trang.
+ *
+ * bao-CR-801 — `rawMaterial` (Lịch sử mua nguyên liệu): chỉ có chế độ theo mã nên KHÔNG vẽ hai nút chế độ; ô chọn mã là loại
+ * nguyên liệu (nhóm + giá mới, không có số SP đang dùng).
  */
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { MultiPicker } from '@/shared/ui/multi-picker'
@@ -31,6 +34,8 @@ interface PackagingHistoryToolbarProps {
   productOptions: PackagingCodeOption[]
   optionsLoading: boolean
   suppliers: PackagingLastPricesSupplier[]
+  /** Màn Lịch sử mua nguyên liệu: không có chế độ "Theo mã sản phẩm", ô chọn mã nguyên liệu. */
+  rawMaterial?: boolean
 }
 
 export function PackagingHistoryToolbar({
@@ -42,27 +47,30 @@ export function PackagingHistoryToolbar({
   productOptions,
   optionsLoading,
   suppliers,
+  rawMaterial = false,
 }: PackagingHistoryToolbarProps) {
   const patch = (next: Partial<PackagingHistoryFilters>) => onFiltersChange({ ...filters, ...next })
-  const isProduct = selection.mode === 'product'
+  const isProduct = !rawMaterial && selection.mode === 'product'
 
   return (
     <div className="flex w-full flex-col gap-2">
       {/*  MỘT hàng (27/11/2026, "input hơi mập"): chế độ · ô chọn mã kiểu gọn · nhà cung cấp · khoảng ngày; hẹp thì xuống dòng. */}
       <div className="flex flex-wrap items-center gap-2">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={selection.mode}
-          onValueChange={(value) =>
-            value && onSelectionChange({ ...selection, mode: value as PackagingHistoryMode })
-          }
-          aria-label="Chế độ chọn"
-          className="h-9 shrink-0"
-        >
-          <ToggleGroupItem value="code">Theo mã VTBB</ToggleGroupItem>
-          <ToggleGroupItem value="product">Theo mã sản phẩm</ToggleGroupItem>
-        </ToggleGroup>
+        {!rawMaterial && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={selection.mode}
+            onValueChange={(value) =>
+              value && onSelectionChange({ ...selection, mode: value as PackagingHistoryMode })
+            }
+            aria-label="Chế độ chọn"
+            className="h-9 shrink-0"
+          >
+            <ToggleGroupItem value="code">Theo mã VTBB</ToggleGroupItem>
+            <ToggleGroupItem value="product">Theo mã sản phẩm</ToggleGroupItem>
+          </ToggleGroup>
+        )}
         <div className="min-w-72 flex-1">
           {isProduct ? (
             <PackagingCodePicker
@@ -77,12 +85,17 @@ export function PackagingHistoryToolbar({
             />
           ) : (
             <PackagingCodePicker
+              kind={rawMaterial ? 'rawMaterial' : 'material'}
               options={codeOptions}
               value={selection.codes}
               onChange={(codes) => onSelectionChange({ ...selection, codes })}
               loading={optionsLoading}
               maxCodes={PACKAGING_HISTORY_MAX_CODES}
-              emptyPlaceholder="Tất cả mã VTBB — gõ mã, tên, nhóm hoặc NCC để chọn mã cụ thể"
+              emptyPlaceholder={
+                rawMaterial
+                  ? 'Tất cả mã nguyên liệu — gõ mã, tên, nhóm hoặc NCC để chọn mã cụ thể'
+                  : 'Tất cả mã VTBB — gõ mã, tên, nhóm hoặc NCC để chọn mã cụ thể'
+              }
               compact
             />
           )}

@@ -19,10 +19,12 @@ export function usePackagingMaterialPriceList(params: PackagingMaterialPriceList
   })
 }
 
-export function usePackagingMaterialCodeOptions() {
+/** `enabled` (bao-CR-801): khuôn Lịch sử mua hàng dùng chung cho VTBB và nguyên liệu — màn VTBB tắt để không gọi đường này. */
+export function usePackagingMaterialCodeOptions(enabled = true) {
   return useQuery({
     queryKey: packagingCostKeys.materialCodeOptions(),
     queryFn: fetchPackagingMaterialCodeOptions,
+    enabled,
     //  Danh mục nguyên liệu có giá ít đổi; 5 phút là đủ (cùng nhịp với ô chọn mã VTBB).
     staleTime: 5 * 60 * 1000,
   })

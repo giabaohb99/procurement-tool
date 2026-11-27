@@ -4,7 +4,7 @@
  * (thẻ số liệu ở `packaging-history-summary.ts`).
  */
 import type {
-  PackagingCodeOption, PackagingHistoryMode, PackagingHistoryParams,
+  PackagingCodeOption, PackagingHistoryMode, PackagingHistoryParams, PackagingMaterialHistoryParams,
   PackagingLastPricesParams, PackagingLastPricesRow, PackagingLastPurchase,
   LastPricesTrend,
 } from '../api/packaging-cost-types'
@@ -19,6 +19,8 @@ export const PACKAGING_PATHS = {
   impact: '/packaging-cost/impact',
   priceList: '/packaging-cost/price-list',
   materialPrices: '/packaging-cost/material-prices',
+  /** bao-CR-801 — Lịch sử mua nguyên liệu: không có mục menu, vào bằng cách bấm mã ở Bảng giá nguyên liệu. */
+  materialHistory: '/packaging-cost/material-history',
   lastPrices: '/packaging-cost/last-prices',
   history: '/packaging-cost/history',
   products: '/packaging-cost/products',
@@ -113,6 +115,13 @@ export const historyHref = (code: string): string =>
 export const historyProductHref = (fgCode: string): string =>
   `${PACKAGING_PATHS.history}?${new URLSearchParams({ fg: fgCode }).toString()}`
 
+/**
+ * bao-CR-801 — đường dẫn tới Lịch sử mua nguyên liệu của MỘT mã — dùng cho ô mã ở Bảng giá nguyên liệu. Màn riêng, khóa
+ * quyền riêng (`packaging_material_price`), KHÔNG phải `historyHref` của VTBB.
+ */
+export const materialHistoryHref = (code: string): string =>
+  `${PACKAGING_PATHS.materialHistory}?${new URLSearchParams({ codes: code }).toString()}`
+
 export function buildHistoryParams(
   sel: HistorySelection, f: HistoryFilters, search: string, sort: { by: string; dir: 'asc' | 'desc' },
 ): PackagingHistoryParams {
@@ -121,6 +130,23 @@ export function buildHistoryParams(
     mode: sel.mode,
     codes: !isProduct && sel.codes.length ? sel.codes : undefined,
     fg_codes: isProduct && sel.fg.length ? sel.fg : undefined,
+    q: search.trim() || undefined,
+    supplier: f.suppliers.length ? f.suppliers : undefined,
+    date_from: f.from || undefined,
+    date_to: f.to || undefined,
+    ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
+  }
+}
+
+/**
+ * bao-CR-801 — tham số của lịch sử NGUYÊN LIỆU: chỉ có chế độ theo mã nên bỏ `mode` / `fg_codes` (đường `material-history`
+ * không nhận hai tham số đó); `fg` / `mode` lạc trên URL cũng không lọt xuống máy chủ.
+ */
+export function buildMaterialHistoryParams(
+  sel: HistorySelection, f: HistoryFilters, search: string, sort: { by: string; dir: 'asc' | 'desc' },
+): PackagingMaterialHistoryParams {
+  return {
+    codes: sel.codes.length ? sel.codes : undefined,
     q: search.trim() || undefined,
     supplier: f.suppliers.length ? f.suppliers : undefined,
     date_from: f.from || undefined,

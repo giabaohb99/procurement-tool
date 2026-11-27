@@ -52,9 +52,13 @@ function SourceCell({ row }: { row: PackagingHistoryRow }) {
  * "So lần trước" tính theo từng mã nên chưa xếp được. Một mã: bỏ cột Tên (đã có ở tiêu đề biểu đồ) nhường chỗ cho nhà cung cấp.
  * Giá trị mua = thành tiền Misa khi có, không thì giá x số lượng (máy chủ tính). Chế độ sản phẩm: mỗi dòng = một lần mua x một
  * (sản phẩm, thành phần), khóa dòng là (sản phẩm, id).
+ * bao-CR-801: màn Lịch sử mua nguyên liệu dùng chung bảng này — đổi nhãn hai cột mã / tên (`codeLabel`, `nameLabel`), mã là
+ * chữ thường (`plainCode`: `CodeLink` dẫn sang lịch sử của VTBB, không thuộc quyền nguyên liệu) và lưu cấu hình cột riêng
+ * (`tableKey`). Cột Nguồn vẫn dẫn sang đơn mua hàng.
  */
 export default function PackagingHistoryTable({
   rows, total, productMode, singleCode, sortBy, sortDir, onSort, page, pageSize, onPage, onReload, summary, empty,
+  codeLabel = 'Mã VTBB', nameLabel = 'Tên vật tư', plainCode = false, tableKey,
 }: {
   rows: PackagingHistoryRow[]
   total: number
@@ -69,12 +73,18 @@ export default function PackagingHistoryTable({
   onReload: () => void
   summary?: ReactNode
   empty: ReactNode
+  codeLabel?: string
+  nameLabel?: string
+  /** Mã là chữ thường, không bấm sang Lịch sử mua hàng của VTBB. */
+  plainCode?: boolean
+  /** Khóa lưu cấu hình cột; bỏ trống = khóa của màn VTBB theo chế độ. */
+  tableKey?: string
 }) {
   const columns = useMemo<TableColumn<PackagingHistoryRow>[]>(() => {
     const seq: TableColumn<PackagingHistoryRow> = { key: 'seq', label: 'Lần', width: 55, align: 'right', cell: (r) => <span className="pkg-muted pkg-num">{r.seq}</span> }
     const date: TableColumn<PackagingHistoryRow> = { key: 'date', label: 'Ngày mua', width: 110, sort: 'date', fixed: true, cell: (r) => (r.date ? fmtDateStr(r.date) : <Dash />) }
-    const code: TableColumn<PackagingHistoryRow> = { key: 'code', label: 'Mã VTBB', width: 110, sort: 'code', card: productMode ? 'field' : 'title', cell: (r) => <CodeLink code={r.code} /> }
-    const name: TableColumn<PackagingHistoryRow> = { key: 'name', label: 'Tên vật tư', width: 200, sort: 'name', card: productMode ? 'full' : 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) }
+    const code: TableColumn<PackagingHistoryRow> = { key: 'code', label: codeLabel, width: 110, sort: 'code', card: productMode ? 'field' : 'title', cell: (r) => (plainCode ? <b className="pkg-num">{r.code}</b> : <CodeLink code={r.code} />) }
+    const name: TableColumn<PackagingHistoryRow> = { key: 'name', label: nameLabel, width: 200, sort: 'name', card: productMode ? 'full' : 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) }
     //  Chế độ sản phẩm (bản mẫu `renderHistBySP`): Mã SP · Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...;
     //  chế độ mã: Lần · Ngày mua · Mã VTBB...; một mã thì bỏ cột Tên (đã có ở tiêu đề biểu đồ).
     const cols: TableColumn<PackagingHistoryRow>[] = productMode
@@ -101,9 +111,9 @@ export default function PackagingHistoryTable({
       { key: 'source', label: 'Nguồn', width: 170, sort: 'source', cell: (r) => <SourceCell row={r} /> },
     )
     return cols
-  }, [productMode, singleCode])
+  }, [productMode, singleCode, codeLabel, nameLabel, plainCode])
 
-  const table = useTableColumns(`packaging-history-${productMode ? 'product' : 'code'}`, columns)
+  const table = useTableColumns(tableKey ?? `packaging-history-${productMode ? 'product' : 'code'}`, columns)
   const narrow = useNarrowScreen()
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
 

@@ -114,6 +114,33 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-801 | Bảng giá nguyên liệu: bấm mã xem lịch sử mua hàng của nguyên liệu
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** chủ dự án báo màn Bảng giá nguyên liệu thiếu màn chi tiết lịch sử mua hàng khi bấm vào mã, trong khi Bảng giá VTBB
+thì có.
+
+**Đã làm:**
+- Bấm mã ở Bảng giá nguyên liệu mở màn *Lịch sử mua nguyên liệu* của mã đó: thẻ số liệu, biểu đồ diễn biến đơn giá, từng lần mua kèm
+  nhà cung cấp, kho, số lượng, đơn giá, so với lần trước và đơn mua hàng nguồn. Có ở cả hai giao diện.
+- Màn dùng chung quyền với Bảng giá nguyên liệu; người chỉ có quyền các màn VTBB không vào được, và màn Lịch sử mua hàng của VTBB
+  vẫn không hiện mã nguyên liệu.
+- Xuất Excel theo quyền Xuất của Bảng giá nguyên liệu.
+- Cập nhật tài liệu chức năng và bài hướng dẫn tổng quan của cụm.
+
+**Chưa làm:** chưa có trang in và màn giá các lần mua gần nhất riêng cho nguyên liệu.
+
+**Quay lui:** chạy lại bản mã trước; không có thay đổi dữ liệu.
+
+**Kiểm:** backend 15 ca của cụm quyền nguyên liệu đạt (3 ca mới), chạy kèm cụm lịch sử mua và bài canh phạm vi 188 bài đạt; ruff sạch. Giao diện mới: kiểm kiểu 0 lỗi, 2.361 bài của phân hệ thu mua và khung ứng dụng đạt. Giao diện cũ: kiểm kiểu giữ nguyên 4 lỗi nền. Chưa mở trên trình duyệt, chưa lên dev.
+
+Mã nguồn: `backend/app/modules/packaging_cost/history_controller.py` · `history_service.py` ·
+`frontend-v2/src/modules/procurement/pages/` (màn lịch sử nguyên liệu) · `frontend/src/pages/packaging/`.
+Kiểm: `test/backend/test_quyen_rieng_gia_nguyen_lieu_cr800.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md` · `backend/scripts/seed_help_gia_bao_bi_cr784.py`.
+
 ## bao-CR-800 | Giá nguyên vật liệu sản xuất: Bảng giá nguyên liệu có quyền riêng và dữ liệu thật
 - status: xong
 - date: 2026-11-27

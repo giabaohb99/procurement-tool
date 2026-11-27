@@ -19,6 +19,7 @@ import type {
   PackagingImpactResult,
   PackagingLastPricesParams,
   PackagingLastPricesResult,
+  PackagingMaterialHistoryParams,
   PackagingMaterialPriceListParams,
   PackagingOverviewParams,
   PackagingOverviewResult,
@@ -122,6 +123,23 @@ export function fetchPackagingHistory(params: PackagingHistoryParams) {
 export async function exportPackagingHistory(params: PackagingHistoryParams) {
   try {
     await downloadFile(`${BASE}/history/export`, 'lich-su-mua-hang.xlsx', { ...params })
+  } catch (error) {
+    throw new Error(await readBlobErrorMessage(error), { cause: error })
+  }
+}
+
+/**
+ * bao-CR-801 — Lịch sử mua nguyên liệu: hai đường RIÊNG, gác bằng khóa `packaging_material_price` (cùng khuôn kết quả với
+ * `GET /history` chế độ mã). Đường `history` của VTBB không trả mã nguyên liệu, và người chỉ giữ khóa nguyên liệu gọi nó là 403.
+ */
+export function fetchPackagingMaterialHistory(params: PackagingMaterialHistoryParams) {
+  return apiGet<PackagingHistoryResult>(`${BASE}/material-history`, { params })
+}
+
+/** Xuất Lịch sử mua nguyên liệu — cùng bộ lọc + thứ tự đang xem, không kèm `page`. */
+export async function exportPackagingMaterialHistory(params: PackagingMaterialHistoryParams) {
+  try {
+    await downloadFile(`${BASE}/material-history/export`, 'lich-su-mua-nguyen-lieu.xlsx', { ...params })
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }

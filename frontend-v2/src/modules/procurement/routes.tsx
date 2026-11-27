@@ -246,6 +246,20 @@ export const procurementModule: ErpModule = {
           path: appRoutes.procurement.packagingMaterialPrices,
           icon: FlaskConical,
           entity: 'packaging_material_price',
+          //  bao-CR-801 — màn Lịch sử mua nguyên liệu (ẩn khỏi menu) thuộc về đây: mở bằng cách bấm mã ở Bảng giá nguyên
+          //  liệu, đứng ở màn đó thì sáng mục này.
+          matchPaths: [appRoutes.procurement.packagingMaterialHistory],
+        },
+        {
+          //  bao-CR-801 — không có mục menu riêng (vào bằng cách bấm mã nguyên liệu). Giữ mục ẩn để đường dẫn vẫn bị gác
+          //  quyền khi gõ thẳng URL: cùng khóa RIÊNG của nguyên liệu, khóa Lịch sử mua hàng của VTBB không mở được.
+          label: 'Lịch sử mua nguyên liệu',
+          path: appRoutes.procurement.packagingMaterialHistory,
+          icon: ChartLine,
+          entity: 'packaging_material_price',
+          hidden: true,
+          //  Breadcrumb: … › Bảng giá nguyên liệu › Lịch sử mua nguyên liệu.
+          breadcrumbOwnLabel: true,
         },
         {
           label: 'Giá mua gần nhất',
@@ -523,6 +537,13 @@ export const procurementModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/packaging-material-price-list-page'))
           .PackagingMaterialPriceListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingMaterialHistory,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-material-history-page'))
+          .PackagingMaterialHistoryPage,
       }),
     },
     {

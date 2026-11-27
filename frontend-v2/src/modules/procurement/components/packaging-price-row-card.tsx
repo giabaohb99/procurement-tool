@@ -25,7 +25,7 @@ interface PackagingPriceRowCardProps {
   row: PackagingPriceRow
   /** Có quyền tạo báo giá → hiện nút "Báo giá" (mở hộp Báo giá mới điền sẵn mã). */
   onQuote?: (row: PackagingPriceRow) => void
-  /** Dòng của Bảng giá nguyên liệu (bao-CR-800): mã chữ thường, không có Số SP đang dùng — khớp bộ cột của màn đó. */
+  /** Dòng của Bảng giá nguyên liệu (bao-CR-800): không có Số SP đang dùng; mã mở Lịch sử mua nguyên liệu (bao-CR-801). */
   rawMaterial?: boolean
 }
 
@@ -34,7 +34,7 @@ export function PackagingPriceRowCard({ row, onQuote, rawMaterial = false }: Pac
   return (
     <div className="space-y-2.5">
       <PackagingCardTitle
-        code={rawMaterial ? row.code : <PackagingCodeLink code={row.code} />}
+        code={<PackagingCodeLink code={row.code} rawMaterial={rawMaterial} />}
         name={row.name}
         aside={
           <>

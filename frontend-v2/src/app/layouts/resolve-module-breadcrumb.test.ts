@@ -50,7 +50,8 @@ describe('resolveModuleBreadcrumb — pageLabel (chữ cuối khi nó là "trang
   })
 })
 
-//  duoc-CR-784 — cờ `breadcrumbOwnLabel` chỉ bật ở Báo giá VTBB; các màn ẩn khác của Thu mua giữ nguyên luật cũ.
+//  duoc-CR-784 — cờ `breadcrumbOwnLabel` bật ở Báo giá VTBB; bao-CR-801 thêm Lịch sử mua nguyên liệu (mở từ mã ở Bảng giá
+//  nguyên liệu). Các màn ẩn khác của Thu mua giữ nguyên luật cũ.
 describe('resolveModuleBreadcrumb — breadcrumbOwnLabel trên menu Thu mua thật', () => {
   it('ends with Báo giá VTBB after Bảng giá VTBB on the hidden quotes screen', () => {
     const crumb = resolveModuleBreadcrumb(procurementModule, appRoutes.procurement.packagingQuotes)
@@ -61,12 +62,28 @@ describe('resolveModuleBreadcrumb — breadcrumbOwnLabel trên menu Thu mua th�
     expect(crumb.pageLabel).toBe('Báo giá VTBB')
   })
 
-  it('is set on the Báo giá VTBB item only', () => {
+  it('ends with Lịch sử mua nguyên liệu after Bảng giá nguyên liệu on the hidden material history screen', () => {
+    const crumb = resolveModuleBreadcrumb(procurementModule, appRoutes.procurement.packagingMaterialHistory)
+    expect(crumb.current?.label).toBe('Giá nguyên vật liệu sản xuất')
+    expect(crumb.activeChild?.label).toBe('Bảng giá nguyên liệu')
+    expect(crumb.ownLabelChild?.label).toBe('Lịch sử mua nguyên liệu')
+    expect(crumb.pageLabel).toBe('Lịch sử mua nguyên liệu')
+    //  Màn Lịch sử mua hàng của VTBB (đường chỉ khác tiền tố `material-`) không bị kéo theo.
+    const packaging = resolveModuleBreadcrumb(procurementModule, appRoutes.procurement.packagingHistory)
+    expect(packaging.activeChild?.label).toBe('Lịch sử mua hàng')
+    expect(packaging.ownLabelChild).toBeUndefined()
+    //  Và Bảng giá nguyên liệu tự nó không có cấp cuối thừa.
+    const prices = resolveModuleBreadcrumb(procurementModule, appRoutes.procurement.packagingMaterialPrices)
+    expect(prices.activeChild?.label).toBe('Bảng giá nguyên liệu')
+    expect(prices.ownLabelChild).toBeUndefined()
+  })
+
+  it('is set on the two hidden screens opened from a price list only', () => {
     const flagged = procurementModule.nav
       .flatMap((item) => [item, ...(item.children ?? [])])
       .filter((item) => item.breadcrumbOwnLabel)
       .map((item) => item.label)
-    expect(flagged).toEqual(['Báo giá VTBB'])
+    expect(flagged).toEqual(['Lịch sử mua nguyên liệu', 'Báo giá VTBB'])
   })
 
   it('keeps Customs hidden tabs and Lô xuất của tôi under Giá thị trường', () => {

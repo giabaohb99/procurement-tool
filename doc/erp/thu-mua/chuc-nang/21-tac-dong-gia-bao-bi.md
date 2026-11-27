@@ -6,7 +6,7 @@
 | Ngày | 27/11/2026 |
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Hiệu lực (chỉ trên dev) |
-| CR liên quan | duoc-CR-784, bao-CR-792 (tách khóa quyền theo màn, 27/11/2026), bao-CR-800 (quyền riêng Bảng giá nguyên liệu) |
+| CR liên quan | duoc-CR-784, bao-CR-792 (tách khóa quyền theo màn, 27/11/2026), bao-CR-800 (quyền riêng Bảng giá nguyên liệu), bao-CR-801 (lịch sử mua nguyên liệu) |
 | Giao diện | Cả hai giao diện: nhóm menu **Mua hàng**, mục cha đóng mở **Giá nguyên vật liệu sản xuất** ngay dưới *Tra cứu thị trường* (chốt 25/11/2026; tên chốt 21/11/2026, trước là Giá bao bì), sáu mục con. ERP v2: `/procurement/packaging-cost/...`, `frontend-v2/src/modules/procurement/pages/packaging-*.tsx` · giao diện cũ Thu mua: `/packaging-cost/...`, `/packaging-boms`, `/product-price-quotes`; `frontend/src/pages/packaging/*`. Xóa theo lô ở trang lô nhập: v2 `/system/imports/:id`, v1 `/import-batches/:id` |
 | Bài Help Center | Thẻ **Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất** + 9 bài (bài thứ 8 *Xóa dữ liệu đã nhập nhầm theo lô nhập Excel* thêm 26/11/2026), `backend/scripts/seed_help_gia_bao_bi_cr784.py` |
 | Hợp đồng kỹ thuật | [api.md](../tai-lieu-ky-thuat/api.md) (nhóm `packaging-cost`, các dòng `/api/packaging-cost/*`, `/api/packaging-boms`, `/api/product-price-quotes`) · [kế hoạch 261120](../plans/261120-tac-dong-gia-bao-bi/plan.md) (phase 04 = hợp đồng API và số đo hiệu năng) · [kế hoạch tối ưu 261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) (gộp nguồn sổ giá, nguồn báo giá, bỏ ngưỡng, đổi tên `fg_*`, xóa theo lô) · [mô hình dữ liệu](../tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) |
@@ -189,8 +189,16 @@ cấp quyền riêng, có bộ phận được xem và có bộ phận không.
 - Một chỗ quyết định: `packaging_cost/material_scope.py` ghép điều kiện loại mã vào phạm vi pháp nhân trên sổ giá
   (`last_prices_controller.view_scope` / `shared_view_scope`); các tập mã dựng ngoài sổ giá (định mức, báo giá, mã đã chọn) lọc bằng
   `material_codes` / `split_codes`.
-- Chưa làm: lịch sử từng lần mua và giá các lần gần nhất riêng cho nguyên liệu (hiện xem ở cột của Bảng giá nguyên liệu); danh
-  sách Báo giá VTBB vẫn liệt kê báo giá của mọi mã, kể cả mã nguyên liệu nếu có người nhập.
+- **Lịch sử mua nguyên liệu** (bao-CR-801): bấm mã ở Bảng giá nguyên liệu mở màn lịch sử mua hàng của mã đó
+  (`/procurement/packaging-cost/material-history?codes=<mã>`, không có mục menu riêng), cùng khuôn màn Lịch sử mua hàng của
+  VTBB: thẻ số liệu, biểu đồ diễn biến đơn giá khi chọn một mã, từng lần mua kèm nhà cung cấp, kho, số lượng, đơn giá, so lần
+  trước và đơn mua hàng nguồn. Chỉ có chế độ theo mã; không có Nạp sổ Misa và không có In. API
+  `GET /api/packaging-cost/material-history` (`codes` lặp, rỗng = mọi mã nguyên liệu; `q`, `supplier`, `date_from`, `date_to`,
+  `sort_by`, `sort_dir`, `page`, `page_size`) và `.../material-history/export` (tệp `lich-su-mua-nguyen-lieu.xlsx`), cùng
+  khóa `packaging_material_price`. Dựng trên `build_history(..., any_code=True)`: không chọn mã thì lấy mọi mã mà phạm vi
+  nguyên liệu cho thấy, vì nguyên liệu không nằm trong tập mã VTBB (định mức ∪ báo giá).
+- Chưa làm: màn giá các lần mua gần nhất riêng cho nguyên liệu; trang in lịch sử nguyên liệu; danh sách Báo giá VTBB vẫn liệt kê
+  báo giá của mọi mã, kể cả mã nguyên liệu nếu có người nhập.
 
 ## 5. Giá mua gần nhất
 

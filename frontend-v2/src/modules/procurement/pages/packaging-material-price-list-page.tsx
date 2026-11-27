@@ -6,8 +6,10 @@
  * xem giá nguyên liệu, có bộ phận không). Màn chỉ gọi ba đường của nguyên liệu (`material-price-list`, đường xuất của nó,
  * `material-code-options`); TUYỆT ĐỐI không gọi `price-list` / `code-options` của VTBB — người chỉ giữ khóa nguyên liệu gọi
  * hai đường đó là 403. Khác màn VTBB: không có nút phạm vi (nguyên liệu không nằm trong định mức bao bì), không có cột Số SP
- * đang dùng / Thao tác, mã là chữ thường (màn Lịch sử mua hàng của cụm không còn mã nguyên liệu). Phân trang + xếp tại MÁY
- * CHỦ; tham số xếp đi kèm bộ lọc nên Xuất Excel ra đúng thứ tự đang xem.
+ * đang dùng / Thao tác. Phân trang + xếp tại MÁY CHỦ; tham số xếp đi kèm bộ lọc nên Xuất Excel ra đúng thứ tự đang xem.
+ *
+ * bao-CR-801 — bấm mã nguyên liệu mở màn Lịch sử mua nguyên liệu của đúng mã đó (cùng khóa `packaging_material_price`), như
+ * bấm mã ở Bảng giá VTBB mở Lịch sử mua hàng.
  */
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'

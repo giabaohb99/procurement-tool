@@ -364,6 +364,12 @@ export interface PackagingHistoryParams {
   page_size?: number
 }
 
+/**
+ * bao-CR-801 — tham số của `GET /material-history` (lịch sử mua hàng của nguyên liệu): như `PackagingHistoryParams` nhưng
+ * CHỈ có chế độ theo mã nên không có `mode` và không có `fg_codes`.
+ */
+export type PackagingMaterialHistoryParams = Omit<PackagingHistoryParams, 'mode' | 'fg_codes'>
+
 export interface PackagingFgOption { code: string; name: string }
 
 

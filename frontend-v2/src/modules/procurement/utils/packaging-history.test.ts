@@ -10,8 +10,10 @@ import {
   PACKAGING_HISTORY_MAX_CODES,
   packagingHistoryHref,
   packagingHistoryProductHref,
+  packagingMaterialHistoryHref,
   parseHistorySearch,
   priceAxisDomain,
+  toMaterialHistoryParams,
 } from './packaging-history'
 
 describe('parseHistorySearch', () => {
@@ -41,6 +43,83 @@ describe('parseHistorySearch', () => {
     expect(parseHistorySearch(new URLSearchParams({ codes: many })).codes).toHaveLength(
       PACKAGING_HISTORY_MAX_CODES,
     )
+  })
+})
+
+//  bao-CR-801 — màn Lịch sử mua nguyên liệu chỉ có chế độ mã: `mode` / `fg` gõ tay trên URL không được kéo màn sang chế độ
+//  sản phẩm (ở đó màn gọi `fg-options` của VTBB, người chỉ giữ khóa nguyên liệu gặp 403).
+describe('parseHistorySearch — raw material screen', () => {
+  it('reads codes only and drops a crafted mode / fg', () => {
+    expect(parseHistorySearch(new URLSearchParams('mode=product&fg=HH1,HH2&codes=NL1, NL2,NL1'), true)).toEqual({
+      mode: 'code',
+      codes: ['NL1', 'NL2'],
+      fg: [],
+    })
+    expect(parseHistorySearch(new URLSearchParams('fg=HH1'), true)).toEqual({ mode: 'code', codes: [], fg: [] })
+    expect(parseHistorySearch(new URLSearchParams(''), true)).toEqual({ mode: 'code', codes: [], fg: [] })
+  })
+
+  it('still caps the code list at the server limit', () => {
+    const many = Array.from({ length: PACKAGING_HISTORY_MAX_CODES + 1 }, (_, i) => `NL${i}`).join(',')
+    expect(parseHistorySearch(new URLSearchParams({ codes: many }), true).codes).toHaveLength(
+      PACKAGING_HISTORY_MAX_CODES,
+    )
+  })
+
+  it('writes back only codes, so the URL never carries mode or fg', () => {
+    const selection = parseHistorySearch(new URLSearchParams('mode=product&fg=HH1&codes=NL1'), true)
+    expect(buildHistorySearch(selection)).toEqual({ codes: 'NL1' })
+  })
+})
+
+describe('packagingMaterialHistoryHref', () => {
+  it('links one raw-material code to the material history screen and escapes it', () => {
+    expect(packagingMaterialHistoryHref('NL0001')).toBe(
+      '/procurement/packaging-cost/material-history?codes=NL0001',
+    )
+    expect(packagingMaterialHistoryHref('A&fg=B')).toBe(
+      '/procurement/packaging-cost/material-history?codes=A%26fg%3DB',
+    )
+    expect(
+      parseHistorySearch(new URLSearchParams(packagingMaterialHistoryHref('NL0001').split('?')[1]), true),
+    ).toEqual({ mode: 'code', codes: ['NL0001'], fg: [] })
+  })
+})
+
+describe('toMaterialHistoryParams', () => {
+  it('drops mode and fg_codes as keys (not just as values) and keeps every other filter', () => {
+    const params = toMaterialHistoryParams({
+      mode: 'product',
+      fg_codes: ['HH1'],
+      codes: ['NL1'],
+      q: 'x',
+      supplier: ['S1'],
+      date_from: '2026-01-01',
+      date_to: '2026-02-01',
+      sort_by: 'price',
+      sort_dir: 'asc',
+      page: 3,
+      page_size: 20,
+    })
+    expect(params).toEqual({
+      codes: ['NL1'],
+      q: 'x',
+      supplier: ['S1'],
+      date_from: '2026-01-01',
+      date_to: '2026-02-01',
+      sort_by: 'price',
+      sort_dir: 'asc',
+      page: 3,
+      page_size: 20,
+    })
+    expect(Object.keys(params)).not.toContain('mode')
+    expect(Object.keys(params)).not.toContain('fg_codes')
+  })
+
+  it('does not mutate the params it was given', () => {
+    const source = { mode: 'code' as const, codes: ['NL1'] }
+    toMaterialHistoryParams(source)
+    expect(source).toEqual({ mode: 'code', codes: ['NL1'] })
   })
 })
 

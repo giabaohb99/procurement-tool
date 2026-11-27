@@ -5,7 +5,7 @@ import { PACKAGING_ENTITY } from '../../api/packaging-cost'
 import {
   amountText, avgPriceText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR, PKG_UP_COLOR, trendLabel, COST_TREND,
 } from '../../utils/packaging-price'
-import { historyHref, historyProductHref } from '../../utils/packaging-query'
+import { historyHref, historyProductHref, materialHistoryHref } from '../../utils/packaging-query'
 import './packaging.css'
 
 type Num = number | null | undefined
@@ -44,12 +44,14 @@ export function PctText({ value }: { value: Num }) {
  * "Theo mã sản phẩm" (`?fg=`, mọi mã thành phần của định mức).
  * bao-CR-792: Lịch sử mua hàng có khóa quyền riêng (`packaging_history`) — người không xem được màn đó thì mã hiện chữ
  * thường, không còn đường bấm (tránh bấm sang trang báo "Không có quyền xem").
+ * bao-CR-801: `material` = mã NGUYÊN LIỆU, mở màn Lịch sử mua nguyên liệu (`?codes=`) — màn riêng gác bằng khóa
+ * `packaging_material_price`, nên hỏi khóa đó chứ không hỏi `packaging_history`.
  */
-export function CodeLink({ code, product }: { code: string; product?: boolean }) {
+export function CodeLink({ code, product, material }: { code: string; product?: boolean; material?: boolean }) {
   const { can } = useAuth()
-  if (!can(PACKAGING_ENTITY.history, 'read')) return <b className="pkg-num">{code}</b>
+  if (!can(material ? PACKAGING_ENTITY.materialPrices : PACKAGING_ENTITY.history, 'read')) return <b className="pkg-num">{code}</b>
   return (
-    <Link to={product ? historyProductHref(code) : historyHref(code)} className="pkg-code"
+    <Link to={material ? materialHistoryHref(code) : product ? historyProductHref(code) : historyHref(code)} className="pkg-code"
       title={product ? `Xem lịch sử mua các vật tư bao bì của ${code}` : `Xem lịch sử mua hàng của ${code}`}
       onClick={(e) => e.stopPropagation()}>
       {code}

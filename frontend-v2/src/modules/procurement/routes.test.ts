@@ -2,6 +2,8 @@
 // bao-CR-792 — khóa chung `packaging_cost` nghỉ hẳn: mỗi màn một khóa, mục cha hiện theo mục con.
 // bao-CR-800 — Bảng giá nguyên liệu có khóa RIÊNG `packaging_material_price` (trước dùng chung khóa Bảng giá VTBB): giữ khóa
 // này thấy mục cha + vào đúng màn nguyên liệu, không vào được màn VTBB nào; giữ khóa Bảng giá VTBB thì không thấy mục nguyên liệu.
+// bao-CR-801 — màn Lịch sử mua nguyên liệu (ẩn khỏi menu, mở từ mã ở Bảng giá nguyên liệu) gác bằng CHÍNH khóa nguyên liệu:
+// giữ khóa Lịch sử mua hàng của VTBB không vào được, và ngược lại.
 import { describe, expect, it } from 'vitest'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -29,14 +31,25 @@ const PACKAGING_SCREEN_KEYS: [path: string, entity: PermissionEntity][] = [
   [appRoutes.procurement.packagingPrices, 'packaging_price_list'],
   //  duoc-CR-798: Bảng giá nguyên liệu đứng ngay dưới Bảng giá VTBB. bao-CR-800: khóa RIÊNG, không còn chung khóa bảng giá.
   [appRoutes.procurement.packagingMaterialPrices, 'packaging_material_price'],
+  //  bao-CR-801: Lịch sử mua nguyên liệu — cùng khóa với Bảng giá nguyên liệu, ẩn khỏi menu.
+  [appRoutes.procurement.packagingMaterialHistory, 'packaging_material_price'],
   [appRoutes.procurement.packagingLastPrices, 'packaging_last_price'],
   [appRoutes.procurement.packagingHistory, 'packaging_history'],
   [appRoutes.procurement.packagingQuotes, 'packaging_price_list'],
   [appRoutes.procurement.packagingBoms, 'packaging_bom'],
 ]
 const PACKAGING_PATHS = PACKAGING_SCREEN_KEYS.map(([path]) => path)
-/** Báo giá VTBB ẩn khỏi menu (21/11/2026) nhưng đường dẫn vẫn gác quyền như các màn khác. */
-const PACKAGING_MENU_PATHS = PACKAGING_PATHS.filter((path) => path !== appRoutes.procurement.packagingQuotes)
+/** Hai màn ẩn khỏi menu — Báo giá VTBB (21/11/2026) và Lịch sử mua nguyên liệu (bao-CR-801) — đường dẫn vẫn gác quyền như các màn khác. */
+const PACKAGING_HIDDEN_PATHS: string[] = [
+  appRoutes.procurement.packagingQuotes,
+  appRoutes.procurement.packagingMaterialHistory,
+]
+const PACKAGING_MENU_PATHS = PACKAGING_PATHS.filter((path) => !PACKAGING_HIDDEN_PATHS.includes(path))
+/** Hai màn của khóa nguyên liệu: bảng giá (trên menu) và lịch sử mua (ẩn). */
+const MATERIAL_PATHS: string[] = [
+  appRoutes.procurement.packagingMaterialPrices,
+  appRoutes.procurement.packagingMaterialHistory,
+]
 const ALL_PACKAGING_READS = [...new Set(PACKAGING_SCREEN_KEYS.map(([, entity]) => `${entity}.read`))]
 
 const PACKAGING_PARENT_LABEL = 'Giá nguyên vật liệu sản xuất'
@@ -106,7 +119,7 @@ describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
     //  Không đọc được Tổng quan → `ModuleLayout` đẩy tới màn đầu tiên xem được: phải là màn của khóa đang giữ, không
     //  phải màn Tác động giá (đường của mục cha) — ở đó họ gặp trang cấm.
     for (const [path, entity] of PACKAGING_SCREEN_KEYS) {
-      if (path === appRoutes.procurement.packagingQuotes) continue
+      if (PACKAGING_HIDDEN_PATHS.includes(path)) continue
       const can = grants(`${entity}.read`)
       expect(canOpenModule(procurementModule as ErpModule, can), entity).toBe(true)
       const landing = firstAccessibleNavPath(procurementModule as ErpModule, can)
@@ -132,10 +145,58 @@ describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
     expect(firstAccessibleNavPath(procurementModule as ErpModule, can)).toBe(
       appRoutes.procurement.packagingMaterialPrices,
     )
-    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingMaterialPrices, can)).toBe(true)
-    for (const path of PACKAGING_PATHS.filter((p) => p !== appRoutes.procurement.packagingMaterialPrices)) {
+    for (const path of MATERIAL_PATHS) {
+      expect(canAccessRoute(procurementModule as ErpModule, path, can), path).toBe(true)
+    }
+    for (const path of PACKAGING_PATHS.filter((p) => !MATERIAL_PATHS.includes(p))) {
       expect(canAccessRoute(procurementModule as ErpModule, path, can), path).toBe(false)
     }
+  })
+
+  it('opens Lịch sử mua nguyên liệu with the material key only — the VTBB history key does not (bao-CR-801)', () => {
+    const materialHistory = appRoutes.procurement.packagingMaterialHistory
+    const material = grants('packaging_material_price.read')
+    expect(canAccessRoute(procurementModule as ErpModule, materialHistory, material)).toBe(true)
+    //  Khóa nguyên liệu không mở Lịch sử mua hàng của VTBB dù hai đường chỉ khác nhau tiền tố `material-`.
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingHistory, material)).toBe(false)
+
+    //  Người chỉ giữ khóa Lịch sử mua hàng (kể cả đủ mọi hành động): gõ thẳng URL màn nguyên liệu bị chặn, menu không đổi.
+    const history = grants(
+      'packaging_history.read',
+      'packaging_history.write',
+      'packaging_history.export',
+    )
+    expect(canAccessRoute(procurementModule as ErpModule, materialHistory, history)).toBe(false)
+    expect(canAccessRoute(procurementModule as ErpModule, `${materialHistory}/x`, history)).toBe(false)
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingHistory, history)).toBe(true)
+    expect(packagingMenu(history)).toEqual([appRoutes.procurement.packagingHistory])
+
+    //  Đủ sáu khóa VTBB mà thiếu khóa nguyên liệu: vẫn không vào được; quyền xuất mà không có quyền đọc cũng không.
+    const sixKeys = grants(...ALL_PACKAGING_READS.filter((cap) => cap !== 'packaging_material_price.read'))
+    expect(canAccessRoute(procurementModule as ErpModule, materialHistory, sixKeys)).toBe(false)
+    expect(
+      canAccessRoute(procurementModule as ErpModule, materialHistory, grants('packaging_material_price.export')),
+    ).toBe(false)
+  })
+
+  it('keeps Lịch sử mua nguyên liệu off the menu, lit under Bảng giá nguyên liệu, and never the landing screen', () => {
+    const can = grants('packaging_material_price.read')
+    const declared = procurementModule.nav.find((item) => item.label === PACKAGING_PARENT_LABEL)!
+    const hiddenItem = declared.children?.find(
+      (child) => child.path === appRoutes.procurement.packagingMaterialHistory,
+    )
+    expect(hiddenItem?.hidden).toBe(true)
+    expect(hiddenItem?.entity).toBe('packaging_material_price')
+    const priceItem = declared.children?.find(
+      (child) => child.path === appRoutes.procurement.packagingMaterialPrices,
+    )
+    expect(priceItem?.matchPaths).toContain(appRoutes.procurement.packagingMaterialHistory)
+    //  Vào phân hệ / bấm mục cha: đáp xuống Bảng giá nguyên liệu, không đáp xuống màn ẩn (menu trái tối om).
+    expect(packagingMenu(can)).toEqual([appRoutes.procurement.packagingMaterialPrices])
+    expect(firstAccessibleNavPath(procurementModule as ErpModule, can)).toBe(
+      appRoutes.procurement.packagingMaterialPrices,
+    )
+    expect(navItemLandingPath(declared, can)).toBe(appRoutes.procurement.packagingMaterialPrices)
   })
 
   it('keeps Bảng giá nguyên liệu away from a VTBB price-list reader, on the menu and by URL (bao-CR-800)', () => {

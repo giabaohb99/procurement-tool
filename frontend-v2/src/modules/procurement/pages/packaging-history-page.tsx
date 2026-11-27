@@ -4,6 +4,11 @@
  *
  * Lịch sử là bản chụp BẤT BIẾN của sổ giá — không có ô sửa đơn giá (sai thì sửa ở ĐMH / nguồn nạp). Lọc + xếp + phân trang tại
  * MÁY CHỦ (luật §8). Lựa chọn mã nằm ở URL (`?codes=A,B` · `?fg=HH1,HH2` · `mode`) để các bảng khác dẫn thẳng vào được.
+ *
+ * bao-CR-801 — cùng khuôn cho LỊCH SỬ MUA NGUYÊN LIỆU (`rawMaterial`, mở từ mã ở Bảng giá nguyên liệu): dữ liệu đi hai đường
+ * riêng của nguyên liệu (`material-history`, `material-code-options`), gác bằng khóa `packaging_material_price`. Khác màn VTBB:
+ * chỉ có chế độ theo mã (không có "Theo mã sản phẩm"), không có nút Nạp sổ Misa và nút In (chưa có trang in cho nguyên liệu),
+ * mã trong bảng là chữ thường. Màn nguyên liệu TUYỆT ĐỐI không gọi `history` / `code-options` / `fg-options` của VTBB.
  */
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -20,7 +25,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
 import { PackagingExportExcelButton, PackagingPrintButton } from '../components/packaging-header-buttons'
-import { exportPackagingHistory } from '../api/packaging-cost-api'
+import { exportPackagingHistory, exportPackagingMaterialHistory } from '../api/packaging-cost-api'
 import { PackagingHistoryCard } from '../components/packaging-history-card'
 import { PackagingHistoryChart } from '../components/packaging-history-chart'
 import { PackagingHistoryCodeChart } from '../components/packaging-history-code-chart'
@@ -28,27 +33,38 @@ import { PackagingHistorySummary } from '../components/packaging-history-summary
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PackagingHistoryToolbar } from '../components/packaging-history-toolbar'
 import { PACKAGING_MISA_IMPORT } from '../config/packaging-excel-imports'
-import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
-import { usePackagingFgOptions, usePackagingHistory } from '../hooks/use-packaging-history'
+import { usePackagingHistory, usePackagingHistoryOptions } from '../hooks/use-packaging-history'
 import { usePackagingHistoryColumns } from '../hooks/use-packaging-history-columns'
-import type { PackagingCodeOption } from '../types/packaging-cost-types'
-import { sortPackagingCodeOptions } from '../utils/packaging-code-match'
 import {
   buildHistoryParams,
   buildHistorySearch,
   EMPTY_HISTORY_FILTERS,
   historyRowKey,
   parseHistorySearch,
+  toMaterialHistoryParams,
   type PackagingHistoryFilters,
   type PackagingHistorySelection,
 } from '../utils/packaging-history'
 import { packagingHistoryPrintHref } from '../utils/packaging-history-print'
 
-export function PackagingHistoryPage() {
+const PACKAGING_DESCRIPTION =
+  'Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn.'
+const MATERIAL_DESCRIPTION =
+  'Từng lần mua của mã nguyên liệu, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn.'
+
+interface PackagingHistoryPageProps {
+  /** Màn Lịch sử mua nguyên liệu (bao-CR-801): nguồn dữ liệu + khóa quyền của nguyên liệu, chỉ có chế độ theo mã. */
+  rawMaterial?: boolean
+}
+
+export function PackagingHistoryPage({ rawMaterial = false }: PackagingHistoryPageProps) {
   const { can } = usePermission()
   const isMobile = useIsMobile()
   const [searchParams, setSearchParams] = useSearchParams()
-  const selection = useMemo(() => parseHistorySearch(searchParams), [searchParams])
+  const selection = useMemo(
+    () => parseHistorySearch(searchParams, rawMaterial),
+    [searchParams, rawMaterial],
+  )
   const [filters, setFilters] = useState<PackagingHistoryFilters>(EMPTY_HISTORY_FILTERS)
   const [sortBy, setSortBy] = useState('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -58,17 +74,8 @@ export function PackagingHistoryPage() {
   const once = useSingleFlight()
   const isProduct = selection.mode === 'product'
 
-  //  Mọi mã có trong sổ giá (27/11/2026), tìm được cả theo tên NCC — như Giá mua gần nhất / Bảng giá.
-  const codeOptionsQuery = usePackagingCodeOptions(true, 'all')
-  const fgOptionsQuery = usePackagingFgOptions(isProduct)
-  const codeOptions = useMemo(
-    () => sortPackagingCodeOptions(codeOptionsQuery.data ?? []),
-    [codeOptionsQuery.data],
-  )
-  const productOptions = useMemo<PackagingCodeOption[]>(
-    () => (fgOptionsQuery.data ?? []).map((item) => ({ ...item, group: '', usage: 0, new: null })),
-    [fgOptionsQuery.data],
-  )
+  //  Ô chọn mã (và sản phẩm ở chế độ sản phẩm) lấy từ nguồn của ĐÚNG màn: VTBB hoặc nguyên liệu, không lẫn đường.
+  const options = usePackagingHistoryOptions(rawMaterial, isProduct)
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo(
@@ -76,11 +83,11 @@ export function PackagingHistoryPage() {
     [selection, filters, debouncedQ, sortBy, sortDir],
   )
   const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize])
-  const list = usePackagingHistory({ ...filterParams, page, page_size: pageSize })
+  const list = usePackagingHistory({ ...filterParams, page, page_size: pageSize }, rawMaterial)
   const series = list.data?.series ?? null
   //  Chế độ sản phẩm, đúng một sản phẩm: mỗi thành phần một đường giá (máy chủ chỉ trả khi có lần mua có giá).
   const seriesByCode = list.data?.series_by_code ?? null
-  const columns = usePackagingHistoryColumns(isProduct, series !== null)
+  const columns = usePackagingHistoryColumns(isProduct, series !== null, rawMaterial)
 
   const changeSelection = (next: PackagingHistorySelection) =>
     setSearchParams(buildHistorySearch(next), { replace: true })
@@ -91,7 +98,9 @@ export function PackagingHistoryPage() {
     once(async () => {
       setExporting(true)
       try {
-        await exportPackagingHistory(filterParams)
+        await (rawMaterial
+          ? exportPackagingMaterialHistory(toMaterialHistoryParams(filterParams))
+          : exportPackagingHistory(filterParams))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Không xuất được tệp Excel')
       } finally {
@@ -103,21 +112,20 @@ export function PackagingHistoryPage() {
     //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
-        title="Lịch sử mua hàng"
+        title={rawMaterial ? 'Lịch sử mua nguyên liệu' : 'Lịch sử mua hàng'}
         //  Câu giới thiệu ẩn ở khổ điện thoại (cùng nếp các màn CRUD): đọc một lần rồi thôi mà ăn ba bốn dòng đầu màn.
         description={
-          isMobile
-            ? undefined
-            : 'Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn.'
+          isMobile ? undefined : rawMaterial ? MATERIAL_DESCRIPTION : PACKAGING_DESCRIPTION
         }
         actions={
           <>
             {/* In = xem, nên gác theo quyền đọc (không đòi quyền xuất). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
-            {can('packaging_history', 'read') && (
+            {/* Nguyên liệu: chưa có trang in và không nạp sổ Misa ở màn này — hai nút chỉ của VTBB. */}
+            {!rawMaterial && can('packaging_history', 'read') && (
               <PackagingPrintButton href={packagingHistoryPrintHref(filterParams)} />
             )}
-            <PackagingExcelImportButton kind={PACKAGING_MISA_IMPORT} />
-            {can('packaging_history', 'export') && (
+            {!rawMaterial && <PackagingExcelImportButton kind={PACKAGING_MISA_IMPORT} />}
+            {can(rawMaterial ? 'packaging_material_price' : 'packaging_history', 'export') && (
               <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
             )}
           </>
@@ -129,10 +137,11 @@ export function PackagingHistoryPage() {
           onSelectionChange={changeSelection}
           filters={filters}
           onFiltersChange={setFilters}
-          codeOptions={codeOptions}
-          productOptions={productOptions}
-          optionsLoading={isProduct ? fgOptionsQuery.isLoading : codeOptionsQuery.isLoading}
+          codeOptions={options.codeOptions}
+          productOptions={options.productOptions}
+          optionsLoading={options.loading}
           suppliers={list.data?.suppliers ?? []}
+          rawMaterial={rawMaterial}
         />
         {/* Thẻ số liệu đặt TRÊN biểu đồ (người chủ chốt 21/11/2026), không còn nằm trong thanh công cụ của bảng. */}
         <PackagingHistorySummary
@@ -169,8 +178,14 @@ export function PackagingHistoryPage() {
               ? 'Không có lần mua nào khớp bộ lọc.'
               : 'Chưa có lần mua nào cho lựa chọn này.'
           }
-          storageKey={`procurement.packaging-history.${isProduct ? 'product' : 'code'}`}
-          mobileCard={(row) => <PackagingHistoryCard row={row} productMode={isProduct} />}
+          storageKey={
+            rawMaterial
+              ? 'procurement.packaging-material-history'
+              : `procurement.packaging-history.${isProduct ? 'product' : 'code'}`
+          }
+          mobileCard={(row) => (
+            <PackagingHistoryCard row={row} productMode={isProduct} rawMaterial={rawMaterial} />
+          )}
           mobileSort
           filtersActive={filtersActive}
           onResetFilters={() => setFilters(EMPTY_HISTORY_FILTERS)}

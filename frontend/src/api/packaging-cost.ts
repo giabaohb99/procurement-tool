@@ -9,7 +9,7 @@ import { api } from './client'
 import type {
   PackagingBatchPurgePreview, PackagingBatchPurgeResult, PackagingCodeOption, PackagingFgOption, PackagingHistoryParams, PackagingHistoryResult,
   PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
-  PackagingMaterialPriceListParams, PackagingOverviewParams, PackagingOverviewResult,
+  PackagingMaterialHistoryParams, PackagingMaterialPriceListParams, PackagingOverviewParams, PackagingOverviewResult,
   PackagingPriceListParams, PackagingPriceRow,
 } from './packaging-cost-types'
 
@@ -122,6 +122,15 @@ export async function fetchHistory(params: PackagingHistoryParams): Promise<Pack
   return r.data.data
 }
 
+/**
+ * bao-CR-801 — lịch sử mua hàng của NGUYÊN LIỆU (mở từ mã ở màn Bảng giá nguyên liệu): cùng khuôn kết quả với `fetchHistory`
+ * chế độ mã (`series` có khi chọn đúng một mã, `series_by_code` luôn null). Quyền `packaging_material_price.read`.
+ */
+export async function fetchMaterialHistory(params: PackagingMaterialHistoryParams): Promise<PackagingHistoryResult> {
+  const r = await api.get(`${BASE}/material-history`, { params })
+  return r.data.data
+}
+
 export interface QuotePayload {
   product_code: string
   supplier_code: string
@@ -161,9 +170,12 @@ function saveBlob(response: { data: Blob; headers: any }, fallbackName: string) 
   window.URL.revokeObjectURL(url)
 }
 
+/** Các đường có `/export` bằng GET của cụm. */
+export type PackagingExportPath = 'price-list' | 'material-price-list' | 'last-prices' | 'history' | 'material-history' | 'product-overview'
+
 /** Xuất Excel bằng GET: cùng bộ lọc + thứ tự đang xem, không kèm `page`. Ném `Error` mang câu thông báo cho nơi gọi. */
 export async function downloadExport(
-  path: 'price-list' | 'material-price-list' | 'last-prices' | 'history' | 'product-overview', params: object, fallbackName: string,
+  path: PackagingExportPath, params: object, fallbackName: string,
 ) {
   try {
     const r = await api.get(`${BASE}/${path}/export`, { params, responseType: 'blob' })

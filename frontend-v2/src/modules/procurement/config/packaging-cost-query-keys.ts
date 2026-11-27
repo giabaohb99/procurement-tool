@@ -10,6 +10,7 @@ import type {
   PackagingHistoryParams,
   PackagingImpactRequest,
   PackagingLastPricesParams,
+  PackagingMaterialHistoryParams,
   PackagingMaterialPriceListParams,
   PackagingOverviewParams,
   PackagingPriceListParams,
@@ -33,6 +34,9 @@ export const packagingCostKeys = {
   productOverview: (params: PackagingOverviewParams) =>
     [ROOT, 'packagingCost', 'productOverview', params] as const,
   history: (params: PackagingHistoryParams) => [ROOT, 'packagingCost', 'history', params] as const,
+  /** bao-CR-801 — Lịch sử mua nguyên liệu: khóa riêng, không lẫn bộ nhớ đệm với Lịch sử mua hàng của VTBB. */
+  materialHistory: (params: PackagingMaterialHistoryParams) =>
+    [ROOT, 'packagingCost', 'materialHistory', params] as const,
   /** Bản in: nạp ĐỦ mọi dòng của bộ lọc (không có page) nên khóa riêng, không đụng khóa danh sách. */
   historyPrint: (params: PackagingHistoryParams) =>
     [ROOT, 'packagingCost', 'historyPrint', params] as const,

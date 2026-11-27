@@ -65,11 +65,14 @@ def _ledger_text_match(needle: str) -> list:
 
 
 def _conds(codes: list[str] | None, *, q: str = "", suppliers: list[str] | None = None, date_from: date | None = None,
-           date_to: date | None = None, scope_cond=None, skip_text_filters: bool = False, pairs=None, counts=None) -> list:
+           date_to: date | None = None, scope_cond=None, skip_text_filters: bool = False, pairs=None, counts=None,
+           any_code: bool = False) -> list:
     """Điều kiện lọc sổ giá. `codes=None` = toàn bộ mã VTBB. `skip_text_filters` bỏ `q` + nhà cung cấp (ô chọn nhà cung cấp).
     Chế độ sản phẩm: `pairs` (trang dòng, nối từng cặp) hoặc `counts` (số gộp, nối số cặp mỗi mã — `build_pair_counts`); tập mã đã bị
     phép nối giới hạn nên không thêm điều kiện mã. Chữ tìm khớp ở cấp cặp thì `counts.c.m > 0` (có ít nhất một cặp khớp)."""
-    conds = ([] if pairs is not None or counts is not None
+    #  `any_code` (bao-CR-801, lịch sử của nguyên liệu): không chọn mã = mọi mã mà `scope_cond` cho thấy — nguyên liệu không nằm
+    #  trong định mức / báo giá nên tập mã VTBB mặc định không áp được.
+    conds = ([] if pairs is not None or counts is not None or (codes is None and any_code)
              else [L.product_code.in_(codes) if codes is not None else L.product_code.in_(_universe_codes())])
     if date_from is not None:
         conds.append(L.price_date >= date_from)
@@ -166,7 +169,7 @@ def _series(db: Session, conds: list) -> list[dict]:
 def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = None, fg_codes: list[str] | None = None,
                   q: str = "", suppliers: list[str] | None = None, date_from: date | None = None,
                   date_to: date | None = None, sort_by: str = "date", sort_dir: str = "desc", page: int | None = 1,
-                  page_size: int = 50, scope_cond=None) -> dict:
+                  page_size: int = 50, scope_cond=None, any_code: bool = False) -> dict:
     """`{items, total, stats, series, suppliers}`. `page=None` = lấy đủ (xuất Excel; chặn ở MAX_ROWS + 1 dòng).
 
     `mode=code`: `codes` rỗng = mọi mã VTBB. `mode=product`: mã thành phần của các `fg_codes` (rỗng = mọi sản phẩm có
@@ -183,7 +186,8 @@ def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = 
     counts = build_pair_counts(pairs, q.strip()) if product else None
     options_counts = build_pair_counts(pairs) if product else None
     explicit = None if product else [c for c in (codes or []) if c]
-    text = {"q": q, "suppliers": suppliers, "date_from": date_from, "date_to": date_to, "scope_cond": scope_cond}
+    text = {"q": q, "suppliers": suppliers, "date_from": date_from, "date_to": date_to, "scope_cond": scope_cond,
+            "any_code": any_code and not product}
     conds = _conds(explicit or None, **text, counts=counts)
     stats = _stats(db, conds, counts, _weight(counts, q), fg_list)
     offset, limit = ((page - 1) * page_size, page_size) if page is not None else (0, MAX_ROWS + 1)
@@ -192,7 +196,7 @@ def build_history(db: Session, *, mode: str = "code", codes: list[str] | None = 
                        with_names=sort_by in ("name", "supplier"))
             if stats["purchase_count"] else [])
     scope_conds = _conds(explicit or None, date_from=date_from, date_to=date_to, scope_cond=scope_cond,
-                         skip_text_filters=True, counts=options_counts)
+                         skip_text_filters=True, counts=options_counts, any_code=any_code and not product)
     return {"items": [row_to_item(r) for r in rows], "total": stats["purchase_count"], "stats": stats,
             "series": _series(db, conds) if explicit and len(explicit) == 1 and stats["priced_count"] else None,
             "series_by_code": (build_series_by_code(db, pairs, _conds(None, **text, pairs=pairs), SERIES_CAP)

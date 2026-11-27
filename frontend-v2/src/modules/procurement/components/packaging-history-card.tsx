@@ -20,9 +20,15 @@ interface PackagingHistoryCardProps {
   row: PackagingHistoryRow
   /** Chế độ "Theo mã sản phẩm": thêm Mã SP · Tên sản phẩm · Thành phần. */
   productMode: boolean
+  /** bao-CR-801 — dòng của Lịch sử mua nguyên liệu: mã chữ thường như cột Mã nguyên liệu của bảng. */
+  rawMaterial?: boolean
 }
 
-export function PackagingHistoryCard({ row, productMode }: PackagingHistoryCardProps) {
+export function PackagingHistoryCard({
+  row,
+  productMode,
+  rawMaterial = false,
+}: PackagingHistoryCardProps) {
   const qty = formatQuantity(row.qty)
   const role = historyRoleText(row)
   return (
@@ -46,7 +52,11 @@ export function PackagingHistoryCard({ row, productMode }: PackagingHistoryCardP
             <span className="text-xs text-muted-foreground tabular-nums">Lần {row.seq}</span>
           </div>
           <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
-            <PackagingCodeLink code={row.code} />
+            {rawMaterial ? (
+              <span className="font-semibold tabular-nums">{row.code}</span>
+            ) : (
+              <PackagingCodeLink code={row.code} />
+            )}
             <span className="truncate font-medium" title={row.name}>
               {row.name || '(chưa có tên)'}
             </span>

@@ -38,15 +38,24 @@ const row: PackagingHistoryRow = {
   role: null,
 }
 
-function renderCard(over: Partial<PackagingHistoryRow> = {}, productMode = false) {
+function renderCard(over: Partial<PackagingHistoryRow> = {}, productMode = false, rawMaterial = false) {
   render(
     <MemoryRouter>
-      <PackagingHistoryCard row={{ ...row, ...over }} productMode={productMode} />
+      <PackagingHistoryCard row={{ ...row, ...over }} productMode={productMode} rawMaterial={rawMaterial} />
     </MemoryRouter>,
   )
 }
 
 describe('PackagingHistoryCard', () => {
+  //  bao-CR-801 — thẻ của Lịch sử mua nguyên liệu: mã chữ thường (đang ở chính màn lịch sử của nó, kể cả người đủ quyền),
+  //  số ĐMH ở Nguồn vẫn bấm được.
+  it('shows a raw-material code as plain text but keeps the purchase order link', () => {
+    renderCard({ code: 'NL0001', name: 'Hoạt chất Abamectin 95%' }, false, true)
+    expect(screen.getByText('NL0001')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'NL0001' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'PO-0055' })).toBeInTheDocument()
+  })
+
   it('leads with the purchase date and unit price, then the code link and the table fields', () => {
     renderCard()
     expect(screen.getByText('11/09/2026')).toBeInTheDocument()

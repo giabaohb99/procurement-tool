@@ -26,7 +26,7 @@ hàng; sổ giá gộp nguồn (một lần mua trên ERP là một dòng, đang
 Sổ Misa / lịch sử cũ để trống, tệp Excel mới ghi chữ); báo giá có cột Nguồn và chặn trùng (mã, NCC, ngày hiệu lực); ghi chú đơn vị
 VNĐ, chưa VAT trên màn; VAT dòng Misa để trống; bài mới Xóa dữ liệu theo lô nhập thay cho câu "chưa hoàn tác được".
 
-Cập nhật 27/11/2026 (bao-CR-800): thêm màn Bảng giá nguyên liệu (quyền riêng) vào bảng các màn và đoạn nói về quyền ở bài tổng quan.
+Cập nhật 27/11/2026 (bao-CR-800, bao-CR-801): thêm màn Bảng giá nguyên liệu (quyền riêng, bấm mã xem lịch sử mua) vào bảng các màn và đoạn nói về quyền ở bài tổng quan.
 Cập nhật 27/11/2026 (bao-CR-792): quyền *Giá bao bì* (một khóa cho cả cụm) tách thành MỖI MÀN MỘT QUYỀN, tên ở màn phân quyền
 *Giá NVL sản xuất › <tên màn>*. Sửa các đoạn nói về quyền ở bài tổng quan, nhập báo giá, nạp Sổ Misa, nhập định mức, xóa theo lô
 và mục dành cho quản trị. Sau khi phát hành phải seed lại + nạp lại chỉ mục (ba lệnh dưới).
@@ -100,7 +100,7 @@ TREE = {
 <tr><td><strong>Tác động giá bao bì</strong></td><td>Chọn mã bao bì, nhập giá giả định, xem sản phẩm nào tăng chi phí bao nhiêu. Bài {ref(IMPACT_TITLE, "Xem tác động khi nhà cung cấp đổi giá")}.</td></tr>
 <tr><td><strong>Tổng hợp theo sản phẩm</strong></td><td>Mọi sản phẩm có định mức, chi phí bao bì cũ so với mới, đang tăng hay giảm. Bài {ref(PRODUCTS_TITLE, "Rà chi phí bao bì của mọi sản phẩm")}.</td></tr>
 <tr><td><strong>Bảng giá VTBB</strong></td><td>Mỗi mã vật tư bao bì một dòng: giá mua gần nhất, lần trước, báo giá, giá cũ / mới. Nhập báo giá ở đây. Bài {ref(PRICES_TITLE, "Tra Bảng giá VTBB và nhập báo giá")}.</td></tr>
-<tr><td><strong>Bảng giá nguyên liệu</strong></td><td>Cùng khuôn với Bảng giá VTBB nhưng chỉ có nguyên liệu (sản phẩm nhóm NL) đã có giá. Có quyền riêng: không thấy mục này là tài khoản chưa được giao quyền xem giá nguyên liệu. Các màn VTBB không hiện mã nguyên liệu.</td></tr>
+<tr><td><strong>Bảng giá nguyên liệu</strong></td><td>Cùng khuôn với Bảng giá VTBB nhưng chỉ có nguyên liệu (sản phẩm nhóm NL) đã có giá. Bấm vào mã để xem lịch sử từng lần mua của nguyên liệu đó (nhà cung cấp, số lượng, đơn giá, biểu đồ giá). Có quyền riêng: không thấy mục này là tài khoản chưa được giao quyền xem giá nguyên liệu. Các màn VTBB không hiện mã nguyên liệu.</td></tr>
 <tr><td><strong>Giá mua gần nhất</strong></td><td>Đơn giá 3 / 5 / 10 lần mua gần nhất của từng mã, đặt cạnh nhau. Bài {ref(LAST_PRICES_TITLE, "So đơn giá các lần mua gần nhất")}.</td></tr>
 <tr><td><strong>Lịch sử mua hàng</strong></td><td>Từng lần mua của một mã (hoặc của mọi thành phần trong định mức một sản phẩm), kèm biểu đồ. Bài {ref(HISTORY_TITLE, "Xem lịch sử mua và biểu đồ giá")}.</td></tr>
 <tr><td><strong>Định mức bao bì</strong></td><td>Mỗi mã hàng hóa (mã HH) dùng chai, nắp, nhãn, nhãn thùng, thùng nào và bao nhiêu chai một thùng. Bài {ref(BOM_TITLE, "Khai và nhập định mức bao bì từ Excel")}.</td></tr>

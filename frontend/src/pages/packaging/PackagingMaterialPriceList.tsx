@@ -27,8 +27,8 @@ const MATERIAL_SOURCE: PriceListSource = {
  * nguyên liệu = sản phẩm nhóm `NL` đã có giá, lấy qua đường riêng `material-price-list` và gác bằng khóa quyền riêng
  * `packaging_material_price` (chủ dự án chốt 27/11/2026). Dùng CHUNG khung `PackagingPriceListScreen` với màn VTBB — phân
  * trang + xếp cột tại máy chủ, ô chọn mã, chip nhóm, khoảng ngày tính min – max, Xóa lọc, Xuất Excel (khi có quyền `export`).
- * Khác màn VTBB: không có nút phạm vi mã, không có cột Số SP đang dùng / Ghi chú / Thao tác (Báo giá), và mã nguyên liệu là
- * chữ thường (không bấm sang Lịch sử mua hàng của cụm).
+ * Khác màn VTBB: không có nút phạm vi mã, không có cột Số SP đang dùng / Ghi chú / Thao tác (Báo giá). bao-CR-801: mã nguyên
+ * liệu bấm sang màn Lịch sử mua nguyên liệu (`PackagingMaterialHistory`), không sang Lịch sử mua hàng của VTBB.
  */
 export default function PackagingMaterialPriceList() {
   return <PackagingPriceListScreen source={MATERIAL_SOURCE} />

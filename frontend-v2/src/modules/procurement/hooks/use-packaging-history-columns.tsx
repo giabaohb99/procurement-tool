@@ -10,6 +10,10 @@
  *
  * Chế độ "Theo sản phẩm" (bản mẫu `renderHistBySP`): mỗi dòng = một lần mua x một (sản phẩm, thành phần), các cột đầu theo thứ
  * tự bản mẫu: Mã SP · Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...; chế độ mã: Lần · Ngày mua · Mã VTBB...
+ *
+ * bao-CR-801 — cùng bộ cột cho Lịch sử mua nguyên liệu (`rawMaterial`, chỉ có chế độ mã), khác hai cột: tiêu đề ghi "nguyên
+ * liệu" và mã là CHỮ THƯỜNG (đang ở chính màn lịch sử của nguyên liệu; ô mã bấm được của VTBB dẫn sang màn Lịch sử mua hàng
+ * của VTBB, nơi không có mã nguyên liệu). Cột Nguồn giữ liên kết sang đơn mua hàng.
  */
 import { useMemo } from 'react'
 import type { DataTableColumn } from '@/shared/data-table'
@@ -56,6 +60,20 @@ const nameColumn: DataTableColumn<PackagingHistoryRow> = {
   cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
 }
 
+/** Hai cột mã / tên của màn nguyên liệu: cùng khóa xếp, khác tiêu đề, mã không bấm được. */
+const materialCodeColumn: DataTableColumn<PackagingHistoryRow> = {
+  ...codeColumn,
+  header: 'Mã nguyên liệu',
+  //  Tiêu đề dài hơn "Mã VTBB": nới cho chữ + mũi tên xếp không bị cắt.
+  width: 130,
+  cell: (row) => <span className="font-semibold tabular-nums">{row.code}</span>,
+}
+
+const materialNameColumn: DataTableColumn<PackagingHistoryRow> = {
+  ...nameColumn,
+  header: 'Tên nguyên liệu',
+}
+
 /** Ba cột đầu của chế độ sản phẩm (bản mẫu: Mã SP · Tên sản phẩm · Thành phần). */
 const productColumns: DataTableColumn<PackagingHistoryRow>[] = [
   {
@@ -81,12 +99,20 @@ const productColumns: DataTableColumn<PackagingHistoryRow>[] = [
   },
 ]
 
-export function usePackagingHistoryColumns(productMode: boolean, singleCode: boolean) {
+export function usePackagingHistoryColumns(
+  productMode: boolean,
+  singleCode: boolean,
+  rawMaterial = false,
+) {
   return useMemo<DataTableColumn<PackagingHistoryRow>[]>(() => {
+    const code = rawMaterial ? materialCodeColumn : codeColumn
+    const name = rawMaterial ? materialNameColumn : nameColumn
     //  Một mã: tên giống nhau ở mọi dòng (đã có ở ô chọn + tiêu đề biểu đồ) — bỏ cột để nhường chỗ cho nhà cung cấp.
-    const columns: DataTableColumn<PackagingHistoryRow>[] = productMode
-      ? [...productColumns, codeColumn, nameColumn, seqColumn, dateColumn]
-      : [seqColumn, dateColumn, codeColumn, ...(singleCode ? [] : [nameColumn])]
+    //  Màn nguyên liệu không có chế độ sản phẩm (nguyên liệu không nằm trong định mức).
+    const columns: DataTableColumn<PackagingHistoryRow>[] =
+      productMode && !rawMaterial
+        ? [...productColumns, code, name, seqColumn, dateColumn]
+        : [seqColumn, dateColumn, code, ...(singleCode ? [] : [name])]
     columns.push(
       {
         key: 'supplier',
@@ -158,5 +184,5 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
       },
     )
     return columns
-  }, [productMode, singleCode])
+  }, [productMode, singleCode, rawMaterial])
 }

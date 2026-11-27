@@ -478,6 +478,12 @@ export interface PackagingHistoryParams {
   page_size?: number
 }
 
+/**
+ * bao-CR-801 — bộ lọc của Lịch sử mua nguyên liệu (`GET /material-history` + đường xuất của nó): như Lịch sử mua hàng nhưng
+ * chỉ có chế độ theo mã, nên KHÔNG có `mode` và `fg_codes` (nguyên liệu không nằm trong định mức sản phẩm).
+ */
+export type PackagingMaterialHistoryParams = Omit<PackagingHistoryParams, 'mode' | 'fg_codes'>
+
 /** Sản phẩm có định mức cho ô chọn của chế độ sản phẩm (`GET /fg-options`). */
 export interface PackagingFgOption {
   code: string

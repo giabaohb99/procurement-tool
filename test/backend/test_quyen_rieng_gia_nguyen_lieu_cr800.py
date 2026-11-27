@@ -124,6 +124,32 @@ def test_cac_man_vtbb_khong_tra_ma_nguyen_lieu(api, seed, cap_quyen):
     assert _codes(api, "/api/packaging-cost/history?codes=NL0001") == []
 
 
+# ── bao-CR-801: lịch sử mua hàng của nguyên liệu ──────────────────────────────────────────────────────────────────
+def test_lich_su_nguyen_lieu_chi_co_ma_nhom_nl_va_co_bieu_do_khi_chon_mot_ma(api, seed, cap_quyen):
+    cap_quyen(seed.u_req_id, MATERIAL_ENTITY, scope="all", read=True, export=True)
+
+    data = api.get("/api/packaging-cost/material-history").json()["data"]
+    assert {r["code"] for r in data["items"]} == {"NL0001"} and data["total"] == 3          # không chọn mã = mọi nguyên liệu, không có chai
+    one = api.get("/api/packaging-cost/material-history?codes=NL0001").json()["data"]
+    assert [r["price"] for r in one["items"]] == [99999, 52000, 50000]                       # mới nhất trước
+    assert one["stats"]["purchase_count"] == 3 and len(one["series"]) == 3                   # một mã: có dữ liệu biểu đồ
+    assert api.get("/api/packaging-cost/material-history?codes=CPT0105").json()["data"]["total"] == 0   # mã VTBB không lọt sang
+    assert api.get("/api/packaging-cost/material-history/export?codes=NL0001").status_code == 200
+
+
+def test_lich_su_nguyen_lieu_can_khoa_rieng(api, seed, cap_quyen):
+    for key in PACKAGING_ENTITIES:
+        cap_quyen(seed.u_req_id, key, scope="all", read=True, export=True)
+    assert api.get("/api/packaging-cost/material-history").status_code == 403
+    assert api.get("/api/packaging-cost/material-history/export").status_code == 403
+
+
+def test_lich_su_nguyen_lieu_chi_xem_thi_khong_xuat(api, seed, cap_quyen):
+    cap_quyen(seed.u_req_id, MATERIAL_ENTITY, scope="all", read=True)
+    assert api.get("/api/packaging-cost/material-history").status_code == 200
+    assert api.get("/api/packaging-cost/material-history/export").status_code == 403
+
+
 # ── Migration ─────────────────────────────────────────────────────────────────────────────────────────────────────
 def _load_migration():
     spec = importlib.util.spec_from_file_location("matprice800", MIGRATION)

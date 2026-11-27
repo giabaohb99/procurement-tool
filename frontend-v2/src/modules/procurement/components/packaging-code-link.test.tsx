@@ -55,6 +55,47 @@ describe('PackagingCodeLink', () => {
     )
   })
 
+  //  bao-CR-801 — mã NGUYÊN LIỆU: đích là màn Lịch sử mua nguyên liệu, gác bằng khóa riêng `packaging_material_price`.
+  it('opens the material history for a raw-material code, gated by packaging_material_price.read alone', () => {
+    granted = ['packaging_material_price:read']
+    render(
+      <MemoryRouter>
+        <PackagingCodeLink code="NL0001" rawMaterial />
+        <PackagingCodeLink code="CPT0075" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: 'NL0001' })).toHaveAttribute(
+      'href',
+      `${appRoutes.procurement.packagingMaterialHistory}?codes=NL0001`,
+    )
+    //  Khóa nguyên liệu không mở lịch sử của VTBB: mã VTBB cạnh đó vẫn là chữ thường.
+    expect(screen.queryByRole('link', { name: 'CPT0075' })).not.toBeInTheDocument()
+  })
+
+  it('renders a raw-material code as plain text for someone holding only the VTBB history key', () => {
+    granted = ['packaging_history:read', 'packaging_history:export']
+    render(
+      <MemoryRouter>
+        <PackagingCodeLink code="NL0001" rawMaterial />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.getByText('NL0001')).not.toHaveClass('text-primary')
+  })
+
+  it('escapes a hostile raw-material code instead of letting it add query parameters', () => {
+    granted = ['packaging_material_price:read']
+    render(
+      <MemoryRouter>
+        <PackagingCodeLink code="NL&mode=product" rawMaterial />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: 'NL&mode=product' })).toHaveAttribute(
+      'href',
+      `${appRoutes.procurement.packagingMaterialHistory}?codes=NL%26mode%3Dproduct`,
+    )
+  })
+
   it('opens the purchase history of that code without triggering the row action around it', async () => {
     const onRowClick = vi.fn()
     render(

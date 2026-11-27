@@ -131,6 +131,8 @@ export const appRoutes = {
     packagingPrices: '/procurement/packaging-cost/prices',
     /** duoc-CR-798 — Bảng giá nguyên liệu (khuôn Bảng giá VTBB); bao-CR-800: dữ liệu thật, khóa riêng `packaging_material_price`. */
     packagingMaterialPrices: '/procurement/packaging-cost/material-prices',
+    /** bao-CR-801 — Lịch sử mua nguyên liệu: không có mục menu, mở bằng cách bấm mã ở Bảng giá nguyên liệu (`?codes=`). */
+    packagingMaterialHistory: '/procurement/packaging-cost/material-history',
     packagingLastPrices: '/procurement/packaging-cost/last-prices',
     packagingHistory: '/procurement/packaging-cost/history',
     packagingQuotes: '/procurement/packaging-cost/quotes',

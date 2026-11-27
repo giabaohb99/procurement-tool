@@ -36,8 +36,9 @@ export interface PriceListSource {
   /** Khóa quyền của màn: `export` cho nút Xuất Excel, `create` cho Báo giá (chỉ khi `packaging`). */
   entity: PackagingEntity
   /**
-   * Phần CHỈ CÓ ở Bảng giá VTBB: nút phạm vi (Mã trong định mức / Mọi mã có giá), cột Số SP đang dùng + Ghi chú, mã bấm
-   * sang Lịch sử mua hàng, Báo giá (nút đầu trang, cột Thao tác, Nhập báo giá). Màn nguyên liệu tắt hết: mã là chữ thường.
+   * Phần CHỈ CÓ ở Bảng giá VTBB: nút phạm vi (Mã trong định mức / Mọi mã có giá), cột Số SP đang dùng + Ghi chú, Báo giá
+   * (nút đầu trang, cột Thao tác, Nhập báo giá). Màn nguyên liệu tắt hết. Mã ở cả hai màn đều bấm được: mã VTBB sang Lịch
+   * sử mua hàng, mã nguyên liệu sang Lịch sử mua nguyên liệu (bao-CR-801).
    */
   packaging: boolean
   /** Khóa lưu cấu hình cột của bảng (`useTableColumns`). */
@@ -144,8 +145,9 @@ export function PackagingPriceListScreen({ source }: { source: PriceListSource }
   const onSort = (key: string) => { const s = nextSort(sortBy, sortDir, key); setSortBy(s.by); setSortDir(s.dir); setPage(1) }
 
   const columns = useMemo<TableColumn<PackagingPriceRow>[]>(() => [
-    //  Mã VTBB bấm sang Lịch sử mua hàng của cụm; mã nguyên liệu là chữ thường (Lịch sử mua hàng không thuộc quyền nguyên liệu).
-    { key: 'code', label: source.codeLabel, width: 120, sort: 'code', fixed: true, card: 'title', cell: (r) => (packaging ? <CodeLink code={r.code} /> : <b className="pkg-num">{r.code}</b>) },
+    //  Mã VTBB bấm sang Lịch sử mua hàng của cụm; mã nguyên liệu bấm sang Lịch sử mua nguyên liệu (bao-CR-801, màn riêng
+    //  cùng khóa quyền với Bảng giá nguyên liệu). Cột này là tiêu đề thẻ ở điện thoại nên thẻ cũng bấm được.
+    { key: 'code', label: source.codeLabel, width: 120, sort: 'code', fixed: true, card: 'title', cell: (r) => <CodeLink code={r.code} material={!packaging} /> },
     { key: 'name', label: source.nameLabel, width: 250, sort: 'name', card: 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
     { key: 'group', label: 'Nhóm', width: 90, sort: 'group', cell: (r) => r.group },
     { key: 'unit', label: 'ĐVT', width: 70, cell: (r) => r.unit },

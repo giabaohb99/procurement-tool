@@ -13,6 +13,7 @@ import type {
   PackagingHistoryMode,
   PackagingHistoryParams,
   PackagingHistoryPoint,
+  PackagingMaterialHistoryParams,
 } from '../types/packaging-cost-types'
 
 const ROLE_LABEL = new Map(PACKAGING_ROLE.map((role) => [Number(role.value), role.label]))
@@ -66,10 +67,17 @@ function splitCodes(raw: string | null): string[] {
 /**
  * Đọc lựa chọn từ URL. `mode` nói rõ thì theo `mode`; không nói thì đường dẫn sâu chỉ có `fg` là chế độ sản phẩm, còn lại là
  * chế độ mã. Mã lặp / rỗng bị bỏ, cắt ở trần.
+ *
+ * `rawMaterial` (bao-CR-801, màn Lịch sử mua nguyên liệu): chỉ có chế độ mã — `mode` / `fg` gõ tay trên URL bị BỎ, kẻo màn
+ * rơi vào chế độ sản phẩm rồi gọi đường của VTBB (người chỉ giữ khóa nguyên liệu gặp 403).
  */
-export function parseHistorySearch(search: URLSearchParams): PackagingHistorySelection {
-  const fg = splitCodes(search.get('fg'))
+export function parseHistorySearch(
+  search: URLSearchParams,
+  rawMaterial = false,
+): PackagingHistorySelection {
   const codes = splitCodes(search.get('codes'))
+  if (rawMaterial) return { mode: 'code', codes, fg: [] }
+  const fg = splitCodes(search.get('fg'))
   const explicit = search.get('mode')
   const mode: PackagingHistoryMode =
     explicit === 'product' || explicit === 'code'
@@ -102,6 +110,11 @@ export function packagingHistoryProductHref(fgCode: string): string {
   return `${appRoutes.procurement.packagingHistory}?${new URLSearchParams({ fg: fgCode }).toString()}`
 }
 
+/** bao-CR-801 — đường dẫn tới Lịch sử mua nguyên liệu của MỘT mã nguyên liệu — ô mã ở Bảng giá nguyên liệu. */
+export function packagingMaterialHistoryHref(code: string): string {
+  return `${appRoutes.procurement.packagingMaterialHistory}?${new URLSearchParams({ codes: code }).toString()}`
+}
+
 /**
  * Lựa chọn + bộ lọc màn hình → tham số gửi máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). Chỉ gửi mã
  * của chế độ đang bật. `sort.by` rỗng = để máy chủ xếp mặc định (ngày mới nhất trước).
@@ -123,6 +136,17 @@ export function buildHistoryParams(
     date_to: filters.to || undefined,
     ...(sort.by ? { sort_by: sort.by, sort_dir: sort.dir } : {}),
   }
+}
+
+/**
+ * bao-CR-801 — tham số của đường nguyên liệu (`material-history` + đường xuất): bỏ hẳn `mode` và `fg_codes`, hai khóa đường
+ * đó không có. Phần còn lại (mã, nhà cung cấp, khoảng ngày, thứ tự, trang) giữ nguyên.
+ */
+export function toMaterialHistoryParams(params: PackagingHistoryParams): PackagingMaterialHistoryParams {
+  const rest: Partial<PackagingHistoryParams> = { ...params }
+  delete rest.mode
+  delete rest.fg_codes
+  return rest
 }
 
 /** Điểm biểu đồ: nhãn ngày ngắn cho trục + giá + thông tin hiện ở ô rê chuột. */

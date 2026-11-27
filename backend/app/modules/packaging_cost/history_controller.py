@@ -19,6 +19,7 @@ from app.core.response import success
 from . import export_columns as xl
 from .history_service import MAX_CODES, build_history
 from .last_prices_controller import MAX_PAGE_SIZE, view_scope
+from .material_scope import MATERIAL_ENTITY
 from .model import PackagingBom
 
 ENTITY = "packaging_history"
@@ -88,3 +89,36 @@ def fg_options(db: Session = Depends(get_db),
     """
     rows = db.query(PackagingBom.fg_code, PackagingBom.fg_name).order_by(PackagingBom.fg_code).all()
     return success({"items": [{"code": code, "name": name or ""} for code, name in rows]})
+
+
+# ── bao-CR-801: lịch sử mua hàng của NGUYÊN LIỆU (mở từ mã ở màn Bảng giá nguyên liệu) ─────────────────────────────────
+def material_history_filters(
+    codes: list[str] = Query([], max_length=MAX_CODES), q: str = Query("", max_length=100),
+    supplier: list[str] = Query([], max_length=50), date_from: date | None = None, date_to: date | None = None,
+    sort_by: str = Query("date", max_length=30), sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+) -> dict:
+    """Bộ lọc của lịch sử nguyên liệu: như `history_filters` nhưng chỉ có chế độ theo mã (nguyên liệu không nằm trong định mức)."""
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(422, "Từ ngày không được sau Đến ngày")
+    return {"mode": "code", "codes": codes, "q": q, "suppliers": supplier, "date_from": date_from, "date_to": date_to,
+            "sort_by": sort_by, "sort_dir": sort_dir}
+
+
+@router.get("/material-history")
+def material_history(filters: dict = Depends(material_history_filters), page: int = Query(1, ge=1),
+                     page_size: int = Query(50, ge=1, le=MAX_PAGE_SIZE), db: Session = Depends(get_db),
+                     user=Depends(require(MATERIAL_ENTITY, "read"))):
+    """Lịch sử mua hàng của nguyên liệu (sản phẩm nhóm NL): cùng khuôn kết quả với `GET /history` chế độ mã (`items`, `total`,
+    `stats`, `series` khi chọn đúng một mã, `suppliers`). `codes` rỗng = mọi mã nguyên liệu. Quyền `packaging_material_price.read`:
+    người chỉ có khóa Lịch sử mua hàng của VTBB không gọi được, và `GET /history` không trả mã nguyên liệu."""
+    res = build_history(db, **filters, page=page, page_size=page_size, any_code=True,
+                        scope_cond=view_scope(db, user, MATERIAL_ENTITY, "read"))
+    return success(res)
+
+
+@router.get("/material-history/export")
+def material_history_export(filters: dict = Depends(material_history_filters), db: Session = Depends(get_db),
+                            user=Depends(require(MATERIAL_ENTITY, "export"))):
+    """Xuất Excel lịch sử mua hàng của nguyên liệu theo đúng bộ lọc + thứ tự đang xem (tối đa 5.000 dòng). Quyền `packaging_material_price.export`."""
+    res = build_history(db, **filters, page=None, any_code=True, scope_cond=view_scope(db, user, MATERIAL_ENTITY, "export"))
+    return xl.xlsx_download(xl.build_history_workbook(res["items"], product_mode=False), "lich-su-mua-nguyen-lieu")

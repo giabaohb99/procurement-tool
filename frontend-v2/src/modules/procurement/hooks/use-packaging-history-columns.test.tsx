@@ -23,6 +23,34 @@ describe('usePackagingHistoryColumns', () => {
     expect(headers(false)).not.toContain('Mã SP')
   })
 
+  //  bao-CR-801 — màn Lịch sử mua nguyên liệu: cùng bộ cột, khác nhãn hai cột mã / tên; không có chế độ sản phẩm.
+  it('raw-material screen relabels the code and name columns and never shows the product columns', () => {
+    const material = (productMode: boolean, singleCode = false) =>
+      renderHook(() => usePackagingHistoryColumns(productMode, singleCode, true)).result.current
+    expect(material(false).map((column) => column.header).slice(0, 4)).toEqual([
+      'Lần',
+      'Ngày mua',
+      'Mã nguyên liệu',
+      'Tên nguyên liệu',
+    ])
+    expect(material(false, true).map((column) => column.header).slice(0, 3)).toEqual([
+      'Lần',
+      'Ngày mua',
+      'Mã nguyên liệu',
+    ])
+    //  Kể cả bị gọi nhầm với chế độ sản phẩm: không có Mã SP / Thành phần.
+    const headers = material(true).map((column) => column.header)
+    for (const header of ['Mã SP', 'Tên sản phẩm', 'Thành phần', 'Mã VTBB', 'Tên vật tư']) {
+      expect(headers).not.toContain(header)
+    }
+    //  Phần còn lại y hệt màn VTBB (cùng khóa cột, cùng thứ tự) nên máy chủ nhận đúng các khóa xếp.
+    const packaging = renderHook(() => usePackagingHistoryColumns(false, false)).result.current
+    expect(material(false).map((column) => column.key)).toEqual(packaging.map((column) => column.key))
+    for (const column of material(false).filter((item) => item.sortable)) {
+      expect(HISTORY_SORT_KEYS).toContain(column.key)
+    }
+  })
+
   it('only sorts by keys the server accepts (rule 8)', () => {
     for (const productMode of [false, true]) {
       const columns = renderHook(() => usePackagingHistoryColumns(productMode, false)).result.current

@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CoreApi from '@/core/api'
+import { appRoutes } from '@/shared/constants/app-routes'
 
 import type {
   PackagingCodeOption,
@@ -140,13 +141,21 @@ describe('PackagingMaterialPriceListPage', () => {
     expect(screen.queryByText('Mọi mã có giá')).not.toBeInTheDocument()
   })
 
-  it('shows the material columns: plain-text codes, no "Số SP đang dùng", no quote action', async () => {
-    //  Kể cả người có quyền Lịch sử mua hàng + tạo báo giá VTBB: màn lịch sử của cụm không còn mã nguyên liệu.
-    granted.push('packaging_history.read', 'packaging_price_list.create')
+  it('shows the material columns: codes linking to the material history, no "Số SP đang dùng", no quote action', async () => {
+    //  bao-CR-801 — mã mở Lịch sử mua NGUYÊN LIỆU của đúng mã đó. Người xem màn này chỉ cần khóa nguyên liệu: không có
+    //  `packaging_history.read` vẫn là đường bấm, và đích không bao giờ là màn Lịch sử mua hàng của VTBB.
+    granted.push('packaging_price_list.create')
     build()
     const line = (await screen.findByText('Hoạt chất Abamectin 95%')).closest('tr') as HTMLTableRowElement
-    expect(within(line).getByText('NL0001')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /NL000/ })).not.toBeInTheDocument()
+    expect(within(line).getByRole('link', { name: 'NL0001' })).toHaveAttribute(
+      'href',
+      `${appRoutes.procurement.packagingMaterialHistory}?codes=NL0001`,
+    )
+    const links = screen.getAllByRole('link', { name: /^NL000/ })
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/procurement/packaging-cost/material-history?codes=NL0001',
+      '/procurement/packaging-cost/material-history?codes=NL0002',
+    ])
     expect(screen.getByText('Mã nguyên liệu')).toBeInTheDocument()
     expect(screen.getByText('Tên nguyên liệu')).toBeInTheDocument()
     for (const header of ['Mã VTBB', 'Tên vật tư', 'Số SP đang dùng', 'Thao tác']) {
