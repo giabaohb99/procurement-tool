@@ -254,7 +254,7 @@ TREE = {
 <tr><td>Ghi chú</td><td>Cảnh báo của mã (ví dụ ĐVT mua khác ĐVT danh mục). Cột ẩn sẵn, mở ở nút <strong>Cột</strong>.</td></tr>
 </tbody>
 </table>
-<p>Thanh lọc: ô <strong>Tìm mã, tên vật tư…</strong>, chip nhóm (<strong>Tất cả</strong>, Chai, Nắp, Nhãn…), và nút phạm vi <strong>Mã trong định mức</strong> (mặc định: mã đang dùng trong định mức và mã đã có báo giá) / <strong>Mọi mã có giá</strong> (thêm mọi mã có trong sổ giá). <strong>Đã gõ ô tìm thì màn tìm trên mọi mã có trong sổ giá</strong>, kể cả mã đã mua nhưng chưa nằm trong định mức nào (cột số sản phẩm dùng của mã đó bằng 0), không cần đổi nút phạm vi. Bấm tiêu đề cột để xếp; <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem.</p>
+<p>Thanh lọc: <strong>ô chọn mã</strong> (giống màn Tác động giá bao bì: gõ mã, tên, tên nhóm hoặc tên nhà cung cấp ngay trong ô, chọn được nhiều mã thành chip; danh sách gồm mọi mã có trong sổ giá, kể cả mã chưa nằm trong định mức), chip nhóm (<strong>Tất cả</strong>, Chai, Nắp, Nhãn…), và nút phạm vi <strong>Mã trong định mức</strong> (mặc định: mã đang dùng trong định mức và mã đã có báo giá) / <strong>Mọi mã có giá</strong> (thêm mọi mã có trong sổ giá). <strong>Đã chọn mã thì bảng chỉ còn đúng các mã đó</strong>, kể cả mã đã mua nhưng chưa nằm trong định mức nào (cột số sản phẩm dùng của mã đó bằng 0), không cần đổi nút phạm vi. Bấm tiêu đề cột để xếp; <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem.</p>
 
 <p><strong>Giữ nguyên bộ lọc khi tải lại:</strong> ô tìm, chip nhóm, phạm vi mã, khoảng ngày, cột đang xếp, trang và số dòng mỗi trang đều nằm trên địa chỉ của trang. Bấm F5 hoặc gửi địa chỉ cho đồng nghiệp là mở lại đúng bộ lọc đó; bấm <strong>Quay lại</strong> của trình duyệt không bị kẹt qua từng lần lọc.</p>
 
@@ -311,7 +311,7 @@ TREE = {
 <table>
 <thead><tr><th>Ô lọc</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td>Ô chọn mã</td><td>Giống ô chọn mã của màn Tác động giá bao bì: gõ mã, tên hoặc tên nhóm ngay trong ô, danh sách mã khớp hiện ra, bấm hoặc Enter để thêm; mã đã chọn thành chip trong ô (bấm x trên chip để bỏ, dấu x cuối ô để bỏ hết). Chọn được nhiều mã, bảng chỉ còn đúng các mã đó.</td></tr>
+<tr><td>Ô chọn mã</td><td>Giống ô chọn mã của màn Tác động giá bao bì: gõ mã, tên, tên nhóm hoặc <strong>tên nhà cung cấp</strong> (ra các mã từng mua của nhà cung cấp đó) ngay trong ô, danh sách mã khớp hiện ra, bấm hoặc Enter để thêm; mã đã chọn thành chip trong ô (bấm x trên chip để bỏ, dấu x cuối ô để bỏ hết). Chọn được nhiều mã, bảng chỉ còn đúng các mã đó.</td></tr>
 <tr><td>Nhóm sản phẩm</td><td>Lọc theo nhóm. Bấm ô <strong>Nhóm sản phẩm</strong> để mở danh sách nhóm: mỗi nhóm một dòng có ô tick, số mờ bên phải là số mã của nhóm; gõ vào ô để tìm nhóm cho nhanh. Tick nhiều nhóm thì hiện mã thuộc một trong các nhóm đó (ví dụ tick <strong>Chai</strong> và <strong>Nắp</strong> ra cả chai lẫn nắp), ô ghi tên nhóm đầu kèm <em>+n</em>; bấm dấu x trong ô để bỏ hết. Dòng <strong>Tất cả</strong> đứng đầu danh sách: tick thì bỏ mọi nhóm đang chọn và xem hết mọi mã; lúc mới mở màn dòng này chưa tick. Số mã của từng nhóm đếm theo các bộ lọc khác đang dùng, không co lại khi bạn chọn nhóm.</td></tr>
 <tr><td>Số lần hiển thị</td><td>3, 5 (mặc định) hoặc 10 lần mua. Đây là số cột hiện, không phải bộ lọc.</td></tr>
 <tr><td>Phạm vi mã</td><td><strong>Mọi mã</strong> (mặc định) hoặc <strong>Định mức + báo giá</strong> (chỉ mã thành phần của định mức và mã đã có báo giá).</td></tr>

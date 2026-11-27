@@ -12,19 +12,19 @@ import PackagingExcelImportButton from '../../components/packaging/PackagingExce
 import PackagingQuoteModal from '../../components/packaging/PackagingQuoteModal'
 import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText } from '../../components/packaging/PackagingCells'
 import { IMPORT_MODULE_PACKAGING_QUOTE, PACKAGING_ENTITY, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
-import type { PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import type { PackagingCodeOption, PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import { fmtDateStr } from '../../utils/datetime'
 import { joinWarnings } from '../../utils/packaging-price'
-import { collectGroups, nextSort } from '../../utils/packaging-query'
+import { collectGroups, nextSort, sortCodeOptions } from '../../utils/packaging-query'
+import PackagingCodePicker from '../../components/packaging/PackagingCodePicker'
 import { PRICE_LIST_URL_KEYS, priceListScreenToSearch, searchToPriceListScreen } from '../../utils/packaging-prices-screen-url'
 import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import '../../components/packaging/packaging.css'
 
-interface Filters { q: string; group: string; scope: 'bom' | 'all' }
-const EMPTY: Filters = { q: '', group: '', scope: 'bom' }
+interface Filters { codes: string[]; group: string; scope: 'bom' | 'all' }
+const EMPTY: Filters = { codes: [], group: '', scope: 'bom' }
 
 /**
  * Màn BẢNG GIÁ VTBB: mỗi mã một dòng với số lần mua, hai lần mua gần nhất, báo giá mới nhất, giá cũ / mới, min–max theo
@@ -35,30 +35,34 @@ export default function PackagingPriceList() {
   const { can } = useAuth()
   //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ từ khóa, nhóm, phạm vi, khoảng ngày, cột xếp, trang).
   const [initial] = useState(() => searchToPriceListScreen(window.location.search))
-  const [filters, setFilters] = useState<Filters>({ q: initial.q, group: initial.group, scope: initial.scope })
+  const [filters, setFilters] = useState<Filters>({ codes: initial.codes, group: initial.group, scope: initial.scope })
   const [range, setRange] = useState(initial.range)
   const [sortBy, setSortBy] = useState(initial.sortBy)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
   const [page, setPage] = useState(initial.page)
   const [pageSize, setPageSize] = useState(initial.pageSize)
   const [groups, setGroups] = useState<string[]>([])
+  const [codeOptions, setCodeOptions] = useState<PackagingCodeOption[]>([])
+  const [codesLoading, setCodesLoading] = useState(true)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)   // '' = mở "Báo giá mới" chưa khóa mã
   const [exporting, setExporting] = useState(false)
-  const q = useDebouncedValue(filters.q, 350).trim()
   const canQuote = can(PACKAGING_ENTITY.priceList, 'create')
 
-  //  Nhóm cho chip lấy từ mã đang dùng trong định mức.
-  useEffect(() => { fetchCodeOptions().then((d) => setGroups(collectGroups(d))).catch(() => {}) }, [])
+  //  Ô chọn mã (27/11/2026): mọi mã có trong sổ giá; nhóm cho chip lấy từ chính danh sách đó.
+  useEffect(() => {
+    fetchCodeOptions('all').then((d) => { setCodeOptions(sortCodeOptions(d)); setGroups(collectGroups(d)) })
+      .catch(() => {}).finally(() => setCodesLoading(false))
+  }, [])
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo<PackagingPriceListParams>(() => ({
-    q: q || undefined,
+    code: filters.codes.length ? filters.codes : undefined,
     group: filters.group || undefined,
     scope: filters.scope,
     date_from: range.from || undefined,
     date_to: range.to || undefined,
     ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
-  }), [q, filters.group, filters.scope, range, sortBy, sortDir])
+  }), [filters.codes, filters.group, filters.scope, range, sortBy, sortDir])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
   const list = useLatestQuery(() => fetchPriceList(params), JSON.stringify(params))
 
@@ -160,8 +164,9 @@ export default function PackagingPriceList() {
         {/* Thanh lọc nằm CÙNG hàng với nút Tải lại / Cột của bảng (người chủ báo dải trống giữa hai hàng, 23/11/2026). */}
         <TableToolbar compact {...table} onRefresh={list.reload}>
           <div className="pkg-row" style={{ flex: 1, minWidth: 0 }}>
-            <div className="pkg-search">
-              <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên vật tư…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
+            <div style={{ width: 380, maxWidth: '100%' }}>
+              <PackagingCodePicker options={codeOptions} value={filters.codes} onChange={(codes) => patch({ codes })}
+                loading={codesLoading} emptyPlaceholder="Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã" compact />
             </div>
             <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
               {['', ...groups].map((g) => (

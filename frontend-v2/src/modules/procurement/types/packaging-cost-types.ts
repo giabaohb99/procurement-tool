@@ -229,6 +229,8 @@ export interface PackagingPriceListResult {
 /** Bộ lọc của Bảng giá VTBB — cũng là tham số của đường xuất Excel (cùng thứ tự). */
 export interface PackagingPriceListParams {
   q?: string
+  /** Mã chọn ở ô chọn mã (lặp khóa `code=`, tối đa 500) — chỉ đúng các mã đó, bất kể phạm vi. */
+  code?: string[]
   group?: string
   scope?: 'bom' | 'all'
   date_from?: string

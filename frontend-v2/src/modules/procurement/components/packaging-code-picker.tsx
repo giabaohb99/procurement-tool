@@ -47,7 +47,7 @@ const PICKER_TEXT: Record<
     aria: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng',
     empty: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng — gõ mã, tên hoặc tên nhóm',
     more: 'Thêm mã… (vd: chai · nắp · nhãn, thùng · NAP0085)',
-    summary: 'mã bao bì đang dùng cho sản phẩm',
+    summary: 'mã vật tư bao bì khớp',
   },
   product: {
     aria: 'Chọn mã sản phẩm',

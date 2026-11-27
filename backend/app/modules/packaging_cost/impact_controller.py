@@ -24,6 +24,7 @@ from .code_options_service import supplier_names_by_code
 from .impact_service import compute_impact
 from .last_prices_controller import router as last_prices_router
 from .last_prices_controller import shared_view_scope
+from .last_prices_controller import MAX_CODES, CodeValue
 from .last_prices_controller import view_scope as _scope
 from .product_overview_controller import router as product_overview_router
 from .price_list_service import SORT_KEYS, build_price_list, build_price_list_page
@@ -85,14 +86,15 @@ def _check_list_params(date_from: date | None, date_to: date | None, sort_dir: s
         raise HTTPException(422, "sort_dir chỉ nhận asc hoặc desc")
 
 
-def _price_list(db: Session, user, action: str, *, q, group, scope, date_from, date_to, sort_by, sort_dir):
+def _price_list(db: Session, user, action: str, *, q, group, scope, date_from, date_to, sort_by, sort_dir, codes=None):
     _check_list_params(date_from, date_to, sort_dir)
-    return build_price_list(db, q=q, group=group, scope=scope, date_from=date_from,
-                            date_to=date_to, sort_by=sort_by, sort_dir=sort_dir, scope_cond=_scope(db, user, PRICE_LIST_ENTITY, action))
+    return build_price_list(db, q=q, group=group, scope=scope, date_from=date_from, date_to=date_to, sort_by=sort_by,
+                            sort_dir=sort_dir, scope_cond=_scope(db, user, PRICE_LIST_ENTITY, action), product_codes=codes)
 
 
 @router.get("/price-list")
 def price_list(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+               code: list[CodeValue] = Query([], max_length=MAX_CODES),
                scope: str = Query("bom", pattern="^(bom|all)$"),
                date_from: date | None = None, date_to: date | None = None,
                sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
@@ -100,6 +102,7 @@ def price_list(q: str = Query("", max_length=100), group: str = Query("", max_le
                db: Session = Depends(get_db), user=Depends(require(PRICE_LIST_ENTITY, "read"))):
     """Bảng giá VTBB: mỗi mã vật tư một dòng (giá cũ / mới / chênh, số sản phẩm dùng, báo giá).
 
+    `code` (lặp, tối đa 500, ô chọn mã 27/11/2026) = chỉ đúng các mã đã chọn, bất kể phạm vi.
     `scope=bom` = mã thành phần của định mức ∪ mã có báo giá; `scope=all` = thêm mọi mã có trong sổ giá. Lọc + xếp (`sort_by` trong khóa cho phép, ô trống xuống cuối) tại máy chủ rồi mới
     phân trang; xếp theo cột danh mục (`code, name, group, unit`) thì chỉ tính giá cho các mã của trang (nhanh khi sổ giá lớn).
     Quyền `packaging_price_list.read`.
@@ -107,18 +110,20 @@ def price_list(q: str = Query("", max_length=100), group: str = Query("", max_le
     _check_list_params(date_from, date_to, sort_dir)
     items, total = build_price_list_page(db, page=page, page_size=page_size, q=q, group=group, scope=scope,
                                          date_from=date_from, date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code",
-                                         sort_dir=sort_dir, scope_cond=_scope(db, user, PRICE_LIST_ENTITY, "read"))
+                                         sort_dir=sort_dir, scope_cond=_scope(db, user, PRICE_LIST_ENTITY, "read"),
+                                         product_codes=code)
     return success({"items": items, "total": total})
 
 
 @router.get("/price-list/export")
 def price_list_export(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+                      code: list[CodeValue] = Query([], max_length=MAX_CODES),
                       scope: str = Query("bom", pattern="^(bom|all)$"),
                       date_from: date | None = None, date_to: date | None = None,
                       sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
                       db: Session = Depends(get_db), user=Depends(require(PRICE_LIST_ENTITY, "export"))):
     """Xuất Excel Bảng giá VTBB theo đúng bộ lọc + thứ tự đang xem (không phân trang). Quyền `packaging_price_list.export`."""
-    rows = _price_list(db, user, "export", q=q, group=group, scope=scope, date_from=date_from,
+    rows = _price_list(db, user, "export", q=q, group=group, scope=scope, codes=code, date_from=date_from,
                        date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code", sort_dir=sort_dir)
     return xl.xlsx_download(xl.build_price_list_workbook(rows), "bang-gia-vtbb")
 

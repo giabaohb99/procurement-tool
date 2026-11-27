@@ -28,7 +28,6 @@ export const LAST_PRICES_DEFAULT_PAGE_SIZE = 20
 /** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối). */
 export const LAST_PRICES_DEFAULT_SORT = { by: 'p1_date', dir: 'desc' } as const
 
-const MAX_QUERY_LENGTH = 100
 const MAX_GROUP_LENGTH = 50
 const MAX_SUPPLIER_LENGTH = 50
 const MAX_SUPPLIERS = 50
@@ -125,7 +124,15 @@ export function parsePriceListUrlState(search: URLSearchParams): PriceListUrlSta
   const range = readDateRange(search)
   return {
     filters: {
-      q: readText(search.get('q'), MAX_QUERY_LENGTH),
+      //  `code` lặp khóa (ô chọn mã, 27/11/2026, thay ô tìm chữ `q`); link cũ có `q` thì bỏ qua.
+      codes: [
+        ...new Set(
+          search
+            .getAll('code')
+            .map((code) => readText(code, MAX_SUPPLIER_LENGTH))
+            .filter(Boolean),
+        ),
+      ].slice(0, MAX_CODES),
       group: readText(search.get('group'), MAX_GROUP_LENGTH),
       scope: readScope(search.get('scope')),
     },
@@ -141,8 +148,7 @@ export function parsePriceListUrlState(search: URLSearchParams): PriceListUrlSta
 /** Trạng thái màn → chuỗi truy vấn (không kèm `?`); mặc định thì không ghi gì. */
 export function buildPriceListUrlSearch(state: PriceListUrlState): string {
   const search = new URLSearchParams()
-  const q = state.filters.q.trim()
-  if (q) search.set('q', q)
+  for (const code of state.filters.codes) search.append('code', code)
   if (state.filters.group) search.set('group', state.filters.group)
   if (state.filters.scope !== 'bom') search.set('scope', state.filters.scope)
   if (state.from) search.set('date_from', state.from)
