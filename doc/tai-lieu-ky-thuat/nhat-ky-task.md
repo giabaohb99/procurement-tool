@@ -133,6 +133,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 Mã nguồn: `backend/scripts/seed_help_lich_su_mua_cr795.py` · `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py` · `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`
 Deploy: dev (chạy seed), prod chưa
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb): đã chạy script vá bài Lịch sử mua hàng & Tham chiếu giá và bài AI riêng, nạp lại chỉ mục.
 
 ## bao-CR-794 | Đơn mua hàng: nút Sửa giá sau duyệt cho người có quyền duyệt, dùng được cả khi đơn đã nhận hàng
 - status: xong
@@ -174,6 +175,7 @@ hàng còn dòng sửa được; không có ở đơn Nháp, Hoàn thành, đơn
 trả lại giá cũ, nhật ký ghi đủ, khổ điện thoại hiện dạng thẻ không tràn, hai bài hướng dẫn khớp nhãn. Đã đổi nhãn cột của giao
 diện mới thành *Chênh lệch (chưa VAT)* cho khớp giao diện cũ. Chưa soát bằng trình duyệt: giao diện cũ, và tài khoản không có
 quyền duyệt (đường API đã thử: bị chặn).
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb): nút Sửa giá đã có trên prod; đã vá hai bài hướng dẫn và xuất bản cẩm nang trợ lý.
 
 ## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
 - status: xong
@@ -205,6 +207,8 @@ Deploy: dev 27/11/2026 (erp-v2 637a310e): chạy script cho phòng Dego Lab (id 
 lại không đổi gì. Thử bằng tài khoản thật: người phòng Lab vào được Bảng giá VTBB (kể cả xuất), Giá mua gần nhất và danh sách báo
 giá, bị chặn ở bốn màn còn lại và ở thao tác thêm báo giá; người giữ vai trò xem cả cụm vẫn vào đủ. Prod chưa (chạy script sau khi
 phát hành bao-CR-792).
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb): chạy script cho phòng Dego Lab (id 6), chuyển 8 tài khoản sang vai trò hai màn; thử
+bằng tài khoản thật: vào được Bảng giá VTBB và Giá mua gần nhất, bị chặn ở bốn màn còn lại. 25 tài khoản khác giữ vai trò xem cả cụm.
 
 ## bao-CR-792 | Giá nguyên vật liệu sản xuất: tách quyền theo từng màn thay cho một quyền chung cả cụm
 - status: xong
@@ -245,6 +249,8 @@ Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
 Deploy: dev 27/11/2026 (erp-v2 e94bb084): migration `permsplit792` chạy, không còn dòng quyền cũ; vai trò xem cụm giá (44 tài
 khoản) có Xem / Xuất ở cả sáu màn, Quản lý thu mua giữ đủ quyền nhập liệu; thử bằng tài khoản thật: người có vai trò vào được mọi
 đường của cụm, người không có khóa nào bị chặn hết. Đã seed lại HDSD và nạp lại chỉ mục trên dev. Prod chưa.
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb): migration `permsplit792` chạy, không còn dòng quyền cũ; vai trò xem cụm giá và
+Quản lý thu mua đã mang sáu khóa mới. Đã seed lại HDSD cụm giá và nạp lại chỉ mục.
 
 ## bao-CR-791 | Bảng giá VTBB: ô tìm kiếm tìm trên mọi mã đã mua, kể cả mã chưa có trong định mức bao bì
 - status: xong
@@ -265,6 +271,7 @@ mã nằm trong định mức bao bì hoặc có báo giá; mã này chưa thu�
 Mã nguồn: `backend/app/modules/packaging_cost/price_list_service.py`.
 Kiểm: `test/backend/test_bang_gia_tim_moi_ma_cr791.py`.
 Deploy: dev 27/11/2026 (erp-v2 f08f1b7f). Prod chưa.
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb).
 
 ## bao-CR-790 | Lịch sử mua hàng ghi ngay khi hàng về kho và đổi theo đơn mua hàng tới khi dòng hoàn thành
 - status: xong
@@ -306,6 +313,8 @@ Kiểm: `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`.
 Deploy: dev 27/11/2026 (erp-v2 f08f1b7f): migration `phstage790` chạy; script dựng lịch sử ghi 65 bản ghi đang mở của 35 đơn, chạy
 lại lần hai không đổi gì, kiểm sổ giá không lệch. Prod chưa (sau khi phát hành phải chạy script trên prod, ước 745 dòng).
+Deploy: prod 27/11/2026 bản 2.26.0 (main 8de70ffb): migration `phstage790` chạy; script dựng lịch sử ghi 741 bản ghi đang mở của 500 đơn
+(dump trước phát hành `prod_truoc_release_20261127_1434`); kiểm sổ giá không lệch; mã CHT0230 của PO01260 đã có lịch sử.
 
 ## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
 - status: xong
