@@ -255,6 +255,15 @@ tbody tr.pkg-zero td { color: var(--muted); }
 .pkg-tile-diff small { font-size: 12px; font-weight: 400; }
 .pkg-tile-diff.col { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.25; }
 .pkg-tile .pkg-assumed { width: 100%; min-width: 0; box-sizing: border-box; height: 32px !important; font-size: 14.5px; font-weight: 700; }
+/*  Thẻ mã đã chọn (27/11/2026): dải giá cũ → mới · chênh lệch, rồi ô giá giả định rộng hết thẻ. */
+.pkg-strip { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: start; column-gap: 8px; margin-top: 8px; padding: 7px 12px; background: #f4f7fe; border-radius: 8px; }
+.pkg-strip > div { min-width: 0; }
+.pkg-strip-v { margin-top: 2px; font-size: 15.5px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pkg-strip-arrow { margin-top: 18px; color: var(--muted); font-size: 16px; }
+.pkg-strip-end { text-align: right; }
+.pkg-strip-end small { display: block; font-size: 12px; font-weight: 400; }
+.pkg-assumed-row { margin-top: 8px; }
+.pkg-assumed-row .pkg-assumed { display: block; margin-top: 3px; width: 100%; box-sizing: border-box; height: 40px !important; font-size: 15.5px; font-weight: 700; }
 .pkg-card-foot { margin-top: 8px; font-size: 12px; color: var(--muted); }
 .pkg-card-warn { margin-top: 6px; font-size: 12px; }
 .pkg-card-warn.amber { color: #b45309; }

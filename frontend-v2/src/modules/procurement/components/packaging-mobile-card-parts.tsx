@@ -77,7 +77,7 @@ export function PackagingCardStats({
 }
 
 /**
- * Ô SỐ của lưới 2×2 (thẻ Mã đã chọn): nhãn nhỏ mờ trên, giá trị đậm dưới, nền nhạt như dải số chính. Vùng giá trị luôn cao
+ * Ô SỐ của lưới 2×2 (thẻ Sản phẩm): nhãn nhỏ mờ trên, giá trị đậm dưới, nền nhạt như dải số chính. Vùng giá trị luôn cao
  * tối thiểu 32px (bằng ô nhập) để bốn ô của lưới cao bằng nhau dù ô có chữ hay ô có ô nhập.
  */
 export function PackagingCardTile({ label, children }: { label: string; children: ReactNode }) {

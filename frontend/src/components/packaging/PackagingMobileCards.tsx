@@ -7,7 +7,7 @@ import { CodeLink, DiffText, PctText, PriceText, TrendText } from './PackagingCe
 
 /**
  * duoc-CR-784 — NỘI DUNG THẺ điện thoại của hai bảng Tác động giá (Mã đã chọn, Sản phẩm bị ảnh hưởng) và của Tổng hợp theo
- * sản phẩm, bố cục "lưới 2×2 gọn" (người chủ chốt 26/11/2026). Truyền vào `TableCards.renderCard`: khung thẻ, thanh xếp, ô rỗng
+ * sản phẩm. Thẻ sản phẩm: "lưới 2×2 gọn" (người chủ chốt 26/11/2026); thẻ mã đã chọn: "dải giá + ô gõ rộng" (chốt 27/11/2026). Truyền vào `TableCards.renderCard`: khung thẻ, thanh xếp, ô rỗng
  * vẫn của `TableCards`. Nhãn, màu tăng xanh giảm đỏ, luật ô giá giả định y hệt bảng (và y hệt thẻ `frontend-v2`).
  */
 
@@ -34,7 +34,10 @@ function PriceChange({ from, to }: { from: number | null | undefined; to: number
   )
 }
 
-/** Thẻ của một MÃ ĐÃ CHỌN: mã · nhóm + nút bỏ, tên, bốn ô (Giá cũ · Giá mới · Chênh lệch · Giá giả định), chân "n SP · Min–Max". */
+/**
+ * Thẻ của một MÃ ĐÃ CHỌN: mã · nhóm + nút bỏ, tên, MỘT dải giá đọc theo mạch Giá cũ → Giá mới với Chênh lệch căn phải, ô Giá giả
+ * định riêng một hàng rộng hết thẻ (dễ gõ bằng ngón tay), chân "n SP · Min–Max".
+ */
 export function SelectedCodeCard({ row, assumed, onAssumedChange, onRemove }: {
   row: PackagingSelectedCode
   /** Giá đang gõ (chưa qua trễ). */
@@ -51,17 +54,21 @@ export function SelectedCodeCard({ row, assumed, onAssumedChange, onRemove }: {
         <button className="pkg-x" aria-label={`Bỏ ${row.code}`} title="Bỏ mã này" onClick={() => onRemove(row.code)}><i className="ti ti-x" /></button>
       </div>
       <div className="pkg-card-name" title={row.name}>{row.name || <span className="pkg-muted">(chưa có tên)</span>}</div>
-      <div className="pkg-tiles">
-        <Tile label="Giá cũ"><PriceText value={row.old} /></Tile>
-        <Tile label="Giá mới"><PriceText value={row.new} /></Tile>
-        <Tile label="Chênh lệch">
-          <span className="pkg-tile-diff"><DiffText value={row.diff} bold /><small><PctText value={row.pct} /></small></span>
-        </Tile>
-        <Tile label="Giá giả định">
-          {/*  Ô xóa trắng trả 0 — coi là BỎ giả định (giá bao bì 0 đồng không có nghĩa mô phỏng). */}
-          <NumberInput className="pkg-assumed" placeholder="Nhập giá" maxDecimals={PRICE_DECIMALS}
-            value={assumed ?? 0} onChange={(p) => onAssumedChange(row.code, p > 0 ? p : null)} />
-        </Tile>
+      <div className="pkg-strip">
+        <div><span className="tcard-k">Giá cũ</span><div className="pkg-strip-v"><PriceText value={row.old} /></div></div>
+        <i className="ti ti-arrow-right pkg-strip-arrow" aria-hidden="true" />
+        <div><span className="tcard-k">Giá mới</span><div className="pkg-strip-v"><PriceText value={row.new} /></div></div>
+        <div className="pkg-strip-end">
+          <span className="tcard-k">Chênh lệch</span>
+          <div className="pkg-strip-v"><DiffText value={row.diff} bold /></div>
+          <small><PctText value={row.pct} /></small>
+        </div>
+      </div>
+      <div className="pkg-assumed-row">
+        <span className="tcard-k">Giá giả định</span>
+        {/*  Ô xóa trắng trả 0 — coi là BỎ giả định (giá bao bì 0 đồng không có nghĩa mô phỏng). */}
+        <NumberInput className="pkg-assumed" placeholder="Nhập giá" maxDecimals={PRICE_DECIMALS}
+          value={assumed ?? 0} onChange={(p) => onAssumedChange(row.code, p > 0 ? p : null)} />
       </div>
       <div className="pkg-card-foot">
         {row.usage.toLocaleString('vi-VN')} SP bị ảnh hưởng · Min–Max {priceText(row.min) || '—'} – {priceText(row.max) || '—'}

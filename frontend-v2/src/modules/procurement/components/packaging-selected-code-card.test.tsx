@@ -40,7 +40,7 @@ function renderCard(over: Partial<PackagingSelectedCode> = {}) {
 }
 
 describe('PackagingSelectedCodeCard', () => {
-  it('shows code (link to history), name, the four tiles and the usage / min-max footer', () => {
+  it('shows code (link to history), name, the old → new / diff strip, the assumed-price row and the footer', () => {
     renderCard()
     expect(screen.getByRole('link', { name: 'CET0028' })).toHaveAttribute('href', expect.stringContaining('CET0028'))
     expect(screen.getByText('Chai PAPE tròn cổ 43')).toBeInTheDocument()
