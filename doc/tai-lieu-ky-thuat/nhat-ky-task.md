@@ -9,6 +9,37 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
+- status: xong
+- date: 2026-11-27
+- pic: NSU209
+
+**Bối cảnh:** cần cấp cho một người ngoài nhóm phát triển chỗ chạy ứng dụng riêng trên VPS dev, ra ngoài qua tên miền
+`app.degoorganic.com` (Cloudflare Tunnel trỏ `http://app-ganic:8990`), mà không chạm được ERP dev, cụm trợ lý AI và bot.
+Đồng thời bản ERPNext dựng tạm để học nghiệp vụ (30/10/2026) đã hết việc, được duyệt xóa hẳn.
+
+**Đã làm**
+- Tạo tài khoản `ganic` trên VPS dev: chỉ đăng nhập bằng khóa SSH riêng, thư mục làm việc `/home/ganic/thu-muc-1`, không thuộc
+  nhóm docker, không có sudo chung, tắt chuyển tiếp cổng.
+- Viết lệnh `/usr/local/sbin/app-ganic` (deploy, status, logs, restart, stop, start, exec, check) là lệnh duy nhất tài khoản này
+  được chạy bằng sudo (`/etc/sudoers.d/91-ganic-app`). Lệnh chép mã bằng quyền của chính tài khoản đó, dựng ảnh theo Dockerfile
+  của họ và chạy đúng một container `app-ganic` theo cấu hình cố định ở `/srv/app-ganic/compose.yml` (chỉ root sửa): cổng 8990,
+  mạng `proxy-tier`, trần 768 MB RAM và 1 CPU, dữ liệu bền ở `/data`, biến môi trường nạp từ tệp `.env` của họ.
+- Chặn tài khoản này gọi các cổng nội bộ `127.0.0.1` của máy, trừ DNS (dịch vụ `ganic-loopback-guard`). Lý do: redis chuyển tiếp
+  của cụm trợ lý AI ở cổng nội bộ không có mật khẩu.
+- Đặt sẵn một trang mẫu và deploy thử bằng chính tài khoản mới: `https://app.degoorganic.com` trả HTTP 200. Đã kiểm tài khoản
+  không gọi được docker, không chạy được sudo khác, không đọc được thư mục tài khoản khác, không vào được cổng nội bộ.
+- Viết tài liệu hướng dẫn cho người nhận và trợ lý AI của họ, giao kèm tệp khóa trong một tệp nén; bản sao tài liệu đặt ở thư
+  mục nhà của tài khoản trên máy chủ.
+- Gỡ ERPNext: xóa 9 container `erpnext-hoc-*`, 4 volume dữ liệu, 2 mạng, ba ảnh (`erpnext-hoc:v16-hrms`, `frappe/erpnext:v16.53.0`,
+  `mariadb:11.8`) và hai tệp dữ liệu trích từ ERP trong `~/erpnext-hoc`. Ổ đĩa từ 81% xuống 65%.
+
+**Chưa làm:** thư mục `~/erpnext-hoc` còn lại 2 MB tệp cấu hình và script (không còn dữ liệu); dòng `erpnext.degoholding.vn` trên
+trang Cloudflare do Ban điều hành gỡ. Redis chuyển tiếp của cụm trợ lý AI vẫn chưa đặt mật khẩu.
+
+**Quay lui:** `userdel -r ganic`, xóa `/etc/sudoers.d/91-ganic-app`, `/usr/local/sbin/app-ganic`, `/srv/app-ganic`, dịch vụ
+`ganic-loopback-guard` và container `app-ganic`. ERPNext không khôi phục được; dữ liệu gốc vẫn ở ERP.
+
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
