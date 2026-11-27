@@ -121,6 +121,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - pic: NSU209
 - tag: Agent 2
 **Bối cảnh:** bài **Lịch sử mua hàng & Tham chiếu giá** còn ghi luật cũ: lần mua chỉ vào lịch sử khi dòng Hoàn thành và số liệu giữ nguyên mãi. Từ bao-CR-790 lịch sử ghi từ lúc nhận hàng, và bao-CR-794 thêm nút **Sửa giá** cho đơn đã duyệt.
+
+**Đã làm**
+- Script vá bài dựng tay **Lịch sử mua hàng & Tham chiếu giá** theo đúng khuôn các script vá bài Thu mua: tìm bài theo tiêu đề, thay bốn cặp chữ cũ sang mới, câu cũ không khớp thì báo và bỏ qua, có chạy thử, nạp lại kho tìm kiếm của Trợ lý cho bài vừa đổi, chạy lại không đổi gì thêm.
+- Nội dung mới: lần mua vào lịch sử ngay khi dòng của đơn đã duyệt bắt đầu nhận hàng; khi dòng chưa Hoàn thành thì lịch sử đi theo đơn (sửa đơn giá, số lượng, VAT thì đổi theo; dòng hủy, đơn hủy, Hủy duyệt, xóa thì rút khỏi lịch sử); dòng Hoàn thành thì chốt, không đổi nữa; đơn đã duyệt cần đổi đơn giá thì người có quyền duyệt bấm **Sửa giá**. Câu báo trống ở mục cuối đổi theo.
+- Bài **AI riêng của bạn làm được gì**: ca đơn đã nhận hàng thêm ý cần đổi đơn giá thì người có quyền duyệt bấm **Sửa giá** trên web, kèm các trường hợp không dùng được.
+- Tài liệu chức năng Lịch sử mua hàng trỏ tới bài hướng dẫn và script vá.
+- Đã chạy trên dev: bài Lịch sử mua hàng (id 34) đổi đủ bốn chỗ, bài AI riêng làm được gì cập nhật, kho tìm kiếm nạp lại cho hai bài.
+
+**Còn lại:** soát hai bài đã vá theo nút Sửa giá trên devhelp sau khi dev dựng xong bao-CR-794. Chưa chạy trên prod.
+
+Mã nguồn: `backend/scripts/seed_help_lich_su_mua_cr795.py` · `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py` · `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`
+Deploy: dev (chạy seed), prod chưa
+
 ## bao-CR-794 | Đơn mua hàng: nút Sửa giá sau duyệt cho người có quyền duyệt, dùng được cả khi đơn đã nhận hàng
 - status: xong
 - date: 2026-11-27
