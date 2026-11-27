@@ -147,6 +147,11 @@ Mã nguồn: `backend/app/modules/packaging_cost/material_scope.py` · `impact_c
 `frontend-v2/src/modules/procurement/pages/packaging-material-price-list-page.tsx` · `frontend/src/pages/packaging/PackagingMaterialPriceList.tsx`.
 Kiểm: `test/backend/test_quyen_rieng_gia_nguyen_lieu_cr800.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md` · `backend/scripts/seed_help_gia_bao_bi_cr784.py`.
+Deploy: dev 27/11/2026 (erp-v2 b5f69ecb): migration `matprice800` chạy, bốn vai trò đang xem Bảng giá VTBB nhận quyền mới (quản
+trị, Quản lý thu mua, vai trò xem cụm giá, vai trò hai màn của phòng Lab). Thử bằng tài khoản thật qua đường API: màn nguyên
+liệu trả 73 mã nhóm NL có giá, xuất được; các màn VTBB không còn mã nhóm NL kể cả khi tra thẳng mã; người không có quyền bị
+chặn. Đã mở giao diện mới trên dev: màn Bảng giá nguyên liệu hiện dữ liệu, có nút Xuất Excel, không còn nút phạm vi mã; màn
+Bảng giá VTBB vẫn chạy như cũ. Đã seed lại HDSD cụm giá và nạp lại chỉ mục trên dev. Prod chưa.
 
 ## bao-CR-799 | Đơn mua hàng: sửa giá trong bảng cũng cập nhật lịch sử mua hàng và các màn Giá nguyên vật liệu
 - status: xong
