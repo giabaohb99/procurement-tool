@@ -14,7 +14,7 @@ from . import service
 #  nhận · gác quyền + phạm vi · gọi · trả.
 from .model import POItem, PurchaseOrder
 from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn,
-                     ItemProgressIn, POCreate, POUpdate, RejectIn)
+                     ItemProgressIn, POCreate, POUpdate, PriceAdjustIn, RejectIn)
 from .sort_expressions import list_sort_allow
 from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
 
@@ -367,6 +367,21 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     # thì người vừa duyệt vẫn là người được chọn cho lần gửi duyệt sau, người lập đổi được.
     db.commit()
     return success(_out(db, po), "Đã hủy duyệt — đơn về Nháp")
+
+
+@router.post("/{pid}/adjust-prices")
+def adjust_po_prices(pid: int, data: PriceAdjustIn, db: Session = Depends(get_db),
+                     user=Depends(require("purchase_order", "approve"))):
+    """Sửa đơn giá sau duyệt (bao-CR-794) — đơn giữ nguyên trạng thái, công nợ / lịch sử mua / sổ giá tính lại theo giá mới.
+
+    Cùng người với Hủy duyệt: giá trên đơn đã duyệt là cam kết đã ký, đổi nó là quyết định của người có quyền DUYỆT.
+    """
+    _in_scope(db, pid, user, "approve")
+    result = service.adjust_prices(db, pid, data, user.id)
+    message = f"Đã sửa giá {len(result['changed'])} dòng"
+    if result["draft_requests"]:
+        message += f". Kiểm lại số tiền trên yêu cầu thanh toán đang Nháp: {', '.join(result['draft_requests'])}"
+    return success(_out(db, result["po"]), message)
 
 
 @router.post("/{pid}/reject")

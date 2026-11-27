@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import { purchaseOrderApi, type PurchaseOrderPayload } from '../api/purchase-order-api'
+import {
+  purchaseOrderApi,
+  type PurchaseOrderPayload,
+  type PurchaseOrderPriceAdjustPayload,
+} from '../api/purchase-order-api'
 
 /** Một ĐMH. `id <= 0` (màn tạo mới) thì không gọi API. */
 export function usePurchaseOrder(id: number) {
@@ -95,6 +99,26 @@ export function usePurchaseOrderAction(id: number) {
     },
     onSuccess: (_data, variables) => {
       toast.success(ACTION_LABELS[variables.action])
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/**
+ * bao-CR-794 — Sửa giá sau duyệt. Thông báo thành công là NGUYÊN câu `message` của máy chủ (câu
+ * đó nhắc cả YCTT đang Nháp cần kiểm lại số tiền); lỗi thì `http-client` đã tự bật thông báo.
+ */
+export function useAdjustPurchaseOrderPrices(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: PurchaseOrderPriceAdjustPayload) =>
+      purchaseOrderApi.adjustPrices(id, payload),
+    onSuccess: (result) => {
+      toast.success(result.message || 'Đã sửa giá')
+      //  Máy chủ trả luôn chi tiết đơn mới: ghi thẳng vào cache để màn hình có giá mới ngay, không
+      //  hở một nhịp chờ nạp lại mà người dùng bấm Lưu đơn kèm giá cũ.
+      queryClient.setQueryData(queryKeys.procurement.purchaseOrder(id), result.order)
       void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
     },
   })

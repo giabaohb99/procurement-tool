@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   CircleCheck,
+  CircleDollarSign,
   CornerUpLeft,
   FileText,
   Loader2,
@@ -74,6 +75,7 @@ import { PurchaseOrderDeliveryAttachDialog } from '../components/purchase-order-
 import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialog'
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
+import { PurchaseOrderPriceAdjustDialog } from '../components/purchase-order-price-adjust-dialog'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
 import { PurchaseOrderAddManyLinesButton } from '../components/purchase-order-add-many-lines-button'
 import { PurchaseOrderMissingFieldsNotice } from '../components/purchase-order-missing-fields-notice'
@@ -120,6 +122,7 @@ import {
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { describeOrdered, findOverOrders, formatQty } from '../utils/over-order'
+import { isPriceAdjustAvailable } from '../utils/purchase-order-price-adjust'
 import { rebasePurchaseOrderDraft } from '../utils/purchase-order-rebase'
 import {
   duplicatePurchaseOrderCodes,
@@ -266,6 +269,8 @@ export function PurchaseOrderDetailPage() {
     lineIndex !== null && can('purchase_order', 'write'),
   )
   const [paymentOpen, setPaymentOpen] = useState(false)
+  /** bao-CR-794: hộp Sửa giá sau duyệt — dựng khi mở, gỡ khi đóng để mỗi lần mở là bảng giá sạch. */
+  const [priceAdjustOpen, setPriceAdjustOpen] = useState(false)
   /** Chặn bấm đúp "Gửi duyệt" ngay trong tick (bao-CR-590). */
   const submittingRef = useRef(false)
 
@@ -477,6 +482,16 @@ export function PurchaseOrderDetailPage() {
     approved &&
     can('purchase_order', 'approve') &&
     !data.items.some((item) => (item.qty_received ?? 0) > 0)
+  /**
+   * bao-CR-794 — Sửa giá sau duyệt: cùng quyền với Hủy duyệt nhưng KHÔNG gác theo "chưa nhận hàng"
+   * (đơn đã nhận hàng không hủy duyệt được, đây là đường để sửa giá cho nó). Xét trên bản ĐÃ LƯU:
+   * giá hiện tại và id dòng phải là của máy chủ, không phải của bản nháp đang gõ.
+   */
+  const canAdjustPrices =
+    !isNew &&
+    Boolean(serverData) &&
+    can('purchase_order', 'approve') &&
+    isPriceAdjustAvailable(serverData ?? data)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
   const purchaseRequestId = purchaseRequestsData?.items.find(
     (request) => request.code === data.pr_code,
@@ -632,11 +647,12 @@ export function PurchaseOrderDetailPage() {
    * Nút đầu trang theo ĐÚNG THỨ TỰ BẢN V1 (duoc-CR-737) — người dùng dời từ v1 sang tìm
    * nút ở chỗ cũ. Tiện ích (trái vạch ngăn): Tạo yêu cầu thanh toán · In · Hủy đơn ·
    * Xóa. Quy trình (phải): Gửi duyệt · Duyệt · Trả về · Từ chối · Hủy duyệt · Hoàn
-   * thành · Mở lại · Lưu / Tạo đơn — Lưu LUÔN đứng cuối, mép phải. Nút Nhân bản cả đơn
+   * thành · Mở lại · Lưu / Tạo đơn — Lưu LUÔN đứng cuối, mép phải. Sửa giá (bao-CR-794, v1
+   * không có) đứng ngay sau Hủy duyệt vì cùng quyền, cùng nhóm việc. Nút Nhân bản cả đơn
    * đã bỏ khỏi đầu trang (duoc-CR-737) — chép đơn dùng biểu tượng chép ở màn danh sách.
    *
    * Nút viền mang MÀU của nút cùng tên ở v1 (`ACTION_TONE_CLASS`): Tạo yêu cầu thanh
-   * toán, Hoàn thành chữ xanh; Trả về, Hủy duyệt hổ phách; Hủy đơn, Từ chối, Xóa đỏ;
+   * toán, Hoàn thành chữ xanh; Trả về, Hủy duyệt, Sửa giá hổ phách; Hủy đơn, Từ chối, Xóa đỏ;
    * In, Mở lại để trơn.
    *
    * `primary` = nút nền đặc (Gửi duyệt · Duyệt · Lưu): khổ hẹp vẫn để ngoài, còn lại vào
@@ -843,6 +859,20 @@ export function PurchaseOrderDetailPage() {
         </Button>
       ),
     },
+    /* bao-CR-794: sửa đơn giá mà không đưa đơn về Nháp — còn hiện cả khi đơn đã nhận hàng. */
+    canAdjustPrices && {
+      key: 'adjust-prices',
+      node: (
+        <Button
+          variant="outline"
+          className={ACTION_TONE_CLASS.warning}
+          onClick={() => setPriceAdjustOpen(true)}
+        >
+          <CircleDollarSign />
+          Sửa giá
+        </Button>
+      ),
+    },
     /* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
        backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
        để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */
@@ -1045,6 +1075,8 @@ export function PurchaseOrderDetailPage() {
                       {isMobile ? 'Chạm vào thẻ dòng hàng' : 'Mở nút bút chì ở cột Hành động'} để sửa:{' '}
                       {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
                       {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
+                      {canAdjustPrices &&
+                        ' Cần đổi đơn giá thì bấm Sửa giá — đơn giữ nguyên trạng thái, không cần duyệt lại.'}
                     </p>
                   )}
                   <PurchaseOrderItemsTable
@@ -1220,6 +1252,13 @@ export function PurchaseOrderDetailPage() {
       </div>
 
       <PurchaseOrderPaymentDialog open={paymentOpen} order={data} onOpenChange={setPaymentOpen} />
+
+      {priceAdjustOpen && serverData && (
+        <PurchaseOrderPriceAdjustDialog
+          order={serverData}
+          onClose={() => setPriceAdjustOpen(false)}
+        />
+      )}
 
       {attachTarget && attachItem && attachDelivery && (
         <PurchaseOrderDeliveryAttachDialog

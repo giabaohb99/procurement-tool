@@ -114,6 +114,44 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
+- status: dang-lam
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** bài **Lịch sử mua hàng & Tham chiếu giá** còn ghi luật cũ: lần mua chỉ vào lịch sử khi dòng Hoàn thành và số liệu giữ nguyên mãi. Từ bao-CR-790 lịch sử ghi từ lúc nhận hàng, và bao-CR-794 thêm nút **Sửa giá** cho đơn đã duyệt.
+## bao-CR-794 | Đơn mua hàng: nút Sửa giá sau duyệt cho người có quyền duyệt, dùng được cả khi đơn đã nhận hàng
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** đơn đã duyệt bị khóa đơn giá. Muốn sửa phải Hủy duyệt, mà Hủy duyệt bị chặn khi đơn đã nhận hàng. Nhà cung cấp báo
+lại giá sau khi hàng về thì từ trước tới nay phải nhờ kỹ thuật chạy script. Chủ dự án yêu cầu làm nút để thu mua tự sửa.
+
+**Đã làm:**
+- Thêm nút *Sửa giá* trên chi tiết đơn mua hàng (cạnh Hủy duyệt, cả hai giao diện) cho người có quyền duyệt. Hộp thoại liệt kê các
+  dòng còn sửa được, giá hiện tại, ô giá mới, chênh lệch thành tiền và ô lý do bắt buộc.
+- Đơn giữ nguyên trạng thái, không về Nháp, không duyệt lại. Chỉ đổi đơn giá; mã hàng, số lượng, VAT vẫn khóa.
+- Lưu xong hệ thống tự tính lại thành tiền dòng và công nợ hàng theo số lượng đã nhận, cập nhật lịch sử mua hàng và các màn Giá
+  nguyên vật liệu sản xuất theo giá mới. Nhật ký của đơn ghi giá cũ, giá mới và lý do.
+- Không cho sửa khi đơn đã có yêu cầu thanh toán gửi duyệt trở đi, khi công nợ hàng đã trả tiền, khi dòng đã hoàn thành hoặc đã hủy.
+  Yêu cầu thanh toán còn Nháp thì vẫn cho sửa và nhắc mã phiếu để kiểm lại số tiền.
+- Cập nhật tài liệu chức năng, bài hướng dẫn sử dụng (Đơn mua hàng; Công nợ và Yêu cầu thanh toán) và cẩm nang trợ lý.
+
+**Chưa làm:** chưa soát bằng trình duyệt (cần người đăng nhập thử trên dev). Bài hướng dẫn *Lịch sử mua hàng và Tham chiếu giá* còn
+ghi luật cũ (chỉ ghi lịch sử khi dòng hoàn thành), cần một lượt sửa riêng. Câu báo lỗi của trợ lý AI khi sửa đơn đã duyệt chưa nhắc
+tới nút Sửa giá.
+
+**Quay lui:** chạy lại bản mã trước. Không có thay đổi cấu trúc dữ liệu; giá đã sửa bằng nút này thì sửa lại bằng chính nút đó.
+
+**Kiểm:** backend 26 ca mới đạt; bộ rộng quanh đơn mua hàng, phân quyền, nhật ký 3.071 bài đạt, 4 bỏ qua, 1 bài đỏ có sẵn ở màn nhật ký email (`test_man_nhat_ky_email_cr721.py`, không thuộc phần này); ruff sạch. Giao diện mới: kiểm kiểu 0 lỗi, 1.951 bài của phân hệ thu mua đạt (31 ca mới). Giao diện cũ: kiểm kiểu giữ nguyên 4 lỗi nền.
+
+Mã nguồn: `backend/app/modules/purchase_order/price_adjust_service.py` · `controller.py` · `schema.py` · `backend/app/core/action_catalog.py` ·
+`frontend-v2/src/modules/procurement/components/purchase-order-price-adjust-dialog.tsx` · `frontend/src/components/PoPriceAdjustModal.tsx`.
+Kiểm: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` · `frontend-v2/src/modules/procurement/components/purchase-order-price-adjust-dialog.test.tsx`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` · `backend/scripts/seed_help_sua_gia_dmh_cr794.py`.
+
 ## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
 - status: xong
 - date: 2026-11-27

@@ -55,6 +55,18 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
   Hệ thống vẫn LƯU đơn giá chưa VAT; công nợ, bản in không đổi. Yêu cầu báo giá / phiếu khảo sát chưa có ô này.
   Người dùng nhờ trợ lý **sửa giá dòng ĐMH bằng giá đã gồm VAT** → gửi `price_after_vat` (không gửi `price`) trong `po_lines`
   của `propose_document_update`; máy tự tính đơn giá chưa VAT. **Không tự chia nhẩm** rồi gửi `price`.
+- **Đơn mua hàng đã duyệt: khóa sửa, Hủy duyệt và Sửa giá sau duyệt** (Sửa giá có từ 27/11/2026, bao-CR-794): đơn *Đã
+  duyệt / Đã nhận một phần / Đã nhận đủ* bị khóa nội dung. Đổi mã hàng, số lượng, VAT → người có quyền **Duyệt** đơn bấm
+  ***Hủy duyệt*** (nhập lý do), đơn về Nháp, sửa rồi gửi duyệt lại; đơn **đã nhận hàng thì không Hủy duyệt được**. Chỉ đổi
+  **đơn giá** → cũng người có quyền Duyệt bấm ***Sửa giá*** trên thanh nút chi tiết đơn (cạnh Hủy duyệt), hộp *Sửa giá sau
+  duyệt*: gõ cột *Đơn giá mới*, nhập ***Lý do sửa giá*** (bắt buộc), bấm ***Lưu giá mới***. Dùng được **cả khi đơn đã nhận
+  hàng**; đơn giữ nguyên trạng thái, không về Nháp, không duyệt lại. Sau khi lưu: thành tiền dòng và công nợ hàng tính lại
+  theo số lượng đã nhận; Lịch sử mua hàng và sổ giá của cụm Giá nguyên vật liệu sản xuất đi theo giá mới; nhật ký đơn ghi giá
+  cũ → giá mới kèm lý do. **Không sửa giá được khi:** đơn có yêu cầu thanh toán đã gửi duyệt / đã duyệt / đã chi (hủy phiếu
+  thanh toán trước); công nợ hàng của đơn đã trả tiền; dòng đã Hoàn thành hoặc đã Hủy; đơn đã Hoàn thành / đã Hủy. Đơn chưa
+  duyệt thì sửa thẳng trên đơn. Yêu cầu thanh toán còn **Nháp** có đơn này: vẫn sửa được, hệ thống nhắc mã phiếu để kiểm lại
+  số tiền. **Trợ lý không sửa giá đơn đã duyệt** (không có công cụ; `propose_document_update` chỉ sửa đơn Nháp / Bị trả lại): chỉ
+  đường tới nút ***Sửa giá***; người hỏi không thấy nút thì thiếu quyền Duyệt đơn mua hàng, hoặc đơn không còn dòng sửa được.
 - **Mẫu thu mua khi in phiếu đề xuất từ Đơn mua hàng** (từ 17/11/2026): màn in YCMH từ ĐMH có thêm *Mẫu thu mua – có
   chữ ký* / *không chữ ký*. Người đề xuất = người đang in, Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó
   (ký ô TP/BP đề xuất), NCC và bảng hàng theo **ĐMH** (SL đặt, đơn giá). Chỉ người **đọc được đơn đó** mới thấy hai mẫu;
@@ -150,7 +162,8 @@ Chỉ đường cho người dùng thì gọi đúng chữ trên nút dưới đ
   khi còn dòng rỗng bấm ***Chốt (n chốt rỗng)***.
 - Chi tiết Phiếu khảo sát: ***Duyệt*** (hộp hỏi lại, nút ***Duyệt phiếu***) · ***Bổ sung*** · ***Tải file lên*** · ***Xóa phiếu***.
 - Chi tiết ĐMH: đơn mới bấm ***Tạo***; ***Hủy*** (ẩn khi đơn có dòng Hoàn thành) · ***Xóa đơn*** · ***Hoàn thành*** /
-  ***Mở lại*** luôn hỏi lại; ***Thêm nhiều*** ở thẻ dòng hàng. *Hồ sơ chứng từ* chọn ở tiêu đề thẻ chứng từ (bấm ra menu).
+  ***Mở lại*** luôn hỏi lại; đơn đã duyệt có ***Hủy duyệt*** (ẩn khi đã nhận hàng) và ***Sửa giá*** (người có quyền
+  Duyệt); ***Thêm nhiều*** ở thẻ dòng hàng. *Hồ sơ chứng từ* chọn ở tiêu đề thẻ chứng từ (bấm ra menu).
   Thẻ chứng từ có ***Chuỗi chứng từ (PYC/PKS)*** và ***Upload thêm file cho mục này***. Thẻ chi phí thu mua: ***Tạo YCTT***;
   NCC chưa có khoản nợ hiện *Chưa thành công nợ*. Hộp tạo YCTT có tab ***Chi phí thu mua***.
 
