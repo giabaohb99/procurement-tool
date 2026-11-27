@@ -56,7 +56,7 @@ export function PackagingLastPricesPage() {
   const [exporting, setExporting] = useState(false)
   const once = useSingleFlight()
   //  Danh sách mã cho ô chọn mã — cùng nguồn với màn Tác động và Lịch sử mua hàng.
-  const codeOptionsQuery = usePackagingCodeOptions()
+  const codeOptionsQuery = usePackagingCodeOptions(true, 'all')
   const codeOptions = useMemo(
     () => sortPackagingCodeOptions(codeOptionsQuery.data ?? []),
     [codeOptionsQuery.data],

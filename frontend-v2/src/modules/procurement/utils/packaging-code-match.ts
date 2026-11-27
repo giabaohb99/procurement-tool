@@ -2,7 +2,8 @@
  * duoc-CR-784 — tìm mã bao bì kiểu bản mẫu (`smartMatcher` của `Bao cao gia NVL san xuat`).
  *
  * Gõ TÊN NHÓM ("chai", "nắp", "nhãn, thùng") = lọc theo nhóm — để bấm "Chọn tất cả" là chọn cả nhóm.
- * Còn lại = tìm không dấu, mọi từ phải có mặt trong mã / tên / nhóm ("nắp 0085" ra NAP0085).
+ * Còn lại = tìm không dấu, mọi từ phải có mặt trong mã / tên / nhóm / tên nhà cung cấp từng bán ("nắp 0085" ra NAP0085,
+ * "phl" ra các mã từng mua của PHL — 27/11/2026).
  * Nhóm lấy từ chính dữ liệu (`item_group` của danh mục sản phẩm), không gõ cứng danh sách.
  */
 import { PACKAGING_ROLE } from '@/shared/constants/statuses'
@@ -45,7 +46,7 @@ export function buildPackagingCodeMatcher(
 
   const terms = folded.split(/[\s,]+/).filter(Boolean)
   return (option) => {
-    const haystack = fold(`${option.code} ${option.name} ${option.group}`)
+    const haystack = fold(`${option.code} ${option.name} ${option.group} ${option.suppliers ?? ''}`)
     return terms.every((term) => haystack.includes(term))
   }
 }

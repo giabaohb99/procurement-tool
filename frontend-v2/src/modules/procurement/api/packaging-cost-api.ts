@@ -10,6 +10,7 @@ import { filenameFromContentDisposition } from '@/core/api/download-file'
 
 import { readBlobErrorMessage } from './customs-api'
 import type {
+  PackagingCodeOptionScope,
   PackagingCodeOption,
   PackagingFgOption,
   PackagingHistoryParams,
@@ -28,11 +29,17 @@ const BASE = '/api/packaging-cost'
 export const PACKAGING_QUOTE_API = '/api/product-price-quotes'
 export const PACKAGING_BOM_API = '/api/packaging-boms'
 
-/** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
-export async function fetchPackagingCodeOptions(): Promise<PackagingCodeOption[]> {
+/**
+ * Danh sách mã cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. `bom` (mặc định, màn Tác động) = mã đang dùng trong định
+ * mức (~1.500); `all` = mọi mã có trong sổ giá (Giá mua gần nhất, Bảng giá, Lịch sử mua hàng). Mỗi mã kèm tên NCC từng bán.
+ */
+export async function fetchPackagingCodeOptions(
+  scope: PackagingCodeOptionScope = 'bom',
+): Promise<PackagingCodeOption[]> {
   //  Hợp đồng chỉ nói "trả đủ" — nhận cả mảng trần lẫn khuôn `{items}` của danh sách cho chắc.
   const res = await apiGet<PackagingCodeOption[] | { items: PackagingCodeOption[] }>(
     `${BASE}/code-options`,
+    scope === 'all' ? { params: { scope } } : undefined,
   )
   return Array.isArray(res) ? res : (res.items ?? [])
 }

@@ -15,6 +15,8 @@ export interface PackagingCodeOption {
   group: string
   usage: number
   new: number | null
+  /** Tên các nhà cung cấp từng bán mã này (nối " · ") — gõ tên NCC vào ô chọn là ra mã (27/11/2026). */
+  suppliers?: string
 }
 
 /** Thân của `POST /impact` và `POST /impact/export`. */

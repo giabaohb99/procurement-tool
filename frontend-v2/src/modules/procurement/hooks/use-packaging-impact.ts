@@ -8,12 +8,12 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { fetchPackagingCodeOptions, fetchPackagingImpact } from '../api/packaging-cost-api'
 import { packagingCostKeys } from '../config/packaging-cost-query-keys'
-import type { PackagingImpactRequest } from '../types/packaging-cost-types'
+import type { PackagingCodeOptionScope, PackagingImpactRequest } from '../types/packaging-cost-types'
 
-export function usePackagingCodeOptions(enabled = true) {
+export function usePackagingCodeOptions(enabled = true, scope: PackagingCodeOptionScope = 'bom') {
   return useQuery({
-    queryKey: packagingCostKeys.codeOptions(),
-    queryFn: fetchPackagingCodeOptions,
+    queryKey: packagingCostKeys.codeOptions(scope),
+    queryFn: () => fetchPackagingCodeOptions(scope),
     enabled,
     //  Danh mục định mức ít đổi; 5 phút là đủ, ghi báo giá / định mức sẽ tự dọn gốc.
     staleTime: 5 * 60 * 1000,

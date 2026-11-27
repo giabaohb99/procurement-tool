@@ -61,6 +61,16 @@ describe('buildPackagingCodeMatcher', () => {
   })
 })
 
+describe('buildPackagingCodeMatcher — supplier names (27/11/2026)', () => {
+  it('finds codes by the name of a supplier that sold them, accent-insensitive', () => {
+    const withSupplier = { ...option('NAP0085', 'Nắp', 'Nắp 28mm đỏ'), suppliers: 'Công ty Cổ phần PHL · Nhựa Việt' }
+    const plain = option('CPT0105', 'Chai', 'Chai PET 1 lít')
+    const match = buildPackagingCodeMatcher('nhua viet', [])
+    expect(match(withSupplier)).toBe(true)
+    expect(match(plain)).toBe(false)
+  })
+})
+
 describe('collectSearchGroups', () => {
   //  Lỗi thật thấy khi mở thử 20/11/2026: định mức chưa có mã thùng nào, gõ "thùng" + Chọn tất cả chọn
   //  nhầm 104 mã Nhãn thùng (tìm chữ khớp tên nhóm "Nhãn thùng").
