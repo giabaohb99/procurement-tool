@@ -7,6 +7,7 @@ import {
   Coins,
   FileStack,
   FileText,
+  FlaskConical,
   History,
   Landmark,
   LayoutDashboard,
@@ -234,6 +235,13 @@ export const procurementModule: ErpModule = {
           entity: 'packaging_price_list',
           //  Màn Báo giá VTBB (ẩn khỏi menu) thuộc về đây: báo giá nhập từ Bảng giá, đứng ở màn đó thì sáng mục này.
           matchPaths: [appRoutes.procurement.packagingQuotes],
+        },
+        {
+          //  duoc-CR-798: khuôn Bảng giá VTBB cho nguyên liệu, chưa có dữ liệu; cùng khóa xem bảng giá.
+          label: 'Bảng giá nguyên liệu',
+          path: appRoutes.procurement.packagingMaterialPrices,
+          icon: FlaskConical,
+          entity: 'packaging_price_list',
         },
         {
           label: 'Giá mua gần nhất',
@@ -504,6 +512,13 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.packagingPrices,
       lazy: async () => ({
         Component: (await import('./pages/packaging-price-list-page')).PackagingPriceListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.packagingMaterialPrices,
+      lazy: async () => ({
+        Component: (await import('./pages/packaging-material-price-list-page'))
+          .PackagingMaterialPriceListPage,
       }),
     },
     {

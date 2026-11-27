@@ -129,6 +129,8 @@ export const appRoutes = {
     packagingImpact: '/procurement/packaging-cost',
     packagingProducts: '/procurement/packaging-cost/products',
     packagingPrices: '/procurement/packaging-cost/prices',
+    /** duoc-CR-798 — Bảng giá nguyên liệu (khuôn Bảng giá VTBB, chưa có dữ liệu). */
+    packagingMaterialPrices: '/procurement/packaging-cost/material-prices',
     packagingLastPrices: '/procurement/packaging-cost/last-prices',
     packagingHistory: '/procurement/packaging-cost/history',
     packagingQuotes: '/procurement/packaging-cost/quotes',

@@ -25,6 +25,8 @@ const PACKAGING_SCREEN_KEYS: [path: string, entity: PermissionEntity][] = [
   [appRoutes.procurement.packagingImpact, 'packaging_impact'],
   [appRoutes.procurement.packagingProducts, 'packaging_product_summary'],
   [appRoutes.procurement.packagingPrices, 'packaging_price_list'],
+  //  duoc-CR-798: Bảng giá nguyên liệu đứng ngay dưới Bảng giá VTBB, cùng khóa xem bảng giá.
+  [appRoutes.procurement.packagingMaterialPrices, 'packaging_price_list'],
   [appRoutes.procurement.packagingLastPrices, 'packaging_last_price'],
   [appRoutes.procurement.packagingHistory, 'packaging_history'],
   [appRoutes.procurement.packagingQuotes, 'packaging_price_list'],
@@ -102,6 +104,8 @@ describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
     //  phải màn Tác động giá (đường của mục cha) — ở đó họ gặp trang cấm.
     for (const [path, entity] of PACKAGING_SCREEN_KEYS) {
       if (path === appRoutes.procurement.packagingQuotes) continue
+      //  Bảng giá nguyên liệu (duoc-CR-798) dùng chung khóa với Bảng giá VTBB: người giữ khóa đó vào màn ĐẦU (VTBB).
+      if (path === appRoutes.procurement.packagingMaterialPrices) continue
       const can = grants(`${entity}.read`)
       expect(canOpenModule(procurementModule as ErpModule, can), entity).toBe(true)
       const landing = firstAccessibleNavPath(procurementModule as ErpModule, can)

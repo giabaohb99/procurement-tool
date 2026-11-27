@@ -55,6 +55,7 @@ import { PACKAGING_ENTITY } from './api/packaging-cost'
 import PackagingImpact from './pages/packaging/PackagingImpact'
 import PackagingProductOverview from './pages/packaging/PackagingProductOverview'
 import PackagingPriceList from './pages/packaging/PackagingPriceList'
+import PackagingMaterialPriceList from './pages/packaging/PackagingMaterialPriceList'
 import PackagingLastPrices from './pages/packaging/PackagingLastPrices'
 import PackagingHistory from './pages/packaging/PackagingHistory'
 import PrintPackagingHistory from './pages/PrintPackagingHistory'
@@ -138,6 +139,8 @@ export default function App() {
             <Route path="packaging-cost/impact" element={<PackagingGate entity={PACKAGING_ENTITY.impact}><PackagingImpact /></PackagingGate>} />
             <Route path="packaging-cost/products" element={<PackagingGate entity={PACKAGING_ENTITY.products}><PackagingProductOverview /></PackagingGate>} />
             <Route path="packaging-cost/price-list" element={<PackagingGate entity={PACKAGING_ENTITY.priceList}><PackagingPriceList /></PackagingGate>} />
+            {/* duoc-CR-798: Bảng giá nguyên liệu — khuôn Bảng giá VTBB, chưa có dữ liệu, cùng khóa xem bảng giá. */}
+            <Route path="packaging-cost/material-prices" element={<PackagingGate entity={PACKAGING_ENTITY.priceList}><PackagingMaterialPriceList /></PackagingGate>} />
             <Route path="packaging-cost/last-prices" element={<PackagingGate entity={PACKAGING_ENTITY.lastPrices}><PackagingLastPrices /></PackagingGate>} />
             <Route path="packaging-cost/history" element={<PackagingGate entity={PACKAGING_ENTITY.history}><PackagingHistory /></PackagingGate>} />
             <Route path="survey-report" element={<SurveyReport />} />

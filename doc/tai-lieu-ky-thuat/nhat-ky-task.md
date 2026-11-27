@@ -408,6 +408,41 @@ hành) và `prod_truoc_release_20261126_1706.sql.gz` (sau phát hành, trước 
 
 Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz).
 
+## duoc-CR-798 | Màn Bảng giá nguyên liệu dựng y khuôn Bảng giá VTBB, chưa có dữ liệu
+- status: xong
+- date: 2026-11-27
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** phòng Lab cần tra cứu giá nguyên liệu. Anh Được yêu cầu dựng màn Bảng giá nguyên liệu giống hệt Bảng giá VTBB, có mục menu ngay dưới Bảng giá VTBB, hiện chưa có dữ liệu.
+
+**Đã làm**
+- Thêm màn **Bảng giá nguyên liệu** ở cả hai giao diện, cùng bộ cột với Bảng giá VTBB (chữ VTBB đổi thành nguyên liệu, bỏ cột thao tác Báo giá vì chưa có mã nào), mục menu ngay dưới Bảng giá VTBB trong cụm Giá nguyên vật liệu sản xuất, gác cùng khóa xem bảng giá `packaging_price_list`.
+- Màn chưa nối dữ liệu nên bảng luôn rỗng và ghi rõ *Chưa có dữ liệu bảng giá nguyên liệu.*; khi có nguồn giá thì chỉ cần nạp dòng như màn VTBB.
+- Bài kiểm canh menu theo khóa quyền của cụm khai thêm màn mới; người chỉ có khóa bảng giá vẫn vào thẳng Bảng giá VTBB.
+
+**Kiểm:** typecheck và eslint giao diện mới sạch, 2.105 bài kiểm phân hệ Thu mua, router và thông báo xanh; giao diện cũ không thêm lỗi kiểu; đã xem trên máy local cả hai giao diện.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/packaging-material-price-list-page.tsx`, `routes.tsx`, `routes.test.ts`, `frontend-v2/src/shared/constants/app-routes.ts`; bản v1: `frontend/src/pages/packaging/PackagingMaterialPriceList.tsx`, `frontend/src/App.tsx`, `frontend/src/layouts/AppLayout.tsx`.
+
+## duoc-CR-797 | Sửa giá sau duyệt của đơn mua hàng, cách thứ hai: sửa ngay trong bảng dòng
+- status: xong
+- date: 2026-11-27
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** có hai cách làm cho việc sửa giá đơn mua hàng đã duyệt: hộp *Sửa giá* của bao-CR-794 (chỉ đơn giá, cả hai giao diện) và bản sửa ngay trong bảng dòng đang làm dở trên máy. Anh Được yêu cầu đưa cả hai lên dev để so.
+
+**Đã làm**
+- Commit bản sửa ngay trong bảng: người có quyền duyệt đơn bấm **Sửa giá trong bảng** là sửa được số lượng đặt, đơn giá và VAT của từng dòng ngay trên bảng dòng của đơn đã duyệt, dòng không sửa được thì ô tô xám kèm lý do (dòng hoàn thành hoặc hủy, công nợ đã trả, công nợ nằm trên yêu cầu thanh toán đã gửi duyệt, số lượng đặt nhỏ hơn số đã nhận); lưu xong thì thành tiền, tồn kho, công nợ, yêu cầu mua hàng và yêu cầu thanh toán nháp tự tính lại, nhật ký ghi từng ô cũ sang mới.
+- Gộp chung với bao-CR-794: hai đường API cùng sống (`/reprice` và `/adjust-prices`), hai mã hành động nhật ký tách nhãn (*Sửa SL / giá / VAT sau duyệt* và *Sửa giá sau duyệt*), nút của bản này đổi tên thành *Sửa giá trong bảng* để không trùng nút *Sửa giá*. Bản này chỉ có ở giao diện ERP mới.
+- Sự cố lúc commit: commit giữ số CR (7fa39f3d) lỡ kéo theo sáu tệp giao diện và schema của bản này vì lệnh áp lại phần sửa dở để sẵn chúng trong vùng chuẩn bị; remote thiếu tệp vài phút cho tới commit d89f2ca0 bổ sung phần còn lại.
+
+**Kiểm:** 49 bài kiểm backend của cả hai cách sửa giá xanh; 1.972 bài kiểm phân hệ Thu mua xanh, bài kiểm trang chi tiết đơn của bao-CR-794 xanh sau khi đổi tên nút.
+
+Mã nguồn: `backend/app/modules/purchase_order/reprice_service.py`, `controller.py`, `schema.py`, `backend/app/core/action_catalog.py`; `frontend-v2/src/modules/procurement/components/purchase-order-reprice-bar.tsx`, `purchase-order-reprice-line-fields.tsx`, `hooks/use-purchase-order-reprice.ts`, `utils/purchase-order-reprice.ts`, `pages/purchase-order-detail-page.tsx`.
+Commit: 7fa39f3d, d89f2ca0.
+
 ## duoc-CR-784 | Cụm Giá bao bì ở Thu mua: sổ giá, báo giá, ngưỡng giá, định mức bao bì và màn mô phỏng tác động giá
 - status: xong
 - date: 2026-11-20
