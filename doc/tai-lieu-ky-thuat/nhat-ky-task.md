@@ -114,6 +114,25 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-799 | Đơn mua hàng: sửa giá trong bảng cũng cập nhật lịch sử mua hàng và các màn Giá nguyên vật liệu
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** khi gộp mã trước đợt phát hành, soát thấy cách sửa giá thứ hai của đơn mua hàng (sửa ngay trong bảng dòng) tính lại
+công nợ nhưng chưa cập nhật lịch sử mua hàng và sổ giá. Người dùng sửa giá xong sẽ thấy các màn giá vẫn hiện giá cũ.
+
+**Đã làm:** sửa giá trong bảng xong thì lịch sử mua hàng và các màn Giá nguyên vật liệu sản xuất đổi theo ngay, giống cách sửa
+giá bằng hộp thoại. Thêm bài kiểm để lần sau thêm đường sửa đơn mới mà quên bước này thì bị báo đỏ.
+
+**Quay lui:** chạy lại bản mã trước.
+
+**Kiểm:** 73 bài quanh sửa giá đơn mua hàng, sổ giá và lịch sử mua đạt; ruff sạch.
+
+Mã nguồn: `backend/app/modules/purchase_order/reprice_service.py`.
+Kiểm: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` · `test/backend/test_moc_dong_bo_so_gia_cr784.py` ·
+`test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
+
 ## bao-CR-796 | Lịch sử mua hàng (Giá nguyên vật liệu sản xuất): số đơn ở cột Nguồn không còn bị cắt
 - status: xong
 - date: 2026-11-27

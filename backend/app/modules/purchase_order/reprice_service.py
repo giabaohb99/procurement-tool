@@ -19,6 +19,8 @@ from app.core.audit import record
 from app.modules.payable.model import Payable
 from app.modules.payment_request import service as prq_service
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
+from app.modules.product_price.ledger_sync_service import sync_po_price_ledger   # duoc-CR-784: sổ giá
+from app.modules.purchase_history.service import sync_po_history_safe   # bao-CR-790: lịch sử mua hàng từ lúc nhận hàng
 
 from .base_service import ENTITY, PROG_CANCELLED, PROG_COMPLETED, _sync_pr, get_po, items_of
 from .delivery_service import recompute_effects
@@ -195,5 +197,7 @@ def reprice_po(db: Session, pid: int, data: RepriceIn, user_id: int) -> tuple[Pu
     except Exception:
         db.rollback()   # tiến độ tự động không được làm hỏng thao tác chính (đã commit) — như update_po
     _sync_pr(db, po.pr_code)   # SL đặt đổi → tiến độ dòng YCMH tính lại
+    sync_po_price_ledger(db, po)   # bao-CR-799: giá / SL / VAT đổi → sổ giá của cụm Giá NVL đi theo
+    sync_po_history_safe(db, po)   # bao-CR-799: bản ghi lịch sử mua hàng chưa chốt đi theo
     db.refresh(po)
     return po, len(changes), refreshed

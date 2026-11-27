@@ -261,3 +261,21 @@ def test_duong_api_can_quyen_duyet_khong_phai_quyen_sua(db, seed, order, cap_quy
 def test_ma_hanh_dong_co_trong_bo_ma_nhat_ky():
     from app.core.action_catalog import ACTION_LABELS
     assert ACTION_LABELS["adjust_price"] == "Sửa giá sau duyệt"
+
+
+# ── bao-CR-799: đường "Sửa giá trong bảng" (duoc-CR-797) cũng phải kéo sổ giá và lịch sử mua theo ────────────────────
+def test_sua_gia_trong_bang_cung_dong_bo_lich_su_mua_va_so_gia(db, order):
+    from app.modules.purchase_order.reprice_service import reprice_po
+    from app.modules.purchase_order.schema import RepriceIn
+
+    po, uid = order
+    _receive(db, po, uid)
+    line = _line(db, po)
+
+    reprice_po(db, po.id, RepriceIn(items=[{"id": line.id, "qty_order": 2048, "price": 4800, "vat": 8}]), uid)
+
+    history = db.query(PurchaseHistory).filter(PurchaseHistory.po_item_id == line.id).one()
+    assert float(history.price) == 4800
+    ledger = db.query(ProductPriceLedger).filter(ProductPriceLedger.source_type == int(PriceSourceType.PO_LINE),
+                                                 ProductPriceLedger.source_id == line.id).one()
+    assert float(ledger.price) == 4800

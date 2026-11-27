@@ -13,9 +13,6 @@ import app.modules.purchase_order as po_pkg
 MIEN_TRU = {
     "edit_service.py::create_po": "đơn mới luôn ở Nháp nên chưa có dòng sổ giá — thêm hook chỉ tốn thêm truy vấn mỗi lần sinh đơn "
                                   "(bài chụp số truy vấn của bao-CR-715 sẽ đỏ)",
-    "reprice_service.py::reprice_po": "VIỆC TREO duoc-CR-784: tệp `reprice_service.py` chưa lên erp-v2 (phiên khác giữ) nên chưa "
-                                      "gắn hook; cho tới lúc đó giá đổi bằng reprice chỉ vào sổ khi `backfill_product_price_ledger "
-                                      "--apply` chạy lại hoặc ĐMH đổi mốc kế tiếp. GẮN HOOK RỒI GỠ DÒNG NÀY.",
 }
 
 
