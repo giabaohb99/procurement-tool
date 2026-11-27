@@ -54,6 +54,10 @@
   border: 1px solid var(--border); border-radius: 12px; background: #fff;
 }
 .pkg-chipbox.open { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.18); }
+/*  Kiểu gọn một dòng (Giá mua gần nhất, 27/11/2026): cao bằng ô chọn react-select bên cạnh, chip không xuống dòng. */
+.pkg-chipbox.compact { flex-wrap: nowrap; overflow: hidden; min-height: 0; height: 38px; padding: 0 8px; border-radius: 8px; }
+.pkg-chipbox.compact .pkg-chip, .pkg-chipbox.compact .pkg-chip-more { flex: none; padding-top: 1px; padding-bottom: 1px; }
+.pkg-chipbox.compact .pkg-input { min-width: 80px; }
 .pkg-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 8px;
   border: 1px solid rgba(0, 174, 239, 0.35); background: rgba(0, 174, 239, 0.1); color: var(--teal-dark);

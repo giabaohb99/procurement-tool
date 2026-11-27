@@ -60,7 +60,7 @@ export default function PackagingLastPricesToolbar({
           dòng trên bảng (cạnh Xóa lọc), không lặp ở đây. */}
       <div className="pkg-lookups">
         <PackagingCodePicker options={codeOptions} value={filters.codes} onChange={(codes) => patch({ codes })}
-          loading={codeOptionsLoading} emptyPlaceholder="Tìm mã VTBB — gõ mã, tên hoặc tên nhóm, chọn được nhiều mã" />
+          loading={codeOptionsLoading} emptyPlaceholder="Tìm mã VTBB — gõ mã, tên hoặc tên nhóm, chọn được nhiều mã" compact />
         <MultiCheckSelect value={filters.all ? [ALL_GROUPS] : filters.groups} placeholder="Nhóm sản phẩm" options={groupOptions}
           onChange={changeGroups} />
         <div title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">

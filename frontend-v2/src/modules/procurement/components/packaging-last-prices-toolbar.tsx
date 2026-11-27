@@ -167,6 +167,7 @@ export function PackagingLastPricesToolbar({
           onChange={(codes) => patch({ codes })}
           loading={codeOptionsLoading}
           emptyPlaceholder="Tìm mã VTBB — gõ mã, tên hoặc tên nhóm, chọn được nhiều mã"
+          compact
         />
         <div>
           <MultiPicker<string>
