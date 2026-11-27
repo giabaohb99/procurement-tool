@@ -210,7 +210,7 @@ export function PurchaseOrderPriceAdjustDialog({
                   {renderPriceInput(row)}
                 </div>
                 <p className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Chênh lệch đã nhận (chưa VAT)</span>
+                  <span className="text-muted-foreground">Chênh lệch (chưa VAT)</span>
                   {renderDelta(row)}
                 </p>
               </li>
@@ -231,7 +231,7 @@ export function PurchaseOrderPriceAdjustDialog({
                   className="text-right"
                   title="SL đã nhận × (đơn giá mới − đơn giá hiện tại), chưa VAT"
                 >
-                  Chênh lệch đã nhận (chưa VAT)
+                  Chênh lệch (chưa VAT)
                 </TableHead>
               </TableRow>
             </TableHeader>
