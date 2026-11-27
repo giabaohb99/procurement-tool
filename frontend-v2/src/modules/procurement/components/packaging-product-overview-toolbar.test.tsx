@@ -1,9 +1,24 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_IMPACT_FILTERS } from '../utils/packaging-impact-filters'
 import { PackagingProductOverviewToolbar } from './packaging-product-overview-toolbar'
+import type * as PackagingCostApi from '../api/packaging-cost-api'
+
+//  Ô tìm có gợi ý (27/11/2026) nạp danh sách sản phẩm / mã qua TanStack Query: bọc provider, giả lập hai hàm nạp.
+vi.mock('../api/packaging-cost-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PackagingCostApi>()),
+  fetchPackagingCodeOptions: vi.fn(async () => []),
+  fetchPackagingFgOptions: vi.fn(async () => []),
+}))
+
+function renderWithQuery(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
 
 const COUNTS = { all: 6, up: 2, down: 1, flat: 2, missing: 1 }
 
@@ -11,7 +26,7 @@ function setup(over: Partial<Parameters<typeof PackagingProductOverviewToolbar>[
   const onKeywordChange = vi.fn()
   const onTrendChange = vi.fn()
   const onAdvancedChange = vi.fn()
-  render(
+  renderWithQuery(
     <PackagingProductOverviewToolbar
       keyword=""
       onKeywordChange={onKeywordChange}

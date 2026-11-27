@@ -29,25 +29,24 @@ export default function PackagingHistoryToolbar({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div className="pkg-row" style={{ alignItems: 'flex-start' }}>
-        <div className="pkg-seg" role="group" aria-label="Chế độ chọn" style={{ height: 42, alignItems: 'stretch' }}>
+      {/*  MỘT hàng (27/11/2026, "input hơi mập"): chế độ · ô chọn mã kiểu gọn · nhà cung cấp · khoảng ngày; hẹp thì xuống dòng. */}
+      <div className="pkg-row">
+        <div className="pkg-seg" role="group" aria-label="Chế độ chọn" style={{ height: 38, alignItems: 'stretch' }}>
           <button className={!isProduct ? 'on' : ''} style={{ height: 'auto' }} onClick={() => setMode('code')}>Theo mã VTBB</button>
           <button className={isProduct ? 'on' : ''} style={{ height: 'auto' }} onClick={() => setMode('product')}>Theo mã sản phẩm</button>
         </div>
-        <div style={{ flex: 1, minWidth: 320 }}>
+        <div style={{ flex: 1, minWidth: 300 }}>
           {isProduct ? (
             <PackagingCodePicker kind="product" options={productOptions} value={selection.fg}
               onChange={(fg) => onSelection({ ...selection, fg })} loading={optionsLoading} maxCodes={PACKAGING_HISTORY_MAX_CODES}
-              emptyPlaceholder="Tất cả sản phẩm có định mức — gõ để chọn sản phẩm cụ thể" />
+              emptyPlaceholder="Tất cả sản phẩm có định mức — gõ để chọn sản phẩm cụ thể" compact />
           ) : (
             <PackagingCodePicker options={codeOptions} value={selection.codes}
               onChange={(codes) => onSelection({ ...selection, codes })} loading={optionsLoading} maxCodes={PACKAGING_HISTORY_MAX_CODES}
-              emptyPlaceholder="Tất cả mã VTBB — gõ mã, tên hoặc tên nhóm để chọn mã cụ thể" />
+              emptyPlaceholder="Tất cả mã VTBB — gõ mã, tên, nhóm hoặc NCC để chọn mã cụ thể" compact />
           )}
         </div>
-      </div>
-      <div className="pkg-row">
-        {/*  Ô tìm chữ thứ hai bỏ 27/11/2026: ô chọn mã ở hàng trên đã tìm theo mã, tên, nhóm và tên NCC. */}
+        {/*  Ô tìm chữ thứ hai bỏ 27/11/2026: ô chọn mã đã tìm theo mã, tên, nhóm và tên NCC. */}
         <div style={{ width: 230 }}>
           <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
             options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))} onChange={(v) => patch({ suppliers: v })} />

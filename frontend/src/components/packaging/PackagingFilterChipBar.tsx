@@ -5,6 +5,7 @@ import {
 import type { AdvancedFilterVariant, FilterConditionKey, ImpactAdvancedFilters } from '../../utils/packaging-impact-filters'
 import PackagingAnchoredPanel from './PackagingAnchoredPanel'
 import PackagingFilterConditionEditor from './PackagingFilterConditionEditor'
+import PackagingKeywordSuggestInput from './PackagingKeywordSuggestInput'
 import './packaging.css'
 
 /**
@@ -49,10 +50,8 @@ export default function PackagingFilterChipBar({ variant, value, onChange, keywo
   return (
     <>
       <div className="pkg-row" style={{ flex: '1 1 320px', minWidth: 0 }}>
-        <div className="pkg-search">
-          <input aria-label="Tìm sản phẩm" placeholder="Tìm mã HH, tên, mã thành phần…" value={keyword}
-            onChange={(e) => onKeyword(e.target.value)} />
-        </div>
+        {/*  Ô tìm có gợi ý sản phẩm / mã thành phần (27/11/2026). */}
+        <PackagingKeywordSuggestInput value={keyword} onChange={onKeyword} />
         <button ref={addRef} type="button" className="btn ghost" aria-haspopup="menu" aria-expanded={menuOpen}
           disabled={addable.length === 0} onClick={() => setMenuOpen((v) => !v)}>
           <i className="ti ti-plus" />Thêm điều kiện<i className="ti ti-chevron-down" />
