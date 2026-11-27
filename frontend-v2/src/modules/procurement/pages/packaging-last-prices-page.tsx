@@ -10,7 +10,6 @@ import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
@@ -25,6 +24,7 @@ import {
   PackagingLastPricesToolbar,
   type LastPricesFilters,
 } from '../components/packaging-last-prices-toolbar'
+import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
 import { usePackagingLastPrices } from '../hooks/use-packaging-last-prices'
 import { usePackagingLastPricesColumns } from '../hooks/use-packaging-last-prices-columns'
 import {
@@ -33,6 +33,7 @@ import {
   RECENT_CODES_LIMIT,
   sortKeyOutsideN,
 } from '../utils/packaging-last-prices'
+import { sortPackagingCodeOptions } from '../utils/packaging-code-match'
 import {
   buildLastPricesUrlSearch,
   DEFAULT_LAST_PRICES_FILTERS,
@@ -53,23 +54,23 @@ export function PackagingLastPricesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
   const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
-  const debouncedQ = useDebouncedValue(filters.q, 350)
   const once = useSingleFlight()
+  //  Danh sách mã cho ô chọn mã — cùng nguồn với màn Tác động và Lịch sử mua hàng.
+  const codeOptionsQuery = usePackagingCodeOptions()
+  const codeOptions = useMemo(
+    () => sortPackagingCodeOptions(codeOptionsQuery.data ?? []),
+    [codeOptionsQuery.data],
+  )
   const columns = usePackagingLastPricesColumns(filters.n, filters.showQty)
 
   //  Chế độ gần nhất (mới mở, chưa chọn gì): chỉ 20 mã mua gần nhất, xếp ngày mua mới nhất trước, không phân trang.
-  //  Ô tìm tính theo giá trị đã hoãn để gõ dở không nháy qua lại giữa hai chế độ.
-  const recent = isRecentMode({ ...filters, q: debouncedQ })
+  const recent = isRecentMode(filters)
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo(
     () =>
-      buildLastPricesParams(
-        filters,
-        debouncedQ,
-        recent ? { by: 'p1_date', dir: 'desc' } : { by: sortBy, dir: sortDir },
-      ),
-    [filters, debouncedQ, sortBy, sortDir, recent],
+      buildLastPricesParams(filters, recent ? { by: 'p1_date', dir: 'desc' } : { by: sortBy, dir: sortDir }),
+    [filters, sortBy, sortDir, recent],
   )
   const [rawPage, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
   const page = recent ? 1 : rawPage
@@ -79,9 +80,8 @@ export function PackagingLastPricesPage() {
     page_size: recent ? RECENT_CODES_LIMIT : pageSize,
   })
 
-  //  Ô tìm lên URL theo nhịp ĐÃ HOÃN (350 ms) — không ghi lại URL mỗi phím gõ.
   const urlSearch = buildLastPricesUrlSearch({
-    filters: { ...filters, q: debouncedQ },
+    filters,
     sortBy,
     sortDir,
     page,
@@ -171,6 +171,8 @@ export function PackagingLastPricesPage() {
               filters={filters}
               groups={list.data?.groups ?? []}
               suppliers={list.data?.suppliers ?? []}
+              codeOptions={codeOptions}
+              codeOptionsLoading={codeOptionsQuery.isLoading}
               onChange={changeFilters}
               recentMode={recent}
             />

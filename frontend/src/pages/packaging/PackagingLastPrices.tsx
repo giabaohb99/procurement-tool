@@ -5,11 +5,11 @@ import TableToolbar from '../../components/TableToolbar'
 import { toast } from '../../components/toast'
 import PackagingLastPricesTable from '../../components/packaging/PackagingLastPricesTable'
 import PackagingLastPricesToolbar from '../../components/packaging/PackagingLastPricesToolbar'
-import { downloadExport, fetchLastPrices } from '../../api/packaging-cost'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import { downloadExport, fetchCodeOptions, fetchLastPrices } from '../../api/packaging-cost'
+import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import {
-  buildLastPricesParams, EMPTY_LAST_PRICES_FILTERS, isRecentMode, nextSort, RECENT_CODES_LIMIT, sortKeyOutsideN,
+  buildLastPricesParams, EMPTY_LAST_PRICES_FILTERS, isRecentMode, nextSort, RECENT_CODES_LIMIT, sortCodeOptions, sortKeyOutsideN,
   type LastPricesFilters,
 } from '../../utils/packaging-query'
 import { LAST_PRICES_URL_KEYS, lastPricesScreenToSearch, searchToLastPricesScreen } from '../../utils/packaging-prices-screen-url'
@@ -31,17 +31,23 @@ export default function PackagingLastPrices() {
   const [rawPage, setPage] = useState(initial.page)
   const [pageSize, setPageSize] = useState(initial.pageSize)
   const [exporting, setExporting] = useState(false)
-  const q = useDebouncedValue(filters.q, 350)
+  //  Danh sách mã cho ô chọn mã — cùng nguồn với màn Tác động và Lịch sử mua hàng.
+  const [codeOptions, setCodeOptions] = useState<PackagingCodeOption[]>([])
+  const [codesLoading, setCodesLoading] = useState(true)
+  useEffect(() => {
+    fetchCodeOptions().then((d) => setCodeOptions(sortCodeOptions(d)))
+      .catch(() => toast.error('Không tải được danh sách mã vật tư bao bì.'))
+      .finally(() => setCodesLoading(false))
+  }, [])
 
   //  Chế độ gần nhất (mới mở, chưa chọn gì): chỉ 20 mã mua gần nhất, xếp ngày mua mới nhất trước, không phân trang.
-  //  Ô tìm tính theo giá trị đã hoãn để gõ dở không nháy qua lại giữa hai chế độ.
-  const recent = isRecentMode({ ...filters, q })
+  const recent = isRecentMode(filters)
   const page = recent ? 1 : rawPage
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel (chế độ gần nhất: xuất đủ mọi mã, cùng thứ tự). */
   const filterParams = useMemo(
-    () => buildLastPricesParams(filters, q, recent ? { by: 'p1_date', dir: 'desc' } : { by: sortBy, dir: sortDir }),
-    [filters, q, sortBy, sortDir, recent])
+    () => buildLastPricesParams(filters, recent ? { by: 'p1_date', dir: 'desc' } : { by: sortBy, dir: sortDir }),
+    [filters, sortBy, sortDir, recent])
   const params = useMemo(
     () => ({ ...filterParams, page, page_size: recent ? RECENT_CODES_LIMIT : pageSize }), [filterParams, page, pageSize, recent])
   const list = useLatestQuery(() => fetchLastPrices(params), JSON.stringify(params))
@@ -99,7 +105,8 @@ export default function PackagingLastPrices() {
 
       <div className="card table-card">
         <PackagingLastPricesToolbar filters={filters} onChange={changeFilters}
-          groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []} />
+          groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []}
+          codeOptions={codeOptions} codeOptionsLoading={codesLoading} />
         <div className="table-tools tt-compact" style={{ marginTop: -4 }}>
           <span className="pkg-hint" style={{ marginRight: 'auto' }}>{list.data ? (recent ? `${RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết` : `Tổng ${list.data.total} mã`) : ''}</span>
           {filtersActive && <button className="btn ghost" onClick={() => changeFilters(reset)}><i className="ti ti-rotate" />Xóa lọc</button>}

@@ -2,19 +2,18 @@
  * duoc-CR-784 — thanh lọc của tab Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng"
  * chỉ đổi cột hiện (Excel thêm cột theo cờ `show_qty` cùng giá trị).
  *
- * Bố cục ba hàng (27/11/2026). Hàng 1: bốn ô chọn đều nhau — ô tìm, ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không
+ * Bố cục ba hàng (27/11/2026). Hàng 1: bốn ô chọn — ô chọn nhiều MÃ (như màn Tác động, rộng gấp đôi), ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không
  * tick nhóm nào = mọi nhóm, mỗi nhóm kèm số mã, dòng đầu là Tất cả; thay hàng chip vì prod có khoảng 42 nhóm), nhà cung cấp,
  * khoảng ngày mua. Hàng 2: số lần hiển thị, phạm vi mã, biến động, ngưỡng % rồi ba công tắc. Hàng 3: chú thích chữ nhỏ.
  * Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
-import { ChevronDown, Search } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
-import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { MultiPicker } from '@/shared/ui/multi-picker'
 import { NumberInput } from '@/shared/ui/number-input'
@@ -24,13 +23,16 @@ import { cn } from '@/shared/utils/cn'
 
 import type {
   LastPricesTrend,
+  PackagingCodeOption,
   PackagingLastPricesGroup,
   PackagingLastPricesSupplier,
 } from '../types/packaging-cost-types'
 import { LAST_PRICE_DEFAULT_N, LAST_PRICE_N_OPTIONS, RECENT_CODES_LIMIT } from '../utils/packaging-last-prices'
+import { PackagingCodePicker } from './packaging-code-picker'
 
 export interface LastPricesFilters {
-  q: string
+  /** Mã VTBB chọn ở ô chọn mã (thay ô tìm chữ từ 27/11/2026); rỗng = mọi mã. */
+  codes: string[]
   /** Tên các nhóm đang chọn; rỗng = mọi nhóm. */
   groups: string[]
   n: number
@@ -76,6 +78,9 @@ interface PackagingLastPricesToolbarProps {
   filters: LastPricesFilters
   groups: PackagingLastPricesGroup[]
   suppliers: PackagingLastPricesSupplier[]
+  /** Danh sách mã cho ô chọn mã (đã xếp, cùng nguồn màn Tác động). */
+  codeOptions?: PackagingCodeOption[]
+  codeOptionsLoading?: boolean
   onChange: (filters: LastPricesFilters) => void
   /** Đang ở chế độ gần nhất (chưa chọn nhóm / "Tất cả" / bộ lọc nào) — hiện chú thích 20 mã thay cho tổng số. */
   recentMode?: boolean
@@ -123,6 +128,8 @@ export function PackagingLastPricesToolbar({
   filters,
   groups,
   suppliers,
+  codeOptions = [],
+  codeOptionsLoading = false,
   onChange,
   recentMode = false,
 }: PackagingLastPricesToolbarProps) {
@@ -153,17 +160,14 @@ export function PackagingLastPricesToolbar({
     <div className="flex w-full flex-col gap-3">
       {/*  Hàng 1 (27/11/2026): bốn ô chọn đều nhau — tìm, nhóm, nhà cung cấp, khoảng ngày. Khổ điện thoại chỉ còn hai ô đầu,
           hai ô sau nằm trong phần "Lọc thêm". */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            aria-label="Tìm mã vật tư"
-            placeholder="Tìm mã, tên, nhóm, nhà cung cấp…"
-            value={filters.q}
-            onChange={(event) => patch({ q: event.target.value })}
-          />
-        </div>
+      <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr]">
+        <PackagingCodePicker
+          options={codeOptions}
+          value={filters.codes}
+          onChange={(codes) => patch({ codes })}
+          loading={codeOptionsLoading}
+          emptyPlaceholder="Tìm mã VTBB — gõ mã, tên hoặc tên nhóm, chọn được nhiều mã"
+        />
         <div>
           <MultiPicker<string>
             value={filters.all ? [ALL_GROUPS] : filters.groups}

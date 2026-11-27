@@ -1,7 +1,8 @@
 import DateRangePicker from '../DateRangePicker'
 import MultiCheckSelect from '../MultiCheckSelect'
+import PackagingCodePicker from './PackagingCodePicker'
 import NumberInput from '../NumberInput'
-import type { LastPricesTrend, PackagingLastPricesResult } from '../../api/packaging-cost-types'
+import type { LastPricesTrend, PackagingCodeOption, PackagingLastPricesResult } from '../../api/packaging-cost-types'
 import { LAST_PRICE_N_OPTIONS, type LastPricesFilters } from '../../utils/packaging-query'
 import './packaging.css'
 
@@ -23,18 +24,21 @@ function Toggle({ label, checked, onChange, title }: { label: string; checked: b
 
 /**
  * Thanh lọc của màn Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng" chỉ đổi cột hiện.
- * Hàng 1: bốn ô đều nhau — ô tìm, ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; số mã là
+ * Hàng 1: bốn ô — ô chọn nhiều MÃ (như màn Tác động, rộng gấp đôi), ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; số mã là
  * chữ phụ; dòng đầu danh sách là Tất cả — thay hàng chip từ 27/11/2026 vì prod có khoảng 42 nhóm), nhà cung cấp, khoảng ngày.
  * Hàng 2: số lần hiển thị, phạm vi mã, biến động, ngưỡng % rồi ba công tắc. Hàng 3: chú thích màu.
  * Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 export default function PackagingLastPricesToolbar({
-  filters, onChange, groups, suppliers,
+  filters, onChange, groups, suppliers, codeOptions = [], codeOptionsLoading = false,
 }: {
   filters: LastPricesFilters
   onChange: (next: LastPricesFilters) => void
   groups: PackagingLastPricesResult['groups']
   suppliers: PackagingLastPricesResult['suppliers']
+  /** Danh sách mã cho ô chọn mã (đã xếp, cùng nguồn màn Tác động). */
+  codeOptions?: PackagingCodeOption[]
+  codeOptionsLoading?: boolean
 }) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
   //  Mỗi nhóm một dòng tick, số mã là chữ phụ. Nhóm đã chọn mà số đếm về 0 (bộ lọc khác loại hết mã của nó) vẫn có dòng để bỏ tick.
@@ -55,9 +59,8 @@ export default function PackagingLastPricesToolbar({
       {/*  Hàng 1 (27/11/2026): bốn ô chọn đều nhau — tìm, nhóm, nhà cung cấp, khoảng ngày. Câu nhắc "20 mã mua gần nhất" nằm ở
           dòng trên bảng (cạnh Xóa lọc), không lặp ở đây. */}
       <div className="pkg-lookups">
-        <div className="pkg-search">
-          <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên, nhóm, nhà cung cấp…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
-        </div>
+        <PackagingCodePicker options={codeOptions} value={filters.codes} onChange={(codes) => patch({ codes })}
+          loading={codeOptionsLoading} emptyPlaceholder="Tìm mã VTBB — gõ mã, tên hoặc tên nhóm, chọn được nhiều mã" />
         <MultiCheckSelect value={filters.all ? [ALL_GROUPS] : filters.groups} placeholder="Nhóm sản phẩm" options={groupOptions}
           onChange={changeGroups} />
         <div title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">

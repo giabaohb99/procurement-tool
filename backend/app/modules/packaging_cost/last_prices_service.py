@@ -121,7 +121,8 @@ def _sorted(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict]:
     return sort_rows(rows, sort_by, sort_dir, SORT_KEYS)
 
 
-def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", groups: list[str] | None = None, only_priced: bool = True,
+def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", product_codes: list[str] | None = None,
+                      groups: list[str] | None = None, only_priced: bool = True,
                       bom_only: bool = False, scope: str = "bom", suppliers: list[str] | None = None,
                       date_from: date | None = None, date_to: date | None = None, trend: str = "all",
                       min_pct: float | None = None, sort_by: str = "code", sort_dir: str = "asc", scope_cond=None) -> dict:
@@ -129,7 +130,7 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", groups: l
 
     `n` = số lần mua hiển thị (2..MAX_N). `scope`: `bom` = mã thành phần của định mức ∪ mã có báo giá; `all` = mọi mã có
     lần mua có giá; `bom_only` = chỉ mã thành phần của định mức (thắng `scope`). `date_from` / `date_to` lọc các lần mua
-    TRƯỚC khi xếp hạng. `suppliers` giữ dòng có nhà cung cấp đó trong `n` lần đang hiện. `groups` (tên nhóm, nhiều tên = HOẶC) giữ dòng thuộc một trong các nhóm đó. `trend` (all / up / down / flat) lọc
+    TRƯỚC khi xếp hạng. `product_codes` (ô chọn mã, 27/11/2026) chỉ giữ đúng các mã đó (rỗng = mọi mã). `suppliers` giữ dòng có nhà cung cấp đó trong `n` lần đang hiện. `groups` (tên nhóm, nhiều tên = HOẶC) giữ dòng thuộc một trong các nhóm đó. `trend` (all / up / down / flat) lọc
     chiều đổi giá lần 1 so lần 2; `min_pct` giữ dòng có |lần 1 so lần 2| >= min_pct (đơn vị %).
     `suppliers` tính trên tập đã lọc "chỉ mã có giá" nhưng CHƯA áp tìm / nhóm / nhà cung cấp / biến động (ô chọn đứng yên).
     `groups` = số mã mỗi nhóm SAU mọi bộ lọc trừ bộ lọc nhóm (tìm, nhà cung cấp, khoảng ngày, xu hướng, ngưỡng %) — chip khớp
@@ -174,6 +175,9 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", groups: l
     if terms:
         hay = {r["code"]: _haystack(r) for r in rows}
         rows = [r for r in rows if all(t in hay[r["code"]] for t in terms)]
+    picked = {c.strip() for c in (product_codes or []) if c.strip()}
+    if picked:
+        rows = [r for r in rows if r["code"] in picked]
     wanted = {c for c in (suppliers or []) if c}
     if wanted:
         rows = [r for r in rows if any(p["supplier_code"] in wanted for p in r["purchases"])]

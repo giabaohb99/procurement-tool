@@ -289,7 +289,9 @@ export interface PackagingLastPricesParams {
   /** Số lần mua hiển thị, 2–10 (mặc định 5). */
   n?: number
   q?: string
-  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 50. */
+  /** Mã VTBB chọn ở ô chọn mã (lặp khóa `code=`, tối đa 500); rỗng = mọi mã. */
+  code?: string[]
+  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 200. */
   group?: string[]
   /** Mã nhà cung cấp; mã có nhà cung cấp đó trong `n` lần đang hiện thì giữ. */
   supplier?: string[]

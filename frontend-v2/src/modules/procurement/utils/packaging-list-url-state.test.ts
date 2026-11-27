@@ -77,7 +77,7 @@ describe('Giá mua gần nhất URL state', () => {
   it('round-trips every filter, sort, page and page size', () => {
     const state: LastPricesUrlState = {
       filters: {
-        q: 'chai',
+        codes: ['CPT0105', 'NAP0085'],
         groups: ['Chai', 'Nắp'],
         n: 10,
         scope: 'bom',

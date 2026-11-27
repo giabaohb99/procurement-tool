@@ -10,7 +10,7 @@ const GROUPS = [
 ]
 const SUPPLIERS = [{ code: 'PHL', name: 'CÔNG TY CỔ PHẦN PHL' }]
 const FILTERS: LastPricesFilters = {
-  q: '',
+  codes: [],
   groups: [],
   n: 5,
   scope: 'all',
