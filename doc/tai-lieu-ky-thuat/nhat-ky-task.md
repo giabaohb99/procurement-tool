@@ -258,7 +258,7 @@ Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packagin
 Kiểm: `test/backend/test_*_cr784.py`.
 Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`, `doc/erp/thu-mua/plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md`, `doc/erp/thu-mua/tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md`.
 Commit: 1357b785 (bản đầu) … c8655f45 (lượt cuối 26/11/2026).
-Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod.
+Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod. Dev 27/11/2026 lần hai (erp-v2 3b306d0e): dựng lại api, celery-worker, celery-beat, giao diện ERP và giao diện cũ cho các việc ngày 27/11 (ô chọn nhóm, ô chọn mã, bố cục thanh lọc, đảo màu tăng đỏ giảm xanh, cố định cột tên, thẻ Mã đã chọn), không có migration; seed lại 10 bài hướng dẫn, cẩm nang quy-trinh-thu-mua lên phiên bản 12, nạp lại chỉ mục 58 đoạn (kho 204 trên 204 bài). Chưa lên prod.
 
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong
