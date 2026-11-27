@@ -189,7 +189,7 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: Prin
           {total.toLocaleString('vi-VN')} {productMode ? 'dòng' : 'lần mua'}
         </span>
         <span className="cnt">
-          · Giá VNĐ, chưa VAT, bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn · Lần 1 = lần mua gần nhất của mã
+          · Giá VNĐ, chưa VAT, bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn · Lần 1 = lần mua gần nhất của mã
         </span>
       </div>
       {rows.length === 0 ? (

@@ -75,8 +75,8 @@ có gắn ĐMH sau mốc.
 | Không báo giá, một lần mua có giá | lần đó | = giá mới |
 | Không lần mua có giá, không báo giá | rỗng (*chưa có giá*) | rỗng |
 
-"Gần nhất" = ngày mua giảm, rồi id ĐMH giảm, rồi id dòng sổ giảm. Màu chênh lệch: **tăng xanh, giảm đỏ** (người chủ chốt
-20/11, ngược bản mẫu).
+"Gần nhất" = ngày mua giảm, rồi id ĐMH giảm, rồi id dòng sổ giảm. Màu chênh lệch: **tăng đỏ, giảm xanh** (người chủ chốt
+27/11/2026, đảo lại quyết định 20/11; giống bản mẫu).
 
 ## 2. Tác động giá bao bì
 
@@ -172,7 +172,7 @@ Màn `/procurement/packaging-cost/last-prices` (cũ `/packaging-cost/last-prices
 lần mua gần nhất*.
 
 - Mỗi mã VTBB một dòng; nhóm cột *Thông tin VTBB* (Mã VTBB, Tên vật tư, Nhóm, ĐVT, Số lần có giá); mỗi lần mua một nhóm cột
-  gộp *Lần 1 (gần nhất)*, *Lần 2*… (Ngày mua, Nhà cung cấp, [Số lượng], Đơn giá; xanh đắt hơn lần trước, đỏ rẻ hơn); *Biến
+  gộp *Lần 1 (gần nhất)*, *Lần 2*… (Ngày mua, Nhà cung cấp, [Số lượng], Đơn giá; đỏ đắt hơn lần trước, xanh rẻ hơn); *Biến
   động* (Lần 1 so lần 2, Lần 1 so lần n); *Giá TB* (Giá TB n lần). Chỉ lần mua có giá.
 - Lọc: **ô chọn mã** (27/11/2026 thay ô tìm chữ; dùng lại ô chọn của màn Tác động — gõ mã, tên, tên nhóm, chọn nhiều mã thành
   chip, API `code` lặp, tối đa 500 mã), ô chọn nhiều **Nhóm sản phẩm** (27/11/2026 thay hàng chip vì prod có khoảng 42 nhóm; mỗi nhóm một dòng tick kèm số mã,
@@ -213,7 +213,7 @@ và dữ liệu cũ, *Sổ Misa*. Khóa xếp Nguồn theo thứ tự đó (lị
   23/11/2026), ở cả màn hình lẫn bản in:
   - Đúng một mã: *Tổng số lần mua* (dòng phụ: khoảng ngày) · *Tổng số lượng mua* (ĐVT) · *Tổng giá trị mua* (giá x SL của
     các lần có giá; dòng phụ: số lần có giá / số lần mua) · *Giá thấp nhất – cao nhất* (BQ gia quyền) · *Gần nhất so với lần
-    đầu* (phần trăm giá lần có giá gần nhất so với lần có giá đầu tiên, tăng xanh giảm đỏ; dòng phụ: giá đầu → giá gần
+    đầu* (phần trăm giá lần có giá gần nhất so với lần có giá đầu tiên, tăng đỏ giảm xanh; dòng phụ: giá đầu → giá gần
     nhất) · *Số nhà cung cấp*; kèm biểu đồ *Diễn biến đơn giá*.
   - Nhiều mã / mọi mã: *Số mã đã chọn* (số mã có lịch sử mua) hoặc *Số mã hàng* · *Tổng số lần mua* · *Tổng giá trị mua* ·
     *Số nhà cung cấp*.
@@ -244,8 +244,8 @@ Bảng giá, Giá mua gần nhất, Lịch sử mua hàng — mã ở `packaging
 - Đầu cột nền navy chữ trắng; cột thành phần (chai, nắp, nhãn, nhãn thùng, thùng) nền xanh lá đậm. Giá mua gần nhất có
   thêm hàng nhóm gộp ô *THÔNG TIN VTBB · LẦN 1 (gần nhất) … · BIẾN ĐỘNG · GIÁ TB*, lần chẵn nền xanh lá.
 - Số có dấu nghìn (số lẻ thì hai chữ số lẻ), âm màu đỏ, bằng 0 hiện "-", phần trăm dạng 12,4%, ngày dd/mm/yyyy; ô chưa có
-  số để trống. Giá mới / chi phí mới đậm navy; chênh lệch, phần trăm, giá thành phần tăng **xanh** giảm **đỏ** (ngược bản
-  mẫu, theo luật màu chung của cụm).
+  số để trống. Giá mới / chi phí mới đậm navy; chênh lệch, phần trăm, giá thành phần tăng **đỏ** giảm **xanh** (giống bản
+  mẫu, theo luật màu chung của cụm từ 27/11/2026).
 - Cố định hàng tiêu đề và vài cột đầu, bật bộ lọc, khổ A4 ngang vừa một trang chiều ngang, lặp hàng tiêu đề khi in, chân
   trang *Trang x / y*, không kẻ lưới, font Montserrat.
 

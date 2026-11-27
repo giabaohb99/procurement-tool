@@ -47,7 +47,7 @@ function pick<T>(columns: TableColumn<T>[], slot: CardSlot) {
 
 /**
  * Bảng hiện dạng THẺ trên màn hẹp (≤ 820px, chọn bằng `useNarrowScreen`): mỗi dòng một thẻ dọc. Dựng từ CHÍNH danh sách cột
- * của bảng (`table.columns` — đã áp ẩn / hiện cột) nên nhãn, ô, màu tăng xanh giảm đỏ y hệt bảng; chỗ đặt mỗi cột do
+ * của bảng (`table.columns` — đã áp ẩn / hiện cột) nên nhãn, ô, màu tăng đỏ giảm xanh y hệt bảng; chỗ đặt mỗi cột do
  * `column.card` quyết định (xem `CardSlot`). Phân trang / chip lọc / thanh công cụ vẫn là của trang, đứng ngoài thẻ.
  */
 export default function TableCards<T>({

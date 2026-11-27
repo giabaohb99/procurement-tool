@@ -21,7 +21,7 @@ export interface HistorySummaryItem {
   value: string
   /** Dòng phụ dưới số (khoảng ngày, ĐVT, số lần có giá...). */
   sub?: string
-  /** Chiều giá của thẻ "Gần nhất so với lần đầu": tăng = xanh, giảm = đỏ (luật màu chung của cụm). */
+  /** Chiều giá của thẻ "Gần nhất so với lần đầu": tăng = đỏ, giảm = xanh (luật màu chung của cụm). */
   tone?: 'up' | 'down'
 }
 

@@ -1,6 +1,6 @@
 /**
  * duoc-CR-784 — GIÁ MUA GẦN NHẤT (bám `renderMatrix` của bản mẫu, mở rộng): mỗi mã VTBB một dòng với ngày mua, nhà cung
- * cấp, đơn giá của n lần mua có giá gần nhất (n = 3 / 5 / 10; xanh = đắt hơn lần cũ kế bên, đỏ = rẻ hơn), biến động lần 1
+ * cấp, đơn giá của n lần mua có giá gần nhất (n = 3 / 5 / 10; đỏ = đắt hơn lần cũ kế bên, xanh = rẻ hơn), biến động lần 1
  * so lần 2 / lần n và giá trung bình. Lọc + xếp + phân trang tại MÁY CHỦ (luật §8); tham số đi kèm Xuất Excel để ra đúng
  * thứ tự. Tiêu đề gộp nhóm cột do `DataTable` vẽ (`group` của cột).
  */

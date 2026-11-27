@@ -36,8 +36,8 @@ function rowOf(...prices: (number | null)[]): PackagingLastPricesRow {
 describe('purchaseTrendTone', () => {
   it('paints a purchase red when it is dearer than the next-older one, green when cheaper', () => {
     const row = rowOf(150, 130, 130, 140)
-    expect(purchaseTrendTone(row, 0)).toContain('emerald') // 150 > 130: tăng = xanh (người chủ chốt 20/11)
-    expect(purchaseTrendTone(row, 2)).toContain('destructive') // 130 < 140: giảm = đỏ
+    expect(purchaseTrendTone(row, 0)).toContain('destructive') // 150 > 130: tăng = đỏ (người chủ chốt 27/11)
+    expect(purchaseTrendTone(row, 2)).toContain('emerald') // 130 < 140: giảm = xanh
   })
 
   it('leaves equal prices, the oldest shown purchase and missing slots unpainted', () => {

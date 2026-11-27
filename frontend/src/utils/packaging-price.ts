@@ -10,8 +10,9 @@ import type { PackagingSelectedCode, PackagingWarning, PackagingWarningInput } f
 type Num = number | null | undefined
 
 /** Màu chênh lệch (người chủ chốt 20/11/2026): TĂNG xanh, GIẢM đỏ, bằng 0 không tô. */
-export const PKG_UP_COLOR = '#16a34a'
-export const PKG_DOWN_COLOR = '#dc2626'
+//  Tăng đỏ (giá lên là xấu), giảm xanh — người chủ chốt 27/11/2026, đảo lại quyết định 20/11/2026.
+export const PKG_UP_COLOR = '#dc2626'
+export const PKG_DOWN_COLOR = '#16a34a'
 
 export const isNum = (v: Num): v is number => typeof v === 'number' && Number.isFinite(v)
 

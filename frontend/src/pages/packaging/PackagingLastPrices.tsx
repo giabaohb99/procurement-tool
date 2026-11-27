@@ -18,7 +18,7 @@ import '../../components/packaging/packaging.css'
 
 /**
  * Màn GIÁ MUA GẦN NHẤT: mỗi mã VTBB một dòng với ngày mua, nhà cung cấp, đơn giá của n lần mua có giá gần nhất
- * (n = 3 / 5 / 10; xanh = đắt hơn lần cũ kế bên, đỏ = rẻ hơn), biến động lần 1 so lần 2 / lần n và giá trung bình.
+ * (n = 3 / 5 / 10; đỏ = đắt hơn lần cũ kế bên, xanh = rẻ hơn), biến động lần 1 so lần 2 / lần n và giá trung bình.
  * Lọc + xếp + phân trang tại MÁY CHỦ; tham số đi kèm Xuất Excel để ra đúng thứ tự.
  */
 export default function PackagingLastPrices() {

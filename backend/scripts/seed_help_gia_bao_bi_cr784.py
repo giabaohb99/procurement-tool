@@ -133,12 +133,12 @@ TREE = {
 <tr><td>Chưa mua lần nào, chưa có báo giá</td><td colspan="2">Chưa có giá (ô hiện gạch ngang)</td></tr>
 </tbody>
 </table>
-<p><strong>Màu chênh lệch:</strong> số <strong>tăng hiện màu xanh</strong>, số <strong>giảm hiện màu đỏ</strong>, không đổi thì để màu thường. Màu này áp chung mọi màn, bản in và tệp Excel của cụm.</p>
+<p><strong>Màu chênh lệch:</strong> số <strong>tăng hiện màu đỏ</strong>, số <strong>giảm hiện màu xanh</strong>, không đổi thì để màu thường. Màu này áp chung mọi màn, bản in và tệp Excel của cụm.</p>
 
 <h2>In và Xuất Excel</h2>
 <ul>
 <li>Nút <strong>In</strong> (màn Tác động giá bao bì và Lịch sử mua hàng, cần quyền Xem) mở một thẻ mới đúng theo bộ lọc đang xem, nạp đủ mọi dòng rồi tự bật hộp in. Bản in khổ A4 ngang, trình bày như bản in của báo cáo HTML: tiêu đề báo cáo, ô lọc, thẻ số liệu và biểu đồ (Lịch sử mua hàng, khi xem một mã hoặc một sản phẩm) và bảng.</li>
-<li>Nút <strong>Xuất Excel</strong> (cần quyền Xuất) tải tệp theo đúng bộ lọc và thứ tự đang xem, tối đa 5.000 dòng. Tệp trình bày như tệp Excel của báo cáo HTML: dòng 1 tiêu đề <em>BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — tên báo cáo</em>, dòng 2 ngày xuất và đơn vị (VNĐ, chưa VAT), đầu cột nền xanh đậm (cột chai, nắp, nhãn, nhãn thùng, thùng nền xanh lá), số có dấu nghìn, phần trăm dạng 12,4%, ô tăng xanh giảm đỏ, cố định hàng tiêu đề, có bộ lọc, in A4 ngang có số trang.</li>
+<li>Nút <strong>Xuất Excel</strong> (cần quyền Xuất) tải tệp theo đúng bộ lọc và thứ tự đang xem, tối đa 5.000 dòng. Tệp trình bày như tệp Excel của báo cáo HTML: dòng 1 tiêu đề <em>BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — tên báo cáo</em>, dòng 2 ngày xuất và đơn vị (VNĐ, chưa VAT), đầu cột nền xanh đậm (cột chai, nắp, nhãn, nhãn thùng, thùng nền xanh lá), số có dấu nghìn, phần trăm dạng 12,4%, ô tăng đỏ giảm xanh, cố định hàng tiêu đề, có bộ lọc, in A4 ngang có số trang.</li>
 </ul>
 
 <h2>Ai được xem gì</h2>
@@ -175,7 +175,7 @@ TREE = {
 <tr><td>Mã HH, Tên hàng hóa, Quy cách thùng</td><td>Lấy từ định mức bao bì.</td></tr>
 <tr><td>Chai, Nắp, Nhãn, Nhãn thùng (giá /thùng), Thùng (giá /thùng)</td><td>Mã thành phần và giá. Giá đổi thì hiện <em>giá cũ → giá đang dùng</em>; mã nằm trong danh sách đang chọn được tô nền vàng; chưa có giá thì ghi <em>chưa có giá</em>.</td></tr>
 <tr><td>CP bao bì/chai cũ, CP bao bì/chai mới</td><td>Chi phí bao bì một chai theo giá cũ và theo giá đang dùng (giá giả định nếu có).</td></tr>
-<tr><td>Tăng/giảm /chai, Tăng/giảm /thùng</td><td>Chênh lệch chi phí một chai và một thùng. Xanh là tăng, đỏ là giảm.</td></tr>
+<tr><td>Tăng/giảm /chai, Tăng/giảm /thùng</td><td>Chênh lệch chi phí một chai và một thùng. Đỏ là tăng, xanh là giảm.</td></tr>
 <tr><td>Ghi chú</td><td>Cảnh báo của dòng, ví dụ <em>Thiếu giá thành phần: Nhãn</em> (xem bảng dưới).</td></tr>
 </tbody>
 </table>
@@ -294,7 +294,7 @@ TREE = {
 <h2>Đọc bảng</h2>
 <ul>
 <li>Mỗi mã VTBB một dòng. Nhóm cột <strong>Thông tin VTBB</strong>: Mã VTBB, Tên vật tư, Nhóm, ĐVT, Số lần có giá.</li>
-<li>Mỗi lần mua một nhóm cột có tiêu đề gộp: <strong>Lần 1 (gần nhất)</strong>, Lần 2, Lần 3… Trong mỗi nhóm: <strong>Ngày mua</strong>, <strong>Nhà cung cấp</strong>, <strong>Đơn giá</strong> (bật <strong>Hiện số lượng</strong> để thêm cột Số lượng). Đơn giá xanh là đắt hơn lần mua trước nó, đỏ là rẻ hơn.</li>
+<li>Mỗi lần mua một nhóm cột có tiêu đề gộp: <strong>Lần 1 (gần nhất)</strong>, Lần 2, Lần 3… Trong mỗi nhóm: <strong>Ngày mua</strong>, <strong>Nhà cung cấp</strong>, <strong>Đơn giá</strong> (bật <strong>Hiện số lượng</strong> để thêm cột Số lượng). Đơn giá đỏ là đắt hơn lần mua trước nó, xanh là rẻ hơn.</li>
 <li>Nhóm <strong>Biến động</strong>: <strong>Lần 1 so lần 2</strong> và <strong>Lần 1 so lần n</strong> (phần trăm). Nhóm <strong>Giá TB</strong>: giá trung bình của n lần.</li>
 <li>Chỉ tính lần mua <strong>có giá</strong>; lần mua đơn giá 0 bị bỏ qua.</li>
 </ul>
@@ -337,10 +337,10 @@ TREE = {
 
 <h2>Đọc kết quả</h2>
 <ul>
-<li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng xanh, giảm đỏ, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp; để trống ô mã (xem mọi mã) thì thẻ đầu là Số mã hàng, tức mọi mã có lịch sử mua. Chế độ theo mã sản phẩm: Số sản phẩm (đã chọn hoặc tất cả), Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp. Tổng giá trị mua và giá bình quân gia quyền cộng đúng cột <strong>Giá trị mua</strong> của từng lần.</li>
+<li><strong>Thẻ số liệu</strong> tính trên toàn bộ kết quả lọc. Chọn <strong>đúng một mã</strong>: Tổng số lần mua (kèm khoảng ngày), Tổng số lượng mua (kèm ĐVT), Tổng giá trị mua (kèm số lần có giá), Giá thấp nhất – cao nhất (kèm giá bình quân gia quyền), Gần nhất so với lần đầu (tăng đỏ, giảm xanh, kèm giá đầu → giá gần nhất), Số nhà cung cấp. Nhiều mã: Số mã đã chọn, Tổng số lần mua, Tổng giá trị mua, Số nhà cung cấp; để trống ô mã (xem mọi mã) thì thẻ đầu là Số mã hàng, tức mọi mã có lịch sử mua. Chế độ theo mã sản phẩm: Số sản phẩm (đã chọn hoặc tất cả), Mã vật tư liên quan, Số dòng lịch sử, Số nhà cung cấp. Tổng giá trị mua và giá bình quân gia quyền cộng đúng cột <strong>Giá trị mua</strong> của từng lần.</li>
 <li><strong>Biểu đồ Diễn biến đơn giá</strong> hiện khi chọn đúng một mã: mỗi điểm là một lần mua có giá, rê chuột để xem ngày, đơn giá, nhà cung cấp, số lượng.</li>
 <li><strong>Biểu đồ Diễn biến đơn giá theo thành phần</strong> hiện khi ở chế độ theo mã sản phẩm và chọn <strong>đúng một sản phẩm</strong>: mỗi mã thành phần trong định mức có lần mua có giá (chai, nắp, nhãn, nhãn thùng, thùng) là một đường giá, chú giải ghi <strong>vai trò và mã</strong> (ví dụ Chai · CPT0105), thùng vẽ nét đứt. Rê chuột để xem giá của từng mã tại lần mua đó. Biểu đồ theo đúng bộ lọc đang chọn và có cả trong bản in. Chọn nhiều sản phẩm thì không có biểu đồ.</li>
-<li>Bảng, mới nhất trước: <strong>Lần</strong> (<strong>Lần 1 là lần mua gần nhất của mã</strong>, số càng lớn càng cũ; tính trên toàn bộ lịch sử của mã, không đổi khi bạn lọc), Ngày mua, Mã VTBB, Tên vật tư (chế độ theo mã sản phẩm thêm ba cột Mã SP, Tên sản phẩm, Thành phần ở đầu bảng), Nhà cung cấp, <strong>Kho</strong> (kho nhập hàng; lần mua trong Sổ Misa lấy kho của Misa, lần mua trên ERP lấy kho của dòng đơn mua hàng), Số lượng, Đơn giá, <strong>Giá trị mua</strong> (thành tiền chưa VAT của lần mua: lần mua trong Sổ Misa là số <em>Giá trị</em> trên sổ Misa, có thể lệch vài chục đồng so với đơn giá nhân số lượng vì Misa làm tròn từng dòng; lần mua đã hoàn thành trên ERP hay lịch sử cũ lấy thành tiền đã chốt nếu có; còn lại lấy đơn giá nhân số lượng; lần đơn giá 0 để trống), <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; xanh đắt hơn, đỏ rẻ hơn), <strong>Nguồn</strong> (lần mua trên ERP ghi mã đơn mua hàng, bấm để mở đơn; lần mua trong Sổ Misa hay lịch sử cũ để trống ô này; tệp Excel thì cột Nguồn ghi rõ chữ <em>Sổ Misa</em>, <em>Lịch sử mua hàng</em> hoặc <em>Dòng đơn mua hàng</em>). Ô tìm tìm được cả theo tên kho; bấm tiêu đề cột Kho để xếp.</li>
+<li>Bảng, mới nhất trước: <strong>Lần</strong> (<strong>Lần 1 là lần mua gần nhất của mã</strong>, số càng lớn càng cũ; tính trên toàn bộ lịch sử của mã, không đổi khi bạn lọc), Ngày mua, Mã VTBB, Tên vật tư (chế độ theo mã sản phẩm thêm ba cột Mã SP, Tên sản phẩm, Thành phần ở đầu bảng), Nhà cung cấp, <strong>Kho</strong> (kho nhập hàng; lần mua trong Sổ Misa lấy kho của Misa, lần mua trên ERP lấy kho của dòng đơn mua hàng), Số lượng, Đơn giá, <strong>Giá trị mua</strong> (thành tiền chưa VAT của lần mua: lần mua trong Sổ Misa là số <em>Giá trị</em> trên sổ Misa, có thể lệch vài chục đồng so với đơn giá nhân số lượng vì Misa làm tròn từng dòng; lần mua đã hoàn thành trên ERP hay lịch sử cũ lấy thành tiền đã chốt nếu có; còn lại lấy đơn giá nhân số lượng; lần đơn giá 0 để trống), <strong>So lần trước</strong> (chênh với lần mua có giá liền trước của cùng mã; đỏ đắt hơn, xanh rẻ hơn), <strong>Nguồn</strong> (lần mua trên ERP ghi mã đơn mua hàng, bấm để mở đơn; lần mua trong Sổ Misa hay lịch sử cũ để trống ô này; tệp Excel thì cột Nguồn ghi rõ chữ <em>Sổ Misa</em>, <em>Lịch sử mua hàng</em> hoặc <em>Dòng đơn mua hàng</em>). Ô tìm tìm được cả theo tên kho; bấm tiêu đề cột Kho để xếp.</li>
 <li>Nhãn <strong>ĐMH đang mở</strong> (đứng trước mã đơn ở cột Nguồn): dòng của đơn mua hàng đã duyệt, chưa hoàn thành; giá còn có thể đổi nếu đơn được sửa. Khi dòng hoàn thành, nhãn mất, giá được chốt, dòng vẫn là chính dòng đó (không thêm dòng mới).</li>
 <li>Lần mua đơn giá 0 vẫn hiện để đối chiếu, nhưng không tính vào giá bình quân, thấp nhất, cao nhất và biểu đồ.</li>
 </ul>

@@ -108,7 +108,7 @@ export default function PackagingHistory() {
       <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
           <h2 className="page-title" style={{ margin: 0 }}>Lịch sử mua hàng</h2>
-          <div className="pkg-hint">Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn.</div>
+          <div className="pkg-hint">Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn.</div>
         </div>
         {/* In = xem (quyền đọc). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
         {can('packaging_cost', 'read') && (

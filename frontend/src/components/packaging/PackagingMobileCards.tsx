@@ -8,7 +8,7 @@ import { CodeLink, DiffText, PctText, PriceText, TrendText } from './PackagingCe
 /**
  * duoc-CR-784 — NỘI DUNG THẺ điện thoại của hai bảng Tác động giá (Mã đã chọn, Sản phẩm bị ảnh hưởng) và của Tổng hợp theo
  * sản phẩm. Thẻ sản phẩm: "lưới 2×2 gọn" (người chủ chốt 26/11/2026); thẻ mã đã chọn: "dải giá + ô gõ rộng" (chốt 27/11/2026). Truyền vào `TableCards.renderCard`: khung thẻ, thanh xếp, ô rỗng
- * vẫn của `TableCards`. Nhãn, màu tăng xanh giảm đỏ, luật ô giá giả định y hệt bảng (và y hệt thẻ `frontend-v2`).
+ * vẫn của `TableCards`. Nhãn, màu tăng đỏ giảm xanh, luật ô giá giả định y hệt bảng (và y hệt thẻ `frontend-v2`).
  */
 
 /** Ô số của lưới 2×2: nhãn nhỏ mờ trên, giá trị đậm dưới; vùng giá trị luôn cao tối thiểu bằng ô nhập để bốn ô cao bằng nhau. */

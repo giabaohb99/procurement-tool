@@ -313,7 +313,7 @@ export function PackagingLastPricesToolbar({
 
           {/*  Hàng 3: một dòng chữ nhỏ căn trái — chú thích màu, và câu nhắc khi đang ở chế độ gần nhất. */}
           <p className="text-xs text-muted-foreground">
-            Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
+            Đỏ = đắt hơn lần mua trước đó, xanh = rẻ hơn. VNĐ, chưa VAT.
             {recentMode && (
               <> · {RECENT_CODES_LIMIT} mã mua gần nhất, chọn Tất cả ở ô Nhóm sản phẩm để xem hết.</>
             )}
