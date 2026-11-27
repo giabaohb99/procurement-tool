@@ -150,6 +150,9 @@ Mã nguồn: `backend/app/core/permissions.py` · `scoping.py` · `auth.py` · `
 `frontend-v2/src/modules/procurement/routes.tsx` · `frontend-v2/src/app/router/module-visibility.ts` · `frontend/src/layouts/AppLayout.tsx`.
 Kiểm: `test/backend/test_tach_quyen_gia_nvl_cr792.py` · `frontend-v2/src/modules/procurement/routes.test.ts`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
+Deploy: dev 27/11/2026 (erp-v2 e94bb084): migration `permsplit792` chạy, không còn dòng quyền cũ; vai trò xem cụm giá (44 tài
+khoản) có Xem / Xuất ở cả sáu màn, Quản lý thu mua giữ đủ quyền nhập liệu; thử bằng tài khoản thật: người có vai trò vào được mọi
+đường của cụm, người không có khóa nào bị chặn hết. Đã seed lại HDSD và nạp lại chỉ mục trên dev. Prod chưa.
 
 ## bao-CR-791 | Bảng giá VTBB: ô tìm kiếm tìm trên mọi mã đã mua, kể cả mã chưa có trong định mức bao bì
 - status: xong
@@ -169,6 +172,7 @@ mã nằm trong định mức bao bì hoặc có báo giá; mã này chưa thu�
 
 Mã nguồn: `backend/app/modules/packaging_cost/price_list_service.py`.
 Kiểm: `test/backend/test_bang_gia_tim_moi_ma_cr791.py`.
+Deploy: dev 27/11/2026 (erp-v2 f08f1b7f). Prod chưa.
 
 ## bao-CR-790 | Lịch sử mua hàng ghi ngay khi hàng về kho và đổi theo đơn mua hàng tới khi dòng hoàn thành
 - status: xong
@@ -208,6 +212,8 @@ Mã nguồn: `backend/app/modules/purchase_history/` · `backend/app/modules/pro
 `backend/scripts/sync_po_purchase_history.py` · `backend/migrations/versions/phstage790_lich_su_mua_them_giai_doan.py`.
 Kiểm: `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`.
+Deploy: dev 27/11/2026 (erp-v2 f08f1b7f): migration `phstage790` chạy; script dựng lịch sử ghi 65 bản ghi đang mở của 35 đơn, chạy
+lại lần hai không đổi gì, kiểm sổ giá không lệch. Prod chưa (sau khi phát hành phải chạy script trên prod, ước 745 dòng).
 
 ## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
 - status: xong
