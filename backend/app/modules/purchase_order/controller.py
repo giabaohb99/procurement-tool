@@ -9,12 +9,12 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.notification.service import trigger_notification
 
-from . import service
+from . import reprice_service, service
 #  bao-CR-711: dựng kết quả ở `serializer.py`, truy vấn ở `service.py`. Controller chỉ còn
 #  nhận · gác quyền + phạm vi · gọi · trả.
 from .model import POItem, PurchaseOrder
 from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn,
-                     ItemProgressIn, POCreate, POUpdate, PriceAdjustIn, RejectIn)
+                     ItemProgressIn, POCreate, POUpdate, PriceAdjustIn, RejectIn, RepriceIn)
 from .sort_expressions import list_sort_allow
 from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
 
@@ -382,6 +382,35 @@ def adjust_po_prices(pid: int, data: PriceAdjustIn, db: Session = Depends(get_db
     if result["draft_requests"]:
         message += f". Kiểm lại số tiền trên yêu cầu thanh toán đang Nháp: {', '.join(result['draft_requests'])}"
     return success(_out(db, result["po"]), message)
+
+
+@router.get("/{pid}/reprice-locks")
+def get_po_reprice_locks(pid: int, db: Session = Depends(get_db),
+                         user=Depends(require("purchase_order", "approve"))):
+    """Dòng nào KHÔNG sửa giá sau duyệt được, kèm lý do — giao diện tô xám ô của dòng đó.
+
+    Quyền: `purchase_order.approve` trong phạm vi duyệt. Trả `{item_id: lý do}`; dòng sửa được không có mặt.
+    """
+    po = _in_scope(db, pid, user, "approve")
+    locks = reprice_service.get_reprice_locks(db, po)
+    return success({str(k): v for k, v in locks.items()})
+
+
+@router.post("/{pid}/reprice")
+def reprice_po(pid: int, data: RepriceIn, db: Session = Depends(get_db),
+               user=Depends(require("purchase_order", "approve"))):
+    """Sửa giá sau duyệt — đổi SL đặt / Đơn giá / VAT của dòng mà đơn vẫn giữ trạng thái đã duyệt.
+
+    Quyền: `purchase_order.approve` trong phạm vi duyệt (người bấm Hủy duyệt được). Không hỏi lý do.
+    Lỗi 400: đơn chưa duyệt / đã hoàn thành; dòng Hoàn thành / Hủy; công nợ của dòng đã trả hoặc đã nằm trên
+    YCTT đã gửi duyệt; SL đặt nhỏ hơn SL đã nhận. Công nợ, tồn kho, YCMH và YCTT nháp tự tính lại.
+    """
+    _in_scope(db, pid, user, "approve")
+    po, changed, refreshed = reprice_service.reprice_po(db, pid, data, user.id)
+    message = f"Đã cập nhật giá {changed} dòng"
+    if refreshed:
+        message += f" · YCTT nháp {', '.join(refreshed)} đã cập nhật theo"
+    return success(_out(db, po), message)
 
 
 @router.post("/{pid}/reject")

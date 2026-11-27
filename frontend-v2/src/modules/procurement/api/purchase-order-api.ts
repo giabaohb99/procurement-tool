@@ -103,6 +103,18 @@ export interface PurchaseOrderPayload {
 }
 
 /** bao-CR-321 — điều khoản đã gộp đơn -> NCC -> mặc định, backend trả ở endpoint in. */
+/** Sửa giá sau duyệt — một dòng gửi đủ ba số; máy chủ tự so với số đang lưu, dòng không đổi bị bỏ qua. */
+export interface PurchaseOrderRepriceLine {
+  id: number
+  qty_order: number
+  price: number
+  vat: number
+}
+
+export interface PurchaseOrderRepricePayload {
+  items: PurchaseOrderRepriceLine[]
+}
+
 export interface PurchaseOrderPrintTerms {
   inspection_days: number
   return_days: number
@@ -209,6 +221,22 @@ export const purchaseOrderApi = {
       payload,
     )
     return { order: res.data.data, message: res.data.message ?? '' }
+  },
+  /**
+   * Sửa giá sau duyệt: dòng nào KHÔNG sửa được kèm lý do (`{ item_id: lý do }`). Gác quyền Duyệt ĐMH.
+   */
+  getRepriceLocks: (id: number) =>
+    apiGet<Record<string, string>>(`${BASE_URL}/${id}/reprice-locks`),
+  /**
+   * Sửa giá sau duyệt: ghi SL đặt / Đơn giá / VAT mới, đơn giữ trạng thái đã duyệt. Trả cả `message`
+   * vì câu thông báo của máy chủ nói YCTT nháp nào vừa được cập nhật theo.
+   */
+  reprice: async (id: number, payload: PurchaseOrderRepricePayload) => {
+    const res = await httpClient.post<{ message?: string; data: PurchaseOrderDetail }>(
+      `${BASE_URL}/${id}/reprice`,
+      payload,
+    )
+    return { message: res.data?.message ?? '', data: res.data?.data }
   },
   returnToCreator: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/return`, { reason }),

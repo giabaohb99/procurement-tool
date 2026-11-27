@@ -104,6 +104,8 @@ _EDIT = (
     ActionCode("document_status", "Đổi trạng thái chứng từ", ACTION_GROUP_EDIT),
     # bao-CR-794 — người có quyền duyệt sửa đơn giá của ĐMH đã duyệt / đã nhận hàng, đơn không về Nháp
     ActionCode("adjust_price", "Sửa giá sau duyệt", ACTION_GROUP_EDIT),
+    #  ĐMH đã duyệt: đổi SL đặt / Đơn giá / VAT qua đường riêng `POST /purchase-orders/{id}/reprice`.
+    ActionCode("reprice", "Sửa SL / giá / VAT sau duyệt", ACTION_GROUP_EDIT),
     ActionCode("line_status", "Đổi trạng thái dòng", ACTION_GROUP_EDIT),
     ActionCode("expected_date", "Đổi ngày dự kiến", ACTION_GROUP_EDIT),
     #  bao-CR-568 — thu mua gắn / đổi mã VTBB của dòng YCMH sau điều phối.

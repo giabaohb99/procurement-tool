@@ -878,9 +878,11 @@ export function PurchaseOrderDetailPage() {
       !reprice.active && {
         key: 'reprice',
         node: (
+          //  Hai cách sửa giá sau duyệt cùng chạy trên dev để so (27/11/2026): nút này sửa SL / đơn giá / VAT ngay
+          //  trong bảng; nút "Sửa giá" (bao-CR-794) mở hộp chỉ sửa đơn giá.
           <Button variant="outline" className={ACTION_TONE_CLASS.accent} onClick={reprice.start}>
             <Tag />
-            Sửa giá
+            Sửa giá trong bảng
           </Button>
         ),
       },
