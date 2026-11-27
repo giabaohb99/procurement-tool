@@ -149,7 +149,8 @@ export function PackagingLastPricesPage() {
           emptyMessage={
             filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có mã vật tư bao bì nào có giá.'
           }
-          storageKey="procurement.packaging-last-prices"
+          //  `.v2` (27/11/2026): cột Tên vật tư ghim mặc định — bố cục đã lưu trước đó chỉ ghim cột Mã nên đổi khóa để ai cũng nhận.
+          storageKey="procurement.packaging-last-prices.v2"
           mobileCard={(row) => (
             <PackagingLastPricesCard row={row} n={filters.n} showQty={filters.showQty} />
           )}

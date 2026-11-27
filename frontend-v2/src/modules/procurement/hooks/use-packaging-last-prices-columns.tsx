@@ -101,8 +101,10 @@ export function usePackagingLastPricesColumns(n: number, showQty: boolean) {
         key: 'name',
         header: 'Tên vật tư',
         group: INFO,
-        width: 300,
+        width: 260,
         sortable: true,
+        //  Ghim cùng cột Mã (27/11/2026): cuộn ngang qua các lần mua vẫn thấy tên hàng.
+        defaultPinned: true,
         cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
       },
       { key: 'group', header: 'Nhóm', group: INFO, width: 100, sortable: true, cell: (row) => row.group },

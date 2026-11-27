@@ -51,13 +51,16 @@ export default function PackagingLastPricesTable({
 
   return (
     <TableScroll>
-      <table className="dense pkg-lp" style={{ width: total, minWidth: total }}>
+      {/*  `--pkg-lp-code-w` = bề rộng cột Mã: cột Tên (dính trái thứ hai, 27/11/2026) đứng ngay sau nó khi cuộn ngang. */}
+      <table className="dense pkg-lp" style={{ width: total, minWidth: total, ['--pkg-lp-code-w' as string]: `${W.code}px` }}>
         <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr>
             {/* Ô đầu (cột Mã dính trái) để trống: ô gộp 5 cột mà dính trái thì phủ lên các cột khác khi cuộn ngang. */}
             <th className="sticky-col" />
-            <th colSpan={infoCols - 1} style={{ textAlign: 'left' }}>Thông tin VTBB</th>
+            {/*  Nhãn nhóm nằm trên cột Tên (cũng dính trái) để không trôi mất khi cuộn ngang. */}
+            <th className="sticky-col-2" style={{ textAlign: 'left' }}>Thông tin VTBB</th>
+            <th colSpan={infoCols - 2} />
             {slots.map((i) => (
               <th key={i} colSpan={perSlot} className={`${TONES[i % TONES.length]} gsep`}>{purchaseGroupLabel(i)}</th>
             ))}
@@ -66,7 +69,7 @@ export default function PackagingLastPricesTable({
           </tr>
           <tr>
             <SortTh label="Mã VTBB" sortKey="code" className="sticky-col" {...sort} />
-            <SortTh label="Tên vật tư" sortKey="name" {...sort} />
+            <SortTh label="Tên vật tư" sortKey="name" className="sticky-col-2" {...sort} />
             <SortTh label="Nhóm" sortKey="group" {...sort} />
             <SortTh label="ĐVT" {...sort} />
             <SortTh label="Số lần có giá" sortKey="purchase_count" align="right" {...sort} />
@@ -89,7 +92,7 @@ export default function PackagingLastPricesTable({
           {rows.map((r) => (
             <tr key={r.code}>
               <td className="sticky-col"><CodeLink code={r.code} /></td>
-              <td title={r.name}>{r.name || <span className="pkg-muted">(chưa có tên)</span>}</td>
+              <td className="sticky-col-2" title={r.name}>{r.name || <span className="pkg-muted">(chưa có tên)</span>}</td>
               <td>{r.group}</td>
               <td>{r.unit}</td>
               <td style={{ textAlign: 'right' }}>{r.purchase_count}</td>
