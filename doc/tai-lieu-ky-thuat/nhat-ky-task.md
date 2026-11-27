@@ -169,6 +169,11 @@ cẩm nang trợ lý phiên bản 13. Thử qua đường API trên một đơn 
 khoản không có quyền duyệt bị chặn; tài khoản có quyền sửa được, thành tiền dòng, công nợ hàng, lịch sử mua và sổ giá đổi theo
 rồi về đúng số cũ. Lần thử này lộ ra khoản nợ cũ chỉ mang mã đơn (không mang id đơn), đã vá phép kiểm *công nợ đã trả tiền* để
 tra theo cả hai và thêm một ca kiểm. Prod chưa.
+Soát màn: dev 27/11/2026, giao diện mới, tài khoản có quyền duyệt: nút hiện đúng theo trạng thái đơn (có ở đơn đã duyệt / đã nhận
+hàng còn dòng sửa được; không có ở đơn Nháp, Hoàn thành, đơn mọi dòng đã hủy), hộp thoại và nút lưu khóa / mở đúng, lưu thật rồi
+trả lại giá cũ, nhật ký ghi đủ, khổ điện thoại hiện dạng thẻ không tràn, hai bài hướng dẫn khớp nhãn. Đã đổi nhãn cột của giao
+diện mới thành *Chênh lệch (chưa VAT)* cho khớp giao diện cũ. Chưa soát bằng trình duyệt: giao diện cũ, và tài khoản không có
+quyền duyệt (đường API đã thử: bị chặn).
 
 ## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
 - status: xong
