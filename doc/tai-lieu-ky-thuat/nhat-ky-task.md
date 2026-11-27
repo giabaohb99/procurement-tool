@@ -114,6 +114,15 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-802 | HDSD: cách sửa giá thứ hai của đơn mua hàng (Sửa giá trong bảng)
+- status: dang-lam
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** đơn mua hàng đã duyệt có hai cách sửa giá song song: hộp *Sửa giá* (bao-CR-794, đã có mục trong bài HDSD) và nút *Sửa giá trong bảng* (duoc-CR-797, đổi cả SL đặt và VAT ngay trong bảng dòng). Bài hướng dẫn mới chỉ nói cách thứ nhất.
+
+**Việc:** chèn mục *Sửa giá trong bảng* vào bài Đơn mua hàng (PO), thêm câu YCTT Nháp tự nạp lại ở bài Công nợ & Yêu cầu thanh toán, bổ sung cẩm nang trợ lý và tài liệu chức năng 13; chạy trên dev.
+
 ## bao-CR-800 | Giá nguyên vật liệu sản xuất: Bảng giá nguyên liệu có quyền riêng và dữ liệu thật
 - status: xong
 - date: 2026-11-27
