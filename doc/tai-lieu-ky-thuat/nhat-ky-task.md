@@ -144,6 +144,11 @@ Mã nguồn: `backend/app/modules/purchase_order/price_adjust_service.py` · `co
 `frontend-v2/src/modules/procurement/components/purchase-order-price-adjust-dialog.tsx` · `frontend/src/components/PoPriceAdjustModal.tsx`.
 Kiểm: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` · `frontend-v2/src/modules/procurement/components/purchase-order-price-adjust-dialog.test.tsx`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` · `backend/scripts/seed_help_sua_gia_dmh_cr794.py`.
+Deploy: dev 27/11/2026 (erp-v2, api + hai giao diện): vá bài hướng dẫn Đơn mua hàng và Công nợ & Yêu cầu thanh toán, xuất bản
+cẩm nang trợ lý phiên bản 13. Thử qua đường API trên một đơn thật đã nhận hàng của dev (đổi giá 800 → 801 rồi trả về 800): tài
+khoản không có quyền duyệt bị chặn; tài khoản có quyền sửa được, thành tiền dòng, công nợ hàng, lịch sử mua và sổ giá đổi theo
+rồi về đúng số cũ. Lần thử này lộ ra khoản nợ cũ chỉ mang mã đơn (không mang id đơn), đã vá phép kiểm *công nợ đã trả tiền* để
+tra theo cả hai và thêm một ca kiểm. Prod chưa.
 
 ## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
 - status: xong

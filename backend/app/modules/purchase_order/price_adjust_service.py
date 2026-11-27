@@ -14,6 +14,7 @@ Chặn (tiền đã đi tiếp theo giá cũ thì không sửa ngầm bên dư�
   - dòng đã Hoàn thành (bản ghi lịch sử đã chốt) hoặc đã Hủy.
 """
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -62,7 +63,11 @@ def _block_when_money_moved(db: Session, po: PurchaseOrder) -> list[str]:
     if sent:
         raise HTTPException(400, f"Đơn đã có yêu cầu thanh toán {', '.join(sent)} gửi duyệt hoặc đã chi — không sửa giá được. "
                                  "Hủy phiếu thanh toán liên quan trước rồi sửa giá.")
-    paid = db.query(Payable.id).filter(Payable.po_id == po.id, Payable.source_type == "goods", Payable.paid_amount > 0).first()
+    #  Tra theo CẢ id lẫn mã đơn: khoản nợ cũ có dòng để `po_id = 0`, chỉ mang `po_code` (gặp thật trên dev, PO00807).
+    owner = Payable.po_id == po.id
+    if (po.code or "").strip():
+        owner = or_(owner, Payable.po_code == po.code)
+    paid = db.query(Payable.id).filter(owner, Payable.source_type == "goods", Payable.paid_amount > 0).first()
     if paid:
         raise HTTPException(400, "Công nợ hàng của đơn đã trả tiền — không sửa giá được.")
     return [code for code, _status in requests]

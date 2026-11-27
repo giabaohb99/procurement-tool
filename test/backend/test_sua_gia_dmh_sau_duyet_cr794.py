@@ -185,6 +185,17 @@ def test_cong_no_hang_da_tra_tien_thi_chan(db, order):
     assert "đã trả tiền" in error.value.detail
 
 
+def test_cong_no_cu_chi_mang_ma_don_da_tra_tien_cung_chan(db, order):
+    """Khoản nợ cũ có dòng `po_id = 0`, chỉ mang mã đơn — vẫn phải tính là công nợ của đơn."""
+    po, uid = order
+    db.add(Payable(source_type="goods", ref_id=987654, po_id=0, po_code=po.code, supplier_code="PHL", amount=1000, total=1000,
+                   paid_amount=500))
+    db.commit()
+    with pytest.raises(HTTPException) as error:
+        _adjust(db, po, uid, {"CHT0230": 5000})
+    assert "đã trả tiền" in error.value.detail
+
+
 @pytest.mark.parametrize("progress", ["completed", "cancelled"])
 def test_dong_da_hoan_thanh_hoac_da_huy_khong_sua_gia(db, order, progress):
     po, uid = order
