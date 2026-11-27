@@ -22,6 +22,8 @@ interface PackagingPriceListToolbarProps {
   /** Danh sách mã cho ô chọn mã (mọi mã có trong sổ giá, đã xếp). */
   codeOptions?: PackagingCodeOption[]
   codeOptionsLoading?: boolean
+  /** Câu gợi ý của ô chọn mã khi chưa chọn gì (màn Bảng giá nguyên liệu ghi "nguyên liệu" thay "VTBB"). */
+  searchPlaceholder?: string
   onChange: (filters: PriceListFilters) => void
 }
 
@@ -30,6 +32,7 @@ export function PackagingPriceListToolbar({
   groups,
   codeOptions = [],
   codeOptionsLoading = false,
+  searchPlaceholder = 'Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã',
   onChange,
 }: PackagingPriceListToolbarProps) {
   const patch = (next: Partial<PriceListFilters>) => onChange({ ...filters, ...next })
@@ -46,7 +49,7 @@ export function PackagingPriceListToolbar({
           value={filters.codes}
           onChange={(codes) => patch({ codes })}
           loading={codeOptionsLoading}
-          emptyPlaceholder="Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã"
+          emptyPlaceholder={searchPlaceholder}
           compact
         />
       </div>

@@ -1,4 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import DateRangePicker from '../../components/DateRangePicker'
+import TableToolbar from '../../components/TableToolbar'
+import PackagingCodePicker from '../../components/packaging/PackagingCodePicker'
 import TableHead, { TableCells, TableColGroup } from '../../components/TableHead'
 import TableScroll from '../../components/TableScroll'
 import TableCards from '../../components/TableCards'
@@ -11,16 +14,24 @@ import '../../components/packaging/packaging.css'
 
 /** Chưa có nguồn dữ liệu — bảng rỗng có chủ đích, không phải lỗi tải. */
 const NO_ROWS: PackagingPriceRow[] = []
-const EMPTY_TEXT = 'Chưa có dữ liệu bảng giá nguyên liệu.'
+interface Filters { codes: string[]; group: string; scope: 'bom' | 'all' }
+const EMPTY: Filters = { codes: [], group: '', scope: 'bom' }
 
 /**
  * duoc-CR-798 — BẢNG GIÁ NGUYÊN LIỆU (27/11/2026): dựng y khuôn Bảng giá VTBB (cùng bộ cột, cùng khung bảng, chữ "VTBB"
  * đổi thành "nguyên liệu"), mục menu ngay dưới Bảng giá VTBB, cùng bản `frontend-v2`. CHƯA nối dữ liệu (chủ dự án chốt:
  * dựng màn trước, dữ liệu sau) nên bảng luôn rỗng; khi có nguồn giá thì nạp `rows` như màn VTBB. Không có cột Thao tác
- * (Báo giá) vì chưa có mã nào. Gác cùng khóa xem bảng giá (`PackagingGate` ở `App.tsx`).
+ * (Báo giá) vì chưa có mã nào. Gác cùng khóa xem bảng giá (`PackagingGate` ở `App.tsx`). Thanh lọc đủ như màn VTBB (ô chọn mã,
+ * chip nhóm, phạm vi mã, khoảng ngày tính min – max — 27/11/2026); chưa có dữ liệu nên bộ lọc chỉ giữ trạng thái trên màn.
  */
 export default function PackagingMaterialPriceList() {
   const narrow = useNarrowScreen()
+  const [filters, setFilters] = useState<Filters>(EMPTY)
+  const [range, setRange] = useState({ from: '', to: '' })
+  const patch = (next: Partial<Filters>) => setFilters((f) => ({ ...f, ...next }))
+  const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY) || !!(range.from || range.to)
+  const clearFilters = () => { setFilters(EMPTY); setRange({ from: '', to: '' }) }
+  const emptyText = filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có dữ liệu bảng giá nguyên liệu.'
   const columns = useMemo<TableColumn<PackagingPriceRow>[]>(() => [
     { key: 'code', label: 'Mã nguyên liệu', width: 120, sort: 'code', fixed: true, card: 'title', cell: (r) => <CodeLink code={r.code} /> },
     { key: 'name', label: 'Tên nguyên liệu', width: 250, sort: 'name', card: 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
@@ -49,17 +60,37 @@ export default function PackagingMaterialPriceList() {
           <h2 className="page-title" style={{ margin: 0 }}>Bảng giá nguyên liệu</h2>
           <div className="pkg-hint">Giá cũ / mới từng mã nguyên liệu: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.</div>
         </div>
+        <div style={{ width: 280 }}>
+          <DateRangePicker block value={range} placeholder="Khoảng ngày tính min – max" onChange={setRange} />
+        </div>
       </div>
       <div className="card table-card">
+        <TableToolbar compact {...table}>
+          <div className="pkg-row" style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ width: 380, maxWidth: '100%' }}>
+              <PackagingCodePicker options={[]} value={filters.codes} onChange={(codes) => patch({ codes })}
+                emptyPlaceholder="Tìm mã nguyên liệu — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã" compact />
+            </div>
+            <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
+              <button type="button" className={'pkg-pill' + (filters.group === '' ? ' on' : '')} aria-pressed={filters.group === ''}
+                onClick={() => patch({ group: '' })}>Tất cả</button>
+            </div>
+            <div className="pkg-seg" role="group" aria-label="Phạm vi mã">
+              <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
+              <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
+            </div>
+            {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
+          </div>
+        </TableToolbar>
         {narrow ? (
-          <TableCards columns={table.columns} rows={NO_ROWS} rowKey={(r) => r.code} empty={EMPTY_TEXT} />
+          <TableCards columns={table.columns} rows={NO_ROWS} rowKey={(r) => r.code} empty={emptyText} />
         ) : (
           <TableScroll>
             <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
               <TableColGroup columns={table.columns} colW={table.colW} />
               <TableHead columns={table.columns} startResize={table.startResize} />
               <tbody>
-                <tr><td colSpan={table.columns.length} className="table-empty">{EMPTY_TEXT}</td></tr>
+                <tr><td colSpan={table.columns.length} className="table-empty">{emptyText}</td></tr>
               </tbody>
             </table>
           </TableScroll>

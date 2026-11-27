@@ -420,6 +420,7 @@ Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_202
 - Thêm màn **Bảng giá nguyên liệu** ở cả hai giao diện, cùng bộ cột với Bảng giá VTBB (chữ VTBB đổi thành nguyên liệu, bỏ cột thao tác Báo giá vì chưa có mã nào), mục menu ngay dưới Bảng giá VTBB trong cụm Giá nguyên vật liệu sản xuất, gác cùng khóa xem bảng giá `packaging_price_list`.
 - Màn chưa nối dữ liệu nên bảng luôn rỗng và ghi rõ *Chưa có dữ liệu bảng giá nguyên liệu.*; khi có nguồn giá thì chỉ cần nạp dòng như màn VTBB.
 - Bài kiểm canh menu theo khóa quyền của cụm khai thêm màn mới; người chỉ có khóa bảng giá vẫn vào thẳng Bảng giá VTBB.
+- Theo góp ý cùng ngày, thêm đủ thanh lọc như Bảng giá VTBB ở cả hai giao diện: ô chọn mã kiểu gọn (ghi *Tìm mã nguyên liệu…*), chip nhóm, nút phạm vi *Mã trong định mức / Mọi mã có giá*, ô *Khoảng ngày tính min – max* ở đầu trang và nút *Xóa lọc*; chưa có dữ liệu nên bộ lọc chỉ giữ trạng thái trên màn, có lọc thì câu trống đổi thành *Không có mã nào khớp bộ lọc.*
 
 **Kiểm:** typecheck và eslint giao diện mới sạch, 2.105 bài kiểm phân hệ Thu mua, router và thông báo xanh; giao diện cũ không thêm lỗi kiểu; đã xem trên máy local cả hai giao diện.
 
