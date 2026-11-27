@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, httpClient, type SuccessEnvelope } from '@/core/api'
 import type {
   PurchaseOrderDelivery,
   PurchaseOrderDetail,
@@ -159,6 +159,12 @@ export interface PurchaseOrderSigners {
   dept_head_signature?: string
 }
 
+/** bao-CR-794 — thân lệnh Sửa giá sau duyệt: chỉ cần gửi các dòng ĐỔI giá. */
+export interface PurchaseOrderPriceAdjustPayload {
+  reason: string
+  items: { id: number; price: number }[]
+}
+
 export const purchaseOrderApi = {
   getById: (id: number) => apiGet<PurchaseOrderDetail>(`${BASE_URL}/${id}`),
 
@@ -191,6 +197,19 @@ export const purchaseOrderApi = {
   /** Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108). */
   unapprove: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/unapprove`, { reason }),
+  /**
+   * bao-CR-794 — Sửa ĐƠN GIÁ của đơn đã duyệt / đã nhận hàng mà KHÔNG đưa đơn về Nháp: công nợ,
+   * lịch sử mua hàng và sổ giá tính lại theo giá mới. Yêu cầu `purchase_order.approve` + lý do.
+   * Trả kèm `message` của máy chủ — câu đó mang cả lời nhắc kiểm lại YCTT đang Nháp, nên màn
+   * hình phải hiện NGUYÊN câu chứ không tự đặt câu cố định.
+   */
+  adjustPrices: async (id: number, payload: PurchaseOrderPriceAdjustPayload) => {
+    const res = await httpClient.post<SuccessEnvelope<PurchaseOrderDetail>>(
+      `${BASE_URL}/${id}/adjust-prices`,
+      payload,
+    )
+    return { order: res.data.data, message: res.data.message ?? '' }
+  },
   returnToCreator: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/return`, { reason }),
   cancel: (id: number, reason: string) =>

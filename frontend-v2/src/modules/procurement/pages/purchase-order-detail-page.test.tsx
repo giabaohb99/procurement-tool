@@ -19,6 +19,8 @@ import { PurchaseOrderDetailPage } from './purchase-order-detail-page'
 const server = vi.hoisted(() => ({
   order: null as PurchaseOrderDetail | null,
   payloads: [] as { method: 'create' | 'update'; payload: PurchaseOrderPayload }[],
+  /** Quyền bị rút trong bài kiểm, dạng `entity.action` — mặc định có đủ mọi quyền. */
+  denied: [] as string[],
 }))
 
 function applyPayload(base: PurchaseOrderDetail, payload: PurchaseOrderPayload): PurchaseOrderDetail {
@@ -57,7 +59,10 @@ vi.mock('../api/purchase-order-api', () => ({
 }))
 
 vi.mock('@/core/authorization/use-permission', () => ({
-  usePermission: () => ({ can: () => true, canAccess: () => true }),
+  usePermission: () => ({
+    can: (entity: string, action: string) => !server.denied.includes(`${entity}.${action}`),
+    canAccess: () => true,
+  }),
 }))
 vi.mock('@/core/telemetry/use-form-telemetry', () => ({
   useFormTelemetry: () => ({ markSubmitted: vi.fn() }),
@@ -209,6 +214,7 @@ function lastPayload() {
 beforeEach(() => {
   server.order = null
   server.payloads = []
+  server.denied = []
   localStorage.clear()
 })
 
@@ -363,5 +369,84 @@ describe('PurchaseOrderDetailPage — tạo từ YCMH rồi lưu (bao-CR-758)', 
     await user.click(screen.getByRole('button', { name: /^Lưu$/ }))
     await waitFor(() => expect(server.payloads).toHaveLength(1))
     expect(lastPayload().payload.items.map((item) => item.price)).toEqual([5000, 1350])
+  })
+})
+
+/**
+ * bao-CR-794 — nút Sửa giá sau duyệt. Khác Hủy duyệt: đơn ĐÃ NHẬN HÀNG vẫn phải có nút (đó là
+ * mục đích của lệnh), còn đơn chưa duyệt / đã Hoàn thành hay người thiếu quyền duyệt thì không.
+ */
+describe('PurchaseOrderDetailPage — nút Sửa giá sau duyệt (bao-CR-794)', { timeout: 30_000 }, () => {
+  function seedOrder(status: string, items: Partial<PurchaseOrderItem>[]) {
+    server.order = {
+      ...createEmptyPurchaseOrder(),
+      id: 1178,
+      code: 'PO01178',
+      status,
+      company_id: 1,
+      supplier_code: 'NCC01',
+      items: items.map((item, index) => line({ id: 900 + index, progress_status: 'received', ...item })),
+    }
+  }
+
+  const RECEIVED_LINES: Partial<PurchaseOrderItem>[] = [
+    { product_code: 'VT01', price: 4250, qty_received: 10 },
+    { product_code: 'VT02', price: 1350, qty_received: 0, progress_status: 'ordered' },
+  ]
+
+  it('shows Sửa giá on a received order for an approver, while Hủy duyệt is gone, and opens the dialog', async () => {
+    const user = userEvent.setup()
+    seedOrder('received', RECEIVED_LINES)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    //  Đơn đã nhận hàng: không hủy duyệt được nữa, nhưng sửa giá thì được.
+    expect(screen.queryByRole('button', { name: 'Hủy duyệt' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Sửa giá' }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: /Sửa giá sau duyệt/ })).toBeInTheDocument()
+    expect(within(dialog).getByRole('textbox', { name: 'Đơn giá mới dòng 1' })).toHaveValue('4.250')
+    expect(within(dialog).getByRole('button', { name: 'Lưu giá mới' })).toBeDisabled()
+    await user.click(within(dialog).getByRole('button', { name: 'Hủy' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('shows Sửa giá next to Hủy duyệt on an approved order with nothing received yet', async () => {
+    seedOrder('approved', [{ product_code: 'VT01', qty_received: 0, progress_status: 'ordered' }])
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+    expect(screen.getByRole('button', { name: 'Hủy duyệt' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sửa giá' })).toBeInTheDocument()
+  })
+
+  it('hides Sửa giá from a user without the approve permission', async () => {
+    server.denied = ['purchase_order.approve']
+    seedOrder('received', RECEIVED_LINES)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+    //  Nút Lưu vẫn có (quyền ghi) — chứng tỏ dải nút đã dựng xong chứ không phải chưa vẽ.
+    expect(screen.getByRole('button', { name: /^Lưu$/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sửa giá' })).toBeNull()
+  })
+
+  it.each(['draft', 'submitted', 'completed', 'cancelled'])(
+    'hides Sửa giá on a %s order',
+    async (status) => {
+      seedOrder(status, RECEIVED_LINES)
+      renderPage('/procurement/purchase-orders/1178')
+      await screen.findAllByText('PO01178')
+      expect(screen.queryByRole('button', { name: 'Sửa giá' })).toBeNull()
+    },
+  )
+
+  it('hides Sửa giá when every line is already completed or cancelled', async () => {
+    seedOrder('received', [
+      { product_code: 'VT01', qty_received: 10, progress_status: 'completed' },
+      { product_code: 'VT02', qty_received: 0, progress_status: 'cancelled' },
+    ])
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+    expect(screen.queryByRole('button', { name: 'Sửa giá' })).toBeNull()
   })
 })
