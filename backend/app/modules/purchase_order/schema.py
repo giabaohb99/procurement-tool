@@ -213,3 +213,16 @@ class ItemProgressIn(BaseModel):
 
 class DocumentStatusIn(BaseModel):
     document_status: Str30           # MÃ (B-06): none | partial | full — xem PO_DOCUMENT_STATUS
+
+
+class RepriceLineIn(BaseModel):
+    """Một dòng của lượt Sửa giá sau duyệt — đủ ba số, kể cả ô không đổi (máy chủ tự so với số đang lưu)."""
+    id: int
+    qty_order: float = Field(ge=0, le=1e12)
+    price: float = Field(ge=0, le=1e14)
+    vat: float = Field(ge=0, le=100)
+
+
+class RepriceIn(BaseModel):
+    """Sửa giá sau duyệt: không hỏi lý do (nhật ký đã ghi từng ô cũ → mới), trần 500 dòng."""
+    items: list[RepriceLineIn] = Field(default_factory=list, max_length=500)

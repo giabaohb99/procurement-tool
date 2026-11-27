@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ClipboardList, Copy, History, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -56,6 +56,12 @@ import {
   resolveLineCurrency,
 } from '../utils/purchase-order-import-cost'
 import type { LineReportProgress } from '../utils/survey-report-helpers'
+import {
+  isQtyBelowReceived,
+  isRepriceFieldChanged,
+  isRepriceLineChanged,
+  type RepriceField,
+} from '../utils/purchase-order-reprice'
 import {
   applyPriceAfterVatInput,
   applyPriceBeforeVatInput,
@@ -217,6 +223,31 @@ interface PurchaseOrderItemsTableProps {
   lineReport?: Map<number, LineReportProgress>
   /** Bấm ô "Hồ sơ" của dòng — trang cuộn tới khối báo cáo và sổ nút của dòng đó. */
   onOpenLineReport?: (progress: LineReportProgress) => void
+  /**
+   * Đang "Sửa giá" sau duyệt: mở riêng 4 cột SL đặt · Đơn giá · VAT · Đơn giá sau VAT cho dòng không bị chặn,
+   * tô ô đã đổi và hiện số cũ gạch ngang. Không truyền = chế độ thường.
+   */
+  reprice?: PurchaseOrderItemsRepriceMode
+}
+
+export interface PurchaseOrderItemsRepriceMode {
+  /** Lý do dòng KHÔNG sửa giá được; chuỗi rỗng = sửa được. */
+  lockReasonOf: (item: PurchaseOrderItem) => string
+  /** Dòng như đang lưu trên máy chủ — để so ô nào vừa đổi. */
+  originalOf: (item: PurchaseOrderItem) => PurchaseOrderItem | undefined
+  /**
+   * Bật từ nút đầu trang thì cuộn tới bảng và đặt con trỏ vào ô Đơn giá đầu tiên sửa được. Bật từ hộp chi tiết
+   * dòng thì KHÔNG — hộp đang giữ con trỏ (bẫy focus của Radix sẽ giật lại, hai bên giành nhau).
+   */
+  focusOnStart: boolean
+}
+
+/** Cột của chế độ Sửa giá, và trường lưu tương ứng để so số cũ. */
+const REPRICE_COLUMN_FIELDS: Record<string, RepriceField[]> = {
+  qty: ['qty_order'],
+  price: ['price'],
+  vat: ['vat'],
+  price_after_vat: ['price', 'vat'],
 }
 
 const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
@@ -251,6 +282,7 @@ export function PurchaseOrderItemsTable({
   order,
   lineReport,
   onOpenLineReport,
+  reprice,
 }: PurchaseOrderItemsTableProps) {
   const { data: units } = usePurchaseRequestUnits(editable)
   const { data: itemGroups } = usePurchaseRequestItemGroups(editable)
@@ -421,6 +453,8 @@ export function PurchaseOrderItemsTable({
     const locked = isLineLocked(item)
     const received = isLineReceived(item)
     const cellEditable = editable && !locked
+    //  Chế độ Sửa giá sau duyệt chỉ mở 4 ô giá, và chỉ ở dòng máy chủ không chặn (`reprice-locks`).
+    const priceCellEditable = cellEditable || (!!reprice && !!item.id && !reprice.lockReasonOf(item))
     const lineCurrency = importMode ? resolveLineCurrency(item, orderCurrency).currency : ''
     const currencySuffix = importMode ? (lineCurrency === 'VND' ? 'đ' : lineCurrency) : 'đ'
     switch (key) {
@@ -503,7 +537,7 @@ export function PurchaseOrderItemsTable({
         return (
           <NumberCell
             value={item.qty_order}
-            editable={cellEditable}
+            editable={priceCellEditable}
             onChange={(value) => patch(index, { qty_order: value })}
             format={formatQuantity}
           />
@@ -515,7 +549,7 @@ export function PurchaseOrderItemsTable({
         return (
           <NumberCell
             value={item.price}
-            editable={cellEditable}
+            editable={priceCellEditable}
             // duoc-CR-776: gõ trước thuế thì ô sau VAT tự tính lại theo đơn giá này.
             onChange={(value) => patch(index, applyPriceBeforeVatInput(value))}
             format={formatUnitPrice}
@@ -525,7 +559,7 @@ export function PurchaseOrderItemsTable({
         )
 
       case 'vat':
-        return cellEditable ? (
+        return priceCellEditable ? (
           <Select
             value={String(item.vat ?? 0)}
             // duoc-CR-776: đổi VAT giữ ô gõ gần nhất — vừa gõ sau VAT thì tính lại đơn giá.
@@ -555,7 +589,7 @@ export function PurchaseOrderItemsTable({
       // 180.000 chứ không phải 180.000,0036
       // duoc-CR-776: ô sửa được — gõ giá sau VAT thì tính ngược đơn giá trước thuế.
       case 'price_after_vat':
-        return cellEditable ? (
+        return priceCellEditable ? (
           <NumberCell
             value={priceAfterVat(item)}
             editable
@@ -693,11 +727,80 @@ export function PurchaseOrderItemsTable({
 
   const historyItem = historyIndex === null ? null : items[historyIndex]
 
+  const rootRef = useRef<HTMLDivElement>(null)
+  //  Có ít nhất một dòng sửa được = danh sách dòng bị chặn đã về (lúc đầu mọi dòng là "Đang kiểm tra…").
+  const repriceReady = !!reprice && items.some((item) => !!item.id && !reprice.lockReasonOf(item))
+  const repriceFocusOnStart = !!reprice?.focusOnStart
+  useEffect(() => {
+    if (!repriceReady || !repriceFocusOnStart) return
+    rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const input = rootRef.current?.querySelector<HTMLInputElement>('[data-reprice-cell="price"] input')
+    input?.focus({ preventScroll: true })
+    //  Chỉ chạy lúc vừa vào chế độ Sửa giá, không chạy lại mỗi lần gõ.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repriceReady])
+
+  /** Dòng có ít nhất một ô giá đã đổi — tô cả hàng cho dễ thấy dòng nào đang sửa. */
+  function isRepriceRowChanged(item: PurchaseOrderItem): boolean {
+    const original = reprice?.originalOf(item)
+    return !!original && isRepriceLineChanged(original, item)
+  }
+
+  /**
+   * Ô của bảng / thẻ. Đang Sửa giá thì 4 ô giá được bọc thêm: dòng bị chặn mờ đi và rê chuột thấy lý do;
+   * ô vừa đổi tô vàng nhạt, dưới có số đang lưu gạch ngang để nhìn là biết đổi gì.
+   */
+  function renderDisplayCell(key: string, item: PurchaseOrderItem, index: number) {
+    const content = renderCell(key, item, index)
+    const fields = REPRICE_COLUMN_FIELDS[key]
+    if (!reprice || !fields) return content
+    const lockReason = reprice.lockReasonOf(item)
+    if (lockReason) {
+      return (
+        <div title={lockReason} className="cursor-not-allowed opacity-60">
+          {content}
+        </div>
+      )
+    }
+    const original = reprice.originalOf(item)
+    if (!original || !fields.some((field) => isRepriceFieldChanged(original, item, field))) {
+      return <div data-reprice-cell={key}>{content}</div>
+    }
+    const belowReceived = key === 'qty' && isQtyBelowReceived(item)
+    const oldText =
+      key === 'qty'
+        ? formatQuantity(original.qty_order)
+        : key === 'vat'
+          ? `${original.vat ?? 0}%`
+          : formatUnitPrice(key === 'price' ? original.price : priceAfterVat(original))
+    return (
+      <div data-reprice-cell={key} className="-m-1 rounded bg-warning/15 p-1">
+        {content}
+        <span
+          className="mt-0.5 block text-right text-[11px] text-muted-foreground tabular-nums line-through"
+          title="Số đang lưu"
+        >
+          {oldText}
+        </span>
+        {belowReceived && (
+          <span role="alert" className="block text-right text-[11px] text-destructive">
+            Dưới SL đã nhận ({formatQuantity(item.qty_received ?? 0)})
+          </span>
+        )}
+      </div>
+    )
+  }
+
   //  Nhãn lấy từ CHÍNH tiêu đề cột (bỏ đuôi " *" rồi vẽ dấu sao riêng) để thẻ và
   //  bảng không lệch tên. Chỉ dòng sửa được (đơn còn sửa + dòng chưa khóa) mới có.
   const cardEditFields = (item: PurchaseOrderItem, index: number): PurchaseOrderItemEditField[] => {
-    if (!editable || isLineLocked(item)) return []
-    return CARD_INLINE_EDIT_KEYS.flatMap((key) => {
+    //  Đang Sửa giá: thẻ bày đúng 4 ô giá (kể cả dòng bị chặn, để thấy lý do), không bày ô Mã hàng.
+    const keys = reprice
+      ? CARD_INLINE_EDIT_KEYS.filter((key) => key in REPRICE_COLUMN_FIELDS)
+      : editable && !isLineLocked(item)
+        ? CARD_INLINE_EDIT_KEYS
+        : []
+    return keys.flatMap((key) => {
       const column = columns.find((current) => current.key === key)
       if (!column) return []
       const required = column.header.endsWith(' *')
@@ -706,14 +809,15 @@ export function PurchaseOrderItemsTable({
           key,
           label: required ? column.header.slice(0, -2) : column.header,
           required,
-          content: renderCell(key, item, index),
+          content: renderDisplayCell(key, item, index),
         },
       ]
     })
   }
 
   return (
-    <>
+    //  Khung bọc để cuộn tới bảng khi vừa bấm Sửa giá; `scroll-mt-20` chừa chỗ cho thanh đầu trang đang ghim.
+    <div ref={rootRef} className="min-w-0 scroll-mt-20">
       {asCards ? (
         <div className="space-y-3">
           {/*  Thanh đầu tự dựng như bảng dòng YCMH: ở chế độ thẻ không còn cột nào để
@@ -812,13 +916,18 @@ export function PurchaseOrderItemsTable({
           rows={items}
           storageKey={TABLE_STORAGE_KEY}
           rowKey={purchaseOrderRowKey}
-          renderCell={renderCell}
+          renderCell={renderDisplayCell}
           getSortValue={getSortValue}
           title={`Danh sách dòng hàng (${items.length} dòng)`}
           emptyMessage="Chưa có dòng hàng nào."
           selection={selection}
           cellClassName={(key) =>
             key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
+          }
+          rowClassName={(item) =>
+            reprice && isRepriceRowChanged(item)
+              ? 'odd:bg-warning/10 even:bg-warning/10 hover:bg-warning/15'
+              : undefined
           }
         />
       )}
@@ -837,7 +946,7 @@ export function PurchaseOrderItemsTable({
           if (historyIndex !== null) applyPurchaseHistory(historyIndex, history)
         }}
       />
-    </>
+    </div>
   )
 }
 

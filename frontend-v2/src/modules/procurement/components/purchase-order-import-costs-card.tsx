@@ -1272,12 +1272,6 @@ export function PurchaseOrderImportCostsCard({
           </div>
         </CardHeader>
         <CardContent hidden={!costsCollapse.open} className="space-y-4 px-4">
-          <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
-            VAT ở dòng hàng của đơn nhập khẩu luôn bằng 0 — thuế GTGT hàng nhập nộp ngân sách nhà
-            nước theo tờ khai, khai thành một dòng ở bảng này. Chi phí vẫn thêm/sửa được sau khi
-            đơn đã duyệt (hóa đơn cước, tờ khai thuế, phí lưu bãi đều có sau).
-          </p>
-
           {asCards ? (
             <div className="space-y-2">
               {/*  Thanh đầu chỉ đếm khoản + ô tick hết: cụm nút Quyết toán / Tạo YCTT /

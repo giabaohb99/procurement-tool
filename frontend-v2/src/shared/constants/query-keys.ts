@@ -120,6 +120,9 @@ export const queryKeys = {
     purchaseOrders: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-orders', params ?? {}] as const,
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,
+    /** Sửa giá sau duyệt — dòng nào bị chặn kèm lý do. Nằm dưới khóa của đơn nên lưu đơn là tự nạp lại. */
+    purchaseOrderRepriceLocks: (purchaseOrderId: number) =>
+      ['procurement', 'purchase-orders', purchaseOrderId, 'reprice-locks'] as const,
     /** duoc-CR-777 — dữ liệu "Mẫu thu mua" của bản in YCMH mở từ đơn (người đề xuất = người đang in). */
     purchaseOrderPurchasingPrint: (purchaseOrderId: number) =>
       ['procurement', 'purchase-orders', purchaseOrderId, 'purchasing-print'] as const,

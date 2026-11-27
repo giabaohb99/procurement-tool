@@ -135,3 +135,26 @@ describe('PurchaseOrderLineDialog — nhập giá sau VAT', () => {
     expect(screen.queryByText(/^Đơn giá \(Sau VAT\)/)).toBeNull()
   })
 })
+
+describe('PurchaseOrderLineDialog — sửa giá sau duyệt', () => {
+  it('drops the old "bấm Hủy duyệt" banner on an approved order', () => {
+    renderDialog({ afterApproveEditable: true })
+    expect(screen.queryByText(/Hủy duyệt/)).not.toBeInTheDocument()
+  })
+
+  it('offers a Sửa giá button next to the quantity line and starts reprice mode without closing', async () => {
+    const onStartReprice = vi.fn()
+    const onOpenChange = vi.fn()
+    renderDialog({ afterApproveEditable: true, onStartReprice, onOpenChange })
+    await userEvent.click(screen.getByRole('button', { name: 'Sửa giá' }))
+    expect(onStartReprice).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it('hides the Sửa giá button once reprice mode is on and swaps Lưu đơn for Xong', () => {
+    renderDialog({ onStartReprice: vi.fn(), reprice: { original: line(), lockReason: '' } })
+    expect(screen.queryByRole('button', { name: 'Sửa giá' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Xong' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Lưu đơn' })).not.toBeInTheDocument()
+  })
+})

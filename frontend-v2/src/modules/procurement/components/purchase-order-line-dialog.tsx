@@ -1,3 +1,4 @@
+import { Tag } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { Supplier } from '@/modules/production/types/supplier'
@@ -29,6 +30,7 @@ import {
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import { PurchaseOrderRepriceLineFields } from './purchase-order-reprice-line-fields'
 import {
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
@@ -42,7 +44,6 @@ import {
   isImportOrder,
   isLineLocked,
   isLineReceived,
-  PO_FIELDS_EDITABLE_AFTER_APPROVE,
   PRODUCT_LOCK_HINT,
   type PurchaseOrderDetail,
   type PurchaseOrderItem,
@@ -97,6 +98,13 @@ interface PurchaseOrderLineDialogProps {
   onOpenChange: (open: boolean) => void
   /** Lưu cả đơn — lần giao chỉ được ghi nhận khi lưu đơn (giống v1). */
   onSave: () => void
+  /**
+   * Trang đang ở chế độ "Sửa giá" sau duyệt: hộp bày khối 4 ô giá ở đầu, mọi ô khác chỉ xem, nút Lưu đơn
+   * đổi thành Xong (lưu thật ở thanh dưới đáy trang). Không truyền = chế độ thường.
+   */
+  reprice?: { original?: PurchaseOrderItem; lockReason: string }
+  /** Có thì hộp bày nút "Sửa giá" cạnh dòng SL — bật chế độ Sửa giá của trang mà không đóng hộp. */
+  onStartReprice?: () => void
 }
 
 /**
@@ -126,6 +134,8 @@ export function PurchaseOrderLineDialog({
   onDeliveryRemoved,
   onOpenChange,
   onSave,
+  reprice,
+  onStartReprice,
 }: PurchaseOrderLineDialogProps) {
   const { data: units } = usePurchaseRequestUnits(open)
   const { data: warehouses } = usePurchaseRequestWarehouses(open)
@@ -169,482 +179,504 @@ export function PurchaseOrderLineDialog({
       {/* `max-w-*!`: `DialogContent` của shadcn có sẵn `max-w-[calc(100%-2rem)]`
           và `sm:max-w-lg` — không đánh important thì hộp thoại bị bóp lại theo
           luật gốc, bảng lần giao 22 cột không còn chỗ. */}
-      <DialogContent className="max-h-[92dvh] w-[96vw] max-w-[1200px]! overflow-y-auto">
-        <DialogHeader>
+      {/*  Đầu hộp (tên dòng + nút Sửa giá) và chân hộp đứng yên, chỉ phần thân cuộn — hộp dài gần
+           một trang, cuộn xuống tới ô giá là mất luôn nút Sửa giá lẫn tên dòng đang xem. */}
+      <DialogContent className="flex max-h-[92dvh] w-[96vw] max-w-[1200px]! flex-col overflow-hidden">
+        <DialogHeader className="-mx-6 shrink-0 border-b px-6 pb-3">
           <DialogTitle>
             Dòng {lineNumber}: {item.product_name || item.product_code || 'Chưa chọn sản phẩm'}
           </DialogTitle>
-          <DialogDescription>
-            SL đặt {formatQuantity(item.qty_order)} · Đã nhận{' '}
-            {formatQuantity(item.qty_received ?? 0)} · Còn lại {formatQuantity(remaining)}
-          </DialogDescription>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <DialogDescription>
+              SL đặt {formatQuantity(item.qty_order)} · Đã nhận{' '}
+              {formatQuantity(item.qty_received ?? 0)} · Còn lại {formatQuantity(remaining)}
+            </DialogDescription>
+            {/*  Đơn đã duyệt mà muốn đổi giá: bấm ngay ở đây, khỏi đóng hộp ra tìm nút đầu trang. Khung chữ cũ
+                 "Muốn đổi phần khác thì bấm Hủy duyệt" bỏ — đổi giá không còn phải Hủy duyệt. */}
+            {!reprice && onStartReprice && (
+              <Button type="button" size="sm" className="h-7 shadow-sm" onClick={onStartReprice}>
+                <Tag />
+                Sửa giá
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
-        {afterApproveEditable && !locked && (
-          <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
-            Đơn đã duyệt — chỉ còn sửa được: {PO_FIELDS_EDITABLE_AFTER_APPROVE}. Muốn đổi phần
-            khác thì bấm <b>Hủy duyệt</b> ở đầu trang để đơn về Nháp, sửa xong gửi duyệt lại.
-          </p>
-        )}
-
-        <section className="grid min-w-0 gap-x-4 gap-y-3 md:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground">
-              Mã hàng
-              <RequiredMark />
-            </Label>
-            {/* Chỉ xem nhưng phải lấy ra được để tra cứu — chép bằng nút cho chắc. */}
-            <div className="flex min-w-0 items-center gap-1">
-              <ReadOnlyValue className="min-w-0 flex-1">{item.product_code}</ReadOnlyValue>
-              <CopyButton value={item.product_code} label="mã hàng" className="size-8" />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Phân loại
-              <RequiredMark />
-            </Label>
-            {fieldEditable ? (
-              <SearchSelect
-                value={item.item_group || ''}
-                onChange={(value) => patch({ item_group: value })}
-                options={itemGroupOptions}
-                placeholder="Chọn phân loại"
-                searchPlaceholder="Tìm phân loại..."
-                emptyMessage="Không có phân loại phù hợp"
-                clearable
-              />
-            ) : (
-              <ReadOnlyValue>{item.item_group}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <Label title={received ? PRODUCT_LOCK_HINT : undefined}>
-              Tên hàng
-              <RequiredMark />
-            </Label>
-            {fieldEditable && !received ? (
-              <Textarea
-                rows={2}
-                value={item.product_name || ''}
-                onChange={(event) => patch({ product_name: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue multiline>{item.product_name}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <Label>
-              Tên trên hóa đơn
-              {/* Bắt buộc, nhưng backend suy sẵn từ danh mục sản phẩm khi trả dữ
-                  liệu về — nói rõ để người lập không tưởng phải gõ tay mọi dòng. */}
-              <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì lấy theo danh mục sản phẩm; sản phẩm chưa khai thì phải gõ tay" />
-            </Label>
-            {lateEditable ? (
-              <Textarea
-                rows={2}
-                value={item.invoice_name || ''}
-                placeholder="Bỏ trống thì hệ thống lấy theo danh mục sản phẩm"
-                onChange={(event) => patch({ invoice_name: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue multiline>{item.invoice_name}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <Label>Xuất xứ / TSKT / chất liệu</Label>
-            {fieldEditable ? (
-              <Textarea
-                rows={2}
-                value={item.spec || ''}
-                onChange={(event) => patch({ spec: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue multiline>{item.spec}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Mã HH (thành phẩm)</Label>
-            {fieldEditable ? (
-              <Input
-                value={item.fg_code || ''}
-                placeholder="Tự gắn khi chọn sản phẩm"
-                onChange={(event) => patch({ fg_code: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue>{item.fg_code}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Tên HH (thành phẩm)</Label>
-            {fieldEditable ? (
-              <Input
-                value={item.fg_name || ''}
-                placeholder="Tự gắn khi chọn sản phẩm"
-                onChange={(event) => patch({ fg_name: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue>{item.fg_name}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label title="Có ngày này thì dòng chuyển sang 'Đã gửi ĐMH cho KT'">
-              Ngày giao chứng từ cho KT
-            </Label>
-            {lateEditable ? (
-              <DatePicker
-                value={item.document_delivery_date || ''}
-                onChange={(value) => patch({ document_delivery_date: value })}
-              />
-            ) : (
-              <ReadOnlyValue className="tabular-nums">
-                {formatDate(item.document_delivery_date)}
-              </ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Ngày yêu cầu có hàng
-              <RequiredMark />
-            </Label>
-            {fieldEditable ? (
-              <DatePicker
-                value={item.required_date || ''}
-                onChange={(value) => patch({ required_date: value })}
-              />
-            ) : (
-              <ReadOnlyValue className="tabular-nums">
-                {formatDate(item.required_date)}
-              </ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Ngày dự kiến có hàng
-              {/* Hệ thống tự tính khi lưu (theo dòng YCMH nguồn, không có thì
-                  theo thời gian chuẩn của phân loại). Dòng thêm tay hoặc phân
-                  loại chưa khai thời gian chuẩn thì ô ở lại rỗng, phải gõ tay. */}
-              <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì hệ thống tự tính theo phân loại; không tính được thì phải chọn tay" />
-            </Label>
-            {lateEditable ? (
-              <DatePicker
-                value={item.expected_date || ''}
-                onChange={(value) => patch({ expected_date: value })}
-              />
-            ) : (
-              <ReadOnlyValue className="tabular-nums">
-                {formatDate(item.expected_date)}
-              </ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              SL yêu cầu
-              <RequiredMark />
-            </Label>
-            {fieldEditable ? (
-              <NumberInput
-                value={item.qty_request || 0}
-                onChange={(value) => patch({ qty_request: value })}
-              />
-            ) : (
-              <ReadOnlyValue className="tabular-nums">
-                {formatQuantity(item.qty_request)}
-              </ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              ĐVT
-              <RequiredMark />
-            </Label>
-            {fieldEditable && !received ? (
-              <SearchSelect
-                searchInTrigger
-                value={item.unit || ''}
-                placeholder="Chọn ĐVT"
-                searchPlaceholder="Tìm đơn vị tính…"
-                options={(units?.items ?? []).map((unit) => ({ value: unit.name, label: unit.name }))}
-                onChange={(value) => {
-                  //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
-                  if (value === (item.unit || '')) return
-                  patch({ unit: value })
-                }}
-              />
-            ) : (
-              <ReadOnlyValue>{item.unit}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Kho nhận mặc định
-              <RequiredMark />
-            </Label>
-            {lateEditable ? (
-              <SearchSelect
-                searchInTrigger
-                value={item.warehouse_code || ''}
-                placeholder="Chọn kho"
-                searchPlaceholder="Tìm theo mã hoặc tên kho…"
-                options={(warehouses?.items ?? []).map((warehouse) => ({
-                  value: warehouse.code,
-                  label: `${warehouse.code} — ${warehouse.name}`,
-                }))}
-                onChange={(value) => {
-                  if (value === (item.warehouse_code || '')) return
-                  patch({ warehouse_code: value })
-                }}
-              />
-            ) : (
-              <ReadOnlyValue>{warehouseLabel(item.warehouse_code)}</ReadOnlyValue>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Tùy chọn dòng</Label>
-            <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm">
-              <Checkbox
-                checked={item.supplier_ready}
-                disabled={!fieldEditable}
-                onCheckedChange={(checked) => patch({ supplier_ready: checked === true })}
-              />
-              NCC có sẵn hàng
-            </label>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Trạng thái tiến độ</Label>
-            <div className="flex min-h-9 items-center">
-              <PurchaseOrderLineProgressCell
-                align="start"
-                item={item}
-                controllable={progressEditable && !!item.id && !locked}
-                onProgressChange={onProgressChange}
-              />
-            </div>
-          </div>
-
-          {/* bao-CR-319: cụm nhập khẩu — khối lượng / quy cách để khai hải quan và
-              chia chi phí theo trọng lượng; đồng tiền + tỷ giá riêng của dòng. */}
-          {importMode && (
-            <>
-              <div className="space-y-1.5">
-                <Label>Khối lượng (kg)</Label>
-                {fieldEditable ? (
-                  <NumberInput
-                    value={item.weight_kg || 0}
-                    onChange={(value) => patch({ weight_kg: value })}
-                    maxDecimals={3}
-                    aria-label="Khối lượng (kg)"
-                  />
-                ) : (
-                  <ReadOnlyValue className="tabular-nums">
-                    {formatQuantity(item.weight_kg || 0)}
-                  </ReadOnlyValue>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Quy cách / kích thước</Label>
-                {fieldEditable ? (
-                  <Input
-                    value={item.dimension || ''}
-                    onChange={(event) => patch({ dimension: event.target.value })}
-                    placeholder="VD: 120 x 80 x 60 cm"
-                  />
-                ) : (
-                  <ReadOnlyValue>{item.dimension}</ReadOnlyValue>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Đồng tiền của dòng</Label>
-                {fieldEditable ? (
-                  <Select
-                    value={item.currency || CURRENCY_FOLLOW_ORDER}
-                    onValueChange={(value) =>
-                      patch({ currency: value === CURRENCY_FOLLOW_ORDER ? '' : value })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={CURRENCY_FOLLOW_ORDER}>
-                        Theo đơn ({order.currency || 'VND'})
-                      </SelectItem>
-                      {CURRENCY_OPTIONS.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <ReadOnlyValue>
-                    {item.currency || `Theo đơn (${lineCurrency.currency})`}
-                  </ReadOnlyValue>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Tỷ giá của dòng (0 = theo đơn)</Label>
-                {fieldEditable ? (
-                  <NumberInput
-                    value={item.exchange_rate || 0}
-                    onChange={(value) => patch({ exchange_rate: value })}
-                    maxDecimals={6}
-                    aria-label="Tỷ giá của dòng"
-                  />
-                ) : (
-                  <ReadOnlyValue className="tabular-nums">
-                    {item.exchange_rate
-                      ? formatUnitPrice(item.exchange_rate)
-                      : `Theo đơn (${formatUnitPrice(lineCurrency.exchangeRate)})`}
-                  </ReadOnlyValue>
-                )}
-              </div>
-
-              <Field label="Thành tiền quy đổi (VNĐ)">
-                {isMissingExchangeRate(item, order) ? (
-                  <span className="text-warning">Chưa có tỷ giá</span>
-                ) : (
-                  `${formatMoney(displayLineBaseAmount(item, order))} đ`
-                )}
-              </Field>
-            </>
+        <div className="-mx-6 grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto px-6 py-1">
+          {reprice && (
+            <PurchaseOrderRepriceLineFields
+              item={item}
+              original={reprice.original}
+              lockReason={reprice.lockReason}
+              importMode={importMode}
+              onChange={patch}
+            />
           )}
 
-          {/* duoc-CR-776: Đơn giá (trước thuế) và Đơn giá (Sau VAT) cùng sửa được — gõ ô nào ô kia
-              tự tính (`utils/vat-price.ts`); VAT % vẫn chọn ở bảng dòng. Thành tiền tính từ đơn
-              giá trước thuế như cũ. */}
-          <div className="space-y-1.5">
-            <Label htmlFor="po-line-price">
-              Đơn giá
-              <RequiredMark />
-            </Label>
-            {fieldEditable ? (
-              <NumberInput
-                id="po-line-price"
-                value={item.price || 0}
-                maxDecimals={PRICE_MAX_DECIMALS}
-                onChange={(value) => patch(applyPriceBeforeVatInput(value))}
-              />
-            ) : (
-              <ReadOnlyValue className="tabular-nums">{formatUnitPrice(item.price || 0)}</ReadOnlyValue>
-            )}
-          </div>
-          {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng.
-              Đơn nhập khẩu không có VAT dòng nên bỏ ô này. */}
-          {!importMode && (
+          <section className="grid min-w-0 gap-x-4 gap-y-3 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="po-line-price-after-vat">
-                Đơn giá (Sau VAT){' '}
-                {/*  Hộp không có ô VAT (chọn ở bảng dòng) — nói rõ mức đang dùng để tính ngược. */}
-                <span className="font-normal text-muted-foreground">VAT {item.vat || 0}%</span>
+              <Label className="text-muted-foreground">
+                Mã hàng
+                <RequiredMark />
+              </Label>
+              {/* Chỉ xem nhưng phải lấy ra được để tra cứu — chép bằng nút cho chắc. */}
+              <div className="flex min-w-0 items-center gap-1">
+                <ReadOnlyValue className="min-w-0 flex-1">{item.product_code}</ReadOnlyValue>
+                <CopyButton value={item.product_code} label="mã hàng" className="size-8" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                Phân loại
+                <RequiredMark />
               </Label>
               {fieldEditable ? (
-                <NumberInput
-                  id="po-line-price-after-vat"
-                  value={resolveLinePriceAfterVat(item, item.vat)}
-                  maxDecimals={2}
-                  onChange={(value) => patch(applyPriceAfterVatInput(value, item.vat))}
+                <SearchSelect
+                  value={item.item_group || ''}
+                  onChange={(value) => patch({ item_group: value })}
+                  options={itemGroupOptions}
+                  placeholder="Chọn phân loại"
+                  searchPlaceholder="Tìm phân loại..."
+                  emptyMessage="Không có phân loại phù hợp"
+                  clearable
+                />
+              ) : (
+                <ReadOnlyValue>{item.item_group}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label title={received ? PRODUCT_LOCK_HINT : undefined}>
+                Tên hàng
+                <RequiredMark />
+              </Label>
+              {fieldEditable && !received ? (
+                <Textarea
+                  rows={2}
+                  value={item.product_name || ''}
+                  onChange={(event) => patch({ product_name: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{item.product_name}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>
+                Tên trên hóa đơn
+                {/* Bắt buộc, nhưng backend suy sẵn từ danh mục sản phẩm khi trả dữ
+                    liệu về — nói rõ để người lập không tưởng phải gõ tay mọi dòng. */}
+                <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì lấy theo danh mục sản phẩm; sản phẩm chưa khai thì phải gõ tay" />
+              </Label>
+              {lateEditable ? (
+                <Textarea
+                  rows={2}
+                  value={item.invoice_name || ''}
+                  placeholder="Bỏ trống thì hệ thống lấy theo danh mục sản phẩm"
+                  onChange={(event) => patch({ invoice_name: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{item.invoice_name}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Xuất xứ / TSKT / chất liệu</Label>
+              {fieldEditable ? (
+                <Textarea
+                  rows={2}
+                  value={item.spec || ''}
+                  onChange={(event) => patch({ spec: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{item.spec}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Mã HH (thành phẩm)</Label>
+              {fieldEditable ? (
+                <Input
+                  value={item.fg_code || ''}
+                  placeholder="Tự gắn khi chọn sản phẩm"
+                  onChange={(event) => patch({ fg_code: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue>{item.fg_code}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Tên HH (thành phẩm)</Label>
+              {fieldEditable ? (
+                <Input
+                  value={item.fg_name || ''}
+                  placeholder="Tự gắn khi chọn sản phẩm"
+                  onChange={(event) => patch({ fg_name: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue>{item.fg_name}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label title="Có ngày này thì dòng chuyển sang 'Đã gửi ĐMH cho KT'">
+                Ngày giao chứng từ cho KT
+              </Label>
+              {lateEditable ? (
+                <DatePicker
+                  value={item.document_delivery_date || ''}
+                  onChange={(value) => patch({ document_delivery_date: value })}
                 />
               ) : (
                 <ReadOnlyValue className="tabular-nums">
-                  {formatUnitPrice(resolveLinePriceAfterVat(item, item.vat))} đ
+                  {formatDate(item.document_delivery_date)}
                 </ReadOnlyValue>
               )}
             </div>
-          )}
-          <Field label="Tổng tiền đặt hàng">
-            {formatMoney(
-              item.order_total ??
-                (item.qty_order || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100),
-            )}{' '}
-            {importMode && lineCurrency.currency !== 'VND' ? lineCurrency.currency : 'đ'}
-          </Field>
-          <Field label="Tiền hàng đã nhận">{formatMoney(item.goods_total ?? 0)} đ</Field>
-          <Field label="Đã trả">{formatMoney(item.paid_total ?? 0)} đ</Field>
-          <Field label="Còn lại">{formatMoney(item.remaining_total ?? 0)} đ</Field>
 
-          <div className="space-y-1.5 md:col-span-2">
-            <Label>Ghi chú</Label>
-            {lateEditable ? (
-              <Input
-                value={item.note || ''}
-                onChange={(event) => patch({ note: event.target.value })}
-              />
-            ) : (
-              <ReadOnlyValue multiline>{item.note}</ReadOnlyValue>
+            <div className="space-y-1.5">
+              <Label>
+                Ngày yêu cầu có hàng
+                <RequiredMark />
+              </Label>
+              {fieldEditable ? (
+                <DatePicker
+                  value={item.required_date || ''}
+                  onChange={(value) => patch({ required_date: value })}
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">
+                  {formatDate(item.required_date)}
+                </ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                Ngày dự kiến có hàng
+                {/* Hệ thống tự tính khi lưu (theo dòng YCMH nguồn, không có thì
+                    theo thời gian chuẩn của phân loại). Dòng thêm tay hoặc phân
+                    loại chưa khai thời gian chuẩn thì ô ở lại rỗng, phải gõ tay. */}
+                <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì hệ thống tự tính theo phân loại; không tính được thì phải chọn tay" />
+              </Label>
+              {lateEditable ? (
+                <DatePicker
+                  value={item.expected_date || ''}
+                  onChange={(value) => patch({ expected_date: value })}
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">
+                  {formatDate(item.expected_date)}
+                </ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                SL yêu cầu
+                <RequiredMark />
+              </Label>
+              {fieldEditable ? (
+                <NumberInput
+                  value={item.qty_request || 0}
+                  onChange={(value) => patch({ qty_request: value })}
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">
+                  {formatQuantity(item.qty_request)}
+                </ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                ĐVT
+                <RequiredMark />
+              </Label>
+              {fieldEditable && !received ? (
+                <SearchSelect
+                  searchInTrigger
+                  value={item.unit || ''}
+                  placeholder="Chọn ĐVT"
+                  searchPlaceholder="Tìm đơn vị tính…"
+                  options={(units?.items ?? []).map((unit) => ({ value: unit.name, label: unit.name }))}
+                  onChange={(value) => {
+                    //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+                    if (value === (item.unit || '')) return
+                    patch({ unit: value })
+                  }}
+                />
+              ) : (
+                <ReadOnlyValue>{item.unit}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                Kho nhận mặc định
+                <RequiredMark />
+              </Label>
+              {lateEditable ? (
+                <SearchSelect
+                  searchInTrigger
+                  value={item.warehouse_code || ''}
+                  placeholder="Chọn kho"
+                  searchPlaceholder="Tìm theo mã hoặc tên kho…"
+                  options={(warehouses?.items ?? []).map((warehouse) => ({
+                    value: warehouse.code,
+                    label: `${warehouse.code} — ${warehouse.name}`,
+                  }))}
+                  onChange={(value) => {
+                    if (value === (item.warehouse_code || '')) return
+                    patch({ warehouse_code: value })
+                  }}
+                />
+              ) : (
+                <ReadOnlyValue>{warehouseLabel(item.warehouse_code)}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Tùy chọn dòng</Label>
+              <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={item.supplier_ready}
+                  disabled={!fieldEditable}
+                  onCheckedChange={(checked) => patch({ supplier_ready: checked === true })}
+                />
+                NCC có sẵn hàng
+              </label>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Trạng thái tiến độ</Label>
+              <div className="flex min-h-9 items-center">
+                <PurchaseOrderLineProgressCell
+                  align="start"
+                  item={item}
+                  controllable={progressEditable && !!item.id && !locked}
+                  onProgressChange={onProgressChange}
+                />
+              </div>
+            </div>
+
+            {/* bao-CR-319: cụm nhập khẩu — khối lượng / quy cách để khai hải quan và
+                chia chi phí theo trọng lượng; đồng tiền + tỷ giá riêng của dòng. */}
+            {importMode && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>Khối lượng (kg)</Label>
+                  {fieldEditable ? (
+                    <NumberInput
+                      value={item.weight_kg || 0}
+                      onChange={(value) => patch({ weight_kg: value })}
+                      maxDecimals={3}
+                      aria-label="Khối lượng (kg)"
+                    />
+                  ) : (
+                    <ReadOnlyValue className="tabular-nums">
+                      {formatQuantity(item.weight_kg || 0)}
+                    </ReadOnlyValue>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Quy cách / kích thước</Label>
+                  {fieldEditable ? (
+                    <Input
+                      value={item.dimension || ''}
+                      onChange={(event) => patch({ dimension: event.target.value })}
+                      placeholder="VD: 120 x 80 x 60 cm"
+                    />
+                  ) : (
+                    <ReadOnlyValue>{item.dimension}</ReadOnlyValue>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Đồng tiền của dòng</Label>
+                  {fieldEditable ? (
+                    <Select
+                      value={item.currency || CURRENCY_FOLLOW_ORDER}
+                      onValueChange={(value) =>
+                        patch({ currency: value === CURRENCY_FOLLOW_ORDER ? '' : value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={CURRENCY_FOLLOW_ORDER}>
+                          Theo đơn ({order.currency || 'VND'})
+                        </SelectItem>
+                        {CURRENCY_OPTIONS.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            {code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <ReadOnlyValue>
+                      {item.currency || `Theo đơn (${lineCurrency.currency})`}
+                    </ReadOnlyValue>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Tỷ giá của dòng (0 = theo đơn)</Label>
+                  {fieldEditable ? (
+                    <NumberInput
+                      value={item.exchange_rate || 0}
+                      onChange={(value) => patch({ exchange_rate: value })}
+                      maxDecimals={6}
+                      aria-label="Tỷ giá của dòng"
+                    />
+                  ) : (
+                    <ReadOnlyValue className="tabular-nums">
+                      {item.exchange_rate
+                        ? formatUnitPrice(item.exchange_rate)
+                        : `Theo đơn (${formatUnitPrice(lineCurrency.exchangeRate)})`}
+                    </ReadOnlyValue>
+                  )}
+                </div>
+
+                <Field label="Thành tiền quy đổi (VNĐ)">
+                  {isMissingExchangeRate(item, order) ? (
+                    <span className="text-warning">Chưa có tỷ giá</span>
+                  ) : (
+                    `${formatMoney(displayLineBaseAmount(item, order))} đ`
+                  )}
+                </Field>
+              </>
             )}
-          </div>
-        </section>
 
-        <section className="min-w-0 space-y-3 border-t pt-4">
-          {purchaseOrderId <= 0 && (
-            <p className="text-sm text-muted-foreground">
-              Lưu đơn (Tạo) trước rồi mới thêm được lần giao.
-            </p>
-          )}
-          {purchaseOrderId > 0 && !deliveryEditable && (
-            <p className="text-sm text-muted-foreground">
-              Chỉ thêm/sửa lần giao khi đơn đã được duyệt.
-            </p>
-          )}
-          {locked && (
-            <p className="text-sm text-muted-foreground">
-              Dòng đã {item.progress_status === 'cancelled' ? 'hủy' : 'hoàn thành'} — không sửa được
-              lần giao.
-            </p>
-          )}
+            {/* duoc-CR-776: Đơn giá (trước thuế) và Đơn giá (Sau VAT) cùng sửa được — gõ ô nào ô kia
+                tự tính (`utils/vat-price.ts`); VAT % vẫn chọn ở bảng dòng. Thành tiền tính từ đơn
+                giá trước thuế như cũ. */}
+            <div className="space-y-1.5">
+              <Label htmlFor="po-line-price">
+                Đơn giá
+                <RequiredMark />
+              </Label>
+              {fieldEditable ? (
+                <NumberInput
+                  id="po-line-price"
+                  value={item.price || 0}
+                  maxDecimals={PRICE_MAX_DECIMALS}
+                  onChange={(value) => patch(applyPriceBeforeVatInput(value))}
+                />
+              ) : (
+                <ReadOnlyValue className="tabular-nums">{formatUnitPrice(item.price || 0)}</ReadOnlyValue>
+              )}
+            </div>
+            {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng.
+                Đơn nhập khẩu không có VAT dòng nên bỏ ô này. */}
+            {!importMode && (
+              <div className="space-y-1.5">
+                <Label htmlFor="po-line-price-after-vat">
+                  Đơn giá (Sau VAT){' '}
+                  {/*  Hộp không có ô VAT (chọn ở bảng dòng) — nói rõ mức đang dùng để tính ngược. */}
+                  <span className="font-normal text-muted-foreground">VAT {item.vat || 0}%</span>
+                </Label>
+                {fieldEditable ? (
+                  <NumberInput
+                    id="po-line-price-after-vat"
+                    value={resolveLinePriceAfterVat(item, item.vat)}
+                    maxDecimals={2}
+                    onChange={(value) => patch(applyPriceAfterVatInput(value, item.vat))}
+                  />
+                ) : (
+                  <ReadOnlyValue className="tabular-nums">
+                    {formatUnitPrice(resolveLinePriceAfterVat(item, item.vat))} đ
+                  </ReadOnlyValue>
+                )}
+              </div>
+            )}
+            <Field label="Tổng tiền đặt hàng">
+              {formatMoney(
+                item.order_total ??
+                  (item.qty_order || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100),
+              )}{' '}
+              {importMode && lineCurrency.currency !== 'VND' ? lineCurrency.currency : 'đ'}
+            </Field>
+            <Field label="Tiền hàng đã nhận">{formatMoney(item.goods_total ?? 0)} đ</Field>
+            <Field label="Đã trả">{formatMoney(item.paid_total ?? 0)} đ</Field>
+            <Field label="Còn lại">{formatMoney(item.remaining_total ?? 0)} đ</Field>
 
-          <PurchaseOrderDeliveriesTable
-            item={item}
-            editable={canEditDeliveries && purchaseOrderId > 0}
-            carriers={carriers}
-            attachEditable={attachEditable && !locked}
-            purchaseOrderId={purchaseOrderId}
-            pendingFiles={pendingFiles}
-            onChange={(deliveries) => patch({ deliveries })}
-            onPendingFilesChange={onPendingFilesChange}
-            onDeliveryRemoved={onDeliveryRemoved}
-            onAdd={
-              canEditDeliveries && purchaseOrderId > 0
-                ? () =>
-                    patch({
-                      deliveries: [
-                        ...(item.deliveries ?? []),
-                        createEmptyDelivery(
-                          item,
-                          (item.deliveries?.length ?? 0) + 1,
-                          stdDaysMap,
-                          orderDate,
-                        ),
-                      ],
-                    })
-                : undefined
-            }
-          />
-        </section>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Ghi chú</Label>
+              {lateEditable ? (
+                <Input
+                  value={item.note || ''}
+                  onChange={(event) => patch({ note: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{item.note}</ReadOnlyValue>
+              )}
+            </div>
+          </section>
 
-        <DialogFooter>
+          <section className="min-w-0 space-y-3 border-t pt-4">
+            {purchaseOrderId <= 0 && (
+              <p className="text-sm text-muted-foreground">
+                Lưu đơn (Tạo) trước rồi mới thêm được lần giao.
+              </p>
+            )}
+            {purchaseOrderId > 0 && !deliveryEditable && (
+              <p className="text-sm text-muted-foreground">
+                Chỉ thêm/sửa lần giao khi đơn đã được duyệt.
+              </p>
+            )}
+            {locked && (
+              <p className="text-sm text-muted-foreground">
+                Dòng đã {item.progress_status === 'cancelled' ? 'hủy' : 'hoàn thành'} — không sửa được
+                lần giao.
+              </p>
+            )}
+
+            <PurchaseOrderDeliveriesTable
+              item={item}
+              editable={canEditDeliveries && purchaseOrderId > 0}
+              carriers={carriers}
+              attachEditable={attachEditable && !locked}
+              purchaseOrderId={purchaseOrderId}
+              pendingFiles={pendingFiles}
+              onChange={(deliveries) => patch({ deliveries })}
+              onPendingFilesChange={onPendingFilesChange}
+              onDeliveryRemoved={onDeliveryRemoved}
+              onAdd={
+                canEditDeliveries && purchaseOrderId > 0
+                  ? () =>
+                      patch({
+                        deliveries: [
+                          ...(item.deliveries ?? []),
+                          createEmptyDelivery(
+                            item,
+                            (item.deliveries?.length ?? 0) + 1,
+                            stdDaysMap,
+                            orderDate,
+                          ),
+                        ],
+                      })
+                  : undefined
+              }
+            />
+          </section>
+        </div>
+
+        <DialogFooter className="-mx-6 shrink-0 border-t px-6 pt-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Đóng
           </Button>
-          {(editable || canEditDeliveries || lateEditable) && (
+          {reprice && !reprice.lockReason && (
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              Xong
+            </Button>
+          )}
+          {!reprice && (editable || canEditDeliveries || lateEditable) && (
             <Button
               onClick={() => {
                 onOpenChange(false)

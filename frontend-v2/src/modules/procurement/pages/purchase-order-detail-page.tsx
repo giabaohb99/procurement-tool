@@ -18,6 +18,7 @@ import {
   Save,
   Send,
   Ship,
+  Tag,
 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -103,6 +104,8 @@ import {
 import { findDeliveryAttachTarget } from '../helpers/delivery-attach-target'
 import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
+import { usePurchaseOrderReprice } from '../hooks/use-purchase-order-reprice'
+import { PurchaseOrderRepriceBar } from '../components/purchase-order-reprice-bar'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
 import { useUploadDeliveryFiles } from '../hooks/use-purchase-request-support'
 import {
@@ -208,6 +211,8 @@ export function PurchaseOrderDetailPage() {
   const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_ORDER, isNew) // duoc-CR-641
 
   const { data: serverData, isLoading, isError } = usePurchaseOrder(purchaseOrderId)
+  //  Sửa giá sau duyệt: bản nháp giá riêng, so với dòng ĐÃ LƯU (không so với bản nháp của trang).
+  const reprice = usePurchaseOrderReprice(purchaseOrderId, serverData?.items ?? NO_ITEMS)
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
   //  không thêm request; bảng dòng hàng đọc % theo dòng từ đây.
   const { data: executionReport } = useSurveyRequestReport(purchaseOrderId, 'purchase_order')
@@ -493,6 +498,29 @@ export function PurchaseOrderDetailPage() {
     can('purchase_order', 'approve') &&
     isPriceAdjustAvailable(serverData ?? data)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
+  /**
+   * Sửa giá sau duyệt: cùng quyền với Hủy duyệt (Duyệt ĐMH) nhưng KHÔNG đòi chưa nhận hàng — đó chính là ca
+   * Hủy duyệt bó tay. Dòng nào bị chặn (đã trả tiền, đã lên YCTT đã gửi duyệt…) máy chủ trả lý do riêng.
+   */
+  const canReprice =
+    !isNew && approved && can('purchase_order', 'approve') && data.items.some((item) => !!item.id)
+  /** Đang Sửa giá: bảng + hộp chi tiết vẽ dòng đã đè phần giá đang sửa. */
+  const displayItems = reprice.applyTo(data.items)
+  //  Khối tổng tiền dưới bảng nhảy theo giá đang sửa, khớp số "→" trên thanh đáy.
+  const shownTotals = reprice.active
+    ? summarizeOrderTotals({
+        currency: data.currency ?? '',
+        exchange_rate: data.exchange_rate ?? 0,
+        items: displayItems,
+      })
+    : orderTotals
+  const repriceTableMode = reprice.active
+    ? {
+        lockReasonOf: reprice.lockReasonOf,
+        originalOf: reprice.originalOf,
+        focusOnStart: lineIndex === null,
+      }
+    : undefined
   const purchaseRequestId = purchaseRequestsData?.items.find(
     (request) => request.code === data.pr_code,
   )?.id
@@ -846,6 +874,16 @@ export function PurchaseOrderDetailPage() {
           },
         ]
       : []),
+    canReprice &&
+      !reprice.active && {
+        key: 'reprice',
+        node: (
+          <Button variant="outline" className={ACTION_TONE_CLASS.accent} onClick={reprice.start}>
+            <Tag />
+            Sửa giá
+          </Button>
+        ),
+      },
     canUnapprove && {
       key: 'unapprove',
       node: (
@@ -1068,7 +1106,7 @@ export function PurchaseOrderDetailPage() {
                       </p>
                     </div>
                   )}
-                  {afterApproveEditable && (
+                  {afterApproveEditable && !reprice.active && (
                     <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
                       {/*  Khổ điện thoại không còn cột Hành động — bảng đã thành thẻ, chạm thẻ mở hộp chi tiết dòng. */}
                       Đơn đã duyệt — nội dung đã ký khóa lại.{' '}
@@ -1080,12 +1118,15 @@ export function PurchaseOrderDetailPage() {
                     </p>
                   )}
                   <PurchaseOrderItemsTable
-                    items={data.items}
+                    items={displayItems}
                     order={data}
                     editable={headerEditable}
                     selection={lineSelection.selection}
-                    progressEditable={progressEditable}
-                    onChange={(items) => patch({ items })}
+                    progressEditable={progressEditable && !reprice.active}
+                    onChange={(items) =>
+                      reprice.active ? reprice.updateFromItems(items) : patch({ items })
+                    }
+                    reprice={repriceTableMode}
                     onOpenDetail={setLineIndex}
                     //  Dòng chưa lưu khóa tick theo chỉ số: chèn / bỏ một dòng làm dấu tick trôi sang
                     //  dòng khác, *Xóa đã chọn* xóa nhầm (rà mã duoc-CR-741) — bỏ hết dấu tick.
@@ -1102,9 +1143,9 @@ export function PurchaseOrderDetailPage() {
                     onProgressChange={handleProgressChange}
                   />
                   <DocumentMoneyTotals
-                    subtotal={orderTotals.subtotal}
-                    vat={orderTotals.vat}
-                    total={orderTotals.total}
+                    subtotal={shownTotals.subtotal}
+                    vat={shownTotals.vat}
+                    total={shownTotals.total}
                     subtotalLabel={
                       !isImportOrder(data)
                         ? 'Tiền hàng theo SL đặt (chưa VAT)'
@@ -1251,6 +1292,16 @@ export function PurchaseOrderDetailPage() {
         </CardCollapseScope>
       </div>
 
+      {reprice.active && (
+        <PurchaseOrderRepriceBar
+          summary={reprice.summary}
+          currencySuffix={isImportOrder(data) ? data.currency || '' : 'đ'}
+          saving={reprice.saving}
+          onCancel={() => void reprice.cancel()}
+          onSave={() => void reprice.save()}
+        />
+      )}
+
       <PurchaseOrderPaymentDialog open={paymentOpen} order={data} onOpenChange={setPaymentOpen} />
 
       {priceAdjustOpen && serverData && (
@@ -1276,14 +1327,24 @@ export function PurchaseOrderDetailPage() {
       )}
 
       <PurchaseOrderLineDialog
-        item={lineIndex === null ? null : (data.items[lineIndex] ?? null)}
+        item={lineIndex === null ? null : (displayItems[lineIndex] ?? null)}
         order={data}
         lineNumber={(lineIndex ?? 0) + 1}
         open={lineIndex !== null}
         editable={headerEditable}
-        afterApproveEditable={afterApproveEditable}
-        deliveryEditable={progressEditable}
-        progressEditable={progressEditable}
+        //  Đang Sửa giá: hộp chỉ mở 4 ô giá — các ô sau duyệt / lần giao đi đường Lưu chung, đừng trộn hai lượt lưu.
+        afterApproveEditable={afterApproveEditable && !reprice.active}
+        deliveryEditable={progressEditable && !reprice.active}
+        progressEditable={progressEditable && !reprice.active}
+        reprice={
+          reprice.active && lineIndex !== null && displayItems[lineIndex]
+            ? {
+                original: reprice.originalOf(displayItems[lineIndex]),
+                lockReason: reprice.lockReasonOf(displayItems[lineIndex]),
+              }
+            : undefined
+        }
+        onStartReprice={canReprice && !reprice.active ? reprice.start : undefined}
         onProgressChange={handleProgressChange}
         // Đính kèm phiếu giao mở cả khi đơn đã hoàn thành (chỉ chặn khi hủy):
         // chứng từ thường về sau ngày chốt đơn.
@@ -1298,6 +1359,10 @@ export function PurchaseOrderDetailPage() {
         pendingFiles={linePendingFiles}
         onChange={(item) => {
           if (lineIndex === null) return
+          if (reprice.active) {
+            reprice.updateLine(item)
+            return
+          }
           patch({
             items: data.items.map((current, index) => (index === lineIndex ? item : current)),
           })
