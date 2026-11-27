@@ -317,6 +317,12 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
   mới, giữ nguyên phạm vi — `read` / `export` sang cả sáu khóa; `create` sang Bảng giá VTBB và Định mức bao bì; `write` /
   `delete` sang Bảng giá VTBB, Định mức bao bì và Lịch sử mua hàng — rồi xóa dòng `packaging_cost`. Không ai mất quyền; muốn
   thu hẹp theo màn thì quản trị bỏ tick ở màn Vai trò & quyền sau khi phát hành.
+- **Vai trò hai màn cho phòng Dego Lab** (bao-CR-793): vai trò `packaging_cost_lab_view` (*Giá NVL: Bảng giá và Giá mua gần
+  nhất*) chỉ mang `packaging_price_list` và `packaging_last_price`, Xem / Xuất, phạm vi chép từ vai trò xem cả cụm
+  `packaging_cost_view`. Script `python -m scripts.split_packaging_lab_role --dept-id <id phòng> [--apply]` tạo vai trò và
+  đổi vai trò cho người của phòng đó (gán tay); người ngoài phòng giữ vai trò xem cả cụm. Người chỉ giữ vai trò hai màn: menu
+  cụm chỉ còn hai mục, mã vật tư ở Bảng giá VTBB là chữ thường (không mở Lịch sử mua hàng), xem được danh sách Báo giá VTBB
+  nhưng không thêm / sửa / xóa.
 - Phạm vi: năm khóa có giá (`packaging_impact`, `packaging_product_summary`, `packaging_price_list`, `packaging_last_price`,
   `packaging_history`) khai `SCOPE_FIELDS[...] = {"company": "company_id"}` đo trên sổ giá — mỗi màn tính giá theo pháp nhân
   mà khóa CỦA MÀN ĐÓ cho người xem thấy. `packaging_bom` khai `PUBLIC`: định mức là danh mục dùng chung, không có cột pháp

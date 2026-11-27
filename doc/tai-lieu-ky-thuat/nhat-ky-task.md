@@ -114,6 +114,33 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** sau khi tách quyền theo từng màn, chủ dự án chốt cách chia: phòng Dego Lab chỉ cần xem Bảng giá VTBB và Giá mua gần
+nhất; những người còn lại đang được xem cụm giá thì giữ nguyên cả sáu màn.
+
+**Đã làm:**
+- Thêm một vai trò mới *Giá NVL: Bảng giá và Giá mua gần nhất*, chỉ có quyền Xem / Xuất ở hai màn đó.
+- Thêm script chuyển người của một phòng từ vai trò xem cả cụm sang vai trò hai màn. Script chạy thử trước, có cờ mới ghi thật,
+  chạy lại không đổi gì, và ghi nhật ký thao tác cho từng tài khoản.
+- Người ngoài phòng không bị đụng. Vai trò đến từ gói quyền của chức vụ cũng không bị đụng, script chỉ in cảnh báo.
+
+**Người dùng phòng Lab sẽ thấy:** menu cụm giá còn hai mục; mã vật tư ở Bảng giá VTBB không còn bấm sang Lịch sử mua hàng; vẫn xem
+được danh sách báo giá nhưng không thêm, sửa, xóa.
+
+**Chưa làm:** chưa soát bằng trình duyệt với tài khoản phòng Lab (cần người đăng nhập thử trên dev).
+
+**Quay lui:** vào màn Vai trò & quyền gán lại vai trò *Giá nguyên vật liệu* cho các tài khoản phòng Lab và bỏ vai trò hai màn.
+
+**Kiểm:** 5 ca mới đạt, chạy kèm 42 ca tách quyền của bao-CR-792 đều đạt; ruff sạch.
+
+Mã nguồn: `backend/scripts/split_packaging_lab_role.py`.
+Kiểm: `test/backend/test_vai_tro_gia_nvl_phong_lab_cr793.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
+
 ## bao-CR-792 | Giá nguyên vật liệu sản xuất: tách quyền theo từng màn thay cho một quyền chung cả cụm
 - status: xong
 - date: 2026-11-27
