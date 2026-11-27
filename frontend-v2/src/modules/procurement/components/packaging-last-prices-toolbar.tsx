@@ -2,10 +2,10 @@
  * duoc-CR-784 — thanh lọc của tab Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng"
  * chỉ đổi cột hiện (Excel thêm cột theo cờ `show_qty` cùng giá trị).
  *
- * Hàng 1: ô tìm + ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; mỗi nhóm kèm số mã),
- * dòng đầu danh sách là Tất cả. Ô chọn thay hàng chip từ 27/11/2026 vì prod có khoảng 42 nhóm, chip chiếm bốn hàng.
- * Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
- * ngưỡng %, và các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
+ * Bố cục ba hàng (27/11/2026). Hàng 1: bốn ô chọn đều nhau — ô tìm, ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không
+ * tick nhóm nào = mọi nhóm, mỗi nhóm kèm số mã, dòng đầu là Tất cả; thay hàng chip vì prod có khoảng 42 nhóm), nhà cung cấp,
+ * khoảng ngày mua. Hàng 2: số lần hiển thị, phạm vi mã, biến động, ngưỡng % rồi ba công tắc. Hàng 3: chú thích chữ nhỏ.
+ * Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 import { ChevronDown, Search } from 'lucide-react'
 import { useState } from 'react'
@@ -150,9 +150,11 @@ export function PackagingLastPricesToolbar({
   }
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full max-w-xs">
+    <div className="flex w-full flex-col gap-3">
+      {/*  Hàng 1 (27/11/2026): bốn ô chọn đều nhau — tìm, nhóm, nhà cung cấp, khoảng ngày. Khổ điện thoại chỉ còn hai ô đầu,
+          hai ô sau nằm trong phần "Lọc thêm". */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="relative">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -162,7 +164,7 @@ export function PackagingLastPricesToolbar({
             onChange={(event) => patch({ q: event.target.value })}
           />
         </div>
-        <div className="w-60">
+        <div>
           <MultiPicker<string>
             value={filters.all ? [ALL_GROUPS] : filters.groups}
             onChange={changeGroups}
@@ -176,10 +178,28 @@ export function PackagingLastPricesToolbar({
             hideSelectAll
           />
         </div>
-        {recentMode && (
-          <span className="text-xs text-muted-foreground">
-            {RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết
-          </span>
+        {showExtra && (
+          <>
+            <div title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
+              <MultiPicker<string>
+                value={filters.suppliers}
+                onChange={(ids) => patch({ suppliers: ids })}
+                options={suppliers.map((s) => ({ id: s.code, label: s.name, hint: s.code }))}
+                placeholder="Nhà cung cấp"
+                searchPlaceholder="Tìm nhà cung cấp…"
+                emptyMessage="Không có nhà cung cấp nào."
+                summaryInTrigger
+                clearInTrigger
+              />
+            </div>
+            <DateRangePicker
+              from={filters.from}
+              to={filters.to}
+              placeholder="Khoảng ngày mua"
+              className="w-full"
+              onChange={(from, to) => patch({ from, to })}
+            />
+          </>
         )}
       </div>
 
@@ -200,7 +220,9 @@ export function PackagingLastPricesToolbar({
 
       {showExtra && (
         <>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/*  Hàng 2: nhóm nút chọn một rồi các công tắc, chung một dòng chảy để màn vừa (khoảng 1100px) lấp đủ hai dòng thay vì
+              ba dòng lửng. */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Field label="Số lần hiển thị">
               <ToggleGroup
                 type="single"
@@ -230,24 +252,6 @@ export function PackagingLastPricesToolbar({
                 <ToggleGroupItem value="all">Mọi mã</ToggleGroupItem>
               </ToggleGroup>
             </Field>
-            <div className="w-56" title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
-              <MultiPicker<string>
-                value={filters.suppliers}
-                onChange={(ids) => patch({ suppliers: ids })}
-                options={suppliers.map((s) => ({ id: s.code, label: s.name, hint: s.code }))}
-                placeholder="Nhà cung cấp"
-                searchPlaceholder="Tìm nhà cung cấp…"
-                emptyMessage="Không có nhà cung cấp nào."
-                summaryInTrigger
-                clearInTrigger
-              />
-            </div>
-            <DateRangePicker
-              from={filters.from}
-              to={filters.to}
-              placeholder="Khoảng ngày mua"
-              onChange={(from, to) => patch({ from, to })}
-            />
             <Field label="Biến động lần 1 so lần 2">
               <ToggleGroup
                 type="single"
@@ -282,9 +286,6 @@ export function PackagingLastPricesToolbar({
                 onChange={(minPct) => patch({ minPct })}
               />
             </Field>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <Toggle
               id="last-prices-only-priced"
               label="Chỉ mã đã có giá"
@@ -303,11 +304,21 @@ export function PackagingLastPricesToolbar({
               checked={filters.showQty}
               onChange={(showQty) => patch({ showQty })}
             />
-            <span className="text-xs text-muted-foreground">
-              Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
-            </span>
           </div>
+
+          {/*  Hàng 3: một dòng chữ nhỏ căn trái — chú thích màu, và câu nhắc khi đang ở chế độ gần nhất. */}
+          <p className="text-xs text-muted-foreground">
+            Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.
+            {recentMode && (
+              <> · {RECENT_CODES_LIMIT} mã mua gần nhất, chọn Tất cả ở ô Nhóm sản phẩm để xem hết.</>
+            )}
+          </p>
         </>
+      )}
+      {!showExtra && recentMode && (
+        <span className="text-xs text-muted-foreground">
+          {RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết
+        </span>
       )}
     </div>
   )

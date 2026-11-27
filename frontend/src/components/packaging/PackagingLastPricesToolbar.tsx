@@ -2,7 +2,7 @@ import DateRangePicker from '../DateRangePicker'
 import MultiCheckSelect from '../MultiCheckSelect'
 import NumberInput from '../NumberInput'
 import type { LastPricesTrend, PackagingLastPricesResult } from '../../api/packaging-cost-types'
-import { LAST_PRICE_N_OPTIONS, RECENT_CODES_LIMIT, type LastPricesFilters } from '../../utils/packaging-query'
+import { LAST_PRICE_N_OPTIONS, type LastPricesFilters } from '../../utils/packaging-query'
 import './packaging.css'
 
 const TRENDS: [LastPricesTrend, string][] = [['up', 'Tăng'], ['down', 'Giảm'], ['flat', 'Không đổi']]
@@ -23,19 +23,18 @@ function Toggle({ label, checked, onChange, title }: { label: string; checked: b
 
 /**
  * Thanh lọc của màn Giá mua gần nhất. Mọi tùy chọn gửi máy chủ (và theo Xuất Excel), trừ "Hiện số lượng" chỉ đổi cột hiện.
- * Hàng 1: ô tìm + ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; số mã là chữ phụ), dòng
- * đầu danh sách là Tất cả — ô chọn thay hàng chip từ 27/11/2026 vì prod có khoảng 42 nhóm, chip chiếm bốn hàng. Hàng 2: số lần hiển thị, phạm vi mã, nhà cung cấp, khoảng ngày mua, biến động,
- * ngưỡng %. Hàng 3: các công tắc. Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
+ * Hàng 1: bốn ô đều nhau — ô tìm, ô chọn nhiều NHÓM SẢN PHẨM (tick nhiều nhóm = HOẶC, không tick nhóm nào = mọi nhóm; số mã là
+ * chữ phụ; dòng đầu danh sách là Tất cả — thay hàng chip từ 27/11/2026 vì prod có khoảng 42 nhóm), nhà cung cấp, khoảng ngày.
+ * Hàng 2: số lần hiển thị, phạm vi mã, biến động, ngưỡng % rồi ba công tắc. Hàng 3: chú thích màu.
+ * Lọc nhà cung cấp GIỮ DÒNG có nhà cung cấp đó trong n lần đang hiện (không cắt bớt lần mua).
  */
 export default function PackagingLastPricesToolbar({
-  filters, onChange, groups, suppliers, recentMode = false,
+  filters, onChange, groups, suppliers,
 }: {
   filters: LastPricesFilters
   onChange: (next: LastPricesFilters) => void
   groups: PackagingLastPricesResult['groups']
   suppliers: PackagingLastPricesResult['suppliers']
-  /** Đang ở chế độ gần nhất (chưa chọn nhóm / "Tất cả" / bộ lọc nào) — hiện chú thích 20 mã thay cho tổng số. */
-  recentMode?: boolean
 }) {
   const patch = (next: Partial<LastPricesFilters>) => onChange({ ...filters, ...next })
   //  Mỗi nhóm một dòng tick, số mã là chữ phụ. Nhóm đã chọn mà số đếm về 0 (bộ lọc khác loại hết mã của nó) vẫn có dòng để bỏ tick.
@@ -53,17 +52,24 @@ export default function PackagingLastPricesToolbar({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 0 10px' }}>
-      <div className="pkg-row">
+      {/*  Hàng 1 (27/11/2026): bốn ô chọn đều nhau — tìm, nhóm, nhà cung cấp, khoảng ngày. Câu nhắc "20 mã mua gần nhất" nằm ở
+          dòng trên bảng (cạnh Xóa lọc), không lặp ở đây. */}
+      <div className="pkg-lookups">
         <div className="pkg-search">
           <input aria-label="Tìm mã vật tư" placeholder="Tìm mã, tên, nhóm, nhà cung cấp…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
         </div>
-        <div style={{ width: 230 }}>
-          <MultiCheckSelect value={filters.all ? [ALL_GROUPS] : filters.groups} placeholder="Nhóm sản phẩm" options={groupOptions}
-            onChange={changeGroups} />
+        <MultiCheckSelect value={filters.all ? [ALL_GROUPS] : filters.groups} placeholder="Nhóm sản phẩm" options={groupOptions}
+          onChange={changeGroups} />
+        <div title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
+          <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
+            options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))}
+            onChange={(v) => patch({ suppliers: v })} />
         </div>
-        {recentMode && <span className="pkg-hint">{RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết</span>}
+        <DateRangePicker block value={{ from: filters.from, to: filters.to }} placeholder="Khoảng ngày mua"
+          onChange={(v) => patch({ from: v.from, to: v.to })} />
       </div>
 
+      {/*  Hàng 2: nhóm nút chọn một rồi các công tắc, chung một dòng chảy cho màn vừa lấp đủ dòng. */}
       <div className="pkg-row">
         <Field label="Số lần hiển thị">
           <div className="pkg-seg" role="group" aria-label="Số lần hiển thị">
@@ -78,15 +84,6 @@ export default function PackagingLastPricesToolbar({
             <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã</button>
           </div>
         </Field>
-        <div style={{ width: 230 }} title="Giữ các mã có nhà cung cấp này trong các lần mua đang hiện">
-          <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
-            options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))}
-            onChange={(v) => patch({ suppliers: v })} />
-        </div>
-        <div style={{ width: 250 }}>
-          <DateRangePicker block value={{ from: filters.from, to: filters.to }} placeholder="Khoảng ngày mua"
-            onChange={(v) => patch({ from: v.from, to: v.to })} />
-        </div>
         <Field label="Biến động lần 1 so lần 2">
           <div className="pkg-seg" role="group" aria-label="Biến động lần 1 so lần 2">
             {/*  "Tất cả" = bỏ lọc biến động; sáng sau khi bấm (cờ `trendAllLit`), mới mở thì chưa sáng. */}
@@ -104,14 +101,11 @@ export default function PackagingLastPricesToolbar({
           <NumberInput style={{ width: 80, height: 32, padding: '0 8px' }} value={filters.minPct} maxDecimals={2}
             onChange={(minPct) => patch({ minPct })} />
         </Field>
-      </div>
-
-      <div className="pkg-row">
         <Toggle label="Chỉ mã đã có giá" checked={filters.onlyPriced} onChange={(onlyPriced) => patch({ onlyPriced })} />
         <Toggle label="Chỉ mã đang dùng trong định mức" checked={filters.bomOnly} onChange={(bomOnly) => patch({ bomOnly })} />
         <Toggle label="Hiện số lượng" checked={filters.showQty} onChange={(showQty) => patch({ showQty })} />
-        <span className="pkg-hint">Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.</span>
       </div>
+      <span className="pkg-hint">Xanh = đắt hơn lần mua trước đó, đỏ = rẻ hơn. VNĐ, chưa VAT.</span>
     </div>
   )
 }

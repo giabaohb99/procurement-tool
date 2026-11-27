@@ -99,7 +99,7 @@ export default function PackagingLastPrices() {
 
       <div className="card table-card">
         <PackagingLastPricesToolbar filters={filters} onChange={changeFilters}
-          groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []} recentMode={recent} />
+          groups={list.data?.groups ?? []} suppliers={list.data?.suppliers ?? []} />
         <div className="table-tools tt-compact" style={{ marginTop: -4 }}>
           <span className="pkg-hint" style={{ marginRight: 'auto' }}>{list.data ? (recent ? `${RECENT_CODES_LIMIT} mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết` : `Tổng ${list.data.total} mã`) : ''}</span>
           {filtersActive && <button className="btn ghost" onClick={() => changeFilters(reset)}><i className="ti ti-rotate" />Xóa lọc</button>}
