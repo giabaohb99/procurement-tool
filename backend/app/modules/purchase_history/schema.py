@@ -25,6 +25,8 @@ class PurchaseHistoryOut(BaseModel):
     vat: float = 0
     amount: float = 0
     completed_at: str = ""
+    # bao-CR-790: 1 = đang mở (đã nhận hàng, chưa hoàn thành — còn đổi theo ĐMH) · 2 = đã chốt. `completed_at` rỗng khi đang mở.
+    line_stage: int = 2
     # Phần "Thông tin chung" + dòng hàng còn lại (DB lưu chuỗi JSON). Trả ra dạng object để
     # popup "Lịch sử mua hàng gần nhất" điền luôn Chi tiết dòng (tên trên hóa đơn, TSKT,
     # mã/tên HH, phân loại, kho nhận, ghi chú). Dòng legacy không có ĐMH → {}.

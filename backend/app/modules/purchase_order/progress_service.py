@@ -161,5 +161,7 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {label}")
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
     sync_po_price_ledger(db, po)   # duoc-CR-784: dòng hủy thì ra khỏi sổ giá; tiếp tục thì vào lại
+    from app.modules.purchase_history.service import sync_po_history_safe   # LAZY như `snapshot_line_safe`
+    sync_po_history_safe(db, po)   # bao-CR-790: dòng hủy thì bỏ bản ghi lịch sử chưa chốt; tiếp tục thì ghi lại
     db.refresh(po)
     return po

@@ -380,6 +380,6 @@ def test_chuoi_migration_mot_dau_la_bombatch784_noi_sau_fgname784_va_cleanup784(
     cfg = Config()
     cfg.set_main_option("script_location", str(MIGRATION.parents[1]))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["bombatch784"]
+    assert script.get_heads() == ["phstage790"]          # bao-CR-790 nối sau bombatch784
     assert script.get_revision("bombatch784").down_revision == "fgname784"
     assert script.get_revision("fgname784").down_revision == "cleanup784"

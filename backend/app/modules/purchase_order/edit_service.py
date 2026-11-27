@@ -17,6 +17,7 @@ from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from .model import DEFAULT_CURRENCY, OrderType, POItem, PurchaseOrder
 from .schema import POCreate, POUpdate
 from app.modules.product_price.ledger_sync_service import sync_po_price_ledger   # duoc-CR-784: sổ giá
+from app.modules.purchase_history.service import sync_po_history_safe   # bao-CR-790: lịch sử mua hàng từ lúc nhận hàng
 from .base_service import (ENTITY, PROG_CANCELLED, PROG_COMPLETED, _sync_pr, get_po, items_of, rate_of,
                            sync_urgent_group)
 from .item_service import _save_items, fill_blank_invoice_name
@@ -480,6 +481,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     # đổi trạng thái nên nếu thiếu bước này, tiến độ SL bên YCMH sẽ bị cũ.
     _sync_pr(db, po.pr_code)
     sync_po_price_ledger(db, po)   # duoc-CR-784: giá / SL / VAT / dòng bị xóa đổi → cập nhật sổ giá
+    sync_po_history_safe(db, po)   # bao-CR-790: hàng về kho là có lịch sử; giá / SL đổi thì bản ghi chưa chốt đổi theo
     db.refresh(po)
     return po
 
@@ -520,6 +522,7 @@ def delete_po(db: Session, pid: int, user_id: int):
     # `sync_from_purchase_orders` đã bỏ đơn xóa mềm nên đồng bộ lại là đủ.
     _sync_pr(db, po.pr_code)
     sync_po_price_ledger(db, po)   # duoc-CR-784: đơn xóa mềm thôi tính vào sổ giá
+    sync_po_history_safe(db, po)   # bao-CR-790: đơn xóa mềm thì bỏ bản ghi lịch sử chưa chốt
     record(db, user_id, ENTITY, pid, "delete", f"Xóa mềm đơn {po.code}")
 
 
@@ -555,5 +558,6 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     # (duyệt → bắt đầu tính; hủy/từ chối → thôi tính) nên luôn đồng bộ lại tiến độ dòng YCMH.
     _sync_pr(db, po.pr_code)
     sync_po_price_ledger(db, po)   # duoc-CR-784: duyệt → vào sổ giá; hủy / từ chối / bỏ duyệt → ra khỏi sổ giá
+    sync_po_history_safe(db, po)   # bao-CR-790: cùng luật cho bản ghi lịch sử chưa chốt
     db.refresh(po)
     return po

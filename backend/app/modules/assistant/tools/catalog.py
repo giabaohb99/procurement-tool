@@ -282,7 +282,7 @@ def _attach_order_lines(ctx: ToolContext, out: dict, product_code: str, limit: i
     Bảng lịch sử mua chỉ có dòng ĐMH đã HOÀN TẤT (phần lớn là Excel cũ), nên câu "tên trên hóa đơn / giá 3 đơn gần nhất"
     phải đọc ở đây. Gác phạm vi ĐMH như màn danh sách; không có quyền xem ĐMH thì chỉ báo, không trả."""
     if not ctx.can("purchase_order"):
-        out["order_lines_note"] = "Không có quyền xem đơn mua hàng nên chỉ có lịch sử mua đã hoàn tất."
+        out["order_lines_note"] = "Không có quyền xem đơn mua hàng nên chỉ có lịch sử mua (các dòng đã nhận hàng)."
         return
     from .procurement_doc_tool import _label
     from .approval_tool import _detail_url
@@ -765,7 +765,7 @@ SPECS: list[ToolSpec] = [
         name="product_purchase_history",
         description="Lịch sử mua của một mã hàng: đã mua của ai, giá bao nhiêu, số lượng, ngày, "
                     "mã PO, tên trên hóa đơn từng lần (invoice_name; invoice_name_from_catalog=true là tên lấy "
-                    "từ danh mục vì dữ liệu cũ không lưu). Sắp theo ngày mới nhất. items = lần mua ĐÃ HOÀN TẤT; "
+                    "từ danh mục vì dữ liệu cũ không lưu). Sắp theo ngày mới nhất. items = lần mua ĐÃ NHẬN HÀNG; "
                     "order_lines = các dòng đơn mua hàng trên hệ gần nhất (kể cả chưa nhận hàng) kèm tên trên hóa "
                     "đơn, giá, trạng thái — dùng order_lines khi hỏi N đơn gần nhất.",
         parameters={
