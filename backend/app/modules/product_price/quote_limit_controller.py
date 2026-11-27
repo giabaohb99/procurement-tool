@@ -1,7 +1,8 @@
 """CRUD báo giá của màn Giá bao bì (duoc-CR-784, phase 03). Ngưỡng sàn / trần đã bỏ (phase 04, migration `cleanup784`) — tên tệp giữ
 nguyên để khỏi đổi đường dẫn; router ngưỡng `/api/product-price-limits` không còn.
 
-Gác khóa `packaging_cost` bằng quyền HÀNH ĐỘNG (read / create / write / delete). Báo giá là danh mục dùng chung —
+Gác khóa `packaging_price_list` (bao-CR-792, 27/11/2026: Báo giá VTBB đi cùng khóa của màn Bảng giá VTBB; trước đó là khóa
+chung `packaging_cost`) bằng quyền HÀNH ĐỘNG (read / create / write / delete). Báo giá là danh mục dùng chung —
 không có cột pháp nhân — nên dựng bằng `make_crud_router(scoped=False)`; phạm vi theo pháp nhân của khóa này đo trên SỔ
 GIÁ (`ProductPriceLedger.company_id`), áp ở `packaging_cost/impact_controller.py`.
 """
@@ -14,7 +15,7 @@ from . import catalog_checks as chk
 from .model import ProductPriceQuote
 from .schema import QuoteCreate, QuoteOut, QuoteUpdate
 
-ENTITY = "packaging_cost"
+ENTITY = "packaging_price_list"
 TAG = "packaging-cost"
 
 

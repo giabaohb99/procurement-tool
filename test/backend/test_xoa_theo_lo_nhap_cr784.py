@@ -42,10 +42,14 @@ def catalog(db):
     add_products(db, ("CPT0075", "Chai", "Cái"), ("NAP0056", "Nắp", "Cái"), ("CET0028", "Chai khác", "Cái"))
 
 
+PURGE_KEYS = ("packaging_bom", "packaging_price_list", "packaging_history")
+
+
 def _grant(cap_quyen, uid, *, imp=True, delete=True):
     if imp:
         cap_quyen(uid, "import", scope="all", read=True)
-    cap_quyen(uid, "packaging_cost", scope="all", read=True, create=True, write=True, delete=delete)
+    for key in PURGE_KEYS:                                      # bao-CR-792: mỗi loại lô gác bằng khóa của màn giữ dữ liệu
+        cap_quyen(uid, key, scope="all", read=True, create=True, write=True, delete=delete)
 
 
 @pytest.fixture
@@ -252,8 +256,7 @@ def test_xoa_lo_misa_tinh_lai_moc_theo_dong_con_lai_va_bo_moc_khi_het(db, seed, 
 # ── Quyền, lỗi ───────────────────────────────────────────────────────────────────────
 def test_thieu_quyen_xoa_o_gia_bao_bi_hoac_thieu_import_doc_la_403(db, seed, cap_quyen, client_as, catalog):  # noqa: F811
     b = _bom_batch(db, seed, ROWS)
-    cap_quyen(seed.u_req_id, "import", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, create=True, write=True)      # KHÔNG có delete
+    _grant(cap_quyen, seed.u_req_id, delete=False)                                                 # KHÔNG có delete
     api = client_as(db.get(User, seed.u_req_id))
     assert api.get(f"/api/imports/{b.id}/purge-preview").status_code == 403
     assert api.post(f"/api/imports/{b.id}/purge", json={}).status_code == 403
@@ -262,7 +265,7 @@ def test_thieu_quyen_xoa_o_gia_bao_bi_hoac_thieu_import_doc_la_403(db, seed, cap
 
 def test_thieu_quyen_doc_import_la_403(db, seed, cap_quyen, client_as, catalog):  # noqa: F811
     b = _bom_batch(db, seed, ROWS)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, delete=True)                 # không có import.read
+    _grant(cap_quyen, seed.u_req_id, imp=False)                                                    # không có import.read
     api = client_as(db.get(User, seed.u_req_id))
     assert api.get(f"/api/imports/{b.id}/purge-preview").status_code == 403
     assert api.post(f"/api/imports/{b.id}/purge", json={}).status_code == 403
@@ -373,13 +376,13 @@ def test_migration_downgrade_bo_cot_va_chi_muc_va_chay_lai_duoc(old_conn):
     assert "import_batch_id" in {c["name"] for c in sa.inspect(old_conn).get_columns("tab_packaging_bom")}
 
 
-def test_chuoi_migration_mot_dau_la_bombatch784_noi_sau_fgname784_va_cleanup784():
+def test_chuoi_migration_mot_dau_bombatch784_noi_sau_fgname784_va_cleanup784():
     from alembic.config import Config
     from alembic.script import ScriptDirectory
 
     cfg = Config()
     cfg.set_main_option("script_location", str(MIGRATION.parents[1]))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["bombatch784"]
+    assert len(script.get_heads()) == 1                         # đầu chuỗi nay là migration sau (bao-CR-792: permsplit792)
     assert script.get_revision("bombatch784").down_revision == "fgname784"
     assert script.get_revision("fgname784").down_revision == "cleanup784"

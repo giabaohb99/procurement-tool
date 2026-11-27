@@ -96,7 +96,12 @@ ENTITY_MODEL_PATHS = {
     "work_schedule_personal": ("app.modules.employee.model", "Employee"),   # duoc-CR-757: đo trên hồ sơ nhân sự đích
     "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
     "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
-    "packaging_cost": ("app.modules.product_price.model", "ProductPriceLedger"),   # duoc-CR-784: đo trên sổ giá
+    #  duoc-CR-784: đo trên sổ giá; bao-CR-792: mỗi màn một khóa (`packaging_bom` khai PUBLIC nên không có ở đây).
+    "packaging_impact": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_product_summary": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_price_list": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_last_price": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_history": ("app.modules.product_price.model", "ProductPriceLedger"),
 }
 
 

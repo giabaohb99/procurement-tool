@@ -40,7 +40,7 @@ Bảng ngưỡng `tab_product_price_limit` đã **xóa** ở migration `cleanup7
 | `product_code` | VARCHAR(50) | mã vật tư |
 | `supplier_code` / `supplier_name` | VARCHAR(50) / VARCHAR(200) NULL | tên chép theo dòng chỉ ở nguồn Misa (mã NCC Misa không có trong `tab_supplier`) |
 | `warehouse_name` | VARCHAR(200) NULL | TÊN kho nhập hàng (Misa: cột kho; ERP: tên tra từ mã kho) |
-| `company_id` | BIGINT, mặc định 0 | pháp nhân — phạm vi của khóa `packaging_cost` đo trên cột này |
+| `company_id` | BIGINT, mặc định 0 | pháp nhân — phạm vi của năm khóa có giá của cụm (`packaging_impact`, `packaging_product_summary`, `packaging_price_list`, `packaging_last_price`, `packaging_history`; bao-CR-792) đo trên cột này |
 | `price_date` | DATE | ngày mua |
 | `price` | DECIMAL(18,4) | đơn giá VNĐ chưa VAT (giá dòng x tỷ giá) |
 | `vat` | DECIMAL(5,2) NULL, không mặc định | NULL = không biết (dòng Misa, từ `cleanup784`), KHÔNG phải 0% |
@@ -105,6 +105,7 @@ từ `pkgcost784`; `mrg761a` đã có.
 | 8 | `cleanup784` | xóa `tab_product_price_limit`; `vat` cho phép NULL, dòng Misa đổi sang NULL |
 | 9 | `fgname784` | đổi tên `hh_code` / `hh_name` → `fg_code` / `fg_name` |
 | 10 | `bombatch784` | `import_batch_id` ở định mức + sổ giá; đánh dấu định mức cũ theo lô khi khớp đúng `created_count` |
+| 11 | `permsplit792` (bao-CR-792, 27/11/2026) | migration DỮ LIỆU, không đổi bảng: mỗi dòng `tab_permission` của khóa `packaging_cost` chuyển thành dòng của các khóa theo màn (`read` / `export` sang cả sáu khóa; `create` sang `packaging_price_list`, `packaging_bom`; `write` / `delete` sang `packaging_price_list`, `packaging_bom`, `packaging_history`), giữ vai trò + phạm vi, đã có thì bỏ qua, rồi xóa dòng `packaging_cost`. Quay lui gộp ngược về một dòng `packaging_cost` (hợp các cờ, phạm vi rộng nhất) |
 
 Câu đọc kiểm trước từng bước và lệnh quay lui: phase 02, 03, 04, 07 của [kế hoạch 261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md);
 danh sách việc lên prod: [phase 05](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/phase-05-tai-lieu-kiem-phat-hanh.md).

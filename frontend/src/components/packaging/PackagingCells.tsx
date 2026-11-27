@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import { PACKAGING_ENTITY } from '../../api/packaging-cost'
 import {
   amountText, avgPriceText, diffColor, diffText, pctText, priceText, PKG_DOWN_COLOR, PKG_UP_COLOR, trendLabel, COST_TREND,
 } from '../../utils/packaging-price'
@@ -40,8 +42,12 @@ export function PctText({ value }: { value: Num }) {
 /**
  * Ô MÃ bấm được: mã VTBB mở Lịch sử mua hàng của đúng mã đó (`?codes=`); `product` = mã HÀNG HÓA, mở lịch sử ở chế độ
  * "Theo mã sản phẩm" (`?fg=`, mọi mã thành phần của định mức).
+ * bao-CR-792: Lịch sử mua hàng có khóa quyền riêng (`packaging_history`) — người không xem được màn đó thì mã hiện chữ
+ * thường, không còn đường bấm (tránh bấm sang trang báo "Không có quyền xem").
  */
 export function CodeLink({ code, product }: { code: string; product?: boolean }) {
+  const { can } = useAuth()
+  if (!can(PACKAGING_ENTITY.history, 'read')) return <b className="pkg-num">{code}</b>
   return (
     <Link to={product ? historyProductHref(code) : historyHref(code)} className="pkg-code"
       title={product ? `Xem lịch sử mua các vật tư bao bì của ${code}` : `Xem lịch sử mua hàng của ${code}`}

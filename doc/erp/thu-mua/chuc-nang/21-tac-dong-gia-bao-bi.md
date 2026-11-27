@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 1.1 |
-| Ngày | 26/11/2026 |
+| Bản | 1.2 |
+| Ngày | 27/11/2026 |
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Hiệu lực (chỉ trên dev) |
-| CR liên quan | duoc-CR-784 |
+| CR liên quan | duoc-CR-784, bao-CR-792 (tách khóa quyền theo màn, 27/11/2026) |
 | Giao diện | Cả hai giao diện: nhóm menu **Mua hàng**, mục cha đóng mở **Giá nguyên vật liệu sản xuất** ngay dưới *Tra cứu thị trường* (chốt 25/11/2026; tên chốt 21/11/2026, trước là Giá bao bì), sáu mục con. ERP v2: `/procurement/packaging-cost/...`, `frontend-v2/src/modules/procurement/pages/packaging-*.tsx` · giao diện cũ Thu mua: `/packaging-cost/...`, `/packaging-boms`, `/product-price-quotes`; `frontend/src/pages/packaging/*`. Xóa theo lô ở trang lô nhập: v2 `/system/imports/:id`, v1 `/import-batches/:id` |
 | Bài Help Center | Thẻ **Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất** + 9 bài (bài thứ 8 *Xóa dữ liệu đã nhập nhầm theo lô nhập Excel* thêm 26/11/2026), `backend/scripts/seed_help_gia_bao_bi_cr784.py` |
 | Hợp đồng kỹ thuật | [api.md](../tai-lieu-ky-thuat/api.md) (nhóm `packaging-cost`, các dòng `/api/packaging-cost/*`, `/api/packaging-boms`, `/api/product-price-quotes`) · [kế hoạch 261120](../plans/261120-tac-dong-gia-bao-bi/plan.md) (phase 04 = hợp đồng API và số đo hiệu năng) · [kế hoạch tối ưu 261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) (gộp nguồn sổ giá, nguồn báo giá, bỏ ngưỡng, đổi tên `fg_*`, xóa theo lô) · [mô hình dữ liệu](../tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) |
@@ -147,9 +147,9 @@ VTBB và nhập báo giá của nhà cung cấp*.
 - **Báo giá mới** (đầu trang) / **Báo giá** (từng dòng, mã khóa sẵn) mở hộp: Mã VTBB *, Nhà cung cấp, Đơn giá (VNĐ, chưa VAT) *,
   VAT (%), Ngày hiệu lực *, Ghi chú; nút **Lưu báo giá**. Ô **Nhà cung cấp** (26/11/2026) chọn từ danh mục NCC đang hoạt động, gõ
   mã hoặc tên để tìm, xóa được; người thiếu quyền `supplier.read` thì vẫn là ô gõ mã tay (tự viết hoa). Lỗi: *Nhập mã vật tư bao bì.*, *Nhập đơn giá báo giá (lớn hơn
-  0).*, *Chọn ngày hiệu lực.* Cần quyền `packaging_cost.create`.
+  0).*, *Chọn ngày hiệu lực.* Cần quyền `packaging_price_list.create` (khóa của màn Bảng giá VTBB, bao-CR-792).
 - Màn danh sách **Báo giá VTBB** (`/procurement/packaging-cost/quotes`, cũ `/product-price-quotes`) **ẩn khỏi menu**
-  (người chủ chốt 21/11: bản mẫu không có tab này) nhưng vẫn gác quyền `packaging_cost`. v2 sửa trong hộp (**Lưu thay
+  (người chủ chốt 21/11: bản mẫu không có tab này) nhưng vẫn gác quyền, cùng khóa `packaging_price_list` của màn Bảng giá VTBB (bao-CR-792). v2 sửa trong hộp (**Lưu thay
   đổi**), bản cũ sửa ở trang chi tiết chung (**Lưu**, **Xóa**).
 - **Nguồn và khóa duy nhất của báo giá** (25/11/2026, phase 03 của kế hoạch tối ưu [261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md),
   migration `quotesrc784`, lên dev 25/11/2026). Mỗi báo giá có `source_type` (bộ mã `quote_source_type`: **1 Nhập tay**, **2 Nhập Excel**; số 3 để dành
@@ -253,9 +253,9 @@ thay bằng **Xóa dữ liệu của lô này** từ 25/11/2026, xem mục 9):
 
 | Loại (module) | Nút / màn | Quyền | Luật |
 |---|---|---|---|
-| Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_cost.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
-| Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_cost.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục. Nguồn báo giá: thêm mới và đè giá / VAT ghi (Nhập Excel, id đợt), đè chỉ ghi chú thì giữ nguồn |
-| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_cost.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ. Dòng Misa ghi `vat = NULL`; `source_id` = số thứ tự trong sổ (`max + 1`), KHÔNG trỏ chứng từ nào; dòng THÊM mới mang `import_batch_id` = id lô (từ `bombatch784`, để xóa theo lô); dòng nạp bằng script HTML mang 0 |
+| Định mức bao bì (4) | *Nhập từ Excel* · Định mức bao bì | `packaging_bom.create` | như mục 7; nay có *Tải tệp mẫu* (sheet MAP_SP cột A–K) |
+| Báo giá VTBB (5) | *Nhập báo giá* · Bảng giá VTBB | `packaging_price_list.create` | cột theo chữ tiêu đề: Mã VTBB, Đơn giá, Ngày hiệu lực (bắt buộc), Mã NCC, VAT (%), Ghi chú; trùng (mã, NCC, ngày hiệu lực) thì sửa giá / VAT / ghi chú, chưa có thì thêm; mã phải có trong danh mục. Nguồn báo giá: thêm mới và đè giá / VAT ghi (Nhập Excel, id đợt), đè chỉ ghi chú thì giữ nguồn |
+| Sổ Misa (6) | *Nạp sổ Misa* · Lịch sử mua hàng | `packaging_history.write` | đọc Sổ chi tiết mua hàng Misa như bản HTML (mọi sheet, tiêu đề trong 6 dòng đầu, bỏ mã PPA / CKC / CPM / CPN và số lượng 0); chỉ thay dòng nguồn Misa TRONG khoảng ngày của tệp theo nội dung (trùng giữ id, mới thêm, thừa bỏ), ngoài khoảng giữ nguyên; mốc = ngày lớn nhất mọi dòng Misa. Cột *Giá trị* (tùy chọn) ghi vào thành tiền của dòng; **nạp lại cùng tệp thì dòng đã có được bổ sung / sửa thành tiền** (giữ id, không nhân đôi), tệp không có cột *Giá trị* thì không đụng thành tiền cũ. Dòng Misa ghi `vat = NULL`; `source_id` = số thứ tự trong sổ (`max + 1`), KHÔNG trỏ chứng từ nào; dòng THÊM mới mang `import_batch_id` = id lô (từ `bombatch784`, để xóa theo lô); dòng nạp bằng script HTML mang 0 |
 
 Mọi nút nhập còn đòi `import.create` + `import.read`. Tệp mẫu: `GET /api/imports/template?module=4|5|6` (sheet dữ liệu chỉ có
 tiêu đề + sheet *Hướng dẫn*; ví dụ đặt dưới dòng 6 để bộ đọc Misa không nhận nhầm). Mã: `packaging_cost/quote_import.py`,
@@ -278,7 +278,7 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
 - Mã thành phần chưa có trong danh mục sản phẩm tô đỏ (*chưa có trong danh mục*).
 - v2: **Thêm định mức** / bấm dòng mở hộp, nút **Tạo mới** / **Lưu thay đổi**, xóa trong hộp. Bản cũ: danh sách chung, **Thêm**
   hoặc bấm dòng mở trang chi tiết, **Tạo** / **Lưu** / **Xóa**.
-- **Nhập từ Excel** (cần `packaging_cost.create` + `import.create` + `import.read`): hộp *Nhập định mức bao bì*, tệp
+- **Nhập từ Excel** (cần `packaging_bom.create` + `import.create` + `import.read`): hộp *Nhập định mức bao bì*, tệp
   `DATA_CHAI.xlsx` (sheet `MAP_SP`, hoặc `data` + `DATA CHUNG`), nút **Chạy thử** → trang lô Quản lý Import (`module=4`) xem
   nhật ký từng dòng → **Ghi thật** (hộp hỏi lại). Bản cũ: trang lô `/import-batches/:id` có nút **Ghi thật** riêng cho lô
   định mức bao bì đã chạy thử xong. Có rồi thì cập nhật, chưa có thì tạo, dòng không có trong tệp giữ nguyên; khớp mã HH bỏ
@@ -288,12 +288,35 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
 
 ## 8. Quyền, giới hạn, phạm vi chưa làm
 
-- Khóa quyền **`packaging_cost`** (*Giá bao bì*, nhóm Thu mua ở màn Vai trò & quyền): `read` mở mọi màn, `export` nút Xuất
-  Excel, `create` báo giá / định mức / nhập Excel, `write` sửa (và Nạp sổ Misa), `delete` xóa (kể cả **Xóa dữ liệu của lô
-  này**, kèm `import.read`). Nằm trong `SENSITIVE_PROCUREMENT_ENTITIES`
-  (giá vốn): tick Xem / Xuất cho vai trò mặc định hiện dòng nhắc vàng. Seed không giao sẵn cho vai trò nào ngoài admin.
-- Phạm vi: `SCOPE_FIELDS["packaging_cost"] = {"company": "company_id"}` đo trên sổ giá — giá tính theo pháp nhân người xem
-  được thấy. Định mức, báo giá là danh mục dùng chung (`scoped=False`).
+- **Mỗi màn một khóa quyền** (bao-CR-792, chủ dự án yêu cầu 27/11/2026; trước đó cả cụm dùng một khóa `packaging_cost`, nay
+  khóa đó nghỉ hẳn). Sáu khóa nằm ở nhóm Thu mua của màn Vai trò & quyền, nhãn *Giá NVL sản xuất › <tên màn>*:
+
+| Khóa | Màn | Hành động có nghĩa |
+|---|---|---|
+| `packaging_impact` | Tác động giá bao bì (kể cả trang in) | `read` xem, `export` Xuất Excel |
+| `packaging_product_summary` | Tổng hợp theo sản phẩm | `read`, `export` |
+| `packaging_price_list` | Bảng giá VTBB, kèm Báo giá VTBB | `read`, `export`; `create` / `write` / `delete` báo giá; `create` Nhập báo giá từ Excel; `delete` xóa dữ liệu của lô báo giá |
+| `packaging_last_price` | Giá mua gần nhất | `read`, `export` |
+| `packaging_history` | Lịch sử mua hàng (kể cả trang in), kèm Sổ Misa | `read`, `export`; `write` Nạp sổ Misa; `delete` xóa dữ liệu của lô Sổ Misa |
+| `packaging_bom` | Định mức bao bì | `read`, `export`; `create` / `write` / `delete` định mức; `create` Nhập từ Excel; `delete` xóa dữ liệu của lô định mức |
+
+  Không có `read` của màn nào thì không thấy mục menu của màn đó. Ô chọn mã (`GET /code-options`) và ô chọn sản phẩm
+  (`GET /fg-options`) dùng chung nhiều màn: mở khi có `read` trên **bất kỳ** khóa nào trong sáu khóa. Mọi nút nhập Excel còn đòi
+  `import.create` + `import.read`; **Xóa dữ liệu của lô này** còn đòi `import.read`. Cả sáu khóa nằm trong
+  `SENSITIVE_PROCUREMENT_ENTITIES` (giá vốn): tick Xem / Xuất cho vai trò mặc định hiện dòng nhắc vàng. Seed: không vai trò
+  mẫu nào khai tay; Quản lý thu mua (`pur_manager`) tự có vì sáu khóa không nằm trong `_SYS_ENTITIES`, vai trò khác tick tay.
+- **Chuyển quyền cũ** (migration dữ liệu `permsplit792`): vai trò đang có `packaging_cost` nhận đúng hành động đó trên khóa
+  mới, giữ nguyên phạm vi — `read` / `export` sang cả sáu khóa; `create` sang Bảng giá VTBB và Định mức bao bì; `write` /
+  `delete` sang Bảng giá VTBB, Định mức bao bì và Lịch sử mua hàng — rồi xóa dòng `packaging_cost`. Không ai mất quyền; muốn
+  thu hẹp theo màn thì quản trị bỏ tick ở màn Vai trò & quyền sau khi phát hành.
+- Phạm vi: năm khóa có giá (`packaging_impact`, `packaging_product_summary`, `packaging_price_list`, `packaging_last_price`,
+  `packaging_history`) khai `SCOPE_FIELDS[...] = {"company": "company_id"}` đo trên sổ giá — mỗi màn tính giá theo pháp nhân
+  mà khóa CỦA MÀN ĐÓ cho người xem thấy. `packaging_bom` khai `PUBLIC`: định mức là danh mục dùng chung, không có cột pháp
+  nhân và màn không hiện giá. Định mức, báo giá dựng bằng `scoped=False`. Giá trong ô chọn mã dùng chung tính trên HỢP phạm vi
+  của các khóa có giá mà người xem giữ; người chỉ có `packaging_bom` thấy mã nhưng không thấy giá.
+- Công cụ Trợ lý / bot / cổng MCP gác theo màn tương ứng: `packaging_price_impact` cần `packaging_impact.read`;
+  `packaging_price_lookup` cần `packaging_price_list.read` (phần n lần mua gần nhất chỉ kèm khi có thêm
+  `packaging_last_price.read`); `packaging_product_cost` cần `packaging_product_summary.read`.
 - Giới hạn: một chai một bộ chai / nắp / nhãn (chưa có số lượng thành phần); mỗi mã HH một định mức, chưa có phiên bản (Q7
   treo); đơn giá hiểu là giá một cái theo ĐVT danh mục (Q3 treo); giá từ lịch sử mua của ERP; riêng giai đoạn tới mốc cắt (30/06/2026) lấy TẠM từ sổ Misa nạp bằng script (xem mục 1, Q1).
 - **Đã bỏ hẳn:** ngưỡng giá sàn / trần. Từ 21/11 chỉ ẩn ở giao diện (công tắc `PACKAGING_LIMITS_ENABLED = false`); 25/11/2026 chủ dự án
@@ -310,7 +333,8 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
 Ba loại lô của cụm (Định mức bao bì = module 4, Báo giá VTBB = 5, Sổ Misa .xlsx = 6) không lưu bản chụp nên không có *Hoàn tác*.
 Thay vào đó trang lô nhập (v2 `/system/imports/:id` — menu *Quản trị › Nhập dữ liệu*; v1 `/import-batches/:id` — *Hệ thống ›
 Quản lý Import*) có nút **Xóa dữ liệu của lô này**, chỉ hiện khi lô là **ghi thật**, **đã xong**, thuộc ba loại trên và người xem có
-`import.read` + `packaging_cost.delete`. Bài HDSD: *Giá NVL sản xuất — Xóa dữ liệu đã nhập nhầm theo lô nhập Excel*.
+`import.read` + quyền `delete` trên khóa của màn giữ dữ liệu lô (bao-CR-792): lô định mức cần `packaging_bom.delete`, lô báo giá
+cần `packaging_price_list.delete`, lô Sổ Misa cần `packaging_history.delete`. Bài HDSD: *Giá NVL sản xuất — Xóa dữ liệu đã nhập nhầm theo lô nhập Excel*.
 
 - Hộp **Xóa dữ liệu của lô này?** gọi `GET /api/imports/{id}/purge-preview`: *Sẽ xóa N <loại> do lô này nhập.*; dòng **đã sửa tay sau
   khi nhập** (giờ sửa cuối muộn hơn giờ lô xong quá 3 giây) đếm riêng, mặc định **giữ lại**, tick *Xóa luôn M dòng đã sửa tay* để xóa
@@ -324,6 +348,6 @@ Quản lý Import*) có nút **Xóa dữ liệu của lô này**, chỉ hiện k
 | Báo giá VTBB (5) | `source_type` = 2 (Nhập Excel) và `source_id` = lô | báo giá lô thêm hoặc đè đơn giá / VAT lần cuối; sửa tay giá / VAT / khóa đưa nguồn về (1, 0) nên không còn thuộc lô |
 | Sổ Misa (6) | `source_type` = 3 và `tab_product_price_ledger.import_batch_id` = lô | chỉ dòng lô THÊM; dòng đã có được giữ qua lần nạp sau mang id lô cũ; dòng lô đã bỏ không trả lại; xong thì mốc `misa_price_cutoff` = ngày lớn nhất mọi dòng Misa còn lại (hết thì bỏ mốc). Dòng nạp bằng script HTML (5.041 dòng trên dev) mang 0, gỡ bằng `scripts.import_misa_price_ledger --purge` |
 
-- Lỗi: lô sai loại, chạy thử, chưa xong → 400 (câu tiếng Việt); thiếu quyền → 403 (kiểm quyền trước khi tra lô); không có lô → 404.
+- Lỗi: lô sai loại, chạy thử, chưa xong → 400 (câu tiếng Việt); thiếu quyền → 403 (chưa có `delete` trên khóa nào trong ba khóa thì 403 trước khi tra lô, nên không dò được id lô; có rồi mới kiểm đúng khóa theo loại lô); không có lô → 404.
 - Mã: `packaging_cost/batch_purge_service.py`, `batch_purge_controller.py`; v2 `system/components/import-batch-purge-dialog.tsx`; v1
   `frontend/src/components/packaging/PackagingBatchPurgeModal.tsx`. Bài kiểm `test/backend/test_xoa_theo_lo_nhap_cr784.py`.

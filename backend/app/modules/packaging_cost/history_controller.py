@@ -2,14 +2,18 @@
 
 Router con, gắn vào `impact_controller.router` (cùng tiền tố `/api/packaging-cost`) nên không phải sửa `main.py`.
 Phạm vi dữ liệu theo PHÁP NHÂN đo trên sổ giá — cùng luật với Tác động giá / Bảng giá / Giá mua gần nhất.
+
+bao-CR-792 (27/11/2026): màn này gác khóa `packaging_history`; ô chọn sản phẩm `/fg-options` là danh mục định mức dùng chung
+nên mở khi có `read` trên bất kỳ khóa nào của cụm.
 """
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import require, require_any
 from app.core.database import get_db
+from app.core.permissions import PACKAGING_ENTITIES
 from app.core.response import success
 
 from . import export_columns as xl
@@ -17,7 +21,7 @@ from .history_service import MAX_CODES, build_history
 from .last_prices_controller import MAX_PAGE_SIZE, view_scope
 from .model import PackagingBom
 
-ENTITY = "packaging_cost"
+ENTITY = "packaging_history"
 router = APIRouter()
 
 
@@ -60,23 +64,27 @@ def history(filters: dict = Depends(history_filters), page: int = Query(1, ge=1)
     đúng một mã được chọn: tối đa 1.000 điểm giá cũ -> mới), `series_by_code` (chế độ sản phẩm, đúng MỘT sản phẩm được chọn: mỗi mã
     thành phần có lần mua có giá một đường `{code, name, role, points: [{date, price}]}`, xếp theo vai trò, tối đa 1.000 điểm giá cũ -> mới
     mỗi mã; ngược lại `null`) và `suppliers` (cho ô chọn, chưa áp `q` / `supplier`). Quyền
-    `packaging_cost.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
+    `packaging_history.read`; chỉ tính các dòng sổ giá thuộc pháp nhân người xem được thấy.
     """
-    res = build_history(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, "read"))
+    res = build_history(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, ENTITY, "read"))
     return success(res)
 
 
 @router.get("/history/export")
 def history_export(filters: dict = Depends(history_filters), db: Session = Depends(get_db),
                    user=Depends(require(ENTITY, "export"))):
-    """Xuất Excel Lịch sử mua hàng theo đúng bộ lọc + thứ tự đang xem (không phân trang, tối đa 5.000 dòng). Quyền `packaging_cost.export`."""
-    res = build_history(db, **filters, page=None, scope_cond=view_scope(db, user, "export"))
+    """Xuất Excel Lịch sử mua hàng theo đúng bộ lọc + thứ tự đang xem (không phân trang, tối đa 5.000 dòng). Quyền `packaging_history.export`."""
+    res = build_history(db, **filters, page=None, scope_cond=view_scope(db, user, ENTITY, "export"))
     return xl.xlsx_download(xl.build_history_workbook(res["items"], product_mode=filters["mode"] == "product"),
                             "lich-su-mua-hang")
 
 
 @router.get("/fg-options")
-def fg_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    """Ô chọn sản phẩm của Lịch sử mua hàng: mọi mã hàng hóa có định mức bao bì, kèm `{code, name}` (~1.000, không phân trang). Quyền `packaging_cost.read`."""
+def fg_options(db: Session = Depends(get_db),
+               user=Depends(require_any(*((entity, "read") for entity in PACKAGING_ENTITIES)))):
+    """Ô chọn sản phẩm của Lịch sử mua hàng: mọi mã hàng hóa có định mức bao bì, kèm `{code, name}` (~1.000, không phân trang).
+
+    Đường dùng chung (bao-CR-792): quyền `read` trên BẤT KỲ khóa nào của cụm Giá NVL sản xuất; không trả giá nên không lọc phạm vi.
+    """
     rows = db.query(PackagingBom.fg_code, PackagingBom.fg_name).order_by(PackagingBom.fg_code).all()
     return success({"items": [{"code": code, "name": name or ""} for code, name in rows]})

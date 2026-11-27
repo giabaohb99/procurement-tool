@@ -17,7 +17,7 @@ này GIỮ NGUYÊN (đổi thì phải đổi chỉ mục phủ `ix_ppl_code_lat
 
 Luật cũ / mới (đúng `build()` của bản mẫu): có báo giá → mới = báo giá, cũ = lần mua có giá gần nhất (không có lần mua thì cũ =
 mới); không báo giá → mới = lần mua gần nhất, cũ = lần trước đó (chỉ một lần mua thì cũ = mới). Phạm vi dữ liệu: `scope_cond`
-là điều kiện phạm vi của khóa `packaging_cost` trên sổ giá — giá chỉ tính trên các dòng người xem được thấy.
+là điều kiện phạm vi của khóa màn đang gọi (`packaging_*`, bao-CR-792) trên sổ giá — giá chỉ tính trên các dòng người xem được thấy.
 
 Mốc sổ Misa (`misa_cutoff.py`) được áp BÊN TRONG `latest_priced_by_code` — mọi số của hàm này (cũ / mới, p1 / p2, số lần mua,
 ngày cuối, min / max) chỉ xét dòng còn hiệu lực: Misa tới mốc, dòng ĐMH (nguồn 2) sau mốc. Chưa có mốc = như cũ.

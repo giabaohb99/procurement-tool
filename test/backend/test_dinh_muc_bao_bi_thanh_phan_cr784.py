@@ -45,7 +45,7 @@ def catalog(db):
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as, catalog):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, create=True, write=True, delete=True)
+    cap_quyen(seed.u_req_id, "packaging_bom", scope="all", read=True, create=True, write=True, delete=True)
     return client_as(db.get(User, seed.u_req_id))
 
 

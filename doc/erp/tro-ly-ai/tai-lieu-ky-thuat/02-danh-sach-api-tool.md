@@ -101,7 +101,7 @@ truy vấn tổng hợp mới (thường là group-by / min-max).
 - Tham số / trường đổi ngày 25/11/2026: `packaging_product_cost` nhận **`fg_codes`** (trước là `hh_codes`), kết quả sản phẩm trả
   **`fg_code`** / **`fg_name`** (trước `hh_code` / `hh_name`, ở cả `packaging_price_impact`); bỏ hẳn `floor_price` / `ceiling_price`
   và hai cảnh báo ngưỡng (bảng ngưỡng sàn / trần đã xóa). Hợp đồng chi tiết: `doc/agent-hub/06-cong-mcp.md` §3.7c.
-- Quyền: `packaging_cost.read` + phạm vi pháp nhân trên sổ giá (như màn web). Tiền VND trước VAT. Qua cổng MCP: nhóm G7
+- Quyền (bao-CR-792, 27/11/2026, mỗi công cụ theo khóa của màn tương ứng): `packaging_price_impact` cần `packaging_impact.read`; `packaging_price_lookup` cần `packaging_price_list.read` (n lần mua gần nhất chỉ kèm khi có thêm `packaging_last_price.read`); `packaging_product_cost` cần `packaging_product_summary.read`; kèm phạm vi pháp nhân trên sổ giá theo khóa đó (như màn web). Tiền VND trước VAT. Qua cổng MCP: nhóm G7
   riêng `packaging`, tắt mặc định. Hợp đồng đủ ở `doc/agent-hub/06-cong-mcp.md` §3.7c.
 
 ---

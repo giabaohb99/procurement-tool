@@ -65,13 +65,16 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
   Nguyễn Văn A*). Đơn cũ chưa gắn hồ sơ chỉ có chữ đã lưu (vd *Mr Tiên*) — đọc nguyên chữ đó, **đừng đoán** là ai. Hỏi
   *"vì sao đơn hiện mã trần / tên lạ"* thì nói: đó là đơn cũ chưa gắn hồ sơ, mở đơn chọn lại NSPT rồi lưu là xong.
 
-## Giá nguyên vật liệu sản xuất / Giá bao bì (duoc-CR-784, từ 21/11/2026; cập nhật 26/11/2026)
+## Giá nguyên vật liệu sản xuất / Giá bao bì (duoc-CR-784, từ 21/11/2026; cập nhật 27/11/2026)
 
 Cụm màn cho Thu mua xem **nhà cung cấp đổi giá một mã chai, nắp, nhãn, nhãn thùng, thùng (VTBB) thì chi phí bao bì của
 sản phẩm nào đổi theo, đổi bao nhiêu**, để quyết nhận giá / thương lượng / đổi NCC / báo xem lại giá bán. Hai giao diện cùng
 chỗ: phân hệ **Thu mua**, nhóm menu **Mua hàng**, mục cha đóng mở **Giá nguyên vật liệu sản xuất** (ngay dưới *Tra cứu thị
-trường*; bấm để mở / thu sáu mục con). Cần quyền **Giá bao bì** (`packaging_cost`, nhóm Thu mua ở màn phân quyền vai trò):
-không có quyền Xem thì không thấy mục — nhờ quản trị.
+trường*; bấm để mở / thu sáu mục con). **Mỗi màn một quyền riêng** (từ 27/11/2026, bao-CR-792; nhóm Thu mua ở màn
+phân quyền vai trò, tên *Giá NVL sản xuất › <tên màn>*): Tác động giá bao bì (`packaging_impact`), Tổng hợp theo sản phẩm
+(`packaging_product_summary`), Bảng giá VTBB kèm Báo giá VTBB (`packaging_price_list`), Giá mua gần nhất
+(`packaging_last_price`), Lịch sử mua hàng kèm Nạp sổ Misa (`packaging_history`), Định mức bao bì (`packaging_bom`). Không có
+quyền Xem của màn nào thì không thấy màn đó; không có quyền của màn nào trong cụm thì không thấy cả mục — nhờ quản trị.
 - Màn (hai giao diện cùng tên): ***Tác động giá bao bì*** (chọn mã, gõ tên nhóm rồi ***Chọn tất cả***, ô ***Nhập giá*** để
   thử giá giả định; muốn biết sản phẩm tăng nhiều nhất thì xếp cột *Tăng/giảm /thùng* giảm dần; chip nhóm *Chai / Nắp / Nhãn* ở
   bảng mã đã chọn; ***Lọc nâng cao*** ở bảng sản phẩm: xu hướng, vai trò của mã, khoảng quy cách / tăng giảm /chai, /thùng /
@@ -111,21 +114,23 @@ không có quyền Xem thì không thấy mục — nhờ quản trị.
   cái theo ĐVT danh mục; Sổ Misa mới tới 30/06/2026.
 - **Nhập Excel (kèm tệp mẫu, nút *Tải tệp mẫu* trong hộp):** ***Nhập báo giá*** ở Bảng giá VTBB (Mã VTBB, Đơn giá, Ngày hiệu
   lực, Mã NCC, VAT, Ghi chú; trùng mã + NCC + ngày thì sửa) · ***Nạp sổ Misa*** ở Lịch sử mua hàng (Sổ chi tiết mua hàng xuất
-  từ Misa; chỉ thay dữ liệu Misa trong khoảng ngày của tệp, mốc tự dời; cần quyền **Sửa** Giá bao bì) · ***Nhập từ Excel*** ở
+  từ Misa; chỉ thay dữ liệu Misa trong khoảng ngày của tệp, mốc tự dời; cần quyền **Sửa** của màn Lịch sử mua hàng) · ***Nhập từ Excel*** ở
   Định mức bao bì. Cả ba: ***Chạy thử*** → xem nhật ký ở trang lô Quản lý Import → ***Ghi thật***. Ba loại lô này không có
   *Hoàn tác*; ghi thật nhầm thì mở trang lô (ERP mới: *Quản trị › Nhập dữ liệu*; giao diện cũ: *Hệ thống › Quản lý Import*)
   rồi bấm ***Xóa dữ liệu của lô này***: hộp xem trước số dòng sẽ xóa, dòng đã sửa tay sau khi nhập mặc định giữ lại (tick
   *Xóa luôn … dòng đã sửa tay* nếu muốn), bấm ***Xóa N dòng***; không đảo ngược được. Định mức / báo giá mà lô tạo mới hoặc
   ghi đè lần cuối bị xóa hẳn (không quay về bản cũ); lô Sổ Misa chỉ xóa lần mua lô đó thêm và tự tính lại mốc. Cần quyền
-  **Xóa** Giá bao bì + quyền xem Quản lý Import.
+  **Xóa** của màn giữ dữ liệu lô (lô định mức: Định mức bao bì; lô báo giá: Bảng giá VTBB; lô Sổ Misa: Lịch sử mua hàng) +
+  quyền xem Quản lý Import. Nhập báo giá cần quyền **Tạo** của Bảng giá VTBB; Nhập từ Excel cần quyền **Tạo** của Định mức bao bì.
 - **In / Excel:** bản in A4 ngang và tệp Excel trình bày như báo cáo HTML (tiêu đề *BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT*,
   ngày xuất, đơn vị VNĐ chưa VAT, ô tăng xanh giảm đỏ), theo đúng bộ lọc đang xem; Excel tối đa 5.000 dòng.
 - Giao diện cũ là ứng dụng cài được: cập nhật xong mà màn chưa đổi thì bấm ***Tải lại*** ở hộp *Đã có phiên bản mới*.
 - Hỏi số cụ thể → dùng công cụ giá nguyên vật liệu bao bì nếu có trong danh sách công cụ: `packaging_price_impact` ("nắp X lên 350 đ thì
   sản phẩm nào tăng bao nhiêu", nhận giá giả định), `packaging_price_lookup` (giá cũ / mới, lần mua gần nhất của một mã VTBB),
   `packaging_product_cost` (chi phí bao bì / chai, / thùng của một mã HH — truyền mã HH ở tham số `fg_codes`, kết quả trả
-  `fg_code` / `fg_name`). Kết quả không còn trường giá sàn / trần. Không có công cụ hoặc người hỏi thiếu quyền Giá bao bì thì
-  chỉ màn ***Tác động giá bao bì***. **Không tự nhẩm** chi phí từ lịch sử mua, đừng đoán giá. Trợ lý không xóa / nhập được dữ
+  `fg_code` / `fg_name`). Kết quả không còn trường giá sàn / trần. Mỗi công cụ cần quyền Xem của màn tương ứng (Tác động giá bao bì /
+  Bảng giá VTBB, kèm Giá mua gần nhất nếu hỏi các lần mua gần nhất / Tổng hợp theo sản phẩm). Không có công cụ hoặc người hỏi
+  thiếu quyền thì nói rõ cần quyền của màn nào và chỉ màn ***Tác động giá bao bì***. **Không tự nhẩm** chi phí từ lịch sử mua, đừng đoán giá. Trợ lý không xóa / nhập được dữ
   liệu của cụm (chỉ trên màn web).
   Bước thao tác chi tiết: HDSD *Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất* (search_docs).
 

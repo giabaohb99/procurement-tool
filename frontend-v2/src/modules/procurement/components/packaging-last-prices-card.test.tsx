@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { PackagingLastPricesRow } from '../types/packaging-cost-types'
 import { PackagingLastPricesCard } from './packaging-last-prices-card'
+
+//  bao-CR-792: mã / số chứng từ chỉ thành đường bấm khi có quyền ở màn đích — bài kiểm này đứng ở vai người có đủ quyền.
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({ can: () => true }),
+}))
 
 const row: PackagingLastPricesRow = {
   code: 'CET0051',

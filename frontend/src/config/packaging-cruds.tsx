@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { CrudConfig } from './cruds'
 import PackagingExcelImportButton from '../components/packaging/PackagingExcelImportButton'
-import { IMPORT_MODULE_PACKAGING_BOM, PACKAGING_BOM_API, PACKAGING_QUOTE_API } from '../api/packaging-cost'
+import { IMPORT_MODULE_PACKAGING_BOM, PACKAGING_BOM_API, PACKAGING_ENTITY, PACKAGING_QUOTE_API } from '../api/packaging-cost'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtPrice } from '../utils/money'
 import { PACKAGING_ROLE_LABELS, QUOTE_SOURCE_EXCEL, quoteSourceText } from '../utils/packaging-price'
@@ -10,7 +10,8 @@ import { PACKAGING_ROLE_LABELS, QUOTE_SOURCE_EXCEL, quoteSourceText } from '../u
  * duoc-CR-784 — hai danh mục của cụm Giá bao bì khai báo kiểu CRUD chung của bản v1 (gộp vào `cruds` ở `config/cruds.tsx`):
  *   - Báo giá VTBB (`/api/product-price-quotes`): giá nhà cung cấp báo cho vật tư bao bì (VNĐ chưa VAT);
  *   - Định mức bao bì (`/api/packaging-boms`): mỗi mã hàng hóa dùng chai / nắp / nhãn / nhãn thùng / thùng nào.
- * Cả hai gác khóa quyền `packaging_cost`; `txn: true` để người chỉ có quyền Xem vẫn mở được danh sách.
+ * bao-CR-792: mỗi danh mục một khóa quyền — Báo giá VTBB đi chung khóa `packaging_price_list` với màn Bảng giá VTBB,
+ * Định mức bao bì gác khóa `packaging_bom`. `txn: true` để người chỉ có quyền Xem vẫn mở được danh sách.
  */
 
 const ROLE_FIELDS = [
@@ -42,7 +43,7 @@ function partCell(row: any, role: number, field: string) {
 
 export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
   'product-price-quotes': {
-    slug: 'product-price-quotes', entity: 'packaging_cost', auditEntity: 'packaging_cost_quote', title: 'Báo giá VTBB',
+    slug: 'product-price-quotes', entity: PACKAGING_ENTITY.priceList, auditEntity: 'packaging_cost_quote', title: 'Báo giá VTBB',
     apiPath: PACKAGING_QUOTE_API, txn: true, idDefaultHidden: true, cards: true,
     columns: [
       { key: 'product_code', label: 'Mã VTBB', card: 'title', render: (r) => <b>{r.product_code}</b> },
@@ -85,7 +86,7 @@ export const PACKAGING_CRUDS: Record<string, CrudConfig> = {
     ],
   },
   'packaging-boms': {
-    slug: 'packaging-boms', entity: 'packaging_cost', auditEntity: 'packaging_bom', title: 'Định mức bao bì',
+    slug: 'packaging-boms', entity: PACKAGING_ENTITY.boms, auditEntity: 'packaging_bom', title: 'Định mức bao bì',
     apiPath: PACKAGING_BOM_API, txn: true, idDefaultHidden: true, cards: true,
     headerExtra: () => (
       <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_BOM} action="create"

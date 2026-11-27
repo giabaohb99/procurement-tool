@@ -39,6 +39,7 @@ import {
   IMPORT_MODULE_LABELS,
   IMPORT_MODULES_WITH_PURGE,
   IMPORT_MODULES_WITHOUT_REVERT,
+  IMPORT_PURGE_ENTITY,
   IMPORT_STATUS_DONE,
   IMPORT_STATUS_FAILED,
 } from '../config/import-meta'
@@ -127,13 +128,16 @@ export function ImportDetailPage() {
     can('import', 'delete')
 
   // Lô cụm Giá NVL (định mức / báo giá / sổ Misa) đã ghi thật: xóa dữ liệu theo lô (duoc-CR-784 phase 07), có xem trước.
+  // bao-CR-792: quyền xóa theo KHÓA CỦA MÀN chứa loại lô đó (định mức / bảng giá / lịch sử), không còn khóa chung.
+  const purgeEntity = batch ? IMPORT_PURGE_ENTITY[batch.module] : undefined
   const canPurge =
     !!batch &&
     batch.status === IMPORT_STATUS_DONE &&
     batch.mode === IMPORT_MODE_APPLY &&
     IMPORT_MODULES_WITH_PURGE.includes(batch.module) &&
     can('import', 'read') &&
-    can('packaging_cost', 'delete')
+    !!purgeEntity &&
+    can(purgeEntity, 'delete')
 
   // Bản chạy thử đã hoàn tất -> cho phép "Ghi thật" (thử → xem → ghi).
   const canCommit =

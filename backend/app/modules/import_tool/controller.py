@@ -47,19 +47,20 @@ _MODULE_GUARDS = {
         "revert": ([("employee", "write")], "Hoàn tác lô Nhân sự cần quyền sửa Nhân sự"),
         "file": ([("employee_sensitive", "read")], "Tệp chứa thông tin nhạy cảm"),
     },
-    #  duoc-CR-784: nhập định mức bao bì (DATA_CHAI.xlsx) = quyền `import` VÀ quyền trên khóa `packaging_cost`.
+    #  duoc-CR-784: nhập định mức bao bì (DATA_CHAI.xlsx) = quyền `import` VÀ quyền trên khóa của MÀN nhận dữ liệu
+    #  (bao-CR-792, 27/11/2026: mỗi màn của cụm Giá NVL sản xuất một khóa, thay khóa chung `packaging_cost`).
     ImportModule.PACKAGING_BOM: {
-        "create": ([("packaging_cost", "create")], "Nhập định mức bao bì cần quyền tạo ở Giá bao bì"),
-        "revert": ([("packaging_cost", "delete")], "Hoàn tác lô định mức bao bì cần quyền xóa ở Giá bao bì"),
+        "create": ([("packaging_bom", "create")], "Nhập định mức bao bì cần quyền tạo ở Định mức bao bì"),
+        "revert": ([("packaging_bom", "delete")], "Hoàn tác lô định mức bao bì cần quyền xóa ở Định mức bao bì"),
     },
     ImportModule.PACKAGING_QUOTE: {
-        "create": ([("packaging_cost", "create")], "Nhập báo giá VTBB cần quyền tạo ở Giá bao bì"),
-        "revert": ([("packaging_cost", "delete")], "Hoàn tác lô báo giá VTBB cần quyền xóa ở Giá bao bì"),
+        "create": ([("packaging_price_list", "create")], "Nhập báo giá VTBB cần quyền tạo ở Bảng giá VTBB"),
+        "revert": ([("packaging_price_list", "delete")], "Hoàn tác lô báo giá VTBB cần quyền xóa ở Bảng giá VTBB"),
     },
     #  Sổ Misa đổi giá của cả cụm (thay dòng trong khoảng ngày + dời mốc) nên đòi quyền SỬA, không chỉ quyền tạo.
     ImportModule.PACKAGING_MISA: {
-        "create": ([("packaging_cost", "write")], "Nạp sổ Misa cần quyền sửa ở Giá bao bì"),
-        "revert": ([("packaging_cost", "write")], "Hoàn tác lô sổ Misa cần quyền sửa ở Giá bao bì"),
+        "create": ([("packaging_history", "write")], "Nạp sổ Misa cần quyền sửa ở Lịch sử mua hàng"),
+        "revert": ([("packaging_history", "write")], "Hoàn tác lô sổ Misa cần quyền sửa ở Lịch sử mua hàng"),
     },
     #  M6: Phòng ban nhập Excel (CSV cũ đã ngừng và trỏ về đây) cần quyền sửa Phòng ban.
     ImportModule.DEPARTMENT: {

@@ -50,7 +50,8 @@ import SurveyProgress from './pages/SurveyProgress'
 import TicketList from './pages/TicketList'
 import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
-import PackagingGate from './components/packaging/PackagingGate'
+import PackagingGate, { PackagingIndexRedirect } from './components/packaging/PackagingGate'
+import { PACKAGING_ENTITY } from './api/packaging-cost'
 import PackagingImpact from './pages/packaging/PackagingImpact'
 import PackagingProductOverview from './pages/packaging/PackagingProductOverview'
 import PackagingPriceList from './pages/packaging/PackagingPriceList'
@@ -91,8 +92,8 @@ export default function App() {
               string (codes / date_from / date_to / mode), không có `:id`. */}
           <Route path="/print/import-landed-cost" element={<Protected><PrintImportLandedCost /></Protected>} />
           {/* duoc-CR-784: bản in cụm Giá bao bì — lọc đi bằng query string, trang tự nạp ĐỦ mọi dòng (không phân trang). */}
-          <Route path="/print/packaging-history" element={<Protected><PackagingGate><PrintPackagingHistory /></PackagingGate></Protected>} />
-          <Route path="/print/packaging-impact" element={<Protected><PackagingGate><PrintPackagingImpact /></PackagingGate></Protected>} />
+          <Route path="/print/packaging-history" element={<Protected><PackagingGate entity={PACKAGING_ENTITY.history}><PrintPackagingHistory /></PackagingGate></Protected>} />
+          <Route path="/print/packaging-impact" element={<Protected><PackagingGate entity={PACKAGING_ENTITY.impact}><PrintPackagingImpact /></PackagingGate></Protected>} />
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
@@ -133,12 +134,12 @@ export default function App() {
             <Route path="procurement/customs-prices/exports/:id?" element={<CustomsExportLinkRedirect />} />
             {/* duoc-CR-784: cụm Giá bao bì (bê từ bản v2). Báo giá VTBB + Định mức bao bì đi route CRUD chung :entity
                 (`product-price-quotes`, `packaging-boms` — khai ở config/packaging-cruds.tsx). */}
-            <Route path="packaging-cost" element={<Navigate to="/packaging-cost/impact" replace />} />
-            <Route path="packaging-cost/impact" element={<PackagingGate><PackagingImpact /></PackagingGate>} />
-            <Route path="packaging-cost/products" element={<PackagingGate><PackagingProductOverview /></PackagingGate>} />
-            <Route path="packaging-cost/price-list" element={<PackagingGate><PackagingPriceList /></PackagingGate>} />
-            <Route path="packaging-cost/last-prices" element={<PackagingGate><PackagingLastPrices /></PackagingGate>} />
-            <Route path="packaging-cost/history" element={<PackagingGate><PackagingHistory /></PackagingGate>} />
+            <Route path="packaging-cost" element={<PackagingIndexRedirect />} />
+            <Route path="packaging-cost/impact" element={<PackagingGate entity={PACKAGING_ENTITY.impact}><PackagingImpact /></PackagingGate>} />
+            <Route path="packaging-cost/products" element={<PackagingGate entity={PACKAGING_ENTITY.products}><PackagingProductOverview /></PackagingGate>} />
+            <Route path="packaging-cost/price-list" element={<PackagingGate entity={PACKAGING_ENTITY.priceList}><PackagingPriceList /></PackagingGate>} />
+            <Route path="packaging-cost/last-prices" element={<PackagingGate entity={PACKAGING_ENTITY.lastPrices}><PackagingLastPrices /></PackagingGate>} />
+            <Route path="packaging-cost/history" element={<PackagingGate entity={PACKAGING_ENTITY.history}><PackagingHistory /></PackagingGate>} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

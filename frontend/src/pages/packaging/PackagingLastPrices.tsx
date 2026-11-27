@@ -5,7 +5,7 @@ import TableToolbar from '../../components/TableToolbar'
 import { toast } from '../../components/toast'
 import PackagingLastPricesTable from '../../components/packaging/PackagingLastPricesTable'
 import PackagingLastPricesToolbar from '../../components/packaging/PackagingLastPricesToolbar'
-import { downloadExport, fetchLastPrices } from '../../api/packaging-cost'
+import { PACKAGING_ENTITY, downloadExport, fetchLastPrices } from '../../api/packaging-cost'
 import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import {
@@ -90,7 +90,7 @@ export default function PackagingLastPrices() {
           <h2 className="page-title" style={{ margin: 0 }}>Giá mua gần nhất</h2>
           <div className="pkg-hint">Đơn giá của n lần mua có giá gần nhất của từng mã vật tư bao bì (VNĐ, chưa VAT). Lần 1 là lần mua mới nhất; dòng đơn giá 0 bị bỏ qua.</div>
         </div>
-        {can('packaging_cost', 'export') && (
+        {can(PACKAGING_ENTITY.lastPrices, 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
             <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>

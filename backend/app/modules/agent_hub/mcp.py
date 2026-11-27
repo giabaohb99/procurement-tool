@@ -64,7 +64,8 @@ READ_TOOLS = frozenset({
     #  duoc-CR-761: ca làm việc theo ngày — của chính mình (không khóa) / của nhân sự khác (employee.read + phạm vi).
     "my_work_shifts", "employee_work_shifts",
     "my_projects",   # duoc-CR-763: dự án / nhóm dự án mình tham gia, cùng luật visible_list_ids của màn Dự án
-    #  duoc-CR-784: giá bao bì — chỉ đọc, gác packaging_cost.read + phạm vi pháp nhân trên sổ giá như màn web.
+    #  duoc-CR-784: giá bao bì — chỉ đọc, gác `read` trên khóa của màn tương ứng (bao-CR-792: packaging_impact /
+    #  packaging_price_list + packaging_last_price / packaging_product_summary) + phạm vi pháp nhân trên sổ giá như màn web.
     "packaging_price_impact", "packaging_price_lookup", "packaging_product_cost",
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có

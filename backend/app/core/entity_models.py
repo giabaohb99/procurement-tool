@@ -51,8 +51,13 @@ ENTITY_MODEL_PATHS: dict[str, tuple[str, str]] = {
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
     "login_session": ("app.modules.login_session.model", "LoginSession"),
     "dossier": ("app.modules.dossier.model", "Dossier"),
-    #  duoc-CR-784: phạm vi đo trên SỔ GIÁ (cột `company_id`); các bảng danh mục của khóa này không lọc theo pháp nhân.
-    "packaging_cost": ("app.modules.product_price.model", "ProductPriceLedger"),
+    #  duoc-CR-784: phạm vi đo trên SỔ GIÁ (cột `company_id`); các bảng danh mục của cụm này không lọc theo pháp nhân.
+    #  bao-CR-792: mỗi màn một khóa; `packaging_bom` khai `PUBLIC` nên không có mặt ở đây.
+    "packaging_impact": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_product_summary": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_price_list": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_last_price": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_history": ("app.modules.product_price.model", "ProductPriceLedger"),
 }
 
 

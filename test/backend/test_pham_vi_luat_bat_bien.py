@@ -169,6 +169,9 @@ BB3_PUBLIC_CO_LY_DO = {
                 "(`legacy_id`), lúc nó hỏng thì phía ERP thường CHƯA có bản ghi nào "
                 "để xét công ty/phòng ban; lọc ở đây là giấu đúng dòng lỗi nặng nhất. "
                 "Khóa chỉ cấp cho quản trị hệ thống",
+    "packaging_bom": "định mức bao bì (bao-CR-792, tách từ `packaging_cost`) — danh mục dùng chung mọi pháp nhân, bảng "
+                     "`tab_packaging_bom` không có cột pháp nhân và màn không hiện giá; giá của cụm đo trên sổ giá bằng "
+                     "năm khóa màn còn lại. Ai XEM / SỬA gác bằng packaging_bom.*",
     "purchase_cost_type": "danh mục loại chi phí thu mua dùng chung (bao-CR-453) — bảng "
                           "`tab_po_cost_type` không có cột pháp nhân hay phòng ban, mã là "
                           "duy nhất toàn hệ vì cột `tab_po_cost.cost_type` của MỌI đơn trỏ "
@@ -345,28 +348,28 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "(hai mức nhạy cảm tách riêng); `audit`+`change_log` khai "
                                "PUBLIC vì lọc nhật ký theo phạm vi người tra là giấu đúng "
                                "lượt gọi cần soi nhất",
-    #  duoc-CR-784: khóa `packaging_cost` đo phạm vi trên SỔ GIÁ (`ProductPriceLedger.company_id`, xem `impact_controller.py`
-    #  — có `scope_condition`). Ba bảng danh mục dưới đây (định mức bao bì / báo giá / ngưỡng giá) dùng chung mọi pháp nhân,
+    #  duoc-CR-784 + bao-CR-792 (mỗi màn một khóa thay khóa chung `packaging_cost`): năm khóa có giá đo phạm vi trên SỔ GIÁ
+    #  (`ProductPriceLedger.company_id`, xem `last_prices_controller.py` — có `scope_condition`). Ba bảng danh mục dưới đây (định mức bao bì / báo giá / ngưỡng giá) dùng chung mọi pháp nhân,
     #  KHÔNG có cột pháp nhân để lọc — dựng bằng `make_crud_router(scoped=False)` nên gác bằng quyền hành động từng route.
     "packaging_cost/bom_controller.py": "duoc-CR-784: định mức bao bì theo mã HH — danh mục dùng chung, không có cột pháp nhân; "
-                                        "make_crud_router(scoped=False), cổng là require('packaging_cost', …) từng route. "
-                                        "Phạm vi theo pháp nhân của khóa này chỉ áp trên sổ giá (impact_controller.py)",
+                                        "make_crud_router(scoped=False), cổng là require('packaging_bom', …) từng route "
+                                        "(bao-CR-792; khóa khai PUBLIC, màn này không hiện giá)",
     "packaging_cost/history_controller.py": "duoc-CR-784: Lịch sử mua hàng CÓ lọc phạm vi — gọi `view_scope` (dùng chung "
                                             "với last_prices_controller.py), hàm đó gọi scope_condition(ProductPriceLedger, "
-                                            "'packaging_cost', …) và truyền scope_cond vào build_history; bài dò tên hàm "
+                                            "'packaging_history', …) và truyền scope_cond vào build_history; bài dò tên hàm "
                                             "trong tệp không thấy vì lời gọi nằm ở tệp kia",
     "packaging_cost/product_overview_controller.py": "duoc-CR-784: Tổng hợp theo sản phẩm CÓ lọc phạm vi — gọi `view_scope` (dùng "
                                                       "chung với last_prices_controller.py), hàm đó gọi scope_condition("
-                                                      "ProductPriceLedger, 'packaging_cost', …) và truyền scope_cond vào "
+                                                      "ProductPriceLedger, 'packaging_product_summary', …) và truyền scope_cond vào "
                                                       "build_product_overview; bài dò tên hàm trong tệp không thấy vì lời "
                                                       "gọi nằm ở tệp kia",
     "packaging_cost/batch_purge_controller.py": "duoc-CR-784 phase 07: xóa dữ liệu theo LÔ NHẬP = đảo ngược đúng một lần "
                                                 "nhập Excel, chỉ đụng dòng mang import_batch_id / source_id của lô đó; gác kép "
-                                                "import.read + packaging_cost.delete (ngang quyền nhập). Định mức và báo giá là "
+                                                "import.read + quyền delete trên khóa của màn giữ dữ liệu lô (bao-CR-792). Định mức và báo giá là "
                                                 "danh mục dùng chung không có cột pháp nhân; dòng sổ Misa của lô mang pháp nhân "
                                                 "người nhập chọn lúc nạp, không lọc thêm theo phạm vi xem",
     "product_price/quote_limit_controller.py": "duoc-CR-784: báo giá — danh mục dùng chung, không có cột "
-                                               "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_cost', …) "
+                                               "pháp nhân; make_crud_router(scoped=False), cổng là require('packaging_price_list', …) "
                                                "từng route. Giá chỉ ĐI VÀO màn Tác động qua `get_price_states` (có scope_cond)",
     # -- không có dữ liệu theo dòng để lọc --
     "auth/controller.py": "đăng nhập/đổi mật khẩu — chưa có phiên quyền để lọc",

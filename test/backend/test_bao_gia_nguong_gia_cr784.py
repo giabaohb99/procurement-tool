@@ -19,7 +19,7 @@ QUOTES, LIMITS = "/api/product-price-quotes", "/api/product-price-limits"     # 
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, create=True, write=True, delete=True)
+    cap_quyen(seed.u_req_id, "packaging_price_list", scope="all", read=True, create=True, write=True, delete=True)
     add_products(db, ("CPT0075", "Chai 1L", "Cái"), ("NAP0085", "Nắp", "Cái"))
     return client_as(db.get(User, seed.u_req_id))
 
@@ -52,7 +52,7 @@ def test_khong_co_quyen_la_403(db, seed, client_as):  # noqa: F811
 
 
 def test_chi_co_quyen_xem_thi_khong_tao_khong_xoa(db, seed, cap_quyen, client_as):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "packaging_price_list", scope="all", read=True)
     client = client_as(db.get(User, seed.u_req_id))
     assert client.get(QUOTES).status_code == 200
     assert client.post(QUOTES, json={}).status_code == 403
@@ -141,12 +141,15 @@ def test_impact_request_cat_khoang_trang_khoa_gia_gia_dinh_va_chan_khoa_la_va_qu
         ImpactRequest(codes=[f"C{i}" for i in range(500)], assumed_prices={f"C{i}": 1 for i in range(501)})
 
 
-def test_ten_entity_nhat_ky_cua_hai_danh_muc_quy_ve_khoa_packaging_cost():
-    """`audit_entity` của hai CRUD (định mức, báo giá) phải có trong PERMISSION_KEY_ALIAS, kẻo màn Nhật ký hỏi quyền theo tên không có trong bảng quyền."""
+def test_ten_entity_nhat_ky_cua_hai_danh_muc_quy_ve_khoa_cua_man():
+    """`audit_entity` của hai CRUD (định mức, báo giá) phải quy về một khóa có trong bảng quyền, kẻo màn Nhật ký hỏi quyền theo tên
+    không có trong bảng quyền. bao-CR-792: báo giá -> khóa Bảng giá VTBB; định mức trùng tên khóa `packaging_bom`."""
+    from app.core.permissions import ENTITIES
     from app.modules.audit.controller import PERMISSION_KEY_ALIAS
     from app.modules.packaging_cost.bom_controller import router as bom_router
     from app.modules.product_price.quote_limit_controller import quote_router
-    for name in ("packaging_bom", "packaging_cost_quote"):
-        assert PERMISSION_KEY_ALIAS[name] == "packaging_cost"
+    keys = {name: PERMISSION_KEY_ALIAS.get(name, name) for name in ("packaging_bom", "packaging_cost_quote")}
+    assert keys == {"packaging_bom": "packaging_bom", "packaging_cost_quote": "packaging_price_list"}
+    assert set(keys.values()) <= set(ENTITIES)
     assert "packaging_cost_limit" not in PERMISSION_KEY_ALIAS
     assert bom_router and quote_router

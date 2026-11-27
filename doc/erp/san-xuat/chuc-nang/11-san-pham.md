@@ -747,7 +747,7 @@ Quy ước: *Đầu vào* là thứ người dùng nhập hoặc hệ thống l�
 
 **SX-SP-52 Báo cáo dữ liệu VTBB cho Kinh doanh**
 - Nội dung: mã, tên, hình, giá hiện hành, sản phẩm áp dụng, lịch sử sử dụng theo BĐM, giá thấp nhất / cao nhất 5 lần mua gần nhất, công nghệ theo NCC, MOQ.
-- Ràng buộc: giá là dữ liệu nhạy cảm; ERP hiện giấu cả cụm giá sau quyền `packaging_cost.read`.
+- Ràng buộc: giá là dữ liệu nhạy cảm; ERP hiện giấu cụm giá sau quyền Xem theo từng màn (`packaging_impact`, `packaging_product_summary`, `packaging_price_list`, `packaging_last_price`, `packaging_history`, `packaging_bom`; bao-CR-792, 27/11/2026).
 
 **SX-SP-53 Lịch sử thay đổi** và **SX-SP-54 Chuyển dữ liệu ban đầu**
 - Lịch sử: dùng nhật ký sẵn có; riêng BĐM đã có phiên bản nên lịch sử nghiệp vụ nằm ở chuỗi phiên bản.

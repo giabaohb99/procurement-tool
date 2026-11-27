@@ -193,35 +193,45 @@ export const procurementModule: ErpModule = {
         },
       ],
     },
-    //  duoc-CR-784 — cụm Giá nguyên vật liệu sản xuất (tên chốt 21/11/2026, trước là Giá bao bì), khóa RIÊNG `packaging_cost`
-    //  (giá vốn bao bì, nhạy cảm). 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng,
+    //  duoc-CR-784 — cụm Giá nguyên vật liệu sản xuất (tên chốt 21/11/2026, trước là Giá bao bì), giá vốn bao bì nên nhạy
+    //  cảm. 25/11/2026 (người chủ chốt): vẽ như "Tra cứu thị trường" — MỘT mục cha có biểu tượng,
     //  mục con thụt vào có vạch dọc — và nằm CHUNG nhóm Mua hàng, ngay sau Tra cứu thị trường (người chủ chốt cùng ngày).
     //  Mục con Tác động ở đường gốc của cụm nên phải `end: true`, không thì nó sáng lây khi đứng ở các mục con khác.
+    //  bao-CR-792 — khóa chung `packaging_cost` NGHỈ HẲN, mỗi màn một khóa riêng (khai ở từng mục con). Mục cha hiện khi
+    //  còn ÍT NHẤT MỘT mục con xem được (luật `children` của `module-visibility.ts`), bấm vào thì tới mục con đầu tiên
+    //  người đó được xem (menu trái + breadcrumb). `entities` ở cha chỉ để ghi rõ sáu khóa của cụm.
     {
       label: 'Giá nguyên vật liệu sản xuất',
       path: appRoutes.procurement.packagingImpact,
       icon: Coins,
-      entity: 'packaging_cost',
+      entities: [
+        'packaging_impact',
+        'packaging_product_summary',
+        'packaging_price_list',
+        'packaging_last_price',
+        'packaging_history',
+        'packaging_bom',
+      ],
       group: 'Mua hàng',
       children: [
         {
           label: 'Tác động giá bao bì',
           path: appRoutes.procurement.packagingImpact,
           icon: TrendingUp,
-          entity: 'packaging_cost',
+          entity: 'packaging_impact',
           end: true,
         },
         {
           label: 'Tổng hợp theo sản phẩm',
           path: appRoutes.procurement.packagingProducts,
           icon: Sigma,
-          entity: 'packaging_cost',
+          entity: 'packaging_product_summary',
         },
         {
           label: 'Bảng giá VTBB',
           path: appRoutes.procurement.packagingPrices,
           icon: WalletCards,
-          entity: 'packaging_cost',
+          entity: 'packaging_price_list',
           //  Màn Báo giá VTBB (ẩn khỏi menu) thuộc về đây: báo giá nhập từ Bảng giá, đứng ở màn đó thì sáng mục này.
           matchPaths: [appRoutes.procurement.packagingQuotes],
         },
@@ -229,21 +239,22 @@ export const procurementModule: ErpModule = {
           label: 'Giá mua gần nhất',
           path: appRoutes.procurement.packagingLastPrices,
           icon: History,
-          entity: 'packaging_cost',
+          entity: 'packaging_last_price',
         },
         {
           label: 'Lịch sử mua hàng',
           path: appRoutes.procurement.packagingHistory,
           icon: ChartLine,
-          entity: 'packaging_cost',
+          entity: 'packaging_history',
         },
         {
           label: 'Báo giá VTBB',
           path: appRoutes.procurement.packagingQuotes,
           icon: Tags,
-          entity: 'packaging_cost',
+          entity: 'packaging_price_list',
           //  Ẩn khỏi menu (người chủ chốt 21/11/2026: file HTML gốc không có tab này, báo giá nhập ngay ở Bảng giá VTBB).
-          //  Giữ mục để đường dẫn vẫn bị gác quyền packaging_cost — bỏ hẳn mục là route mở cho mọi người đăng nhập.
+          //  Giữ mục để đường dẫn vẫn bị gác quyền (bao-CR-792: cùng khóa `packaging_price_list` với Bảng giá VTBB) — bỏ hẳn
+          //  mục là route mở cho mọi người đăng nhập.
           hidden: true,
           //  Breadcrumb ghi thêm cấp cuối "Báo giá VTBB" sau "Bảng giá VTBB" (khớp v1).
           breadcrumbOwnLabel: true,
@@ -252,7 +263,7 @@ export const procurementModule: ErpModule = {
           label: 'Định mức bao bì',
           path: appRoutes.procurement.packagingBoms,
           icon: ListTree,
-          entity: 'packaging_cost',
+          entity: 'packaging_bom',
         },
       ],
     },

@@ -155,10 +155,15 @@ ENTITIES = [
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
     "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
-    # Giá bao bì (duoc-CR-784): màn Tác động giá + Bảng giá VTBB + Báo giá + Định mức bao bì. MỘT khóa cho cả
-    # cụm vì cùng một nhóm người dùng; chứa GIÁ VỐN bao bì nên KHÔNG dùng lại `product.read` / `purchase_history` (ai xem
-    # sản phẩm cũng xem được giá mua). Phạm vi theo pháp nhân đo trên SỔ GIÁ (`tab_product_price_ledger.company_id`).
-    "packaging_cost",
+    # Giá NVL sản xuất (duoc-CR-784) — chứa GIÁ VỐN bao bì nên KHÔNG dùng lại `product.read` / `purchase_history` (ai xem
+    # sản phẩm cũng xem được giá mua). bao-CR-792 (chủ dự án yêu cầu 27/11/2026): TÁCH khóa `packaging_cost` (một khóa cho
+    # cả cụm) thành MỖI MÀN MỘT KHÓA để cấp từng màn cho từng nhóm người; khóa cũ nghỉ hẳn, quyền đang có chuyển sang khóa
+    # mới bằng migration `permsplit792`. Năm khóa đầu đo phạm vi pháp nhân trên SỔ GIÁ
+    # (`tab_product_price_ledger.company_id`); `packaging_bom` là danh mục dùng chung (xem `SCOPE_FIELDS`). Báo giá VTBB đi
+    # cùng khóa Bảng giá VTBB; nạp Sổ Misa đi cùng khóa Lịch sử mua hàng. Ô chọn mã dùng chung nhiều màn mở khi có `read`
+    # trên BẤT KỲ khóa nào trong sáu (`PACKAGING_ENTITIES`).
+    "packaging_impact", "packaging_product_summary", "packaging_price_list", "packaging_last_price", "packaging_history",
+    "packaging_bom",
     # Tra cứu giá hải quan (bao-CR-470, doc/erp/hai-quan). MỘT khóa cho cả màn tra cứu:
     # read = xem danh sách + biểu đồ · write = nạp tệp GTT02 · delete = hoàn tác lô.
     # Không vai trò nào tự có — đại ca tick tay trên màn Phân quyền (xem `_SYS_ENTITIES`).
@@ -281,7 +286,12 @@ ENTITY_LABELS = {
     "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
     "customs_pesticide": "Danh mục thuốc BVTV (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
-    "packaging_cost": "Giá bao bì",
+    "packaging_impact": "Giá NVL sản xuất › Tác động giá bao bì",
+    "packaging_product_summary": "Giá NVL sản xuất › Tổng hợp theo sản phẩm",
+    "packaging_price_list": "Giá NVL sản xuất › Bảng giá VTBB",
+    "packaging_last_price": "Giá NVL sản xuất › Giá mua gần nhất",
+    "packaging_history": "Giá NVL sản xuất › Lịch sử mua hàng",
+    "packaging_bom": "Giá NVL sản xuất › Định mức bao bì",
     "agent_task": "Trợ lý Telegram › Việc của bot",
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
@@ -302,8 +312,12 @@ ACTION_LABELS = {
 #  bao-CR-720: entity NHẠY CẢM của thu mua. Vai trò người yêu cầu (`user.service.DEFAULT_ROLE_CODE`, mọi tài khoản mới
 #  tự nhận, hàng trăm người giữ) mà được tick Xem / Xuất ở đây thì màn Phân quyền hiện một dòng vàng nhắc (KHÔNG chặn lưu).
 #  Khai MỘT chỗ, giao diện chỉ đọc qua /api/roles/meta. Thêm entity thì thêm vào đây, không gõ ở frontend.
+#  bao-CR-792: sáu khóa của cụm Giá NVL sản xuất (mỗi màn một khóa). Khai MỘT chỗ cho endpoint dùng chung nhiều màn
+#  (`core.auth.require_any`), xóa dữ liệu theo lô và danh sách nhạy cảm bên dưới.
+PACKAGING_ENTITIES = ("packaging_impact", "packaging_product_summary", "packaging_price_list", "packaging_last_price",
+                      "packaging_history", "packaging_bom")
 SENSITIVE_PROCUREMENT_ENTITIES = ["supplier", "contract", "purchase_order", "payable", "payment_request",
-                                  "customs_price", "packaging_cost"]
+                                  "customs_price", *PACKAGING_ENTITIES]
 SENSITIVE_WARN_ACTIONS = ["read", "export"]
 
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]

@@ -6,6 +6,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PackagingSelectedCode } from '../types/packaging-cost-types'
 import { PackagingSelectedCodeCard } from './packaging-selected-code-card'
 
+//  bao-CR-792: mã / số chứng từ chỉ thành đường bấm khi có quyền ở màn đích — bài kiểm này đứng ở vai người có đủ quyền.
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({ can: () => true }),
+}))
+
 const row: PackagingSelectedCode = {
   code: 'CET0028',
   name: 'Chai PAPE tròn cổ 43',

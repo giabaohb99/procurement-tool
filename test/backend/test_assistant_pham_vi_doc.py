@@ -69,11 +69,12 @@ TOOL_CHUNG_TU = {
     "employee_leave_summary": "leave_balance",
     #  duoc-CR-761: ca theo ngày của nhân sự khác — apply_scope(Employee, 'employee') như màn Xem lịch.
     "employee_work_shifts": "employee",
-    #  duoc-CR-784: giá bao bì — sổ giá lọc theo PHÁP NHÂN (scope_condition(ProductPriceLedger, 'packaging_cost') qua
+    #  duoc-CR-784: giá bao bì — sổ giá lọc theo PHÁP NHÂN (scope_condition(ProductPriceLedger, <khóa của màn>) qua
     #  last_prices_controller.view_scope, đúng hàm của màn web); định mức / báo giá / ngưỡng là danh mục dùng chung.
-    "packaging_price_impact": "packaging_cost",
-    "packaging_price_lookup": "packaging_cost",
-    "packaging_product_cost": "packaging_cost",
+    #  bao-CR-792: mỗi công cụ một khóa theo màn (tra giá kèm n lần mua gần nhất cần thêm packaging_last_price).
+    "packaging_price_impact": "packaging_impact",
+    "packaging_price_lookup": "packaging_price_list",
+    "packaging_product_cost": "packaging_product_summary",
 }
 
 #  DANH MỤC / THỐNG KÊ dùng chung toàn công ty: không có cột chủ sở hữu để lọc, phạm vi

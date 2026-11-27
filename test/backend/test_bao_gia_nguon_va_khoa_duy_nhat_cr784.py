@@ -40,7 +40,7 @@ MIGRATION = next((ROOT / "backend" / "migrations" / "versions").glob("quotesrc78
 
 @pytest.fixture
 def api(db, seed, cap_quyen, client_as):  # noqa: F811
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True, create=True, write=True, delete=True)
+    cap_quyen(seed.u_req_id, "packaging_price_list", scope="all", read=True, create=True, write=True, delete=True)
     add_products(db, ("CPT0075", "Chai 1L", "Cái"), ("NAP0056", "Nắp", "Cái"))
     return client_as(db.get(User, seed.u_req_id))
 

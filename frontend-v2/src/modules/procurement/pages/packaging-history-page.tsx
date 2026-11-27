@@ -112,11 +112,11 @@ export function PackagingHistoryPage() {
         actions={
           <>
             {/* In = xem, nên gác theo quyền đọc (không đòi quyền xuất). Mở tab mới với ĐÚNG bộ lọc đang áp; trang in tự nạp đủ mọi dòng. */}
-            {can('packaging_cost', 'read') && (
+            {can('packaging_history', 'read') && (
               <PackagingPrintButton href={packagingHistoryPrintHref(filterParams)} />
             )}
             <PackagingExcelImportButton kind={PACKAGING_MISA_IMPORT} />
-            {can('packaging_cost', 'export') && (
+            {can('packaging_history', 'export') && (
               <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
             )}
           </>

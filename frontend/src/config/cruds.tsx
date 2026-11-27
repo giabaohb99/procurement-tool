@@ -112,7 +112,7 @@ export type CrudConfig = {
   // Chip mô tả dưới tên ở thẻ đầu trang chi tiết (mã, chức vụ, trạng thái…)
   detailChips?: (row: any) => { icon?: string; text: string; cls?: string }[]
   detailTwoCols?: boolean          // trang chi tiết chia 2 cột: form trái, thẻ phụ + lịch sử phải
-  /** Khóa `entity` của nhật ký thao tác khi KHÁC khóa quyền `entity` (vd Báo giá VTBB: quyền `packaging_cost`, nhật ký `packaging_cost_quote`). */
+  /** Khóa `entity` của nhật ký thao tác khi KHÁC khóa quyền `entity` (vd Báo giá VTBB: quyền `packaging_price_list`, nhật ký `packaging_cost_quote`). */
   auditEntity?: string
   /** Nút riêng của màn đặt cạnh nút "Thêm" ở đầu danh sách (vd "Nhập từ Excel" của Định mức bao bì). */
   headerExtra?: () => any

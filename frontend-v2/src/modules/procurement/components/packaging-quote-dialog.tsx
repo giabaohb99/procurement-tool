@@ -238,7 +238,7 @@ export function PackagingQuoteDialog({
 
           <DialogFooter className="sm:col-span-2">
             {item && (
-              <PermissionGate entity="packaging_cost" action="delete">
+              <PermissionGate entity="packaging_price_list" action="delete">
                 <div className="sm:mr-auto">
                   <DeleteConfirmButton
                     recordName={`báo giá ${item.product_code}`}

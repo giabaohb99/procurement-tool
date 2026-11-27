@@ -1274,12 +1274,14 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  # QUYẾT ĐỊNH CHỜ: giá mua theo pháp nhân có phải dữ liệu dùng chung
     #  # toàn tập đoàn không? Xem báo cáo cụm 07 mục E2.
     #  duoc-CR-784: giá bao bì — sổ giá lọc theo pháp nhân như màn web; định mức / báo giá / ngưỡng dùng chung.
-    "packaging_price_impact": "ctx.can(packaging_cost) + scope_condition(ProductPriceLedger, packaging_cost) qua "
-                              "view_scope của màn Giá bao bì, đưa xuống compute_impact (duoc-CR-784)",
-    "packaging_price_lookup": "ctx.can(packaging_cost) + view_scope trên sổ giá cho get_price_states và "
-                              "latest_priced_by_code (duoc-CR-784)",
-    "packaging_product_cost": "ctx.can(packaging_cost) + view_scope trên sổ giá cho get_price_states / "
-                              "build_product_overview (duoc-CR-784)",
+    #  bao-CR-792: mỗi công cụ gác bằng khóa của MÀN tương ứng (trước đó cả ba dùng khóa chung packaging_cost).
+    "packaging_price_impact": "ctx.can(packaging_impact) + scope_condition(ProductPriceLedger, packaging_impact) qua "
+                              "view_scope của màn Giá bao bì, đưa xuống compute_impact (duoc-CR-784, bao-CR-792)",
+    "packaging_price_lookup": "ctx.can(packaging_price_list) + view_scope trên sổ giá cho get_price_states; n lần mua gần "
+                              "nhất (latest_priced_by_code) chỉ khi có thêm packaging_last_price, theo phạm vi của khóa đó "
+                              "(duoc-CR-784, bao-CR-792)",
+    "packaging_product_cost": "ctx.can(packaging_product_summary) + view_scope trên sổ giá cho get_price_states / "
+                              "build_product_overview (duoc-CR-784, bao-CR-792)",
     "product_search": "danh mục PUBLIC — cổng là ctx.can(product)",
     "supplier_search": "danh mục PUBLIC — cổng là ctx.can(supplier)",
     "product_purchase_history": "ctx.can(product) (+supplier để hiện tên NCC) — bảng lịch sử giá",

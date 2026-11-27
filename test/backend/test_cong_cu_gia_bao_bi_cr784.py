@@ -1,5 +1,5 @@
 """duoc-CR-784 — ba công cụ Giá bao bì cho Trợ lý / bot / cổng MCP: `packaging_price_impact`, `packaging_price_lookup`,
-`packaging_product_cost`. Kiểm: thiếu `packaging_cost.read` thì từ chối; phạm vi pháp nhân trên sổ giá như màn web; số khớp
+`packaging_product_cost`. Kiểm: thiếu `read` trên khóa của màn tương ứng (bao-CR-792) thì từ chối; phạm vi pháp nhân trên sổ giá như màn web; số khớp
 dịch vụ của màn (công thức chi phí, giá cũ / mới, n lần mua); tham số lạ không vỡ; số truy vấn cố định; khai đủ chỗ ở
 cổng MCP / bộ lọc công cụ / nhãn ý định."""
 import pytest
@@ -14,6 +14,8 @@ from lich_lam_viec_factory import count_queries
 from so_gia_factory_cr784 import add_ledger, add_products, add_quote, build_bom
 
 TOOLS = ("packaging_price_impact", "packaging_price_lookup", "packaging_product_cost")
+#  bao-CR-792: mỗi công cụ gác bằng khóa của màn tương ứng; n lần mua gần nhất của `packaging_price_lookup` cần thêm khóa Giá mua gần nhất.
+TOOL_KEYS = ("packaging_impact", "packaging_price_list", "packaging_last_price", "packaging_product_summary")
 
 
 def _bom(db, fg="HH0417.1", **over):
@@ -40,7 +42,8 @@ def world(db, seed):
 
 @pytest.fixture
 def ctx(db, seed, cap_quyen, world):
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="all", read=True)
+    for key in TOOL_KEYS:
+        cap_quyen(seed.u_req_id, key, scope="all", read=True)
     return ToolContext(db=db, user=db.get(User, seed.u_req_id))
 
 
@@ -117,7 +120,8 @@ def test_pham_vi_phap_nhan_ca_ba_cong_cu(db, seed, cap_quyen, world):
     add_ledger(db, "CPT0105", 5000, "2026-09-01", company_id=seed.company_id + 99)
     add_products(db, ("CPT0200", "Chai khác", "Cái"))
     add_ledger(db, "CPT0200", 777, "2026-09-01", company_id=seed.company_id + 99)
-    cap_quyen(seed.u_req_id, "packaging_cost", scope="company", read=True)
+    for key in TOOL_KEYS:
+        cap_quyen(seed.u_req_id, key, scope="company", read=True)
     ctx = ToolContext(db=db, user=db.get(User, seed.u_req_id))
     impact = _run(ctx, "packaging_price_impact", {"codes": ["CPT0105"]})
     assert impact["selected"][0]["new_price"] == 1100 and impact["selected"][0]["max_price"] == 1100

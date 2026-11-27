@@ -4,6 +4,7 @@
  */
 import { Link } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/utils/cn'
@@ -44,10 +45,17 @@ export function DiffCell({ row }: { row: PackagingHistoryRow }) {
   )
 }
 
-/** Nhãn "ĐMH đang mở" (giá còn có thể đổi) + số ĐMH nguồn bấm được; dữ liệu cũ không có ĐMH thì để trống. */
+/**
+ * Nhãn "ĐMH đang mở" (giá còn có thể đổi) + số ĐMH nguồn bấm được; dữ liệu cũ không có ĐMH thì để trống.
+ *
+ * bao-CR-792 — người chỉ giữ khóa Lịch sử mua hàng có thể không đọc được ĐMH: màn chi tiết ĐMH gác `purchase_order.read`,
+ * thiếu quyền đó thì số ĐMH là chữ thường, không dẫn vào trang cấm.
+ */
 export function SourceCell({ row }: { row: PackagingHistoryRow }) {
+  const { can } = usePermission()
   const isOpenPo = row.is_open
   if (!isOpenPo && row.doc_id <= 0) return null
+  const poLabel = row.po_code || `#${row.doc_id}`
   return (
     <span className="flex items-center gap-2">
       {isOpenPo && (
@@ -58,15 +66,18 @@ export function SourceCell({ row }: { row: PackagingHistoryRow }) {
           ĐMH đang mở
         </Badge>
       )}
-      {row.doc_id > 0 && (
-        <Link
-          to={appRoutes.procurement.purchaseOrderDetail(row.doc_id)}
-          onClick={(event) => event.stopPropagation()}
-          className="truncate text-primary tabular-nums hover:underline"
-        >
-          {row.po_code || `#${row.doc_id}`}
-        </Link>
-      )}
+      {row.doc_id > 0 &&
+        (can('purchase_order', 'read') ? (
+          <Link
+            to={appRoutes.procurement.purchaseOrderDetail(row.doc_id)}
+            onClick={(event) => event.stopPropagation()}
+            className="truncate text-primary tabular-nums hover:underline"
+          >
+            {poLabel}
+          </Link>
+        ) : (
+          <span className="truncate tabular-nums">{poLabel}</span>
+        ))}
     </span>
   )
 }

@@ -63,7 +63,7 @@ class ProductPriceLedger(Base):
     # TÊN kho nhập hàng chép theo dòng (Misa: cột kho của sổ chi tiết; nguồn 1 / 2: tên kho tra từ mã kho của dòng ĐMH, không có
     # trong danh mục thì giữ chính mã). NULL = không biết kho.
     warehouse_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    # Pháp nhân của giao dịch — phạm vi dữ liệu của khóa `packaging_cost` đo trên cột này.
+    # Pháp nhân của giao dịch — phạm vi dữ liệu của các khóa Giá NVL sản xuất (`packaging_*`, bao-CR-792) đo trên cột này.
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     price_date: Mapped[date] = mapped_column(Date)
     # VNĐ, CHƯA VAT = giá dòng x tỉ giá của dòng.

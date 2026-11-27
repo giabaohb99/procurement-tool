@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarOff, Landmark, Users } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -11,6 +11,13 @@ import { ModuleTopbar } from './module-topbar'
 vi.mock('@/shared/notifications/notification-bell', () => ({ NotificationBell: () => null }))
 vi.mock('./demo-account-switcher', () => ({ DemoAccountSwitcher: () => null }))
 vi.mock('./user-menu', () => ({ UserMenu: () => null }))
+
+//  bao-CR-792: link cấp mục menu hỏi quyền từng mục con. `null` = có mọi quyền (các bài kiểm cũ không quan tâm quyền).
+let readable: string[] | null = null
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({ can: (entity: string) => readable === null || readable.includes(entity) }),
+  useNavContext: () => ({}),
+}))
 
 const testModule: ErpModule = {
   id: 'test',
@@ -68,6 +75,18 @@ const testModule: ErpModule = {
       ],
     },
     {
+      //  bao-CR-792 — khuôn của Giá nguyên vật liệu sản xuất sau khi tách khóa: mỗi mục con một khóa, đường mục cha =
+      //  mục con đầu tiên khai báo.
+      label: 'Cụm tách khóa',
+      path: '/test/split',
+      entities: ['leave_request', 'leave_balance', 'leave_type'],
+      children: [
+        { label: 'Màn đầu', path: '/test/split', entity: 'leave_request', end: true },
+        { label: 'Màn hai', path: '/test/split/two', entity: 'leave_balance' },
+        { label: 'Màn ba', path: '/test/split/three', entity: 'leave_type' },
+      ],
+    },
+    {
       //  Mục trùng tên phân hệ — khuôn của "Nhân sự" › "Nhân sự".
       label: 'Thu mua',
       path: '/test/dup',
@@ -101,6 +120,25 @@ function crumbTexts(nav: HTMLElement): string[] {
 }
 
 describe('ModuleTopbar breadcrumb', () => {
+  beforeEach(() => {
+    readable = null
+  })
+
+  describe('parent whose children use different permission keys (bao-CR-792)', () => {
+    it('links the parent level to the first child the user may read, not to the forbidden first screen', () => {
+      readable = ['leave_balance', 'leave_type']
+      const nav = renderAt('/test/split/three')
+      expect(crumbTexts(nav)).toEqual(['Thu mua', 'Cụm tách khóa', 'Màn ba'])
+      expect(within(nav).getByRole('link', { name: 'Cụm tách khóa' })).toHaveAttribute('href', '/test/split/two')
+    })
+
+    it('keeps the parent path when the user may read the screen that sits there', () => {
+      readable = ['leave_request', 'leave_type']
+      const nav = renderAt('/test/split/three')
+      expect(within(nav).getByRole('link', { name: 'Cụm tách khóa' })).toHaveAttribute('href', '/test/split')
+    })
+  })
+
   it('shows three levels for a submenu child whose path is outside the parent path', () => {
     const nav = renderAt('/test/leave-calendar')
     expect(crumbTexts(nav)).toEqual(['Thu mua', 'Nghỉ phép', 'Lịch nghỉ'])

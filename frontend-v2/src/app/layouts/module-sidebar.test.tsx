@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarOff, Users } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -10,9 +10,15 @@ import { ModuleSidebar } from './module-sidebar'
 //  Chân menu phiên bản (bao-CR-722) gọi API + bộ đệm truy vấn, không thuộc chốt đang kiểm.
 vi.mock('./sidebar-version-footer', () => ({ SidebarVersionFooter: () => null }))
 
+//  `null` = có mọi quyền (mặc định của các bài kiểm cũ); bao-CR-792 cần giả người chỉ đọc được vài khóa.
+let readable: string[] | null = null
+beforeEach(() => {
+  readable = null
+})
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: () => true,
+    can: (entity: string) => readable === null || readable.includes(entity),
     canAny: () => true,
   }),
   useNavContext: () => ({}),
@@ -177,6 +183,57 @@ describe('ModuleSidebar with submenu', () => {
     expect(chevron).not.toHaveClass('-rotate-90')
     expect(screen.getByText('Lịch nghỉ')).toBeInTheDocument()
     expect(screen.getByTestId('current-path')).toHaveTextContent('/test/leave-calendar')
+  })
+})
+
+//  bao-CR-792 — khuôn của Giá nguyên vật liệu sản xuất sau khi tách khóa: mỗi mục con một khóa riêng.
+describe('ModuleSidebar parent whose children use different permission keys', () => {
+  const splitModule: ErpModule = {
+    ...testModule,
+    nav: [
+      {
+        label: 'Cụm tách khóa',
+        path: '/test/split',
+        icon: CalendarOff,
+        entities: ['leave_request', 'leave_balance', 'leave_type'],
+        children: [
+          { label: 'Màn đầu', path: '/test/split', entity: 'leave_request', end: true },
+          { label: 'Màn hai', path: '/test/split/two', entity: 'leave_balance' },
+          { label: 'Màn ba', path: '/test/split/three', entity: 'leave_type' },
+        ],
+      },
+    ],
+  }
+
+  function renderSplit() {
+    function RouteWatcher() {
+      const { pathname } = useLocation()
+      return <div data-testid="current-path">{pathname}</div>
+    }
+    render(
+      <MemoryRouter initialEntries={['/other-page']}>
+        <SidebarProvider>
+          <ModuleSidebar module={splitModule} onResizeWidth={vi.fn()} />
+          <RouteWatcher />
+        </SidebarProvider>
+      </MemoryRouter>,
+    )
+  }
+
+  it('shows the parent with only the readable children, and a click on it opens the first of them', () => {
+    readable = ['leave_balance', 'leave_type']
+    renderSplit()
+    fireEvent.click(screen.getByRole('button', { name: /cụm tách khóa/i }))
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/test/split/two')
+    expect(screen.queryByText('Màn đầu')).not.toBeInTheDocument()
+    expect(screen.getByText('Màn hai')).toBeInTheDocument()
+    expect(screen.getByText('Màn ba')).toBeInTheDocument()
+  })
+
+  it('hides the parent when no child is readable', () => {
+    readable = ['purchase_order']
+    renderSplit()
+    expect(screen.queryByRole('button', { name: /cụm tách khóa/i })).not.toBeInTheDocument()
   })
 })
 

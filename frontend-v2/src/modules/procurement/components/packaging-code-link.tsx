@@ -3,9 +3,13 @@
  * (Bảng giá, Giá mua gần nhất, Tác động giá, chính Lịch sử mua hàng) để một mã là một cú bấm tới mọi lần mua của nó.
  *
  * Dừng nổi bọt cú bấm: bảng có thể đặt hành động ở cả dòng (bấm đúp / bấm dòng) — bấm mã thì chỉ đi tới lịch sử.
+ *
+ * bao-CR-792 — mỗi màn của cụm một khóa riêng: đích là màn Lịch sử mua hàng nên đòi `packaging_history.read`. Không có
+ * quyền thì mã là CHỮ THƯỜNG (không màu link, không bấm được) — đừng để bấm vào rồi gặp trang cấm.
  */
 import { Link } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { cn } from '@/shared/utils/cn'
 
 import { packagingHistoryHref, packagingHistoryProductHref } from '../utils/packaging-history'
@@ -18,6 +22,10 @@ interface PackagingCodeLinkProps {
 }
 
 export function PackagingCodeLink({ code, className, product = false }: PackagingCodeLinkProps) {
+  const { can } = usePermission()
+  if (!can('packaging_history', 'read')) {
+    return <span className={cn('font-semibold tabular-nums', className)}>{code}</span>
+  }
   return (
     <Link
       to={product ? packagingHistoryProductHref(code) : packagingHistoryHref(code)}

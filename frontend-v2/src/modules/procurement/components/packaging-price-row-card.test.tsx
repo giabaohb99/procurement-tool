@@ -5,6 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PackagingPriceRow } from '../types/packaging-cost-types'
 import { PackagingPriceRowCard } from './packaging-price-row-card'
 
+//  bao-CR-792: mã / số chứng từ chỉ thành đường bấm khi có quyền ở màn đích — bài kiểm này đứng ở vai người có đủ quyền.
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({ can: () => true }),
+}))
+
 const row: PackagingPriceRow = {
   code: 'CET0028',
   name: 'Chai PAPE tròn cổ 43',

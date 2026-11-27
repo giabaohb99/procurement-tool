@@ -59,7 +59,9 @@ vi.mock('@/core/api', async (importOriginal) => {
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: (_entity: string, action: string) => (action === 'export' ? canExport : true),
+    //  bao-CR-792: nút Xuất Excel của màn này hỏi đúng khóa `packaging_product_summary`.
+    can: (entity: string, action: string) =>
+      action === 'export' ? canExport && entity === 'packaging_product_summary' : true,
     canAccess: () => true,
   }),
 }))
@@ -196,7 +198,7 @@ describe('PackagingProductOverviewPage', () => {
     expect(screen.queryByRole('group', { name: 'Điều kiện lọc đang bật' })).not.toBeInTheDocument()
   })
 
-  it('hides the export button without packaging_cost.export', async () => {
+  it('hides the export button without packaging_product_summary.export', async () => {
     canExport = false
     build()
     await screen.findByText('Thuốc trừ sâu A 1 lít')

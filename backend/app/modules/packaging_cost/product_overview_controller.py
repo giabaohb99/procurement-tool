@@ -3,6 +3,7 @@
 Router con, gắn vào `impact_controller.router` (cùng tiền tố `/api/packaging-cost`) nên không phải sửa `main.py`. Đường tên
 `/product-overview` (KHÔNG đặt `/summary`: cổng của repo coi mọi đường `/summary` là báo cáo của phân hệ Báo cáo, đòi
 `require_report`). Phạm vi dữ liệu theo PHÁP NHÂN đo trên sổ giá — cùng luật với Tác động giá / Bảng giá / Lịch sử.
+bao-CR-792 (27/11/2026): màn này gác khóa `packaging_product_summary`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -18,7 +19,7 @@ from .impact_schema import MAX_CARTON_QTY, RANGE_LIMIT
 from .last_prices_controller import MAX_PAGE_SIZE, view_scope
 from .product_overview_service import build_product_overview
 
-ENTITY = "packaging_cost"
+ENTITY = "packaging_product_summary"
 router = APIRouter()
 
 #  `part_roles=1,3`: danh sách loại thành phần cách nhau dấu phẩy, dựng từ `PackagingRole` (thêm loại mới là tự nhận).
@@ -76,15 +77,15 @@ def product_overview(filters: dict = Depends(overview_filters), page: int = Quer
     `fg_code, fg_name, carton_qty, cost_old_bottle, cost_new_bottle, diff_bottle, pct, diff_carton` và năm cột thành phần
     `part_bottle, part_cap, part_label, part_carton_label, part_carton` (giá mới của thành phần, hòa theo mã thành phần rồi mã HH;
     khóa lạ -> `fg_code`), ô trống xuống cuối cả hai chiều. `page_size` <= 500. `counts` = `{all, up, down, flat, missing}` trên tập đã lọc `q` + lọc nâng cao nhưng chưa lọc
-    `trend`; `total` = số dòng sau mọi bộ lọc. Quyền `packaging_cost.read`; giá chỉ tính trên các dòng sổ giá thuộc pháp
+    `trend`; `total` = số dòng sau mọi bộ lọc. Quyền `packaging_product_summary.read`; giá chỉ tính trên các dòng sổ giá thuộc pháp
     nhân người xem được thấy. Năm truy vấn cố định bất kể số sản phẩm.
     """
-    return success(build_product_overview(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, "read")))
+    return success(build_product_overview(db, **filters, page=page, page_size=page_size, scope_cond=view_scope(db, user, ENTITY, "read")))
 
 
 @router.get("/product-overview/export")
 def product_overview_export(filters: dict = Depends(overview_filters), db: Session = Depends(get_db),
                             user=Depends(require(ENTITY, "export"))):
-    """Xuất Excel Tổng hợp theo sản phẩm theo đúng bộ lọc (kể cả lọc nâng cao) + thứ tự đang xem (không phân trang, tối đa 5.000 dòng). Quyền `packaging_cost.export`."""
-    res = build_product_overview(db, **filters, page=None, scope_cond=view_scope(db, user, "export"))
+    """Xuất Excel Tổng hợp theo sản phẩm theo đúng bộ lọc (kể cả lọc nâng cao) + thứ tự đang xem (không phân trang, tối đa 5.000 dòng). Quyền `packaging_product_summary.export`."""
+    res = build_product_overview(db, **filters, page=None, scope_cond=view_scope(db, user, ENTITY, "export"))
     return xl.xlsx_download(xl.build_product_overview_workbook(res["items"]), "tong-hop-theo-san-pham")

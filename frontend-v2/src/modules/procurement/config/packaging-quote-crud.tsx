@@ -1,5 +1,6 @@
 /**
- * duoc-CR-784 — danh sách Báo giá VTBB (`/api/product-price-quotes`, khóa `packaging_cost`).
+ * duoc-CR-784 — danh sách Báo giá VTBB (`/api/product-price-quotes`; bao-CR-792: khóa `packaging_price_list`, chung với
+ * màn Bảng giá VTBB).
  *
  * Sửa / thêm bằng hộp thoại riêng `PackagingQuoteDialog` (ô đơn giá kiểu vi-VN) gắn qua `FormDialog`;
  * `formFields` vẫn khai để khung CRUD biết bộ ô (giá trị mặc định, nhãn) dù không dựng form chung.
@@ -16,7 +17,7 @@ import { packagingCostKeys } from './packaging-cost-query-keys'
 import type { PackagingQuote } from '../types/packaging-cost-types'
 
 export const PACKAGING_QUOTE_CRUD_CONFIG: CrudConfig<PackagingQuote> = {
-  entity: 'packaging_cost',
+  entity: 'packaging_price_list',
   auditEntity: 'packaging_cost_quote',
   title: 'Báo giá VTBB',
   description:
