@@ -138,13 +138,15 @@ Màn `/procurement/packaging-cost/prices` (cũ `/packaging-cost/price-list`). B�
 VTBB và nhập báo giá của nhà cung cấp*.
 
 - Cột: Mã VTBB, Tên vật tư, Nhóm, ĐVT, Số lần mua, Mua gần nhất, Giá mua gần nhất, Giá mua lần trước, Báo giá mới (kèm ngày
-  hiệu lực), Giá cũ, Giá mới, Chênh lệch, %, Min, Max, Số SP đang dùng, Ghi chú, Thao tác (nút **Báo giá**).
+  hiệu lực), Giá cũ, Giá mới, Chênh lệch, %, Min, Max, Số SP đang dùng, Ghi chú, Thao tác (nút **Báo giá**). Cột **Tiền tệ**
+  (luôn *VND*, 26/11/2026) đứng ngay trước cột giá đầu tiên để cuộn ngang không che; tệp Excel có cùng cột.
 - v2 ẩn sẵn Min, Max, Ghi chú (mở ở nút **Cột**); bản cũ hiện sẵn Min, Max, ẩn Ghi chú.
 - Lọc: ô *Tìm mã, tên vật tư…*, chip nhóm, phạm vi **Mã trong định mức** (mã trong định mức ∪ mã có báo giá, mặc định) /
   **Mọi mã có giá** (thêm mọi mã trong sổ giá), *Khoảng ngày tính min – max*. Xếp + phân trang tại máy chủ, Xuất Excel theo
   đúng bộ lọc và thứ tự.
-- **Báo giá mới** (đầu trang) / **Báo giá** (từng dòng, mã khóa sẵn) mở hộp: Mã VTBB *, Mã NCC, Đơn giá (VNĐ, chưa VAT) *,
-  VAT (%), Ngày hiệu lực *, Ghi chú; nút **Lưu báo giá**. Lỗi: *Nhập mã vật tư bao bì.*, *Nhập đơn giá báo giá (lớn hơn
+- **Báo giá mới** (đầu trang) / **Báo giá** (từng dòng, mã khóa sẵn) mở hộp: Mã VTBB *, Nhà cung cấp, Đơn giá (VNĐ, chưa VAT) *,
+  VAT (%), Ngày hiệu lực *, Ghi chú; nút **Lưu báo giá**. Ô **Nhà cung cấp** (26/11/2026) chọn từ danh mục NCC đang hoạt động, gõ
+  mã hoặc tên để tìm, xóa được; người thiếu quyền `supplier.read` thì vẫn là ô gõ mã tay (tự viết hoa). Lỗi: *Nhập mã vật tư bao bì.*, *Nhập đơn giá báo giá (lớn hơn
   0).*, *Chọn ngày hiệu lực.* Cần quyền `packaging_cost.create`.
 - Màn danh sách **Báo giá VTBB** (`/procurement/packaging-cost/quotes`, cũ `/product-price-quotes`) **ẩn khỏi menu**
   (người chủ chốt 21/11: bản mẫu không có tab này) nhưng vẫn gác quyền `packaging_cost`. v2 sửa trong hộp (**Lưu thay
@@ -172,14 +174,20 @@ lần mua gần nhất*.
 - Mỗi mã VTBB một dòng; nhóm cột *Thông tin VTBB* (Mã VTBB, Tên vật tư, Nhóm, ĐVT, Số lần có giá); mỗi lần mua một nhóm cột
   gộp *Lần 1 (gần nhất)*, *Lần 2*… (Ngày mua, Nhà cung cấp, [Số lượng], Đơn giá; xanh đắt hơn lần trước, đỏ rẻ hơn); *Biến
   động* (Lần 1 so lần 2, Lần 1 so lần n); *Giá TB* (Giá TB n lần). Chỉ lần mua có giá.
-- Lọc: ô tìm, chip nhóm kèm số, *Số lần hiển thị* 3 / 5 (mặc định) / 10, *Phạm vi mã* **Định mức + báo giá** / **Mọi mã**,
-  *Nhà cung cấp* (giữ mã có NCC đó trong n lần đang hiện), *Khoảng ngày mua*, *Biến động lần 1 so lần 2* (Tất cả / Tăng /
-  Giảm / Không đổi), *Biến động từ (%)*, công tắc *Chỉ mã đã có giá* (bật sẵn), *Chỉ mã đang dùng trong định mức*, *Hiện số
-  lượng*. Xuất Excel theo đúng bộ lọc, n và thứ tự.
-- **Giữ bộ lọc trên URL** (26/11/2026, cùng cách với Bảng giá VTBB): `q`, `group`, `n` (3 / 5 / 10; mặc định 5 không ghi), `scope`,
-  `supplier` (lặp khóa: `supplier=A&supplier=B`), `date_from` / `date_to`, `trend` (`up` / `down` / `flat`), `min_pct`, `only_priced`
-  (mặc định bật nên chỉ ghi `only_priced=0` khi tắt), `bom_only=1`, `show_qty=1`, `sort_by` / `sort_dir` (kể cả khóa theo lần
-  `p{k}_price` / `p{k}_date`, bị bỏ khi k lớn hơn n), `page`, `page_size`.
+- Lọc: ô tìm, chip nhóm kèm số (bật / tắt, chọn nhiều nhóm; API nhận `group` lặp, tối đa 50 nhóm), *Số lần hiển thị* 3 / 5
+  (mặc định) / 10, *Phạm vi mã* **Mọi mã** (mặc định) / **Định mức + báo giá**, *Nhà cung cấp* (giữ mã có NCC đó trong n lần
+  đang hiện), *Khoảng ngày mua*, *Biến động lần 1 so lần 2* (Tất cả / Tăng / Giảm / Không đổi, bấm lại nút đang bật là tắt),
+  *Biến động từ (%)*, công tắc *Chỉ mã đã có giá*, *Chỉ mã đang dùng trong định mức*, *Hiện số lượng* (cả ba tắt sẵn). Xuất
+  Excel theo đúng bộ lọc, n và thứ tự.
+- **Mở màn ở chế độ gần nhất** (người chủ chốt 26/11/2026, cả hai giao diện): mọi bộ lọc tắt thì chỉ nạp **20 mã mua gần nhất**,
+  xếp ngày mua Lần 1 giảm dần, không có chân phân trang, thanh lọc ghi *20 mã mua gần nhất · bấm Tất cả để xem hết*. Chip
+  **Tất cả** (chỉ sáng sau khi bấm) bỏ chip nhóm và nạp hết mọi mã có phân trang; bật chip nhóm, gõ tìm, bật bất kỳ bộ lọc nào
+  hoặc xếp theo cột khác cũng ra chế độ xem hết. Nút **Tất cả** ở hàng Biến động bỏ lọc biến động, cũng chỉ sáng sau khi bấm.
+- **Giữ bộ lọc trên URL** (26/11/2026, cùng cách với Bảng giá VTBB): `q`, `group` (lặp khóa; link cũ một nhóm vẫn mở đúng), `all=1`
+  (đã bấm Tất cả), `n` (3 / 5 / 10; mặc định 5 không ghi), `scope` (chỉ ghi `scope=bom`), `supplier` (lặp khóa: `supplier=A&supplier=B`),
+  `date_from` / `date_to`, `trend` (`up` / `down` / `flat`), `min_pct`, `only_priced=1`, `bom_only=1`, `show_qty=1`, `sort_by` /
+  `sort_dir` (kể cả khóa theo lần `p{k}_price` / `p{k}_date`, bị bỏ khi k lớn hơn n; xếp khác mặc định coi như đã bấm Tất cả),
+  `page`, `page_size`.
 
 ## 6. Lịch sử mua hàng (của cụm Giá bao bì)
 

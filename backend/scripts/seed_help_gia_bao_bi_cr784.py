@@ -300,18 +300,18 @@ TREE = {
 </ul>
 
 <h2>Mở màn lần đầu</h2>
-<p>Lúc mới mở, <strong>mọi bộ lọc đều tắt</strong>: phạm vi <strong>Mọi mã</strong>, các công tắc tắt hết, không chip nhóm nào được bật (tức xem mọi nhóm), không chọn nhà cung cấp, khoảng ngày hay chiều biến động. Bảng xếp sẵn theo <strong>Ngày mua của Lần 1, mới nhất trước</strong> và chỉ hiện <strong>20 dòng đầu</strong>, tức 20 mã có lần mua gần nhất (mã chưa có lần mua nằm cuối bảng). Muốn tìm gì thì tự chọn bộ lọc; muốn xem thêm thì chuyển trang hoặc đổi số dòng mỗi trang (10, 20, 50, 100).</p>
+<p>Lúc mới mở, <strong>mọi bộ lọc đều tắt</strong>: phạm vi <strong>Mọi mã</strong>, các công tắc tắt hết, không chip nhóm nào được bật (tức xem mọi nhóm), không chọn nhà cung cấp, khoảng ngày hay chiều biến động. Màn chỉ hiện <strong>20 mã mua gần nhất</strong>, xếp theo <strong>Ngày mua của Lần 1, mới nhất trước</strong>, không có chân phân trang; cạnh hàng chip có dòng nhắc <em>20 mã mua gần nhất · bấm Tất cả để xem hết</em>. Muốn xem mọi mã thì bấm chip <strong>Tất cả</strong> (chip sáng lên), bảng nạp hết và có phân trang (10, 20, 50, 100 dòng mỗi trang). Bật một chip nhóm, gõ ô tìm, chọn bất kỳ bộ lọc nào hoặc bấm xếp theo cột khác cũng chuyển sang xem hết mọi mã khớp, có phân trang.</p>
 
 <h2>Lọc</h2>
 <table>
 <thead><tr><th>Ô lọc</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td>Tìm mã, tên, nhóm, nhà cung cấp…; chip nhóm</td><td>Lọc theo chữ và theo nhóm. Mỗi chip kèm số mã; bấm chip để bật, bấm lại để tắt. Bật nhiều chip cùng lúc thì hiện mã thuộc một trong các nhóm đó (ví dụ bật <strong>Chai</strong> và <strong>Nắp</strong> ra cả chai lẫn nắp). Không bật chip nào là xem mọi nhóm, nên không có chip <strong>Tất cả</strong>. Số trên chip đếm theo các bộ lọc khác đang dùng, không co lại khi bạn bật chip.</td></tr>
+<tr><td>Tìm mã, tên, nhóm, nhà cung cấp…; chip nhóm</td><td>Lọc theo chữ và theo nhóm. Mỗi chip kèm số mã; bấm chip để bật, bấm lại để tắt. Bật nhiều chip cùng lúc thì hiện mã thuộc một trong các nhóm đó (ví dụ bật <strong>Chai</strong> và <strong>Nắp</strong> ra cả chai lẫn nắp). Chip <strong>Tất cả</strong> đứng đầu hàng: bấm thì bỏ mọi chip nhóm đang bật và xem hết mọi mã; chip chỉ sáng sau khi bấm, lúc mới mở màn chưa sáng. Số trên chip đếm theo các bộ lọc khác đang dùng, không co lại khi bạn bật chip.</td></tr>
 <tr><td>Số lần hiển thị</td><td>3, 5 (mặc định) hoặc 10 lần mua. Đây là số cột hiện, không phải bộ lọc.</td></tr>
 <tr><td>Phạm vi mã</td><td><strong>Mọi mã</strong> (mặc định) hoặc <strong>Định mức + báo giá</strong> (chỉ mã thành phần của định mức và mã đã có báo giá).</td></tr>
 <tr><td>Nhà cung cấp</td><td>Giữ các mã có nhà cung cấp đó trong các lần mua đang hiện (không cắt bớt lần mua của nhà cung cấp khác).</td></tr>
 <tr><td>Khoảng ngày mua</td><td>Chỉ xếp hạng các lần mua trong khoảng ngày.</td></tr>
-<tr><td>Biến động lần 1 so lần 2; Biến động từ (%)</td><td>Bấm <strong>Tăng</strong>, <strong>Giảm</strong> hoặc <strong>Không đổi</strong> để chỉ xem mã đổi giá theo chiều đó; bấm lại nút đang bật để tắt (không có nút <strong>Tất cả</strong>). Ô phần trăm: chỉ mã biến động từ bao nhiêu phần trăm trở lên (0 là không lọc).</td></tr>
+<tr><td>Biến động lần 1 so lần 2; Biến động từ (%)</td><td>Bấm <strong>Tăng</strong>, <strong>Giảm</strong> hoặc <strong>Không đổi</strong> để chỉ xem mã đổi giá theo chiều đó; bấm lại nút đang bật để tắt; bấm <strong>Tất cả</strong> để bỏ lọc biến động (nút sáng sau khi bấm, mới mở màn thì không nút nào sáng). Ô phần trăm: chỉ mã biến động từ bao nhiêu phần trăm trở lên (0 là không lọc).</td></tr>
 <tr><td>Chỉ mã đã có giá; Chỉ mã đang dùng trong định mức; Hiện số lượng</td><td>Công tắc, mặc định tắt cả ba.</td></tr>
 </tbody>
 </table>
