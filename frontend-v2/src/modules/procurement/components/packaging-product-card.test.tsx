@@ -45,16 +45,16 @@ describe('PackagingProductCard', () => {
     }
     //  Tác động đo "mới" bằng giá ĐANG ÁP (7.300), không phải giá mới (7.232).
     expect(screen.getByText('7.300')).toBeInTheDocument()
-    expect(screen.getByText('+500')).toHaveClass('text-emerald-600')
-    expect(screen.getByText('-20.000')).toHaveClass('text-destructive')
+    expect(screen.getByText('+500')).toHaveClass('text-destructive')
+    expect(screen.getByText('-20.000')).toHaveClass('text-emerald-600')
   })
 
   it('lists only components that have a code, with old -> new price, and the carton spec', () => {
     renderCard('impact')
     expect(screen.getByText('Chai')).toBeInTheDocument()
     expect(screen.getByText('CPT0042')).toBeInTheDocument()
-    expect(screen.getByText('6.532')).toHaveClass('text-emerald-600')
-    expect(screen.getByText('700')).toHaveClass('text-destructive')
+    expect(screen.getByText('6.532')).toHaveClass('text-destructive')
+    expect(screen.getByText('700')).toHaveClass('text-emerald-600')
     expect(screen.getByText('Quy cách 40')).toBeInTheDocument()
     //  Nắp không có mã, Nhãn thùng / Thùng không có dòng: ẩn hẳn.
     expect(screen.queryByText('Nắp')).not.toBeInTheDocument()

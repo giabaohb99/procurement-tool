@@ -33,12 +33,12 @@ describe('PackagingLastPricesCard', () => {
     expect(screen.getByRole('link', { name: 'CET0051' })).toBeInTheDocument()
     expect(screen.getByText('Lần 1 so lần 5')).toBeInTheDocument()
     expect(screen.getByText('Giá TB 5 lần')).toBeInTheDocument()
-    expect(screen.getByText('-8,9%')).toHaveClass('text-destructive')
+    expect(screen.getByText('-8,9%')).toHaveClass('text-emerald-600')
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByText('22/01/2026')).toBeInTheDocument()
     //  Lần 1 rẻ hơn lần 2 → đỏ; lần 2 đắt hơn lần 3 → xanh; lần cuối không có gì để so.
-    expect(screen.getByText('4.600')).toHaveClass('text-destructive')
-    expect(screen.getByText('5.048')).toHaveClass('text-emerald-600')
+    expect(screen.getByText('4.600')).toHaveClass('text-emerald-600')
+    expect(screen.getByText('5.048')).toHaveClass('text-destructive')
     expect(screen.queryByText(/^SL /)).not.toBeInTheDocument()
   })
 

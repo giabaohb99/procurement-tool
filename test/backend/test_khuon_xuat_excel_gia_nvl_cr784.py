@@ -59,10 +59,11 @@ def test_dinh_dang_so_ngay_phan_tram_va_o_trong_khong_thanh_0():
     assert ws["F7"].value == 0                                           # 0 thật vẫn là 0 (định dạng hiện "-")
 
 
-def test_mau_tang_xanh_giam_do_va_dam_navy():
+def test_mau_tang_do_giam_xanh_va_dam_navy():
     ws, _ = _sheet()
-    assert _color(ws["D5"]) == UP_COLOR and ws["D5"].font.b             # 700 > 623: tăng = xanh
-    assert _color(ws["D6"]) == DOWN_COLOR                               # 85,5 < 90: giảm = đỏ
+    assert (UP_COLOR, DOWN_COLOR) == ("C0392B", "0B6A3A")                  # tăng đỏ, giảm xanh (người chủ chốt 27/11/2026)
+    assert _color(ws["D5"]) == UP_COLOR and ws["D5"].font.b             # 700 > 623: tăng = đỏ
+    assert _color(ws["D6"]) == DOWN_COLOR                               # 85,5 < 90: giảm = xanh
     assert _color(ws["F5"]) == UP_COLOR and _color(ws["F6"]) == DOWN_COLOR
     assert not ws["F7"].font.b                                          # chênh 0: không tô
     assert _color(ws["H5"]) == NAVY and ws["H5"].font.b

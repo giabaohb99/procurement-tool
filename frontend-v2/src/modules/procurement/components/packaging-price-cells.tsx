@@ -43,7 +43,7 @@ export function PercentText({ value }: { value: Num }) {
 }
 
 /**
- * Giá "cũ → mới" gọn trong một dòng: đổi giá thì số cũ mờ + mũi tên + số mới đậm tô theo chiều (tăng xanh, giảm đỏ); không
+ * Giá "cũ → mới" gọn trong một dòng: đổi giá thì số cũ mờ + mũi tên + số mới đậm tô theo chiều (tăng đỏ, giảm xanh); không
  * đổi thì một số; chưa có giá mới thì nói thẳng "chưa có giá". Dùng ở ô thành phần của bảng sản phẩm và ở thẻ điện thoại.
  */
 export function PriceChangeText({ from, to }: { from: Num; to: Num }) {
@@ -61,7 +61,7 @@ export function PriceChangeText({ from, to }: { from: Num; to: Num }) {
 }
 
 /**
- * Xu hướng chi phí của một sản phẩm (mã `CostTrend`): chữ + màu theo chiều (tăng xanh, giảm đỏ — cùng luật với ô chênh lệch);
+ * Xu hướng chi phí của một sản phẩm (mã `CostTrend`): chữ + màu theo chiều (tăng đỏ, giảm xanh — cùng luật với ô chênh lệch);
  * không đổi / chưa có giá để màu mờ. Tăng kèm gợi ý "cần xem lại giá bán" ở chú giải.
  */
 export function TrendText({ trend }: { trend: number }) {

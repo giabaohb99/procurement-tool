@@ -28,6 +28,8 @@ import { formatPackagingPrice } from '../utils/packaging-price-format'
 
 /** Số chip mã hiện trong ô trước khi gộp thành "+n mã" — chọn cả nhóm hàng trăm mã thì ô không phình. */
 const CHIP_MAX = 12
+/** Kiểu gọn (`compact`): chỉ chừng này chip, còn lại gộp "+n mã" để ô giữ đúng MỘT dòng. */
+const COMPACT_CHIP_MAX = 2
 /** Số dòng vẽ trong danh sách; "Chọn tất cả" vẫn áp cho MỌI mã khớp, kể cả phần chưa vẽ. */
 const LIST_MAX = 200
 
@@ -65,6 +67,11 @@ interface PackagingCodePickerProps {
   onChange: (codes: string[]) => void
   loading?: boolean
   maxCodes?: number
+  /**
+   * Kiểu gọn MỘT dòng, cao bằng các ô lọc bên cạnh (Giá mua gần nhất, 27/11/2026: kiểu thường hai dòng trông "mập"):
+   * chip + chỗ gõ chung một hàng, tối đa `COMPACT_CHIP_MAX` chip rồi "+n mã". Màn Tác động / Lịch sử giữ kiểu thường.
+   */
+  compact?: boolean
 }
 
 export function PackagingCodePicker({
@@ -75,6 +82,7 @@ export function PackagingCodePicker({
   maxCodes = PACKAGING_MAX_CODES,
   kind = 'material',
   emptyPlaceholder,
+  compact = false,
 }: PackagingCodePickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -85,6 +93,7 @@ export function PackagingCodePicker({
   const listboxId = useId()
   const text = PICKER_TEXT[kind]
   const showMaterialMeta = kind === 'material'
+  const chipMax = compact ? COMPACT_CHIP_MAX : CHIP_MAX
 
   //  Sản phẩm không có "nhóm": để rỗng thì từ khóa luôn rơi về tìm chữ (gõ "chai" ra sản phẩm tên có chữ chai).
   const groups = useMemo(() => (kind === 'material' ? collectSearchGroups(options) : []), [options, kind])
@@ -215,16 +224,20 @@ export function PackagingCodePicker({
             ref={boxRef}
             onMouseDown={handleBoxMouseDown}
             className={cn(
-              'flex min-h-10 w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5 shadow-xs',
+              'flex w-full cursor-text items-center gap-1.5 rounded-md border border-input bg-background px-2 shadow-xs',
+              compact ? 'h-9 flex-nowrap overflow-hidden py-1' : 'min-h-10 flex-wrap py-1.5',
               open && 'border-ring ring-[3px] ring-ring/50',
             )}
           >
             <Search className="mx-1 size-4 shrink-0 text-muted-foreground" />
-            {value.slice(0, CHIP_MAX).map((code) => (
+            {value.slice(0, chipMax).map((code) => (
               <span
                 key={code}
                 //  Chip nổi hẳn trên nền ô (người chủ chốt 20/11/2026): nền + viền màu chính, chữ đậm.
-                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 py-1 pr-1 pl-2.5 text-[13px] font-semibold text-primary tabular-nums"
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/30 bg-primary/10 pr-1 pl-2.5 text-[13px] font-semibold text-primary tabular-nums',
+                  compact ? 'py-0.5' : 'py-1',
+                )}
               >
                 {code}
                 <button
@@ -237,9 +250,15 @@ export function PackagingCodePicker({
                 </button>
               </span>
             ))}
-            {value.length > CHIP_MAX && (
-              <span className="rounded-md border border-primary/30 px-2.5 py-1 text-[13px] font-semibold text-primary">
-                +{value.length - CHIP_MAX} mã
+            {value.length > chipMax && (
+              <span
+                title={value.slice(chipMax).join(', ')}
+                className={cn(
+                  'shrink-0 rounded-md border border-primary/30 px-2.5 text-[13px] font-semibold text-primary',
+                  compact ? 'py-0.5' : 'py-1',
+                )}
+              >
+                +{value.length - chipMax} mã
               </span>
             )}
             <input
@@ -258,7 +277,9 @@ export function PackagingCodePicker({
                 loading
                   ? 'Đang nạp danh sách mã…'
                   : value.length
-                    ? text.more
+                    ? compact
+                      ? 'Thêm mã…'
+                      : text.more
                     : (emptyPlaceholder ?? text.empty)
               }
               onChange={(event) => {
@@ -269,7 +290,10 @@ export function PackagingCodePicker({
               onFocus={() => setOpen(true)}
               onClick={() => setOpen(true)}
               onKeyDown={handleKeyDown}
-              className="min-w-[12rem] flex-1 truncate bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+              className={cn(
+                'flex-1 truncate bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed',
+                compact ? 'min-w-[5rem]' : 'min-w-[12rem]',
+              )}
             />
             {value.length > 0 && (
               <button
@@ -277,7 +301,7 @@ export function PackagingCodePicker({
                 aria-label="Bỏ hết mã đã chọn"
                 title="Bỏ hết mã đã chọn"
                 onClick={() => onChange([])}
-                className="ml-auto rounded-sm p-1 text-muted-foreground hover:text-destructive"
+                className="ml-auto shrink-0 rounded-sm p-1 text-muted-foreground hover:text-destructive"
               >
                 <X className="size-4" />
               </button>

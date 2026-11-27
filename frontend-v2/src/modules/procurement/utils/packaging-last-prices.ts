@@ -20,14 +20,14 @@ export const LAST_PRICE_DEFAULT_N = 5
 export const RECENT_CODES_LIMIT = 20
 
 /**
- * Chế độ gần nhất = chưa bấm "Tất cả", không chip nhóm và không bộ lọc nào khác (ô tìm, nhà cung cấp, ngày, biến động,
+ * Chế độ gần nhất = chưa chọn "Tất cả", không chọn nhóm và không bộ lọc nào khác (ô chọn mã, nhà cung cấp, ngày, biến động,
  * ngưỡng %, phạm vi định mức, các công tắc). `n` và `showQty` chỉ đổi cột hiện nên không tính.
  */
 export function isRecentMode(filters: LastPricesFilters): boolean {
   return (
     !filters.all &&
     filters.groups.length === 0 &&
-    !filters.q.trim() &&
+    filters.codes.length === 0 &&
     filters.suppliers.length === 0 &&
     !filters.from &&
     !filters.to &&
@@ -67,12 +67,11 @@ export function purchaseTrendTone(row: PackagingLastPricesRow, index: number): s
  */
 export function buildLastPricesParams(
   filters: LastPricesFilters,
-  search: string,
   sort: { by: string; dir: 'asc' | 'desc' },
 ): PackagingLastPricesParams {
   return {
     n: filters.n,
-    q: search.trim() || undefined,
+    code: filters.codes.length ? filters.codes : undefined,
     group: filters.groups.length ? filters.groups : undefined,
     supplier: filters.suppliers.length ? filters.suppliers : undefined,
     date_from: filters.from || undefined,

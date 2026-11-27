@@ -234,7 +234,9 @@ export type LastPricesTrend = 'all' | 'up' | 'down' | 'flat'
 export interface PackagingLastPricesParams {
   n?: number
   q?: string
-  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 50. */
+  /** Mã VTBB chọn ở ô chọn mã (lặp khóa `code=`, tối đa 500); rỗng = mọi mã. */
+  code?: string[]
+  /** Tên nhóm (lặp khóa `group=`); nhiều nhóm = HOẶC, tối đa 200. */
   group?: string[]
   supplier?: string[]
   date_from?: string

@@ -152,7 +152,8 @@ export const LAST_PRICE_N_OPTIONS = [3, 5, 10] as const
 export const LAST_PRICE_DEFAULT_N = 5
 
 export interface LastPricesFilters {
-  q: string
+  /** Mã VTBB chọn ở ô chọn mã (thay ô tìm chữ từ 27/11/2026); rỗng = mọi mã. */
+  codes: string[]
   /** Tên các nhóm đang bật (chip bật / tắt); rỗng = mọi nhóm. */
   groups: string[]
   n: number
@@ -173,7 +174,7 @@ export interface LastPricesFilters {
 
 /** Mặc định của Giá mua gần nhất (người chủ chốt 26/11/2026): mọi bộ lọc TẮT — mọi mã, không ép "chỉ mã đã có giá". */
 export const EMPTY_LAST_PRICES_FILTERS: LastPricesFilters = {
-  q: '', groups: [], n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
+  codes: [], groups: [], n: LAST_PRICE_DEFAULT_N, scope: 'all', suppliers: [], from: '', to: '',
   trend: 'all', minPct: 0, onlyPriced: false, bomOnly: false, showQty: false, all: false, trendAllLit: false,
 }
 /** Xếp mặc định của Giá mua gần nhất: Lần 1 ngày mua, mới nhất trước (mã chưa có lần mua xuống cuối) — 20 mã gần nhất. */
@@ -185,11 +186,11 @@ export const LAST_PRICES_DEFAULT_PAGE_SIZE = 20
 export const RECENT_CODES_LIMIT = 20
 
 /**
- * Chế độ gần nhất = chưa bấm "Tất cả", không chip nhóm và không bộ lọc nào khác (ô tìm, nhà cung cấp, ngày, biến động,
+ * Chế độ gần nhất = chưa chọn "Tất cả", không chọn nhóm và không bộ lọc nào khác (ô chọn mã, nhà cung cấp, ngày, biến động,
  * ngưỡng %, phạm vi định mức, các công tắc). `n` và `showQty` chỉ đổi cột hiện nên không tính.
  */
 export function isRecentMode(f: LastPricesFilters): boolean {
-  return !f.all && f.groups.length === 0 && !f.q.trim() && f.suppliers.length === 0 && !f.from && !f.to
+  return !f.all && f.groups.length === 0 && f.codes.length === 0 && f.suppliers.length === 0 && !f.from && !f.to
     && f.trend === 'all' && f.minPct <= 0 && !f.onlyPriced && !f.bomOnly && f.scope === 'all'
 }
 
@@ -209,11 +210,11 @@ export function purchaseTone(row: PackagingLastPricesRow, index: number): string
 
 /** Bộ lọc màn hình → tham số máy chủ (danh sách VÀ Xuất Excel dùng chung nên ra cùng thứ tự). */
 export function buildLastPricesParams(
-  f: LastPricesFilters, search: string, sort: { by: string; dir: 'asc' | 'desc' },
+  f: LastPricesFilters, sort: { by: string; dir: 'asc' | 'desc' },
 ): PackagingLastPricesParams {
   return {
     n: f.n,
-    q: search.trim() || undefined,
+    code: f.codes.length ? f.codes : undefined,
     group: f.groups.length ? f.groups : undefined,
     supplier: f.suppliers.length ? f.suppliers : undefined,
     date_from: f.from || undefined,

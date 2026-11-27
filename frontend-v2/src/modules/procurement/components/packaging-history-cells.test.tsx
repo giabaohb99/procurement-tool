@@ -49,15 +49,15 @@ describe('PriceCell', () => {
 })
 
 describe('DiffCell', () => {
-  it('paints an increase green and a decrease red, with the percent', () => {
+  it('paints an increase red and a decrease green, with the percent', () => {
     const { rerender } = inRouter(<DiffCell row={row()} />)
-    expect(screen.getByText('+10 (+8,3%)').className).toMatch(/emerald/)
+    expect(screen.getByText('+10 (+8,3%)').className).toMatch(/destructive/)
     rerender(
       <MemoryRouter>
         <DiffCell row={row({ diff: -5, pct: -0.05 })} />
       </MemoryRouter>,
     )
-    expect(screen.getByText('-5 (-5,0%)').className).toMatch(/destructive/)
+    expect(screen.getByText('-5 (-5,0%)').className).toMatch(/emerald/)
   })
 
   it('shows a dash for the first purchase, and a plain muted 0 (no percent) for an unchanged price', () => {

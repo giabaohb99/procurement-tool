@@ -24,7 +24,7 @@ export function AmountText({ value }: { value: Num }) {
   return t ? <span className="pkg-num">{t}</span> : <Dash />
 }
 
-/** Chênh lệch có dấu: tăng xanh, giảm đỏ, bằng 0 không màu. */
+/** Chênh lệch có dấu: tăng đỏ, giảm xanh, bằng 0 không màu. */
 export function DiffText({ value, bold }: { value: Num; bold?: boolean }) {
   const t = diffText(value)
   if (!t) return <Dash />
@@ -51,7 +51,7 @@ export function CodeLink({ code, product }: { code: string; product?: boolean })
   )
 }
 
-/** Xu hướng chi phí của một sản phẩm (mã `CostTrend`): tăng xanh, giảm đỏ (cùng luật với ô chênh lệch), còn lại màu mờ. */
+/** Xu hướng chi phí của một sản phẩm (mã `CostTrend`): tăng đỏ, giảm xanh (cùng luật với ô chênh lệch), còn lại màu mờ. */
 export function TrendText({ trend }: { trend: number }) {
   const color = trend === COST_TREND.UP ? PKG_UP_COLOR : trend === COST_TREND.DOWN ? PKG_DOWN_COLOR : undefined
   return (

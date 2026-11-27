@@ -14,7 +14,7 @@
 .pp {
   --navy: #0f3b6e; --green: #0b6a3a; --lime: #7fd148; --blue: #00aeef; --muted: #5a5a5a; --faint: #8c939c;
   --line: #e0e5ec; --line-2: #eef1f5; --text: #14202e; --brand-soft: #e6eef7; --accent-soft: #e8f5ec;
-  --up: #0b6a3a; --down: #c0392b; --warn: #9a6b00; --warn-bg: #fff6db; --input: #fffbe6;
+  --up: #c0392b; --down: #0b6a3a;  /* tăng đỏ, giảm xanh (27/11/2026) */ --warn: #9a6b00; --warn-bg: #fff6db; --input: #fffbe6;
   min-height: 100vh; background: #f5f7fa; color: var(--text);
   font: 12.5px/1.45 'Montserrat', 'Segoe UI', Roboto, Arial, sans-serif;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;

@@ -22,6 +22,8 @@ const PAGE_SIZES = [10, 20, 50, 100]
 const MAX_QUERY_LENGTH = 100
 const MAX_CODE_LENGTH = 50
 const MAX_SUPPLIERS = 100
+/** Bằng trần `PACKAGING_MAX_CODES` của ô chọn mã và `MAX_CODES` của API. */
+const MAX_CODES = 500
 const MAX_GROUPS = 200
 const TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -36,7 +38,7 @@ const LAST_PRICES_SORT_KEYS = ['code', 'name', 'group', 'purchase_count', 'v12',
 
 export const PRICE_LIST_URL_KEYS = ['q', 'group', 'scope', 'date_from', 'date_to', 'sort_by', 'sort_dir', 'page', 'page_size'] as const
 export const LAST_PRICES_URL_KEYS = [
-  'q', 'group', 'all', 'scope', 'only_priced', 'date_from', 'date_to', 'supplier', 'n', 'show_qty', 'trend', 'min_pct', 'bom_only',
+  'code', 'q', 'group', 'all', 'scope', 'only_priced', 'date_from', 'date_to', 'supplier', 'n', 'show_qty', 'trend', 'min_pct', 'bom_only',
   'sort_by', 'sort_dir', 'page', 'page_size',
 ] as const
 
@@ -144,7 +146,7 @@ export function lastPricesScreenToSearch(st: LastPricesScreenState): string {
   const f = st.filters
   const d = EMPTY_LAST_PRICES_FILTERS
   const s = new URLSearchParams()
-  if (f.q.trim()) s.set('q', f.q.trim())
+  f.codes.forEach((c) => s.append('code', c))
   f.groups.forEach((g) => s.append('group', g))
   if (f.all) s.set('all', '1')
   if (f.n !== d.n) s.set('n', String(f.n))
@@ -172,6 +174,8 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
     .filter((c) => c && c.length <= MAX_CODE_LENGTH))].slice(0, MAX_SUPPLIERS)
   //  `group` lặp khóa như `supplier` (chip nhóm bật nhiều cùng lúc); link cũ chỉ một `group=` vẫn ra đúng một nhóm.
   const groups = [...new Set(s.getAll('group').map((g) => g.trim().slice(0, MAX_CODE_LENGTH)).filter(Boolean))].slice(0, MAX_GROUPS)
+  //  Mã chọn ở ô chọn mã (27/11/2026, thay ô tìm chữ `q`): `code` lặp khóa; link cũ có `q` thì bỏ qua.
+  const codes = [...new Set(s.getAll('code').map((c) => c.trim()).filter((c) => c && c.length <= MAX_CODE_LENGTH))].slice(0, MAX_CODES)
   const trend = s.get('trend') as LastPricesTrend
   const minPct = Number(s.get('min_pct'))
   const sortBy = s.get('sort_by') ?? ''
@@ -182,7 +186,7 @@ export function searchToLastPricesScreen(search: string): LastPricesScreenState 
   const sortedAwayFromRecent = sorted && (sortBy !== LAST_PRICES_DEFAULT_SORT.by || sortDir !== LAST_PRICES_DEFAULT_SORT.dir)
   return {
     filters: {
-      q: textFromSearch(s, 'q'),
+      codes,
       groups,
       all: groups.length === 0 && (flag(s, 'all') === true || sortedAwayFromRecent),
       trendAllLit: false,

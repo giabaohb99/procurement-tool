@@ -60,11 +60,11 @@ describe('PackagingSelectedCodeCard', () => {
     expect(screen.getByText('Thiếu giá thành phần')).toBeInTheDocument()
   })
 
-  it('colours an increase green and a decrease red, like the table', () => {
+  it('colours an increase red and a decrease green, like the table', () => {
     renderCard()
-    expect(screen.getByText('+330,5')).toHaveClass('text-emerald-600')
+    expect(screen.getByText('+330,5')).toHaveClass('text-destructive')
     renderCard({ code: 'NAP0001', diff: -20, pct: -0.05 })
-    expect(screen.getByText('-20')).toHaveClass('text-destructive')
+    expect(screen.getByText('-20')).toHaveClass('text-emerald-600')
   })
 
   it('keeps the assumed-price input editable on the card', async () => {

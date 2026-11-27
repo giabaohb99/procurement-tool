@@ -98,8 +98,8 @@ không có quyền Xem thì không thấy mục — nhờ quản trị.
   mua hàng, dòng có mã đơn ở cột *Nguồn* là lần mua trên ERP, dòng để trống ô Nguồn là Sổ Misa / lịch sử cũ (tệp Excel ghi rõ
   chữ *Sổ Misa*, *Lịch sử mua hàng*, *Dòng đơn mua hàng*).
 - **Giá cũ / mới:** có báo giá → mới = báo giá mới nhất (kể cả ngày hiệu lực ở tương lai), cũ = lần mua có giá gần nhất;
-  không báo giá → mới = lần mua có giá gần nhất, cũ = lần trước đó; mới mua một lần → cũ = mới. Số **tăng hiện xanh, giảm
-  hiện đỏ**. **Không còn ngưỡng giá sàn / trần** (đã bỏ hẳn 25/11/2026: không nút, cột, ô lọc hay cảnh báo nào về ngưỡng);
+  không báo giá → mới = lần mua có giá gần nhất, cũ = lần trước đó; mới mua một lần → cũ = mới. Số **tăng hiện đỏ, giảm
+  hiện xanh**. **Không còn ngưỡng giá sàn / trần** (đã bỏ hẳn 25/11/2026: không nút, cột, ô lọc hay cảnh báo nào về ngưỡng);
   Min / Max là giá thấp nhất / cao nhất tự tính từ sổ giá. Đừng hướng dẫn người dùng đặt ngưỡng.
 - **Báo giá:** mỗi (mã, mã NCC, ngày hiệu lực) chỉ một báo giá (bỏ trống Mã NCC cũng tính là một NCC); lưu trùng thì hệ thống
   báo *Đã có báo giá cùng mã, NCC và ngày hiệu lực* → sửa báo giá đang có hoặc đổi ngày hiệu lực. Màn danh sách *Báo giá VTBB*
@@ -119,7 +119,7 @@ không có quyền Xem thì không thấy mục — nhờ quản trị.
   ghi đè lần cuối bị xóa hẳn (không quay về bản cũ); lô Sổ Misa chỉ xóa lần mua lô đó thêm và tự tính lại mốc. Cần quyền
   **Xóa** Giá bao bì + quyền xem Quản lý Import.
 - **In / Excel:** bản in A4 ngang và tệp Excel trình bày như báo cáo HTML (tiêu đề *BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT*,
-  ngày xuất, đơn vị VNĐ chưa VAT, ô tăng xanh giảm đỏ), theo đúng bộ lọc đang xem; Excel tối đa 5.000 dòng.
+  ngày xuất, đơn vị VNĐ chưa VAT, ô tăng đỏ giảm xanh), theo đúng bộ lọc đang xem; Excel tối đa 5.000 dòng.
 - Giao diện cũ là ứng dụng cài được: cập nhật xong mà màn chưa đổi thì bấm ***Tải lại*** ở hộp *Đã có phiên bản mới*.
 - Hỏi số cụ thể → dùng công cụ giá nguyên vật liệu bao bì nếu có trong danh sách công cụ: `packaging_price_impact` ("nắp X lên 350 đ thì
   sản phẩm nào tăng bao nhiêu", nhận giá giả định), `packaging_price_lookup` (giá cũ / mới, lần mua gần nhất của một mã VTBB),
