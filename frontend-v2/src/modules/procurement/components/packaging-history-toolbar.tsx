@@ -1,8 +1,9 @@
 /**
  * duoc-CR-784 — thanh chọn + lọc của tab Lịch sử mua hàng.
  *
- * Hàng 1: chế độ (theo mã VTBB / theo mã sản phẩm) + ô chọn nhiều mã (dùng lại `PackagingCodePicker`; để trống = tất cả).
- * Hàng 2: nhà cung cấp, khoảng ngày mua (ô tìm chữ thứ hai bỏ 27/11/2026: ô chọn mã ở hàng 1 đã tìm theo mã, tên, nhóm và tên NCC). Lựa chọn mã nằm ở URL (do trang giữ), bộ lọc còn lại ở state trang.
+ * Một hàng (27/11/2026): chế độ (theo mã VTBB / theo mã sản phẩm) · ô chọn nhiều mã kiểu gọn (dùng lại `PackagingCodePicker`;
+ * để trống = tất cả) · nhà cung cấp · khoảng ngày mua. Ô tìm chữ thứ hai bỏ 27/11/2026 vì ô chọn mã đã tìm theo mã, tên, nhóm và
+ * tên NCC. Lựa chọn mã nằm ở URL (do trang giữ), bộ lọc còn lại ở state trang.
  */
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { MultiPicker } from '@/shared/ui/multi-picker'
@@ -47,7 +48,8 @@ export function PackagingHistoryToolbar({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <div className="flex flex-wrap items-start gap-3">
+      {/*  MỘT hàng (27/11/2026, "input hơi mập"): chế độ · ô chọn mã kiểu gọn · nhà cung cấp · khoảng ngày; hẹp thì xuống dòng. */}
+      <div className="flex flex-wrap items-center gap-2">
         <ToggleGroup
           type="single"
           variant="outline"
@@ -56,12 +58,12 @@ export function PackagingHistoryToolbar({
             value && onSelectionChange({ ...selection, mode: value as PackagingHistoryMode })
           }
           aria-label="Chế độ chọn"
-          className="h-10 shrink-0"
+          className="h-9 shrink-0"
         >
           <ToggleGroupItem value="code">Theo mã VTBB</ToggleGroupItem>
           <ToggleGroupItem value="product">Theo mã sản phẩm</ToggleGroupItem>
         </ToggleGroup>
-        <div className="min-w-80 flex-1">
+        <div className="min-w-72 flex-1">
           {isProduct ? (
             <PackagingCodePicker
               kind="product"
@@ -71,6 +73,7 @@ export function PackagingHistoryToolbar({
               loading={optionsLoading}
               maxCodes={PACKAGING_HISTORY_MAX_CODES}
               emptyPlaceholder="Tất cả sản phẩm có định mức — gõ để chọn sản phẩm cụ thể"
+              compact
             />
           ) : (
             <PackagingCodePicker
@@ -79,13 +82,11 @@ export function PackagingHistoryToolbar({
               onChange={(codes) => onSelectionChange({ ...selection, codes })}
               loading={optionsLoading}
               maxCodes={PACKAGING_HISTORY_MAX_CODES}
-              emptyPlaceholder="Tất cả mã VTBB — gõ mã, tên hoặc tên nhóm để chọn mã cụ thể"
+              emptyPlaceholder="Tất cả mã VTBB — gõ mã, tên, nhóm hoặc NCC để chọn mã cụ thể"
+              compact
             />
           )}
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="w-56">
           <MultiPicker<string>
             value={filters.suppliers}

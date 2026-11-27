@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
@@ -11,6 +12,20 @@ import {
   type ImpactAdvancedFilters,
 } from '../utils/packaging-impact-filters'
 import { PackagingFilterChipBar } from './packaging-filter-chip-bar'
+import type * as PackagingCostApi from '../api/packaging-cost-api'
+
+//  Ô tìm có gợi ý (27/11/2026) nạp danh sách sản phẩm / mã qua TanStack Query: bọc provider, giả lập hai hàm nạp.
+vi.mock('../api/packaging-cost-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PackagingCostApi>()),
+  fetchPackagingCodeOptions: vi.fn(async () => []),
+  fetchPackagingFgOptions: vi.fn(async () => []),
+}))
+
+function renderWithQuery(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
 
 /** Giữ bộ lọc trong state như màn thật và ghi lại mọi lần `onChange` để soi thân yêu cầu gửi máy chủ. */
 function Harness({
@@ -51,7 +66,7 @@ afterEach(() => {
 describe('PackagingFilterChipBar', () => {
   it('shows no chip row until a condition exists and lists the impact fields in the add menu', async () => {
     const user = userEvent.setup()
-    render(<Harness />)
+    renderWithQuery(<Harness />)
     expect(screen.queryByRole('group', { name: 'Điều kiện lọc đang bật' })).not.toBeInTheDocument()
     await openMenu(user)
     const items = screen.getAllByRole('menuitem').map((item) => item.textContent)
@@ -68,7 +83,7 @@ describe('PackagingFilterChipBar', () => {
 
   it('overview menu has no trend but has the old-cost and % fields', async () => {
     const user = userEvent.setup()
-    render(<Harness variant="overview" />)
+    renderWithQuery(<Harness variant="overview" />)
     await openMenu(user)
     const names = screen.getAllByRole('menuitem').map((item) => item.textContent ?? '')
     expect(names).not.toContain('Xu hướng chi phí')
@@ -77,7 +92,7 @@ describe('PackagingFilterChipBar', () => {
 
   it('warning text names only current warning kinds (no floor / ceiling)', async () => {
     const user = userEvent.setup()
-    render(<Harness />)
+    renderWithQuery(<Harness />)
     await openMenu(user)
     const item = screen.getByRole('menuitem', { name: /Chỉ sản phẩm có cảnh báo/ })
     expect(item).toHaveTextContent('quy cách thùng')
@@ -87,7 +102,7 @@ describe('PackagingFilterChipBar', () => {
   it('a boolean condition is added immediately as a chip', async () => {
     const user = userEvent.setup()
     const applied: ImpactAdvancedFilters[] = []
-    render(<Harness onChange={(next) => applied.push(next)} />)
+    renderWithQuery(<Harness onChange={(next) => applied.push(next)} />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: /Chỉ sản phẩm có cảnh báo/ }))
     expect(applied.at(-1)?.warningsOnly).toBe(true)
@@ -97,7 +112,7 @@ describe('PackagingFilterChipBar', () => {
   it('single-choice trend: pick closes the editor and leaves a chip with the label', async () => {
     const user = userEvent.setup()
     const applied: ImpactAdvancedFilters[] = []
-    render(<Harness onChange={(next) => applied.push(next)} />)
+    renderWithQuery(<Harness onChange={(next) => applied.push(next)} />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Xu hướng chi phí' }))
     await user.click(await screen.findByRole('button', { name: 'Tăng' }))
@@ -108,7 +123,7 @@ describe('PackagingFilterChipBar', () => {
 
   it('multi-choice roles: toggles stay open and the chip lists the labels', async () => {
     const user = userEvent.setup()
-    render(<Harness />)
+    renderWithQuery(<Harness />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: /Có mã đã chọn ở vai trò/ }))
     await user.click(await screen.findByRole('button', { name: 'Nắp' }))
@@ -122,7 +137,7 @@ describe('PackagingFilterChipBar', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const applied: ImpactAdvancedFilters[] = []
-    render(<Harness onChange={(next) => applied.push(next)} />)
+    renderWithQuery(<Harness onChange={(next) => applied.push(next)} />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Tăng/giảm /thùng' }))
     await user.type(await screen.findByLabelText('Tăng/giảm /thùng từ'), '1.000')
@@ -136,7 +151,7 @@ describe('PackagingFilterChipBar', () => {
   it('range: closing the editor before the delay still sends what was typed', async () => {
     const user = userEvent.setup()
     const applied: ImpactAdvancedFilters[] = []
-    render(<Harness variant="overview" onChange={(next) => applied.push(next)} />)
+    renderWithQuery(<Harness variant="overview" onChange={(next) => applied.push(next)} />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: '% chênh' }))
     await user.type(await screen.findByLabelText('% chênh từ'), '5')
@@ -148,7 +163,7 @@ describe('PackagingFilterChipBar', () => {
   it('range: shows an inline message for "from" > "to" and does not send the range', async () => {
     const user = userEvent.setup()
     const applied: ImpactAdvancedFilters[] = []
-    render(<Harness onChange={(next) => applied.push(next)} />)
+    renderWithQuery(<Harness onChange={(next) => applied.push(next)} />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Quy cách thùng' }))
     await user.type(await screen.findByLabelText('Quy cách thùng từ'), '30')
@@ -161,7 +176,7 @@ describe('PackagingFilterChipBar', () => {
 
   it('an empty new chip disappears when its editor closes without input', async () => {
     const user = userEvent.setup()
-    render(<Harness />)
+    renderWithQuery(<Harness />)
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Tăng/giảm /chai' }))
     expect(await screen.findByText('Tăng/giảm /chai: chưa nhập')).toBeInTheDocument()
@@ -171,7 +186,7 @@ describe('PackagingFilterChipBar', () => {
 
   it('clicking a chip edits it, the x removes it and the field returns to the menu', async () => {
     const user = userEvent.setup()
-    render(
+    renderWithQuery(
       <Harness
         initial={{ ...EMPTY_IMPACT_FILTERS, roles: [1], cartonQty: { min: '24', max: '40' } }}
         onChange={() => undefined}

@@ -288,3 +288,14 @@ tbody tr.pkg-zero td { color: var(--muted); }
 .pkg-card-pcode .pkg-code { font-size: 12.5px; }
 .pkg-card-pprice { text-align: right; white-space: nowrap; }
 .pkg-card-grp { color: var(--muted); font-size: 12.5px; font-weight: 400; }
+
+/*  Ô tìm có gợi ý của thanh lọc chip (27/11/2026): danh sách sổ dưới ô, mỗi dòng mã · tên · loại. */
+.pkg-suggest { position: relative; }
+.pkg-suggest-list { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; width: min(560px, 90vw); max-height: 320px;
+  overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 59, 110, 0.12); }
+.pkg-suggest-item { display: flex; align-items: baseline; gap: 12px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.pkg-suggest-item.on { background: #f1f5f9; }
+.pkg-suggest-code { width: 96px; flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pkg-suggest-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkg-suggest-kind { flex: none; color: var(--muted); font-size: 12px; }

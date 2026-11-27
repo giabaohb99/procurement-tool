@@ -14,7 +14,7 @@
  * để cụm Xếp theo / Tải lại đứng CÙNG hàng; phần riêng của màn (`children`) xuống hàng riêng `order-3` — người chủ chê
  * dải trống khi cụm nút đứng một mình một hàng (26/11/2026).
  */
-import { ChevronDown, ListFilter, Plus, Search, X } from 'lucide-react'
+import { ChevronDown, ListFilter, Plus, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -25,7 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
@@ -41,6 +40,7 @@ import {
   type ImpactAdvancedFilters,
 } from '../utils/packaging-impact-filters'
 import { PackagingFilterConditionEditor } from './packaging-filter-condition-editor'
+import { PackagingKeywordSuggestInput } from './packaging-keyword-suggest-input'
 
 interface PackagingFilterChipBarProps {
   variant: AdvancedFilterVariant
@@ -88,16 +88,12 @@ export function PackagingFilterChipBar({
           isMobile ? 'flex-[1_1_10rem]' : 'flex-[1_1_24rem] flex-wrap',
         )}
       >
-        <div className={cn('relative', isMobile ? 'min-w-0 flex-1' : 'w-72 max-w-full')}>
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            aria-label="Tìm sản phẩm"
-            placeholder="Tìm mã HH, tên, mã thành phần…"
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-          />
-        </div>
+        {/*  Ô tìm có gợi ý sản phẩm / mã thành phần (27/11/2026). */}
+        <PackagingKeywordSuggestInput
+          value={keyword}
+          onChange={onKeywordChange}
+          className={isMobile ? 'min-w-0 flex-1' : 'w-72 max-w-full'}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {isMobile ? (
