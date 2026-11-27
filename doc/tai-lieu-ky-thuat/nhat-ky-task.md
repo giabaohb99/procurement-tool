@@ -132,6 +132,8 @@ giá bằng hộp thoại. Thêm bài kiểm để lần sau thêm đường s�
 Mã nguồn: `backend/app/modules/purchase_order/reprice_service.py`.
 Kiểm: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` · `test/backend/test_moc_dong_bo_so_gia_cr784.py` ·
 `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
+Deploy: dev 27/11/2026 (erp-v2 c518b11b), thử trên đơn thật PO00807 qua đường API: sửa giá trong bảng 800 → 801 rồi trả về, công nợ, lịch
+sử mua và sổ giá đổi theo. Prod 27/11/2026 bản 2.27.0 (main 448401aa).
 
 ## bao-CR-796 | Lịch sử mua hàng (Giá nguyên vật liệu sản xuất): số đơn ở cột Nguồn không còn bị cắt
 - status: xong
@@ -155,6 +157,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/hooks/use-packaging-history-co
 `frontend-v2/src/modules/procurement/components/packaging-history-cells.tsx`.
 Deploy: dev 27/11/2026 (erp-v2 c8306ec5), đã mở màn trên dev khổ 1.700 px: cột Nguồn hiện đủ nhãn và số đơn, bảng rộng 1.565 px
 trong khung 1.352 px nên có thanh cuộn ngang, cuộn tới hết cột cuối. Prod chưa (chủ dự án dặn đẩy sau).
+Deploy: prod 27/11/2026 bản 2.27.0 (main 448401aa).
 
 ## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
 - status: dang-lam
@@ -444,6 +447,7 @@ Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_202
 **Kiểm:** typecheck và eslint giao diện mới sạch, 2.105 bài kiểm phân hệ Thu mua, router và thông báo xanh; giao diện cũ không thêm lỗi kiểu; đã xem trên máy local cả hai giao diện.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/pages/packaging-material-price-list-page.tsx`, `routes.tsx`, `routes.test.ts`, `frontend-v2/src/shared/constants/app-routes.ts`; bản v1: `frontend/src/pages/packaging/PackagingMaterialPriceList.tsx`, `frontend/src/App.tsx`, `frontend/src/layouts/AppLayout.tsx`.
+Deploy: prod 27/11/2026 bản 2.27.0 (main 448401aa), do điều phối phát hành theo lời chủ dự án.
 
 ## duoc-CR-797 | Sửa giá sau duyệt của đơn mua hàng, cách thứ hai: sửa ngay trong bảng dòng
 - status: xong
@@ -462,6 +466,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/pages/packaging-material-price
 
 Mã nguồn: `backend/app/modules/purchase_order/reprice_service.py`, `controller.py`, `schema.py`, `backend/app/core/action_catalog.py`; `frontend-v2/src/modules/procurement/components/purchase-order-reprice-bar.tsx`, `purchase-order-reprice-line-fields.tsx`, `hooks/use-purchase-order-reprice.ts`, `utils/purchase-order-reprice.ts`, `pages/purchase-order-detail-page.tsx`.
 Commit: 7fa39f3d, d89f2ca0.
+Deploy: prod 27/11/2026 bản 2.27.0 (main 448401aa), kèm bản vá bao-CR-799 (đồng bộ sổ giá + lịch sử mua sau khi sửa giá trong bảng).
 
 ## duoc-CR-784 | Cụm Giá bao bì ở Thu mua: sổ giá, báo giá, ngưỡng giá, định mức bao bì và màn mô phỏng tác động giá
 - status: xong
