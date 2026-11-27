@@ -114,6 +114,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-796 | Lịch sử mua hàng (Giá nguyên vật liệu sản xuất): số đơn ở cột Nguồn không còn bị cắt
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** chủ dự án báo trên giao diện mới: cột Nguồn của màn Lịch sử mua hàng chỉ hiện *PO0…*, và bảng không kéo ngang được để
+xem phần bị che.
+
+**Nguyên nhân:** cột Nguồn hẹp hơn nội dung (nhãn *ĐMH đang mở* kèm số đơn); các cột cộng lại vẫn vừa khung nên bảng không có
+thanh cuộn ngang.
+
+**Đã làm:** nới bề rộng mặc định các cột theo bản giao diện cũ, cột Nguồn đủ chỗ cho nhãn và số đơn, số đơn không bị cắt nữa. Màn
+hẹp hơn tổng bề rộng cột thì bảng tự có thanh cuộn ngang. Ai đã tự kéo giãn cột thì giữ bề rộng đã lưu của họ.
+
+**Quay lui:** chạy lại bản giao diện trước.
+
+**Kiểm:** giao diện mới kiểm kiểu 0 lỗi, 46 bài của màn Lịch sử mua hàng đạt.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/hooks/use-packaging-history-columns.tsx` ·
+`frontend-v2/src/modules/procurement/components/packaging-history-cells.tsx`.
+
 ## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
 - status: dang-lam
 - date: 2026-11-27

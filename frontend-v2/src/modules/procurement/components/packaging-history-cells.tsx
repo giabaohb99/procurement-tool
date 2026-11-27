@@ -71,12 +71,12 @@ export function SourceCell({ row }: { row: PackagingHistoryRow }) {
           <Link
             to={appRoutes.procurement.purchaseOrderDetail(row.doc_id)}
             onClick={(event) => event.stopPropagation()}
-            className="truncate text-primary tabular-nums hover:underline"
+            className="shrink-0 whitespace-nowrap text-primary tabular-nums hover:underline"
           >
             {poLabel}
           </Link>
         ) : (
-          <span className="truncate tabular-nums">{poLabel}</span>
+          <span className="shrink-0 whitespace-nowrap tabular-nums">{poLabel}</span>
         ))}
     </span>
   )

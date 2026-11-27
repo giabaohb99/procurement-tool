@@ -5,7 +5,8 @@
  * `packaging_cost/history_service.py` (`date, code, name, supplier, warehouse, qty, price, amount, vat, source` + `fg_code,
  * fg_name, role` chỉ ở chế độ sản phẩm). "Lần" và "So lần trước" là số tính theo từng mã nên chưa xếp được (luật §8: không
  * bật `sortable` khi máy chủ chưa nhận khóa). Số lượng kèm ĐVT trong một ô; nguồn + số ĐMH chung một cột. Dòng đơn giá 0 mờ đi
- * (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở".
+ * (không tính vào KPI / biểu đồ); dòng ĐMH đang mở mang nhãn "ĐMH đang mở". Bề rộng cột theo bản giao diện cũ
+ * (`PackagingHistoryTable.tsx`); tổng bề rộng là sàn của bảng nên khung hẹp hơn thì bảng tự có thanh cuộn ngang.
  *
  * Chế độ "Theo sản phẩm" (bản mẫu `renderHistBySP`): mỗi dòng = một lần mua x một (sản phẩm, thành phần), các cột đầu theo thứ
  * tự bản mẫu: Mã SP · Tên sản phẩm · Thành phần · Mã VTBB · Tên vật tư · Lần · Ngày mua...; chế độ mã: Lần · Ngày mua · Mã VTBB...
@@ -50,7 +51,7 @@ const codeColumn: DataTableColumn<PackagingHistoryRow> = {
 const nameColumn: DataTableColumn<PackagingHistoryRow> = {
   key: 'name',
   header: 'Tên vật tư',
-  width: 160,
+  width: 200,
   sortable: true,
   cell: (row) => row.name || <span className="text-muted-foreground">(chưa có tên)</span>,
 }
@@ -90,7 +91,7 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
       {
         key: 'supplier',
         header: 'Nhà cung cấp',
-        width: singleCode ? 220 : 140,
+        width: singleCode ? 260 : 190,
         sortable: true,
         cell: (row) => row.supplier || <EmptyDash />,
       },
@@ -105,7 +106,7 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
       {
         key: 'qty',
         header: 'Số lượng',
-        width: 110,
+        width: 120,
         align: 'right',
         sortable: true,
         sortDescFirst: true,
@@ -123,7 +124,7 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
       {
         key: 'price',
         header: 'Đơn giá',
-        width: 100,
+        width: 110,
         align: 'right',
         sortable: true,
         sortDescFirst: true,
@@ -133,7 +134,7 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
         // Giá trị mua = thành tiền Misa khi có, không thì giá x số lượng (máy chủ tính); dòng giá 0 không có giá trị.
         key: 'amount',
         header: 'Giá trị mua',
-        width: 120,
+        width: 130,
         align: 'right',
         sortable: true,
         sortDescFirst: true,
@@ -142,14 +143,16 @@ export function usePackagingHistoryColumns(productMode: boolean, singleCode: boo
       {
         key: 'diff',
         header: 'So lần trước',
-        width: 140,
+        width: 150,
         align: 'right',
         cell: (row) => <DiffCell row={row} />,
       },
       {
         key: 'source',
         header: 'Nguồn',
-        width: 120,
+        // Đủ chỗ cho nhãn "ĐMH đang mở" + số đơn (PO01260) trên MỘT dòng: hẹp hơn là số đơn bị cắt còn "PO0…"
+        // và bảng vừa khít khung nên không có thanh cuộn ngang để xem phần bị cắt (chủ dự án báo 27/11/2026).
+        width: 195,
         sortable: true,
         cell: (row) => <SourceCell row={row} />,
       },
