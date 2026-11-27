@@ -127,6 +127,9 @@
 .pkg-lp tbody td { padding: 8px 10px; font-size: 13px; }
 .pkg-lp .sticky-col { position: sticky; left: 0; z-index: 1; background: inherit; }
 .pkg-lp thead .sticky-col { z-index: 4; background: #f4f7fe; }
+/*  Cột Tên vật tư dính trái thứ hai (27/11/2026), ngay sau cột Mã; vạch bóng mép phải tách phần dính với phần cuộn. */
+.pkg-lp .sticky-col-2 { position: sticky; left: var(--pkg-lp-code-w, 110px); z-index: 1; background: inherit; box-shadow: inset -1px 0 0 var(--border); }
+.pkg-lp thead .sticky-col-2 { z-index: 4; background: #f4f7fe; }
 .pkg-lp .g0 { background: #dbeafe !important; }
 .pkg-lp .g1 { background: #ffedd5 !important; }
 .pkg-lp .g2 { background: #dcfce7 !important; }
