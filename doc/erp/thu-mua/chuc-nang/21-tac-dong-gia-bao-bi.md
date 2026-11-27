@@ -141,13 +141,15 @@ VTBB và nhập báo giá của nhà cung cấp*.
   hiệu lực), Giá cũ, Giá mới, Chênh lệch, %, Min, Max, Số SP đang dùng, Ghi chú, Thao tác (nút **Báo giá**). Cột **Tiền tệ**
   (luôn *VND*, 26/11/2026) đứng ngay trước cột giá đầu tiên để cuộn ngang không che; tệp Excel có cùng cột.
 - v2 ẩn sẵn Min, Max, Ghi chú (mở ở nút **Cột**); bản cũ hiện sẵn Min, Max, ẩn Ghi chú.
-- Lọc: ô *Tìm mã, tên vật tư…*, chip nhóm, phạm vi **Mã trong định mức** (mã trong định mức ∪ mã có báo giá, mặc định) /
+- Lọc: **ô chọn mã** (27/11/2026 thay ô tìm chữ, cùng ô của màn Tác động kiểu gọn một dòng; danh sách `code-options?scope=all` =
+  mọi mã có trong sổ giá, tìm theo mã, tên, nhóm hoặc tên NCC từng bán; API `code` lặp tối đa 500 mã, bất kể phạm vi), chip nhóm, phạm vi **Mã trong định mức** (mã trong định mức ∪ mã có báo giá, mặc định) /
   **Mọi mã có giá** (thêm mọi mã trong sổ giá), *Khoảng ngày tính min – max*. Xếp + phân trang tại máy chủ, Xuất Excel theo
   đúng bộ lọc và thứ tự.
 - **Ô tìm đi qua nút phạm vi** (bao-CR-791, 27/11/2026): đã gõ ô tìm thì máy chủ tìm trên MỌI mã có trong sổ giá dù đang để
   *Mã trong định mức* (`price_list_service.search_scope`), áp cho cả màn hình và Xuất Excel. Lý do: chủ dự án tìm mã đã mua qua
   ĐMH (CHT0230) không thấy vì mã chưa thuộc định mức nào; trên prod 1.135 mã thuộc định mức so với 2.650 mã có lần mua. Ô
-  chọn mã của màn Tác động (`code-options`) giữ phạm vi định mức.
+  chọn mã của màn Tác động (`code-options`) giữ phạm vi định mức. Từ 27/11/2026 cả hai giao diện thay ô tìm chữ bằng ô chọn mã (`code`), nên màn
+  không gửi `q` nữa; luật `search_scope` vẫn giữ cho ai gọi thẳng API.
 - **Báo giá mới** (đầu trang) / **Báo giá** (từng dòng, mã khóa sẵn) mở hộp: Mã VTBB *, Nhà cung cấp, Đơn giá (VNĐ, chưa VAT) *,
   VAT (%), Ngày hiệu lực *, Ghi chú; nút **Lưu báo giá**. Ô **Nhà cung cấp** (26/11/2026) chọn từ danh mục NCC đang hoạt động, gõ
   mã hoặc tên để tìm, xóa được; người thiếu quyền `supplier.read` thì vẫn là ô gõ mã tay (tự viết hoa). Lỗi: *Nhập mã vật tư bao bì.*, *Nhập đơn giá báo giá (lớn hơn

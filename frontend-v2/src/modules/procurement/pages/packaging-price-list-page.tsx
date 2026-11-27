@@ -11,7 +11,6 @@ import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
@@ -35,10 +34,10 @@ import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
 import { usePackagingPriceList } from '../hooks/use-packaging-price-list'
 import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-columns'
 import type { PackagingPriceListParams, PackagingPriceRow } from '../types/packaging-cost-types'
-import { collectPackagingGroups } from '../utils/packaging-code-match'
+import { collectPackagingGroups, sortPackagingCodeOptions } from '../utils/packaging-code-match'
 import { buildPriceListUrlSearch, parsePriceListUrlState } from '../utils/packaging-list-url-state'
 
-const EMPTY_FILTERS: PriceListFilters = { q: '', group: '', scope: 'bom' }
+const EMPTY_FILTERS: PriceListFilters = { codes: [], group: '', scope: 'bom' }
 
 export function PackagingPriceListPage() {
   const { can } = usePermission()
@@ -52,7 +51,6 @@ export function PackagingPriceListPage() {
   const [sortBy, setSortBy] = useState(initial.sortBy)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
   const [pageSize, setPageSize] = useState(initial.pageSize)
-  const debouncedQ = useDebouncedValue(filters.q, 350)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const once = useSingleFlight()
@@ -60,7 +58,7 @@ export function PackagingPriceListPage() {
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo<PackagingPriceListParams>(
     () => ({
-      q: debouncedQ.trim() || undefined,
+      code: filters.codes.length ? filters.codes : undefined,
       group: filters.group || undefined,
       scope: filters.scope,
       date_from: range.from || undefined,
@@ -68,14 +66,13 @@ export function PackagingPriceListPage() {
       //  Nhịp thứ ba của tiêu đề cột trả khóa rỗng = thôi xếp → KHÔNG gửi, để máy chủ xếp mặc định.
       ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
     }),
-    [debouncedQ, filters.group, filters.scope, range, sortBy, sortDir],
+    [filters.codes, filters.group, filters.scope, range, sortBy, sortDir],
   )
   const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
   const list = usePackagingPriceList({ ...filterParams, page, page_size: pageSize })
 
-  //  Ô tìm lên URL theo nhịp ĐÃ HOÃN (350 ms) — không ghi lại URL mỗi phím gõ.
   const urlSearch = buildPriceListUrlSearch({
-    filters: { ...filters, q: debouncedQ },
+    filters,
     from: range.from,
     to: range.to,
     sortBy,
@@ -89,9 +86,10 @@ export function PackagingPriceListPage() {
     }
   }, [urlSearch, searchParams, setSearchParams])
 
-  //  Nhóm cho chip lấy từ mã đang dùng trong định mức (đã có cache của màn Tác động).
-  const optionsQuery = usePackagingCodeOptions()
-  const groups = useMemo(() => collectPackagingGroups(optionsQuery.data ?? []), [optionsQuery.data])
+  //  Danh sách mã của ô chọn mã = mọi mã có trong sổ giá (27/11/2026); nhóm cho chip lấy từ chính danh sách đó.
+  const optionsQuery = usePackagingCodeOptions(true, 'all')
+  const codeOptions = useMemo(() => sortPackagingCodeOptions(optionsQuery.data ?? []), [optionsQuery.data])
+  const groups = useMemo(() => collectPackagingGroups(codeOptions), [codeOptions])
 
   const openQuote = useCallback((row: PackagingPriceRow) => setQuoteCode(row.code), [])
   const canQuote = can('packaging_cost', 'create')
@@ -101,7 +99,7 @@ export function PackagingPriceListPage() {
   })
 
   const filtersActive =
-    filters.q !== '' ||
+    filters.codes.length > 0 ||
     filters.group !== '' ||
     filters.scope !== 'bom' ||
     Boolean(range.from || range.to)
@@ -185,7 +183,13 @@ export function PackagingPriceListPage() {
             setSortDir(dir)
           }}
           toolbar={
-            <PackagingPriceListToolbar filters={filters} groups={groups} onChange={setFilters} />
+            <PackagingPriceListToolbar
+              filters={filters}
+              groups={groups}
+              codeOptions={codeOptions}
+              codeOptionsLoading={optionsQuery.isLoading}
+              onChange={setFilters}
+            />
           }
           pagination={{
             page,

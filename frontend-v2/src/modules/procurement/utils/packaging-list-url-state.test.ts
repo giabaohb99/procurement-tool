@@ -16,7 +16,7 @@ const parseLast = (query: string) => parseLastPricesUrlState(new URLSearchParams
 describe('Bảng giá VTBB URL state', () => {
   it('round-trips filters, date range, sort, page and page size with API param names', () => {
     const state: PriceListUrlState = {
-      filters: { q: 'nắp', group: 'Nắp', scope: 'all' },
+      filters: { codes: ['NAP0085', 'CPT0105'], group: 'Nắp', scope: 'all' },
       from: '2026-01-01',
       to: '2026-06-30',
       sortBy: 'pct',
@@ -26,7 +26,7 @@ describe('Bảng giá VTBB URL state', () => {
     }
     const query = buildPriceListUrlSearch(state)
     const params = new URLSearchParams(query)
-    expect(params.get('q')).toBe('nắp')
+    expect(params.getAll('code')).toEqual(['NAP0085', 'CPT0105'])
     expect(params.get('group')).toBe('Nắp')
     expect(params.get('scope')).toBe('all')
     expect(params.get('date_from')).toBe('2026-01-01')
@@ -41,7 +41,7 @@ describe('Bảng giá VTBB URL state', () => {
   it('writes nothing for the default state', () => {
     const state = parsePriceList('')
     expect(state).toEqual({
-      filters: { q: '', group: '', scope: 'bom' },
+      filters: { codes: [], group: '', scope: 'bom' },
       from: '',
       to: '',
       sortBy: '',
@@ -65,11 +65,11 @@ describe('Bảng giá VTBB URL state', () => {
     expect(state.pageSize).toBe(50)
   })
 
-  it('drops an inverted date range and cuts over-long text', () => {
-    const state = parsePriceList(`date_from=2026-05-02&date_to=2026-05-01&q=${'a'.repeat(300)}`)
+  it('drops an inverted date range, ignores an old `q` link and cuts over-long codes', () => {
+    const state = parsePriceList(`date_from=2026-05-02&date_to=2026-05-01&q=nap&code=${'a'.repeat(300)}`)
     expect(state.from).toBe('')
     expect(state.to).toBe('')
-    expect(state.filters.q).toHaveLength(100)
+    expect(state.filters.codes).toEqual(['a'.repeat(50)])
   })
 })
 

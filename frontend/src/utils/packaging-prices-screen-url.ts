@@ -36,7 +36,7 @@ const PRICE_LIST_SORT_KEYS = [
 /** Khóa xếp cố định của Giá mua gần nhất; các khóa theo lần `p{k}_date` / `p{k}_price` kiểm riêng theo n. */
 const LAST_PRICES_SORT_KEYS = ['code', 'name', 'group', 'purchase_count', 'v12', 'v1n', 'avg']
 
-export const PRICE_LIST_URL_KEYS = ['q', 'group', 'scope', 'date_from', 'date_to', 'sort_by', 'sort_dir', 'page', 'page_size'] as const
+export const PRICE_LIST_URL_KEYS = ['code', 'q', 'group', 'scope', 'date_from', 'date_to', 'sort_by', 'sort_dir', 'page', 'page_size'] as const
 export const LAST_PRICES_URL_KEYS = [
   'code', 'q', 'group', 'all', 'scope', 'only_priced', 'date_from', 'date_to', 'supplier', 'n', 'show_qty', 'trend', 'min_pct', 'bom_only',
   'sort_by', 'sort_dir', 'page', 'page_size',
@@ -89,7 +89,8 @@ function writeSortAndPage(
 // ── Bảng giá VTBB ───────────────────────────────────────────────────────────────
 
 export interface PriceListScreenState {
-  q: string
+  /** Mã chọn ở ô chọn mã (27/11/2026, thay ô tìm chữ `q`). */
+  codes: string[]
   group: string
   scope: 'bom' | 'all'
   range: { from: string; to: string }
@@ -101,7 +102,7 @@ export interface PriceListScreenState {
 
 export function priceListScreenToSearch(st: PriceListScreenState): string {
   const s = new URLSearchParams()
-  if (st.q.trim()) s.set('q', st.q.trim())
+  st.codes.forEach((c) => s.append('code', c))
   if (st.group) s.set('group', st.group)
   if (st.scope === 'all') s.set('scope', 'all')
   if (st.range.from) s.set('date_from', st.range.from)
@@ -115,7 +116,8 @@ export function searchToPriceListScreen(search: string): PriceListScreenState {
   const sortBy = s.get('sort_by') ?? ''
   const sorted = PRICE_LIST_SORT_KEYS.includes(sortBy)
   return {
-    q: textFromSearch(s, 'q'),
+    //  `code` lặp khóa (ô chọn mã); link cũ có `q` thì bỏ qua.
+    codes: [...new Set(s.getAll('code').map((c) => c.trim()).filter((c) => c && c.length <= MAX_CODE_LENGTH))].slice(0, MAX_CODES),
     group: textFromSearch(s, 'group', MAX_CODE_LENGTH),
     scope: scopeFromSearch(s),
     range: rangeFromSearch(s),

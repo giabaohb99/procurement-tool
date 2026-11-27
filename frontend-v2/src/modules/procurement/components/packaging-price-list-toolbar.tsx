@@ -1,15 +1,16 @@
 /**
- * duoc-CR-784 — thanh lọc của Bảng giá VTBB: ô tìm (gõ tên nhóm hoặc mã / tên), chip nhóm, phạm vi mã
- * (chỉ mã trong định mức hay mọi mã có trong sổ giá).
+ * duoc-CR-784 — thanh lọc của Bảng giá VTBB: ô chọn mã (27/11/2026 thay ô tìm chữ — gõ mã, tên, tên nhóm hoặc tên NCC, chọn
+ * nhiều mã, như màn Tác động), chip nhóm, phạm vi mã (chỉ mã trong định mức hay mọi mã có trong sổ giá).
  */
-import { Search } from 'lucide-react'
-
-import { Input } from '@/shared/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 import { cn } from '@/shared/utils/cn'
 
+import type { PackagingCodeOption } from '../types/packaging-cost-types'
+import { PackagingCodePicker } from './packaging-code-picker'
+
 export interface PriceListFilters {
-  q: string
+  /** Mã chọn ở ô chọn mã; rỗng = mọi mã theo phạm vi. */
+  codes: string[]
   /** Rỗng = mọi nhóm. */
   group: string
   scope: 'bom' | 'all'
@@ -18,12 +19,17 @@ export interface PriceListFilters {
 interface PackagingPriceListToolbarProps {
   filters: PriceListFilters
   groups: string[]
+  /** Danh sách mã cho ô chọn mã (mọi mã có trong sổ giá, đã xếp). */
+  codeOptions?: PackagingCodeOption[]
+  codeOptionsLoading?: boolean
   onChange: (filters: PriceListFilters) => void
 }
 
 export function PackagingPriceListToolbar({
   filters,
   groups,
+  codeOptions = [],
+  codeOptionsLoading = false,
   onChange,
 }: PackagingPriceListToolbarProps) {
   const patch = (next: Partial<PriceListFilters>) => onChange({ ...filters, ...next })
@@ -34,14 +40,14 @@ export function PackagingPriceListToolbar({
     //  Khổ điện thoại: khối lọc chiếm TRỌN hàng (`basis-full`) — cụm nút bên phải còn thêm ô "Xếp theo", chia hàng với nó
     //  thì ô tìm co còn một mẩu và chip nhóm dựng thành cột.
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 max-md:basis-full">
-      <div className="relative w-full max-w-xs">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          aria-label="Tìm mã vật tư"
-          placeholder="Tìm mã, tên vật tư…"
-          value={filters.q}
-          onChange={(event) => patch({ q: event.target.value })}
+      <div className="w-full max-w-md">
+        <PackagingCodePicker
+          options={codeOptions}
+          value={filters.codes}
+          onChange={(codes) => patch({ codes })}
+          loading={codeOptionsLoading}
+          emptyPlaceholder="Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã"
+          compact
         />
       </div>
 

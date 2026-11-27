@@ -79,16 +79,23 @@ def search_scope(q: str, scope: str) -> str:
 
 def build_price_list(db: Session, *, q: str = "", group: str = "", scope: str = "bom",
                      date_from: date | None = None, date_to: date | None = None, sort_by: str = "code",
-                     sort_dir: str = "asc", scope_cond=None, new_only: bool = False) -> list[dict]:
+                     sort_dir: str = "asc", scope_cond=None, new_only: bool = False,
+                     product_codes: list[str] | None = None) -> list[dict]:
     """Toàn bộ dòng đã lọc + xếp (chưa cắt trang). `scope`: `bom` = mã thành phần ∪ mã có báo giá; `all` = thêm mọi mã
     có trong sổ giá. `new_only` = chế độ nhẹ của ô chọn mã (chỉ `new`, xem `get_price_states`): các cột cũ / chênh / min / max
-    / số lần mua KHÔNG đáng tin ở chế độ này. Có chữ tìm thì phạm vi mở ra mọi mã (`search_scope`), trừ chế độ nhẹ của ô chọn mã."""
+    / số lần mua KHÔNG đáng tin ở chế độ này. Có chữ tìm thì phạm vi mở ra mọi mã (`search_scope`), trừ chế độ nhẹ của ô chọn mã.
+    `product_codes` (ô chọn mã, 27/11/2026): chỉ đúng các mã đã chọn, bất kể phạm vi — mã đã mua mà ngoài định mức vẫn ra."""
+    picked = {c.strip() for c in (product_codes or []) if c.strip()}
     if not new_only:
         scope = search_scope(q, scope)
     usage, quoted = _component_usage(db)
-    codes = None if scope == "all" else set(usage) | quoted
-    states = get_price_states(db, codes, date_from=date_from, date_to=date_to, scope_cond=scope_cond, also=set(usage) | quoted,
-                              new_only=new_only)
+    if picked:
+        states = get_price_states(db, picked, date_from=date_from, date_to=date_to, scope_cond=scope_cond, also=picked,
+                                  new_only=new_only)
+    else:
+        codes = None if scope == "all" else set(usage) | quoted
+        states = get_price_states(db, codes, date_from=date_from, date_to=date_to, scope_cond=scope_cond,
+                                  also=set(usage) | quoted, new_only=new_only)
     needle = fold_text(q)
     rows = [r for r in (_row(st, usage.get(code, 0)) for code, st in states.items()) if _keep(r, needle, group)]
     return sort_rows(rows, sort_by, sort_dir)
@@ -101,7 +108,8 @@ STATIC_SORT_KEYS = {"code", "name", "group"}
 
 def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = "", group: str = "", scope: str = "bom",
                           date_from: date | None = None, date_to: date | None = None,
-                          sort_by: str = "code", sort_dir: str = "asc", scope_cond=None) -> tuple[list[dict], int]:
+                          sort_by: str = "code", sort_dir: str = "asc", scope_cond=None,
+                          product_codes: list[str] | None = None) -> tuple[list[dict], int]:
     """`(dòng của trang, tổng số dòng sau lọc)` — màn hình Bảng giá.
 
     ĐƯỜNG NHANH khi `scope=bom` và xếp theo cột danh mục (`code, name, group` — mặc định của màn):
@@ -111,9 +119,10 @@ def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = ""
     """
     start = (page - 1) * page_size
     scope = search_scope(q, scope)
-    if scope != "bom" or sort_by not in STATIC_SORT_KEYS:
+    #  Đã chọn mã thì tập nhỏ (tối đa 500): đi đường đầy đủ cho đúng các mã đó.
+    if product_codes or scope != "bom" or sort_by not in STATIC_SORT_KEYS:
         rows = build_price_list(db, q=q, group=group, scope=scope, date_from=date_from, date_to=date_to,
-                                sort_by=sort_by, sort_dir=sort_dir, scope_cond=scope_cond)
+                                sort_by=sort_by, sort_dir=sort_dir, scope_cond=scope_cond, product_codes=product_codes)
         return rows[start:start + page_size], len(rows)
 
     usage, quoted = _component_usage(db)

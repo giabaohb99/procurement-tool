@@ -316,6 +316,18 @@ def test_scope_all_them_ma_chi_co_trong_so_gia(api, db):
     assert api.get(PRICE_LIST, params={"scope": "all"}).json()["data"]["total"] == 6
 
 
+def test_bang_gia_o_chon_ma_chi_giu_dung_ma_da_chon_ke_ca_ngoai_dinh_muc(api, db):
+    """27/11/2026: `code` lặp ở Bảng giá (và Xuất Excel) chỉ giữ đúng các mã đã chọn, kể cả mã ngoài định mức."""
+    add_ledger(db, "KHAC001", 10, "2026-03-01")
+    data = api.get(PRICE_LIST, params={"code": ["NAP0085", "KHAC001"]}).json()["data"]
+    assert data["total"] == 2 and {r["code"] for r in data["items"]} == {"NAP0085", "KHAC001"}
+    res = api.get(PRICE_LIST + "/export", params={"code": ["NAP0085"]})
+    assert res.status_code == 200
+    head, rows = read_report_sheet(openpyxl.load_workbook(BytesIO(res.content)).active)
+    assert [r[0].value for r in rows] == ["NAP0085"]
+    assert api.get(PRICE_LIST, params={"code": [f"M{i}" for i in range(501)]}).status_code == 422
+
+
 def test_code_options_chi_ma_dang_dung_trong_dinh_muc(api, db):
     add_ledger(db, "KHAC001", 10, "2026-03-01")
     add_quote(db, "NAP0085", 260, "2026-07-01")

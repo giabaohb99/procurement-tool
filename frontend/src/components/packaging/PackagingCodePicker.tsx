@@ -21,7 +21,7 @@ const TEXT: Record<PackagingPickerKind, { empty: string; more: string; aria: str
     empty: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng — gõ mã, tên hoặc tên nhóm',
     more: 'Thêm mã… (vd: chai · nắp · nhãn, thùng · NAP0085)',
     aria: 'Chọn mã chai / nắp / nhãn / nhãn thùng / thùng',
-    summary: 'mã bao bì đang dùng cho sản phẩm',
+    summary: 'mã vật tư bao bì khớp',
   },
   product: {
     empty: 'Chọn sản phẩm — gõ mã hoặc tên',
