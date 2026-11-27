@@ -34,7 +34,7 @@ PRICE_LIST_COLUMNS = [
     Col("min", "Giá thấp nhất", "price", 11), Col("max", "Giá cao nhất", "price", 11), Col("quote_price", "Báo giá mới", "price", 11),
     Col("quote_from", "Ngày hiệu lực\nbáo giá", "date", 12), Col("warn_text", "Cảnh báo", width=34),
 ]
-#  Màu chữ: giá mới đậm navy, chênh lệch / phần trăm tăng xanh giảm đỏ (cùng luật với màn hình).
+#  Màu chữ: giá mới đậm navy, chênh lệch / phần trăm tăng đỏ giảm xanh (cùng luật với màn hình).
 _DIFF_TONES = {"diff": sign_tone("diff"), "pct": sign_tone("pct")}
 
 
@@ -175,7 +175,7 @@ def _last_price_layout(n: int, show_qty: bool) -> tuple[list[Col], list[Group], 
         groups.append(Group(f"LẦN {k}" + (" (gần nhất)" if k == 1 else ""), len(part), even))
         if even:
             alt |= {c.key for c in part}
-        #  Đơn giá: xanh = cao hơn lần trước nó, đỏ = thấp hơn, không đổi / lần cuối thì đậm navy.
+        #  Đơn giá: đỏ = cao hơn lần trước nó, xanh = thấp hơn, không đổi / lần cuối thì đậm navy.
         tones[f"p{k}_price"] = change_tone(f"p{k}_price", f"p{k + 1}_price", "bold") if k < n else bold_tone
         cols += part
     cols += [Col("v12", "Lần 1 so\nlần 2", "percent", 10), Col("v1n", f"Lần 1 so\nlần {n}", "percent", 10),
@@ -193,7 +193,7 @@ def build_last_prices_workbook(rows: list[dict], n: int = 5, show_qty: bool = Fa
     ws.title = f"Giá {n} lần gần nhất"
     cols, groups, alt, tones = _last_price_layout(n, show_qty)
     write_report_sheet(ws, subject=f"Lịch sử giá {n} lần mua gần nhất",
-                       note=f"{_count(len(rows))} mã · Lần 1 = lần mua có đơn giá gần nhất · Đơn giá xanh = cao hơn lần trước, đỏ = "
+                       note=f"{_count(len(rows))} mã · Lần 1 = lần mua có đơn giá gần nhất · Đơn giá đỏ = cao hơn lần trước, xanh = "
                             "thấp hơn · Giá TB = trung bình cộng các lần đang hiện",
                        columns=cols, rows=[flatten_for_export(r, n) for r in rows], groups=groups, alt_keys=alt,
                        tones=tones, freeze_cols=2)

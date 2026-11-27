@@ -114,6 +114,64 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-791 | Bảng giá VTBB: ô tìm kiếm tìm trên mọi mã đã mua, kể cả mã chưa có trong định mức bao bì
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** tìm mã CHT0230 (chai đã mua qua đơn mua hàng PO01260) ở Bảng giá VTBB thì không ra. Màn mặc định chỉ liệt kê
+mã nằm trong định mức bao bì hoặc có báo giá; mã này chưa thuộc định mức nào. Trên prod có 1.135 mã thuộc định mức trong khi
+2.650 mã có lần mua, nên hơn nửa số mã đã mua không tìm được nếu không đổi nút phạm vi.
+
+**Đã làm**
+- Đã gõ ô tìm thì Bảng giá tìm trên mọi mã có trong sổ giá (cả màn hình lẫn tệp xuất Excel). Mã ngoài định mức hiện với cột
+  số sản phẩm dùng bằng 0.
+- Không gõ gì thì danh sách vẫn theo nút phạm vi đang chọn như cũ. Ô chọn mã của màn Tác động giá giữ phạm vi định mức.
+
+**Kiểm:** 4 bài kiểm mới; các bài Bảng giá và Tác động giá cũ vẫn xanh.
+
+Mã nguồn: `backend/app/modules/packaging_cost/price_list_service.py`.
+Kiểm: `test/backend/test_bang_gia_tim_moi_ma_cr791.py`.
+
+## bao-CR-790 | Lịch sử mua hàng ghi ngay khi hàng về kho và đổi theo đơn mua hàng tới khi dòng hoàn thành
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** lịch sử mua hàng (khối dùng ở chi tiết sản phẩm, chi tiết nhà cung cấp, popup tham chiếu giá khi lập đơn, trợ lý
+AI) chỉ được ghi khi một dòng đơn mua hàng hoàn thành, tức đã thanh toán đủ. Thực tế trên prod 745 dòng đã nhận hàng mà chỉ 5
+dòng có lịch sử, nên tra lần mua gần nhất gần như không thấy gì từ tháng 8/2026. Yêu cầu: hàng về kho là ghi lịch sử ngay;
+sửa giá trên đơn thì lịch sử đổi theo; đơn hủy thì gỡ.
+
+**Đã làm**
+- Bản ghi lịch sử có hai giai đoạn (cột mới `line_stage`): *đang mở* từ lúc dòng nhận hàng, *đã chốt* khi dòng hoàn thành.
+  Một dòng đơn chỉ có một bản ghi suốt đời.
+- Bản ghi đang mở đi theo đơn mua hàng: đổi giá, số lượng, VAT, nhà cung cấp thì cập nhật đúng bản ghi đó; dòng hủy, số lượng
+  nhận về 0, đơn bị hủy, bỏ duyệt hoặc xóa thì bản ghi bị xóa. Việc đồng bộ chạy sau mọi thao tác đổi đơn: lưu đơn, lưu lần
+  nhận hàng (kể cả qua trợ lý AI), đổi trạng thái đơn, xóa đơn, hủy hoặc tiếp tục dòng, nhập đơn từ Excel, hoàn tác lô nhập.
+- Dòng hoàn thành thì chốt đúng bản ghi đang mở (giữ id) và chốt dòng sổ giá như trước. Bản ghi đã chốt và dữ liệu cũ nạp từ
+  Excel không bị đụng.
+- Sổ giá của cụm Giá nguyên vật liệu sản xuất không đổi hành vi: bản ghi lịch sử đang mở không chốt dòng sổ giá, dòng sổ vẫn
+  theo đơn mua hàng.
+- Script `scripts/sync_po_purchase_history.py` dựng bản ghi cho các dòng đã nhận hàng từ trước (mặc định chạy thử, `--apply`
+  mới ghi, chạy lại không đổi gì).
+- Popup lịch sử ở hai giao diện đổi chữ *lần mua đã hoàn thành* thành *lần mua đã nhận hàng*. Cập nhật tài liệu chức năng
+  Lịch sử mua hàng.
+- Lỗi ở phần lịch sử không chặn thao tác trên đơn: chạy trong một bước có thể lùi, hỏng thì ghi log.
+
+**Chưa làm:** sửa giá trên đơn đã duyệt hiện vẫn bị khóa trên màn hình (chỉ sửa được qua bỏ duyệt rồi duyệt lại, hoặc script
+vận hành); nút sửa giá sau duyệt cho quản lý là việc riêng, chờ quyết định. Script sửa giá vận hành phải gọi thêm hai hàm đồng
+bộ sổ giá và lịch sử (đã ghi trong tài liệu chức năng).
+
+**Kiểm:** 20 bài kiểm mới (sinh bản ghi lúc nhận hàng, đổi giá, sáu tình huống gỡ bản ghi, chốt khi hoàn thành, sổ giá
+không bị chốt sớm, ba đường thật của đơn mua hàng, lỗi không làm hỏng phiên, bài canh các điểm đồng bộ); hai lượt chạy các bài liên quan đều xanh: 510 bài (sổ giá, lịch sử mua, đơn mua hàng, công nợ, tác động giá) và 247 bài (trợ lý AI, nhập đơn từ Excel, các bài chụp kết quả lưu đơn). Ruff sạch.
+
+Mã nguồn: `backend/app/modules/purchase_history/` · `backend/app/modules/product_price/ledger_sync_service.py` ·
+`backend/app/modules/purchase_order/edit_service.py` · `progress_service.py` · `backend/app/modules/import_tool/` ·
+`backend/scripts/sync_po_purchase_history.py` · `backend/migrations/versions/phstage790_lich_su_mua_them_giai_doan.py`.
+Kiểm: `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`.
+
 ## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
 - status: xong
 - date: 2026-11-27
@@ -245,6 +303,10 @@ Deploy: prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_202
 - Ngày 26/11/2026 (chiều, lượt cuối trước khi lên prod): màn *Bảng giá VTBB* ở cả hai giao diện thêm cột **Tiền tệ** (luôn ghi VND, tệp Excel có cùng cột), đặt ngay trước cột giá đầu tiên để không bị cuộn ngang che; hộp báo giá đổi ô gõ mã nhà cung cấp thành ô **Nhà cung cấp** chọn từ danh mục nhà cung cấp đang hoạt động, gõ mã hoặc tên để tìm, người không có quyền xem danh mục nhà cung cấp thì vẫn gõ mã tay. Màn *Giá mua gần nhất* thêm lại nút **Tất cả** ở hàng chip nhóm và ở hàng *Biến động lần 1 so lần 2*, nút chỉ sáng sau khi bấm; lúc mới mở màn, chưa chọn gì, bảng chỉ nạp **20 mã mua gần nhất** (xếp theo ngày mua lần gần nhất, mới nhất trước, không có chân phân trang, thanh lọc ghi *20 mã mua gần nhất · bấm Tất cả để xem hết*); bấm **Tất cả**, bật chip nhóm, gõ tìm, bật bất kỳ bộ lọc nào hay xếp theo cột khác thì nạp hết mọi mã khớp, có phân trang, địa chỉ trang ghi thêm `all=1`. Giao diện cũ: tiêu đề nhóm đang xem ở menu trái và tiêu đề bản in dùng độ đậm 700, vì phông chữ chỉ nạp tới 700 nên trình duyệt Edge vẽ lệch chữ có dấu ở độ đậm 800. Cả đợt này đã lên prod trong bản 2.25.0. Ngày 27/11/2026 sửa bài hướng dẫn *Giá mua gần nhất* và tài liệu chức năng 21 cho khớp màn đã lên prod (trước đó còn ghi không có nút Tất cả và chuyển trang ngay từ lúc mở màn), rồi cùng ngày chạy lại seed bài hướng dẫn và nạp lại chỉ mục tìm kiếm của Trợ lý trên dev và prod: mỗi nơi dựng lại cây 10 bài, nạp 58 đoạn, kho dev đủ 204 trên 204 bài, kho prod đủ 194 trên 194 bài. Trên prod chỉ chép tệp script mới vào container api rồi chạy, không dựng lại image, nên nhánh main sẽ nhận tệp này ở đợt phát hành sau. Mã nguồn: `backend/app/modules/packaging_cost/export_columns.py`; `frontend-v2/src/modules/procurement/components/packaging-quote-dialog.tsx`, `packaging-last-prices-toolbar.tsx`, `pages/packaging-last-prices-page.tsx`, `utils/packaging-last-prices.ts`, `hooks/use-packaging-price-list-columns.tsx`; bản v1: `frontend/src/components/packaging/PackagingLastPricesToolbar.tsx`, `PackagingQuoteModal.tsx`, `frontend/src/pages/packaging/PackagingLastPrices.tsx`, `PackagingPriceList.tsx`, `frontend/src/index.css`. Commit: 67181ab7, 5f3ddd8a, afb4b1f2, c8655f45, d7d37e73.
 - Ngày 27/11/2026: thẻ điện thoại của bảng *Mã đã chọn* (màn Tác động giá bao bì) ở cả hai giao diện bỏ lưới bốn ô đều nhau theo góp ý *cụm UI này xấu quá*, đổi sang bố cục người chủ chọn là **dải giá và ô gõ rộng**: một dải nền nhạt đọc theo đúng mạch *Giá cũ* → *Giá mới*, *Chênh lệch* căn sát phải kèm phần trăm bên dưới, ba nhãn thẳng một hàng và ba số thẳng một hàng; ô *Giá giả định* tách riêng một hàng rộng hết thẻ và cao hơn cho dễ gõ bằng ngón tay; dòng chân số sản phẩm bị ảnh hưởng và khoảng Min – Max giữ nguyên. Thẻ sản phẩm vẫn giữ lưới bốn ô. Đã xem trên máy local ở khổ 390 px cả hai giao diện; chưa lên dev. Mã nguồn: `frontend-v2/src/modules/procurement/components/packaging-selected-code-card.tsx`; bản v1: `frontend/src/components/packaging/PackagingMobileCards.tsx`, `packaging.css`.
 - Ngày 27/11/2026: màn *Giá mua gần nhất* ở cả hai giao diện bỏ hàng chip nhóm (prod có khoảng 42 nhóm nên chip chiếm bốn hàng) và thay bằng một ô chọn nhiều **Nhóm sản phẩm** đặt ngay cạnh ô tìm: mỗi nhóm một dòng có ô tick kèm số mã, gõ để tìm nhóm, tick nhiều nhóm thì ô ghi tên nhóm đầu kèm *+n*, dấu x bỏ hết. Theo góp ý tiếp theo, nút **Tất cả** được đưa vào làm dòng đầu của danh sách: tick thì bỏ các nhóm đang chọn và nạp hết mọi mã có phân trang, ô ghi chữ Tất cả; đang Tất cả mà tick một nhóm thì chuyển sang lọc theo nhóm đó. Câu nhắc chế độ gần nhất đổi thành *20 mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết*. Đường API nâng trần số nhóm một lần gọi từ 50 lên 200 (cả hai giao diện đọc địa chỉ trang cũng theo 200) để tick nhiều nhóm không vấp lỗi 422. Bài hướng dẫn sử dụng và tài liệu chức năng 21 đã sửa theo; chưa chạy seed, chưa lên dev. Đã thử trên máy local cả hai giao diện: tick Cóc và Hộp ra đúng 21 mã của hai nhóm, tick Tất cả ra 2.909 mã. Mã nguồn: `frontend-v2/src/modules/procurement/components/packaging-last-prices-toolbar.tsx`, `utils/packaging-list-url-state.ts`; bản v1: `frontend/src/components/packaging/PackagingLastPricesToolbar.tsx`, `frontend/src/pages/packaging/PackagingLastPrices.tsx`, `frontend/src/utils/packaging-prices-screen-url.ts`; `backend/app/modules/packaging_cost/last_prices_controller.py`.
+- Ngày 27/11/2026 (tiếp): sắp lại bố cục thanh lọc màn *Giá mua gần nhất* ở cả hai giao diện vì các ô bị tràn dòng lộn xộn. Hàng đầu là bốn ô chọn rộng đều nhau: ô tìm, *Nhóm sản phẩm*, *Nhà cung cấp*, *Khoảng ngày mua* (màn vừa dàn hai cột, điện thoại một cột). Hàng hai là các nhóm nút *Số lần hiển thị*, *Phạm vi mã*, *Biến động lần 1 so lần 2*, ô *Biến động từ (%)*, nối tiếp ba công tắc trong cùng một dòng chảy nên màn khoảng 1.100 px lấp đủ hai dòng. Dưới cùng là một dòng chữ nhỏ căn trái cho chú thích màu (bản ERP mới ghi thêm câu nhắc chế độ 20 mã gần nhất; bản cũ đã có câu đó ở dòng trên bảng nên bỏ chỗ lặp). Khổ điện thoại vẫn chỉ hiện ô tìm, ô nhóm và nút *Lọc thêm*. Đã xem trên máy local khổ 1440 px và 390 px. Mã nguồn: `frontend-v2/src/modules/procurement/components/packaging-last-prices-toolbar.tsx`; bản v1: `frontend/src/components/packaging/PackagingLastPricesToolbar.tsx`, `packaging.css`, `frontend/src/pages/packaging/PackagingLastPrices.tsx`.
+- Ngày 27/11/2026 (tiếp): ô tìm chữ của màn *Giá mua gần nhất* ở cả hai giao diện đổi thành ô chọn mã giống màn *Tác động giá bao bì* (dùng lại chính ô đó): gõ mã, tên hoặc tên nhóm ngay trong ô, chọn được nhiều mã, mã đã chọn thành chip trong ô, bảng chỉ còn đúng các mã đó; ô này rộng gấp đôi ba ô còn lại của hàng đầu. Đường API nhận thêm tham số `code` lặp (tối đa 500 mã) cho cả danh sách lẫn Xuất Excel; địa chỉ trang ghi `code=…`, link cũ có `q` thì bỏ qua. Bài hướng dẫn sử dụng và tài liệu chức năng 21 đã sửa theo. Đã thử trên máy local: chọn NAP0029, COC0010, CHT0116 ra đúng 3 mã ở cả hai giao diện. Theo góp ý *nhìn mập quá*, ô chọn mã ở màn này dùng kiểu gọn một dòng cao bằng các ô bên cạnh: chip và chỗ gõ chung một hàng, hiện hai chip đầu rồi gộp *+n mã* (rê chuột thấy đủ mã); màn Tác động và Lịch sử mua hàng vẫn giữ kiểu cũ. Mã nguồn: `backend/app/modules/packaging_cost/last_prices_controller.py`, `last_prices_service.py`; `frontend-v2/src/modules/procurement/components/packaging-last-prices-toolbar.tsx`, `pages/packaging-last-prices-page.tsx`, `utils/packaging-last-prices.ts`, `utils/packaging-list-url-state.ts`; bản v1: `frontend/src/components/packaging/PackagingLastPricesToolbar.tsx`, `frontend/src/pages/packaging/PackagingLastPrices.tsx`, `frontend/src/utils/packaging-query.ts`, `packaging-prices-screen-url.ts`.
+- Ngày 27/11/2026 (tiếp): đảo màu tăng / giảm của cả cụm Giá nguyên vật liệu sản xuất theo yêu cầu: **giá tăng tô đỏ, giá giảm tô xanh** (bỏ quyết định 20/11/2026 tăng xanh giảm đỏ; nay giống bản mẫu HTML). Đổi ở một chỗ cho mỗi lớp: hàm tô màu của giao diện ERP mới, hằng màu của giao diện cũ, thẻ số liệu, hai bản in (Tác động, Lịch sử) và màu chữ của tệp Excel; các câu chú thích trên màn, bản in, dòng phụ Excel, bài hướng dẫn sử dụng, cẩm nang Trợ lý và tài liệu chức năng 21 viết lại theo nghĩa mới (*Đỏ = đắt hơn lần mua trước đó, xanh = rẻ hơn*). Bài kiểm so màu sửa theo, thêm một dòng canh mã màu Excel. Chưa chạy seed bài hướng dẫn và cẩm nang. Mã nguồn: `frontend-v2/src/modules/procurement/utils/packaging-price-format.ts`, `components/packaging-print.css`; `frontend/src/utils/packaging-price.ts`, `frontend/src/components/packaging/packaging.css`, `packaging-print.css`; `backend/app/modules/packaging_cost/report_xlsx_writer.py`, `export_columns.py`.
+- Ngày 27/11/2026 (tiếp): màn *Giá mua gần nhất* ở cả hai giao diện cố định thêm cột **Tên vật tư** ngay sau cột *Mã VTBB*, nên cuộn ngang qua các lần mua vẫn thấy tên hàng (giao diện cũ giữ luôn nhãn nhóm *Thông tin VTBB* trên cột tên, có vạch tách phần cố định). Giao diện ERP mới thu cột tên từ 300 còn 260 px và đổi khóa lưu bố cục bảng sang bản `.v2` để người đã chỉnh cột trước đó cũng nhận cột ghim mới (ai đã kéo rộng hay ẩn cột thì phải chỉnh lại một lần). Đã xem trên máy local: cuộn hết sang phải, hai cột vẫn đứng yên. Mã nguồn: `frontend-v2/src/modules/procurement/hooks/use-packaging-last-prices-columns.tsx`, `pages/packaging-last-prices-page.tsx`; bản v1: `frontend/src/components/packaging/PackagingLastPricesTable.tsx`, `packaging.css`.
 
 **Kiểm:** hơn 330 bài kiểm backend của CR này xanh (sổ giá, mốc đồng bộ ĐMH, báo giá, định mức, trạng thái giá, tác động, chia trang, giá mua gần nhất, số truy vấn cố định); bài canh phạm vi và khóa quyền xanh; typecheck và lint giao diện sạch, các bài kiểm vitest của cụm Giá bao bì và bảng dùng chung xanh. Đo trên MySQL ở cỡ dữ liệu gấp 100 lần (650 nghìn dòng sổ giá, 20 nghìn định mức): màn Tác động chọn 500 mã từ 5,5 giây còn 234 ms, Bảng giá mặc định từ 19,6 giây còn 195 ms.
 
@@ -254,7 +316,7 @@ Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packagin
 Kiểm: `test/backend/test_*_cr784.py`.
 Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`, `doc/erp/thu-mua/plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md`, `doc/erp/thu-mua/tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md`.
 Commit: 1357b785 (bản đầu) … c8655f45 (lượt cuối 26/11/2026).
-Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod.
+Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod. Dev 27/11/2026 lần hai (erp-v2 3b306d0e): dựng lại api, celery-worker, celery-beat, giao diện ERP và giao diện cũ cho các việc ngày 27/11 (ô chọn nhóm, ô chọn mã, bố cục thanh lọc, đảo màu tăng đỏ giảm xanh, cố định cột tên, thẻ Mã đã chọn), không có migration; seed lại 10 bài hướng dẫn, cẩm nang quy-trinh-thu-mua lên phiên bản 12, nạp lại chỉ mục 58 đoạn (kho 204 trên 204 bài). Chưa lên prod.
 
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong

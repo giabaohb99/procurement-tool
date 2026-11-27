@@ -45,7 +45,7 @@ describe('PackagingPriceRowCard', () => {
     expect(screen.getByText('VND')).toBeInTheDocument()
     expect(screen.getByText('30/06/2026')).toBeInTheDocument()
     expect(screen.getByText('20/11/2026')).toBeInTheDocument()
-    expect(screen.getByText('+330,5')).toHaveClass('text-emerald-600')
+    expect(screen.getByText('+330,5')).toHaveClass('text-destructive')
     expect(screen.queryByRole('button', { name: 'Báo giá' })).not.toBeInTheDocument()
   })
 

@@ -126,7 +126,7 @@ export function PrintHistoryTable({ rows, productMode, singleCode, total }: {
       <div className="tbar">
         <span className="ttl">Toàn bộ lịch sử mua hàng</span>
         <span className="cnt">{total.toLocaleString('vi-VN')} {productMode ? 'dòng' : 'lần mua'}</span>
-        <span className="cnt">· Giá VNĐ, chưa VAT, bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn · Lần 1 = lần mua gần nhất của mã</span>
+        <span className="cnt">· Giá VNĐ, chưa VAT, bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn · Lần 1 = lần mua gần nhất của mã</span>
       </div>
       {rows.length === 0 ? <p className="empty">Không có lần mua nào khớp bộ lọc.</p> : (
         <table>

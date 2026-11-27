@@ -119,7 +119,7 @@ export default function PurchaseHistoryPickerModal({
             <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Lịch sử mua hàng gần nhất</h3>
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2, overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {productCode}{productName ? ` · ${productName}` : ''} · {total} lần mua đã hoàn thành
+              {productCode}{productName ? ` · ${productName}` : ''} · {total} lần mua đã nhận hàng
             </div>
           </div>
           <button className="icon-btn" title="Đóng" onClick={onClose}>

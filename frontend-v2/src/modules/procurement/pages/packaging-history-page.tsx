@@ -107,7 +107,7 @@ export function PackagingHistoryPage() {
         description={
           isMobile
             ? undefined
-            : 'Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: xanh = đắt hơn lần trước, đỏ = rẻ hơn.'
+            : 'Từng lần mua của mã vật tư bao bì hoặc của thành phần trong định mức sản phẩm, mới nhất trước. Giá VNĐ, chưa VAT, là bản chụp lúc mua: đỏ = đắt hơn lần trước, xanh = rẻ hơn.'
         }
         actions={
           <>

@@ -8,6 +8,8 @@ import './packaging.css'
 
 /** Số chip hiện trong ô trước khi gộp thành "+n mã" — chọn cả nhóm hàng trăm mã thì ô không phình. */
 const CHIP_MAX = 12
+/** Kiểu gọn (`compact`): chỉ chừng này chip, còn lại gộp "+n mã" để ô giữ đúng MỘT dòng. */
+const COMPACT_CHIP_MAX = 2
 /** Số dòng vẽ trong danh sách; "Chọn tất cả" vẫn áp cho MỌI mã khớp, kể cả phần chưa vẽ. */
 const LIST_MAX = 200
 
@@ -35,7 +37,7 @@ const TEXT: Record<PackagingPickerKind, { empty: string; more: string; aria: str
  * là lọc cả nhóm để "Chọn tất cả" chọn đúng nhóm đó. Vượt `maxCodes` thì chặn cả lượt và báo, không cắt bớt ngầm.
  */
 export default function PackagingCodePicker({
-  options, value, onChange, loading, maxCodes = PACKAGING_MAX_CODES, kind = 'material', emptyPlaceholder,
+  options, value, onChange, loading, maxCodes = PACKAGING_MAX_CODES, kind = 'material', emptyPlaceholder, compact = false,
 }: {
   /** Danh sách đã xếp sẵn (`sortCodeOptions`). */
   options: PackagingCodeOption[]
@@ -45,6 +47,11 @@ export default function PackagingCodePicker({
   maxCodes?: number
   kind?: PackagingPickerKind
   emptyPlaceholder?: string
+  /**
+   * Kiểu gọn MỘT dòng, cao bằng các ô lọc bên cạnh (Giá mua gần nhất, 27/11/2026: kiểu thường hai dòng trông "mập"):
+   * chip + chỗ gõ chung một hàng, tối đa `COMPACT_CHIP_MAX` chip rồi "+n mã". Màn Tác động / Lịch sử giữ kiểu thường.
+   */
+  compact?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -144,9 +151,9 @@ export default function PackagingCodePicker({
 
   return (
     <div className="pkg-picker" ref={rootRef}>
-      <div className={'pkg-chipbox' + (open ? ' open' : '')} onMouseDown={onBoxMouseDown}>
+      <div className={'pkg-chipbox' + (compact ? ' compact' : '') + (open ? ' open' : '')} onMouseDown={onBoxMouseDown}>
         <i className="ti ti-search" style={{ color: 'var(--muted)', margin: '0 4px' }} />
-        {value.slice(0, CHIP_MAX).map((code) => (
+        {value.slice(0, compact ? COMPACT_CHIP_MAX : CHIP_MAX).map((code) => (
           <span key={code} className="pkg-chip">
             {code}
             <button type="button" aria-label={`Bỏ ${code}`} onClick={() => onChange(value.filter((c) => c !== code))}>
@@ -154,13 +161,17 @@ export default function PackagingCodePicker({
             </button>
           </span>
         ))}
-        {value.length > CHIP_MAX && <span className="pkg-chip-more">+{value.length - CHIP_MAX} mã</span>}
+        {value.length > (compact ? COMPACT_CHIP_MAX : CHIP_MAX) && (
+          <span className="pkg-chip-more" title={value.slice(compact ? COMPACT_CHIP_MAX : CHIP_MAX).join(', ')}>
+            +{value.length - (compact ? COMPACT_CHIP_MAX : CHIP_MAX)} mã
+          </span>
+        )}
         <input
           ref={inputRef} type="text" role="combobox" className="pkg-input" autoComplete="off"
           aria-label={text.aria} aria-expanded={open} aria-controls={open ? listId : undefined}
           aria-autocomplete="list" aria-activedescendant={activeOption ? optId(activeOption.code) : undefined}
           disabled={loading} value={keyword}
-          placeholder={loading ? 'Đang nạp danh sách mã…' : value.length ? text.more : (emptyPlaceholder ?? text.empty)}
+          placeholder={loading ? 'Đang nạp danh sách mã…' : value.length ? (compact ? 'Thêm mã…' : text.more) : (emptyPlaceholder ?? text.empty)}
           onChange={(e) => { setKeyword(e.target.value); setActive(-1); setOpen(true) }}
           onFocus={() => setOpen(true)} onClick={() => setOpen(true)} onKeyDown={onKeyDown}
         />

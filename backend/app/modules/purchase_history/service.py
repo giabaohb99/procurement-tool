@@ -1,51 +1,59 @@
-"""Lịch sử mua hàng — ghi snapshot khi dòng ĐMH vào `completed` + truy vấn cho UI."""
+"""Lịch sử mua hàng — bản ghi có từ lúc dòng ĐMH NHẬN HÀNG, chốt khi dòng vào `completed` + truy vấn cho UI.
+
+bao-CR-790 (chủ dự án 27/11/2026): trước đây chỉ ghi khi dòng `completed` (đã thanh toán đủ) nên phần lớn lần mua thật không có
+lịch sử. Nay: hàng về kho (SL nhận > 0) là có bản ghi ĐANG MỞ, đồng bộ theo ĐMH (`sync_po_history`); dòng hoàn thành thì CHỐT
+đúng bản ghi đó (`snapshot_line`), id giữ nguyên.
+"""
 import json
 import logging
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
+
+from app.core.packaging_price_codes import LedgerLineStage
 
 from .model import PurchaseHistory
 
 log = logging.getLogger(__name__)
 
+OPEN, FINAL = int(LedgerLineStage.OPEN), int(LedgerLineStage.FINAL)
+PROG_CANCELLED, PROG_COMPLETED = "cancelled", "completed"   # trùng `purchase_order.base_service` (không import để khỏi vòng)
 
-def snapshot_line(db: Session, po, item) -> PurchaseHistory | None:
-    """Ghi 1 record snapshot cho dòng vừa vào `completed`.
 
-    Gọi từ `purchase_order.service.auto_advance_line` — chỉ `db.add()`, KHÔNG commit
-    (caller commit trong cùng transaction với việc đổi `progress_status`).
-    Trả None nếu đã có snapshot cho dòng này (idempotent).
-    """
-    exists = db.query(PurchaseHistory.id).filter(PurchaseHistory.po_item_id == item.id).first()
-    if exists:
-        return None
+def _dec(value, places: int) -> Decimal:
+    """Số về đúng độ lẻ của cột để so được với giá trị đọc từ DB (không báo "đã đổi" vì khác kiểu float / Decimal)."""
+    return Decimal(str(value or 0)).quantize(Decimal(1).scaleb(-places))
 
-    # Tên pháp nhân — denormalize để bảng lịch sử tự đứng được, không phụ thuộc tab_company sau này
-    company_name = ""
-    if po.company_id:
-        from app.modules.company.model import Company
-        row = db.query(Company.name).filter(Company.id == po.company_id).first()
-        company_name = row[0] if row else ""
 
-    obj = PurchaseHistory(
-        po_item_id=item.id,
-        po_id=po.id,
-        po_code=po.code or "",
-        product_code=item.product_code or "",
-        product_name=item.product_name or "",
-        supplier_code=po.supplier_code or "",
-        supplier_name=po.supplier_name or "",
-        company_id=po.company_id or 0,
-        company_name=company_name,
-        order_date=po.order_date or "",
-        unit=item.unit or "",
-        qty_order=item.qty_order or 0,
-        price=item.price or 0,
-        vat=item.vat or 0,
-        amount=item.amount or 0,
-        completed_at=date.today().strftime("%Y-%m-%d"),
-        extra=json.dumps({
+def _company_name(db: Session, po) -> str:
+    """Tên pháp nhân — denormalize để bảng lịch sử tự đứng được, không phụ thuộc tab_company sau này."""
+    if not po.company_id:
+        return ""
+    from app.modules.company.model import Company
+    row = db.query(Company.name).filter(Company.id == po.company_id).first()
+    return row[0] if row else ""
+
+
+def _line_values(po, item, company_name: str) -> dict:
+    """Mọi cột của bản ghi lịch sử lấy từ ĐMH + dòng hàng (trừ giai đoạn và ngày chốt)."""
+    return {
+        "po_item_id": item.id,
+        "po_id": po.id,
+        "po_code": po.code or "",
+        "product_code": item.product_code or "",
+        "product_name": item.product_name or "",
+        "supplier_code": po.supplier_code or "",
+        "supplier_name": po.supplier_name or "",
+        "company_id": po.company_id or 0,
+        "company_name": company_name,
+        "order_date": po.order_date or "",
+        "unit": item.unit or "",
+        "qty_order": _dec(item.qty_order, 3),
+        "price": _dec(item.price, 4),
+        "vat": _dec(item.vat, 2),
+        "amount": _dec(item.amount, 2),
+        "extra": json.dumps({
             # Phần "Thông tin chung" còn lại của ĐMH
             "pr_code": po.pr_code or "",
             "misa_code": po.misa_code or "",
@@ -67,8 +75,39 @@ def snapshot_line(db: Session, po, item) -> PurchaseHistory | None:
             "warehouse_code": item.warehouse_code or "",
             "item_note": item.note or "",
         }, ensure_ascii=False),
-    )
-    db.add(obj)
+    }
+
+
+def _apply(row: PurchaseHistory, values: dict) -> bool:
+    """Ghi `values` lên bản ghi ĐÃ CÓ (id giữ nguyên). Trả True nếu có cột nào đổi."""
+    changed = False
+    for key, value in values.items():
+        if getattr(row, key) != value:
+            setattr(row, key, value)
+            changed = True
+    return changed
+
+
+def snapshot_line(db: Session, po, item) -> PurchaseHistory | None:
+    """CHỐT bản ghi lịch sử cho dòng vừa vào `completed`.
+
+    Gọi từ `purchase_order.service.auto_advance_line` — chỉ `db.add()`, KHÔNG commit
+    (caller commit trong cùng transaction với việc đổi `progress_status`).
+    bao-CR-790: dòng đã có bản ghi ĐANG MỞ (sinh lúc nhận hàng) thì chụp lại số của ĐMH lên chính bản ghi đó rồi đặt ĐÃ CHỐT;
+    chưa có thì chèn bản ghi đã chốt. Trả None nếu dòng này đã chốt rồi (idempotent).
+    """
+    obj = db.query(PurchaseHistory).filter(PurchaseHistory.po_item_id == item.id).first()
+    if obj is not None and obj.line_stage == FINAL:
+        return None
+    values = _line_values(po, item, _company_name(db, po))
+    today = date.today().strftime("%Y-%m-%d")
+    if obj is None:
+        obj = PurchaseHistory(**values, line_stage=FINAL, completed_at=today)
+        db.add(obj)
+    else:
+        _apply(obj, values)
+        obj.line_stage = FINAL
+        obj.completed_at = today
     _record_in_price_ledger(db, obj, item)
     return obj
 
@@ -99,6 +138,72 @@ def snapshot_line_safe(db: Session, po, item) -> None:
         snapshot_line(db, po, item)
     except Exception:
         log.exception("Không ghi được lịch sử mua hàng cho po_item_id=%s", getattr(item, "id", None))
+
+
+def line_in_history(po_counts: bool, item) -> bool:
+    """Dòng ĐMH có mặt trong lịch sử mua hàng không: ĐMH được tính (đã duyệt trở đi, chưa xóa mềm), dòng chưa hủy và ĐÃ NHẬN HÀNG."""
+    return po_counts and (item.progress_status or "") != PROG_CANCELLED and float(item.qty_received or 0) > 0
+
+
+def sync_po_history(db: Session, po) -> dict:
+    """Dựng lại các bản ghi lịch sử ĐANG MỞ của MỘT ĐMH theo đúng dòng hàng hiện tại (bao-CR-790). Không commit.
+
+    - Dòng đủ điều kiện (`line_in_history`) chưa có bản ghi -> chèn bản ghi đang mở; có rồi mà số đã đổi (giá / SL / VAT / NCC /
+      ngày / thông tin kèm) -> cập nhật đúng bản ghi đó.
+    - Bản ghi đang mở mà dòng hết đủ điều kiện (dòng hủy, SL nhận về 0, dòng bị xóa, ĐMH hủy / bỏ duyệt / xóa mềm) -> xóa.
+    - Bản ghi ĐÃ CHỐT không bao giờ bị đụng. Dòng đã `completed` mà chưa chốt (dữ liệu nạp thẳng tiến độ) -> chốt luôn.
+    Ba truy vấn cố định mỗi đơn (dòng ĐMH, bản ghi hiện có, tên pháp nhân). Trả `{inserted, updated, deleted, finalized}`.
+    """
+    from app.modules.product_price.ledger_sync_service import po_counts_in_ledger
+    from app.modules.purchase_order.model import POItem
+
+    stats = {"inserted": 0, "updated": 0, "deleted": 0, "finalized": 0}
+    db.flush()   # session autoflush=False ở vài nơi: dòng vừa sửa phải xuống DB trước khi đọc lại
+    counts = po_counts_in_ledger(po)
+    items = {it.id: it for it in db.query(POItem).filter(POItem.po_id == po.id).all()}
+    existing = {r.po_item_id: r for r in db.query(PurchaseHistory).filter(
+        PurchaseHistory.po_id == po.id, PurchaseHistory.po_item_id.isnot(None))}
+    wanted = {item_id: it for item_id, it in items.items() if line_in_history(counts, it)}
+
+    for item_id, row in existing.items():
+        if row.line_stage == OPEN and item_id not in wanted:
+            db.delete(row)
+            stats["deleted"] += 1
+    company_name = _company_name(db, po) if wanted else ""
+    for item_id, it in wanted.items():
+        row = existing.get(item_id)
+        if row is not None and row.line_stage == FINAL:
+            continue
+        if (it.progress_status or "") == PROG_COMPLETED:
+            if snapshot_line(db, po, it) is not None:
+                stats["finalized"] += 1
+            continue
+        values = _line_values(po, it, company_name)
+        if row is None:
+            db.add(PurchaseHistory(**values, line_stage=OPEN, completed_at=""))
+            stats["inserted"] += 1
+        elif _apply(row, values):
+            stats["updated"] += 1
+    db.flush()
+    return stats
+
+
+def sync_po_history_safe(db: Session, po, commit: bool = True) -> dict:
+    """Bọc `sync_po_history` trong SAVEPOINT — lỗi ở lịch sử KHÔNG được chặn hay làm hỏng thao tác chính trên ĐMH.
+
+    `commit=True`: tự commit phần của mình (gọi sau khi thao tác chính đã commit); `commit=False`: để nơi gọi commit.
+    """
+    savepoint = db.begin_nested()
+    try:
+        stats = sync_po_history(db, po)
+        savepoint.commit()
+    except Exception:
+        savepoint.rollback()
+        log.exception("Không đồng bộ được lịch sử mua hàng cho ĐMH id=%s", getattr(po, "id", None))
+        return {}
+    if commit:
+        db.commit()
+    return stats
 
 
 def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: str = "",

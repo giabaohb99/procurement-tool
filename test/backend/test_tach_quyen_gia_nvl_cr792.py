@@ -349,7 +349,7 @@ def _run_mig(conn, fn):
 
 def test_migration_chuyen_quyen_cu_sang_khoa_moi_giu_vai_tro_va_pham_vi(old_conn):
     mig = _load_migration()
-    assert (mig.revision, mig.down_revision) == ("permsplit792", "bombatch784")
+    assert (mig.revision, mig.down_revision) == ("permsplit792", "phstage790")
     _permission(old_conn, 1, "packaging_cost", "all", "rcwdea")          # đủ quyền (như Quản lý thu mua)
     _permission(old_conn, 2, "packaging_cost", "company", "r")           # chỉ xem, phạm vi công ty
     _permission(old_conn, 3, "packaging_cost", "all", "rw")              # xem + sửa; đã có sẵn dòng định mức chỉnh tay
@@ -399,4 +399,4 @@ def test_chuoi_migration_mot_dau_la_permsplit792():
     cfg.set_main_option("script_location", str(MIGRATION.parents[1]))
     script = ScriptDirectory.from_config(cfg)
     assert script.get_heads() == ["permsplit792"]
-    assert script.get_revision("permsplit792").down_revision == "bombatch784"
+    assert script.get_revision("permsplit792").down_revision == "phstage790"

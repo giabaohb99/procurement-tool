@@ -58,9 +58,9 @@ describe('PackagingHistoryCard', () => {
     expect(screen.getByRole('link', { name: 'PO-0055' })).toBeInTheDocument()
   })
 
-  it('colours "So lần trước" like the table (more expensive = green)', () => {
+  it('colours "So lần trước" like the table (more expensive = red)', () => {
     renderCard()
-    expect(screen.getByText(/\+50/)).toHaveClass('text-emerald-600')
+    expect(screen.getByText(/\+50/)).toHaveClass('text-destructive')
   })
 
   it('shows the product and component line in product mode', () => {

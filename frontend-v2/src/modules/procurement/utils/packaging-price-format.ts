@@ -42,10 +42,10 @@ export function formatPackagingPercent(ratio: Num): string {
 }
 
 /**
- * Màu theo chiều chênh: TĂNG xanh, GIẢM đỏ, ~0 không tô — người chủ chốt 20/11/2026 (ngược bản mẫu HTML, bản mẫu tô
- * tăng đỏ). Áp chung mọi màn cụm Giá bao bì để một màu chỉ mang một nghĩa.
+ * Màu theo chiều chênh: TĂNG đỏ (giá lên là xấu), GIẢM xanh, ~0 không tô — người chủ chốt 27/11/2026, đảo lại quyết định
+ * 20/11/2026 (tăng xanh), giống bản mẫu HTML. Áp chung mọi màn cụm Giá bao bì để một màu chỉ mang một nghĩa.
  */
 export function packagingDiffTone(value: Num): string | undefined {
   if (!isNumber(value) || Math.abs(value) < 1e-6) return undefined
-  return value > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+  return value > 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'
 }

@@ -33,6 +33,8 @@ const MAX_GROUP_LENGTH = 50
 const MAX_SUPPLIER_LENGTH = 50
 const MAX_SUPPLIERS = 50
 const MAX_GROUPS = 200
+/** Bằng trần `PACKAGING_MAX_CODES` của ô chọn mã và `MAX_CODES` của API. */
+const MAX_CODES = 500
 const MAX_MIN_PCT = 10_000
 const LAST_PRICE_TRENDS: readonly LastPricesTrend[] = ['up', 'down', 'flat']
 
@@ -160,7 +162,7 @@ export interface LastPricesUrlState {
 }
 
 export const DEFAULT_LAST_PRICES_FILTERS: LastPricesFilters = {
-  q: '',
+  codes: [],
   groups: [],
   n: LAST_PRICE_DEFAULT_N,
   scope: 'all',
@@ -221,12 +223,21 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
         .filter(Boolean),
     ),
   ].slice(0, MAX_GROUPS)
+  //  Mã chọn ở ô chọn mã (27/11/2026, thay ô tìm chữ `q`): `code` lặp khóa; link cũ có `q` thì bỏ qua.
+  const codes = [
+    ...new Set(
+      search
+        .getAll('code')
+        .map((code) => readText(code, MAX_SUPPLIER_LENGTH))
+        .filter(Boolean),
+    ),
+  ].slice(0, MAX_CODES)
   //  `all=1` = đã bấm "Tất cả". Xếp khác mặc định cũng là xem rộng (chế độ gần nhất chỉ có thứ tự mới nhất trước) nên coi như "Tất cả".
   const sortedAwayFromRecent =
     urlSortBy !== '' && (sortBy !== LAST_PRICES_DEFAULT_SORT.by || sortDir !== LAST_PRICES_DEFAULT_SORT.dir)
   return {
     filters: {
-      q: readText(search.get('q'), MAX_QUERY_LENGTH),
+      codes,
       groups,
       all: groups.length === 0 && (readFlag(search.get('all'), false) || sortedAwayFromRecent),
       trendAllLit: false,
@@ -252,8 +263,7 @@ export function parseLastPricesUrlState(search: URLSearchParams): LastPricesUrlS
 export function buildLastPricesUrlSearch(state: LastPricesUrlState): string {
   const { filters } = state
   const search = new URLSearchParams()
-  const q = filters.q.trim()
-  if (q) search.set('q', q)
+  for (const code of filters.codes) search.append('code', code)
   for (const name of filters.groups) search.append('group', name)
   if (filters.all) search.set('all', '1')
   if (filters.n !== LAST_PRICE_DEFAULT_N) search.set('n', String(filters.n))

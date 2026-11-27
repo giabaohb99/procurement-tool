@@ -35,7 +35,7 @@ Tiêu đề ghi kèm tổng số lần mua — *"Lịch sử mua hàng (37)"*. C
 
 ### 2b. Popup tham chiếu giá khi lập đơn
 
-Mở từ dòng hàng đang lập, tiêu đề phụ ghi `MÃ HÀNG · Tên hàng · N lần mua đã hoàn thành`.
+Mở từ dòng hàng đang lập, tiêu đề phụ ghi `MÃ HÀNG · Tên hàng · N lần mua đã nhận hàng`.
 
 - **Ô tìm kiếm** ở đầu popup: tìm gần đúng theo **Mã PO / Nhà cung cấp / Công ty**. Gõ xong **300ms mới gọi API** (không bắn request mỗi ký tự), đổi từ khóa thì về trang 1.
 - Mỗi dòng có nút **"Dùng giá này"**; bấm vào bất kỳ đâu trên dòng cũng chọn được.
@@ -66,7 +66,7 @@ Bảng lịch sử chứa **hai loại dòng khác hẳn nhau về bản chất*
 
 | | `source = "system"` | `source = "legacy"` |
 |---|---|---|
-| Từ đâu ra | Hệ thống **tự chốt** khi một dòng ĐMH vào trạng thái **"Hoàn thành"** | **Nhập từ file Excel** `khaosatsanpham.xlsx` — các lần mua có thật của giai đoạn **trước khi có hệ thống** |
+| Từ đâu ra | Hệ thống **tự ghi** khi một dòng ĐMH **nhận hàng** (SL nhận > 0), rồi **chốt** khi dòng vào **"Hoàn thành"** (bao-CR-790, mục 6) | **Nhập từ file Excel** `khaosatsanpham.xlsx` — các lần mua có thật của giai đoạn **trước khi có hệ thống** |
 | Có ĐMH không | Có — bấm vào dòng mở được đơn | **Không hề có**, vì lúc đó chưa có hệ thống |
 | Cột Mã PO | Mã đơn thật | Nhãn xám **"Dữ liệu cũ"** |
 | Cột `extra` | Đầy đủ (mục 5) | Rỗng — chỉ giữ nguồn file/sheet/dòng Excel |
@@ -115,7 +115,8 @@ Nguyên tắc chia cột: **cột phẳng = thứ được lọc / sắp xếp /
 | Cột | Ý nghĩa |
 |---|---|
 | `po_item_id` | id dòng ĐMH gốc — **unique**, là lớp chống ghi trùng. **NULL** với dòng legacy |
-| `source` | `system` (tự chốt) hoặc `legacy` (nhập từ Excel) — có index |
+| `source` | `system` (sinh từ dòng ĐMH) hoặc `legacy` (nhập từ Excel) — có index |
+| `line_stage` | giai đoạn của bản ghi (bao-CR-790, cùng bộ mã `LedgerLineStage` của sổ giá): `1` = **đang mở** (đã nhận hàng, chưa hoàn thành, còn đổi theo ĐMH), `2` = **đã chốt** (dòng hoàn thành hoặc dữ liệu cũ, bất biến). Dòng có từ trước migration `phstage790` đều là `2` |
 | `legacy_key` | khóa nguồn của dòng cũ (file + sheet + số dòng), **unique** — vừa truy ngược được, vừa chống nhập trùng. NULL với dòng hệ thống |
 | `po_id` / `po_code` | đơn mua hàng gốc; `0` / rỗng với dòng legacy |
 | `product_code` / `product_name` | nối với màn Sản phẩm |
@@ -123,7 +124,7 @@ Nguyên tắc chia cột: **cột phẳng = thứ được lọc / sắp xếp /
 | `company_id` / `company_name` | pháp nhân mua |
 | `order_date` | ngày đặt — **khóa sắp xếp mặc định** (giảm dần) |
 | `unit` · `qty_order` · `price` · `vat` · `amount` | ĐVT, SL đặt, đơn giá, %VAT của dòng, thành tiền |
-| `completed_at` | ngày dòng vào "Hoàn thành" |
+| `completed_at` | ngày dòng vào "Hoàn thành"; **rỗng** khi bản ghi còn đang mở |
 | `extra` | phần còn lại, dạng JSON |
 
 **Index**: 2 composite `(product_code, order_date)` và `(supplier_code, order_date)` — phủ đúng 2 màn dùng thật. Hai cột mã **không cần index đơn** vì đã là leftmost prefix của composite.
@@ -144,13 +145,28 @@ API trả `extra` **dạng object** chứ không phải chuỗi (parse ở `Purc
 
 ## 6. Ghi vào lúc nào
 
-**Đúng một chỗ ghi**: `purchase_order/service.py::auto_advance_line`, khi một dòng hàng **chuyển sang "Hoàn thành"**. Đặt hook ở đó nên **phủ luôn luồng import Excel**, không phải đi vá thêm chỗ nào.
+**Từ bao-CR-790 (chủ dự án yêu cầu 27/11/2026) bản ghi có từ lúc HÀNG VỀ KHO**, không đợi dòng "Hoàn thành". Lý do: "Hoàn thành" đòi dòng đã thanh toán đủ, thực tế trên prod 743 dòng đã nhận hàng mà chỉ 5 dòng có lịch sử — người lập đơn tra giá lần mua gần nhất không thấy gì.
+
+Một dòng ĐMH có **đúng một bản ghi suốt đời** (`po_item_id` unique), đi qua hai giai đoạn (`line_stage`):
+
+| Giai đoạn | Có khi nào | Hành vi |
+|---|---|---|
+| **Đang mở** (`1`) | ĐMH đã duyệt trở đi, chưa xóa mềm; dòng chưa hủy; **SL nhận > 0** | **Đi theo ĐMH**: đổi giá / SL / VAT / NCC / ngày đặt / thông tin kèm thì cập nhật đúng bản ghi đó. Dòng hủy, SL nhận về 0, dòng bị xóa, ĐMH hủy / bỏ duyệt / xóa mềm thì bản ghi bị **xóa** |
+| **Đã chốt** (`2`) | dòng vào "Hoàn thành" (`auto_advance_line` → `snapshot_line`), hoặc dữ liệu cũ | **Bất biến**: chụp lại số của ĐMH lần cuối lên chính bản ghi đang mở (id giữ nguyên), ghi `completed_at`, từ đó không sửa không xóa |
+
+**Chỗ ghi:**
+
+- `purchase_history/service.py::sync_po_history(db, po)` dựng lại các bản ghi đang mở của MỘT đơn theo dòng hàng hiện tại. Gọi (qua `sync_po_history_safe`) ngay sau `sync_po_price_ledger` ở mọi chỗ ĐMH đổi: lưu đơn / lưu lần nhận hàng (`update_po`, kể cả trợ lý AI ghi lần nhận hàng), đổi trạng thái đơn (`set_status`: duyệt, hủy, bỏ duyệt, mở lại), xóa đơn, hủy / tiếp tục dòng (`set_item_progress`), nhập ĐMH từ Excel và hoàn tác lô nhập.
+- `snapshot_line` (gọi từ `auto_advance_line` khi dòng chuyển sang "Hoàn thành") chốt bản ghi; chưa có bản ghi đang mở thì chèn thẳng bản ghi đã chốt.
+- Script sửa giá tay trên ĐMH đã nhận hàng (đặt `POItem.price` rồi `recompute_effects`) phải gọi thêm `sync_po_price_ledger` và `sync_po_history_safe` — `recompute_effects` không tự gọi (bài kiểm chụp số truy vấn `test_chup_ket_qua_tien_dmh_cr719.py`).
+
+**Quan hệ với sổ giá (`tab_product_price_ledger`, cụm Giá NVL sản xuất):** bản ghi lịch sử đang mở KHÔNG chốt dòng sổ giá — dòng sổ vẫn đang mở và đi theo ĐMH (`sync_po_price_ledger`). Chỉ bản ghi đã chốt mới chốt dòng sổ (`record_history_row`, `sync_history_ledger` lọc `line_stage = 2`).
 
 Ba tính chất phải giữ:
 
-- **Bất biến** — ghi 1 lần, không sửa không xóa. **Sửa đơn về sau không làm đổi lịch sử**: đây là bản chụp *tại thời điểm mua*, đó mới là thứ có giá trị tham chiếu.
-- **Idempotent** — đã có bản ghi cho `po_item_id` đó thì thoát ngay, không ghi lần hai. Cột `unique` là lớp bảo hiểm ở tầng CSDL.
-- **Lỗi ghi lịch sử KHÔNG được chặn luồng tiến độ mua hàng** — bọc trong `snapshot_line_safe`, hỏng thì ghi log rồi đi tiếp. Không ai chấp nhận việc dòng hàng không chuyển được trạng thái chỉ vì sổ tham chiếu ghi trượt.
+- **Bản ghi đã chốt là bất biến** — sửa đơn về sau không làm đổi; bản ghi đang mở thì luôn bằng ĐMH hiện tại.
+- **Idempotent** — gọi lại không sinh bản ghi thứ hai, không đổi gì nếu ĐMH không đổi. Cột `unique` là lớp bảo hiểm ở tầng CSDL.
+- **Lỗi ghi lịch sử KHÔNG được chặn thao tác trên ĐMH** — `sync_po_history_safe` chạy trong SAVEPOINT, hỏng thì ghi log rồi đi tiếp; `snapshot_line_safe` như cũ.
 
 Tên công ty được **denormalize** vào bảng (không join `tab_company` lúc đọc) để bảng lịch sử **tự đứng được**, không phụ thuộc việc danh mục công ty về sau có đổi hay không.
 
@@ -166,7 +182,8 @@ docker compose exec -T api python -m scripts.<tên_script>
 
 | Script | Việc |
 |---|---|
-| `backfill_purchase_history.py` | Dựng lại lịch sử cho **dòng ĐMH đã "Hoàn thành" từ trước** khi có tính năng (hoặc do import Misa gán thẳng cột tiến độ nên không đi qua hook). Dùng chính `snapshot_line` nên bản ghi giống hệt luồng thật |
+| `sync_po_purchase_history.py` | bao-CR-790: dựng bản ghi **đang mở** cho các dòng ĐMH **đã nhận hàng từ trước** khi có tính năng (gọi đúng `sync_po_history` cho từng đơn; `--po PO01260` chạy một đơn). Chạy lại không đổi gì |
+| `backfill_purchase_history.py` | Dựng lại lịch sử **đã chốt** cho **dòng ĐMH đã "Hoàn thành" từ trước** khi có tính năng (hoặc do import Misa gán thẳng cột tiến độ nên không đi qua hook). Dùng chính `snapshot_line` nên bản ghi giống hệt luồng thật |
 | `import_purchase_history_legacy.py` | Đổ **lịch sử cũ từ Excel** vào bảng với `source='legacy'` |
 | `backfill_legacy_po_code.py` | Dò ngược xem dòng legacy có ĐMH tương ứng không rồi **điền mã PO** |
 | `import_legacy_data.py` | Nạp dữ liệu cũ nói chung |
@@ -174,6 +191,7 @@ docker compose exec -T api python -m scripts.<tên_script>
 **`backfill_purchase_history` — các cờ đáng nhớ:**
 
 - `--stats` in phân bố *tiến độ dòng × thiếu lịch sử* để rà **trước** khi ghi.
+- Từ bao-CR-790 KHÔNG dùng `--include-received` nữa: cờ này chốt luôn bản ghi (và chốt dòng sổ giá) cho dòng mới chỉ nhận hàng, sau đó đổi giá trên ĐMH không còn đồng bộ. Dòng đã nhận hàng dùng `sync_po_purchase_history.py`.
 - Mặc định chỉ nhận `progress_status = "Hoàn thành"`. Đơn cũ import từ Misa có SL nhận nhưng cột tiến độ không chuẩn nên bị bỏ qua sạch — dùng **`--include-received`** (lấy theo **thực tế đã nhận hàng**) hoặc `--status "..."` tự chỉ định.
 - **Luôn loại dòng đã hủy** (tiến độ / `line_status` = "Hủy đơn", hoặc đơn `status = cancelled`), kể cả khi đã lỡ nhận hàng.
 - `completed_at` **suy ra theo dữ liệu, không đóng dấu ngày chạy script**.
@@ -210,8 +228,9 @@ docker compose exec -T api python -m scripts.<tên_script>
 | Quyết định | Lý do |
 |---|---|
 | 1 bản ghi = **1 dòng hàng**, không phải 1 đơn | Người ta tra giá theo **mã hàng**, không tra theo đơn. Gộp theo đơn thì mỗi lần xem lại phải bóc dòng ra |
-| **Snapshot bất biến**, sửa đơn không làm đổi lịch sử | Giá trị của sổ này nằm ở chỗ nó ghi **đúng cái đã xảy ra lúc đó**. Cho nó chạy theo đơn thì không còn là lịch sử |
-| Chốt tại `auto_advance_line` chứ không ở controller | Một chỗ ghi duy nhất, và **phủ luôn luồng import Excel** — không phải nhớ vá thêm chỗ nào |
+| Bản ghi **đã chốt** là bất biến, sửa đơn không làm đổi | Giá trị của sổ này nằm ở chỗ nó ghi **đúng cái đã xảy ra lúc đó** |
+| Ghi từ lúc **nhận hàng**, đi theo ĐMH tới khi dòng hoàn thành (bao-CR-790, thay quyết định "chỉ ghi khi Hoàn thành") | Chủ dự án 27/11/2026: hàng đã về kho là lần mua có thật, phải tra được ngay; quản lý sửa giá trên ĐMH thì lịch sử phải đổi theo. Chờ thanh toán đủ mới ghi thì sổ gần như trống |
+| Chốt tại `auto_advance_line` chứ không ở controller | Một chỗ chốt duy nhất, và **phủ luôn luồng import Excel** — không phải nhớ vá thêm chỗ nào |
 | Lỗi ghi lịch sử **không** chặn luồng tiến độ | Sổ tham chiếu hỏng thì sửa sau; chặn dòng hàng chuyển trạng thái là chặn việc thật của người dùng |
 | Denormalize tên NCC / SP / công ty vào bảng | Bảng tự đứng được, không phụ thuộc danh mục về sau đổi tên hay xóa |
 | Cột phẳng cho thứ lọc/sắp xếp, phần còn lại vào `extra` JSON | Không đẻ 18 cột chỉ để hiển thị tham khảo; nhưng cái nào cần index thì phải là cột thật |

@@ -36,8 +36,8 @@ function rowOf(...prices: (number | null)[]): PackagingLastPricesRow {
 describe('purchaseTrendTone', () => {
   it('paints a purchase red when it is dearer than the next-older one, green when cheaper', () => {
     const row = rowOf(150, 130, 130, 140)
-    expect(purchaseTrendTone(row, 0)).toContain('emerald') // 150 > 130: tăng = xanh (người chủ chốt 20/11)
-    expect(purchaseTrendTone(row, 2)).toContain('destructive') // 130 < 140: giảm = đỏ
+    expect(purchaseTrendTone(row, 0)).toContain('destructive') // 150 > 130: tăng = đỏ (người chủ chốt 27/11)
+    expect(purchaseTrendTone(row, 2)).toContain('emerald') // 130 < 140: giảm = xanh
   })
 
   it('leaves equal prices, the oldest shown purchase and missing slots unpainted', () => {
@@ -65,7 +65,7 @@ describe('purchaseGroupLabel', () => {
 })
 
 const FILTERS: LastPricesFilters = {
-  q: 'raw',
+  codes: [],
   groups: [],
   n: 5,
   scope: 'bom',
@@ -83,18 +83,19 @@ const FILTERS: LastPricesFilters = {
 
 describe('buildLastPricesParams', () => {
   it('sends only n, scope and only_priced when everything else is at its default', () => {
-    expect(buildLastPricesParams(FILTERS, '', { by: '', dir: 'asc' })).toEqual({
+    expect(buildLastPricesParams(FILTERS, { by: '', dir: 'asc' })).toEqual({
       n: 5,
       only_priced: true,
       scope: 'bom',
     })
   })
 
-  it('maps every option and uses the debounced search text, not the raw input', () => {
+  it('maps every option, chosen codes included', () => {
     const params = buildLastPricesParams(
       {
         ...FILTERS,
         n: 10,
+        codes: ['NAP0085', 'CPT0105'],
         groups: ['Chai', 'Nắp'],
         suppliers: ['PHL', 'NCC02'],
         from: '2026-01-01',
@@ -105,12 +106,11 @@ describe('buildLastPricesParams', () => {
         bomOnly: true,
         scope: 'all',
       },
-      ' nap ',
       { by: 'p2_price', dir: 'desc' },
     )
     expect(params).toEqual({
       n: 10,
-      q: 'nap',
+      code: ['NAP0085', 'CPT0105'],
       group: ['Chai', 'Nắp'],
       supplier: ['PHL', 'NCC02'],
       date_from: '2026-01-01',
@@ -136,7 +136,7 @@ describe('sortKeyOutsideN', () => {
 })
 
 describe('isRecentMode', () => {
-  const base: LastPricesFilters = { ...FILTERS, q: '', scope: 'all', onlyPriced: false }
+  const base: LastPricesFilters = { ...FILTERS, codes: [], scope: 'all', onlyPriced: false }
   it('is on only with nothing chosen (n / showQty do not count)', () => {
     expect(isRecentMode(base)).toBe(true)
     expect(isRecentMode({ ...base, n: 10, showQty: true, trendAllLit: true })).toBe(true)
@@ -144,7 +144,7 @@ describe('isRecentMode', () => {
   it('turns off for "Tất cả", a group chip or any other filter', () => {
     expect(isRecentMode({ ...base, all: true })).toBe(false)
     expect(isRecentMode({ ...base, groups: ['Chai'] })).toBe(false)
-    expect(isRecentMode({ ...base, q: 'nắp' })).toBe(false)
+    expect(isRecentMode({ ...base, codes: ['NAP0085'] })).toBe(false)
     expect(isRecentMode({ ...base, suppliers: ['A'] })).toBe(false)
     expect(isRecentMode({ ...base, from: '2026-01-01' })).toBe(false)
     expect(isRecentMode({ ...base, trend: 'up' })).toBe(false)

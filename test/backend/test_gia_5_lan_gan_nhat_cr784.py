@@ -245,6 +245,15 @@ def test_tham_so_sai_la_422(api, params):
 
 
 # ── Bộ lọc mới ──────────────────────────────────────────────────────────────────
+def test_o_chon_ma_chi_giu_dung_cac_ma_da_chon(api):
+    """Ô chọn mã (27/11/2026): `code` lặp chỉ giữ đúng các mã đó; mã không có dòng thì bỏ qua, không lỗi."""
+    got = {r["code"] for r in _items(api, code=["NAP0085", "KHONGCO01"])["items"]}
+    assert got == {"NAP0085"}
+    both = {r["code"] for r in _items(api, code=["NAP0085", "CPT0105"])["items"]}
+    assert both == {"NAP0085", "CPT0105"}
+    assert api.get(URL, params={"code": [f"M{i}" for i in range(501)]}).status_code == 422
+
+
 def test_khoang_ngay_loc_truoc_khi_xep_hang_va_dem_so_lan(api):
     row = {r["code"]: r for r in _items(api, date_from="2026-02-01", date_to="2026-05-31")["items"]}["CPT0105"]
     assert [p["price"] for p in row["purchases"]] == [130, 120, 105, 110]      # 150 (tháng 6) nằm ngoài khoảng

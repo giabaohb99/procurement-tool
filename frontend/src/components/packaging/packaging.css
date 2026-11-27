@@ -16,6 +16,12 @@
 .pkg-field input[type="text"], .pkg-field input:not([type]) { height: 32px; padding: 0 10px; }
 .pkg-search { width: 280px; max-width: 100%; }
 .pkg-search input { width: 100%; height: 36px; }
+/*  Hàng bốn ô chọn (Giá mua gần nhất, 27/11/2026): ô chọn mã rộng gấp đôi; màn vừa 2 cột, điện thoại 1 cột. */
+.pkg-lookups { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.pkg-lookups .pkg-search { width: 100%; }
+.pkg-lookups .pkg-search input { height: 38px; }   /*  bằng chiều cao ô chọn react-select bên cạnh */
+@media (max-width: 1100px) { .pkg-lookups { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .pkg-lookups { grid-template-columns: minmax(0, 1fr); } }
 
 .pkg-pills { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .pkg-pill {
@@ -48,6 +54,10 @@
   border: 1px solid var(--border); border-radius: 12px; background: #fff;
 }
 .pkg-chipbox.open { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.18); }
+/*  Kiểu gọn một dòng (Giá mua gần nhất, 27/11/2026): cao bằng ô chọn react-select bên cạnh, chip không xuống dòng. */
+.pkg-chipbox.compact { flex-wrap: nowrap; overflow: hidden; min-height: 0; height: 38px; padding: 0 8px; border-radius: 8px; }
+.pkg-chipbox.compact .pkg-chip, .pkg-chipbox.compact .pkg-chip-more { flex: none; padding-top: 1px; padding-bottom: 1px; }
+.pkg-chipbox.compact .pkg-input { min-width: 80px; }
 .pkg-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 8px;
   border: 1px solid rgba(0, 174, 239, 0.35); background: rgba(0, 174, 239, 0.1); color: var(--teal-dark);
@@ -117,6 +127,9 @@
 .pkg-lp tbody td { padding: 8px 10px; font-size: 13px; }
 .pkg-lp .sticky-col { position: sticky; left: 0; z-index: 1; background: inherit; }
 .pkg-lp thead .sticky-col { z-index: 4; background: #f4f7fe; }
+/*  Cột Tên vật tư dính trái thứ hai (27/11/2026), ngay sau cột Mã; vạch bóng mép phải tách phần dính với phần cuộn. */
+.pkg-lp .sticky-col-2 { position: sticky; left: var(--pkg-lp-code-w, 110px); z-index: 1; background: inherit; box-shadow: inset -1px 0 0 var(--border); }
+.pkg-lp thead .sticky-col-2 { z-index: 4; background: #f4f7fe; }
 .pkg-lp .g0 { background: #dbeafe !important; }
 .pkg-lp .g1 { background: #ffedd5 !important; }
 .pkg-lp .g2 { background: #dcfce7 !important; }
@@ -188,8 +201,8 @@ tbody tr.pkg-zero td { color: var(--muted); }
   font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 /* Giá trị dài ("1.900 – 2.800") thu cỡ chữ và được xuống dòng thay vì bị cắt "…". */
 .pkg-kpi-v.long { font-size: 18px; }
-.pkg-kpi-v.up { color: #16a34a; }
-.pkg-kpi-v.down { color: #dc2626; }
+.pkg-kpi-v.up { color: #dc2626; }
+.pkg-kpi-v.down { color: #16a34a; }
 .pkg-kpi-s { margin-top: 2px; font-size: 12px; color: #8c939c; overflow-wrap: anywhere; }
 
 /* ── Thanh lọc dạng chip của bảng sản phẩm bị ảnh hưởng (Tác động giá) và Tổng hợp theo sản phẩm (duoc-CR-784, 26/11/2026) ── */

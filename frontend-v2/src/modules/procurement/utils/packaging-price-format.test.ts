@@ -40,6 +40,6 @@ describe('packagingDiffTone', () => {
   it('does not colour float noise around zero', () => {
     expect(packagingDiffTone(1e-9)).toBeUndefined()
     expect(packagingDiffTone(-1e-9)).toBeUndefined()
-    expect(packagingDiffTone(0.01)).toContain('emerald')
+    expect(packagingDiffTone(0.01)).toContain('destructive')
   })
 })

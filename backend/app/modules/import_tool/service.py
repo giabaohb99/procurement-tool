@@ -327,6 +327,7 @@ def _po_payment_blockers(db, changes) -> list[str]:
 
 def _revert_po(db: Session, changes, user_id: int):
     from app.modules.product_price.ledger_sync_service import sync_po_price_ledger
+    from app.modules.purchase_history.service import sync_po_history_safe
     from app.modules.purchase_order import service as po_service
     from app.modules.purchase_order.model import (PODelivery, POItem,
                                                    PurchaseOrder)
@@ -360,5 +361,6 @@ def _revert_po(db: Session, changes, user_id: int):
         db.flush()
         po_service.recompute_effects(db, po, user_id)
         sync_po_price_ledger(db, po, commit=False)   # duoc-CR-784: dòng dựng lại từ bản chụp → sổ giá khớp theo
+        sync_po_history_safe(db, po, commit=False)   # bao-CR-790: lịch sử chưa chốt cũng khớp theo dòng dựng lại
         restored += 1
     return deleted, restored

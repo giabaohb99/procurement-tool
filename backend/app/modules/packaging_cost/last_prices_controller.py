@@ -28,6 +28,8 @@ ENTITY = "packaging_last_price"
 MAX_PAGE_SIZE = 500
 MAX_GROUPS = 200     #  số nhóm tối đa trong một lần gọi (ô chọn nhiều nhóm, 27/11/2026: prod có khoảng 42 nhóm nên trần 50 quá sát)
 GroupValue = Annotated[str, StringConstraints(max_length=50)]    #  độ dài từng tên nhóm (cột item_group dài 50)
+MAX_CODES = 500     #  số mã tối đa chọn ở ô chọn mã (bằng trần `PACKAGING_MAX_CODES` của giao diện)
+CodeValue = Annotated[str, StringConstraints(max_length=50)]
 router = APIRouter()
 
 
@@ -50,6 +52,7 @@ def shared_view_scope(db: Session, user, action: str = "read"):
 
 def last_price_filters(
     n: int = Query(DEFAULT_N, ge=2, le=MAX_N), q: str = Query("", max_length=100),
+    code: list[CodeValue] = Query([], max_length=MAX_CODES),
     group: list[GroupValue] = Query([], max_length=MAX_GROUPS),
     supplier: list[str] = Query([], max_length=50), date_from: date | None = None, date_to: date | None = None,
     trend: str = Query("all", pattern="^(all|up|down|flat)$"), min_pct: float | None = Query(None, ge=0, le=100000),
@@ -59,7 +62,7 @@ def last_price_filters(
     """Bộ tham số lọc + xếp dùng chung cho danh sách và Xuất Excel (cùng thứ tự)."""
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "Từ ngày không được sau Đến ngày")
-    return {"n": n, "q": q, "groups": group, "suppliers": supplier, "date_from": date_from, "date_to": date_to,
+    return {"n": n, "q": q, "product_codes": code, "groups": group, "suppliers": supplier, "date_from": date_from, "date_to": date_to,
             "trend": trend, "min_pct": min_pct, "only_priced": only_priced, "bom_only": bom_only, "scope": scope,
             "sort_by": sort_by, "sort_dir": sort_dir}
 
@@ -72,6 +75,7 @@ def last_prices(filters: dict = Depends(last_price_filters), page: int = Query(1
 
     `n` = số lần hiển thị (2–10, mặc định 5). Lần 1 là lần mua có giá (> 0) gần nhất; `purchases` xếp từ gần nhất tới xa
     nhất. `v12` / `v1n` là tỷ số biến động lần 1 so lần 2 / lần n (0,05 = +5%). Bộ lọc: `q` (mã, tên, nhóm, nhà cung cấp),
+    `code` (lặp được, `code=A&code=B`, tối đa 500 mã) chỉ giữ đúng các mã đã chọn ở ô chọn mã;
     `group` (lặp được, `group=Chai&group=Nắp` = nhóm Chai HOẶC Nắp; tối đa 200 nhóm, mỗi tên <= 50 ký tự; chỉ một giá trị vẫn
     nhận như cũ), `supplier` (lặp được — giữ mã có nhà cung cấp đó trong n lần đang hiện), `date_from` / `date_to` (chỉ các lần
     mua trong khoảng được xếp hạng), `trend` (all / up / down / flat — lần 1 so lần 2), `min_pct` (|biến động| >= %),

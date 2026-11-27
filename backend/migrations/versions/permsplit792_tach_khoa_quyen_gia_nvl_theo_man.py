@@ -1,7 +1,7 @@
 """tach_khoa_quyen_gia_nvl_theo_man: khoa `packaging_cost` -> moi man mot khoa (bao-CR-792)
 
 Revision ID: permsplit792
-Revises: bombatch784
+Revises: phstage790
 Create Date: 2026-11-27
 
 Chu du an yeu cau 27/11/2026: cum Gia nguyen vat lieu san xuat (duoc-CR-784) dang gac MOT khoa `packaging_cost` cho ca sau man,
@@ -37,7 +37,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "permsplit792"
-down_revision: Union[str, None] = "bombatch784"
+down_revision: Union[str, None] = "phstage790"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

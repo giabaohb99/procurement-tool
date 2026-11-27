@@ -10,7 +10,7 @@ const GROUPS = [
 ]
 const SUPPLIERS = [{ code: 'PHL', name: 'CÔNG TY CỔ PHẦN PHL' }]
 const FILTERS: LastPricesFilters = {
-  q: '',
+  codes: [],
   groups: [],
   n: 5,
   scope: 'all',
@@ -79,7 +79,7 @@ describe('PackagingLastPricesToolbar', () => {
     rerender(
       <PackagingLastPricesToolbar filters={FILTERS} groups={GROUPS} suppliers={SUPPLIERS} onChange={vi.fn()} recentMode />,
     )
-    expect(screen.getByText('20 mã mua gần nhất · chọn Tất cả ở ô Nhóm sản phẩm để xem hết')).toBeInTheDocument()
+    expect(screen.getByText(/20 mã mua gần nhất, chọn Tất cả ở ô Nhóm sản phẩm để xem hết/)).toBeInTheDocument()
   })
 
   it('names the chosen groups in the box, appends in tick order and unticking one removes it', async () => {

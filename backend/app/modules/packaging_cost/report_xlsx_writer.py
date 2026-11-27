@@ -28,7 +28,7 @@ from app.core.export_xlsx import VN_OFFSET, Col
 TITLE_PREFIX = "BÁO CÁO GIÁ NGUYÊN VẬT LIỆU SẢN XUẤT — "
 FONT_NAME = "Montserrat"
 NAVY, GREEN_DARK, LIME, GRID = "0F3B6E", "0B6A3A", "7FD148", "D0D7E2"
-UP_COLOR, DOWN_COLOR = "0B6A3A", "C0392B"           # tăng xanh, giảm đỏ (luật màu chung của cụm)
+UP_COLOR, DOWN_COLOR = "C0392B", "0B6A3A"           # tăng đỏ, giảm xanh (luật màu chung của cụm, 27/11/2026)
 
 FMT_INT = '#,##0;[Red]-#,##0;"-"'
 FMT_DEC = '#,##0.00;[Red]-#,##0.00;"-"'

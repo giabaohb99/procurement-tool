@@ -26,7 +26,7 @@ export function PrintChipsBox({ codes, emptyText }: { codes: readonly string[]; 
   )
 }
 
-/** Một thẻ số liệu của bản in: số to (kèm đơn vị nhỏ), tối đa hai dòng phụ, `tone` tô màu số (tăng = xanh). */
+/** Một thẻ số liệu của bản in: số to (kèm đơn vị nhỏ), tối đa hai dòng phụ, `tone` tô màu số (tăng = đỏ). */
 export interface PrintKpiItem {
   label: string
   value: string
