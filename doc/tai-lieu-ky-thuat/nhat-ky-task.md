@@ -114,6 +114,14 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
+- status: dang-lam
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** bài **Lịch sử mua hàng & Tham chiếu giá** còn ghi luật cũ: lần mua chỉ vào lịch sử khi dòng Hoàn thành và số liệu giữ nguyên mãi. Từ bao-CR-790 lịch sử ghi từ lúc nhận hàng, và bao-CR-794 thêm nút **Sửa giá** cho đơn đã duyệt.
+
 ## bao-CR-793 | Giá nguyên vật liệu sản xuất: phòng Dego Lab chỉ xem Bảng giá VTBB và Giá mua gần nhất
 - status: xong
 - date: 2026-11-27
