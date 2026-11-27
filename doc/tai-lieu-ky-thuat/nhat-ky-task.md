@@ -134,6 +134,8 @@ hẹp hơn tổng bề rộng cột thì bảng tự có thanh cuộn ngang. Ai 
 
 Mã nguồn: `frontend-v2/src/modules/procurement/hooks/use-packaging-history-columns.tsx` ·
 `frontend-v2/src/modules/procurement/components/packaging-history-cells.tsx`.
+Deploy: dev 27/11/2026 (erp-v2 c8306ec5), đã mở màn trên dev khổ 1.700 px: cột Nguồn hiện đủ nhãn và số đơn, bảng rộng 1.565 px
+trong khung 1.352 px nên có thanh cuộn ngang, cuộn tới hết cột cuối. Prod chưa (chủ dự án dặn đẩy sau).
 
 ## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
 - status: dang-lam
