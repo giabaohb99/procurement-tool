@@ -140,6 +140,10 @@ nhất; những người còn lại đang được xem cụm giá thì giữ ngu
 Mã nguồn: `backend/scripts/split_packaging_lab_role.py`.
 Kiểm: `test/backend/test_vai_tro_gia_nvl_phong_lab_cr793.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md`.
+Deploy: dev 27/11/2026 (erp-v2 637a310e): chạy script cho phòng Dego Lab (id 6), tạo vai trò hai màn và chuyển 8 tài khoản; chạy
+lại không đổi gì. Thử bằng tài khoản thật: người phòng Lab vào được Bảng giá VTBB (kể cả xuất), Giá mua gần nhất và danh sách báo
+giá, bị chặn ở bốn màn còn lại và ở thao tác thêm báo giá; người giữ vai trò xem cả cụm vẫn vào đủ. Prod chưa (chạy script sau khi
+phát hành bao-CR-792).
 
 ## bao-CR-792 | Giá nguyên vật liệu sản xuất: tách quyền theo từng màn thay cho một quyền chung cả cụm
 - status: xong
