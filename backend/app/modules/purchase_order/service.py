@@ -50,6 +50,7 @@ from .edit_service import (_ITEM_COPY_FIELDS, copy_po, _default_nspt, _ensure_pr
                            ORDER_FIELD_LABELS, ORDER_FIELDS_EDITABLE_AFTER_APPROVAL, _EDIT_HINT, _differs,
                            block_edit_approved_order, block_clear_misa_in_use, unapprove_po, update_po,
                            DOCUMENT_STATUSES, set_document_status, delete_po, reopen_po, set_status)
+from .price_adjust_service import PRICE_ADJUST_BLOCKING_REQUEST_STATUSES, adjust_prices
 from .query_service import (DEFAULT_INSPECTION_DAYS, DEFAULT_RETURN_DAYS, DEFAULT_INVOICE_DEADLINE, resolve_print_terms,
                             order_amount_map, list_po, list_display_names, pr_items_for_po, query_by_id, query_by_ids,
                             build_list_query, build_line_query, received_by_warehouse, pr_ids_by_code,

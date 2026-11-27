@@ -50,7 +50,7 @@ Từ lúc đơn sang `approved` (và giữ nguyên ở `partial` / `received`), 
 
 Ngoài ra ô **Ngày giao chứng từ cho KT** (`document_delivery_date`) cũng để mở, dù phiếu hỗ trợ không liệt kê: bước tiến độ "Đã gửi ĐMH cho KT" lấy đúng ô này làm mốc (`_step_ok` trong `purchase_order/service.py`), khóa lại thì dòng hàng không bao giờ đi hết tiến độ được.
 
-Mọi ô còn lại đều khóa: **Mã hàng cho copy nhưng không cho sửa**; ĐVT, SL đặt NCC, Đơn giá, VAT% chỉ đọc. Cũng **không thêm dòng, không xóa dòng**.
+Mọi ô còn lại đều khóa: **Mã hàng cho copy nhưng không cho sửa**; ĐVT, SL đặt NCC, Đơn giá, VAT% chỉ đọc. Cũng **không thêm dòng, không xóa dòng**. Riêng Đơn giá có đường sửa riêng cho người duyệt, xem mục *Sửa giá sau duyệt* bên dưới.
 
 Muốn đổi phần đã duyệt thì bấm **"Hủy duyệt"** (`POST /{id}/unapprove`, quyền `purchase_order:approve`, bắt buộc nhập lý do): đơn về **`draft`**, sửa xong phải **Gửi duyệt** rồi **Duyệt** lại — nên đơn nào cũng đi qua đủ cổng kiểm CR-095 một lần nữa. Hủy duyệt bị **chặn** khi:
 
@@ -59,6 +59,23 @@ Muốn đổi phần đã duyệt thì bấm **"Hủy duyệt"** (`POST /{id}/un
 - hoặc đơn đã có yêu cầu thanh toán chưa hủy.
 
 Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) — gửi thẳng PATCH cũng không lách được; giao diện chỉ khóa cho êm tay. Test: `test/backend/test_po_lock_after_approve_cr108.py`.
+
+### Sửa giá sau duyệt (bao-CR-794)
+
+Hủy duyệt bị chặn khi đơn đã nhận hàng, nên giá nhà cung cấp báo lại sau khi hàng về không có đường sửa trên màn hình. Nút **"Sửa giá"** (`POST /{id}/adjust-prices`, quyền `purchase_order:approve`, bắt buộc nhập lý do) cho người có quyền duyệt đổi **đơn giá** của dòng mà **đơn giữ nguyên trạng thái**, không về Nháp, không duyệt lại.
+
+- Áp cho đơn `approved` / `partial` / `received`, kể cả đơn đã nhận hàng. Đơn chưa duyệt thì sửa thẳng trên đơn; đơn `completed` / `cancelled` thì không sửa.
+- Chỉ đổi đơn giá. Mã hàng, số lượng, VAT, tiền tệ vẫn khóa như mục trên. Thân gửi `{reason, items: [{id, price}]}`, giá phải lớn hơn 0; dòng không đổi giá bị bỏ qua, không dòng nào đổi thì báo lỗi. Một dòng sai thì không dòng nào được ghi.
+- Sau khi lưu, hệ thống chạy đúng phần đuôi của lần lưu đơn: tính lại thành tiền dòng, giá tồn kho và **công nợ hàng** theo số lượng đã nhận (`recompute_effects`), đồng bộ YCMH, **sổ giá** (`sync_po_price_ledger`) và **lịch sử mua hàng** đang mở (`sync_po_history_safe`). Nhật ký của đơn ghi hành động `adjust_price`: mã hàng, giá cũ → giá mới, lý do.
+- **Chặn** khi tiền đã đi tiếp theo giá cũ:
+  - đơn có yêu cầu thanh toán ở trạng thái đã gửi duyệt, đã duyệt hoặc đã chi (hủy phiếu thanh toán trước);
+  - công nợ hàng của đơn đã trả tiền;
+  - dòng ở tiến độ "Hoàn thành" (bản ghi lịch sử đã chốt) hoặc "Hủy".
+- Yêu cầu thanh toán còn **Nháp** có đơn này thì vẫn cho sửa; câu thông báo trả về kèm mã phiếu để người dùng kiểm lại số tiền.
+
+Giao diện: nút *Sửa giá* cạnh *Hủy duyệt* trên chi tiết đơn (cả hai giao diện), mở hộp *Sửa giá sau duyệt* liệt kê các dòng chưa Hoàn thành / Hủy với đơn giá hiện tại, ô đơn giá mới, chênh lệch thành tiền chưa VAT theo số lượng đã nhận và ô lý do.
+
+Mã: `purchase_order/price_adjust_service.py`. Test: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py`.
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 

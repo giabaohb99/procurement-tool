@@ -167,6 +167,17 @@ class RejectIn(BaseModel):
     reason: str = ""
 
 
+class PriceAdjustLineIn(BaseModel):
+    id: int
+    price: float = Field(..., gt=0)
+
+
+class PriceAdjustIn(BaseModel):
+    """Sửa đơn giá sau duyệt (bao-CR-794): chỉ gửi id dòng + giá mới, kèm lý do bắt buộc."""
+    reason: str = ""
+    items: list[PriceAdjustLineIn] = Field(..., min_length=1)
+
+
 class CostStageAdvanceIn(BaseModel):
     """Chốt Tạm tính (2) / Quyết toán (3) chi phí thu mua (bao-CR-453). Gửi kèm `import_costs`
     thì lưu bảng chi phí TRƯỚC rồi mới chốt — một nút bấm, không phải Lưu rồi Chốt."""

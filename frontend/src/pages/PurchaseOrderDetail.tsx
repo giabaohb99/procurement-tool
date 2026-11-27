@@ -19,6 +19,7 @@ import TextAreaAuto from '../components/TextAreaAuto'
 import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
+import PoPriceAdjustModal, { priceAdjustableItems } from '../components/PoPriceAdjustModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
@@ -952,6 +953,9 @@ export default function PurchaseOrderDetail() {
     }
   }
 
+  // bao-CR-794: hộp Sửa giá sau duyệt (đơn giữ nguyên trạng thái, kể cả đơn đã nhận hàng)
+  const [priceAdjustOpen, setPriceAdjustOpen] = useState(false)
+
   async function action(path: string, payload: any = {}) {
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
@@ -1218,6 +1222,11 @@ export default function PurchaseOrderDetail() {
               action('unapprove', { reason: r.trim() })
             }}><i className="ti ti-lock-open" />Hủy duyệt</button>
         )}
+        {/* bao-CR-794: khác Hủy duyệt, nút này VẪN hiện khi đơn đã nhận hàng — chỉ đổi đơn giá, đơn không về Nháp. */}
+        {!isNew && approved && can('purchase_order', 'approve') && priceAdjustableItems(items).length > 0 && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
+            onClick={() => setPriceAdjustOpen(true)}><i className="ti ti-currency-dong" />Sửa giá</button>
+        )}
         {!isNew && ['received', 'partial'].includes(po.status) && can('purchase_order', 'write') && (
           <button className="btn" onClick={async () => {
             // bao-CR-453 GĐ2: nhắc khi còn chi phí chưa trả hoặc chưa quyết toán hết
@@ -1440,7 +1449,7 @@ export default function PurchaseOrderDetail() {
                 <i className="ti ti-lock" /> Đơn đã duyệt — nội dung đã duyệt bị khóa. Mã đơn MISA vẫn sửa được ở phần Thông tin chung.
                 Mở <i className="ti ti-pencil" /> Chi tiết dòng
                 để sửa Tên trên hóa đơn, Ngày dự kiến có hàng, Kho nhận, Ghi chú, Ngày giao chứng từ cho KT và các lần giao hàng.
-                {can('purchase_order', 'approve') && ' Cần đổi mã hàng / số lượng / đơn giá thì bấm "Hủy duyệt" rồi gửi duyệt lại.'}
+                {can('purchase_order', 'approve') && ' Cần đổi đơn giá thì bấm "Sửa giá" (đơn giữ nguyên trạng thái). Cần đổi mã hàng / số lượng thì bấm "Hủy duyệt" rồi gửi duyệt lại.'}
               </div>
             )}
             <div className="items-scroll">
@@ -2657,6 +2666,12 @@ export default function PurchaseOrderDetail() {
       })()}
 
       {/* bao-CR-453 GĐ2/GĐ3: hộp thoại mở lại giai đoạn hoặc dòng chi phí */}
+      {priceAdjustOpen && (
+        <PoPriceAdjustModal poId={id as string} poCode={po.code || ''} items={items}
+          onClose={() => setPriceAdjustOpen(false)}
+          onSaved={() => { setPriceAdjustOpen(false); loadAll() }} />
+      )}
+
       {costReopenTarget !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setCostReopenTarget(null)}>
           <div style={{ width: 480, maxWidth: '96vw', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', padding: 24 }} onClick={(e) => e.stopPropagation()}>

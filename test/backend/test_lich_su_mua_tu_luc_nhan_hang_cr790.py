@@ -312,10 +312,10 @@ def test_every_order_change_point_syncs_history_too():
 
     from app.modules.import_tool import po_import
     from app.modules.import_tool import service as import_service
-    from app.modules.purchase_order import edit_service, progress_service
+    from app.modules.purchase_order import edit_service, price_adjust_service, progress_service
 
     sites = [edit_service.update_po, edit_service.delete_po, edit_service.set_status, progress_service.set_item_progress,
-             import_service._revert_po]
+             price_adjust_service.adjust_prices, import_service._revert_po]
     for fn in sites:
         source = inspect.getsource(fn)
         assert "sync_po_price_ledger(" in source and "sync_po_history_safe(" in source, fn.__name__
