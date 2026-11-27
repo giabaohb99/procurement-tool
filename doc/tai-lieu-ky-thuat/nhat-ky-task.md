@@ -152,6 +152,10 @@ trị, Quản lý thu mua, vai trò xem cụm giá, vai trò hai màn của phò
 liệu trả 73 mã nhóm NL có giá, xuất được; các màn VTBB không còn mã nhóm NL kể cả khi tra thẳng mã; người không có quyền bị
 chặn. Đã mở giao diện mới trên dev: màn Bảng giá nguyên liệu hiện dữ liệu, có nút Xuất Excel, không còn nút phạm vi mã; màn
 Bảng giá VTBB vẫn chạy như cũ. Đã seed lại HDSD cụm giá và nạp lại chỉ mục trên dev. Prod chưa.
+Deploy: prod 27/11/2026 bản 2.28.0 (main 72a06395): migration `matprice800` chèn quyền mới cho bốn vai trò (quản trị, Quản lý
+thu mua, vai trò xem cụm giá 25 tài khoản, vai trò hai màn của phòng Lab 8 tài khoản). Thử trên prod qua đường API: màn nguyên
+liệu trả 100 mã nhóm NL có giá, xuất được; các màn VTBB không còn mã nhóm NL; người không có quyền bị chặn. Đã seed lại HDSD
+cụm giá và nạp lại chỉ mục. Việc còn lại của chủ dự án: bỏ tick quyền mới cho bộ phận không được xem giá nguyên liệu.
 
 ## bao-CR-799 | Đơn mua hàng: sửa giá trong bảng cũng cập nhật lịch sử mua hàng và các màn Giá nguyên vật liệu
 - status: xong
