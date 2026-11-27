@@ -164,6 +164,9 @@ ENTITIES = [
     # trên BẤT KỲ khóa nào trong sáu (`PACKAGING_ENTITIES`).
     "packaging_impact", "packaging_product_summary", "packaging_price_list", "packaging_last_price", "packaging_history",
     "packaging_bom",
+    # bao-CR-800 (chủ dự án 27/11/2026): giá NGUYÊN LIỆU (sản phẩm nhóm NL) cấp quyền riêng — có bộ phận được xem, có bộ phận
+    # không. Các khóa VTBB ở trên không còn thấy mã nguyên liệu (`packaging_cost/material_scope.py`).
+    "packaging_material_price",
     # Tra cứu giá hải quan (bao-CR-470, doc/erp/hai-quan). MỘT khóa cho cả màn tra cứu:
     # read = xem danh sách + biểu đồ · write = nạp tệp GTT02 · delete = hoàn tác lô.
     # Không vai trò nào tự có — đại ca tick tay trên màn Phân quyền (xem `_SYS_ENTITIES`).
@@ -292,6 +295,7 @@ ENTITY_LABELS = {
     "packaging_last_price": "Giá NVL sản xuất › Giá mua gần nhất",
     "packaging_history": "Giá NVL sản xuất › Lịch sử mua hàng",
     "packaging_bom": "Giá NVL sản xuất › Định mức bao bì",
+    "packaging_material_price": "Giá NVL sản xuất › Bảng giá nguyên liệu",
     "agent_task": "Trợ lý Telegram › Việc của bot",
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
@@ -317,7 +321,7 @@ ACTION_LABELS = {
 PACKAGING_ENTITIES = ("packaging_impact", "packaging_product_summary", "packaging_price_list", "packaging_last_price",
                       "packaging_history", "packaging_bom")
 SENSITIVE_PROCUREMENT_ENTITIES = ["supplier", "contract", "purchase_order", "payable", "payment_request",
-                                  "customs_price", *PACKAGING_ENTITIES]
+                                  "customs_price", *PACKAGING_ENTITIES, "packaging_material_price"]
 SENSITIVE_WARN_ACTIONS = ["read", "export"]
 
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]

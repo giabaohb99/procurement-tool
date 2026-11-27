@@ -28,6 +28,7 @@ from .last_prices_controller import MAX_CODES, CodeValue
 from .last_prices_controller import view_scope as _scope
 from .product_overview_controller import router as product_overview_router
 from .price_list_service import SORT_KEYS, build_price_list, build_price_list_page
+from .material_scope import KIND_MATERIAL, MATERIAL_ENTITY
 
 #  Khóa của màn Tác động giá bao bì và của màn Bảng giá VTBB. Không viết chú thích cuối dòng: bài canh
 #  `test_dong_bo_giao_dien_v2.py` dò hằng `TÊN = "khóa"` theo nguyên dòng.
@@ -126,6 +127,48 @@ def price_list_export(q: str = Query("", max_length=100), group: str = Query("",
     rows = _price_list(db, user, "export", q=q, group=group, scope=scope, codes=code, date_from=date_from,
                        date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code", sort_dir=sort_dir)
     return xl.xlsx_download(xl.build_price_list_workbook(rows), "bang-gia-vtbb")
+
+
+@router.get("/material-price-list")
+def material_price_list(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+                        code: list[CodeValue] = Query([], max_length=MAX_CODES),
+                        date_from: date | None = None, date_to: date | None = None,
+                        sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
+                        page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=500),
+                        db: Session = Depends(get_db), user=Depends(require(MATERIAL_ENTITY, "read"))):
+    """Bảng giá nguyên liệu (bao-CR-800): cùng khuôn dòng với Bảng giá VTBB nhưng CHỈ mã thuộc nhóm nguyên liệu (`NL`) đã có
+    dữ liệu giá. Khóa riêng `packaging_material_price`: người chỉ có khóa Bảng giá VTBB không gọi được đường này, và ngược lại
+    các đường VTBB không trả mã nguyên liệu. Không có phạm vi "theo định mức" (nguyên liệu không nằm trong định mức bao bì)."""
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(422, "Từ ngày không được sau Đến ngày")
+    rows, total = build_price_list_page(db, page=page, page_size=page_size, q=q, group=group, date_from=date_from,
+                                        date_to=date_to, sort_by=sort_by if sort_by in SORT_KEYS else "code",
+                                        sort_dir=sort_dir, scope_cond=_scope(db, user, MATERIAL_ENTITY, "read"),
+                                        product_codes=code, kind=KIND_MATERIAL)
+    return success({"items": rows, "total": total, "page": page, "page_size": page_size})
+
+
+@router.get("/material-price-list/export")
+def material_price_list_export(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+                               code: list[CodeValue] = Query([], max_length=MAX_CODES),
+                               date_from: date | None = None, date_to: date | None = None,
+                               sort_by: str = Query("code", max_length=30), sort_dir: str = "asc",
+                               db: Session = Depends(get_db), user=Depends(require(MATERIAL_ENTITY, "export"))):
+    """Xuất Excel Bảng giá nguyên liệu theo đúng bộ lọc và thứ tự đang xem. Quyền `packaging_material_price.export`."""
+    rows = build_price_list(db, q=q, group=group, date_from=date_from, date_to=date_to,
+                            sort_by=sort_by if sort_by in SORT_KEYS else "code", sort_dir=sort_dir,
+                            scope_cond=_scope(db, user, MATERIAL_ENTITY, "export"), product_codes=code, kind=KIND_MATERIAL)
+    return xl.xlsx_download(xl.build_price_list_workbook(rows), "bang-gia-nguyen-lieu")
+
+
+@router.get("/material-code-options")
+def material_code_options(db: Session = Depends(get_db), user=Depends(require(MATERIAL_ENTITY, "read"))):
+    """Ô chọn mã của màn Bảng giá nguyên liệu: mọi mã nguyên liệu đã có giá, kèm tên nhà cung cấp để gõ tìm (cùng khuôn `code-options`)."""
+    cond = _scope(db, user, MATERIAL_ENTITY, "read")
+    rows = build_price_list(db, scope_cond=cond, new_only=True, kind=KIND_MATERIAL)
+    suppliers = supplier_names_by_code(db, cond)
+    return success({"items": [{**{k: r[k] for k in ("code", "name", "group", "usage", "new")},
+                               "suppliers": suppliers.get(r["code"], "")} for r in rows]})
 
 
 @router.get("/code-options")

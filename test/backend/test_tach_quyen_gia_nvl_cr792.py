@@ -398,5 +398,6 @@ def test_chuoi_migration_mot_dau_la_permsplit792():
     cfg = Config()
     cfg.set_main_option("script_location", str(MIGRATION.parents[1]))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["permsplit792"]
+    assert script.get_heads() == ["matprice800"]            # bao-CR-800 nối tiếp ngay sau `permsplit792`
+    assert script.get_revision("matprice800").down_revision == "permsplit792"
     assert script.get_revision("permsplit792").down_revision == "phstage790"

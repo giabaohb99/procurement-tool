@@ -19,6 +19,7 @@ import type {
   PackagingImpactResult,
   PackagingLastPricesParams,
   PackagingLastPricesResult,
+  PackagingMaterialPriceListParams,
   PackagingOverviewParams,
   PackagingOverviewResult,
   PackagingPriceListParams,
@@ -60,6 +61,29 @@ export async function exportPackagingPriceList(params: PackagingPriceListParams)
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }
+}
+
+/**
+ * bao-CR-800 — Bảng giá nguyên liệu (sản phẩm nhóm `NL`): ba đường RIÊNG, gác bằng khóa `packaging_material_price`. Người chỉ
+ * giữ khóa này gọi `price-list` / `code-options` của VTBB là 403, nên màn nguyên liệu chỉ được gọi ba hàm dưới đây.
+ */
+export function fetchPackagingMaterialPriceList(params: PackagingMaterialPriceListParams) {
+  return apiGet<PackagingPriceListResult>(`${BASE}/material-price-list`, { params })
+}
+
+/** Xuất Bảng giá nguyên liệu — cùng bộ lọc + thứ tự đang xem, không kèm `page`. */
+export async function exportPackagingMaterialPriceList(params: PackagingMaterialPriceListParams) {
+  try {
+    await downloadFile(`${BASE}/material-price-list/export`, 'bang-gia-nguyen-lieu.xlsx', { ...params })
+  } catch (error) {
+    throw new Error(await readBlobErrorMessage(error), { cause: error })
+  }
+}
+
+/** Danh sách mã cho ô chọn mã của Bảng giá nguyên liệu: mọi mã nguyên liệu đã có giá, kèm tên NCC từng bán. */
+export async function fetchPackagingMaterialCodeOptions(): Promise<PackagingCodeOption[]> {
+  const res = await apiGet<{ items: PackagingCodeOption[] }>(`${BASE}/material-code-options`)
+  return res.items ?? []
 }
 
 export function fetchPackagingLastPrices(params: PackagingLastPricesParams) {

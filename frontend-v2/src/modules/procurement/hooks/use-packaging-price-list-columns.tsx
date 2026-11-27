@@ -4,6 +4,10 @@
  * Cột bật `sortable` gửi `sort_by` = khóa cột (hoặc `sortKey`) lên máy chủ — khóa phải nằm trong
  * `SORT_KEYS` của `packaging_cost/price_list_service.py`. Hai cột giá mua gần nhất / lần trước KHÔNG bật
  * xếp vì máy chủ chưa có khóa cho chúng — bật mà máy chủ không nhận là lỗi "bấm không ăn" (luật §8).
+ *
+ * bao-CR-800 — cùng bộ cột cho Bảng giá nguyên liệu (`rawMaterial`), khác ba chỗ: tiêu đề ghi "nguyên liệu"; mã là CHỮ THƯỜNG
+ * (màn Lịch sử mua hàng của cụm không còn mã nguyên liệu nên không có đích để bấm tới); bỏ cột Số SP đang dùng (nguyên liệu
+ * không nằm trong định mức bao bì, luôn 0) và cột Thao tác (không nhập báo giá ở màn này).
  */
 import { useMemo } from 'react'
 
@@ -22,25 +26,39 @@ import type { PackagingPriceRow } from '../types/packaging-cost-types'
 import { joinPackagingWarnings } from '../utils/packaging-warning-text'
 
 interface PriceListColumnOptions {
-  canQuote: boolean
-  onQuote: (row: PackagingPriceRow) => void
+  canQuote?: boolean
+  onQuote?: (row: PackagingPriceRow) => void
+  /** Bảng giá nguyên liệu: tiêu đề "nguyên liệu", mã là chữ thường, không có cột Số SP đang dùng và cột Thao tác. */
+  rawMaterial?: boolean
 }
 
-export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListColumnOptions) {
-  return useMemo<DataTableColumn<PackagingPriceRow>[]>(
+/** Cột chỉ có nghĩa với vật tư bao bì — màn nguyên liệu bỏ. */
+const PACKAGING_ONLY_COLUMNS: readonly string[] = ['usage', 'actions']
+
+export function usePackagingPriceListColumns({
+  canQuote = false,
+  onQuote,
+  rawMaterial = false,
+}: PriceListColumnOptions) {
+  const columns = useMemo<DataTableColumn<PackagingPriceRow>[]>(
     () => [
         {
           key: 'code',
-          header: 'Mã VTBB',
+          header: rawMaterial ? 'Mã nguyên liệu' : 'Mã VTBB',
           width: 120,
           sortable: true,
           hideable: false,
           defaultPinned: true,
-          cell: (row) => <PackagingCodeLink code={row.code} />,
+          cell: (row) =>
+            rawMaterial ? (
+              <span className="font-semibold tabular-nums">{row.code}</span>
+            ) : (
+              <PackagingCodeLink code={row.code} />
+            ),
         },
         {
           key: 'name',
-          header: 'Tên vật tư',
+          header: rawMaterial ? 'Tên nguyên liệu' : 'Tên vật tư',
           width: 220,
           wrap: true,
           sortable: true,
@@ -189,7 +207,7 @@ export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListCol
                   size="sm"
                   variant="outline"
                   className="h-7"
-                  onClick={() => onQuote(row)}
+                  onClick={() => onQuote?.(row)}
                 >
                   Báo giá
                 </Button>
@@ -198,6 +216,11 @@ export function usePackagingPriceListColumns({ canQuote, onQuote }: PriceListCol
           ),
         },
     ],
-    [canQuote, onQuote],
+    [canQuote, onQuote, rawMaterial],
+  )
+  return useMemo(
+    () =>
+      rawMaterial ? columns.filter((column) => !PACKAGING_ONLY_COLUMNS.includes(column.key)) : columns,
+    [columns, rawMaterial],
   )
 }

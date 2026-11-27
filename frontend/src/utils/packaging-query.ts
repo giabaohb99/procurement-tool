@@ -18,6 +18,7 @@ export const PACKAGING_HISTORY_MAX_CODES = 200
 export const PACKAGING_PATHS = {
   impact: '/packaging-cost/impact',
   priceList: '/packaging-cost/price-list',
+  materialPrices: '/packaging-cost/material-prices',
   lastPrices: '/packaging-cost/last-prices',
   history: '/packaging-cost/history',
   products: '/packaging-cost/products',

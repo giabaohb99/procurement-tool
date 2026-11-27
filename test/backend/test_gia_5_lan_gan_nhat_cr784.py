@@ -176,6 +176,11 @@ def test_pham_vi_cong_ty_chi_thay_lan_mua_cua_phap_nhan_minh(db, seed, cap_quyen
 
 
 # ── Số truy vấn ─────────────────────────────────────────────────────────────────
+#  bao-CR-800 (27/11/2026): thêm MỘT truy vấn cố định lấy mã nhóm nguyên liệu (màn VTBB không mang mã nguyên liệu) nên
+#  5 -> 6. Vẫn là hằng số: không theo số mã, số lần hay bộ lọc. Tên bài giữ nguyên để khỏi đổi lịch sử.
+QUERY_COUNT = 6
+
+
 def test_so_truy_van_la_5_va_khong_phu_thuoc_so_ma_so_lan_hay_bo_loc(db, world):
     busy = dict(q="chai", groups=["Chai", "Nắp"], suppliers=["NCC01"], date_from=date(2026, 1, 1), date_to=date(2026, 12, 31),
                 trend="up", min_pct=1.0, bom_only=True, sort_by="p2_price", sort_dir="desc")
@@ -188,13 +193,13 @@ def test_so_truy_van_la_5_va_khong_phu_thuoc_so_ma_so_lan_hay_bo_loc(db, world):
             add_ledger(db, code, 100 + k, f"2026-0{1 + k % 9}-01", supplier="NCC01" if k % 2 else "NCC02")
     res, big = count_queries(db, lambda: build_last_prices(db))
     assert len(res["rows"]) > 100
-    assert len(small) == len(big) == 5
+    assert len(small) == len(big) == QUERY_COUNT
     for n in (3, 10):
         _, plain = count_queries(db, lambda: build_last_prices(db, n=n))
         _, filtered = count_queries(db, lambda: build_last_prices(db, n=n, **busy))
-        assert len(plain) == len(filtered) == 5
+        assert len(plain) == len(filtered) == QUERY_COUNT
     _, wide = count_queries(db, lambda: build_last_prices(db, scope="all", only_priced=False))
-    assert len(wide) == 5
+    assert len(wide) == QUERY_COUNT
 
 
 # ── Xuất Excel ──────────────────────────────────────────────────────────────────

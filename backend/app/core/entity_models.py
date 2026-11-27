@@ -58,6 +58,7 @@ ENTITY_MODEL_PATHS: dict[str, tuple[str, str]] = {
     "packaging_price_list": ("app.modules.product_price.model", "ProductPriceLedger"),
     "packaging_last_price": ("app.modules.product_price.model", "ProductPriceLedger"),
     "packaging_history": ("app.modules.product_price.model", "ProductPriceLedger"),
+    "packaging_material_price": ("app.modules.product_price.model", "ProductPriceLedger"),
 }
 
 

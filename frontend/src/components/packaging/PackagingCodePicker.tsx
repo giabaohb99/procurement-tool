@@ -3,7 +3,7 @@ import type { KeyboardEvent, MouseEvent } from 'react'
 import { toast } from '../toast'
 import type { PackagingCodeOption } from '../../api/packaging-cost-types'
 import { priceText, PACKAGING_ROLE_LABELS } from '../../utils/packaging-price'
-import { buildCodeMatcher, collectSearchGroups, PACKAGING_MAX_CODES } from '../../utils/packaging-query'
+import { buildCodeMatcher, collectGroups, collectSearchGroups, PACKAGING_MAX_CODES } from '../../utils/packaging-query'
 import './packaging.css'
 
 /** Số chip hiện trong ô trước khi gộp thành "+n mã" — chọn cả nhóm hàng trăm mã thì ô không phình. */
@@ -13,8 +13,12 @@ const COMPACT_CHIP_MAX = 2
 /** Số dòng vẽ trong danh sách; "Chọn tất cả" vẫn áp cho MỌI mã khớp, kể cả phần chưa vẽ. */
 const LIST_MAX = 200
 
-/** `material` = mã vật tư bao bì (tìm theo tên nhóm, kèm số SP + giá mới); `product` = mã sản phẩm có định mức. */
-export type PackagingPickerKind = 'material' | 'product'
+/**
+ * `material` = mã vật tư bao bì (tìm theo tên nhóm, kèm số SP + giá mới); `product` = mã sản phẩm có định mức;
+ * `ingredient` = mã NGUYÊN LIỆU của màn Bảng giá nguyên liệu (bao-CR-800): có nhóm + giá mới, không có số SP đang dùng
+ * (nguyên liệu không nằm trong định mức bao bì) và không gắn năm tên nhóm chai / nắp / nhãn...
+ */
+export type PackagingPickerKind = 'material' | 'product' | 'ingredient'
 
 const TEXT: Record<PackagingPickerKind, { empty: string; more: string; aria: string; summary: string }> = {
   material: {
@@ -28,6 +32,12 @@ const TEXT: Record<PackagingPickerKind, { empty: string; more: string; aria: str
     more: 'Thêm sản phẩm… (vd: HH0713 · tên sản phẩm)',
     aria: 'Chọn mã sản phẩm',
     summary: 'sản phẩm có định mức bao bì',
+  },
+  ingredient: {
+    empty: 'Chọn mã nguyên liệu — gõ mã, tên, nhóm hoặc NCC',
+    more: 'Thêm mã nguyên liệu…',
+    aria: 'Chọn mã nguyên liệu',
+    summary: 'mã nguyên liệu khớp',
   },
 }
 
@@ -62,6 +72,8 @@ export default function PackagingCodePicker({
   const listId = useId()
   const text = TEXT[kind]
   const material = kind === 'material'
+  //  Kiểu có nhóm (vật tư bao bì, nguyên liệu): dòng hiện nhóm + giá mới, gõ tên nhóm là lọc cả nhóm.
+  const grouped = kind !== 'product'
 
   const closeList = () => { setOpen(false); setKeyword(''); setActive(-1) }
 
@@ -75,10 +87,10 @@ export default function PackagingCodePicker({
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
-  //  Sản phẩm không có "nhóm": để rỗng thì từ khóa luôn rơi về tìm chữ.
+  //  Sản phẩm không có "nhóm": để rỗng thì từ khóa luôn rơi về tìm chữ. Nguyên liệu chỉ hiểu nhóm có trong dữ liệu của nó.
   const groups = useMemo(
-    () => (material ? collectSearchGroups(options, Object.values(PACKAGING_ROLE_LABELS)) : []),
-    [options, material],
+    () => (material ? collectSearchGroups(options, Object.values(PACKAGING_ROLE_LABELS)) : grouped ? collectGroups(options) : []),
+    [options, material, grouped],
   )
   const filtered = useMemo(() => options.filter(buildCodeMatcher(keyword, groups)), [options, keyword, groups])
   const visible = useMemo(() => filtered.slice(0, LIST_MAX), [filtered])
@@ -205,11 +217,12 @@ export default function PackagingCodePicker({
                   onClick={() => toggle(o.code)} onMouseMove={() => active !== i && setActive(i)}>
                   <i className="ti ti-check tick" />
                   <span className="c">{o.code}</span>
-                  {material && <span className="g">{o.group}</span>}
+                  {grouped && <span className="g">{o.group}</span>}
                   <span className="n">{o.name}</span>
                   {material && (
                     <span className="u">{o.usage} SP{o.new != null && ` · ${priceText(o.new)}`}</span>
                   )}
+                  {kind === 'ingredient' && o.new != null && <span className="u">{priceText(o.new)}</span>}
                 </div>
               )
             })}

@@ -11,14 +11,16 @@ import { toast } from '../../components/toast'
 import PackagingExcelImportButton from '../../components/packaging/PackagingExcelImportButton'
 import PackagingQuoteModal from '../../components/packaging/PackagingQuoteModal'
 import { CodeLink, DiffText, Dash, OneLine, PctText, PriceText } from '../../components/packaging/PackagingCells'
-import { IMPORT_MODULE_PACKAGING_QUOTE, PACKAGING_ENTITY, downloadExport, fetchCodeOptions, fetchPriceList } from '../../api/packaging-cost'
+import {
+  IMPORT_MODULE_PACKAGING_QUOTE, PACKAGING_ENTITY, downloadExport, fetchCodeOptions, fetchPriceList, type PackagingEntity,
+} from '../../api/packaging-cost'
 import type { PackagingCodeOption, PackagingPriceListParams, PackagingPriceRow } from '../../api/packaging-cost-types'
 import { useLatestQuery } from '../../hooks/use-latest-query'
 import { useTableColumns, TableColumn } from '../../hooks/useTableColumns'
 import { fmtDateStr } from '../../utils/datetime'
 import { joinWarnings } from '../../utils/packaging-price'
 import { collectGroups, nextSort, sortCodeOptions } from '../../utils/packaging-query'
-import PackagingCodePicker from '../../components/packaging/PackagingCodePicker'
+import PackagingCodePicker, { type PackagingPickerKind } from '../../components/packaging/PackagingCodePicker'
 import { PRICE_LIST_URL_KEYS, priceListScreenToSearch, searchToPriceListScreen } from '../../utils/packaging-prices-screen-url'
 import { useSearchSyncToUrl } from '../../hooks/useSearchSyncToUrl'
 import '../../components/packaging/packaging.css'
@@ -27,14 +29,70 @@ interface Filters { codes: string[]; group: string; scope: 'bom' | 'all' }
 const EMPTY: Filters = { codes: [], group: '', scope: 'bom' }
 
 /**
+ * bao-CR-800 — NGUỒN DỮ LIỆU + chữ của một màn bảng giá. Hai màn Bảng giá VTBB và Bảng giá nguyên liệu dùng CHUNG khung
+ * (`PackagingPriceListScreen`), chỉ khác bộ này: mỗi màn gọi đường riêng và hỏi khóa quyền riêng của mình, không gọi chéo.
+ */
+export interface PriceListSource {
+  /** Khóa quyền của màn: `export` cho nút Xuất Excel, `create` cho Báo giá (chỉ khi `packaging`). */
+  entity: PackagingEntity
+  /**
+   * Phần CHỈ CÓ ở Bảng giá VTBB: nút phạm vi (Mã trong định mức / Mọi mã có giá), cột Số SP đang dùng + Ghi chú, mã bấm
+   * sang Lịch sử mua hàng, Báo giá (nút đầu trang, cột Thao tác, Nhập báo giá). Màn nguyên liệu tắt hết: mã là chữ thường.
+   */
+  packaging: boolean
+  /** Khóa lưu cấu hình cột của bảng (`useTableColumns`). */
+  tableKey: string
+  title: string
+  hint: string
+  codeLabel: string
+  nameLabel: string
+  pickerKind: PackagingPickerKind
+  pickerPlaceholder: string
+  /** Câu khi bảng rỗng mà KHÔNG lọc gì. */
+  emptyText: string
+  exportPath: 'price-list' | 'material-price-list'
+  exportName: string
+  fetchList: (params: PackagingPriceListParams) => Promise<{ items: PackagingPriceRow[]; total: number }>
+  fetchCodes: () => Promise<PackagingCodeOption[]>
+}
+
+const PACKAGING_SOURCE: PriceListSource = {
+  entity: PACKAGING_ENTITY.priceList,
+  packaging: true,
+  tableKey: 'packaging-price-list',
+  title: 'Bảng giá VTBB',
+  hint: 'Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.',
+  codeLabel: 'Mã VTBB',
+  nameLabel: 'Tên vật tư',
+  pickerKind: 'material',
+  pickerPlaceholder: 'Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã',
+  emptyText: 'Chưa có mã vật tư bao bì nào trong định mức.',
+  exportPath: 'price-list',
+  exportName: 'bang-gia-vtbb.xlsx',
+  fetchList: fetchPriceList,
+  //  Ô chọn mã (27/11/2026): mọi mã có trong sổ giá.
+  fetchCodes: () => fetchCodeOptions('all'),
+}
+
+/**
  * Màn BẢNG GIÁ VTBB: mỗi mã một dòng với số lần mua, hai lần mua gần nhất, báo giá mới nhất, giá cũ / mới, min–max theo
  * khoảng ngày và số sản phẩm đang dùng. Phân trang + xếp tại MÁY CHỦ — tham số xếp đi kèm bộ lọc nên
  * Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá.
  */
 export default function PackagingPriceList() {
+  return <PackagingPriceListScreen source={PACKAGING_SOURCE} />
+}
+
+/** Khung chung của hai màn bảng giá (VTBB / nguyên liệu, bao-CR-800) — `source` quyết định đường gọi, khóa quyền và phần riêng của VTBB. */
+export function PackagingPriceListScreen({ source }: { source: PriceListSource }) {
   const { can } = useAuth()
+  const { packaging } = source
   //  Trạng thái ban đầu đọc từ URL (F5 / link được chia sẻ vẫn giữ từ khóa, nhóm, phạm vi, khoảng ngày, cột xếp, trang).
-  const [initial] = useState(() => searchToPriceListScreen(window.location.search))
+  const [initial] = useState(() => {
+    const st = searchToPriceListScreen(window.location.search)
+    //  Màn nguyên liệu không có phạm vi mã và không có cột Số SP đang dùng: bỏ `scope` / khóa xếp `usage` lạc trên URL.
+    return packaging ? st : { ...st, scope: EMPTY.scope, sortBy: st.sortBy === 'usage' ? '' : st.sortBy }
+  })
   const [filters, setFilters] = useState<Filters>({ codes: initial.codes, group: initial.group, scope: initial.scope })
   const [range, setRange] = useState(initial.range)
   const [sortBy, setSortBy] = useState(initial.sortBy)
@@ -46,25 +104,26 @@ export default function PackagingPriceList() {
   const [codesLoading, setCodesLoading] = useState(true)
   const [quoteCode, setQuoteCode] = useState<string | null>(null)   // '' = mở "Báo giá mới" chưa khóa mã
   const [exporting, setExporting] = useState(false)
-  const canQuote = can(PACKAGING_ENTITY.priceList, 'create')
+  const canQuote = packaging && can(source.entity, 'create')
 
-  //  Ô chọn mã (27/11/2026): mọi mã có trong sổ giá; nhóm cho chip lấy từ chính danh sách đó.
+  //  Ô chọn mã: danh sách mã của CHÍNH màn này (`source.fetchCodes`); nhóm cho chip lấy từ chính danh sách đó.
   useEffect(() => {
-    fetchCodeOptions('all').then((d) => { setCodeOptions(sortCodeOptions(d)); setGroups(collectGroups(d)) })
+    source.fetchCodes().then((d) => { setCodeOptions(sortCodeOptions(d)); setGroups(collectGroups(d)) })
       .catch(() => {}).finally(() => setCodesLoading(false))
-  }, [])
+  }, [source])
 
   /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
   const filterParams = useMemo<PackagingPriceListParams>(() => ({
     code: filters.codes.length ? filters.codes : undefined,
     group: filters.group || undefined,
-    scope: filters.scope,
+    //  Đường nguyên liệu không có tham số `scope`.
+    ...(packaging ? { scope: filters.scope } : {}),
     date_from: range.from || undefined,
     date_to: range.to || undefined,
     ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
-  }), [filters.codes, filters.group, filters.scope, range, sortBy, sortDir])
+  }), [packaging, filters.codes, filters.group, filters.scope, range, sortBy, sortDir])
   const params = useMemo(() => ({ ...filterParams, page, page_size: pageSize }), [filterParams, page, pageSize])
-  const list = useLatestQuery(() => fetchPriceList(params), JSON.stringify(params))
+  const list = useLatestQuery(() => source.fetchList(params), JSON.stringify(params))
 
   const urlSearch = useMemo(
     () => priceListScreenToSearch({ ...filters, range, sortBy, sortDir, page, pageSize }),
@@ -85,8 +144,9 @@ export default function PackagingPriceList() {
   const onSort = (key: string) => { const s = nextSort(sortBy, sortDir, key); setSortBy(s.by); setSortDir(s.dir); setPage(1) }
 
   const columns = useMemo<TableColumn<PackagingPriceRow>[]>(() => [
-    { key: 'code', label: 'Mã VTBB', width: 120, sort: 'code', fixed: true, card: 'title', cell: (r) => <CodeLink code={r.code} /> },
-    { key: 'name', label: 'Tên vật tư', width: 250, sort: 'name', card: 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
+    //  Mã VTBB bấm sang Lịch sử mua hàng của cụm; mã nguyên liệu là chữ thường (Lịch sử mua hàng không thuộc quyền nguyên liệu).
+    { key: 'code', label: source.codeLabel, width: 120, sort: 'code', fixed: true, card: 'title', cell: (r) => (packaging ? <CodeLink code={r.code} /> : <b className="pkg-num">{r.code}</b>) },
+    { key: 'name', label: source.nameLabel, width: 250, sort: 'name', card: 'subtitle', cell: (r) => (r.name ? <OneLine>{r.name}</OneLine> : <span className="pkg-muted">(chưa có tên)</span>) },
     { key: 'group', label: 'Nhóm', width: 90, sort: 'group', cell: (r) => r.group },
     { key: 'unit', label: 'ĐVT', width: 70, cell: (r) => r.unit },
     { key: 'purchase_count', label: 'Số lần mua', width: 90, align: 'right', sort: 'purchase_count', cell: (r) => r.purchase_count },
@@ -112,28 +172,31 @@ export default function PackagingPriceList() {
     //  Min và Max tách hai cột, mỗi cột xếp theo đúng giá trị nó hiện.
     { key: 'min', label: 'Min', width: 100, align: 'right', sort: 'min', cell: (r) => <PriceText value={r.min} /> },
     { key: 'max', label: 'Max', width: 100, align: 'right', sort: 'max', cell: (r) => <PriceText value={r.max} /> },
-    { key: 'usage', label: 'Số SP đang dùng', width: 100, align: 'right', sort: 'usage', cell: (r) => r.usage },
-    { key: 'note', label: 'Ghi chú', width: 200, defaultHidden: true, card: 'full', cell: (r) => (joinWarnings(r.warnings) ? <span className="pkg-err">{joinWarnings(r.warnings)}</span> : null) },
-    {
-      key: 'actions', label: 'Thao tác', width: 170, fixed: true, card: 'action',
-      cell: (r) => (
-        <span className="pkg-actions">
-          {canQuote && <button className="btn outline sm" onClick={() => setQuoteCode(r.code)}>Báo giá</button>}
-        </span>
-      ),
-    },
-  ], [canQuote])
-  const table = useTableColumns('packaging-price-list', columns)
+    //  Ba cột dưới chỉ có ở Bảng giá VTBB (nguyên liệu không nằm trong định mức bao bì, không có luồng Báo giá ở màn này).
+    ...(packaging ? [
+      { key: 'usage', label: 'Số SP đang dùng', width: 100, align: 'right', sort: 'usage', cell: (r) => r.usage },
+      { key: 'note', label: 'Ghi chú', width: 200, defaultHidden: true, card: 'full', cell: (r) => (joinWarnings(r.warnings) ? <span className="pkg-err">{joinWarnings(r.warnings)}</span> : null) },
+      {
+        key: 'actions', label: 'Thao tác', width: 170, fixed: true, card: 'action',
+        cell: (r) => (
+          <span className="pkg-actions">
+            {canQuote && <button className="btn outline sm" onClick={() => setQuoteCode(r.code)}>Báo giá</button>}
+          </span>
+        ),
+      },
+    ] satisfies TableColumn<PackagingPriceRow>[] : []),
+  ], [canQuote, packaging, source.codeLabel, source.nameLabel])
+  const table = useTableColumns(source.tableKey, columns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
   const rows = list.data?.items ?? []
   const narrow = useNarrowScreen()
   const emptyText = list.failed ? 'Không tải được bảng giá — thử tải lại.' : list.loading ? 'Đang tải…'
-    : filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có mã vật tư bao bì nào trong định mức.'
+    : filtersActive ? 'Không có mã nào khớp bộ lọc.' : source.emptyText
 
   async function exportExcel() {
     if (exporting) return
     setExporting(true)
-    try { await downloadExport('price-list', filterParams, 'bang-gia-vtbb.xlsx') }
+    try { await downloadExport(source.exportPath, filterParams, source.exportName) }
     catch (e: any) { toast.error(e?.message || 'Không xuất được tệp Excel') }
     finally { setExporting(false) }
   }
@@ -142,18 +205,20 @@ export default function PackagingPriceList() {
     <div>
       <div className="pkg-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
-          <h2 className="page-title" style={{ margin: 0 }}>Bảng giá VTBB</h2>
-          <div className="pkg-hint">Giá cũ / mới từng mã vật tư bao bì: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.</div>
+          <h2 className="page-title" style={{ margin: 0 }}>{source.title}</h2>
+          <div className="pkg-hint">{source.hint}</div>
         </div>
         <div style={{ width: 280 }}>
           <DateRangePicker block value={range} placeholder="Khoảng ngày tính min – max"
             onChange={(v) => { setRange(v); setPage(1) }} />
         </div>
         {canQuote && <button className="btn" title="Báo giá mới" aria-label="Báo giá mới" onClick={() => setQuoteCode('')}><i className="ti ti-plus" /><span className="pkg-btn-label">Báo giá mới</span></button>}
-        <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_QUOTE} action="create"
-          label="Nhập báo giá" title="Nhập báo giá VTBB từ Excel"
-          description="Mỗi dòng một báo giá: Mã VTBB, Đơn giá (VNĐ chưa VAT), Ngày hiệu lực; tùy chọn Mã NCC, VAT (%), Ghi chú. Trùng mã + NCC + ngày hiệu lực thì cập nhật, chưa có thì thêm. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
-        {can(PACKAGING_ENTITY.priceList, 'export') && (
+        {packaging && (
+          <PackagingExcelImportButton module={IMPORT_MODULE_PACKAGING_QUOTE} action="create"
+            label="Nhập báo giá" title="Nhập báo giá VTBB từ Excel"
+            description="Mỗi dòng một báo giá: Mã VTBB, Đơn giá (VNĐ chưa VAT), Ngày hiệu lực; tùy chọn Mã NCC, VAT (%), Ghi chú. Trùng mã + NCC + ngày hiệu lực thì cập nhật, chưa có thì thêm. Chạy thử trước, xem nhật ký rồi bấm Ghi thật." />
+        )}
+        {can(source.entity, 'export') && (
           <button className="btn outline" disabled={exporting} onClick={exportExcel} title="Xuất Excel" aria-label="Xuất Excel">
             <i className="ti ti-file-spreadsheet" /><span className="pkg-btn-label">{exporting ? 'Đang xuất…' : 'Xuất Excel'}</span>
           </button>
@@ -166,7 +231,7 @@ export default function PackagingPriceList() {
           <div className="pkg-row" style={{ flex: 1, minWidth: 0 }}>
             <div style={{ width: 380, maxWidth: '100%' }}>
               <PackagingCodePicker options={codeOptions} value={filters.codes} onChange={(codes) => patch({ codes })}
-                loading={codesLoading} emptyPlaceholder="Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã" compact />
+                loading={codesLoading} kind={source.pickerKind} emptyPlaceholder={source.pickerPlaceholder} compact />
             </div>
             <div className="pkg-pills" role="group" aria-label="Lọc theo nhóm">
               {['', ...groups].map((g) => (
@@ -174,10 +239,12 @@ export default function PackagingPriceList() {
                   aria-pressed={filters.group === g} onClick={() => patch({ group: g })}>{g || 'Tất cả'}</button>
               ))}
             </div>
-            <div className="pkg-seg" role="group" aria-label="Phạm vi mã">
-              <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
-              <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
-            </div>
+            {packaging && (
+              <div className="pkg-seg" role="group" aria-label="Phạm vi mã">
+                <button className={filters.scope === 'bom' ? 'on' : ''} onClick={() => patch({ scope: 'bom' })}>Mã trong định mức</button>
+                <button className={filters.scope === 'all' ? 'on' : ''} onClick={() => patch({ scope: 'all' })}>Mọi mã có giá</button>
+              </div>
+            )}
             {filtersActive && <button className="btn ghost sm" onClick={clearFilters}><i className="ti ti-rotate" />Xóa lọc</button>}
           </div>
         </TableToolbar>

@@ -18,8 +18,11 @@ export default function PackagingGate({ entity, children }: { entity: PackagingE
   return <>{children}</>
 }
 
-/** Thứ tự màn như menu trái — đường gốc `/packaging-cost` mở màn ĐẦU TIÊN người dùng xem được. */
-const INDEX_ORDER = ['impact', 'products', 'priceList', 'lastPrices', 'history', 'boms'] as const
+/**
+ * Thứ tự màn như menu trái — đường gốc `/packaging-cost` mở màn ĐẦU TIÊN người dùng xem được.
+ * bao-CR-800: thêm Bảng giá nguyên liệu (khóa riêng) — người CHỈ có khóa đó được đưa thẳng xuống màn nguyên liệu.
+ */
+const INDEX_ORDER = ['impact', 'products', 'priceList', 'materialPrices', 'lastPrices', 'history', 'boms'] as const
 
 /** bao-CR-792 — đường gốc của cụm: trước luôn về Tác động giá; nay người không có khóa màn đó được đưa tới màn đầu tiên mình có quyền xem. */
 export function PackagingIndexRedirect() {

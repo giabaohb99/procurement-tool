@@ -23,6 +23,7 @@ from app.modules.product_price.model import ProductPriceLedger
 
 from . import export_columns as xl
 from .last_prices_service import DEFAULT_N, MAX_N, build_last_prices
+from .material_scope import KIND_PACKAGING, kind_of_entity, with_kind
 
 ENTITY = "packaging_last_price"
 MAX_PAGE_SIZE = 500
@@ -34,8 +35,9 @@ router = APIRouter()
 
 
 def view_scope(db: Session, user, entity: str, action: str = "read"):
-    """Điều kiện phạm vi pháp nhân của người xem trên sổ giá theo khóa `entity` của màn đang gọi (None = thấy hết)."""
-    return scope_condition(ProductPriceLedger, entity, user, get_perm_profile(db, user), action)
+    """Điều kiện phạm vi của người xem trên sổ giá theo khóa `entity` của màn đang gọi: pháp nhân + loại mã (VTBB / nguyên liệu)."""
+    #  bao-CR-800: khóa Bảng giá nguyên liệu chỉ thấy mã nhóm NL, mọi khóa VTBB không thấy mã nhóm NL.
+    return with_kind(scope_condition(ProductPriceLedger, entity, user, get_perm_profile(db, user), action), kind_of_entity(entity))
 
 
 def shared_view_scope(db: Session, user, action: str = "read"):
@@ -47,7 +49,8 @@ def shared_view_scope(db: Session, user, action: str = "read"):
     profile = get_perm_profile(db, user)
     conds = [scope_condition(ProductPriceLedger, entity, user, profile, action)
              for entity in PACKAGING_ENTITIES if SCOPE_FIELDS[entity] is not PUBLIC]
-    return None if any(cond is None for cond in conds) else or_(*conds)
+    #  bao-CR-800: đường dùng chung của các màn VTBB không bao giờ mang mã nguyên liệu (màn nguyên liệu có đường riêng).
+    return with_kind(None if any(cond is None for cond in conds) else or_(*conds), KIND_PACKAGING)
 
 
 def last_price_filters(

@@ -10,6 +10,7 @@ import type {
   PackagingHistoryParams,
   PackagingImpactRequest,
   PackagingLastPricesParams,
+  PackagingMaterialPriceListParams,
   PackagingOverviewParams,
   PackagingPriceListParams,
 } from '../types/packaging-cost-types'
@@ -23,6 +24,10 @@ export const packagingCostKeys = {
   impact: (body: PackagingImpactRequest) => [ROOT, 'packagingCost', 'impact', body] as const,
   priceList: (params: PackagingPriceListParams) =>
     [ROOT, 'packagingCost', 'priceList', params] as const,
+  /** bao-CR-800 — Bảng giá nguyên liệu: khóa riêng, không lẫn bộ nhớ đệm với Bảng giá VTBB (hai đường, hai quyền). */
+  materialPriceList: (params: PackagingMaterialPriceListParams) =>
+    [ROOT, 'packagingCost', 'materialPriceList', params] as const,
+  materialCodeOptions: () => [ROOT, 'packagingCost', 'materialCodeOptions'] as const,
   lastPrices: (params: PackagingLastPricesParams) =>
     [ROOT, 'packagingCost', 'lastPrices', params] as const,
   productOverview: (params: PackagingOverviewParams) =>

@@ -1,5 +1,7 @@
 // duoc-CR-784 — ai thấy cụm Giá bao bì trên menu Thu mua, và gõ thẳng URL thì bị chặn ra sao.
 // bao-CR-792 — khóa chung `packaging_cost` nghỉ hẳn: mỗi màn một khóa, mục cha hiện theo mục con.
+// bao-CR-800 — Bảng giá nguyên liệu có khóa RIÊNG `packaging_material_price` (trước dùng chung khóa Bảng giá VTBB): giữ khóa
+// này thấy mục cha + vào đúng màn nguyên liệu, không vào được màn VTBB nào; giữ khóa Bảng giá VTBB thì không thấy mục nguyên liệu.
 import { describe, expect, it } from 'vitest'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -25,8 +27,8 @@ const PACKAGING_SCREEN_KEYS: [path: string, entity: PermissionEntity][] = [
   [appRoutes.procurement.packagingImpact, 'packaging_impact'],
   [appRoutes.procurement.packagingProducts, 'packaging_product_summary'],
   [appRoutes.procurement.packagingPrices, 'packaging_price_list'],
-  //  duoc-CR-798: Bảng giá nguyên liệu đứng ngay dưới Bảng giá VTBB, cùng khóa xem bảng giá.
-  [appRoutes.procurement.packagingMaterialPrices, 'packaging_price_list'],
+  //  duoc-CR-798: Bảng giá nguyên liệu đứng ngay dưới Bảng giá VTBB. bao-CR-800: khóa RIÊNG, không còn chung khóa bảng giá.
+  [appRoutes.procurement.packagingMaterialPrices, 'packaging_material_price'],
   [appRoutes.procurement.packagingLastPrices, 'packaging_last_price'],
   [appRoutes.procurement.packagingHistory, 'packaging_history'],
   [appRoutes.procurement.packagingQuotes, 'packaging_price_list'],
@@ -51,7 +53,8 @@ function packagingMenu(can: ReturnType<typeof grants>) {
 }
 
 describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
-  it('shows the six menu screens to someone who reads all six keys (Báo giá VTBB is hidden from the menu)', () => {
+  it('shows the seven menu screens to someone who reads all seven keys (Báo giá VTBB is hidden from the menu)', () => {
+    expect(ALL_PACKAGING_READS).toHaveLength(7)
     expect(packagingMenu(grants(...ALL_PACKAGING_READS))).toEqual(PACKAGING_MENU_PATHS)
   })
 
@@ -104,8 +107,6 @@ describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
     //  phải màn Tác động giá (đường của mục cha) — ở đó họ gặp trang cấm.
     for (const [path, entity] of PACKAGING_SCREEN_KEYS) {
       if (path === appRoutes.procurement.packagingQuotes) continue
-      //  Bảng giá nguyên liệu (duoc-CR-798) dùng chung khóa với Bảng giá VTBB: người giữ khóa đó vào màn ĐẦU (VTBB).
-      if (path === appRoutes.procurement.packagingMaterialPrices) continue
       const can = grants(`${entity}.read`)
       expect(canOpenModule(procurementModule as ErpModule, can), entity).toBe(true)
       const landing = firstAccessibleNavPath(procurementModule as ErpModule, can)
@@ -117,6 +118,58 @@ describe('Giá bao bì menu (bao-CR-792: one key per screen)', () => {
   it('never lands a price-list-only reader on the hidden Báo giá VTBB screen', () => {
     const can = grants('packaging_price_list.read')
     expect(packagingParent(can)?.children?.[0]?.path).toBe(appRoutes.procurement.packagingPrices)
+  })
+
+  it('gives a material-price-only reader the parent, its own screen and nothing of VTBB (bao-CR-800)', () => {
+    const can = grants('packaging_material_price.read')
+    expect(packagingParent(can)?.label).toBe(PACKAGING_PARENT_LABEL)
+    expect(packagingMenu(can)).toEqual([appRoutes.procurement.packagingMaterialPrices])
+    //  Bấm mục cha (menu trái đi tới mục con đầu của danh sách đã lọc; breadcrumb dùng `navItemLandingPath`) phải tới màn
+    //  nguyên liệu, không tới màn Tác động giá (đường khai của mục cha) rồi gặp trang cấm.
+    const declared = procurementModule.nav.find((item) => item.label === PACKAGING_PARENT_LABEL)!
+    expect(navItemLandingPath(declared, can)).toBe(appRoutes.procurement.packagingMaterialPrices)
+    expect(canOpenModule(procurementModule as ErpModule, can)).toBe(true)
+    expect(firstAccessibleNavPath(procurementModule as ErpModule, can)).toBe(
+      appRoutes.procurement.packagingMaterialPrices,
+    )
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingMaterialPrices, can)).toBe(true)
+    for (const path of PACKAGING_PATHS.filter((p) => p !== appRoutes.procurement.packagingMaterialPrices)) {
+      expect(canAccessRoute(procurementModule as ErpModule, path, can), path).toBe(false)
+    }
+  })
+
+  it('keeps Bảng giá nguyên liệu away from a VTBB price-list reader, on the menu and by URL (bao-CR-800)', () => {
+    //  Kể cả đủ mọi hành động trên khóa Bảng giá VTBB: giá nguyên liệu là quyền riêng.
+    const can = grants(
+      'packaging_price_list.read',
+      'packaging_price_list.create',
+      'packaging_price_list.write',
+      'packaging_price_list.export',
+    )
+    expect(packagingMenu(can)).toEqual([appRoutes.procurement.packagingPrices])
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingMaterialPrices, can)).toBe(false)
+    expect(
+      canAccessRoute(procurementModule as ErpModule, `${appRoutes.procurement.packagingMaterialPrices}/x`, can),
+    ).toBe(false)
+    //  Đủ sáu khóa VTBB mà thiếu khóa nguyên liệu: vẫn không thấy.
+    const sixKeys = grants(...ALL_PACKAGING_READS.filter((cap) => cap !== 'packaging_material_price.read'))
+    expect(packagingMenu(sixKeys)).not.toContain(appRoutes.procurement.packagingMaterialPrices)
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingMaterialPrices, sixKeys)).toBe(
+      false,
+    )
+  })
+
+  it('does not open the material screen for export / write rights without read', () => {
+    const can = grants('packaging_material_price.export', 'packaging_material_price.write')
+    expect(packagingParent(can)).toBeUndefined()
+    expect(canAccessRoute(procurementModule as ErpModule, appRoutes.procurement.packagingMaterialPrices, can)).toBe(false)
+  })
+
+  it('lists the material key among the keys declared on the parent', () => {
+    const declared = procurementModule.nav.find((item) => item.label === PACKAGING_PARENT_LABEL)!
+    const childKeys = new Set((declared.children ?? []).map((child) => child.entity))
+    expect(new Set(declared.entities)).toEqual(childKeys)
+    expect(declared.entities).toContain('packaging_material_price')
   })
 
   it('blocks typing the URL directly without the key, including deeper paths', () => {

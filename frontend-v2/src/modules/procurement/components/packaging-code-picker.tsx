@@ -21,6 +21,7 @@ import { cn } from '@/shared/utils/cn'
 import type { PackagingCodeOption } from '../types/packaging-cost-types'
 import {
   buildPackagingCodeMatcher,
+  collectPackagingGroups,
   collectSearchGroups,
   PACKAGING_MAX_CODES,
 } from '../utils/packaging-code-match'
@@ -34,10 +35,12 @@ const COMPACT_CHIP_MAX = 2
 const LIST_MAX = 200
 
 /**
- * Ô chọn dùng cho hai loại mã: `material` (mã vật tư bao bì, mặc định — tìm theo tên nhóm, kèm số SP + giá mới) và `product`
- * (mã sản phẩm có định mức, Lịch sử mua hàng — chỉ tìm chữ trong mã / tên, không có nhóm, không có số SP / giá).
+ * Ô chọn dùng cho ba loại mã: `material` (mã vật tư bao bì, mặc định — tìm theo tên nhóm, kèm số SP + giá mới), `product`
+ * (mã sản phẩm có định mức, Lịch sử mua hàng — chỉ tìm chữ trong mã / tên, không có nhóm, không có số SP / giá) và
+ * `rawMaterial` (mã nguyên liệu của Bảng giá nguyên liệu, bao-CR-800 — có nhóm + giá mới, KHÔNG có số SP vì nguyên liệu không
+ * nằm trong định mức bao bì; tên nhóm để hiểu từ khóa chỉ lấy từ chính dữ liệu, không thêm năm vai trò chai / nắp / nhãn…).
  */
-export type PackagingPickerKind = 'material' | 'product'
+export type PackagingPickerKind = 'material' | 'product' | 'rawMaterial'
 
 const PICKER_TEXT: Record<
   PackagingPickerKind,
@@ -54,6 +57,12 @@ const PICKER_TEXT: Record<
     empty: 'Chọn sản phẩm — gõ mã hoặc tên',
     more: 'Thêm sản phẩm… (vd: HH0713 · tên sản phẩm)',
     summary: 'sản phẩm có định mức bao bì',
+  },
+  rawMaterial: {
+    aria: 'Chọn mã nguyên liệu',
+    empty: 'Chọn mã nguyên liệu — gõ mã, tên, nhóm hoặc NCC',
+    more: 'Thêm mã nguyên liệu…',
+    summary: 'mã nguyên liệu khớp',
   },
 }
 
@@ -92,11 +101,19 @@ export function PackagingCodePicker({
   const inputRef = useRef<HTMLInputElement>(null)
   const listboxId = useId()
   const text = PICKER_TEXT[kind]
-  const showMaterialMeta = kind === 'material'
+  const showMaterialMeta = kind !== 'product'
   const chipMax = compact ? COMPACT_CHIP_MAX : CHIP_MAX
 
   //  Sản phẩm không có "nhóm": để rỗng thì từ khóa luôn rơi về tìm chữ (gõ "chai" ra sản phẩm tên có chữ chai).
-  const groups = useMemo(() => (kind === 'material' ? collectSearchGroups(options) : []), [options, kind])
+  const groups = useMemo(
+    () =>
+      kind === 'material'
+        ? collectSearchGroups(options)
+        : kind === 'rawMaterial'
+          ? collectPackagingGroups(options)
+          : [],
+    [options, kind],
+  )
   const filtered = useMemo(
     () => options.filter(buildPackagingCodeMatcher(keyword, groups)),
     [options, keyword, groups],
@@ -384,8 +401,9 @@ export function PackagingCodePicker({
                   <span className="min-w-0 flex-1 truncate">{option.name}</span>
                   {showMaterialMeta && (
                     <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                      {option.usage} SP
-                      {option.new != null && ` · ${formatPackagingPrice(option.new)}`}
+                      {kind === 'material' && `${option.usage} SP`}
+                      {option.new != null &&
+                        `${kind === 'material' ? ' · ' : ''}${formatPackagingPrice(option.new)}`}
                     </span>
                   )}
                 </div>

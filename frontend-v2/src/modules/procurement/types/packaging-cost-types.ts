@@ -241,6 +241,12 @@ export interface PackagingPriceListParams {
   page_size?: number
 }
 
+/**
+ * bao-CR-800 — bộ lọc của Bảng giá nguyên liệu (`GET /material-price-list` và đường xuất): như Bảng giá VTBB nhưng KHÔNG có
+ * `scope` (nguyên liệu không nằm trong định mức bao bì nên không có phạm vi "theo định mức").
+ */
+export type PackagingMaterialPriceListParams = Omit<PackagingPriceListParams, 'scope'>
+
 /** Một lần mua trong ma trận Giá mua gần nhất (`purchases[]`, lần gần nhất đứng đầu). */
 export interface PackagingLastPurchase {
   date: string | null

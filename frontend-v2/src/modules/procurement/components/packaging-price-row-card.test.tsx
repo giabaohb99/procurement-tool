@@ -49,6 +49,23 @@ describe('PackagingPriceRowCard', () => {
     expect(screen.queryByRole('button', { name: 'Báo giá' })).not.toBeInTheDocument()
   })
 
+  //  bao-CR-800 — thẻ của Bảng giá nguyên liệu: màn Lịch sử mua hàng của cụm không còn mã nguyên liệu nên mã KHÔNG được là
+  //  đường bấm (kể cả người có đủ quyền), và nguyên liệu không nằm trong định mức nên không có dòng Số SP đang dùng.
+  it('renders a raw-material row with a plain-text code and without the usage field', () => {
+    render(
+      <MemoryRouter>
+        <PackagingPriceRowCard row={{ ...row, code: 'NL0001', usage: 0 }} rawMaterial />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('NL0001')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByText('Số SP đang dùng')).not.toBeInTheDocument()
+    for (const label of ['Số lần mua', 'Giá mua gần nhất', 'Báo giá mới', 'Min', 'Max', 'Tiền tệ']) {
+      expect(screen.getByText(label)).toBeInTheDocument()
+    }
+    expect(screen.queryByRole('button', { name: 'Báo giá' })).not.toBeInTheDocument()
+  })
+
   it('opens a new quote for the code when the user may quote', () => {
     const onQuote = vi.fn()
     render(

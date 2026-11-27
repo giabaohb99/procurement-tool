@@ -40,6 +40,8 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
       'packaging_last_price',
       'packaging_history',
       'packaging_bom',
+      //  bao-CR-800: Bảng giá nguyên liệu có khóa riêng.
+      'packaging_material_price',
     ],
   },
   {

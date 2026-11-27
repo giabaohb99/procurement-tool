@@ -25,14 +25,16 @@ interface PackagingPriceRowCardProps {
   row: PackagingPriceRow
   /** Có quyền tạo báo giá → hiện nút "Báo giá" (mở hộp Báo giá mới điền sẵn mã). */
   onQuote?: (row: PackagingPriceRow) => void
+  /** Dòng của Bảng giá nguyên liệu (bao-CR-800): mã chữ thường, không có Số SP đang dùng — khớp bộ cột của màn đó. */
+  rawMaterial?: boolean
 }
 
-export function PackagingPriceRowCard({ row, onQuote }: PackagingPriceRowCardProps) {
+export function PackagingPriceRowCard({ row, onQuote, rawMaterial = false }: PackagingPriceRowCardProps) {
   const warnings = joinPackagingWarnings(row.warnings)
   return (
     <div className="space-y-2.5">
       <PackagingCardTitle
-        code={<PackagingCodeLink code={row.code} />}
+        code={rawMaterial ? row.code : <PackagingCodeLink code={row.code} />}
         name={row.name}
         aside={
           <>
@@ -81,7 +83,7 @@ export function PackagingPriceRowCard({ row, onQuote }: PackagingPriceRowCardPro
               <EmptyDash />
             ),
           },
-          { label: 'Số SP đang dùng', value: row.usage.toLocaleString('vi-VN') },
+          ...(rawMaterial ? [] : [{ label: 'Số SP đang dùng', value: row.usage.toLocaleString('vi-VN') }]),
           { label: 'Min', value: <PriceText value={row.min} /> },
           { label: 'Max', value: <PriceText value={row.max} /> },
           { label: 'Tiền tệ', value: 'VND' },

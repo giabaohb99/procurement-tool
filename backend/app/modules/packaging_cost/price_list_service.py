@@ -15,6 +15,7 @@ from app.modules.product_price.price_state_service import PriceState, get_price_
 from .cost_service import fold_text, price_warnings
 from .bom_parts_service import usage_by_code
 from .impact_service import OTHER_GROUP
+from .material_scope import KIND_MATERIAL, KIND_PACKAGING, material_codes, split_codes
 from .numbers import iso, num
 from .sorting import sort_blank_last
 
@@ -80,15 +81,27 @@ def search_scope(q: str, scope: str) -> str:
 def build_price_list(db: Session, *, q: str = "", group: str = "", scope: str = "bom",
                      date_from: date | None = None, date_to: date | None = None, sort_by: str = "code",
                      sort_dir: str = "asc", scope_cond=None, new_only: bool = False,
-                     product_codes: list[str] | None = None) -> list[dict]:
+                     product_codes: list[str] | None = None, kind: str = KIND_PACKAGING) -> list[dict]:
     """Toàn bộ dòng đã lọc + xếp (chưa cắt trang). `scope`: `bom` = mã thành phần ∪ mã có báo giá; `all` = thêm mọi mã
     có trong sổ giá. `new_only` = chế độ nhẹ của ô chọn mã (chỉ `new`, xem `get_price_states`): các cột cũ / chênh / min / max
     / số lần mua KHÔNG đáng tin ở chế độ này. Có chữ tìm thì phạm vi mở ra mọi mã (`search_scope`), trừ chế độ nhẹ của ô chọn mã.
     `product_codes` (ô chọn mã, 27/11/2026): chỉ đúng các mã đã chọn, bất kể phạm vi — mã đã mua mà ngoài định mức vẫn ra."""
-    picked = {c.strip() for c in (product_codes or []) if c.strip()}
+    materials = material_codes(db)
+    picked = split_codes({c.strip() for c in (product_codes or []) if c.strip()}, materials, kind)
+    if product_codes and not picked:
+        return []                       # mọi mã đã chọn đều thuộc loại kia (vd chọn mã nguyên liệu ở màn VTBB)
+    if kind == KIND_MATERIAL:
+        #  bao-CR-800: Bảng giá nguyên liệu = mã nhóm NL CÓ dữ liệu giá. Nguyên liệu không nằm trong định mức bao bì nên không có
+        #  phạm vi "theo định mức"; mã chưa có giá nào thì không lên bảng.
+        states = get_price_states(db, picked or materials, date_from=date_from, date_to=date_to, scope_cond=scope_cond,
+                                  new_only=new_only)
+        needle = fold_text(q)
+        return sort_rows([r for r in (_row(st, 0) for st in states.values()) if _keep(r, needle, group)], sort_by, sort_dir)
     if not new_only:
         scope = search_scope(q, scope)
     usage, quoted = _component_usage(db)
+    usage = {c: n for c, n in usage.items() if c not in materials}
+    quoted = quoted - materials
     if picked:
         states = get_price_states(db, picked, date_from=date_from, date_to=date_to, scope_cond=scope_cond, also=picked,
                                   new_only=new_only)
@@ -97,7 +110,9 @@ def build_price_list(db: Session, *, q: str = "", group: str = "", scope: str = 
         states = get_price_states(db, codes, date_from=date_from, date_to=date_to, scope_cond=scope_cond,
                                   also=set(usage) | quoted, new_only=new_only)
     needle = fold_text(q)
-    rows = [r for r in (_row(st, usage.get(code, 0)) for code, st in states.items()) if _keep(r, needle, group)]
+    #  `codes=None` của `get_price_states` kéo cả mã chỉ có báo giá: lọc lại theo loại mã ở đây cho chắc.
+    rows = [r for r in (_row(st, usage.get(code, 0)) for code, st in states.items() if code not in materials)
+            if _keep(r, needle, group)]
     return sort_rows(rows, sort_by, sort_dir)
 
 
@@ -109,7 +124,7 @@ STATIC_SORT_KEYS = {"code", "name", "group"}
 def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = "", group: str = "", scope: str = "bom",
                           date_from: date | None = None, date_to: date | None = None,
                           sort_by: str = "code", sort_dir: str = "asc", scope_cond=None,
-                          product_codes: list[str] | None = None) -> tuple[list[dict], int]:
+                          product_codes: list[str] | None = None, kind: str = KIND_PACKAGING) -> tuple[list[dict], int]:
     """`(dòng của trang, tổng số dòng sau lọc)` — màn hình Bảng giá.
 
     ĐƯỜNG NHANH khi `scope=bom` và xếp theo cột danh mục (`code, name, group` — mặc định của màn):
@@ -120,13 +135,13 @@ def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = ""
     start = (page - 1) * page_size
     scope = search_scope(q, scope)
     #  Đã chọn mã thì tập nhỏ (tối đa 500): đi đường đầy đủ cho đúng các mã đó.
-    if product_codes or scope != "bom" or sort_by not in STATIC_SORT_KEYS:
+    if kind == KIND_MATERIAL or product_codes or scope != "bom" or sort_by not in STATIC_SORT_KEYS:
         rows = build_price_list(db, q=q, group=group, scope=scope, date_from=date_from, date_to=date_to,
-                                sort_by=sort_by, sort_dir=sort_dir, scope_cond=scope_cond, product_codes=product_codes)
+                                sort_by=sort_by, sort_dir=sort_dir, scope_cond=scope_cond, product_codes=product_codes, kind=kind)
         return rows[start:start + page_size], len(rows)
 
     usage, quoted = _component_usage(db)
-    universe = set(usage) | quoted
+    universe = (set(usage) | quoted) - material_codes(db)      # bao-CR-800: màn VTBB không mang mã nguyên liệu
     info = {c: (n or "", g or "", u or "") for c, n, g, u in
             db.query(Product.code, Product.name, Product.item_group, Product.unit).filter(Product.code.in_(universe or {""})).all()}
     needle = fold_text(q)

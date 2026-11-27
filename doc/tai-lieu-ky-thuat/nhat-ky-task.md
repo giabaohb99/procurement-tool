@@ -114,6 +114,40 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-800 | Giá nguyên vật liệu sản xuất: Bảng giá nguyên liệu có quyền riêng và dữ liệu thật
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** chủ dự án giải thích: nguyên liệu cũng là sản phẩm nhưng thuộc loại nguyên liệu (nhóm NL), cần tách khỏi vật tư bao
+bì để phân quyền, vì có bộ phận được xem giá nguyên liệu và có bộ phận không. Màn Bảng giá nguyên liệu lúc đó mới là khung rỗng
+dùng chung quyền với Bảng giá VTBB, còn giá nguyên liệu thì vẫn xem được ở các màn VTBB.
+
+**Đã làm:**
+- Thêm quyền riêng *Giá NVL sản xuất › Bảng giá nguyên liệu* (Xem, Xuất).
+- Màn Bảng giá nguyên liệu lấy dữ liệu thật: mọi nguyên liệu đã có giá, cùng các cột giá như Bảng giá VTBB, có ô chọn mã, lọc nhóm,
+  khoảng ngày và Xuất Excel (cả hai giao diện).
+- Các màn VTBB của cụm (Bảng giá VTBB, Giá mua gần nhất, Lịch sử mua hàng, ô chọn mã) và công cụ tra giá của trợ lý AI không còn
+  hiện mã nguyên liệu.
+- Khi phát hành, vai trò nào đang xem được Bảng giá VTBB thì tự nhận quyền xem Bảng giá nguyên liệu, để không ai mất thứ đang xem
+  được. Bộ phận không được xem giá nguyên liệu thì quản trị bỏ tick quyền mới ở màn Vai trò & quyền.
+- Cập nhật tài liệu chức năng và bài hướng dẫn tổng quan của cụm.
+
+**Chưa làm:** lịch sử từng lần mua riêng cho nguyên liệu (hiện xem ở các cột của Bảng giá nguyên liệu). Danh sách Báo giá VTBB vẫn
+liệt kê báo giá của mọi mã, kể cả nguyên liệu nếu có người nhập. Chưa soát bằng trình duyệt với tài khoản chỉ có một trong hai quyền.
+
+**Quay lui:** hạ cấp cơ sở dữ liệu một bước (xóa các dòng của quyền mới) rồi chạy lại bản mã trước; khi đó mã nguyên liệu lại hiện ở
+các màn VTBB như cũ.
+
+**Kiểm:** backend 12 ca mới đạt; bộ rộng quanh cụm giá, đơn mua hàng, phân quyền, trợ lý AI 4.187 bài đạt, 4 bỏ qua, 1 bài đỏ có sẵn ở cẩm nang trợ lý (`test_assistant_gon_luot_dot2_cr192.py`, đỏ cả trên bản chưa sửa); ruff sạch. Giao diện mới: kiểm kiểu 0 lỗi, 2.711 bài đạt (31 ca mới và sửa). Giao diện cũ: kiểm kiểu giữ nguyên 4 lỗi nền.
+
+Mã nguồn: `backend/app/modules/packaging_cost/material_scope.py` · `impact_controller.py` · `last_prices_controller.py` ·
+`price_list_service.py` · `last_prices_service.py` · `backend/app/core/permissions.py` · `scoping.py` · `entity_models.py` ·
+`backend/migrations/versions/matprice800_quyen_rieng_bang_gia_nguyen_lieu.py` ·
+`frontend-v2/src/modules/procurement/pages/packaging-material-price-list-page.tsx` · `frontend/src/pages/packaging/PackagingMaterialPriceList.tsx`.
+Kiểm: `test/backend/test_quyen_rieng_gia_nguyen_lieu_cr800.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md` · `backend/scripts/seed_help_gia_bao_bi_cr784.py`.
+
 ## bao-CR-799 | Đơn mua hàng: sửa giá trong bảng cũng cập nhật lịch sử mua hàng và các màn Giá nguyên vật liệu
 - status: xong
 - date: 2026-11-27

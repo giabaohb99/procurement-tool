@@ -5,14 +5,12 @@
  * nên Xuất Excel ra đúng thứ tự đang xem. Nút từng dòng: Báo giá mới.
  */
 import { Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -22,10 +20,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 
 import { PackagingExportExcelButton } from '../components/packaging-header-buttons'
 import { exportPackagingPriceList } from '../api/packaging-cost-api'
-import {
-  PackagingPriceListToolbar,
-  type PriceListFilters,
-} from '../components/packaging-price-list-toolbar'
+import { PackagingPriceListToolbar } from '../components/packaging-price-list-toolbar'
 import { PackagingExcelImportButton } from '../components/packaging-excel-import-button'
 import { PackagingPriceRowCard } from '../components/packaging-price-row-card'
 import { PackagingQuoteDialog } from '../components/packaging-quote-dialog'
@@ -33,58 +28,35 @@ import { PACKAGING_QUOTE_IMPORT } from '../config/packaging-excel-imports'
 import { usePackagingCodeOptions } from '../hooks/use-packaging-impact'
 import { usePackagingPriceList } from '../hooks/use-packaging-price-list'
 import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-columns'
-import type { PackagingPriceListParams, PackagingPriceRow } from '../types/packaging-cost-types'
+import { usePackagingPriceListState } from '../hooks/use-packaging-price-list-state'
+import type { PackagingPriceRow } from '../types/packaging-cost-types'
 import { collectPackagingGroups, sortPackagingCodeOptions } from '../utils/packaging-code-match'
-import { buildPriceListUrlSearch, parsePriceListUrlState } from '../utils/packaging-list-url-state'
-
-const EMPTY_FILTERS: PriceListFilters = { codes: [], group: '', scope: 'bom' }
 
 export function PackagingPriceListPage() {
   const { can } = usePermission()
   const isMobile = useIsMobile()
-  const [searchParams, setSearchParams] = useSearchParams()
-  //  Bộ lọc / cột xếp / trang sống trên URL (F5 / gửi link mở lại đúng chỗ): đọc MỘT lần lúc mở màn, sau đó state là nguồn
-  //  và URL đi theo (effect bên dưới, `replace` — gõ ô tìm không đẻ ra cả chục mục lịch sử của nút Quay lại).
-  const [initial] = useState(() => parsePriceListUrlState(searchParams))
-  const [filters, setFilters] = useState<PriceListFilters>(initial.filters)
-  const [range, setRange] = useState({ from: initial.from, to: initial.to })
-  const [sortBy, setSortBy] = useState(initial.sortBy)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initial.sortDir)
-  const [pageSize, setPageSize] = useState(initial.pageSize)
+  //  Bộ lọc / cột xếp / trang sống trên URL (F5 / gửi link mở lại đúng chỗ) — hook dùng chung với Bảng giá nguyên liệu.
+  const {
+    filters,
+    setFilters,
+    range,
+    setRange,
+    sortBy,
+    sortDir,
+    setSort,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    filterParams,
+    listParams,
+    filtersActive,
+    resetFilters,
+  } = usePackagingPriceListState()
   const [quoteCode, setQuoteCode] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const once = useSingleFlight()
-
-  /** Bộ lọc + thứ tự gửi máy chủ — dùng chung cho danh sách và Xuất Excel. */
-  const filterParams = useMemo<PackagingPriceListParams>(
-    () => ({
-      code: filters.codes.length ? filters.codes : undefined,
-      group: filters.group || undefined,
-      scope: filters.scope,
-      date_from: range.from || undefined,
-      date_to: range.to || undefined,
-      //  Nhịp thứ ba của tiêu đề cột trả khóa rỗng = thôi xếp → KHÔNG gửi, để máy chủ xếp mặc định.
-      ...(sortBy ? { sort_by: sortBy, sort_dir: sortDir } : {}),
-    }),
-    [filters.codes, filters.group, filters.scope, range, sortBy, sortDir],
-  )
-  const [page, setPage] = usePageResetOnFilterChange([filterParams, pageSize], initial.page)
-  const list = usePackagingPriceList({ ...filterParams, page, page_size: pageSize })
-
-  const urlSearch = buildPriceListUrlSearch({
-    filters,
-    from: range.from,
-    to: range.to,
-    sortBy,
-    sortDir,
-    page,
-    pageSize,
-  })
-  useEffect(() => {
-    if (urlSearch !== searchParams.toString()) {
-      setSearchParams(new URLSearchParams(urlSearch), { replace: true })
-    }
-  }, [urlSearch, searchParams, setSearchParams])
+  const list = usePackagingPriceList(listParams)
 
   //  Danh sách mã của ô chọn mã = mọi mã có trong sổ giá (27/11/2026); nhóm cho chip lấy từ chính danh sách đó.
   const optionsQuery = usePackagingCodeOptions(true, 'all')
@@ -97,12 +69,6 @@ export function PackagingPriceListPage() {
     canQuote,
     onQuote: openQuote,
   })
-
-  const filtersActive =
-    filters.codes.length > 0 ||
-    filters.group !== '' ||
-    filters.scope !== 'bom' ||
-    Boolean(range.from || range.to)
 
   const exportExcel = () =>
     once(async () => {
@@ -172,16 +138,10 @@ export function PackagingPriceListPage() {
           )}
           mobileSort
           filtersActive={filtersActive}
-          onResetFilters={() => {
-            setFilters(EMPTY_FILTERS)
-            setRange({ from: '', to: '' })
-          }}
+          onResetFilters={resetFilters}
           sortBy={sortBy}
           sortDir={sortDir}
-          onSortChange={(by, dir) => {
-            setSortBy(by)
-            setSortDir(dir)
-          }}
+          onSortChange={setSort}
           toolbar={
             <PackagingPriceListToolbar
               filters={filters}

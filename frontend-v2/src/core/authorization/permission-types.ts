@@ -174,6 +174,8 @@ export const ENTITIES = [
   'packaging_last_price',
   'packaging_history',
   'packaging_bom',
+  // bao-CR-800 — giá nguyên liệu (sản phẩm nhóm NL) cấp quyền riêng, tách khỏi các màn VTBB.
+  'packaging_material_price',
   // bao-CR-470 — Tra cứu giá hải quan (khớp ENTITIES của backend, canh bởi
   // test_dong_bo_giao_dien_v2.py).
   'customs_price',

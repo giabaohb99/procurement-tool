@@ -9,7 +9,7 @@ import { api } from './client'
 import type {
   PackagingBatchPurgePreview, PackagingBatchPurgeResult, PackagingCodeOption, PackagingFgOption, PackagingHistoryParams, PackagingHistoryResult,
   PackagingImpactRequest, PackagingImpactResult, PackagingLastPricesParams, PackagingLastPricesResult,
-  PackagingOverviewParams, PackagingOverviewResult,
+  PackagingMaterialPriceListParams, PackagingOverviewParams, PackagingOverviewResult,
   PackagingPriceListParams, PackagingPriceRow,
 } from './packaging-cost-types'
 
@@ -31,11 +31,14 @@ export const PACKAGING_IMPORT_MODULES: readonly number[] = [
  * bao-CR-792 — khóa phân quyền của cụm: MỖI MÀN MỘT KHÓA (khóa chung cũ của duoc-CR-784 đã nghỉ hẳn ở backend).
  * Endpoint của màn nào backend gác bằng khóa của màn đó; ô chọn mã / ô chọn sản phẩm dùng chung mở khi có `read` trên
  * bất kỳ khóa nào. Báo giá VTBB (`/product-price-quotes`) đi chung khóa với Bảng giá VTBB.
+ * bao-CR-800: Bảng giá nguyên liệu có khóa RIÊNG `packaging_material_price` — các đường VTBB (kể cả ô chọn mã dùng chung)
+ * không mở cho người chỉ có khóa này, và ngược lại; màn nguyên liệu chỉ gọi các đường `material-*`.
  */
 export const PACKAGING_ENTITY = {
   impact: 'packaging_impact',
   products: 'packaging_product_summary',
   priceList: 'packaging_price_list',
+  materialPrices: 'packaging_material_price',
   lastPrices: 'packaging_last_price',
   history: 'packaging_history',
   boms: 'packaging_bom',
@@ -86,6 +89,21 @@ export async function fetchImpact(body: PackagingImpactRequest): Promise<Packagi
 export async function fetchPriceList(params: PackagingPriceListParams): Promise<{ items: PackagingPriceRow[]; total: number }> {
   const r = await api.get(`${BASE}/price-list`, { params })
   return r.data.data
+}
+
+/**
+ * bao-CR-800 — Bảng giá nguyên liệu: dòng cùng khuôn Bảng giá VTBB nhưng chỉ mã thuộc nhóm nguyên liệu đã có giá;
+ * không có tham số `scope`. Quyền `packaging_material_price.read`.
+ */
+export async function fetchMaterialPriceList(params: PackagingMaterialPriceListParams): Promise<{ items: PackagingPriceRow[]; total: number }> {
+  const r = await api.get(`${BASE}/material-price-list`, { params })
+  return r.data.data
+}
+
+/** bao-CR-800 — mã cho ô chọn của màn Bảng giá nguyên liệu (mọi mã nguyên liệu đã có giá, kèm tên NCC từng bán). */
+export async function fetchMaterialCodeOptions(): Promise<PackagingCodeOption[]> {
+  const r = await api.get(`${BASE}/material-code-options`)
+  return r.data.data?.items ?? []
 }
 
 export async function fetchLastPrices(params: PackagingLastPricesParams): Promise<PackagingLastPricesResult> {
@@ -144,7 +162,9 @@ function saveBlob(response: { data: Blob; headers: any }, fallbackName: string) 
 }
 
 /** Xuất Excel bằng GET: cùng bộ lọc + thứ tự đang xem, không kèm `page`. Ném `Error` mang câu thông báo cho nơi gọi. */
-export async function downloadExport(path: 'price-list' | 'last-prices' | 'history' | 'product-overview', params: object, fallbackName: string) {
+export async function downloadExport(
+  path: 'price-list' | 'material-price-list' | 'last-prices' | 'history' | 'product-overview', params: object, fallbackName: string,
+) {
   try {
     const r = await api.get(`${BASE}/${path}/export`, { params, responseType: 'blob' })
     saveBlob(r, fallbackName)

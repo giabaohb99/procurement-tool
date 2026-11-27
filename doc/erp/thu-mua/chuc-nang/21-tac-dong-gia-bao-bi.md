@@ -6,7 +6,7 @@
 | Ngày | 27/11/2026 |
 | Người phụ trách | đại ca và các agent |
 | Trạng thái | Hiệu lực (chỉ trên dev) |
-| CR liên quan | duoc-CR-784, bao-CR-792 (tách khóa quyền theo màn, 27/11/2026) |
+| CR liên quan | duoc-CR-784, bao-CR-792 (tách khóa quyền theo màn, 27/11/2026), bao-CR-800 (quyền riêng Bảng giá nguyên liệu) |
 | Giao diện | Cả hai giao diện: nhóm menu **Mua hàng**, mục cha đóng mở **Giá nguyên vật liệu sản xuất** ngay dưới *Tra cứu thị trường* (chốt 25/11/2026; tên chốt 21/11/2026, trước là Giá bao bì), sáu mục con. ERP v2: `/procurement/packaging-cost/...`, `frontend-v2/src/modules/procurement/pages/packaging-*.tsx` · giao diện cũ Thu mua: `/packaging-cost/...`, `/packaging-boms`, `/product-price-quotes`; `frontend/src/pages/packaging/*`. Xóa theo lô ở trang lô nhập: v2 `/system/imports/:id`, v1 `/import-batches/:id` |
 | Bài Help Center | Thẻ **Hướng dẫn sử dụng Giá nguyên vật liệu sản xuất** + 9 bài (bài thứ 8 *Xóa dữ liệu đã nhập nhầm theo lô nhập Excel* thêm 26/11/2026), `backend/scripts/seed_help_gia_bao_bi_cr784.py` |
 | Hợp đồng kỹ thuật | [api.md](../tai-lieu-ky-thuat/api.md) (nhóm `packaging-cost`, các dòng `/api/packaging-cost/*`, `/api/packaging-boms`, `/api/product-price-quotes`) · [kế hoạch 261120](../plans/261120-tac-dong-gia-bao-bi/plan.md) (phase 04 = hợp đồng API và số đo hiệu năng) · [kế hoạch tối ưu 261125](../plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md) (gộp nguồn sổ giá, nguồn báo giá, bỏ ngưỡng, đổi tên `fg_*`, xóa theo lô) · [mô hình dữ liệu](../tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md) |
@@ -172,6 +172,26 @@ VTBB và nhập báo giá của nhà cung cấp*.
   giá trị hỏng (ngày sai, khóa xếp lạ, cỡ trang ngoài danh sách) bị bỏ chứ không làm màn lỗi; ô tìm lên URL sau nhịp gõ, URL thay
   thế chứ không đẻ thêm mục lịch sử của nút Quay lại.
 
+## 4b. Bảng giá nguyên liệu (bao-CR-800, màn dựng ở duoc-CR-798)
+
+Nguyên liệu là **sản phẩm thuộc nhóm `NL`** trong danh mục (`tab_product.item_group`). Chủ dự án chốt 27/11/2026: giá nguyên liệu
+cấp quyền riêng, có bộ phận được xem và có bộ phận không.
+
+- Màn **Bảng giá nguyên liệu** (mục menu ngay dưới Bảng giá VTBB, cả hai giao diện) dùng cùng khuôn dòng với Bảng giá VTBB nhưng
+  **chỉ có mã nhóm NL đã có dữ liệu giá** (lần mua trong sổ giá hoặc báo giá). Không có phạm vi *theo định mức* vì nguyên liệu không
+  nằm trong định mức bao bì; không có cột *SP dùng* và không có nút Báo giá. Mã hiện dạng chữ thường (không mở Lịch sử mua hàng).
+- API: `GET /api/packaging-cost/material-price-list` (`q`, `group`, `code` lặp, `date_from`, `date_to`, `sort_by`, `sort_dir`,
+  `page`, `page_size`), `GET .../material-price-list/export` (tệp `bang-gia-nguyen-lieu.xlsx`), `GET .../material-code-options`
+  (ô chọn mã). Khóa `packaging_material_price`: `read` cho hai đường đọc, `export` cho xuất.
+- **Các màn VTBB không còn mã nguyên liệu**: Bảng giá VTBB (kể cả phạm vi *Mọi mã có giá*, gõ tìm, chọn thẳng mã), Giá mua gần
+  nhất, Lịch sử mua hàng của cụm, ô chọn mã dùng chung và công cụ tra giá của trợ lý AI. Trước bản này mã nguyên liệu lọt ra ở các
+  chỗ đó nên ai xem được Bảng giá VTBB cũng xem được giá nguyên liệu.
+- Một chỗ quyết định: `packaging_cost/material_scope.py` ghép điều kiện loại mã vào phạm vi pháp nhân trên sổ giá
+  (`last_prices_controller.view_scope` / `shared_view_scope`); các tập mã dựng ngoài sổ giá (định mức, báo giá, mã đã chọn) lọc bằng
+  `material_codes` / `split_codes`.
+- Chưa làm: lịch sử từng lần mua và giá các lần gần nhất riêng cho nguyên liệu (hiện xem ở cột của Bảng giá nguyên liệu); danh
+  sách Báo giá VTBB vẫn liệt kê báo giá của mọi mã, kể cả mã nguyên liệu nếu có người nhập.
+
 ## 5. Giá mua gần nhất
 
 Màn `/procurement/packaging-cost/last-prices` (cũ `/packaging-cost/last-prices`). Bài HDSD: *Giá NVL sản xuất — So đơn giá các
@@ -328,6 +348,10 @@ Bảng `tab_packaging_bom` (đầu phiếu, mỗi mã HH một dòng) + `tab_pac
   mà khóa CỦA MÀN ĐÓ cho người xem thấy. `packaging_bom` khai `PUBLIC`: định mức là danh mục dùng chung, không có cột pháp
   nhân và màn không hiện giá. Định mức, báo giá dựng bằng `scoped=False`. Giá trong ô chọn mã dùng chung tính trên HỢP phạm vi
   của các khóa có giá mà người xem giữ; người chỉ có `packaging_bom` thấy mã nhưng không thấy giá.
+- **Khóa thứ bảy `packaging_material_price`** (bao-CR-800): Bảng giá nguyên liệu, `read` / `export`, phạm vi pháp nhân đo trên
+  sổ giá. Không thuộc nhóm đường dùng chung của sáu khóa VTBB. Migration dữ liệu `matprice800` chép Xem / Xuất và phạm vi từ
+  `packaging_price_list` sang khóa mới cho mọi vai trò đang có (không ai mất thứ đang xem được); quyền ghi không chép. Bộ phận
+  không được xem giá nguyên liệu thì quản trị bỏ tick *Giá NVL sản xuất › Bảng giá nguyên liệu* ở màn Vai trò & quyền.
 - Công cụ Trợ lý / bot / cổng MCP gác theo màn tương ứng: `packaging_price_impact` cần `packaging_impact.read`;
   `packaging_price_lookup` cần `packaging_price_list.read` (phần n lần mua gần nhất chỉ kèm khi có thêm
   `packaging_last_price.read`); `packaging_product_cost` cần `packaging_product_summary.read`.

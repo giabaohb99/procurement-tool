@@ -208,9 +208,11 @@ def test_du_55_entity():
     `packaging_impact` · `packaging_product_summary` · `packaging_price_list` · `packaging_last_price` · `packaging_history`
     (company đo trên sổ giá như cũ) + `packaging_bom` (PUBLIC: danh mục định mức dùng chung, không có cột pháp nhân). Quyền
     đang có chuyển sang khóa mới bằng migration `permsplit792`; vẫn KHÔNG nằm trong `_SYS_ENTITIES`.
+    87 → 88 ngày 27/11/2026 (bao-CR-800, chủ dự án yêu cầu): giá nguyên liệu cấp quyền riêng (`packaging_material_price`) —
+    company đo trên sổ giá như các khóa có giá của cụm; migration `matprice800` chép Xem / Xuất từ `packaging_price_list`.
     """
-    assert len(ENTITIES) == 87
-    assert len(SCOPE_FIELDS) == 87
+    assert len(ENTITIES) == 88
+    assert len(SCOPE_FIELDS) == 88
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

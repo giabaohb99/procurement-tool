@@ -1,52 +1,84 @@
 /**
- * duoc-CR-798 — BẢNG GIÁ NGUYÊN LIỆU (27/11/2026): dựng y khuôn Bảng giá VTBB (cùng bộ cột, cùng khung bảng) cho
- * nguyên liệu, mục menu ngay dưới Bảng giá VTBB. CHƯA nối dữ liệu (chủ dự án chốt: dựng màn trước, dữ liệu sau) nên bảng
- * luôn rỗng và nói thẳng điều đó; khi có nguồn giá nguyên liệu thì thay `rows` bằng hook gọi API như màn VTBB.
- * Gác cùng khóa xem bảng giá `packaging_price_list` (mục menu khai trong `routes.tsx`).
- * Thanh lọc đủ như màn VTBB (ô chọn mã, chip nhóm, phạm vi mã, khoảng ngày tính min – max — 27/11/2026); chưa có dữ liệu
- * nên bộ lọc chỉ giữ trạng thái trên màn, chưa gửi đi đâu.
+ * duoc-CR-798 — BẢNG GIÁ NGUYÊN LIỆU (27/11/2026): khuôn Bảng giá VTBB cho nguyên liệu (sản phẩm nhóm `NL`), mục menu ngay
+ * dưới Bảng giá VTBB.
+ *
+ * bao-CR-800 — nối DỮ LIỆU THẬT và khóa quyền RIÊNG `packaging_material_price` (chủ dự án chốt 27/11/2026: có bộ phận được
+ * xem giá nguyên liệu, có bộ phận không). Màn chỉ gọi ba đường của nguyên liệu (`material-price-list`, đường xuất của nó,
+ * `material-code-options`); TUYỆT ĐỐI không gọi `price-list` / `code-options` của VTBB — người chỉ giữ khóa nguyên liệu gọi
+ * hai đường đó là 403. Khác màn VTBB: không có nút phạm vi (nguyên liệu không nằm trong định mức bao bì), không có cột Số SP
+ * đang dùng / Thao tác, mã là chữ thường (màn Lịch sử mua hàng của cụm không còn mã nguyên liệu). Phân trang + xếp tại MÁY
+ * CHỦ; tham số xếp đi kèm bộ lọc nên Xuất Excel ra đúng thứ tự đang xem.
  */
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 
+import { exportPackagingMaterialPriceList } from '../api/packaging-cost-api'
+import { PackagingExportExcelButton } from '../components/packaging-header-buttons'
+import { PackagingPriceListToolbar } from '../components/packaging-price-list-toolbar'
+import { PackagingPriceRowCard } from '../components/packaging-price-row-card'
 import {
-  PackagingPriceListToolbar,
-  type PriceListFilters,
-} from '../components/packaging-price-list-toolbar'
+  usePackagingMaterialCodeOptions,
+  usePackagingMaterialPriceList,
+} from '../hooks/use-packaging-material-price-list'
 import { usePackagingPriceListColumns } from '../hooks/use-packaging-price-list-columns'
-import type { PackagingPriceRow } from '../types/packaging-cost-types'
-
-/** Chưa có nguồn dữ liệu — bảng rỗng có chủ đích, không phải lỗi tải. */
-const NO_ROWS: PackagingPriceRow[] = []
-const EMPTY_FILTERS: PriceListFilters = { codes: [], group: '', scope: 'bom' }
+import { usePackagingPriceListState } from '../hooks/use-packaging-price-list-state'
+import { collectPackagingGroups, sortPackagingCodeOptions } from '../utils/packaging-code-match'
 
 export function PackagingMaterialPriceListPage() {
+  const { can } = usePermission()
   const isMobile = useIsMobile()
-  const [filters, setFilters] = useState<PriceListFilters>(EMPTY_FILTERS)
-  const [range, setRange] = useState({ from: '', to: '' })
-  const filtersActive =
-    filters.codes.length > 0 || filters.group !== '' || filters.scope !== 'bom' || Boolean(range.from || range.to)
-  const baseColumns = usePackagingPriceListColumns({ canQuote: false, onQuote: () => undefined })
-  //  Cùng bộ cột với Bảng giá VTBB, chỉ đổi chữ "VTBB" thành "nguyên liệu" ở tiêu đề.
-  const columns = useMemo(
-    () =>
-      baseColumns.map((column) =>
-        typeof column.header === 'string' && column.header === 'Mã VTBB'
-          ? { ...column, header: 'Mã nguyên liệu' }
-          : typeof column.header === 'string' && column.header === 'Tên vật tư'
-            ? { ...column, header: 'Tên nguyên liệu' }
-            : column,
-      ),
-    [baseColumns],
-  )
+  //  Bộ lọc / cột xếp / trang sống trên URL — cùng hook với Bảng giá VTBB, chế độ nguyên liệu (không có `scope`).
+  const {
+    filters,
+    setFilters,
+    range,
+    setRange,
+    sortBy,
+    sortDir,
+    setSort,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    filterParams,
+    listParams,
+    filtersActive,
+    resetFilters,
+  } = usePackagingPriceListState({ rawMaterial: true })
+  const [exporting, setExporting] = useState(false)
+  const once = useSingleFlight()
+  const list = usePackagingMaterialPriceList(listParams)
+
+  //  Ô chọn mã = mọi mã nguyên liệu đã có giá; nhóm cho chip lấy từ chính danh sách đó (không đụng đường của VTBB).
+  const optionsQuery = usePackagingMaterialCodeOptions()
+  const codeOptions = useMemo(() => sortPackagingCodeOptions(optionsQuery.data ?? []), [optionsQuery.data])
+  const groups = useMemo(() => collectPackagingGroups(codeOptions), [codeOptions])
+
+  const columns = usePackagingPriceListColumns({ rawMaterial: true })
+
+  const exportExcel = () =>
+    once(async () => {
+      setExporting(true)
+      try {
+        await exportPackagingMaterialPriceList(filterParams)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Không xuất được tệp Excel')
+      } finally {
+        setExporting(false)
+      }
+    })
 
   return (
+    //  `fill` chỉ từ `md`: ở khổ hẹp bảng thành danh sách thẻ dài, nhét vào khe cao cố định là cuộn LỒNG (xem crud-list-page).
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Bảng giá nguyên liệu"
@@ -56,39 +88,57 @@ export function PackagingMaterialPriceListPage() {
             : 'Giá cũ / mới từng mã nguyên liệu: có báo giá thì giá mới là báo giá, không thì là lần mua gần nhất. Đơn vị VNĐ, chưa VAT.'
         }
         actions={
-          <DateRangePicker
-            from={range.from}
-            to={range.to}
-            placeholder="Khoảng ngày tính min – max"
-            className="max-md:basis-full"
-            onChange={(from, to) => setRange({ from, to })}
-          />
+          <>
+            <DateRangePicker
+              from={range.from}
+              to={range.to}
+              placeholder="Khoảng ngày tính min – max"
+              className="max-md:basis-full"
+              onChange={(from, to) => setRange({ from, to })}
+            />
+            {can('packaging_material_price', 'export') && (
+              <PackagingExportExcelButton exporting={exporting} onClick={() => void exportExcel()} />
+            )}
+          </>
         }
       />
       <Card className="flex min-h-0 flex-1 flex-col gap-4 p-4 max-md:gap-2 max-md:p-3">
         <DataTable
+          //  Dòng khóa theo mã, không có `id` số: để mặc định thì lúc đang tải bảng chèn cột ID rồi gỡ, làm tách nhóm cột.
           idColumn={false}
           fillHeight
           columns={columns}
-          rows={NO_ROWS}
+          rows={list.data?.items}
           getRowId={(row) => row.code}
-          emptyMessage={
-            filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có dữ liệu bảng giá nguyên liệu.'
-          }
+          isLoading={list.isLoading}
+          isError={list.isError}
+          emptyMessage={filtersActive ? 'Không có mã nào khớp bộ lọc.' : 'Chưa có nguyên liệu nào có giá.'}
           storageKey="procurement.packaging-material-price-list"
+          mobileCard={(row) => <PackagingPriceRowCard row={row} rawMaterial />}
+          mobileSort
           filtersActive={filtersActive}
-          onResetFilters={() => {
-            setFilters(EMPTY_FILTERS)
-            setRange({ from: '', to: '' })
-          }}
+          onResetFilters={resetFilters}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={setSort}
           toolbar={
             <PackagingPriceListToolbar
+              rawMaterial
               filters={filters}
-              groups={[]}
-              searchPlaceholder="Tìm mã nguyên liệu — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã"
+              groups={groups}
+              codeOptions={codeOptions}
+              codeOptionsLoading={optionsQuery.isLoading}
               onChange={setFilters}
             />
           }
+          pagination={{
+            page,
+            pageSize,
+            total: list.data?.total ?? 0,
+            onPageChange: setPage,
+            onPageSizeChange: setPageSize,
+            unitLabel: 'mã',
+          }}
         />
       </Card>
     </PageContainer>

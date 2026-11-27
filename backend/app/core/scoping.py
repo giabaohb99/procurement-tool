@@ -319,6 +319,8 @@ SCOPE_FIELDS = {
     #  SỬA gác bằng quyền hành động `packaging_bom.*`. KHÔNG đo trên sổ giá: khóa này trùng tên entity nhật ký
     #  `packaging_bom`, khai model sổ giá cho nó là `audit/controller._guard` đem id định mức đi soi trên bảng sổ giá.
     "packaging_bom":             PUBLIC,
+    #  bao-CR-800: giá nguyên liệu (nhóm NL) đo phạm vi pháp nhân trên sổ giá như các khóa có giá ở trên.
+    "packaging_material_price":  {"company": "company_id"},
 
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy

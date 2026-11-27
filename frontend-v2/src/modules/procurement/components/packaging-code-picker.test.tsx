@@ -44,6 +44,36 @@ describe('PackagingCodePicker', () => {
     expect(onChange).toHaveBeenCalledWith(['NHG0100', 'CPT0105', 'CPT0075'])
   })
 
+  //  bao-CR-800 — ô chọn mã của Bảng giá nguyên liệu: nói "nguyên liệu", không ghi "n SP" (nguyên liệu không nằm trong định
+  //  mức), và tên vai trò bao bì ("chai") KHÔNG được hiểu là nhóm — phải rơi về tìm chữ trong mã / tên / NCC.
+  it('raw-material kind: own wording, no "SP" count, and "chai" is a text search, not the Chai group', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const rawOptions: PackagingCodeOption[] = [
+      { code: 'NL0001', name: 'Dung môi rửa chai', group: 'Dung môi', usage: 0, new: 31000, suppliers: 'Hóa chất A' },
+      { code: 'NL0002', name: 'Hoạt chất B', group: 'Hoạt chất', usage: 0, new: null },
+    ]
+    render(<PackagingCodePicker kind="rawMaterial" options={rawOptions} value={[]} onChange={onChange} />)
+    const input = screen.getByRole('combobox', { name: 'Chọn mã nguyên liệu' })
+    await user.click(input)
+    expect(screen.getByText('2 mã nguyên liệu khớp')).toBeInTheDocument()
+    const first = screen.getByRole('option', { name: /NL0001/ })
+    expect(first).toHaveTextContent('Dung môi')
+    expect(first).toHaveTextContent('31.000')
+    expect(first).not.toHaveTextContent(/\d SP/)
+    expect(screen.getByRole('option', { name: /NL0002/ })).not.toHaveTextContent(/SP|·/)
+
+    await user.type(input, 'chai')
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Chọn tất cả (1)' }))
+    expect(onChange).toHaveBeenCalledWith(['NL0001'])
+    //  Gõ tên nhóm có trong dữ liệu vẫn lọc theo nhóm; gõ tên NCC ra mã từng mua của NCC đó.
+    await user.clear(input)
+    await user.type(input, 'hoạt chất')
+    expect(screen.getByRole('option', { name: /NL0002/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+  })
+
   it('blocks the whole action when it would exceed the cap, instead of silently trimming', async () => {
     const { user, onChange } = await openPicker(['NHG0100'], 2)
     await user.click(screen.getByRole('button', { name: 'Chọn tất cả (4)' }))

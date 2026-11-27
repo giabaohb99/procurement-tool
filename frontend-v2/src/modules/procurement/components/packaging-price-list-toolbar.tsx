@@ -1,6 +1,9 @@
 /**
  * duoc-CR-784 — thanh lọc của Bảng giá VTBB: ô chọn mã (27/11/2026 thay ô tìm chữ — gõ mã, tên, tên nhóm hoặc tên NCC, chọn
  * nhiều mã, như màn Tác động), chip nhóm, phạm vi mã (chỉ mã trong định mức hay mọi mã có trong sổ giá).
+ *
+ * bao-CR-800 — dùng lại cho Bảng giá nguyên liệu (`rawMaterial`): ô chọn mã nói "nguyên liệu", KHÔNG có nút phạm vi (nguyên
+ * liệu không nằm trong định mức bao bì nên "Mã trong định mức / Mọi mã có giá" vô nghĩa).
  */
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 import { cn } from '@/shared/utils/cn'
@@ -22,8 +25,8 @@ interface PackagingPriceListToolbarProps {
   /** Danh sách mã cho ô chọn mã (mọi mã có trong sổ giá, đã xếp). */
   codeOptions?: PackagingCodeOption[]
   codeOptionsLoading?: boolean
-  /** Câu gợi ý của ô chọn mã khi chưa chọn gì (màn Bảng giá nguyên liệu ghi "nguyên liệu" thay "VTBB"). */
-  searchPlaceholder?: string
+  /** Màn Bảng giá nguyên liệu: ô chọn mã ghi "nguyên liệu" thay "VTBB" và bỏ nút phạm vi mã. */
+  rawMaterial?: boolean
   onChange: (filters: PriceListFilters) => void
 }
 
@@ -32,7 +35,7 @@ export function PackagingPriceListToolbar({
   groups,
   codeOptions = [],
   codeOptionsLoading = false,
-  searchPlaceholder = 'Tìm mã VTBB — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã',
+  rawMaterial = false,
   onChange,
 }: PackagingPriceListToolbarProps) {
   const patch = (next: Partial<PriceListFilters>) => onChange({ ...filters, ...next })
@@ -49,7 +52,8 @@ export function PackagingPriceListToolbar({
           value={filters.codes}
           onChange={(codes) => patch({ codes })}
           loading={codeOptionsLoading}
-          emptyPlaceholder={searchPlaceholder}
+          kind={rawMaterial ? 'rawMaterial' : 'material'}
+          emptyPlaceholder={`Tìm mã ${rawMaterial ? 'nguyên liệu' : 'VTBB'} — gõ mã, tên, nhóm hoặc NCC, chọn được nhiều mã`}
           compact
         />
       </div>
@@ -72,17 +76,19 @@ export function PackagingPriceListToolbar({
         ))}
       </div>
 
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={filters.scope}
-        onValueChange={(value) => value && patch({ scope: value as PriceListFilters['scope'] })}
-        aria-label="Phạm vi mã"
-      >
-        <ToggleGroupItem value="bom">Mã trong định mức</ToggleGroupItem>
-        <ToggleGroupItem value="all">Mọi mã có giá</ToggleGroupItem>
-      </ToggleGroup>
+      {!rawMaterial && (
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={filters.scope}
+          onValueChange={(value) => value && patch({ scope: value as PriceListFilters['scope'] })}
+          aria-label="Phạm vi mã"
+        >
+          <ToggleGroupItem value="bom">Mã trong định mức</ToggleGroupItem>
+          <ToggleGroupItem value="all">Mọi mã có giá</ToggleGroupItem>
+        </ToggleGroup>
+      )}
     </div>
   )
 }

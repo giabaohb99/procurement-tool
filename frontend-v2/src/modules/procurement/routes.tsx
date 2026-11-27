@@ -200,7 +200,9 @@ export const procurementModule: ErpModule = {
     //  Mục con Tác động ở đường gốc của cụm nên phải `end: true`, không thì nó sáng lây khi đứng ở các mục con khác.
     //  bao-CR-792 — khóa chung `packaging_cost` NGHỈ HẲN, mỗi màn một khóa riêng (khai ở từng mục con). Mục cha hiện khi
     //  còn ÍT NHẤT MỘT mục con xem được (luật `children` của `module-visibility.ts`), bấm vào thì tới mục con đầu tiên
-    //  người đó được xem (menu trái + breadcrumb). `entities` ở cha chỉ để ghi rõ sáu khóa của cụm.
+    //  người đó được xem (menu trái + breadcrumb). `entities` ở cha chỉ để ghi rõ các khóa của cụm.
+    //  bao-CR-800 — thêm khóa thứ bảy `packaging_material_price` (Bảng giá nguyên liệu, quyền RIÊNG): người CHỈ giữ khóa này
+    //  vẫn thấy mục cha và bấm vào là tới Bảng giá nguyên liệu; khóa này không mở màn nào của VTBB.
     {
       label: 'Giá nguyên vật liệu sản xuất',
       path: appRoutes.procurement.packagingImpact,
@@ -209,6 +211,7 @@ export const procurementModule: ErpModule = {
         'packaging_impact',
         'packaging_product_summary',
         'packaging_price_list',
+        'packaging_material_price',
         'packaging_last_price',
         'packaging_history',
         'packaging_bom',
@@ -237,11 +240,12 @@ export const procurementModule: ErpModule = {
           matchPaths: [appRoutes.procurement.packagingQuotes],
         },
         {
-          //  duoc-CR-798: khuôn Bảng giá VTBB cho nguyên liệu, chưa có dữ liệu; cùng khóa xem bảng giá.
+          //  duoc-CR-798: khuôn Bảng giá VTBB cho nguyên liệu. bao-CR-800: dữ liệu thật + khóa RIÊNG — giữ khóa Bảng giá VTBB
+          //  không thấy mục này, và ngược lại.
           label: 'Bảng giá nguyên liệu',
           path: appRoutes.procurement.packagingMaterialPrices,
           icon: FlaskConical,
-          entity: 'packaging_price_list',
+          entity: 'packaging_material_price',
         },
         {
           label: 'Giá mua gần nhất',

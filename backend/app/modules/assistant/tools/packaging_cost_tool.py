@@ -147,13 +147,16 @@ def _search_codes(db, q: str, limit: int) -> tuple[list[str], bool]:
     from sqlalchemy import and_, case, or_, select, union
 
     from app.modules.packaging_cost.bom_parts_service import component_codes_query
+    from app.modules.packaging_cost.material_scope import MATERIAL_GROUP
     from app.modules.product.model import Product
     from app.modules.product_price.model import ProductPriceLedger, ProductPriceQuote
 
     terms = q.split()
     universe = union(component_codes_query(), select(ProductPriceQuote.product_code), select(ProductPriceLedger.product_code))
     match = and_(*[or_(Product.code.contains(t, autoescape=True), Product.name.contains(t, autoescape=True)) for t in terms])
-    rows = (db.query(Product.code).filter(match, Product.code.in_(select(universe.subquery().c[0])))
+    #  bao-CR-800: công cụ tra giá VTBB không trả mã nguyên liệu (nhóm NL) — giá nguyên liệu có khóa quyền riêng.
+    rows = (db.query(Product.code).filter(match, Product.item_group != MATERIAL_GROUP,
+                                          Product.code.in_(select(universe.subquery().c[0])))
             .order_by(case((Product.code == q, 0), else_=1), Product.code).limit(limit + 1).all())
     codes = [c for (c,) in rows]
     return codes[:limit], len(codes) > limit

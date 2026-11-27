@@ -25,6 +25,7 @@ from app.modules.supplier.model import Supplier
 
 from .cost_service import fold_text
 from .bom_parts_service import usage_by_code
+from .material_scope import material_codes
 from .impact_service import OTHER_GROUP
 from .numbers import iso, num
 from .price_list_service import sort_rows
@@ -139,6 +140,10 @@ def build_last_prices(db: Session, *, n: int = DEFAULT_N, q: str = "", product_c
     n = max(2, min(int(n), MAX_N))
     comps = set(usage_by_code(db))     # mã thành phần của mọi định mức (gom ở SQL, không kéo từng dòng định mức về)
     quoted = {c for (c,) in db.query(ProductPriceQuote.product_code).distinct().all()}
+    #  bao-CR-800: màn VTBB không mang mã nguyên liệu — dòng sổ giá đã bị `scope_cond` lọc, còn mã chỉ có báo giá / nằm trong
+    #  định mức thì lọc ở đây.
+    materials = material_codes(db)
+    comps, quoted = comps - materials, quoted - materials
     universe = comps if bom_only else comps | quoted
     codes = None if (scope == "all" and not bom_only) else universe
 

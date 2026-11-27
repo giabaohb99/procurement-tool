@@ -202,8 +202,10 @@ const NAV_GROUPS: NavGroup[] = [
             crumbSuffixes: [{ path: "/product-price-quotes", label: "Báo giá VTBB" }],
             visible: canReadPackaging(PACKAGING_ENTITY.priceList),
           },
-          //  duoc-CR-798: Bảng giá nguyên liệu ngay dưới Bảng giá VTBB (khuôn giống hệt, chưa có dữ liệu), cùng khóa xem bảng giá.
-          { to: "/packaging-cost/material-prices", label: "Bảng giá nguyên liệu", icon: "ti-flask", visible: canReadPackaging(PACKAGING_ENTITY.priceList) },
+          //  duoc-CR-798: Bảng giá nguyên liệu ngay dưới Bảng giá VTBB (khuôn giống hệt). bao-CR-800: khóa quyền RIÊNG
+          //  `packaging_material_price` — người chỉ có khóa Bảng giá VTBB không thấy mục này; người chỉ có khóa này vẫn thấy
+          //  mục cha (`anyEntity` lấy mọi khóa của `PACKAGING_ENTITY`) và bấm mục cha là xuống thẳng màn nguyên liệu.
+          { to: "/packaging-cost/material-prices", label: "Bảng giá nguyên liệu", icon: "ti-flask", visible: canReadPackaging(PACKAGING_ENTITY.materialPrices) },
           { to: "/packaging-cost/last-prices", label: "Giá mua gần nhất", icon: "ti-history", visible: canReadPackaging(PACKAGING_ENTITY.lastPrices) },
           { to: "/packaging-cost/history", label: "Lịch sử mua hàng", icon: "ti-timeline", visible: canReadPackaging(PACKAGING_ENTITY.history) },
           { to: "/packaging-boms", label: "Định mức bao bì", icon: "ti-hierarchy-2", visible: canReadPackaging(PACKAGING_ENTITY.boms) },
