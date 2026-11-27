@@ -8,6 +8,8 @@ Luật sổ giá (một lần mua của hệ thống = MỘT dòng sổ theo `po
   kể cả khi ĐMH sau đó bị hủy / xóa mềm.
 - Lịch sử cũ nạp từ Excel (`PURCHASE_HISTORY`, `source_id` = `tab_purchase_history.id`, `po_item_id` trống): chỉ chèn, luôn `FINAL`. Ngoại
   lệ duy nhất: dòng lịch sử bị xóa (nạp lại dữ liệu cũ) thì dòng sổ mồ côi bị xóa theo (`sync_history_ledger`).
+- bao-CR-790: lịch sử mua hàng nay có bản ghi ĐANG MỞ từ lúc nhận hàng (`tab_purchase_history.line_stage = 1`). Bản ghi đó KHÔNG
+  chốt dòng sổ: dòng sổ vẫn đang mở và đi theo ĐMH; chỉ bản ghi lịch sử ĐÃ CHỐT (dòng hoàn thành, dữ liệu cũ) mới chốt dòng sổ.
 - Giá sổ = giá dòng x tỉ giá (VNĐ, chưa VAT). Lịch sử cũ coi là VNĐ. Dòng giá 0 vẫn ghi (đếm "số lần mua"), tầng tính giá
   (`price_state_service`) bỏ qua.
 - Thành tiền `amount` (VNĐ, chưa VAT): dòng chốt từ lịch sử = `tab_purchase_history.amount` (đã gồm VAT, tính theo SL thực nhận lúc dòng hoàn
@@ -293,23 +295,26 @@ def sync_history_ledger(db: Session, dry_run: bool = False) -> dict:
         db.execute(delete(L).where(L.id.in_(orphan_ids[i:i + BATCH])))
     stats["deleted_orphans"] = len(orphan_ids)
 
-    # 2) dòng ĐMH đã chốt mà không còn dòng lịch sử nào trỏ `po_item_id` đó (hiếm: hoàn tác nhập ĐMH) -> trả về đang mở, để
-    #    `sync_po_price_ledger` quyết giữ hay bỏ theo ĐMH
+    # 2) dòng ĐMH đã chốt mà không còn dòng lịch sử ĐÃ CHỐT nào trỏ `po_item_id` đó (hiếm: hoàn tác nhập ĐMH) -> trả về đang mở,
+    #    để `sync_po_price_ledger` quyết giữ hay bỏ theo ĐMH
     reopen_ids = [r[0] for r in db.query(L.id).filter(
-        L.source_type == SRC_PO, L.line_stage == FINAL, ~select(PH.id).where(PH.po_item_id == L.source_id).exists()).all()]
+        L.source_type == SRC_PO, L.line_stage == FINAL,
+        ~select(PH.id).where(PH.po_item_id == L.source_id, PH.line_stage == FINAL).exists()).all()]
     for i in range(0, len(reopen_ids), BATCH):
         db.execute(update(L).where(L.id.in_(reopen_ids[i:i + BATCH])).values(line_stage=OPEN, amount=None, synced_at=func.now()))
     stats["reopened"] = len(reopen_ids)
 
-    # 3) dòng lịch sử chưa có dòng sổ (chèn `FINAL`) hoặc dòng sổ còn đang mở (nâng lên `FINAL` bằng số chụp). Danh mục kho nạp MỘT
-    #    lần cho cả lượt, tra mã -> tên trong bộ nhớ
+    # 3) dòng lịch sử ĐÃ CHỐT chưa có dòng sổ (chèn `FINAL`) hoặc dòng sổ còn đang mở (nâng lên `FINAL` bằng số chụp). Bản ghi lịch
+    #    sử đang mở (bao-CR-790: đã nhận hàng, chưa hoàn thành) bị bỏ qua — dòng sổ của nó do `sync_po_price_ledger` giữ. Danh mục
+    #    kho nạp MỘT lần cho cả lượt, tra mã -> tên trong bộ nhớ
     wh_names = load_warehouse_names(db)
     last_id = 0
     while True:
         rows = (db.query(PH, POItem.exchange_rate, POItem.id, L)
                 .outerjoin(L, history_join(L, PH))
                 .outerjoin(POItem, POItem.id == PH.po_item_id)
-                .filter(or_(L.id.is_(None), L.line_stage != FINAL), PH.id > last_id).order_by(PH.id.asc()).limit(BATCH).all())
+                .filter(or_(L.id.is_(None), L.line_stage != FINAL), PH.line_stage == FINAL, PH.id > last_id)
+                .order_by(PH.id.asc()).limit(BATCH).all())
         if not rows:
             break
         for ph, rate, item_id, row in rows:

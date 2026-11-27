@@ -68,12 +68,23 @@ def _keep(row: dict, needle: str, group: str) -> bool:
     return not group.strip() or fold_text(row["group"]) == fold_text(group)
 
 
+def search_scope(q: str, scope: str) -> str:
+    """bao-CR-791: đã gõ ô tìm thì tìm trên MỌI mã có trong sổ giá, kể cả khi đang để phạm vi "theo định mức".
+
+    Chủ dự án 27/11/2026 tìm mã CHT0230 (có mua trên ĐMH, chưa nằm trong định mức nào) ở Bảng giá và không thấy: hơn nửa số mã đã
+    mua nằm ngoài định mức. Không gõ gì thì danh sách vẫn theo phạm vi đang chọn như cũ.
+    """
+    return "all" if q.strip() else scope
+
+
 def build_price_list(db: Session, *, q: str = "", group: str = "", scope: str = "bom",
                      date_from: date | None = None, date_to: date | None = None, sort_by: str = "code",
                      sort_dir: str = "asc", scope_cond=None, new_only: bool = False) -> list[dict]:
     """Toàn bộ dòng đã lọc + xếp (chưa cắt trang). `scope`: `bom` = mã thành phần ∪ mã có báo giá; `all` = thêm mọi mã
     có trong sổ giá. `new_only` = chế độ nhẹ của ô chọn mã (chỉ `new`, xem `get_price_states`): các cột cũ / chênh / min / max
-    / số lần mua KHÔNG đáng tin ở chế độ này."""
+    / số lần mua KHÔNG đáng tin ở chế độ này. Có chữ tìm thì phạm vi mở ra mọi mã (`search_scope`), trừ chế độ nhẹ của ô chọn mã."""
+    if not new_only:
+        scope = search_scope(q, scope)
     usage, quoted = _component_usage(db)
     codes = None if scope == "all" else set(usage) | quoted
     states = get_price_states(db, codes, date_from=date_from, date_to=date_to, scope_cond=scope_cond, also=set(usage) | quoted,
@@ -99,6 +110,7 @@ def build_price_list_page(db: Session, *, page: int, page_size: int, q: str = ""
     tập rồi mới xếp: đường đầy đủ `build_price_list`. Hai đường cho CÙNG kết quả (có bài kiểm đối chiếu).
     """
     start = (page - 1) * page_size
+    scope = search_scope(q, scope)
     if scope != "bom" or sort_by not in STATIC_SORT_KEYS:
         rows = build_price_list(db, q=q, group=group, scope=scope, date_from=date_from, date_to=date_to,
                                 sort_by=sort_by, sort_dir=sort_dir, scope_cond=scope_cond)

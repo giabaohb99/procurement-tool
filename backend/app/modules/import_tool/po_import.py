@@ -344,6 +344,7 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
         if apply:
             # duoc-CR-784: giá / SL / trạng thái dòng vừa nạp → sổ giá. Chưa commit (cuối `run` mới commit).
             sync_po_price_ledger(db, po, commit=False)
+            ph_service.sync_po_history_safe(db, po, commit=False)   # bao-CR-790: dòng đã nhận hàng → lịch sử đang mở
         changes.append({"survey_id": po.id, "was_new": was_new, "snapshot": snap})
 
     if apply:

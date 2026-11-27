@@ -249,7 +249,7 @@ TREE = {
 <tr><td>Ghi chú</td><td>Cảnh báo của mã (ví dụ ĐVT mua khác ĐVT danh mục). Cột ẩn sẵn, mở ở nút <strong>Cột</strong>.</td></tr>
 </tbody>
 </table>
-<p>Thanh lọc: ô <strong>Tìm mã, tên vật tư…</strong>, chip nhóm (<strong>Tất cả</strong>, Chai, Nắp, Nhãn…), và nút phạm vi <strong>Mã trong định mức</strong> (mặc định: mã đang dùng trong định mức và mã đã có báo giá) / <strong>Mọi mã có giá</strong> (thêm mọi mã có trong sổ giá). Bấm tiêu đề cột để xếp; <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem.</p>
+<p>Thanh lọc: ô <strong>Tìm mã, tên vật tư…</strong>, chip nhóm (<strong>Tất cả</strong>, Chai, Nắp, Nhãn…), và nút phạm vi <strong>Mã trong định mức</strong> (mặc định: mã đang dùng trong định mức và mã đã có báo giá) / <strong>Mọi mã có giá</strong> (thêm mọi mã có trong sổ giá). <strong>Đã gõ ô tìm thì màn tìm trên mọi mã có trong sổ giá</strong>, kể cả mã đã mua nhưng chưa nằm trong định mức nào (cột số sản phẩm dùng của mã đó bằng 0), không cần đổi nút phạm vi. Bấm tiêu đề cột để xếp; <strong>Xuất Excel</strong> ra đúng bộ lọc và thứ tự đang xem.</p>
 
 <p><strong>Giữ nguyên bộ lọc khi tải lại:</strong> ô tìm, chip nhóm, phạm vi mã, khoảng ngày, cột đang xếp, trang và số dòng mỗi trang đều nằm trên địa chỉ của trang. Bấm F5 hoặc gửi địa chỉ cho đồng nghiệp là mở lại đúng bộ lọc đó; bấm <strong>Quay lại</strong> của trình duyệt không bị kẹt qua từng lần lọc.</p>
 

@@ -1,18 +1,22 @@
-from sqlalchemy import BigInteger, Index, Numeric, String, Text
+from sqlalchemy import BigInteger, Index, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
 
 
 class PurchaseHistory(Base, AuditMixin):
-    """Lịch sử mua hàng — SNAPSHOT 1 dòng hàng của ĐMH tại thời điểm dòng đó vào `completed`.
+    """Lịch sử mua hàng — mỗi dòng hàng của ĐMH một bản ghi, có từ lúc HÀNG VỀ KHO (bao-CR-790).
 
     1 record = 1 dòng hàng (line item). ĐMH có 2 dòng → 2 record.
     Phục vụ 2 màn: chi tiết Sản phẩm (lọc `product_code`) và chi tiết NCC (lọc `supplier_code`).
 
-    BẤT BIẾN: ghi 1 lần, không sửa/xóa. An toàn vì dòng đã `completed` là điểm cuối và bị
-    khóa sửa (purchase_order/service.py) — `auto_advance_line` bỏ qua dòng đã ở điểm cuối nên
-    hook ghi chỉ chạy đúng 1 lần cho mỗi dòng. `po_item_id` unique là lớp bảo hiểm.
+    HAI GIAI ĐOẠN (`line_stage`, cùng bộ mã `LedgerLineStage` của sổ giá):
+    - ĐANG MỞ (1): dòng ĐMH đã nhận hàng (SL nhận > 0) nhưng chưa hoàn thành. Còn đồng bộ theo ĐMH — đổi giá / SL / VAT / NCC
+      thì cập nhật đúng bản ghi; dòng hủy, SL nhận về 0, ĐMH bị hủy / bỏ duyệt / xóa thì bản ghi bị xóa
+      (`purchase_history.service.sync_po_history`).
+    - ĐÃ CHỐT (2): dòng vào `completed` (`snapshot_line`) hoặc dữ liệu cũ. BẤT BIẾN: không sửa / xóa nữa. An toàn vì dòng
+      `completed` là điểm cuối và bị khóa sửa — `auto_advance_line` bỏ qua dòng đã ở điểm cuối. `po_item_id` unique là lớp
+      bảo hiểm: một dòng ĐMH chỉ có MỘT bản ghi suốt đời (id giữ nguyên khi chuyển từ đang mở sang đã chốt).
 
     Ngoài ra bảng còn chứa DỮ LIỆU CŨ (`source='legacy'`) nhập từ file Excel lịch sử mua hàng
     của giai đoạn trước khi có hệ thống: không có ĐMH nên `po_item_id`/`po_code` rỗng.
@@ -32,7 +36,10 @@ class PurchaseHistory(Base, AuditMixin):
     # MySQL cho phép nhiều NULL trong unique index nên vẫn giữ được lớp chống ghi trùng
     # cho dòng sinh từ luồng chạy thật.
     po_item_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
-    # system = chốt tự động khi dòng ĐMH vào `completed` | legacy = nhập từ file lịch sử cũ
+    # bao-CR-790: giai đoạn của bản ghi (bộ mã `LedgerLineStage`): 1 = đang mở (đã nhận hàng, còn đồng bộ theo ĐMH),
+    # 2 = đã chốt (dòng hoàn thành hoặc dữ liệu cũ, bất biến). Dòng có từ trước migration `phstage790` đều là 2.
+    line_stage: Mapped[int] = mapped_column(SmallInteger, default=2, server_default="2")
+    # system = sinh từ dòng ĐMH của hệ thống (từ lúc nhận hàng) | legacy = nhập từ file lịch sử cũ
     source: Mapped[str] = mapped_column(String(10), default="system", index=True)
     # Khóa nguồn của dòng dữ liệu cũ (file + sheet + số dòng) — để truy ngược và chống nhập trùng.
     # NULL với dòng sinh từ hệ thống.
@@ -56,7 +63,7 @@ class PurchaseHistory(Base, AuditMixin):
     price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)              # % VAT của dòng
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
-    completed_at: Mapped[str] = mapped_column(String(10), default="")         # ngày dòng vào `completed`
+    completed_at: Mapped[str] = mapped_column(String(10), default="")         # ngày dòng vào `completed`; rỗng khi còn đang mở
 
     # ── Phần còn lại của "Thông tin chung" + dòng hàng (JSON, không lọc/sort) ──
     # {pr_code, misa_code, nspt, payment_terms, is_urgent, po_note, department,

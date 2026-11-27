@@ -114,6 +114,64 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-791 | Bảng giá VTBB: ô tìm kiếm tìm trên mọi mã đã mua, kể cả mã chưa có trong định mức bao bì
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** tìm mã CHT0230 (chai đã mua qua đơn mua hàng PO01260) ở Bảng giá VTBB thì không ra. Màn mặc định chỉ liệt kê
+mã nằm trong định mức bao bì hoặc có báo giá; mã này chưa thuộc định mức nào. Trên prod có 1.135 mã thuộc định mức trong khi
+2.650 mã có lần mua, nên hơn nửa số mã đã mua không tìm được nếu không đổi nút phạm vi.
+
+**Đã làm**
+- Đã gõ ô tìm thì Bảng giá tìm trên mọi mã có trong sổ giá (cả màn hình lẫn tệp xuất Excel). Mã ngoài định mức hiện với cột
+  số sản phẩm dùng bằng 0.
+- Không gõ gì thì danh sách vẫn theo nút phạm vi đang chọn như cũ. Ô chọn mã của màn Tác động giá giữ phạm vi định mức.
+
+**Kiểm:** 4 bài kiểm mới; các bài Bảng giá và Tác động giá cũ vẫn xanh.
+
+Mã nguồn: `backend/app/modules/packaging_cost/price_list_service.py`.
+Kiểm: `test/backend/test_bang_gia_tim_moi_ma_cr791.py`.
+
+## bao-CR-790 | Lịch sử mua hàng ghi ngay khi hàng về kho và đổi theo đơn mua hàng tới khi dòng hoàn thành
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** lịch sử mua hàng (khối dùng ở chi tiết sản phẩm, chi tiết nhà cung cấp, popup tham chiếu giá khi lập đơn, trợ lý
+AI) chỉ được ghi khi một dòng đơn mua hàng hoàn thành, tức đã thanh toán đủ. Thực tế trên prod 745 dòng đã nhận hàng mà chỉ 5
+dòng có lịch sử, nên tra lần mua gần nhất gần như không thấy gì từ tháng 8/2026. Yêu cầu: hàng về kho là ghi lịch sử ngay;
+sửa giá trên đơn thì lịch sử đổi theo; đơn hủy thì gỡ.
+
+**Đã làm**
+- Bản ghi lịch sử có hai giai đoạn (cột mới `line_stage`): *đang mở* từ lúc dòng nhận hàng, *đã chốt* khi dòng hoàn thành.
+  Một dòng đơn chỉ có một bản ghi suốt đời.
+- Bản ghi đang mở đi theo đơn mua hàng: đổi giá, số lượng, VAT, nhà cung cấp thì cập nhật đúng bản ghi đó; dòng hủy, số lượng
+  nhận về 0, đơn bị hủy, bỏ duyệt hoặc xóa thì bản ghi bị xóa. Việc đồng bộ chạy sau mọi thao tác đổi đơn: lưu đơn, lưu lần
+  nhận hàng (kể cả qua trợ lý AI), đổi trạng thái đơn, xóa đơn, hủy hoặc tiếp tục dòng, nhập đơn từ Excel, hoàn tác lô nhập.
+- Dòng hoàn thành thì chốt đúng bản ghi đang mở (giữ id) và chốt dòng sổ giá như trước. Bản ghi đã chốt và dữ liệu cũ nạp từ
+  Excel không bị đụng.
+- Sổ giá của cụm Giá nguyên vật liệu sản xuất không đổi hành vi: bản ghi lịch sử đang mở không chốt dòng sổ giá, dòng sổ vẫn
+  theo đơn mua hàng.
+- Script `scripts/sync_po_purchase_history.py` dựng bản ghi cho các dòng đã nhận hàng từ trước (mặc định chạy thử, `--apply`
+  mới ghi, chạy lại không đổi gì).
+- Popup lịch sử ở hai giao diện đổi chữ *lần mua đã hoàn thành* thành *lần mua đã nhận hàng*. Cập nhật tài liệu chức năng
+  Lịch sử mua hàng.
+- Lỗi ở phần lịch sử không chặn thao tác trên đơn: chạy trong một bước có thể lùi, hỏng thì ghi log.
+
+**Chưa làm:** sửa giá trên đơn đã duyệt hiện vẫn bị khóa trên màn hình (chỉ sửa được qua bỏ duyệt rồi duyệt lại, hoặc script
+vận hành); nút sửa giá sau duyệt cho quản lý là việc riêng, chờ quyết định. Script sửa giá vận hành phải gọi thêm hai hàm đồng
+bộ sổ giá và lịch sử (đã ghi trong tài liệu chức năng).
+
+**Kiểm:** 20 bài kiểm mới (sinh bản ghi lúc nhận hàng, đổi giá, sáu tình huống gỡ bản ghi, chốt khi hoàn thành, sổ giá
+không bị chốt sớm, ba đường thật của đơn mua hàng, lỗi không làm hỏng phiên, bài canh các điểm đồng bộ); hai lượt chạy các bài liên quan đều xanh: 510 bài (sổ giá, lịch sử mua, đơn mua hàng, công nợ, tác động giá) và 247 bài (trợ lý AI, nhập đơn từ Excel, các bài chụp kết quả lưu đơn). Ruff sạch.
+
+Mã nguồn: `backend/app/modules/purchase_history/` · `backend/app/modules/product_price/ledger_sync_service.py` ·
+`backend/app/modules/purchase_order/edit_service.py` · `progress_service.py` · `backend/app/modules/import_tool/` ·
+`backend/scripts/sync_po_purchase_history.py` · `backend/migrations/versions/phstage790_lich_su_mua_them_giai_doan.py`.
+Kiểm: `test/backend/test_lich_su_mua_tu_luc_nhan_hang_cr790.py`.
+Tài liệu: `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`.
+
 ## van-hanh-vps-dev-2711 | VPS dev: tài khoản SSH giới hạn cho ứng dụng app-ganic (app.degoorganic.com) và gỡ ERPNext học nghiệp vụ
 - status: xong
 - date: 2026-11-27

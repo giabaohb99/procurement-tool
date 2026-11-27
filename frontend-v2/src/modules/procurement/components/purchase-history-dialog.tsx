@@ -52,7 +52,7 @@ interface PurchaseHistoryDialogProps {
 }
 
 /**
- * Các lần mua đã hoàn thành của đúng mã hàng — dùng chung cho YCMH và ĐMH.
+ * Các lần mua đã nhận hàng của đúng mã hàng (bao-CR-790: lịch sử có từ lúc hàng về kho) — dùng chung cho YCMH và ĐMH.
  *
  * Chọn một dòng chỉ cập nhật bản nháp hiện tại; người dùng vẫn phải bấm Lưu
  * phiếu để ghi nhận. KHÔNG lọc theo NCC của chứng từ đang lập: mục đích chính
@@ -128,7 +128,7 @@ export function PurchaseHistoryDialog({
           <DialogTitle>Lịch sử mua hàng gần nhất</DialogTitle>
           <DialogDescription className="truncate">
             {productCode}
-            {productName ? ` · ${productName}` : ''} · {total} lần mua đã hoàn thành
+            {productName ? ` · ${productName}` : ''} · {total} lần mua đã nhận hàng
           </DialogDescription>
         </DialogHeader>
 
