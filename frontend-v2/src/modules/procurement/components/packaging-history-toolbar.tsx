@@ -2,12 +2,9 @@
  * duoc-CR-784 — thanh chọn + lọc của tab Lịch sử mua hàng.
  *
  * Hàng 1: chế độ (theo mã VTBB / theo mã sản phẩm) + ô chọn nhiều mã (dùng lại `PackagingCodePicker`; để trống = tất cả).
- * Hàng 2: ô tìm, nhà cung cấp, khoảng ngày mua. Lựa chọn mã nằm ở URL (do trang giữ), bộ lọc còn lại ở state trang.
+ * Hàng 2: nhà cung cấp, khoảng ngày mua (ô tìm chữ thứ hai bỏ 27/11/2026: ô chọn mã ở hàng 1 đã tìm theo mã, tên, nhóm và tên NCC). Lựa chọn mã nằm ở URL (do trang giữ), bộ lọc còn lại ở state trang.
  */
-import { Search } from 'lucide-react'
-
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
-import { Input } from '@/shared/ui/input'
 import { MultiPicker } from '@/shared/ui/multi-picker'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 
@@ -89,16 +86,6 @@ export function PackagingHistoryToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            aria-label="Tìm lần mua"
-            placeholder="Tìm mã, tên, nhà cung cấp, kho…"
-            value={filters.q}
-            onChange={(event) => patch({ q: event.target.value })}
-          />
-        </div>
         <div className="w-56">
           <MultiPicker<string>
             value={filters.suppliers}

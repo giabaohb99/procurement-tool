@@ -47,9 +47,7 @@ export default function PackagingHistoryToolbar({
         </div>
       </div>
       <div className="pkg-row">
-        <div className="pkg-search">
-          <input aria-label="Tìm lần mua" placeholder="Tìm mã, tên, nhà cung cấp, kho…" value={filters.q} onChange={(e) => patch({ q: e.target.value })} />
-        </div>
+        {/*  Ô tìm chữ thứ hai bỏ 27/11/2026: ô chọn mã ở hàng trên đã tìm theo mã, tên, nhóm và tên NCC. */}
         <div style={{ width: 230 }}>
           <MultiCheckSelect value={filters.suppliers} placeholder="Nhà cung cấp"
             options={suppliers.map((s) => ({ value: s.code, label: s.name, hint: s.code }))} onChange={(v) => patch({ suppliers: v })} />

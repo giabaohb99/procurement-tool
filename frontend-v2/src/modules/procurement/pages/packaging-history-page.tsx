@@ -58,7 +58,8 @@ export function PackagingHistoryPage() {
   const once = useSingleFlight()
   const isProduct = selection.mode === 'product'
 
-  const codeOptionsQuery = usePackagingCodeOptions()
+  //  Mọi mã có trong sổ giá (27/11/2026), tìm được cả theo tên NCC — như Giá mua gần nhất / Bảng giá.
+  const codeOptionsQuery = usePackagingCodeOptions(true, 'all')
   const fgOptionsQuery = usePackagingFgOptions(isProduct)
   const codeOptions = useMemo(
     () => sortPackagingCodeOptions(codeOptionsQuery.data ?? []),
