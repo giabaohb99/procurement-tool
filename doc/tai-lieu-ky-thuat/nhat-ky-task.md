@@ -114,6 +114,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-795 | Hướng dẫn sử dụng lịch sử mua hàng theo luật ghi từ lúc nhận hàng và nút Sửa giá đơn mua hàng
+- status: dang-lam
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** bài **Lịch sử mua hàng & Tham chiếu giá** còn ghi luật cũ: lần mua chỉ vào lịch sử khi dòng Hoàn thành và số liệu giữ nguyên mãi. Từ bao-CR-790 lịch sử ghi từ lúc nhận hàng, và bao-CR-794 thêm nút **Sửa giá** cho đơn đã duyệt.
+
+**Đã làm**
+- Script vá bài dựng tay **Lịch sử mua hàng & Tham chiếu giá** theo đúng khuôn các script vá bài Thu mua: tìm bài theo tiêu đề, thay bốn cặp chữ cũ sang mới, câu cũ không khớp thì báo và bỏ qua, có chạy thử, nạp lại kho tìm kiếm của Trợ lý cho bài vừa đổi, chạy lại không đổi gì thêm.
+- Nội dung mới: lần mua vào lịch sử ngay khi dòng của đơn đã duyệt bắt đầu nhận hàng; khi dòng chưa Hoàn thành thì lịch sử đi theo đơn (sửa đơn giá, số lượng, VAT thì đổi theo; dòng hủy, đơn hủy, Hủy duyệt, xóa thì rút khỏi lịch sử); dòng Hoàn thành thì chốt, không đổi nữa; đơn đã duyệt cần đổi đơn giá thì người có quyền duyệt bấm **Sửa giá**. Câu báo trống ở mục cuối đổi theo.
+- Bài **AI riêng của bạn làm được gì**: ca đơn đã nhận hàng thêm ý cần đổi đơn giá thì người có quyền duyệt bấm **Sửa giá** trên web, kèm các trường hợp không dùng được.
+- Tài liệu chức năng Lịch sử mua hàng trỏ tới bài hướng dẫn và script vá.
+- Đã chạy trên dev: bài Lịch sử mua hàng (id 34) đổi đủ bốn chỗ, bài AI riêng làm được gì cập nhật, kho tìm kiếm nạp lại cho hai bài.
+
+**Còn lại:** soát hai bài đã vá theo nút Sửa giá trên devhelp sau khi dev dựng xong bao-CR-794. Chưa chạy trên prod.
+
+Mã nguồn: `backend/scripts/seed_help_lich_su_mua_cr795.py` · `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py` · `doc/erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md`
+Deploy: dev (chạy seed), prod chưa
+
 ## bao-CR-794 | Đơn mua hàng: nút Sửa giá sau duyệt cho người có quyền duyệt, dùng được cả khi đơn đã nhận hàng
 - status: xong
 - date: 2026-11-27
@@ -429,7 +449,7 @@ Mã nguồn: `backend/app/modules/product_price/`, `backend/app/modules/packagin
 Kiểm: `test/backend/test_*_cr784.py`.
 Tham chiếu: `doc/erp/thu-mua/plans/261120-tac-dong-gia-bao-bi/plan.md`, `doc/erp/thu-mua/plans/261125-toi-uu-bang-gia-nvl-duoc-cr-784/plan.md`, `doc/erp/thu-mua/tai-lieu-ky-thuat/mo-hinh-du-lieu-gia-nvl-san-xuat.md`.
 Commit: 1357b785 (bản đầu) … c8655f45 (lượt cuối 26/11/2026).
-Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod. Dev 27/11/2026 lần hai (erp-v2 3b306d0e): dựng lại api, celery-worker, celery-beat, giao diện ERP và giao diện cũ cho các việc ngày 27/11 (ô chọn nhóm, ô chọn mã, bố cục thanh lọc, đảo màu tăng đỏ giảm xanh, cố định cột tên, thẻ Mã đã chọn), không có migration; seed lại 10 bài hướng dẫn, cẩm nang quy-trinh-thu-mua lên phiên bản 12, nạp lại chỉ mục 58 đoạn (kho 204 trên 204 bài). Chưa lên prod.
+Deploy: dev 20/11/2026 (erp-v2 1357b785: dựng api, celery-worker, celery-beat và giao diện ERP; migration `pkgcost784`; nạp sổ giá 6.606 dòng từ lịch sử mua hàng và dòng ĐMH đã duyệt, kiểm lệch sạch); prod 26/11/2026 bản 2.25.0 (main 02d271d8, dump prod_truoc_release_20261126_1659.sql.gz); 27/11/2026 seed lại bài hướng dẫn và nạp lại chỉ mục trên dev (erp-v2 4b147899) và prod. Dev 27/11/2026 lần hai (erp-v2 3b306d0e): dựng lại api, celery-worker, celery-beat, giao diện ERP và giao diện cũ cho các việc ngày 27/11 (ô chọn nhóm, ô chọn mã, bố cục thanh lọc, đảo màu tăng đỏ giảm xanh, cố định cột tên, thẻ Mã đã chọn), không có migration; seed lại 10 bài hướng dẫn, cẩm nang quy-trinh-thu-mua lên phiên bản 12, nạp lại chỉ mục 58 đoạn (kho 204 trên 204 bài). Dev 27/11/2026 lần ba (erp-v2 924a63b8, sau đợt deploy `637a310e` của bao-CR-792 đã đưa lên phần lớn việc chiều 27/11): dựng lại api, celery-worker, celery-beat, giao diện ERP và giao diện cũ cho ô tìm có gợi ý và thanh lọc một hàng của Lịch sử mua hàng, không có migration; seed lại 10 bài hướng dẫn, nạp lại chỉ mục 62 đoạn (kho 204 trên 204 bài). Chưa lên prod.
 
 ## duoc-CR-783-luot-3 | Xóa vĩnh viễn và đưa vào lưu trữ dự án, chuyển nhóm từ cây (menu và kéo thả), ô chọn lọc nhóm ở màn Dự án
 - status: xong

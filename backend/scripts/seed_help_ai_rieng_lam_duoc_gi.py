@@ -109,7 +109,7 @@ thì VAT của dòng phải để 0.</p>
 <tr><td>Đơn đang chờ duyệt</td><td>Nhờ người duyệt <strong>Trả lại</strong>; đơn về Bị trả lại rồi mới nhờ AI sửa.</td></tr>
 <tr><td>Đơn đã duyệt, chưa nhận hàng</td><td>Người có quyền duyệt bấm <strong>Hủy duyệt</strong> trên web, đơn về Nháp, rồi mới nhờ AI sửa.</td></tr>
 <tr><td>Đơn đã nhận hàng, có dòng Hoàn thành hoặc đã có yêu cầu thanh toán</td><td>Không hủy duyệt được, nên cũng không sửa qua
-AI. Liên hệ thu mua / kế toán.</td></tr>
+AI. Cần đổi <strong>đơn giá</strong> thì người có quyền duyệt bấm <strong>Sửa giá</strong> trên chi tiết đơn ở web (dùng được cả khi hàng đã về; không dùng được khi dòng đã Hoàn thành, đơn có yêu cầu thanh toán đã gửi duyệt hoặc công nợ hàng đã trả). Việc khác liên hệ thu mua / kế toán.</td></tr>
 <tr><td>Thêm, bỏ dòng; đổi mã hàng, nhà cung cấp, công ty, đồng tiền</td><td>Làm trên màn ĐMH.</td></tr>
 <tr><td>Đơn ngoài phạm vi bạn được sửa</td><td>AI báo không tìm thấy đơn trong phạm vi của bạn.</td></tr>
 </tbody>

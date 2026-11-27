@@ -4,6 +4,8 @@ Tài liệu mô tả **Lịch sử mua hàng** — sổ ghi lại **từng lần
 
 Vấn đề gốc: người lập đơn không nhớ lần trước mua mặt hàng này thế nào, nên mỗi lần lại đi hỏi người khác hoặc mở file Excel cũ. Giá cả thì thay đổi theo thời gian, không có mốc so sánh thì không biết NCC báo giá lần này là đắt hay rẻ.
 
+**Bài hướng dẫn:** *Lịch sử mua hàng & Tham chiếu giá* (thẻ Dành cho Nhân viên Mua hàng, dựng tay) — vá theo mục 6 bằng `backend/scripts/seed_help_lich_su_mua_cr795.py` (bao-CR-795). Nội dung ở đây và ở bài phải khớp nhau.
+
 **Không phải màn hình riêng, không có mục menu.** Đây là một khối dữ liệu dùng chung, hiện ở 3 chỗ (mục 1). Ghi vào **tự động**, không ai nhập tay.
 
 > **Khác với báo cáo mua hàng (`08-he-thong-bao-cao.md`)**: báo cáo là số liệu tổng hợp theo kỳ để nhìn xu hướng. Lịch sử mua hàng là **từng dòng giao dịch một**, phục vụ đúng một việc: tra lại một mã hàng cụ thể lúc đang lập đơn.
