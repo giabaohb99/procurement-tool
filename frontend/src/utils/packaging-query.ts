@@ -51,7 +51,8 @@ export function buildCodeMatcher(query: string, groups: readonly string[]): (o: 
   }
   const terms = folded.split(/[\s,]+/).filter(Boolean)
   return (o) => {
-    const hay = fold(`${o.code} ${o.name} ${o.group}`)
+    //  Tên NCC từng bán mã cũng tìm được (27/11/2026): gõ "phl" ra các mã từng mua của PHL.
+    const hay = fold(`${o.code} ${o.name} ${o.group} ${o.suppliers ?? ''}`)
     return terms.every((t) => hay.includes(t))
   }
 }

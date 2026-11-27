@@ -22,7 +22,12 @@ export interface PackagingCodeOption {
   usage: number
   /** Giá mới theo bảng giá; `null` = chưa có giá. */
   new: number | null
+  /** Tên các nhà cung cấp từng bán mã này (nối " · ") — gõ tên NCC vào ô chọn là ra mã (27/11/2026). */
+  suppliers?: string
 }
+
+/** Phạm vi danh sách mã của ô chọn: `bom` = mã trong định mức (màn Tác động), `all` = mọi mã có trong sổ giá. */
+export type PackagingCodeOptionScope = 'bom' | 'all'
 
 /** Thân của `POST /impact` và `POST /impact/export`. */
 export interface PackagingImpactRequest {

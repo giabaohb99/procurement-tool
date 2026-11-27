@@ -19,7 +19,7 @@ const ROOT = 'procurement'
 export const packagingCostKeys = {
   /** Gốc chung — dọn sau khi ghi báo giá / định mức (giá cũ-mới đổi theo). */
   all: [ROOT, 'packagingCost'] as const,
-  codeOptions: () => [ROOT, 'packagingCost', 'codeOptions'] as const,
+  codeOptions: (scope: 'bom' | 'all' = 'bom') => [ROOT, 'packagingCost', 'codeOptions', scope] as const,
   impact: (body: PackagingImpactRequest) => [ROOT, 'packagingCost', 'impact', body] as const,
   priceList: (params: PackagingPriceListParams) =>
     [ROOT, 'packagingCost', 'priceList', params] as const,

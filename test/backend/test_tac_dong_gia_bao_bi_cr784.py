@@ -323,8 +323,23 @@ def test_code_options_chi_ma_dang_dung_trong_dinh_muc(api, db):
     add_quote(db, "NAP0085", 260, "2026-07-01")
     items = api.get(OPTIONS).json()["data"]["items"]
     assert {r["code"] for r in items} == {"CPT0105", "NAP0085", "NHG0001", "NDT0001", "THU0001"}
-    assert set(items[0]) == {"code", "name", "group", "usage", "new"}
+    assert set(items[0]) == {"code", "name", "group", "usage", "new", "suppliers"}
     assert api.get(OPTIONS, params={"q": "nap"}).json()["data"]["items"][0]["code"] == "NAP0085"
+
+
+def test_code_options_scope_all_them_ma_ngoai_dinh_muc_va_ten_ncc(api, db):
+    """27/11/2026: `scope=all` cho ô chọn mã của Giá mua gần nhất / Bảng giá / Lịch sử; `suppliers` để gõ tên NCC ra mã."""
+    from app.modules.supplier.model import Supplier
+    db.add(Supplier(code="PHL", name="Công ty Cổ phần PHL"))
+    db.commit()
+    add_ledger(db, "KHAC001", 10, "2026-03-01", supplier="PHL")
+    add_ledger(db, "KHAC001", 12, "2026-04-01", supplier="PHL")          # trùng NCC: chỉ một tên
+    add_ledger(db, "KHAC001", 0, "2026-05-01", supplier="NCCGIA0")      # giá 0 không tính
+    bom_only = {r["code"] for r in api.get(OPTIONS).json()["data"]["items"]}
+    assert "KHAC001" not in bom_only
+    items = {r["code"]: r for r in api.get(OPTIONS, params={"scope": "all"}).json()["data"]["items"]}
+    assert "KHAC001" in items and items["KHAC001"]["suppliers"] == "Công ty Cổ phần PHL"
+    assert api.get(OPTIONS, params={"scope": "khac"}).status_code == 422
 
 
 # ── Xuất Excel ──────────────────────────────────────────────────────────────────

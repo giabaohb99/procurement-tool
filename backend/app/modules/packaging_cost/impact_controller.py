@@ -20,6 +20,7 @@ from app.core.response import success
 from . import export_columns as xl
 from .impact_schema import ImpactRequest
 from .history_controller import router as history_router
+from .code_options_service import supplier_names_by_code
 from .impact_service import compute_impact
 from .last_prices_controller import router as last_prices_router
 from .last_prices_controller import shared_view_scope
@@ -124,15 +125,22 @@ def price_list_export(q: str = Query("", max_length=100), group: str = Query("",
 
 @router.get("/code-options")
 def code_options(q: str = Query("", max_length=100), group: str = Query("", max_length=50),
+                 scope: str = Query("bom", pattern="^(bom|all)$"),
                  db: Session = Depends(get_db),
                  user=Depends(require_any(*((entity, "read") for entity in PACKAGING_ENTITIES)))):
-    """Ô chọn nhiều mã của màn Tác động / Lịch sử / Bảng giá: mọi mã đang dùng trong định mức, kèm `{code, name, group, usage, new}`.
+    """Danh sách mã cho ô chọn nhiều mã: `{code, name, group, usage, new, suppliers}`, trả đủ, giao diện lọc tại chỗ.
 
-    Trả đủ (~1.500 mã), không phân trang — giao diện lọc tại chỗ. Đường dùng chung (bao-CR-792): quyền `read` trên BẤT KỲ khóa
-    nào của cụm Giá NVL sản xuất; giá `new` tính trên HỢP phạm vi pháp nhân của các khóa người xem giữ (`shared_view_scope`).
+    `scope=bom` (mặc định, màn Tác động): chỉ mã đang dùng trong định mức (~1.500). `scope=all` (Giá mua gần nhất, Bảng giá,
+    Lịch sử mua hàng, 27/11/2026): thêm mọi mã có trong sổ giá. `suppliers` = tên các nhà cung cấp từng bán mã đó (nối bằng
+    " · ", tối đa 20 tên) để gõ tên NCC vào ô là ra mã. Đường dùng chung (bao-CR-792): quyền `read` trên BẤT KỲ khóa nào của
+    cụm Giá NVL sản xuất; giá `new` và tên NCC tính trên HỢP phạm vi pháp nhân của các khóa người xem giữ (`shared_view_scope`).
     """
-    rows = build_price_list(db, q=q, group=group, scope="bom", scope_cond=shared_view_scope(db, user), new_only=True)
-    return success({"items": [{k: r[k] for k in ("code", "name", "group", "usage", "new")} for r in rows if r["usage"] > 0]})
+    cond = shared_view_scope(db, user)
+    rows = build_price_list(db, q=q, group=group, scope=scope, scope_cond=cond, new_only=True)
+    suppliers = supplier_names_by_code(db, cond)
+    keep = (lambda r: True) if scope == "all" else (lambda r: r["usage"] > 0)
+    return success({"items": [{**{k: r[k] for k in ("code", "name", "group", "usage", "new")},
+                               "suppliers": suppliers.get(r["code"], "")} for r in rows if keep(r)]})
 
 
 router.include_router(last_prices_router)

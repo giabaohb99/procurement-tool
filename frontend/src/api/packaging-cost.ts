@@ -61,9 +61,12 @@ export async function purgeBatchData(batchId: number | string, includeEdited: bo
   return r.data.data
 }
 
-/** Mã đang dùng trong định mức (~1.500) cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. */
-export async function fetchCodeOptions(): Promise<PackagingCodeOption[]> {
-  const r = await api.get(`${BASE}/code-options`)
+/**
+ * Danh sách mã cho ô chọn nhiều — nạp một lần, lọc ở trình duyệt. `bom` (mặc định, màn Tác động) = mã đang dùng trong định
+ * mức (~1.500); `all` = mọi mã có trong sổ giá (Giá mua gần nhất, Bảng giá, Lịch sử mua hàng). Mỗi mã kèm tên NCC từng bán.
+ */
+export async function fetchCodeOptions(scope: 'bom' | 'all' = 'bom'): Promise<PackagingCodeOption[]> {
+  const r = await api.get(`${BASE}/code-options`, scope === 'all' ? { params: { scope } } : undefined)
   const d = r.data.data
   return Array.isArray(d) ? d : (d?.items ?? [])
 }

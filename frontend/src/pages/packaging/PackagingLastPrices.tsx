@@ -35,7 +35,7 @@ export default function PackagingLastPrices() {
   const [codeOptions, setCodeOptions] = useState<PackagingCodeOption[]>([])
   const [codesLoading, setCodesLoading] = useState(true)
   useEffect(() => {
-    fetchCodeOptions().then((d) => setCodeOptions(sortCodeOptions(d)))
+    fetchCodeOptions('all').then((d) => setCodeOptions(sortCodeOptions(d)))
       .catch(() => toast.error('Không tải được danh sách mã vật tư bao bì.'))
       .finally(() => setCodesLoading(false))
   }, [])
