@@ -131,12 +131,15 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Theo góp ý cùng ngày, ĐMH đang khóa vẫn nhập lại được **Mã đơn MISA** (đổi công ty thường phải lập lại đơn trên MISA dưới pháp nhân mới): màn Sửa ĐMH của cả hai giao diện mở riêng ô này kèm nút Lưu, các ô khác vẫn khóa; đường của trợ lý AI vẫn bị chặn hẳn để không báo nhầm là đã ghi. Chuông báo khi duyệt đổi công ty nhắc người phụ trách nhập lại mã.
 - Viết HDSD vào 4 bài trên Trung tâm trợ giúp (script seed riêng, chạy lại không sinh trùng), cẩm nang quy trình thu mua và tài liệu chức năng YCMH, ĐMH.
 
-**Kiểm:** 28 bài kiểm mới của CR này cùng các bài kiểm backend liên quan xanh, ruff 0 lỗi; giao diện mới: eslint 0 lỗi, 2.055 bài kiểm phân hệ Thu mua xanh, typecheck sạch ở các tệp của CR (lỗi duy nhất còn lại nằm ở một tệp chưa commit của người khác); giao diện cũ giữ đúng 4 lỗi kiểu cũ. Đã chạy migration và seed HDSD trên máy local.
+**Kiểm:** 28 bài kiểm mới của CR này cùng các bài kiểm backend liên quan xanh, ruff 0 lỗi; giao diện mới: eslint 0 lỗi, 2.055 bài kiểm phân hệ Thu mua xanh, typecheck sạch ở các tệp của CR (lỗi duy nhất còn lại nằm ở một tệp chưa commit của người khác); giao diện cũ giữ đúng 4 lỗi kiểu cũ. Đã chạy migration và seed HDSD trên máy local. Đã thử tay toàn luồng trên giao diện cũ ở máy local bằng phiếu thử PYC-TEST803 / PO00366: trả về, chỉ sửa được công ty, ĐMH khóa chỉ nhập lại được Mã MISA, gửi duyệt, duyệt lại thì ĐMH nhận công ty mới và mở khóa; phiếu có ĐMH đã nhận hàng bị chặn đúng câu.
 
-**Còn lại:** chạy seed HDSD và nạp lại kho tìm kiếm trợ giúp trên dev, phát hành phiên bản mới của skill cẩm nang thu mua; soát thật trên dev bằng một phiếu Đang mua hàng đủ điều kiện.
+**Kết quả:** đã lên dev ngày 28/11/2026 (migration `prret803`, devthumua / deverp / devhelp trả 200); seed HDSD 4 bài và nạp lại kho tìm kiếm trợ giúp trên dev; phát hành phiên bản 15 của skill cẩm nang thu mua trên dev. Chưa lên prod.
+
+**Còn lại:** soát thật trên dev bằng một phiếu Đang mua hàng đủ điều kiện.
 
 Mã nguồn: `purchase_request/invoice_company_return_service.py`, `core/pr_return_codes.py`, migration `prret803`, `purchase_order/controller.py` (`_in_scope`), `frontend-v2/.../invoice-company-return-lock.ts`, `frontend/src/pages/PurchaseRequestDetail.tsx`, `PurchaseOrderDetail.tsx`, `backend/scripts/seed_help_tra_ve_sua_cong_ty_cr803.py`
 Tham chiếu: bài kiểm `test/backend/test_tra_ve_sua_cong_ty_hoa_don_cr803.py`
+Deploy: dev 28/11/2026, commit 84c1f6cf
 
 ## bao-CR-802 | HDSD: cách sửa giá thứ hai của đơn mua hàng (Sửa giá trong bảng)
 - status: xong
