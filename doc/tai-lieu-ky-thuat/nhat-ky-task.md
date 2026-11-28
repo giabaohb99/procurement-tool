@@ -164,6 +164,10 @@ Mã nguồn: `backend/app/modules/packaging_cost/history_controller.py` · `hist
 `frontend-v2/src/modules/procurement/pages/` (màn lịch sử nguyên liệu) · `frontend/src/pages/packaging/`.
 Kiểm: `test/backend/test_quyen_rieng_gia_nguyen_lieu_cr800.py`.
 Tài liệu: `doc/erp/thu-mua/chuc-nang/21-tac-dong-gia-bao-bi.md` · `backend/scripts/seed_help_gia_bao_bi_cr784.py`.
+Deploy: dev 28/11/2026 (erp-v2 ba7cbe9b, api + hai giao diện). Thử bằng tài khoản thật qua đường API: không chọn mã thì ra 208
+lần mua của 73 mã nguyên liệu; chọn một mã thì ra các lần mua của mã đó kèm điểm biểu đồ, xuất được; cùng mã đó ở lịch sử
+VTBB vẫn ra rỗng; người không có quyền bị chặn. Bài kiểm chạy lại sau khi gộp: backend 851 bài quanh cụm giá đạt. Đã seed lại
+HDSD cụm giá và nạp lại chỉ mục trên dev. Chưa bấm thử trên trình duyệt (khung trình duyệt hết phiên đăng nhập). Prod chưa.
 
 ## bao-CR-800 | Giá nguyên vật liệu sản xuất: Bảng giá nguyên liệu có quyền riêng và dữ liệu thật
 - status: xong
