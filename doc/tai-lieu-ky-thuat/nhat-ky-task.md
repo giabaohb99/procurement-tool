@@ -114,6 +114,30 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-802 | HDSD: cách sửa giá thứ hai của đơn mua hàng (Sửa giá trong bảng)
+- status: xong
+- date: 2026-11-27
+- list: Thu mua
+- pic: NSU209
+**Bối cảnh:** đơn mua hàng đã duyệt có hai cách sửa giá song song: hộp *Sửa giá* (bao-CR-794, đã có mục trong bài HDSD) và
+nút *Sửa giá trong bảng* (duoc-CR-797, đổi cả SL đặt và VAT ngay trong bảng dòng). Bài hướng dẫn mới chỉ nói cách thứ nhất,
+câu mở đầu còn ghi đổi số lượng hay VAT phải Hủy duyệt.
+
+**Đã làm**
+- Script vá bài HDSD dựng tay theo khuôn cr794: bài *Đơn mua hàng (PO)* sửa câu mở đầu mục *Sửa giá sau duyệt*, chèn mục
+  *Sửa giá trong bảng* (ai dùng, cách làm, lưu hoặc bỏ, SL đặt không dưới SL đã nhận, dòng bị chặn kèm lý do, sau khi lưu) và
+  bảng so hai cách; bài *Công nợ & Yêu cầu thanh toán* thêm đoạn yêu cầu thanh toán Nháp tự nạp lại theo số mới.
+- Cẩm nang trợ lý phần thu mua thêm cách thứ hai và cách chọn giữa hai cách; tài liệu chức năng 13 thêm mục riêng.
+- Nhãn đối chiếu với mã giao diện ERP mới và với màn thật trên dev (đơn PO00807: nút, thanh đáy *Thôi* / *Lưu giá mới*, bốn
+  ô mở ở cả ba dòng; không lưu gì, giá NAP0001 vẫn 800).
+
+**Kiểm:** chạy thử trên nội dung bài dev trước khi ghi; trên dev ghi thật 2 bài (#10, #14), chạy lại báo đã có; trang
+devhelp hiện đủ mục mới.
+
+Mã nguồn: `backend/scripts/seed_help_sua_gia_trong_bang_cr802.py`, `backend/app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`,
+`doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md`.
+Deploy: dev 27/11/2026 (seed, `reindex_help_rag.py --purge-orphans`, cẩm nang quy-trinh-thu-mua phiên bản 14). Prod chưa chạy.
+
 ## bao-CR-801 | Bảng giá nguyên liệu: bấm mã xem lịch sử mua hàng của nguyên liệu
 - status: xong
 - date: 2026-11-27

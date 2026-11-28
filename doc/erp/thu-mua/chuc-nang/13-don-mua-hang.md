@@ -50,7 +50,7 @@ Từ lúc đơn sang `approved` (và giữ nguyên ở `partial` / `received`), 
 
 Ngoài ra ô **Ngày giao chứng từ cho KT** (`document_delivery_date`) cũng để mở, dù phiếu hỗ trợ không liệt kê: bước tiến độ "Đã gửi ĐMH cho KT" lấy đúng ô này làm mốc (`_step_ok` trong `purchase_order/service.py`), khóa lại thì dòng hàng không bao giờ đi hết tiến độ được.
 
-Mọi ô còn lại đều khóa: **Mã hàng cho copy nhưng không cho sửa**; ĐVT, SL đặt NCC, Đơn giá, VAT% chỉ đọc. Cũng **không thêm dòng, không xóa dòng**. Riêng Đơn giá có đường sửa riêng cho người duyệt, xem mục *Sửa giá sau duyệt* bên dưới.
+Mọi ô còn lại đều khóa: **Mã hàng cho copy nhưng không cho sửa**; ĐVT, SL đặt NCC, Đơn giá, VAT% chỉ đọc. Cũng **không thêm dòng, không xóa dòng**. Riêng SL đặt, Đơn giá, VAT có hai đường sửa riêng cho người duyệt, xem mục *Sửa giá sau duyệt* và *Sửa giá trong bảng* bên dưới.
 
 Muốn đổi phần đã duyệt thì bấm **"Hủy duyệt"** (`POST /{id}/unapprove`, quyền `purchase_order:approve`, bắt buộc nhập lý do): đơn về **`draft`**, sửa xong phải **Gửi duyệt** rồi **Duyệt** lại — nên đơn nào cũng đi qua đủ cổng kiểm CR-095 một lần nữa. Hủy duyệt bị **chặn** khi:
 
@@ -76,6 +76,25 @@ Hủy duyệt bị chặn khi đơn đã nhận hàng, nên giá nhà cung cấp
 Giao diện: nút *Sửa giá* cạnh *Hủy duyệt* trên chi tiết đơn (cả hai giao diện), mở hộp *Sửa giá sau duyệt* liệt kê các dòng chưa Hoàn thành / Hủy với đơn giá hiện tại, ô đơn giá mới, chênh lệch thành tiền chưa VAT theo số lượng đã nhận và ô lý do.
 
 Mã: `purchase_order/price_adjust_service.py`. Test: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py`.
+
+### Sửa giá trong bảng (duoc-CR-797, bao-CR-799)
+
+Cách thứ hai, chạy song song với hộp *Sửa giá*, **chỉ ở giao diện ERP mới**. Nút **"Sửa giá trong bảng"** trên thanh nút chi tiết đơn (hoặc nút *Sửa giá* ở đầu popup chi tiết dòng) bật chế độ sửa ngay trên bảng dòng: mở bốn ô *SL đặt*, *Đơn giá*, *VAT%*, *Đơn giá (Sau VAT)* (đơn nhập khẩu không có hai cột VAT). Ô vừa đổi tô vàng kèm số đang lưu gạch ngang; thanh nổi ở đáy màn hiện số dòng đã sửa, tổng đơn cũ → mới và hai nút *Thôi* / *Lưu giá mới* (thoát khi còn dòng chưa lưu thì hỏi *Bỏ phần sửa giá?*). Bài HDSD: mục *Sửa giá trong bảng* của bài *Đơn mua hàng (PO)* (`backend/scripts/seed_help_sua_gia_trong_bang_cr802.py`); nội dung ở đây và ở seed phải khớp nhau.
+
+- API: `GET /{id}/reprice-locks` trả `{item_id: lý do}` cho dòng KHÔNG sửa được; `POST /{id}/reprice` thân `{items: [{id, qty_order, price, vat}]}`. Quyền `purchase_order:approve` trong phạm vi duyệt. **Không hỏi lý do**: nhật ký hành động `reprice` ghi từng ô *SL đặt / Đơn giá / VAT (%)* cũ → mới.
+- Áp cho đơn `approved` / `partial` / `received`. Kiểm từng ô: SL đặt > 0 và **không nhỏ hơn SL đã nhận** (giao diện báo *Dưới SL đã nhận* ngay dưới ô), đơn giá không âm, VAT 0 – 100. Dòng gửi lên mà không đổi gì thì bỏ qua; không dòng nào đổi thì báo lỗi.
+- **Chặn theo từng dòng** (khác hộp *Sửa giá* chặn cả đơn), lý do hiện khi rê chuột vào ô mờ: dòng Hoàn thành / đã hủy; công nợ hàng của dòng đã có tiền trả (kể cả trả trước đã đối trừ); dòng nằm trên YCTT đang chờ duyệt / đã duyệt / đã chi (*trả phiếu đó về trước*).
+- Sau khi lưu: `recompute_effects` (thành tiền, giá tồn kho, công nợ hàng), tiến độ tự động, đồng bộ YCMH (SL đặt), **sổ giá** (`sync_po_price_ledger`) và **lịch sử mua hàng** đang mở (`sync_po_history_safe`, bao-CR-799). YCTT **Nháp** đang trỏ vào công nợ của dòng vừa đổi được **nạp lại tự động** (`payment_request.service.apply_refresh`); câu báo kèm mã phiếu.
+
+| | Hộp *Sửa giá* (bao-CR-794) | *Sửa giá trong bảng* (duoc-CR-797) |
+|---|---|---|
+| Ô sửa | Đơn giá | SL đặt, đơn giá, VAT |
+| Lý do | Bắt buộc | Không hỏi |
+| Chặn | Cả đơn | Từng dòng, kèm lý do |
+| YCTT Nháp | Nhắc mã phiếu để kiểm lại | Tự nạp lại |
+| Giao diện | Cả hai | Chỉ ERP mới |
+
+Mã: `purchase_order/reprice_service.py`; giao diện `frontend-v2/src/modules/procurement/hooks/use-purchase-order-reprice.ts`, `components/purchase-order-reprice-bar.tsx`, `components/purchase-order-items-table.tsx`. Test: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` (gồm cả đường `/reprice`).
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
