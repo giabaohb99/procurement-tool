@@ -29,6 +29,11 @@ from .edit_service import (_AUTO_NOTE_PREFIX, _empty_cluster, _norm_cluster, clu
 from .lifecycle_service import (cancel_pr, can_return_requester, return_pr, TRANSFERABLE_STATUSES, dept_name_of,
                                 can_transfer_dept, validate_transfer_target, transfer_handler_dept, complete_pr,
                                 _notify_survey_request_done, set_status)
+from .invoice_company_return_service import (INVOICE_COMPANY_RETURN_STATUSES, is_invoice_company_return,
+                                             find_invoice_company_return_blocker, return_for_invoice_company,
+                                             update_invoice_company_only, apply_invoice_company_approval,
+                                             ensure_not_invoice_company_return, is_po_locked_by_pr_return,
+                                             ensure_po_not_locked)
 from .dispatch_service import (dispatch_enabled, DISPATCH_CONTEXT_FIELDS, dispatch_context, dispatch_skip_rules,
                                skip_dispatch_for, dispatch_pr, assign)
 from .line_status_service import (has_cancelled_line, _misa_covered_codes, PO_PENDING_STATUSES, PO_DEAD_STATUSES,

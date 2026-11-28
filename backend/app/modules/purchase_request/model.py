@@ -64,6 +64,10 @@ class PurchaseRequest(Base, AuditMixin):
     received_date: Mapped[str] = mapped_column(String(10), default="")     # ngày TIẾP NHẬN (YYYY-MM-DD)
     need_date: Mapped[str] = mapped_column(String(10), default="")         # ngày cần hàng
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)       # draft|submitted|approved|rejected
+    # duoc-CR-803: kiểu trả về đang áp lên phiếu, mã `PrReturnMode` (`core/pr_return_codes.py`). 0 = không trong
+    # đợt trả về đặc biệt nào; 1 = trả về CHỈ để sửa Công ty nhận hóa đơn — phiếu nằm ở rejected / submitted
+    # nhưng các ĐMH của nó vẫn còn và bị khóa ghi tới khi trưởng phòng duyệt lại.
+    return_mode: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)
     assignee_id: Mapped[int] = mapped_column(BigInteger, default=0)

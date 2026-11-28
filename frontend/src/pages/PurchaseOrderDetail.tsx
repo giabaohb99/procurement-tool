@@ -204,7 +204,7 @@ const COST_STAGE_HEADER_HINT = 'Ô đang nhập: số trước VAT theo tiền t
 export default function PurchaseOrderDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
-  const { can, user } = useAuth()
+  const { can: canByRole, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   // bao-CR-649: đo mở / gửi / bỏ dở biểu mẫu TẠO MỚI (không đọc giá trị ô nhập)
@@ -219,6 +219,14 @@ export default function PurchaseOrderDetail() {
     // bao-CR-321 — điều khoản in, chép từ NCC lúc chọn; 0 / rỗng = bản in dùng NCC rồi mặc định
     inspection_days: 0, return_days: 0, invoice_deadline: '',
   })
+  // duoc-CR-803: YCMH nguồn đang bị trả về để sửa Công ty nhận hóa đơn -> backend khóa MỌI thao tác
+  // ghi của đơn (400 "Đơn mua hàng đang bị khóa"). Gác ngay ở `can()` của trang: thao tác ghi trên đơn
+  // mua hàng và lập yêu cầu thanh toán từ đơn đều tắt, chỉ còn xem / in. Mọi cổng sửa của trang
+  // (headerEditable, deliveryEditable, progressEditable, chi phí, chứng từ...) đi qua `can()` nên khóa theo.
+  const prReturnLock = !isNew && !!po.locked_by_pr_return
+  const can = (entity: string, action: string) =>
+    (prReturnLock && ['purchase_order', 'payment_request'].includes(entity) && !['read', 'print', 'export'].includes(action))
+      ? false : canByRole(entity, action)
   const [companies, setCompanies] = useState<any[]>([])
   // bao-CR-785: danh mục phòng cho ô Phòng xử lý của đơn tạo thẳng (không từ YCMH).
   const [departments, setDepartments] = useState<any[]>([])
@@ -1250,6 +1258,15 @@ export default function PurchaseOrderDetail() {
         )}
       </div>
 
+      {/* duoc-CR-803: đơn tạm khóa vì YCMH nguồn bị trả về sửa công ty nhận hóa đơn */}
+      {prReturnLock && (
+        <div className="card" style={{ padding: '10px 14px', marginBottom: 14, background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <div style={{ fontSize: 13, color: '#92400e' }}>
+            <i className="ti ti-lock" /> <b>Đơn đang tạm khóa: yêu cầu mua hàng {po.pr_code} được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.</b>
+          </div>
+        </div>
+      )}
+
       <div className={isLogShown ? 'detail-grid' : ''}>
         <div style={{ minWidth: 0 }}>
           {/* Thông tin chung */}
@@ -2180,7 +2197,7 @@ export default function PurchaseOrderDetail() {
               isNew={isNew}
               showDocumentStatus={true}
               documentStatus={po.document_status || 'none'}
-              onDocumentStatusChange={setDocStatus}
+              onDocumentStatusChange={prReturnLock ? undefined : setDocStatus}
               showChainDetailButton={true}
               onRefresh={loadAll}
             />

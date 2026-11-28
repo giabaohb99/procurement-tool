@@ -213,6 +213,9 @@ def _out_action_flags(db: Session, pr, user, d: dict) -> None:
                             and _in_approve_scope(db, user, pr.id))
     # bao-CR-554: nút "Trả về" cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
     d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
+    # duoc-CR-803: phiếu đang trả về CHỈ để sửa Công ty nhận hóa đơn — giao diện khóa mọi ô khác.
+    d["return_mode"] = int(pr.return_mode or 0)
+    d["invoice_company_only"] = service.is_invoice_company_return(pr)
 
 
 def _out_people_and_signatures(db: Session, pr, d: dict) -> None:

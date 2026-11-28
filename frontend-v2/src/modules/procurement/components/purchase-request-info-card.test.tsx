@@ -266,3 +266,43 @@ describe('PurchaseRequestInfoCard — Phòng xử lý lúc lập phiếu', () =>
     expect(screen.queryByRole('button', { name: 'Phòng thu mua mặc định' })).toBeNull()
   })
 })
+
+/**
+ * duoc-CR-803 — phiếu Đang mua hàng trả về chỉ để sửa Công ty nhận hóa đơn. Đang sửa nhưng chỉ
+ * ô công ty mở; ô Nhân sự YC phải khóa nốt vì chọn người là tự đè `company_id` theo hồ sơ nhân sự.
+ */
+describe('PurchaseRequestInfoCard — chỉ sửa Công ty nhận hóa đơn (duoc-CR-803)', () => {
+  const DATA = { ...BASE_DATA, purpose: 'Mua nắp chai', note: 'Gấp trong tuần' }
+
+  it('keeps the company picker open and turns every other field read-only', () => {
+    renderCard({ data: DATA, onlyCompanyEditable: true })
+
+    expect(screen.getByRole('combobox', { name: /Công ty nhận hóa đơn/ })).toHaveValue('Công ty DEGO')
+    expect(screen.queryByRole('combobox', { name: /Nhân sự YC/ })).toBeNull()
+    expect(screen.getByText('Nguyễn Văn An')).toBeInTheDocument()
+    //  Ô chữ chỉ xem là chữ thường (bôi đen được), không phải ô nhập bị khóa.
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0)
+    expect(screen.getByText('Mua nắp chai')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Đơn gấp' })).toBeDisabled()
+  })
+
+  it('still reports the picked company to the page', async () => {
+    const user = userEvent.setup()
+    const companies = [...COMPANIES, { id: 11, name: 'Công ty Organic' }] as Company[]
+    const { onChange } = renderCard({ data: DATA, companies, onlyCompanyEditable: true })
+
+    const company = screen.getByRole('combobox', { name: /Công ty nhận hóa đơn/ })
+    await user.clear(company)
+    await user.type(company, 'organic')
+    await user.click(await screen.findByRole('button', { name: 'Công ty Organic' }))
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith({ company_id: 11, company_name: 'Công ty Organic' })
+  })
+
+  it('a normal edit still opens the other fields', () => {
+    renderCard({ data: DATA })
+    expect(screen.getByRole('combobox', { name: /Nhân sự YC/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('textbox').length).toBeGreaterThan(0)
+  })
+})

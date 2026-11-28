@@ -16,6 +16,8 @@ from .model import PurchaseRequest, PurchaseRequestItem
 from .warehouse_ref import WarehouseCatalog, sync_line_warehouse
 from .schema import PRCreate, PRUpdate
 from .base_service import ENTITY, LINE_STATUS_CANCELLED, LINE_STATUS_NO_PO, get_pr, items_of, sla_base_date
+from .invoice_company_return_service import (ensure_not_invoice_company_return, is_invoice_company_return,
+                                             update_invoice_company_only)
 from .department_service import (default_handler_dept_id, fill_department_from_employee, find_dept_head_id,
                                  sync_head_of_dept_name)
 
@@ -400,6 +402,9 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
     if pr.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
+    # duoc-CR-803: phiếu trả về để sửa công ty — chỉ nhận đúng ô Công ty nhận hóa đơn, phần còn lại bỏ qua.
+    if is_invoice_company_return(pr):
+        return update_invoice_company_only(db, pr, data.company_id, user_id)
     old_urgent = bool(pr.is_urgent)
     old_head = int(pr.head_of_dept_id or 0)     # bao-CR-499: để ô người duyệt đi theo TBP mới
     # supplier_req/supplier_pur xử lý riêng bên dưới (không phải cột của model)
@@ -447,6 +452,7 @@ def set_urgent(db: Session, pid: int, is_urgent: bool, user_id: int) -> Purchase
     pr = get_pr(db, pid)
     if pr.status == "cancelled":
         raise HTTPException(400, "Phiếu đã hủy — không đổi được cờ Đơn gấp.")
+    ensure_not_invoice_company_return(pr, "đổi cờ Đơn gấp")   # duoc-CR-803: cờ gấp chép xuống ĐMH đang khóa
     pr.is_urgent = bool(is_urgent)
     pr.updated_by = user_id
     db.commit()
@@ -461,6 +467,7 @@ def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr = get_pr(db, pid)
     if pr.status not in ("draft", "rejected", "cancelled"):
         raise HTTPException(400, "Chỉ xóa được phiếu ở trạng thái Nháp, Bị trả lại hoặc Đã từ chối")
+    ensure_not_invoice_company_return(pr, "xóa")   # duoc-CR-803: phiếu còn ĐMH đang sống
     pr.is_deleted = True
     pr.updated_by = user_id
     db.commit()

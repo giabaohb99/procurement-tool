@@ -9,6 +9,7 @@ import {
   CornerUpLeft,
   FileText,
   Loader2,
+  Lock,
   LockOpen,
   Plus,
   Printer,
@@ -27,6 +28,7 @@ import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
+import type { PermissionAction } from '@/core/authorization/permission-types'
 import { usePermission } from '@/core/authorization/use-permission'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -128,6 +130,11 @@ import { describeOrdered, findOverOrders, formatQty } from '../utils/over-order'
 import { isPriceAdjustAvailable } from '../utils/purchase-order-price-adjust'
 import { rebasePurchaseOrderDraft } from '../utils/purchase-order-rebase'
 import {
+  buildPrReturnLockNotice,
+  isOrderLockedByPrReturn,
+  isPoActionOpenWhilePrReturned,
+} from '../utils/invoice-company-return-lock'
+import {
   duplicatePurchaseOrderCodes,
   listPurchaseOrderLineIssues,
   validatePurchaseOrder,
@@ -211,6 +218,15 @@ export function PurchaseOrderDetailPage() {
   const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_ORDER, isNew) // duoc-CR-641
 
   const { data: serverData, isLoading, isError } = usePurchaseOrder(purchaseOrderId)
+  /**
+   * duoc-CR-803: YCMH nguồn bị trả về để sửa Công ty nhận hóa đơn thì đơn TẠM KHÓA — chỉ còn xem
+   * + in tới khi phiếu được duyệt lại (backend trả 400 cho mọi đường ghi). Tên `locked` đã dành
+   * cho đơn Hoàn thành / Hủy nên dùng tên riêng. Mọi cổng quyền của trang đi qua `canOrder`
+   * thay cho `can('purchase_order', …)` để không sót chỗ nào.
+   */
+  const lockedByPrReturn = !isNew && isOrderLockedByPrReturn(serverData)
+  const canOrder = (action: PermissionAction) =>
+    can('purchase_order', action) && isPoActionOpenWhilePrReturned(action, lockedByPrReturn)
   //  Sửa giá sau duyệt: bản nháp giá riêng, so với dòng ĐÃ LƯU (không so với bản nháp của trang).
   const reprice = usePurchaseOrderReprice(purchaseOrderId, serverData?.items ?? NO_ITEMS)
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
@@ -271,7 +287,7 @@ export function PurchaseOrderDetailPage() {
   //  duoc-CR-654 (D0b): "Nhận hàng" không có form riêng — đo dialog chi tiết dòng ĐMH (nơi nhập giao/nhận) khi người dùng có quyền ghi.
   const { markSubmitted: markLineSubmitted } = useFormTelemetry(
     UI_FORM_CODE.GOODS_RECEIPT,
-    lineIndex !== null && can('purchase_order', 'write'),
+    lineIndex !== null && canOrder('write'),
   )
   const [paymentOpen, setPaymentOpen] = useState(false)
   /** bao-CR-794: hộp Sửa giá sau duyệt — dựng khi mở, gỡ khi đóng để mỗi lần mở là bảng giá sạch. */
@@ -289,7 +305,7 @@ export function PurchaseOrderDetailPage() {
   //  chọn giữ ở trang vì nút nằm ở tiêu đề thẻ Dòng hàng, cột tick nằm trong bảng.
   const lineSelection = usePurchaseOrderLineSelection(
     draft?.items ?? NO_ITEMS,
-    (isNew || draft?.status === 'draft') && can('purchase_order', isNew ? 'create' : 'write'),
+    (isNew || draft?.status === 'draft') && canOrder(isNew ? 'create' : 'write'),
   )
   /**
    * Phiếu giao chọn cho lần giao CHƯA LƯU — giữ hộ tới khi bấm Lưu đơn. Không có
@@ -346,7 +362,7 @@ export function PurchaseOrderDetailPage() {
     const canAttach =
       attachRequested &&
       serverData.status !== 'cancelled' &&
-      can('purchase_order', 'write') &&
+      canOrder('write') &&
       target.lineIndex >= 0 &&
       !isLineLocked(serverData.items[target.lineIndex])
     if (canAttach && target.delivery) {
@@ -471,7 +487,7 @@ export function PurchaseOrderDetailPage() {
   /** Đơn đã chốt/hủy — khóa cứng, kể cả hồ sơ chứng từ cũng theo mốc này. */
   const locked = isPurchaseOrderLocked(data.status)
   const approved = isPurchaseOrderApproved(data.status)
-  const canWrite = can('purchase_order', isNew ? 'create' : 'write')
+  const canWrite = canOrder(isNew ? 'create' : 'write')
   /**
    * Sửa được nội dung đơn: chỉ khi đơn còn Nháp / Bị trả lại (CR-108). Gửi duyệt
    * xong là chốt nội dung — đang chờ duyệt mà vẫn sửa được thì người duyệt đọc
@@ -480,12 +496,12 @@ export function PurchaseOrderDetailPage() {
   const headerEditable = (isNew || ['draft', 'rejected'].includes(data.status)) && canWrite
   /** Đơn đã duyệt: chỉ mở các ô phát sinh sau khi duyệt, nằm trong popup chi tiết dòng. */
   const afterApproveEditable = !isNew && approved && canWrite
-  const progressEditable = !isNew && isDeliveryStage(data.status) && can('purchase_order', 'write')
+  const progressEditable = !isNew && isDeliveryStage(data.status) && canOrder('write')
   /** Chưa nhận hàng thì mới hủy duyệt được — khớp điều kiện backend chặn. */
   const canUnapprove =
     !isNew &&
     approved &&
-    can('purchase_order', 'approve') &&
+    canOrder('approve') &&
     !data.items.some((item) => (item.qty_received ?? 0) > 0)
   /**
    * bao-CR-794 — Sửa giá sau duyệt: cùng quyền với Hủy duyệt nhưng KHÔNG gác theo "chưa nhận hàng"
@@ -495,7 +511,7 @@ export function PurchaseOrderDetailPage() {
   const canAdjustPrices =
     !isNew &&
     Boolean(serverData) &&
-    can('purchase_order', 'approve') &&
+    canOrder('approve') &&
     isPriceAdjustAvailable(serverData ?? data)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
   /**
@@ -503,7 +519,7 @@ export function PurchaseOrderDetailPage() {
    * Hủy duyệt bó tay. Dòng nào bị chặn (đã trả tiền, đã lên YCTT đã gửi duyệt…) máy chủ trả lý do riêng.
    */
   const canReprice =
-    !isNew && approved && can('purchase_order', 'approve') && data.items.some((item) => !!item.id)
+    !isNew && approved && canOrder('approve') && data.items.some((item) => !!item.id)
   /** Đang Sửa giá: bảng + hộp chi tiết vẽ dòng đã đè phần giá đang sửa. */
   const displayItems = reprice.applyTo(data.items)
   //  Khối tổng tiền dưới bảng nhảy theo giá đang sửa, khớp số "→" trên thanh đáy.
@@ -694,6 +710,7 @@ export function PurchaseOrderDetailPage() {
       hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
     */
     !isNew &&
+      !lockedByPrReturn &&
       ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
       can('payment_request', 'create') && {
         key: 'payment-request',
@@ -712,7 +729,7 @@ export function PurchaseOrderDetailPage() {
     /* bao-CR-498: gom mọi bản in vào MỘT nút "In" thả xuống như bản v1 — trước đó năm nút
        in rời chiếm cả hàng tiêu đề, người dùng phải đọc từng nút để tìm bản cần in. */
     !isNew &&
-      can('purchase_order', 'print') && {
+      canOrder('print') && {
         key: 'print',
         group: 'utility',
         node: (
@@ -784,7 +801,7 @@ export function PurchaseOrderDetailPage() {
        cũng chặn) — để nút ở đó chỉ mời người dùng gõ lý do rồi ăn lỗi. */
     !isNew &&
       isDeliveryStage(data.status) &&
-      can('purchase_order', 'cancel') &&
+      canOrder('cancel') &&
       !data.items.some((item) => item.progress_status === 'completed') && {
         key: 'cancel',
         group: 'utility',
@@ -800,7 +817,7 @@ export function PurchaseOrderDetailPage() {
         ),
       },
     canDelete &&
-      can('purchase_order', 'delete') && {
+      canOrder('delete') && {
         key: 'delete',
         group: 'utility',
         node: (
@@ -834,7 +851,7 @@ export function PurchaseOrderDetailPage() {
           </Button>
         ),
       },
-    ...(!isNew && data.status === 'submitted' && can('purchase_order', 'approve')
+    ...(!isNew && data.status === 'submitted' && canOrder('approve')
       ? [
           {
             key: 'approve',
@@ -1000,6 +1017,16 @@ export function PurchaseOrderDetailPage() {
         actions={headerActions}
       />
 
+      {lockedByPrReturn && (
+        <div
+          role="status"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <Lock className="mt-0.5 size-4 shrink-0" />
+          <span>{buildPrReturnLockNotice(data.pr_code)}</span>
+        </div>
+      )}
+
       <div className="min-w-0 space-y-4">
         {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
         <CardCollapseScope scope={isNew ? null : 'procurement.purchase-order'}>
@@ -1014,7 +1041,7 @@ export function PurchaseOrderDetailPage() {
             employees={employeesData?.items}
             departments={departmentsData?.items}
             approverCandidates={approverData?.items}
-            canPickNspt={can('purchase_order', 'approve')}
+            canPickNspt={canOrder('approve')}
             purchaseRequestId={purchaseRequestId}
             onChange={patch}
           />
@@ -1240,7 +1267,7 @@ export function PurchaseOrderDetailPage() {
               ref={reportCardRef}
               entity="purchase_order"
               ownerId={purchaseOrderId}
-              canEdit={!locked && can('purchase_order', 'write')}
+              canEdit={!locked && canOrder('write')}
               itemsLocked
             />
           )}
@@ -1260,12 +1287,12 @@ export function PurchaseOrderDetailPage() {
           <DocumentAttachmentsCard
             entity="purchase_order"
             entityId={purchaseOrderId}
-            canManage={!locked && can('purchase_order', 'write')}
+            canManage={!locked && canOrder('write')}
             autoOpenUpload={attachRequested && !focusDeliveryId && !focusLineId}
             documentStatus={isNew ? '' : data.document_status || 'none'}
             //  duoc-CR-741: đổi tình trạng hồ sơ bằng menu ở tiêu đề thẻ này như bản v1. Sửa được
             //  cả khi đơn đã Hoàn thành (chứng từ thường về sau) — endpoint riêng, không qua Lưu.
-            documentStatusEditable={!isNew && can('purchase_order', 'write')}
+            documentStatusEditable={!isNew && canOrder('write')}
             onDocumentStatusChange={(value) => setDocumentStatus.mutate(value)}
             v1Wording
           />
@@ -1351,7 +1378,7 @@ export function PurchaseOrderDetailPage() {
         // Đính kèm phiếu giao mở cả khi đơn đã hoàn thành (chỉ chặn khi hủy):
         // chứng từ thường về sau ngày chốt đơn.
         attachEditable={
-          !isNew && data.status !== 'cancelled' && can('purchase_order', 'write')
+          !isNew && data.status !== 'cancelled' && canOrder('write')
         }
         purchaseOrderId={purchaseOrderId}
         carriers={(suppliersData?.items ?? []).filter(

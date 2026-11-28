@@ -51,6 +51,21 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 
 **Chốt chặn tạo Đơn mua hàng (CR-034):** backend `_ensure_pr_dispatched` chặn tạo/sửa ĐMH tham chiếu YCMH đang ở `draft` · `submitted` · `approved` · `rejected` ("YCMH … chưa được điều phối (chưa có nhân sự phụ trách)") và `cancelled` ("đã bị từ chối"). Ẩn nút ở FE chỉ là tiện ích — chặn thật nằm ở backend. Mã YCMH gõ tay không khớp phiếu nào (dữ liệu cũ) thì không chặn.
 
+### Trả về phiếu Đang mua hàng để sửa Công ty nhận hóa đơn (duoc-CR-803)
+
+Nhánh trả về thứ ba, dùng khi người yêu cầu chọn nhầm **Công ty nhận hóa đơn** mà phiếu đã có ĐMH lên MISA. Áp cho **cả hai giao diện** (thumua cũ và ERP mới), cùng nút **"Trả về"** có sẵn, cùng dòng báo trên YCMH và ĐMH. Bài HDSD: mục *3a. Bị trả lại chỉ để sửa Công ty nhận hóa đơn* của bài *Xử lý yêu cầu mua hàng* (và bản TBP), mục *Trả về phiếu Đang mua hàng để sửa Công ty nhận hóa đơn* của bài *Phê duyệt yêu cầu mua hàng*, mục *Đơn tạm khóa...* của bài *Đơn mua hàng (PO)* (`backend/scripts/seed_help_tra_ve_sua_cong_ty_cr803.py`); nội dung ở đây và ở seed phải khớp nhau.
+
+- **Ai bấm:** cùng cờ `can_return` với trả về thường (bao-CR-554): quản lý có `purchase_request:cancel` trong phạm vi, hoặc người có `approve` trong phạm vi duyệt.
+- **Chỉ phiếu `purchasing` (Đang mua hàng).** `processing` (Đang xử lý), `purchased` (Đã mua hàng), `completed` không dùng được. Trả về thường (Chờ duyệt, hoặc Đã duyệt / Đã điều phối chưa dòng nào lên ĐMH) giữ nguyên hành vi cũ.
+- **Điều kiện** (`find_invoice_company_return_blocker`, xét mọi ĐMH cùng `pr_code`, chưa xóa, chưa hủy): có ít nhất một ĐMH; không dòng ĐMH nào (trừ dòng hủy) ở tiến độ từ *Đã nhận hàng* trở đi hoặc có `qty_received > 0`; không dòng YCMH nào ở *Đã nhận hàng* / *Hoàn thành*; ĐMH chưa nằm trên YCTT nào chưa hủy; ĐMH chưa có công nợ. Trượt thì 400 kèm câu: *Đơn mua hàng {mã} đã có dòng nhận hàng — không trả về được phiếu này* · *Phiếu đã có dòng nhận hàng — ...* · *Đơn mua hàng đã có yêu cầu thanh toán {mã} — ...* · *Đơn mua hàng đã phát sinh công nợ — ...* · *Phiếu chưa có đơn mua hàng nào còn hiệu lực*. Lý do chặn: đổi pháp nhân khi đã có chứng từ tiền thì lệch với chứng từ.
+- **Sau khi trả:** `status = rejected` (Bị trả lại) kèm cột `return_mode = 1` (bộ mã `pr_return_mode`, `core/pr_return_codes.py`). KHÁC trả về thường: **giữ** NSTM, trạng thái dòng và các ĐMH. Người yêu cầu nhận chuông `pr_returned` như thường.
+- **Trong lúc trả về:** `PATCH /{pid}` chỉ nhận `company_id` (mọi trường khác gửi lên bị bỏ qua, không báo lỗi, vì cả hai giao diện gửi nguyên biểu mẫu); công ty phải còn dùng. Chặn kèm câu *Phiếu đang trả về chỉ để sửa công ty nhận hóa đơn — không ... được*: xóa phiếu, **hủy / Từ chối phiếu** (`POST /{pid}/cancel`, *... không hủy được*; nút ẩn trên cả hai giao diện vì các ĐMH vẫn sống), đổi cờ Đơn gấp, phân bổ NSTM, cập nhật trạng thái dòng. Không tạo thêm ĐMH được (chốt chặn `_ensure_pr_dispatched` với `rejected`). Giao diện đọc cờ `invoice_company_only` của chi tiết phiếu để khóa mọi ô trừ Công ty nhận hóa đơn và hiện dòng báo.
+- **ĐMH liên quan bị khóa** — xem *Đơn tạm khóa khi YCMH trả về sửa công ty* ở [13-don-mua-hang.md](13-don-mua-hang.md).
+- **Gửi duyệt → Duyệt:** người yêu cầu bấm Gửi duyệt như thường (`submitted`, chuông cho TBP). Duyệt khi phiếu còn `rejected` bị chặn 400 *Phiếu đang chờ người yêu cầu sửa công ty nhận hóa đơn — chưa duyệt được* (không thì phiếu rơi xuống luồng thường, lên `approved` mà `return_mode` còn 1, ĐMH khóa mãi). Lúc Duyệt máy chủ soi lại chứng từ của ĐMH (`_find_po_document_blocker`): trong lúc khóa vẫn có thể có YCTT gõ tay mang mã ĐMH, có thì 400 kèm lý do và *Xử lý chứng từ đó trước rồi duyệt lại*. Qua cổng thì TBP **Duyệt** (`apply_invoice_company_approval`): chép `company_id` xuống mọi ĐMH còn hiệu lực (nhật ký từng đơn, dòng sổ giá đang mở đi theo), xóa `return_mode`, đặt phiếu về mốc `dispatched` rồi `recompute_status` tự suy lại (thường là `purchasing`) — **không** qua điều phối lại, không đổi NSTM, không ghi đè *Trưởng phòng phê duyệt* của lần duyệt gốc. Chuông `pr_approved` như thường, thêm chuông *{mã} — Đổi công ty nhận hóa đơn* cho NSTM phụ trách phiếu. Câu báo: *Đã duyệt — cập nhật công ty nhận hóa đơn cho n đơn mua hàng*.
+- **Trả về lần nữa** (phiếu `submitted` đang ở chế độ này) thì về `rejected` và **giữ** `return_mode` — không kéo dòng về `no_po`. **Không có đường hủy đợt sửa**: muốn bỏ thì trả về người yêu cầu chọn lại công ty cũ, gửi duyệt rồi duyệt (ĐMH mở khóa, công ty giữ nguyên).
+
+Mã: `purchase_request/invoice_company_return_service.py`; migration `prret803`. API: `doc/erp/thu-mua/tai-lieu-ky-thuat/api.md` (dòng 28/11/2026).
+
 ---
 
 ## A. Thông tin chung (header phiếu)
@@ -88,7 +103,7 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 - Mặc định: 0 (chưa chọn); tự điền từ công ty của Nhân sự YC nếu nhân sự đã có `company_id`
 - Bắt buộc: Có (`validate()` kiểm tra: "Vui lòng chọn Công ty")
 - Nguồn dữ liệu / liên kết: Bảng Công ty (`company`), API `/api/companies`
-- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
+- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`. Phiếu `rejected` do trả về sửa công ty (duoc-CR-803) thì đây là ô DUY NHẤT sửa được; duyệt lại thì công ty chép xuống mọi ĐMH liên quan (xem mục *Trả về phiếu Đang mua hàng để sửa Công ty nhận hóa đơn*).
 - Logic đặc biệt: Tên công ty (`company_name`) được tra cứu và gắn vào response để hiển thị; không lưu riêng.
 
 ### 5. Nhân sự yêu cầu (`requester` + `requester_id`)
@@ -461,7 +476,7 @@ Entity: `purchase_request`
 | **Chốt phương án** (H) | là người yêu cầu (`created_by` / `requester_id`) **hoặc** `purchase_request:approve` | `dispatched`, `processing`, `purchasing`, `purchased` |
 | Gửi duyệt | `purchase_request:write` hoặc là người tạo phiếu hoặc người yêu cầu (khớp `requester_id`) | `draft`, `rejected` |
 | Duyệt | `purchase_request:approve` | `submitted` |
-| Trả về (→ `rejected`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing` |
+| Trả về (→ `rejected`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing`; `purchasing` chỉ để sửa Công ty nhận hóa đơn (duoc-CR-803, quản lý có `cancel` hoặc người duyệt trong phạm vi) |
 | Từ chối phiếu (→ `cancelled`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing` |
 | Phân bổ NSTM | `purchase_request:approve` | mọi trạng thái trừ `cancelled`, `completed` |
 | Cập nhật trạng thái / tiến độ / `expected_date` dòng | `purchase_request:read` + là NSTM phụ trách hoặc có `approve`/`cancel` | mọi trạng thái sau duyệt (trừ `cancelled`, `completed`) |

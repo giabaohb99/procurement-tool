@@ -318,6 +318,11 @@ export const PR_LINE_STATUS: readonly StatusOption[] = [
   {"value": "cancelled", "label": "Hủy đơn", "sort_order": 0, "is_terminal": true, "is_exception": true},
 ]
 
+/** Kiểu trả về yêu cầu mua hàng */
+export const PR_RETURN_MODE: readonly StatusOption[] = [
+  {"value": "1", "label": "Trả về sửa công ty nhận hóa đơn", "sort_order": 1, "is_terminal": false, "is_exception": false},
+]
+
 /** Nguồn dòng sổ giá */
 export const PRICE_SOURCE_TYPE: readonly StatusOption[] = [
   {"value": "1", "label": "Lịch sử mua hàng cũ (nạp Excel)", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -548,6 +553,11 @@ export const PACKAGING_ROLE_CODE = {
   CARTON: 5,
 } as const
 
+/** Kiểu trả về yêu cầu mua hàng — khóa → mã gửi lên backend. */
+export const PR_RETURN_MODE_CODE = {
+  INVOICE_COMPANY: 1,
+} as const
+
 /** Nguồn dòng sổ giá — khóa → mã gửi lên backend. */
 export const PRICE_SOURCE_TYPE_CODE = {
   PURCHASE_HISTORY: 1,
@@ -664,6 +674,7 @@ export const STATUS_SETS = {
   po_item_line_status: PO_ITEM_LINE_STATUS,
   po_progress_status: PO_PROGRESS_STATUS,
   pr_line_status: PR_LINE_STATUS,
+  pr_return_mode: PR_RETURN_MODE,
   price_source_type: PRICE_SOURCE_TYPE,
   quote_source_type: QUOTE_SOURCE_TYPE,
   report_key: REPORT_KEY,

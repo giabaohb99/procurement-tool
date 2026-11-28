@@ -111,6 +111,8 @@ def dispatch_pr(db: Session, pid: int, user_id: int,
 
     Trả về (phiếu, số dòng vừa gán tự động, số dòng vẫn chưa có người)."""
     pr = get_pr(db, pid)
+    from .invoice_company_return_service import ensure_not_invoice_company_return
+    ensure_not_invoice_company_return(pr, "điều phối")   # duoc-CR-803
     if pr.status != "approved":
         raise HTTPException(400, "Chỉ điều phối được phiếu ở trạng thái Đã duyệt "
                                  "(trưởng phòng duyệt xong, chưa điều phối).")
@@ -157,6 +159,8 @@ def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseReque
     pr = get_pr(db, pid)
     if pr.status in ("cancelled", "completed", "done"):
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không phân bổ được")
+    from .invoice_company_return_service import ensure_not_invoice_company_return
+    ensure_not_invoice_company_return(pr, "phân bổ người phụ trách")   # duoc-CR-803
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
     from app.modules.category_assignee.service import check_assignee_allowed

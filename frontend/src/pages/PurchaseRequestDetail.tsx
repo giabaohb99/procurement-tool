@@ -249,7 +249,12 @@ export default function PurchaseRequestDetail() {
       .catch(() => setDeptHeads([]))
   }, [pr.department, pr.company_id])
 
-  const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
+  // duoc-CR-803: phiếu Đang mua hàng bị trả về CHỈ để sửa Công ty nhận hóa đơn (đơn mua hàng vẫn còn,
+  // đang tạm khóa). Khi đó mọi ô khác chỉ xem; riêng ô Công ty sửa được lúc phiếu ở Bị trả lại.
+  // Backend cũng chỉ nhận `company_id` và chặn xóa / Đơn gấp / phân bổ / trạng thái dòng.
+  const companyOnly = !isNew && !!pr.invoice_company_only
+  const editable = !companyOnly && (isNew || pr.status === 'draft' || pr.status === 'rejected')
+  const companyEditable = editable || (companyOnly && pr.status === 'rejected')
   // bao-CR-547 (đại ca chốt 01/10/2026): tick nhiều dòng rồi "Xóa đã chọn" — CHỈ form tạo hoặc phiếu Nháp;
   // phiếu Bị trả lại vẫn xóa từng dòng như cũ. Chọn theo CHỈ SỐ (dòng mới chưa có id) nên đổi số dòng
   // là bỏ hết lựa chọn, kẻo tick trúng dòng khác sau khi ai đó xóa/thêm lẻ.
@@ -266,7 +271,7 @@ export default function PurchaseRequestDetail() {
   }
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
   const prLocked = ['cancelled', 'completed', 'done'].includes(pr.status)   // đã từ chối/hoàn thành → khóa thao tác
-  const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
+  const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked && !companyOnly   // phân bổ NSTM (chặn khi phiếu đã kết thúc / đang trả về sửa công ty)
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
   // bao-CR-498: hai đường "Trả về" gộp vào một nút — đường luồng duyệt + đường trả phòng lập (cờ backend).
   // bao-CR-554: cờ `can_return` do server tính (quyền + phạm vi + chưa dòng nào lên ĐMH) — người
@@ -275,6 +280,8 @@ export default function PurchaseRequestDetail() {
   const returnResolution = resolveReturnAction(canReturnToRequester, !isNew && !!pr.can_return_dept)
   const runReturn = (target: ReturnTarget) => {
     if (target === 'department') setTransferMode('return')
+    // duoc-CR-803: phiếu Đang mua hàng trả về thì chỉ sửa được Công ty nhận hóa đơn, đơn mua hàng tạm khóa
+    else if (pr.status === 'purchasing') setPromptAction({ type: 'return', title: 'Trả về', message: 'Phiếu đang mua hàng: trả về lần này chỉ cho người yêu cầu sửa Công ty nhận hóa đơn, các đơn mua hàng liên quan sẽ tạm khóa tới khi phiếu được duyệt lại. Lý do trả về:' })
     else setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })
   }
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
@@ -316,7 +323,7 @@ export default function PurchaseRequestDetail() {
   const showAssigneeCol = can('survey_request', 'process')
   // Trạng thái dòng chỉ cho NSTM phụ trách chính dòng đó hoặc admin/quản lý
   const isAssignee = (it: any) => !!it.assignee && it.assignee === (user as any)?.emp_code
-  const canLineStatus = (it: any) => canAssignPurchaser || canManage || isAssignee(it)
+  const canLineStatus = (it: any) => !companyOnly && (canAssignPurchaser || canManage || isAssignee(it))
   const canEditNote = (it: any) => editable || canLineStatus(it)
 
   // NSTM chọn được — bao-CR-486: đọc từ API theo ô "Phòng xử lý" của phiếu (phòng tự mua → người
@@ -613,6 +620,7 @@ export default function PurchaseRequestDetail() {
 
   function validate(forSubmit: boolean): string {
     if (!pr.company_id) return 'Vui lòng chọn Công ty'
+    if (companyOnly) return ''   // duoc-CR-803: trả về chỉ để sửa công ty — các ô khác không đổi được
     if (!pr.requester) return 'Vui lòng chọn Nhân sự yêu cầu'
     const valid = items.filter((it: any) => it.product_name)
     if (valid.length === 0) return 'Cần ít nhất 1 sản phẩm'
@@ -890,20 +898,20 @@ export default function PurchaseRequestDetail() {
             Màu (CR-027): phiếu ĐÃ TỪ CHỐI bị khóa, không còn nút workflow nào → đây là việc cần làm tiếp,
             để nút đặc cho nổi. Phiếu BỊ TRẢ LẠI vẫn sửa & "Gửi duyệt" lại được (nút đặc bên phải) nên
             nút này để dạng nhạt hơn, tránh 2 nút chính đá nhau. */}
-        {!isNew && ['rejected', 'cancelled'].includes(pr.status) && can('survey_request', 'create') && (
+        {!isNew && !companyOnly && ['rejected', 'cancelled'].includes(pr.status) && can('survey_request', 'create') && (
           <button className={pr.status === 'cancelled' ? 'btn' : 'btn secondary'} onClick={createSurveyRequest}>
             <i className="ti ti-clipboard-list" />Tạo yêu cầu báo giá
           </button>
         )}
-        {!isNew && ['draft', 'rejected', 'cancelled'].includes(pr.status) && can('purchase_request', 'delete') && (
+        {!isNew && !companyOnly && ['draft', 'rejected', 'cancelled'].includes(pr.status) && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
         {/* ── Nhóm workflow + chính (phải): Duyệt · Trả về · Từ chối cùng nhóm ── */}
-        {editable && (
+        {companyEditable && (
           <button className="btn secondary" onClick={() => save(false)}><i className="ti ti-device-floppy" />Lưu</button>
         )}
-        {editable && (
+        {companyEditable && (
           <button className="btn" onClick={() => save(true)}><i className="ti ti-send" />Gửi duyệt</button>
         )}
         {/* Duyệt bước 1 (trưởng bộ phận). Dùng cờ can_approve của server chứ không dùng can() —
@@ -920,7 +928,8 @@ export default function PurchaseRequestDetail() {
             <i className="ti ti-corner-up-left" />Trả về
           </button>
         )}
-        {!isNew && pr.can_approve && (
+        {/* duoc-CR-803: phiếu trả về sửa công ty nhận hóa đơn còn đơn mua hàng -> backend chặn /cancel, ẩn nút */}
+        {!isNew && pr.can_approve && !companyOnly && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'cancel', title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu, không sửa lại được):' })}><i className="ti ti-ban" />Từ chối</button>
         )}
         {/* CR-034: duyệt lần 2 phía thu mua (điều phối — tự động phân bổ NSTM). Cờ can_dispatch do
@@ -941,7 +950,7 @@ export default function PurchaseRequestDetail() {
           <button className="btn secondary" onClick={() => { if (!allItemsDone) { toast.error('Chưa có sản phẩm đặt hàng hoàn tất — chỉ hoàn thành khi mọi sản phẩm đã Hoàn thành/Hủy.'); return } setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' }) }}><i className="ti ti-checks" />Hoàn thành</button>
         )}
         {/* ── Từ chối (khóa phiếu) ở giai đoạn đã duyệt/đang xử lý ── */}
-        {!isNew && canManage && !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
+        {!isNew && canManage && !companyOnly && !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <>
             <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'cancel', title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):' })}><i className="ti ti-ban" />Từ chối</button>
@@ -958,6 +967,15 @@ export default function PurchaseRequestDetail() {
             {pr.can_dispatch
               ? 'Bấm Duyệt để hệ thống tự phân bổ nhân sự thu mua phụ trách; trước đó phiếu chưa tạo được đơn mua hàng.'
               : 'Admin / Quản lý thu mua duyệt lần nữa thì hệ thống mới phân bổ nhân sự phụ trách và mở khóa tạo đơn mua hàng.'}
+          </div>
+        </div>
+      )}
+
+      {/* duoc-CR-803: trả về chỉ để sửa Công ty nhận hóa đơn — hiện ở cả Bị trả lại lẫn Chờ duyệt */}
+      {companyOnly && (
+        <div className="card" style={{ padding: '10px 14px', marginBottom: 14, background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <div style={{ fontSize: 13, color: '#92400e' }}>
+            <i className="ti ti-info-circle" /> <b>Phiếu được trả về chỉ để sửa Công ty nhận hóa đơn. Các đơn mua hàng liên quan đang tạm khóa tới khi phiếu được duyệt lại.</b>
           </div>
         </div>
       )}
@@ -1089,7 +1107,7 @@ export default function PurchaseRequestDetail() {
                 <label>Công ty nhận hóa đơn <span className="req">*</span></label>
                 <SearchSelect value={String(pr.company_id || '')}
                   onChange={(v) => setH('company_id', Number(v) || 0)} options={companyOptions}
-                  disabled={!editable} placeholder="Chọn công ty" />
+                  disabled={!companyEditable} placeholder="Chọn công ty" />
               </div>
               <div className="form-row">
                 <label>Nhân sự YC <span className="req">*</span></label>
@@ -1192,7 +1210,7 @@ export default function PurchaseRequestDetail() {
                 <label>Tùy chọn phiếu</label>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', minHeight: 40, flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--red)' }}>
-                    <input type="checkbox" checked={!!pr.is_urgent} disabled={prLocked} onChange={(e) => toggleUrgent(e.target.checked)} style={{ width: 18, height: 18 }} />
+                    <input type="checkbox" checked={!!pr.is_urgent} disabled={prLocked || companyOnly} onChange={(e) => toggleUrgent(e.target.checked)} style={{ width: 18, height: 18 }} />
                     Đơn gấp
                   </label>
                   {/* CR-082 — nói rõ vì sao phiếu bị đánh dấu gấp (danh sách dòng vi phạm ở tooltip) */}
@@ -1650,6 +1668,7 @@ export default function PurchaseRequestDetail() {
             <div style={{ marginTop: 16 }}>
               <AttachmentGallery entity="purchase_request_line_image" entityId={edit.id || 0}
                 permEntity="purchase_request" title="File đính kèm (đối chiếu)" onImages={setCompareImgs}
+                readOnly={companyOnly}
                 pendingFiles={edit._pendingImgs || KHONG_CO_FILE}
                 onPendingChange={(fs) => setItem(editIdx, '_pendingImgs', fs)}
                 maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh · có thể chọn nhiều" />

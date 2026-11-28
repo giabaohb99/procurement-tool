@@ -191,6 +191,16 @@ export interface PurchaseRequestDetail {
    * hoặc đã duyệt / đã điều phối mà chưa dòng nào lên ĐMH. Backend tính, giao diện chỉ đọc.
    */
   can_return?: boolean
+  /**
+   * duoc-CR-803 — kiểu trả về của lần trả gần nhất: 0 trả thường, 1 = `PR_RETURN_MODE_CODE.INVOICE_COMPANY`
+   * (phiếu Đang mua hàng trả về chỉ để sửa Công ty nhận hóa đơn). Bản backend cũ không gửi.
+   */
+  return_mode?: number
+  /**
+   * duoc-CR-803 — phiếu Bị trả lại / Chờ duyệt mà vẫn còn ĐMH: chỉ ô Công ty nhận hóa đơn sửa
+   * được, các ĐMH liên quan tạm khóa tới khi duyệt lại. Đọc qua `isInvoiceCompanyOnly`.
+   */
+  invoice_company_only?: boolean
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng thu mua (bao-CR-524). */
   can_transfer_dept?: boolean
   can_return_dept?: boolean

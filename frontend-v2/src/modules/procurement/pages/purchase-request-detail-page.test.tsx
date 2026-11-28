@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   data: null as unknown,
   progress: { ordered: {}, pending: {}, orders: {} } as Record<string, unknown>,
   runAction: vi.fn(async () => ({})),
+  save: vi.fn(async () => ({ id: 12 })),
   updateItemStatus: vi.fn(async () => ({})),
   /** Dòng + ngày mà bảng giả sẽ báo lên khi bấm nút đổi ngày. */
   saveOperationalResult: undefined as unknown,
@@ -37,7 +38,7 @@ vi.mock('../hooks/use-purchase-request', () => ({
   usePurchaseRequest: () => ({ data: state.data, isLoading: false, isError: false }),
   useOrderProgress: () => ({ data: state.progress }),
   usePurchaseRequestAssignableStaff: () => ({ data: { items: [] } }),
-  useSavePurchaseRequest: () => mutation(),
+  useSavePurchaseRequest: () => mutation(state.save),
   usePurchaseRequestAction: () => mutation(state.runAction),
   useDeletePurchaseRequest: () => mutation(),
   useAssignPurchaser: () => mutation(),
@@ -236,6 +237,7 @@ beforeEach(() => {
   localStorage.clear()
   state.progress = { ordered: {}, pending: {}, orders: {} }
   state.runAction.mockClear()
+  state.save.mockClear()
   state.updateItemStatus.mockClear()
   state.saveOperationalResult = undefined
   useAuthStore.setState({ user: null })
@@ -413,5 +415,104 @@ describe('PurchaseRequestDetailPage — lý do đổi ngày dự kiến (duoc-CR
     //  `false` = popup dòng giữ nguyên, như v1 `if (r === null) return`.
     await vi.waitFor(() => expect(state.saveOperationalResult).toBe(false))
     expect(state.updateItemStatus).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * duoc-CR-803 — YCMH Đang mua hàng trả về chỉ để sửa Công ty nhận hóa đơn. Phiếu nằm ở Bị trả lại
+ * (rồi Chờ duyệt) nhưng các ĐMH vẫn còn: màn phải nói rõ điều đó, tắt những nút backend chặn, và
+ * không đòi các ô bắt buộc khác lúc lưu (backend bỏ qua mọi ô trừ công ty).
+ */
+describe('PurchaseRequestDetailPage — trả về chỉ sửa công ty nhận hóa đơn (duoc-CR-803)', () => {
+  const NOTICE =
+    'Phiếu được trả về chỉ để sửa Công ty nhận hóa đơn. Các đơn mua hàng liên quan đang tạm khóa tới khi phiếu được duyệt lại.'
+
+  it.each(['rejected', 'submitted'])('shows the notice on a %s request', (status) => {
+    build(buildRequest({ status, return_mode: 1, invoice_company_only: true }))
+    expect(screen.getByRole('status')).toHaveTextContent(NOTICE)
+  })
+
+  it('hides delete and the quote-request shortcut that a normal returned request offers', () => {
+    build(buildRequest({ status: 'rejected', return_mode: 1, invoice_company_only: true }))
+    expect(screen.queryByRole('button', { name: 'Xóa phiếu' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Tạo yêu cầu báo giá' })).toBeNull()
+    //  Phiếu vẫn lưu / gửi duyệt lại được.
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gửi duyệt' })).toBeInTheDocument()
+  })
+
+  it('a resubmitted request keeps Duyệt and Trả về but drops Từ chối, which the backend blocks', () => {
+    build(
+      buildRequest({
+        status: 'submitted',
+        invoice_company_only: true,
+        can_approve: true,
+        can_return: true,
+      }),
+    )
+    expect(screen.getByRole('button', { name: 'Duyệt' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Trả về' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).toBeNull()
+  })
+
+  it('a normal submitted request still offers Từ chối', () => {
+    build(buildRequest({ status: 'submitted', can_approve: true }))
+    expect(screen.getByRole('button', { name: 'Từ chối' })).toBeInTheDocument()
+  })
+
+  it('a normal returned request keeps delete and shows no notice', () => {
+    build(buildRequest({ status: 'rejected' }))
+    expect(screen.getByRole('button', { name: 'Xóa phiếu' })).toBeInTheDocument()
+    expect(screen.queryByText(NOTICE)).toBeNull()
+  })
+
+  it('saves with only the company filled, though other required fields are empty', async () => {
+    //  Phiếu cũ thiếu người yêu cầu: chặn theo luật thường thì không bao giờ lưu lại được.
+    build(buildRequest({ status: 'rejected', invoice_company_only: true, requester: '' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(state.save).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends for approval again without asking for the approver the normal rule wants', async () => {
+    //  Phiếu không có TBP lẫn người duyệt: luật thường chặn "Vui lòng chọn Trưởng phòng phê duyệt".
+    build(buildRequest({ status: 'rejected', invoice_company_only: true }))
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi duyệt' }))
+    expect(state.save).toHaveBeenCalledTimes(1)
+    expect(state.runAction).toHaveBeenCalledWith({ action: 'submit' })
+  })
+
+  it('a normal returned request without an approver is still blocked on send', async () => {
+    build(buildRequest({ status: 'rejected' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi duyệt' }))
+    expect(state.save).not.toHaveBeenCalled()
+  })
+
+  it('still blocks a save without the invoice company', async () => {
+    build(buildRequest({ status: 'rejected', invoice_company_only: true, company_id: 0 }))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(state.save).not.toHaveBeenCalled()
+  })
+
+  it('a normal returned request without a requester is still blocked as before', async () => {
+    build(buildRequest({ status: 'rejected', requester: '' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(state.save).not.toHaveBeenCalled()
+  })
+
+  it('returning a purchasing request warns that only the company is editable and orders lock', async () => {
+    build(buildRequest({ status: 'purchasing', can_return: true }))
+    await userEvent.click(screen.getByRole('button', { name: 'Trả về' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(/chỉ để người lập sửa Công ty nhận hóa đơn/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/tạm khóa tới khi phiếu được duyệt lại/)).toBeInTheDocument()
+    //  Chữ nút giữ nguyên như hộp Trả về thường.
+    expect(within(dialog).getByRole('button', { name: 'Xác nhận' })).toBeInTheDocument()
+  })
+
+  it('returning a submitted request shows the plain dialog without the warning', async () => {
+    build(buildRequest({ status: 'submitted', can_return: true }))
+    await userEvent.click(screen.getByRole('button', { name: 'Trả về' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByText(/chỉ để người lập sửa Công ty nhận hóa đơn/)).toBeNull()
   })
 })

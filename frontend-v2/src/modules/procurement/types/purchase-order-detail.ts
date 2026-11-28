@@ -122,6 +122,11 @@ export interface PurchaseOrderDetail {
   misa_code: string
   /** Mã YCMH nguồn — chuỗi mã, KHÔNG phải id. */
   pr_code: string
+  /**
+   * duoc-CR-803 — YCMH nguồn đang bị trả về để sửa Công ty nhận hóa đơn: mọi đường ghi của đơn
+   * trả 400 tới khi phiếu được duyệt lại, chỉ còn xem + in. Bản backend cũ không gửi.
+   */
+  locked_by_pr_return?: boolean
   survey_code: string
   company_id: number
   supplier_code: string

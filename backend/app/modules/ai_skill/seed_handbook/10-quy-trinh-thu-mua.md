@@ -76,6 +76,20 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
   khác vẫn cần sửa → ***Sửa giá trong bảng***. **Trợ lý không sửa giá đơn đã duyệt** (không có công cụ; `propose_document_update` chỉ sửa đơn Nháp / Bị trả lại): chỉ
   đường tới nút ***Sửa giá*** / ***Sửa giá trong bảng***; người hỏi không thấy nút thì thiếu quyền Duyệt đơn mua hàng, hoặc đơn
   không còn dòng sửa được.
+- **YCMH Đang mua hàng chọn nhầm Công ty nhận hóa đơn: trả về CHỈ để sửa ô đó** (từ 28/11/2026, duoc-CR-803, cả hai giao
+  diện): quản lý có quyền Hủy phiếu hoặc người duyệt trong phạm vi bấm ***Trả về*** (nhập lý do) trên phiếu **Đang mua
+  hàng**. Chỉ được khi mọi dòng của các ĐMH cùng mã PYC (trừ đơn hủy) **chưa nhận hàng** và các ĐMH đó **chưa có YCTT**
+  (trừ phiếu hủy) **và chưa có công nợ**; không thì máy chủ báo lý do (*Đơn mua hàng ... đã có dòng nhận hàng / đã có yêu cầu
+  thanh toán ... / đã phát sinh công nợ — không trả về được phiếu này*). Phiếu *Đang xử lý*, *Đã mua hàng*, *Hoàn thành*
+  không dùng được; trả về thường (Chờ duyệt / Đã duyệt / Đã điều phối chưa có ĐMH) giữ như cũ. Sau khi trả: phiếu **Bị trả
+  lại**, giữ NSTM và trạng thái dòng; người yêu cầu chỉ sửa được ***Công ty nhận hóa đơn*** rồi ***Gửi duyệt*** (ô khác gửi
+  lên bị bỏ qua); không xóa, **không hủy / Từ chối phiếu** (nút ẩn), không đổi Đơn gấp, phân bổ, sửa trạng thái dòng, lập thêm ĐMH được. Mọi ĐMH liên quan **tạm
+  khóa**: chỉ xem, in (sửa, duyệt, tiến độ, nhận hàng, chi phí, đính kèm, hủy... đều báo *Đơn mua hàng đang bị khóa...*).
+  Trưởng bộ phận ***Duyệt*** như thường (chỉ sau khi người yêu cầu đã gửi lại; còn Bị trả lại thì báo *... chưa duyệt
+  được*; có YCTT mới gắn mã ĐMH trong lúc khóa thì chặn, xử lý YCTT trước) → công ty mới chép xuống mọi ĐMH, mở khóa, phiếu
+  tự về Đang mua hàng (không điều phối lại), NSTM nhận chuông *Đổi công ty nhận hóa đơn*. Trả về lần nữa vẫn ở chế độ chỉ
+  sửa công ty. Muốn bỏ đợt sửa: người yêu cầu chọn lại công ty cũ, gửi duyệt, trưởng bộ phận duyệt. Trợ lý không trả về hộ
+  (không có công cụ): chỉ đường tới nút ***Trả về***.
 - **Mẫu thu mua khi in phiếu đề xuất từ Đơn mua hàng** (từ 17/11/2026): màn in YCMH từ ĐMH có thêm *Mẫu thu mua – có
   chữ ký* / *không chữ ký*. Người đề xuất = người đang in, Trưởng phòng ban/bộ phận = **quản lý trực tiếp** của người đó
   (ký ô TP/BP đề xuất), NCC và bảng hàng theo **ĐMH** (SL đặt, đơn giá). Chỉ người **đọc được đơn đó** mới thấy hai mẫu;

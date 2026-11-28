@@ -9,10 +9,16 @@ from app.core.central_purchasing import normalize_handler_dept_id
 
 from .model import PurchaseRequest
 from .base_service import ENTITY, LINE_STATUS_CANCELLED, LINE_STATUS_DONE, LINE_STATUS_NO_PO, get_pr, items_of
+from .invoice_company_return_service import (INVOICE_COMPANY_RETURN_STATUSES, ensure_not_invoice_company_return,
+                                             find_invoice_company_return_blocker, is_invoice_company_return,
+                                             return_for_invoice_company)
 
 
 def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
     pr = get_pr(db, pid)
+    # duoc-CR-803: phiếu đang trả về sửa công ty còn ĐMH đang sống — hủy là bỏ rơi các đơn đó với công ty cũ.
+    # Muốn bỏ đợt sửa thì trả về người yêu cầu chọn lại công ty cũ rồi duyệt.
+    ensure_not_invoice_company_return(pr, "hủy")
     pr.status = "cancelled"
     pr.updated_by = user_id
     db.commit()
@@ -24,16 +30,33 @@ def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
 #  bao-CR-554 — trả về được từ Chờ duyệt, và từ Đã duyệt / Đã điều phối khi chưa dòng nào lên ĐMH
 #  (đại ca chốt 02/10/2026). Trước đây quản lý trả về phiếu đã có ĐMH vẫn lọt: dòng bị kéo về
 #  `no_po` trong khi đơn vẫn còn.
+#  duoc-CR-803: thêm nhánh thứ ba — phiếu Đang mua hàng mà các ĐMH chưa nhận hàng / chưa có chứng từ tiền thì
+#  trả về được, nhưng CHỈ để sửa Công ty nhận hóa đơn (`invoice_company_return_service`).
 def can_return_requester(db: Session, pr: PurchaseRequest) -> bool:
     if pr.status == "submitted":
         return True
+    if pr.status in INVOICE_COMPANY_RETURN_STATUSES:
+        return not find_invoice_company_return_blocker(db, pr)
     return can_transfer_dept(db, pr)   # khai bên dưới — chỉ gọi lúc chạy
 
 
 def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
     """Trả phiếu về "Bị trả lại" (rejected) — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCKS).
-    Xóa nhân sự phụ trách + reset trạng thái mọi dòng về `no_po` (CR-074)."""
+    Xóa nhân sự phụ trách + reset trạng thái mọi dòng về `no_po` (CR-074).
+
+    duoc-CR-803: phiếu Đang mua hàng → trả về kiểu sửa công ty (giữ ĐMH, giữ dòng). Phiếu đang chờ duyệt
+    lại của đợt sửa công ty mà bị trả tiếp thì cũng GIỮ kiểu đó — kéo dòng về `no_po` lúc này là mất dấu
+    các ĐMH đang sống."""
     pr = get_pr(db, pid)
+    if pr.status in INVOICE_COMPANY_RETURN_STATUSES:
+        return return_for_invoice_company(db, pid, reason, user_id)
+    if pr.status == "submitted" and is_invoice_company_return(pr):
+        pr.status = "rejected"
+        pr.updated_by = user_id
+        db.commit()
+        record(db, user_id, ENTITY, pid, "returned", reason)
+        db.refresh(pr)
+        return pr
     if not can_return_requester(db, pr):
         raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
                                  "lên đơn mua hàng — hủy đơn liên quan trước")

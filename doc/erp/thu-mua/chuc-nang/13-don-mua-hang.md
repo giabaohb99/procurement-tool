@@ -96,6 +96,17 @@ Cách thứ hai, chạy song song với hộp *Sửa giá*, **chỉ ở giao di�
 
 Mã: `purchase_order/reprice_service.py`; giao diện `frontend-v2/src/modules/procurement/hooks/use-purchase-order-reprice.ts`, `components/purchase-order-reprice-bar.tsx`, `components/purchase-order-items-table.tsx`. Test: `test/backend/test_sua_gia_dmh_sau_duyet_cr794.py` (gồm cả đường `/reprice`).
 
+### Đơn tạm khóa khi YCMH trả về sửa công ty (duoc-CR-803)
+
+YCMH nguồn (cùng `pr_code`) đang **Đang mua hàng** được trả về CHỈ để sửa Công ty nhận hóa đơn (luật trả về, điều kiện, duyệt lại: [12-yeu-cau-mua-hang.md](12-yeu-cau-mua-hang.md), mục *Trả về phiếu Đang mua hàng để sửa Công ty nhận hóa đơn*) thì **mọi ĐMH chưa hủy** của phiếu đó khóa ghi tới khi TBP duyệt lại. Cả hai giao diện; bài HDSD: mục *Đơn tạm khóa khi yêu cầu mua hàng được trả về sửa công ty* của bài *Đơn mua hàng (PO)*.
+
+- Chi tiết đơn trả thêm `locked_by_pr_return`; giao diện hiện dòng báo đơn đang tạm khóa kèm mã YCMH, chỉ để xem và in.
+- Máy chủ chặn (`ensure_po_not_locked`, 400 *Đơn mua hàng đang bị khóa: yêu cầu mua hàng liên quan đã trả về để sửa công ty nhận hóa đơn, chờ duyệt lại*): mọi đường ghi của `/api/purchase-orders/{id}...` đi qua quyền `write` / `approve` / `cancel` / `delete` (sửa, gửi duyệt, duyệt, hủy duyệt, sửa giá, tiến độ, nhận hàng, chi phí thu mua, hủy, xóa), cộng tải lên / gắn / gỡ tệp đính kèm của đơn và của lần giao. Tiến độ tự động (`apply_auto_progress`) đứng yên.
+- Duyệt lại: `company_id` của YCMH chép xuống từng đơn còn hiệu lực (nhật ký *Đổi công ty nhận hóa đơn theo YCMH ...*), đơn mở khóa. Phiếu nhập kho ngầm, tồn kho, công nợ lập SAU đó mang công ty mới; trả về chỉ được khi chưa dòng nào nhận hàng và chưa có YCTT / công nợ nên không có chứng từ cũ nào phải chuyển.
+- Khóa chỉ gỡ khi YCMH được duyệt lại: trong lúc trả về YCMH không hủy / Từ chối phiếu được (400, nút ẩn). Có YCTT mới gõ tay mang mã đơn trong lúc khóa thì TBP chưa duyệt được, phải xử lý YCTT đó trước.
+
+Mã: `purchase_request/invoice_company_return_service.py` (`is_po_locked_by_pr_return`, `ensure_po_not_locked`), cổng ở `purchase_order/controller._in_scope`, `edit_service.update_po` / `delete_po`, `attachment/controller._block_po_locked_by_pr_return`.
+
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
 | Giá trị | Ý nghĩa |
@@ -159,7 +170,7 @@ Mã: `purchase_order/reprice_service.py`; giao diện `frontend-v2/src/modules/p
 - Mặc định: 0 (trống)
 - Bắt buộc: Không bắt buộc khi Nháp; nên điền để sinh tự động phiếu nhập kho và công nợ đúng pháp nhân
 - Nguồn dữ liệu / liên kết: Bảng Công ty (`/api/companies`), tối đa 200 bản ghi
-- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa. Đơn đã lên MISA mà YCMH nguồn chọn nhầm công ty thì đổi qua đường trả YCMH về sửa công ty (duoc-CR-803, mục *Đơn tạm khóa khi YCMH trả về sửa công ty*): duyệt lại là công ty tự chép xuống đơn
 - Logic đặc biệt: `company_id` được truyền vào toàn bộ các side-effect (phiếu nhập kho ngầm `goods_receipt`, tồn kho `inventory`, công nợ `payable`). Thông tin công ty (tên, địa chỉ, MST, email HĐ) hiển thị trên bản in.
 
 ### 6. Nhà cung cấp bán hàng (`supplier_code`)

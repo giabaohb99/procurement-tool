@@ -450,3 +450,78 @@ describe('PurchaseOrderDetailPage — nút Sửa giá sau duyệt (bao-CR-794)',
     expect(screen.queryByRole('button', { name: 'Sửa giá' })).toBeNull()
   })
 })
+
+/**
+ * duoc-CR-803 — YCMH nguồn trả về để sửa Công ty nhận hóa đơn thì đơn TẠM KHÓA: backend trả 400
+ * cho mọi đường ghi, nên màn chỉ còn xem + in và phải nói rõ vì sao.
+ */
+describe('PurchaseOrderDetailPage — tạm khóa vì YCMH bị trả về (duoc-CR-803)', { timeout: 30_000 }, () => {
+  function seedOrder(status: string, lockedByPrReturn: boolean) {
+    server.order = {
+      ...createEmptyPurchaseOrder(),
+      id: 1178,
+      code: 'PO01178',
+      pr_code: 'PYC09112601',
+      status,
+      company_id: 1,
+      supplier_code: 'NCC01',
+      locked_by_pr_return: lockedByPrReturn,
+      items: [line({ id: 900, qty_received: 0, progress_status: 'ordered' })],
+    }
+  }
+
+  const NOTICE =
+    'Đơn đang tạm khóa: yêu cầu mua hàng PYC09112601 được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.'
+
+  it('an approved order shows the notice, keeps In and drops every write button', async () => {
+    seedOrder('approved', true)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    expect(screen.getByRole('status')).toHaveTextContent(NOTICE)
+    expect(screen.getByRole('button', { name: 'In' })).toBeInTheDocument()
+    for (const name of [
+      'Lưu',
+      'Hủy duyệt',
+      'Sửa giá',
+      'Sửa giá trong bảng',
+      'Hủy',
+      'Tạo yêu cầu thanh toán',
+    ]) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+  })
+
+  it('the same approved order without the lock still offers those buttons', async () => {
+    seedOrder('approved', false)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    expect(screen.queryByText(NOTICE)).toBeNull()
+    for (const name of ['Lưu', 'Hủy duyệt', 'Sửa giá', 'Hủy', 'Tạo yêu cầu thanh toán']) {
+      expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('a draft order cannot be sent, saved, deleted or given new lines', async () => {
+    seedOrder('draft', true)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    for (const name of ['Gửi duyệt', 'Lưu', 'Xóa đơn', 'Thêm dòng']) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+    //  Ô đơn giá trong bảng thành chữ chỉ xem, không còn ô gõ.
+    expect(within(screen.getByRole('table')).queryAllByRole('textbox', { name: /^Đơn giá dòng/ })).toHaveLength(0)
+  })
+
+  it('a submitted order cannot be approved, returned or rejected', async () => {
+    seedOrder('submitted', true)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    for (const name of ['Duyệt', 'Trả về', 'Từ chối']) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+  })
+})

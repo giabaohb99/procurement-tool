@@ -330,6 +330,9 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
                   for stage in CostStage}
     allocation["effective"] = service.allocate_import_costs(items, costs)
     d["import_cost_allocation"] = allocation
+    # duoc-CR-803: YCMH nguồn đang trả về để sửa Công ty nhận hóa đơn → đơn khóa mọi thao tác ghi.
+    from app.modules.purchase_request.invoice_company_return_service import is_po_locked_by_pr_return
+    d["locked_by_pr_return"] = is_po_locked_by_pr_return(db, po)
     return d
 
 

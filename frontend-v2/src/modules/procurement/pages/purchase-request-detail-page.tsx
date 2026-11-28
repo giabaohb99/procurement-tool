@@ -117,6 +117,12 @@ import {
   toDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { validatePurchaseRequest } from '../utils/required-fields'
+import {
+  INVOICE_COMPANY_ONLY_NOTICE,
+  PURCHASING_RETURN_NOTICE,
+  isInvoiceCompanyOnly,
+  validateInvoiceCompanyOnly,
+} from '../utils/invoice-company-return-lock'
 import { fillApproverDefaults, resolveShownDeptHead } from '../utils/dept-head-display'
 import { resolveReturnAction, type ReturnTarget } from '../utils/return-action'
 import {
@@ -356,8 +362,16 @@ export function PurchaseRequestDetailPage() {
 
   const editable = isEditable(data.status)
   const closed = isClosed(data.status)
+  /**
+   * duoc-CR-803: phiếu Đang mua hàng bị trả về chỉ để sửa Công ty nhận hóa đơn. Đang sửa thì
+   * chỉ ô công ty mở; phân công, tiến độ dòng, cờ Gấp, đính kèm, xóa phiếu đều tắt — backend
+   * chặn y hệt tới khi phiếu được duyệt lại.
+   */
+  const invoiceCompanyOnly = isInvoiceCompanyOnly(data)
+  /** Sửa được NỘI DUNG phiếu (dòng hàng, NCC, ô thông tin) — tắt ở chế độ chỉ sửa công ty. */
+  const contentEditing = editing && !invoiceCompanyOnly
   const canManage = can('purchase_request', 'cancel')
-  const canAssign = can('purchase_request', 'approve') && !closed
+  const canAssign = can('purchase_request', 'approve') && !closed && !invoiceCompanyOnly
   const showAssignee = can('survey_request', 'process')
   // bao-CR-292/297 (ticket 22): thêm hai mốc purchasing/purchased — phiếu đã mua
   // đủ vẫn có thể cần thêm ĐMH (đặt bổ sung / NCC khác) nên không khóa nút ở đó.
@@ -393,7 +407,8 @@ export function PurchaseRequestDetailPage() {
 
   /** Sửa tiến độ dòng: quản lý/người duyệt, hoặc chính NSTM phụ trách dòng đó. */
   const canEditLine = (item: PurchaseRequestItem) =>
-    canAssign || canManage || (!!item.assignee && item.assignee === user?.emp_code)
+    !invoiceCompanyOnly &&
+    (canAssign || canManage || (!!item.assignee && item.assignee === user?.emp_code))
 
   /** Còn dòng chưa đặt đủ -> mới có việc cho nút "Tạo đơn mua hàng". */
   const hasUnorderedItem = data.items.some(
@@ -448,13 +463,13 @@ export function PurchaseRequestDetailPage() {
       ? 'manual'
       : null
   const canManageAttachments =
-    editable && (can('purchase_request', 'write') || can('purchase_request', 'create'))
+    editable &&
+    !invoiceCompanyOnly &&
+    (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const canManageLineAttachments =
-    can('purchase_request', 'write') || can('purchase_request', 'create')
+    !invoiceCompanyOnly && (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const selectedLine = lineIndex === null ? null : loadedDraft.items[lineIndex] ?? null
-  const canEditSelectedLine = selectedLine
-    ? canAssign || canManage || (!!selectedLine.assignee && selectedLine.assignee === user?.emp_code)
-    : false
+  const canEditSelectedLine = selectedLine ? canEditLine(selectedLine) : false
 
   function patch(changes: Partial<PurchaseRequestDetail>) {
     setDraft((current) => (current ? { ...current, ...changes } : current))
@@ -475,7 +490,10 @@ export function PurchaseRequestDetailPage() {
       loadedDraft,
       resolveShownDeptHead(loadedDraft, editing, defaultDeptHead),
     )
-    const validationMessage = validatePurchaseRequest(draftToSave, submitAfterSave)
+    //  duoc-CR-803: chế độ chỉ sửa công ty thì chỉ đòi ô công ty — backend bỏ qua mọi ô khác.
+    const validationMessage = invoiceCompanyOnly
+      ? validateInvoiceCompanyOnly(draftToSave)
+      : validatePurchaseRequest(draftToSave, submitAfterSave)
     if (validationMessage) {
       toast.error(validationMessage)
       return
@@ -563,7 +581,9 @@ export function PurchaseRequestDetailPage() {
     // dòng (mã hàng / SL / kho / ngày cần hàng) chỉ có màn này giữ, đúng như bản
     // `frontend` đang chạy. Bỏ nhánh này là phiếu rỗng ruột vẫn lên duyệt được.
     if (action === 'submit') {
-      const message = validatePurchaseRequest(loadedData, true)
+      const message = invoiceCompanyOnly
+        ? validateInvoiceCompanyOnly(loadedData)
+        : validatePurchaseRequest(loadedData, true)
       if (message) {
         toast.error(message)
         return
@@ -907,7 +927,9 @@ export function PurchaseRequestDetailPage() {
           </Button>
         ),
       },
+      //  duoc-CR-803: phiếu chỉ sửa công ty thì backend chặn /cancel — ẩn cả hai nút Từ chối.
       data.status === 'submitted' &&
+        !invoiceCompanyOnly &&
         (data.can_approve || canManage) && {
           key: 'reject',
           node: (
@@ -1034,6 +1056,7 @@ export function PurchaseRequestDetailPage() {
           ),
         },
       canManage &&
+        !invoiceCompanyOnly &&
         !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && {
           key: 'reject-late',
           node: (
@@ -1099,6 +1122,7 @@ export function PurchaseRequestDetailPage() {
     // phiếu BỊ TRẢ LẠI vẫn sửa & gửi duyệt lại được nên nút viền, tránh hai nút chính đá nhau.
     !isNew &&
       ['rejected', 'cancelled'].includes(data.status) &&
+      !invoiceCompanyOnly &&
       can('survey_request', 'create') && {
         key: 'create-survey-request',
         group: 'utility',
@@ -1116,7 +1140,8 @@ export function PurchaseRequestDetailPage() {
         ),
       },
     !isNew &&
-      ['draft', 'rejected', 'cancelled'].includes(data.status) && {
+      ['draft', 'rejected', 'cancelled'].includes(data.status) &&
+      !invoiceCompanyOnly && {
         key: 'delete',
         group: 'utility',
         node: (
@@ -1171,6 +1196,15 @@ export function PurchaseRequestDetailPage() {
         </div>
       )}
 
+      {invoiceCompanyOnly && (
+        <div
+          role="status"
+          className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          {INVOICE_COMPANY_ONLY_NOTICE}
+        </div>
+      )}
+
       <div className="min-w-0 space-y-4">
         {/*  duoc-CR-780: mọi thẻ trong vùng gập / mở được, nhớ theo loại chứng từ; lập MỚI thì tắt. */}
         <CardCollapseScope scope={isNew ? null : 'procurement.purchase-request'}>
@@ -1178,21 +1212,24 @@ export function PurchaseRequestDetailPage() {
               data={loadedDraft}
               editing={editing}
               isNew={isNew}
+              onlyCompanyEditable={invoiceCompanyOnly}
               companies={companiesData?.items}
               employees={employeesData?.items}
               departments={departmentsData?.items}
               deptHeadCandidates={deptHeadData?.items}
               approverCandidates={approverData?.items}
               defaultDeptHead={defaultDeptHead}
-              urgentEditable={!closed && !editing && can('purchase_request', 'write')}
+              urgentEditable={
+                !closed && !editing && !invoiceCompanyOnly && can('purchase_request', 'write')
+              }
               onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
               onChange={patch}
             />
 
             <PurchaseRequestItemsTable
               items={loadedDraft.items}
-              editing={editing}
-              bulkRemovable={isNew || data.status === 'draft'}
+              editing={contentEditing}
+              bulkRemovable={!invoiceCompanyOnly && (isNew || data.status === 'draft')}
               showAssignee={showAssignee}
               onChange={(items) => patch({ items })}
               onOpenDetail={setLineIndex}
@@ -1222,7 +1259,7 @@ export function PurchaseRequestDetailPage() {
                         </CardTitle>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                           {headerActions}
-                          {editing ? (
+                          {contentEditing ? (
                             <Button
                               variant="outline"
                               size="sm"
@@ -1248,7 +1285,7 @@ export function PurchaseRequestDetailPage() {
                       <CardContent hidden={!collapse.open} className="space-y-3 px-4">
                         {/* Câu hướng dẫn để trong thân thẻ, không nhét vào tiêu đề: hai
                             dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
-                        {!editing && (
+                        {!contentEditing && (
                           <p className="text-xs text-muted-foreground">
                             Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
                             và ảnh đối chiếu.
@@ -1263,7 +1300,11 @@ export function PurchaseRequestDetailPage() {
               )}
             />
 
-            <PurchaseRequestSupplierCard data={loadedDraft} editing={editing} onChange={patch} />
+            <PurchaseRequestSupplierCard
+              data={loadedDraft}
+              editing={contentEditing}
+              onChange={patch}
+            />
 
             {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
                 ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
@@ -1311,8 +1352,8 @@ export function PurchaseRequestDetailPage() {
         item={selectedLine}
         lineNumber={(lineIndex ?? 0) + 1}
         open={lineIndex !== null}
-        editing={editing}
-        documentEditable={editable}
+        editing={contentEditing}
+        documentEditable={editable && !invoiceCompanyOnly}
         onStartEditing={() => setEditing(true)}
         showAssignee={showAssignee}
         canEditProgress={canEditSelectedLine}
@@ -1338,6 +1379,12 @@ export function PurchaseRequestDetailPage() {
                   ? REASON_ACTIONS[reasonFor].description
                   : ''}
             </DialogDescription>
+            {/*  duoc-CR-803: trả phiếu Đang mua hàng là trả riêng — chỉ sửa công ty, khóa ĐMH. */}
+            {reasonFor === 'return' && data.status === 'purchasing' && (
+              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                {PURCHASING_RETURN_NOTICE}
+              </p>
+            )}
           </DialogHeader>
           <Textarea
             rows={4}

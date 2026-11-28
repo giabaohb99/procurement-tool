@@ -25,5 +25,6 @@ from app.core import ai_usage_codes  # noqa: F401
 from app.core import ai_plan_codes  # noqa: F401  kh-AI1-3
 from app.core import job_run_codes  # noqa: F401  bao-CR-703
 from app.core import packaging_price_codes  # noqa: F401  duoc-CR-784
+from app.core import pr_return_codes  # noqa: F401  duoc-CR-803
 
 __all__: list[str] = []

@@ -161,6 +161,20 @@ def _block_leave_request_locked(db: Session, entity: str, entity_id: int):
         check_editable(obj)
 
 
+def _block_po_locked_by_pr_return(db: Session, entity: str, entity_id: int):
+    """Đính kèm của ĐMH / lần giao khóa theo đơn khi YCMH nguồn đang trả về sửa công ty (duoc-CR-803)."""
+    if entity not in ("purchase_order", "delivery"):
+        return
+    from app.modules.purchase_order.model import PODelivery, PurchaseOrder
+    from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
+
+    po_id = entity_id
+    if entity == "delivery":
+        dl = db.get(PODelivery, entity_id)
+        po_id = dl.po_id if dl else 0
+    ensure_po_not_locked(db, db.get(PurchaseOrder, po_id) if po_id else None)
+
+
 def _reindex_document_search(db: Session, entity: str, entity_id: int) -> None:
     """Chỉ mục TÌM KIẾM TOÀN VĂN của văn bản (phase 07, duoc-CR-477) — gọi
     SAU commit khi tệp đính kèm của một PHIÊN BẢN VĂN BẢN (`entity =
@@ -328,6 +342,7 @@ def upload(
     exts, max_mb = _check(db, user, entity, "manage", entity_id)
     _block_version_in_approval(db, entity, entity_id)
     _block_leave_request_locked(db, entity, entity_id)
+    _block_po_locked_by_pr_return(db, entity, entity_id)
     _valid_doc_type(doc_type)
     out = []
     for f in files:
@@ -369,6 +384,7 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
     _check(db, user, data.entity, "manage", data.entity_id)
     _block_version_in_approval(db, data.entity, data.entity_id)
     _block_leave_request_locked(db, data.entity, data.entity_id)
+    _block_po_locked_by_pr_return(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
 
     #  BM-025 — cửa này từng chỉ hỏi "có dòng tab_file nào mang id ấy không", không hỏi
@@ -721,6 +737,7 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
         _check(db, user, lk.entity, "manage", lk.entity_id)
         _block_version_in_approval(db, lk.entity, lk.entity_id)
         _block_leave_request_locked(db, lk.entity, lk.entity_id)
+        _block_po_locked_by_pr_return(db, lk.entity, lk.entity_id)
     fid = lk.file_id
     entity, entity_id = lk.entity, lk.entity_id
     db.delete(lk); db.flush()

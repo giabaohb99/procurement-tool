@@ -41,6 +41,11 @@ interface InfoCardProps {
   editing: boolean
   /** Đang LẬP phiếu mới: ô Phòng xử lý mặc định "Phòng thu mua mặc định" (chưa nhờ phòng nào). */
   isNew?: boolean
+  /**
+   * duoc-CR-803 — phiếu Đang mua hàng bị trả về chỉ để sửa Công ty nhận hóa đơn: đang sửa
+   * nhưng mọi ô khác (kể cả Nhân sự YC, vốn tự đè công ty) chỉ xem.
+   */
+  onlyCompanyEditable?: boolean
   /** Sau khi phiếu duyệt, quản lý vẫn được đổi cờ Gấp và backend đồng bộ sang ĐMH. */
   urgentEditable?: boolean
   onUrgentChange?: (checked: boolean) => void
@@ -69,6 +74,7 @@ export function PurchaseRequestInfoCard({
   data,
   editing,
   isNew = false,
+  onlyCompanyEditable = false,
   urgentEditable,
   onUrgentChange,
   companies = [],
@@ -80,10 +86,12 @@ export function PurchaseRequestInfoCard({
   onChange,
 }: InfoCardProps) {
   const { can } = usePermission()
+  //  duoc-CR-803: mọi ô trừ Công ty nhận hóa đơn theo cờ này; ô công ty theo `editing` gốc.
+  const fieldEditing = editing && !onlyCompanyEditable
   // bao-CR-474 — ô TBP LUÔN hiện một người, xem `resolveShownDeptHead`.
   const { head_of_dept_id: shownHeadId, head_of_dept: shownHeadName } = resolveShownDeptHead(
     data,
-    editing,
+    fieldEditing,
     defaultDeptHead,
   )
   // bao-CR-480: một ô "Phòng xử lý" cho cả ba chứng từ — luật nhãn/mục chọn ở util dùng chung.
@@ -195,7 +203,7 @@ export function PurchaseRequestInfoCard({
             Nhân sự YC
             <RequiredMark />
           </Label>
-          {editing && employees.length ? (
+          {fieldEditing && employees.length ? (
             <SearchSelect
               id="pr-requester"
               searchInTrigger
@@ -229,7 +237,7 @@ export function PurchaseRequestInfoCard({
                 })
               }}
             />
-          ) : editing ? (
+          ) : fieldEditing ? (
             <Input
               value={data.requester}
               placeholder="Nhập nhân sự yêu cầu"
@@ -250,7 +258,7 @@ export function PurchaseRequestInfoCard({
           KHÔNG thấy (loại trừ so đúng ô này). bao-CR-524: KHÔNG còn mục "Thu mua chung" (0) —
           phòng thu mua mặc định là phòng thật "Sản xuất -Thu mua" có sẵn trong danh mục.
         */}
-        {editing && isNew && departments.length ? (
+        {fieldEditing && isNew && departments.length ? (
           /* 03/10/2026 — bỏ ô tick "Nhờ phòng khác xử lý" (bao-CR-488): MỘT ô chọn, mặc định hiện
              "Phòng thu mua mặc định", bấm vào mới xổ danh mục phòng ban. Mục mặc định = CHƯA nhờ
              phòng nào → không gửi, backend tự chọn (nhà máy → chính phòng mình, còn lại → phòng
@@ -271,7 +279,7 @@ export function PurchaseRequestInfoCard({
         ) : (
           <div className="space-y-1.5">
             <Label htmlFor="pr-handler-dept">Phòng xử lý</Label>
-            {editing && departments.length ? (
+            {fieldEditing && departments.length ? (
               <>
                 <SearchSelect
                   id="pr-handler-dept"
@@ -292,7 +300,7 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>Chức vụ (Nếu có)</Label>
-          {editing ? (
+          {fieldEditing ? (
             <Input
               value={data.requester_position}
               placeholder="Tự động theo Nhân sự"
@@ -313,11 +321,11 @@ export function PurchaseRequestInfoCard({
         <div className="space-y-1.5">
           <Label
             htmlFor="pr-dept-head"
-            className={editing && deptHeadCandidates.length ? '' : 'text-muted-foreground'}
+            className={fieldEditing && deptHeadCandidates.length ? '' : 'text-muted-foreground'}
           >
             Trưởng bộ phận (TBP) / Người liên hệ
           </Label>
-          {editing && deptHeadCandidates.length ? (
+          {fieldEditing && deptHeadCandidates.length ? (
             //  Người đang hiện KHÔNG nằm trong danh sách ứng viên thì để ô rỗng và bày tên đó ở
             //  placeholder (chữ mờ) — y như bản Radix cũ. Đưa id vào `value` thì SearchSelect
             //  hiện nguyên văn con số id, vì nó không tìm thấy nhãn trong `options`.
@@ -362,7 +370,7 @@ export function PurchaseRequestInfoCard({
             />
           ) : (
             <ReadOnlyValue>
-              {shownHeadName || (editing ? 'Phòng chưa gán Trưởng bộ phận ở màn Phòng ban' : '—')}
+              {shownHeadName || (fieldEditing ? 'Phòng chưa gán Trưởng bộ phận ở màn Phòng ban' : '—')}
             </ReadOnlyValue>
           )}
         </div>
@@ -376,7 +384,7 @@ export function PurchaseRequestInfoCard({
           value={data.approver_employee_id || shownHeadId}
           name={data.approver_employee_name || (data.approver_employee_id ? '' : shownHeadName)}
           candidates={approverCandidates}
-          editable={editing}
+          editable={fieldEditing}
           onChange={onChange}
           required
         />
@@ -390,11 +398,11 @@ export function PurchaseRequestInfoCard({
           <label className="flex cursor-pointer items-center gap-2 text-sm text-destructive">
             <Checkbox
               checked={data.is_urgent}
-              disabled={!editing && !urgentEditable}
+              disabled={!fieldEditing && !urgentEditable}
               onCheckedChange={(checked) => {
                 const next = checked === true
                 onChange({ is_urgent: next })
-                if (!editing) onUrgentChange?.(next)
+                if (!fieldEditing) onUrgentChange?.(next)
               }}
             />
             Đơn gấp
@@ -406,7 +414,7 @@ export function PurchaseRequestInfoCard({
             Mục đích mua hàng
             <RequiredMark />
           </Label>
-          {editing ? (
+          {fieldEditing ? (
             <Textarea
               rows={3}
               placeholder="Nhập mục đích mua hàng/dịch vụ..."
@@ -420,7 +428,7 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>Nội dung mua hàng</Label>
-          {editing ? (
+          {fieldEditing ? (
             <Textarea
               rows={3}
               placeholder="Nhập nội dung chi tiết..."

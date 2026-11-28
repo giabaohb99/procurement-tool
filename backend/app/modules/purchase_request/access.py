@@ -59,8 +59,8 @@ def _can_return_requester(db: Session, user, pr: PurchaseRequest) -> bool:
     hoặc người duyệt (quyền Duyệt, trong phạm vi) — cả hai ở Chờ duyệt lẫn Đã duyệt / Đã điều
     phối, miễn chưa dòng nào lên ĐMH (`service.can_return_requester`). Người duyệt trước đây chỉ
     trả được ở Chờ duyệt."""
-    if not service.can_return_requester(db, pr):
-        return False
-    if user_has_permission(db, user, "purchase_request", "cancel") and _scope_ok(db, user, pr.id, "cancel"):
-        return True
-    return bool(user_has_permission(db, user, "purchase_request", "approve") and _in_approve_scope(db, user, pr.id))
+    # duoc-CR-803: hỏi quyền TRƯỚC — `can_return_requester` của phiếu Đang mua hàng soi ĐMH / YCTT / công nợ
+    # (5 truy vấn), không đáng chạy cho người xem không có quyền trả về.
+    allowed = (user_has_permission(db, user, "purchase_request", "cancel") and _scope_ok(db, user, pr.id, "cancel")) \
+        or (user_has_permission(db, user, "purchase_request", "approve") and _in_approve_scope(db, user, pr.id))
+    return bool(allowed) and service.can_return_requester(db, pr)

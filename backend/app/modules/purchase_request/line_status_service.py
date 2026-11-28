@@ -358,6 +358,8 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
     pr = get_pr(db, pid)
     if pr.status in ("cancelled", "completed"):
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
+    from .invoice_company_return_service import ensure_not_invoice_company_return
+    ensure_not_invoice_company_return(pr, "cập nhật trạng thái dòng")   # duoc-CR-803
     rows = {i.id: i for i in items_of(db, pid)}
     _expected_changes: list[str] = []
     _code_changes: list[str] = []

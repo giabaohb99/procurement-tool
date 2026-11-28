@@ -302,7 +302,10 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
 
 @router.post("/{pid}/cancel")
 def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    """Hủy YCMH kèm lý do và báo người tạo."""
+    """Hủy YCMH kèm lý do và báo người tạo.
+
+    duoc-CR-803: phiếu đang trả về sửa công ty nhận hóa đơn thì KHÔNG hủy được — các ĐMH của nó vẫn sống;
+    muốn bỏ đợt sửa thì trả về người yêu cầu chọn lại công ty cũ rồi duyệt."""
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
     pr = service.cancel_pr(db, pid, data.reason, user.id)
     trigger_notification(db=db, event="pr_cancelled", doc_type="purchase_request", doc_code=pr.code,
@@ -313,10 +316,18 @@ def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
 
 @router.post("/{pid}/return")
 def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    """Trả YCMH về người yêu cầu để sửa; chỉ khi phiếu chờ duyệt hoặc đã duyệt mà chưa dòng nào lên đơn mua."""
+    """Trả YCMH về người yêu cầu để sửa.
+
+    Chỉ khi phiếu chờ duyệt, hoặc đã duyệt mà chưa dòng nào lên đơn mua. duoc-CR-803: phiếu Đang mua hàng mà các
+    ĐMH chưa nhận hàng / chưa có chứng từ tiền thì trả về CHỈ để sửa Công ty nhận hóa đơn, các ĐMH bị khóa tới khi
+    duyệt lại. Quyền: quản lý (Hủy) hoặc người duyệt trong phạm vi."""
     pr = service.get_pr(db, pid)
     if not _can_return_requester(db, user, pr):   # bao-CR-554: cùng cờ với nút trên giao diện
-        if pr.status not in ("submitted",) + service.TRANSFERABLE_STATUSES or not service.can_return_requester(db, pr):
+        if pr.status in service.INVOICE_COMPANY_RETURN_STATUSES:
+            blocker = service.find_invoice_company_return_blocker(db, pr)
+            if blocker:
+                raise HTTPException(400, blocker)
+        elif pr.status not in ("submitted",) + service.TRANSFERABLE_STATUSES or not service.can_return_requester(db, pr):
             raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
                                      "lên đơn mua hàng — hủy đơn liên quan trước")
         raise HTTPException(403, "Bạn không có quyền trả về phiếu này")
@@ -324,6 +335,9 @@ def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
     trigger_notification(db=db, event="pr_returned", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
+    if service.is_invoice_company_return(pr):
+        return success(_out(db, pr, user), "Đã trả phiếu về để sửa công ty nhận hóa đơn — các đơn mua hàng liên quan "
+                                           "tạm khóa tới khi duyệt lại")
     return success(_out(db, pr, user), "Đã trả phiếu về (Bị trả lại)")
 
 
@@ -455,7 +469,8 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         raise HTTPException(400, "Phiếu chưa có Trưởng phòng phê duyệt — chọn người duyệt rồi gửi lại")
     # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
     # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
-    service.apply_auto_urgent(db, pr, user.id)
+    if not service.is_invoice_company_return(pr):   # duoc-CR-803: dòng không đổi, cờ gấp chép xuống ĐMH đang khóa
+        service.apply_auto_urgent(db, pr, user.id)
     pr = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(
         db=db,
@@ -494,6 +509,12 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # thống) cũng đi thẳng — để nhà máy tự mua không phải qua thu mua chung trong khi các phòng
     # khác vẫn hai bước. Ô điều kiện rỗng = hành vi cũ.
     pr = service.get_pr(db, pid)
+    if service.is_invoice_company_return(pr):
+        # Chỉ duyệt được khi người yêu cầu đã gửi lại; bấm Duyệt trên trang cũ lúc phiếu đang Bị trả lại mà rơi
+        # xuống luồng thường là phiếu lên `approved` với `return_mode` còn 1 — ĐMH khóa vĩnh viễn.
+        if pr.status != "submitted":
+            raise HTTPException(400, "Phiếu đang chờ người yêu cầu sửa công ty nhận hóa đơn — chưa duyệt được")
+        return _approve_invoice_company_change(db, pr, user, background_tasks)
     auto_dispatch = service.skip_dispatch_for(db, pr)
     pr = service.set_status(db, pid, "approved", user.id, audit=not auto_dispatch)
     # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
@@ -534,6 +555,20 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
             msg += f" · còn {blank_count} dòng chưa có người phụ trách, hãy chọn tay"
         return success(_out(db, pr, user), msg)
     return success(_out(db, pr, user), "Đã duyệt — phiếu chờ thu mua duyệt điều phối")
+
+
+def _approve_invoice_company_change(db: Session, pr: PurchaseRequest, user, background_tasks: BackgroundTasks):
+    """duoc-CR-803: duyệt phiếu trả về sửa công ty — đổi công ty trên ĐMH, mở khóa, phiếu về lại mốc đang mua.
+    Không qua điều phối lại, không đổi NSTM, không ghi đè "Trưởng phòng phê duyệt" của lần duyệt gốc."""
+    n = service.apply_invoice_company_approval(db, pr, user.id)
+    link = f"/purchase-requests/{pr.id}"
+    trigger_notification(db=db, event="pr_approved", doc_type="purchase_request", doc_code=pr.code,
+                         creator_id=pr.created_by or user.id, background_tasks=background_tasks,
+                         is_urgent=bool(pr.is_urgent), approve_note=pr.note or "", link=link)
+    service.notify_users(db, service.assigned_user_ids(db, pr), f"{pr.code} — Đổi công ty nhận hóa đơn",
+                         f"Yêu cầu mua hàng {pr.code} đã duyệt đổi công ty nhận hóa đơn; {n} đơn mua hàng liên quan "
+                         "đã cập nhật và mở khóa.", link, user.id, background_tasks)
+    return success(_out(db, pr, user), f"Đã duyệt — cập nhật công ty nhận hóa đơn cho {n} đơn mua hàng")
 
 
 @router.post("/{pid}/dispatch")

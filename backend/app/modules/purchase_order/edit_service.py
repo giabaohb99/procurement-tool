@@ -442,6 +442,8 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
+    from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
+    ensure_po_not_locked(db, po)   # duoc-CR-803: YCMH nguồn đang trả về sửa công ty nhận hóa đơn
     block_edit_approved_order(db, po, data)
     block_clear_misa_in_use(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
@@ -514,6 +516,8 @@ def delete_po(db: Session, pid: int, user_id: int):
     po = get_po(db, pid)
     if po.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ xóa được đơn ở trạng thái Nháp hoặc Bị từ chối. Đơn đã duyệt/xử lý hãy dùng Hủy đơn.")
+    from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
+    ensure_po_not_locked(db, po)   # duoc-CR-803: YCMH nguồn đang trả về sửa công ty nhận hóa đơn
     for row in import_costs_of(db, pid):
         block_delete_paid_import_cost(db, row)
     mark_deleted(po, user_id)

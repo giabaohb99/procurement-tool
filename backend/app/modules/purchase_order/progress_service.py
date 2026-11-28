@@ -109,6 +109,9 @@ def auto_advance_line(db: Session, po: PurchaseOrder, item: POItem) -> bool:
 
 def apply_auto_progress(db: Session, po: PurchaseOrder, user_id: int | None = None) -> bool:
     """Duyệt mọi dòng → auto tiến; nếu có đổi thì commit + đồng bộ YCMH. Trả True nếu có đổi."""
+    from app.modules.purchase_request.invoice_company_return_service import is_po_locked_by_pr_return
+    if is_po_locked_by_pr_return(db, po):   # duoc-CR-803: đơn đang khóa thì tiến độ đứng yên tới khi mở khóa
+        return False
     changed = False
     for item in db.query(POItem).filter(POItem.po_id == po.id).all():
         if auto_advance_line(db, po, item):

@@ -114,6 +114,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-803 | Trả yêu cầu mua hàng Đang mua hàng về để chỉ sửa Công ty nhận hóa đơn
+- status: xong
+- date: 2026-11-28
+- pic: NSU231
+- tag: Được
+
+**Bối cảnh:** theo ticket thu mua, có YCMH (yêu cầu mua hàng) đã lên ĐMH (đơn mua hàng) và đặt hàng xong mới phát hiện chọn sai Công ty nhận hóa đơn. Anh Được chốt luật: chỉ phiếu **Đang mua hàng** mới trả về được, dòng hàng của các ĐMH liên quan chưa được nhận, và khi trả về thì người yêu cầu chỉ được sửa Công ty nhận hóa đơn; làm ở cả hai giao diện.
+
+**Đã làm**
+- Nút **Trả về** của YCMH nay nhận thêm phiếu Đang mua hàng. Máy chủ chặn khi có ĐMH đã có dòng nhận hàng, khi ĐMH đã có YCTT (yêu cầu thanh toán) chưa hủy hoặc đã phát sinh công nợ, và báo rõ mã chứng từ đang vướng.
+- Trả về kiểu này giữ nguyên người phụ trách mua, trạng thái dòng và các ĐMH; phiếu hiện **Bị trả lại** kèm dòng báo. Người yêu cầu chỉ sửa được ô Công ty nhận hóa đơn rồi gửi duyệt; trong lúc đó không xóa, không hủy, không đổi cờ gấp, không phân bổ, không điều phối được phiếu.
+- Mọi thao tác ghi trên các ĐMH cùng mã YCMH bị khóa (sửa, duyệt, hủy, tiến độ, chi phí, đính kèm, tiến độ tự chạy khi YCTT duyệt, các đường của trợ lý AI); ĐMH hiện dòng báo **Đơn đang tạm khóa**, chỉ còn xem và in.
+- Trưởng phòng duyệt lại như thường thì công ty mới được chép xuống mọi ĐMH và sổ giá đang mở, khóa được gỡ, phiếu tự về lại Đang mua hàng mà không qua điều phối; người phụ trách nhận chuông báo. Lúc duyệt máy chủ soát lại YCTT / công nợ để không lọt chứng từ gõ tay trong lúc khóa.
+- Sau lượt rà mã độc lập, vá thêm hai lỗ: bấm Duyệt khi phiếu còn Bị trả lại (trang cũ chưa tải lại) và trưởng phòng bấm Từ chối phiếu (gọi đường hủy) trong lúc trả về; cả hai nay bị chặn.
+- Viết HDSD vào 4 bài trên Trung tâm trợ giúp (script seed riêng, chạy lại không sinh trùng), cẩm nang quy trình thu mua và tài liệu chức năng YCMH, ĐMH.
+
+**Kiểm:** 26 bài kiểm mới của CR này cùng 202 bài kiểm backend liên quan xanh, ruff 0 lỗi; giao diện mới: eslint 0 lỗi, 2.049 bài kiểm phân hệ Thu mua xanh, typecheck sạch ở các tệp của CR (lỗi duy nhất còn lại nằm ở một tệp chưa commit của người khác); giao diện cũ giữ đúng 4 lỗi kiểu cũ. Đã chạy migration và seed HDSD trên máy local.
+
+**Còn lại:** chạy seed HDSD và nạp lại kho tìm kiếm trợ giúp trên dev, phát hành phiên bản mới của skill cẩm nang thu mua; soát thật trên dev bằng một phiếu Đang mua hàng đủ điều kiện.
+
+Mã nguồn: `purchase_request/invoice_company_return_service.py`, `core/pr_return_codes.py`, migration `prret803`, `purchase_order/controller.py` (`_in_scope`), `frontend-v2/.../invoice-company-return-lock.ts`, `frontend/src/pages/PurchaseRequestDetail.tsx`, `PurchaseOrderDetail.tsx`, `backend/scripts/seed_help_tra_ve_sua_cong_ty_cr803.py`
+Tham chiếu: bài kiểm `test/backend/test_tra_ve_sua_cong_ty_hoa_don_cr803.py`
+
 ## bao-CR-802 | HDSD: cách sửa giá thứ hai của đơn mua hàng (Sửa giá trong bảng)
 - status: xong
 - date: 2026-11-27

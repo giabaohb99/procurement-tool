@@ -40,7 +40,14 @@ def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseOrder:
                      get_perm_profile(db, user), action).first()
     if not po:
         raise HTTPException(404, "Không tìm thấy đơn mua hàng")
+    # duoc-CR-803: mọi đường GHI của ĐMH đi qua đây — YCMH nguồn đang trả về sửa công ty thì khóa hết.
+    if action in _LOCKABLE_ACTIONS:
+        from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
+        ensure_po_not_locked(db, po)
     return po
+
+
+_LOCKABLE_ACTIONS = ("write", "approve", "cancel", "delete")
 
 
 def _require_awaiting_approval(db: Session, pid: int, action_label: str) -> None:
@@ -287,6 +294,9 @@ def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(requir
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
     #  bao-CR-547: kiểm CẢ LÔ trước khi xóa đơn nào — chỉ đơn Nháp (đại ca chốt 01/10/2026).
     ensure_all_draft(rows, "đơn mua hàng")
+    from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
+    for po in rows:   # duoc-CR-803: kiểm khóa cả lô trước, kẻo xóa dở nửa lô rồi mới vấp đơn đang khóa
+        ensure_po_not_locked(db, po)
     for pid in [r.id for r in rows]:
         try:
             service.delete_po(db, pid, user.id)
