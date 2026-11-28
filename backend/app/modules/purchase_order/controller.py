@@ -21,7 +21,7 @@ from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
 
-def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseOrder:
+def _in_scope(db: Session, pid: int, user, action: str, *, allow_pr_return_lock: bool = False) -> PurchaseOrder:
     """Nạp ĐMH theo id NHƯNG chỉ khi nó nằm trong phạm vi `action` của người gọi.
 
     `require(entity, action)` chỉ trả lời "vai trò này được làm hành động đó không"; nó
@@ -41,7 +41,8 @@ def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseOrder:
     if not po:
         raise HTTPException(404, "Không tìm thấy đơn mua hàng")
     # duoc-CR-803: mọi đường GHI của ĐMH đi qua đây — YCMH nguồn đang trả về sửa công ty thì khóa hết.
-    if action in _LOCKABLE_ACTIONS:
+    # `allow_pr_return_lock`: đường Sửa ĐMH tự xử lý khóa (vẫn cho nhập lại Mã đơn MISA) — xem `update_po`.
+    if action in _LOCKABLE_ACTIONS and not allow_pr_return_lock:
         from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
         ensure_po_not_locked(db, po)
     return po
@@ -257,8 +258,15 @@ def clone_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
 
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
-    """Sửa ĐMH."""
-    _in_scope(db, pid, user, "write")
+    """Sửa ĐMH.
+
+    duoc-CR-803: đơn đang khóa vì YCMH trả về sửa công ty nhận hóa đơn thì chỉ nhận Mã đơn MISA (nhập lại mã theo
+    công ty mới), mọi trường khác bỏ qua."""
+    from app.modules.purchase_request.invoice_company_return_service import is_po_locked_by_pr_return
+    po = _in_scope(db, pid, user, "write", allow_pr_return_lock=True)
+    if is_po_locked_by_pr_return(db, po):
+        return success(_out(db, service.update_misa_code_only(db, pid, data, user.id)),
+                       "Đơn đang khóa — chỉ lưu Mã đơn MISA")
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")
 
 

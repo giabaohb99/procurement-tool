@@ -249,3 +249,23 @@ def test_dispatch_blocked_while_returned(db, seed):
     _return(db, pr)
     with pytest.raises(HTTPException):
         pr_service.dispatch_pr(db, pr.id, USER.id)
+
+
+def test_misa_code_editable_while_locked_other_fields_ignored(db, seed):
+    #  Đổi công ty thường phải lập lại đơn trên MISA dưới pháp nhân mới → màn Sửa ĐMH vẫn nhập lại được mã.
+    from app.modules.purchase_order import controller as po_ctl
+    from app.modules.purchase_order.schema import POUpdate
+    pr, po, _ = _world_pr(db, seed)
+    _return(db, pr)
+    po_ctl.update_po(po.id, POUpdate(misa_code="MS-2", payment_terms="Đổi điều khoản"), db=db, user=USER)
+    db.refresh(po)
+    assert po.misa_code == "MS-2" and (po.payment_terms or "") != "Đổi điều khoản"
+
+
+def test_misa_code_cannot_be_blanked_while_locked_when_lines_advanced(db, seed):
+    from app.modules.purchase_order import controller as po_ctl
+    from app.modules.purchase_order.schema import POUpdate
+    pr, po, _ = _world_pr(db, seed)
+    _return(db, pr)
+    with pytest.raises(HTTPException):
+        po_ctl.update_po(po.id, POUpdate(misa_code=""), db=db, user=USER)

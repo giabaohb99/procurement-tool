@@ -4,6 +4,7 @@ import { ACTIONS, type PermissionAction } from '@/core/authorization/permission-
 import {
   buildPrReturnLockNotice,
   isInvoiceCompanyOnly,
+  isMisaEditableWhilePrReturned,
   isOrderLockedByPrReturn,
   isPoActionOpenWhilePrReturned,
   validateInvoiceCompanyOnly,
@@ -80,5 +81,26 @@ describe('buildPrReturnLockNotice', () => {
   it('still reads as a sentence when the code is blank or padded', () => {
     expect(buildPrReturnLockNotice('  ')).toContain('yêu cầu mua hàng nguồn được trả về')
     expect(buildPrReturnLockNotice(' PYC1 ')).toContain('yêu cầu mua hàng PYC1 được')
+  })
+})
+
+describe('buildPrReturnLockNotice — Mã đơn MISA', () => {
+  it('adds the MISA hint only for someone who can still re-enter the code', () => {
+    const hint = 'Vẫn nhập lại được Mã đơn MISA nếu đã lập lại đơn trên MISA dưới công ty mới.'
+    expect(buildPrReturnLockNotice('PYC1', true)).toBe(
+      `Đơn đang tạm khóa: yêu cầu mua hàng PYC1 được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại. ${hint}`,
+    )
+    expect(buildPrReturnLockNotice('PYC1', false)).not.toContain('MISA')
+    expect(buildPrReturnLockNotice('PYC1')).not.toContain('MISA')
+  })
+})
+
+describe('isMisaEditableWhilePrReturned', () => {
+  it('opens the MISA box only on a locked order for a user with write permission', () => {
+    expect(isMisaEditableWhilePrReturned(true, true)).toBe(true)
+    expect(isMisaEditableWhilePrReturned(true, false)).toBe(false)
+    //  Đơn không khóa: ô MISA theo luật thường (sau duyệt), ngoại lệ này không bật.
+    expect(isMisaEditableWhilePrReturned(false, true)).toBe(false)
+    expect(isMisaEditableWhilePrReturned(false, false)).toBe(false)
   })
 })

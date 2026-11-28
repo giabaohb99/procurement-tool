@@ -567,7 +567,8 @@ def _approve_invoice_company_change(db: Session, pr: PurchaseRequest, user, back
                          is_urgent=bool(pr.is_urgent), approve_note=pr.note or "", link=link)
     service.notify_users(db, service.assigned_user_ids(db, pr), f"{pr.code} — Đổi công ty nhận hóa đơn",
                          f"Yêu cầu mua hàng {pr.code} đã duyệt đổi công ty nhận hóa đơn; {n} đơn mua hàng liên quan "
-                         "đã cập nhật và mở khóa.", link, user.id, background_tasks)
+                         "đã cập nhật và mở khóa. Đơn đã nhập MISA dưới công ty cũ thì nhập lại Mã đơn MISA.",
+                         link, user.id, background_tasks)
     return success(_out(db, pr, user), f"Đã duyệt — cập nhật công ty nhận hóa đơn cho {n} đơn mua hàng")
 
 

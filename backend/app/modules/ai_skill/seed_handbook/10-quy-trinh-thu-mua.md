@@ -84,10 +84,13 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
   không dùng được; trả về thường (Chờ duyệt / Đã duyệt / Đã điều phối chưa có ĐMH) giữ như cũ. Sau khi trả: phiếu **Bị trả
   lại**, giữ NSTM và trạng thái dòng; người yêu cầu chỉ sửa được ***Công ty nhận hóa đơn*** rồi ***Gửi duyệt*** (ô khác gửi
   lên bị bỏ qua); không xóa, **không hủy / Từ chối phiếu** (nút ẩn), không đổi Đơn gấp, phân bổ, sửa trạng thái dòng, lập thêm ĐMH được. Mọi ĐMH liên quan **tạm
-  khóa**: chỉ xem, in (sửa, duyệt, tiến độ, nhận hàng, chi phí, đính kèm, hủy... đều báo *Đơn mua hàng đang bị khóa...*).
+  khóa**: chỉ xem, in, và **nhập lại *Mã đơn MISA*** (sửa ô đó rồi ***Lưu***, ô khác bỏ qua; không xóa trắng mã khi dòng
+  đã qua bước cần mã) cho đơn đã lập lại trên MISA dưới công ty mới; còn lại (sửa, duyệt, tiến độ, nhận hàng, chi phí, đính
+  kèm, hủy...) đều báo *Đơn mua hàng đang bị khóa...*.
   Trưởng bộ phận ***Duyệt*** như thường (chỉ sau khi người yêu cầu đã gửi lại; còn Bị trả lại thì báo *... chưa duyệt
   được*; có YCTT mới gắn mã ĐMH trong lúc khóa thì chặn, xử lý YCTT trước) → công ty mới chép xuống mọi ĐMH, mở khóa, phiếu
-  tự về Đang mua hàng (không điều phối lại), NSTM nhận chuông *Đổi công ty nhận hóa đơn*. Trả về lần nữa vẫn ở chế độ chỉ
+  tự về Đang mua hàng (không điều phối lại), NSTM nhận chuông *Đổi công ty nhận hóa đơn* (nhắc đơn đã nhập MISA dưới công ty cũ thì nhập lại Mã đơn MISA; ô đó vẫn sửa
+  được như mọi đơn đã duyệt). Trả về lần nữa vẫn ở chế độ chỉ
   sửa công ty. Muốn bỏ đợt sửa: người yêu cầu chọn lại công ty cũ, gửi duyệt, trưởng bộ phận duyệt. Trợ lý không trả về hộ
   (không có công cụ): chỉ đường tới nút ***Trả về***.
 - **Mẫu thu mua khi in phiếu đề xuất từ Đơn mua hàng** (từ 17/11/2026): màn in YCMH từ ĐMH có thêm *Mẫu thu mua – có

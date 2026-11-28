@@ -48,7 +48,7 @@ from .progress_service import (PROGRESS_ORDER, PROGRESS_EXCEPTIONS, is_line_paid
 from .edit_service import (_ITEM_COPY_FIELDS, copy_po, _default_nspt, _ensure_pr_dispatched, _handler_dept_of_pr,
                            create_po, APPROVED_STATUSES, LINE_FIELDS_EDITABLE_AFTER_APPROVAL, LINE_FIELD_LABELS,
                            ORDER_FIELD_LABELS, ORDER_FIELDS_EDITABLE_AFTER_APPROVAL, _EDIT_HINT, _differs,
-                           block_edit_approved_order, block_clear_misa_in_use, unapprove_po, update_po,
+                           block_edit_approved_order, block_clear_misa_in_use, unapprove_po, update_po, update_misa_code_only,
                            DOCUMENT_STATUSES, set_document_status, delete_po, reopen_po, set_status)
 from .price_adjust_service import PRICE_ADJUST_BLOCKING_REQUEST_STATUSES, adjust_prices
 from .query_service import (DEFAULT_INSPECTION_DAYS, DEFAULT_RETURN_DAYS, DEFAULT_INVOICE_DEADLINE, resolve_print_terms,

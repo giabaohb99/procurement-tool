@@ -131,6 +131,7 @@ import { isPriceAdjustAvailable } from '../utils/purchase-order-price-adjust'
 import { rebasePurchaseOrderDraft } from '../utils/purchase-order-rebase'
 import {
   buildPrReturnLockNotice,
+  isMisaEditableWhilePrReturned,
   isOrderLockedByPrReturn,
   isPoActionOpenWhilePrReturned,
 } from '../utils/invoice-company-return-lock'
@@ -227,6 +228,14 @@ export function PurchaseOrderDetailPage() {
   const lockedByPrReturn = !isNew && isOrderLockedByPrReturn(serverData)
   const canOrder = (action: PermissionAction) =>
     can('purchase_order', action) && isPoActionOpenWhilePrReturned(action, lockedByPrReturn)
+  /**
+   * Ngoại lệ duy nhất của khóa trên: ô Mã đơn MISA vẫn nhập lại được (lập lại đơn trên MISA dưới
+   * công ty mới). Backend khi đơn khóa chỉ lưu `misa_code`, mọi ô khác bỏ qua.
+   */
+  const misaOnlyEditable = isMisaEditableWhilePrReturned(
+    lockedByPrReturn,
+    can('purchase_order', 'write'),
+  )
   //  Sửa giá sau duyệt: bản nháp giá riêng, so với dòng ĐÃ LƯU (không so với bản nháp của trang).
   const reprice = usePurchaseOrderReprice(purchaseOrderId, serverData?.items ?? NO_ITEMS)
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
@@ -557,6 +566,19 @@ export function PurchaseOrderDetailPage() {
    * Trả `true` khi lưu (và gửi, nếu có) xong.
    */
   async function handleSave(submitAfterSave = false): Promise<boolean> {
+    //  duoc-CR-803: đơn khóa chỉ lưu Mã đơn MISA — bỏ qua kiểm dòng, hỏi trùng mã, lệch ngày (đều
+    //  là ô backend bỏ qua lúc này), gửi thẳng. Câu báo của backend nói rõ chỉ lưu Mã đơn MISA.
+    if (lockedByPrReturn) {
+      if (!misaOnlyEditable) return false
+      const saved = await savePurchaseOrder.mutateAsync({
+        id: purchaseOrderId,
+        payload: toPurchaseOrderPayload(data),
+      })
+      markSubmitted()
+      setDraft(saved)
+      setDraftBase(saved)
+      return true
+    }
     const message = validatePurchaseOrder(data, submitAfterSave)
     if (message) {
       toast.error(message)
@@ -961,7 +983,7 @@ export function PurchaseOrderDetailPage() {
       },
     /* Đơn đã duyệt vẫn cần nút Lưu: mấy ô mở sau khi duyệt nằm trong popup
        chi tiết dòng, sửa xong phải ghi xuống được. */
-    (headerEditable || afterApproveEditable) && {
+    (headerEditable || afterApproveEditable || misaOnlyEditable) && {
       key: 'save',
       primary: true,
       node: (
@@ -1023,7 +1045,7 @@ export function PurchaseOrderDetailPage() {
           className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
         >
           <Lock className="mt-0.5 size-4 shrink-0" />
-          <span>{buildPrReturnLockNotice(data.pr_code)}</span>
+          <span>{buildPrReturnLockNotice(data.pr_code, misaOnlyEditable)}</span>
         </div>
       )}
 
@@ -1033,7 +1055,7 @@ export function PurchaseOrderDetailPage() {
           <PurchaseOrderInfoCard
             data={data}
             editable={headerEditable}
-            misaEditable={afterApproveEditable}
+            misaEditable={afterApproveEditable || misaOnlyEditable}
             companies={companiesData?.items}
             suppliers={(suppliersData?.items ?? []).filter(
               (supplier) => supplier.supplier_type !== 'transport',

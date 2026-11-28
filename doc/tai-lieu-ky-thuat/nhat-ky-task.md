@@ -128,9 +128,10 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 - Mọi thao tác ghi trên các ĐMH cùng mã YCMH bị khóa (sửa, duyệt, hủy, tiến độ, chi phí, đính kèm, tiến độ tự chạy khi YCTT duyệt, các đường của trợ lý AI); ĐMH hiện dòng báo **Đơn đang tạm khóa**, chỉ còn xem và in.
 - Trưởng phòng duyệt lại như thường thì công ty mới được chép xuống mọi ĐMH và sổ giá đang mở, khóa được gỡ, phiếu tự về lại Đang mua hàng mà không qua điều phối; người phụ trách nhận chuông báo. Lúc duyệt máy chủ soát lại YCTT / công nợ để không lọt chứng từ gõ tay trong lúc khóa.
 - Sau lượt rà mã độc lập, vá thêm hai lỗ: bấm Duyệt khi phiếu còn Bị trả lại (trang cũ chưa tải lại) và trưởng phòng bấm Từ chối phiếu (gọi đường hủy) trong lúc trả về; cả hai nay bị chặn.
+- Theo góp ý cùng ngày, ĐMH đang khóa vẫn nhập lại được **Mã đơn MISA** (đổi công ty thường phải lập lại đơn trên MISA dưới pháp nhân mới): màn Sửa ĐMH của cả hai giao diện mở riêng ô này kèm nút Lưu, các ô khác vẫn khóa; đường của trợ lý AI vẫn bị chặn hẳn để không báo nhầm là đã ghi. Chuông báo khi duyệt đổi công ty nhắc người phụ trách nhập lại mã.
 - Viết HDSD vào 4 bài trên Trung tâm trợ giúp (script seed riêng, chạy lại không sinh trùng), cẩm nang quy trình thu mua và tài liệu chức năng YCMH, ĐMH.
 
-**Kiểm:** 26 bài kiểm mới của CR này cùng 202 bài kiểm backend liên quan xanh, ruff 0 lỗi; giao diện mới: eslint 0 lỗi, 2.049 bài kiểm phân hệ Thu mua xanh, typecheck sạch ở các tệp của CR (lỗi duy nhất còn lại nằm ở một tệp chưa commit của người khác); giao diện cũ giữ đúng 4 lỗi kiểu cũ. Đã chạy migration và seed HDSD trên máy local.
+**Kiểm:** 28 bài kiểm mới của CR này cùng các bài kiểm backend liên quan xanh, ruff 0 lỗi; giao diện mới: eslint 0 lỗi, 2.055 bài kiểm phân hệ Thu mua xanh, typecheck sạch ở các tệp của CR (lỗi duy nhất còn lại nằm ở một tệp chưa commit của người khác); giao diện cũ giữ đúng 4 lỗi kiểu cũ. Đã chạy migration và seed HDSD trên máy local.
 
 **Còn lại:** chạy seed HDSD và nạp lại kho tìm kiếm trợ giúp trên dev, phát hành phiên bản mới của skill cẩm nang thu mua; soát thật trên dev bằng một phiếu Đang mua hàng đủ điều kiện.
 

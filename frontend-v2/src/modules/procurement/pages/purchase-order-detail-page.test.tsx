@@ -461,6 +461,7 @@ describe('PurchaseOrderDetailPage — tạm khóa vì YCMH bị trả về (duoc
       ...createEmptyPurchaseOrder(),
       id: 1178,
       code: 'PO01178',
+      misa_code: 'MISA-CU',
       pr_code: 'PYC09112601',
       status,
       company_id: 1,
@@ -472,24 +473,53 @@ describe('PurchaseOrderDetailPage — tạm khóa vì YCMH bị trả về (duoc
 
   const NOTICE =
     'Đơn đang tạm khóa: yêu cầu mua hàng PYC09112601 được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.'
+  const MISA_HINT = 'Vẫn nhập lại được Mã đơn MISA nếu đã lập lại đơn trên MISA dưới công ty mới.'
 
-  it('an approved order shows the notice, keeps In and drops every write button', async () => {
+  it('an approved order shows the notice, keeps In and Lưu for the MISA code, drops every other write button', async () => {
+    seedOrder('approved', true)
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    expect(screen.getByRole('status')).toHaveTextContent(`${NOTICE} ${MISA_HINT}`)
+    expect(screen.getByRole('button', { name: 'In' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('MISA-CU')).toBeInTheDocument()
+    for (const name of ['Hủy duyệt', 'Sửa giá', 'Sửa giá trong bảng', 'Hủy', 'Tạo yêu cầu thanh toán']) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+  })
+
+  it('saves a re-entered MISA code straight away, without the line checks of a normal save', async () => {
+    const user = userEvent.setup()
+    //  Dòng thiếu kho: lưu thường bị chặn ở màn, nhưng đơn khóa chỉ lưu Mã đơn MISA.
+    seedOrder('approved', true)
+    server.order = {
+      ...(server.order as PurchaseOrderDetail),
+      items: [line({ id: 900, warehouse_code: '', qty_received: 0, progress_status: 'ordered' })],
+    }
+    renderPage('/procurement/purchase-orders/1178')
+    await screen.findAllByText('PO01178')
+
+    const misa = screen.getByDisplayValue('MISA-CU')
+    await user.clear(misa)
+    await user.type(misa, 'MISA-MOI')
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(server.payloads).toHaveLength(1))
+    expect(lastPayload().payload.misa_code).toBe('MISA-MOI')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  it('a user without write permission gets neither Lưu nor the MISA hint', async () => {
+    server.denied = ['purchase_order.write']
     seedOrder('approved', true)
     renderPage('/procurement/purchase-orders/1178')
     await screen.findAllByText('PO01178')
 
     expect(screen.getByRole('status')).toHaveTextContent(NOTICE)
-    expect(screen.getByRole('button', { name: 'In' })).toBeInTheDocument()
-    for (const name of [
-      'Lưu',
-      'Hủy duyệt',
-      'Sửa giá',
-      'Sửa giá trong bảng',
-      'Hủy',
-      'Tạo yêu cầu thanh toán',
-    ]) {
-      expect(screen.queryByRole('button', { name })).toBeNull()
-    }
+    expect(screen.getByRole('status')).not.toHaveTextContent(MISA_HINT)
+    expect(screen.queryByRole('button', { name: 'Lưu' })).toBeNull()
+    expect(screen.queryByDisplayValue('MISA-CU')).toBeNull()
   })
 
   it('the same approved order without the lock still offers those buttons', async () => {
@@ -503,14 +533,15 @@ describe('PurchaseOrderDetailPage — tạm khóa vì YCMH bị trả về (duoc
     }
   })
 
-  it('a draft order cannot be sent, saved, deleted or given new lines', async () => {
+  it('a draft order cannot be sent, deleted or given new lines; only the MISA box stays open', async () => {
     seedOrder('draft', true)
     renderPage('/procurement/purchase-orders/1178')
     await screen.findAllByText('PO01178')
 
-    for (const name of ['Gửi duyệt', 'Lưu', 'Xóa đơn', 'Thêm dòng']) {
+    for (const name of ['Gửi duyệt', 'Xóa đơn', 'Thêm dòng']) {
       expect(screen.queryByRole('button', { name })).toBeNull()
     }
+    expect(screen.getByDisplayValue('MISA-CU')).toBeInTheDocument()
     //  Ô đơn giá trong bảng thành chữ chỉ xem, không còn ô gõ.
     expect(within(screen.getByRole('table')).queryAllByRole('textbox', { name: /^Đơn giá dòng/ })).toHaveLength(0)
   })

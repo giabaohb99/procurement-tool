@@ -227,6 +227,9 @@ export default function PurchaseOrderDetail() {
   const can = (entity: string, action: string) =>
     (prReturnLock && ['purchase_order', 'payment_request'].includes(entity) && !['read', 'print', 'export'].includes(action))
       ? false : canByRole(entity, action)
+  // duoc-CR-803: đơn khóa vẫn NHẬP LẠI được Mã đơn MISA (lập lại đơn trên MISA dưới công ty mới).
+  // Xét quyền GỐC — `can()` ở trên đã tắt purchase_order.write. Backend chỉ lưu `misa_code` lúc này.
+  const misaOnlyEditable = prReturnLock && canByRole('purchase_order', 'write')
   const [companies, setCompanies] = useState<any[]>([])
   // bao-CR-785: danh mục phòng cho ô Phòng xử lý của đơn tạo thẳng (không từ YCMH).
   const [departments, setDepartments] = useState<any[]>([])
@@ -813,6 +816,13 @@ export default function PurchaseOrderDetail() {
   //  rồi mới gửi. Trước đây nút Gửi duyệt chỉ POST `/submit`: máy chủ gửi bản CŨ, rồi `loadAll()`
   //  đổ bản cũ đè lên form, người dùng mất trắng phần vừa sửa. Trả `true` khi lưu (và gửi) xong.
   async function save(submitAfterSave = false): Promise<boolean> {
+    // duoc-CR-803: đơn khóa chỉ gửi Mã đơn MISA — bỏ qua các bước kiểm dòng / giao hàng (không đổi được)
+    if (misaOnlyEditable) {
+      try {
+        await api.patch(`${API}/${id}`, { misa_code: po.misa_code || '' })
+        toast.success('Đã lưu thành công'); loadAll(); return true
+      } catch { /* interceptor đã toast lỗi */ return false }
+    }
     const sentItems = items.filter((it: any) => it.product_name || it.product_code)
     // bao-CR-308: ĐMH ĐƯỢC PHÉP trùng mã (mua theo bộ chứng từ: cùng mã, khác lô / khác Tên
     // trên hóa đơn) — đồng bộ về YCMH cộng GỘP theo mã nên số vẫn đúng. Chỉ HỎI XÁC NHẬN
@@ -1253,7 +1263,7 @@ export default function PurchaseOrderDetail() {
         {!isNew && po.status === 'completed' && can('purchase_order', 'write') && (
           <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Mở lại đơn đã hoàn thành để xử lý tiếp (nhập Số HĐ, tạo yêu cầu thanh toán, cập nhật tiến độ)? Đơn trở về trạng thái theo tiến độ nhận hàng.', confirmText: 'Mở lại' })) action('reopen') }}><i className="ti ti-lock-open" />Mở lại</button>
         )}
-        {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
+        {(((headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write')) || misaOnlyEditable) && (
           <button className="btn" onClick={() => void save()} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
       </div>
@@ -1262,7 +1272,8 @@ export default function PurchaseOrderDetail() {
       {prReturnLock && (
         <div className="card" style={{ padding: '10px 14px', marginBottom: 14, background: '#fffbeb', border: '1px solid #fde68a' }}>
           <div style={{ fontSize: 13, color: '#92400e' }}>
-            <i className="ti ti-lock" /> <b>Đơn đang tạm khóa: yêu cầu mua hàng {po.pr_code} được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.</b>
+            <i className="ti ti-lock" /> <b>Đơn đang tạm khóa: yêu cầu mua hàng {po.pr_code} được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.</b>{' '}
+            Vẫn nhập lại được Mã đơn MISA nếu đã lập lại đơn trên MISA dưới công ty mới.
           </div>
         </div>
       )}
@@ -1290,7 +1301,7 @@ export default function PurchaseOrderDetail() {
               {/* Mã đơn MISA: kế toán đối chiếu số trên phần mềm MISA nên thường điền/sửa SAU khi
                   đơn đã duyệt. Mở ô này cả khi đơn đã duyệt (backend cũng cho, xem
                   ORDER_FIELDS_EDITABLE_AFTER_APPROVAL ở purchase_order/service.py). */}
-              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} placeholder="(nếu có)" disabled={!headerEditable && !afterApproveEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
+              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} placeholder="(nếu có)" disabled={!headerEditable && !afterApproveEditable && !misaOnlyEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
               <div className="form-row"><label>Công ty nhận HĐ <span style={{ color: 'var(--red)' }}>*</span></label>
                 <SearchSelect value={po.company_id ? String(po.company_id) : ''} disabled={!headerEditable} placeholder="Chọn/tìm công ty…"
                   options={companies.map((c) => ({ value: String(c.id), label: c.name }))}

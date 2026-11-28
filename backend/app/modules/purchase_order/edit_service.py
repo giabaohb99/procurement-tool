@@ -409,6 +409,25 @@ def block_clear_misa_in_use(db: Session, po: PurchaseOrder, data: POUpdate) -> N
                                  f"cần mã này ({names}{more}). Nhập mã khác thì được.")
 
 
+def update_misa_code_only(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOrder:
+    """Đơn đang khóa theo YCMH trả về sửa công ty (duoc-CR-803): chỉ ghi Mã đơn MISA, mọi trường khác bỏ qua.
+
+    Đổi công ty nhận hóa đơn thường kéo theo lập lại đơn trên MISA dưới pháp nhân mới, nên mã MISA phải sửa
+    được ngay cả khi đơn đang khóa. Bỏ qua chứ không báo lỗi vì cả hai giao diện gửi nguyên đơn mỗi lần Lưu.
+    Luật chặn xóa trắng mã khi dòng đã tiến qua bước cần mã vẫn áp như thường. Chỉ màn Sửa ĐMH gọi hàm này."""
+    po = get_po(db, pid)
+    if data.misa_code is None or not _differs(po.misa_code, data.misa_code):
+        return po
+    block_clear_misa_in_use(db, po, POUpdate(misa_code=data.misa_code))
+    old = po.misa_code or ""
+    po.misa_code = (data.misa_code or "").strip()
+    po.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, po.id, "update", f"Nhập lại Mã đơn MISA khi đơn đang khóa: {old} -> {po.misa_code}")
+    db.refresh(po)
+    return po
+
+
 def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
     """Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108).
 
@@ -442,8 +461,11 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
+    # duoc-CR-803: YCMH nguồn đang trả về sửa công ty nhận hóa đơn → chặn cứng. Màn Sửa ĐMH gọi
+    # `update_misa_code_only` trước khi tới đây; đường AI / nhập liệu gọi thẳng hàm này nên phải ăn lỗi,
+    # đừng lặng lẽ bỏ qua thay đổi rồi báo đã ghi.
     from app.modules.purchase_request.invoice_company_return_service import ensure_po_not_locked
-    ensure_po_not_locked(db, po)   # duoc-CR-803: YCMH nguồn đang trả về sửa công ty nhận hóa đơn
+    ensure_po_not_locked(db, po)
     block_edit_approved_order(db, po, data)
     block_clear_misa_in_use(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()

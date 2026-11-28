@@ -55,8 +55,27 @@ export function isPoActionOpenWhilePrReturned(
   return !lockedByPrReturn || PO_ACTIONS_OPEN_WHILE_PR_RETURNED.has(action)
 }
 
-/** Câu nhắc đầu trang ĐMH đang tạm khóa. */
-export function buildPrReturnLockNotice(prCode: string): string {
+/**
+ * Câu nhắc đầu trang ĐMH đang tạm khóa. `misaEditable` = người xem còn nhập lại được Mã đơn MISA
+ * (đơn khóa vẫn lưu riêng ô này, anh Được yêu cầu) — người không có quyền ghi thì không nhắc.
+ */
+export function buildPrReturnLockNotice(prCode: string, misaEditable = false): string {
   const code = (prCode || '').trim()
-  return `Đơn đang tạm khóa: yêu cầu mua hàng ${code || 'nguồn'} được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.`
+  const notice = `Đơn đang tạm khóa: yêu cầu mua hàng ${code || 'nguồn'} được trả về để sửa công ty nhận hóa đơn, chờ duyệt lại.`
+  return misaEditable ? `${notice} ${PR_RETURN_LOCK_MISA_HINT}` : notice
+}
+
+/** Câu thêm vào khung báo khóa khi người xem còn sửa được Mã đơn MISA. */
+export const PR_RETURN_LOCK_MISA_HINT =
+  'Vẫn nhập lại được Mã đơn MISA nếu đã lập lại đơn trên MISA dưới công ty mới.'
+
+/**
+ * Ô Mã đơn MISA còn mở trên ĐMH đang khóa không: chỉ khi đơn khóa vì YCMH bị trả về VÀ người xem có
+ * quyền ghi đơn (`canWriteOrder` = quyền vai trò gốc, chưa xét khóa). Backend khi đó chỉ lưu `misa_code`.
+ */
+export function isMisaEditableWhilePrReturned(
+  lockedByPrReturn: boolean,
+  canWriteOrder: boolean,
+): boolean {
+  return lockedByPrReturn && canWriteOrder
 }
